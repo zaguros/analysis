@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from analysis.lde import hht3
+from pq import hht3
 
 setup = 'lt1'
 

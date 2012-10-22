@@ -215,39 +215,3 @@ def fit_population_vs_detuning(g_a, g_A, g_F, g_x0, *arg):
 
     return p0, fitfunc, fitfunc_str
 
-def optical_rabi_damped_old(g_omega, g_xi, g_x0):
-    fitfunc_str = '1/(2*(1+2*_xi()**2))*(1-(cos((_omegaR()*\
-                    sqrt(1-_xi()**2/4))*x)+3*_xi()/sqrt(4-_xi()**2)*\
-                    sin((_omegaR()*sqrt(1-_xi()**2/4))*x))*\
-                    exp(-3*_xi()*_omegaR()*x/2))'
-    
-    xi = fit.Parameter(g_xi, 'xi')
-    omegaR = fit.Parameter(g_omega, 'omegaR')
-    x0= fit.Parameter(g_x0, 'x0')
-
-    p0 = [xi, omegaR, x0]
-
-    def fitfunc(x):
-        return 1/(2*(1+2*xi()**2))*(1-(cos((omegaR()*\
-                    sqrt(1-xi()**2/4))*(x-x0()))+3*xi()/sqrt(4-xi()**2)*\
-                    sin((omegaR()*sqrt(1-xi()**2/4))*(x-x0())))*\
-                    exp(-3*xi()*omegaR()*(x-x0())/2))
-    
-    return p0, fitfunc, fitfunc_str
-
-
-def optical_rabi_damped(g_omega, g_xi, g_x0, g_A, g_off):
-    fitfunc_str = 'B() + A()*cos(omegaR()*(x-x0()))*exp(-xi()*(x-x0()))'
-    
-    xi = fit.Parameter(g_xi, 'xi')
-    omegaR = fit.Parameter(g_omega, 'omegaR')
-    x0= fit.Parameter(g_x0, 'x0')
-    A = fit.Parameter(g_A, 'A')
-    B = fit.Parameter (g_off, 'B')
-    p0 = [xi, omegaR, x0, A, B]
-
-    def fitfunc(x):
-        return B()+A()*cos(omegaR()*(x-x0()))*exp(-xi()*(x-x0()))
-    
-    return p0, fitfunc, fitfunc_str
-

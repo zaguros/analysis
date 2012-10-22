@@ -138,28 +138,24 @@ def fit_gauss(g_a, g_A, g_x0, g_sigma):
 
     return p0, fitfunc, fitfunc_str
 
-
-def fit_exp_decay_with_shifted_offset(g_a, g_A, g_tau, g_x0, *arg):
+def fit_line(g_a, g_b, *arg):
     """
-    fitfunction for an exponential decay,
-        y(x) = A * exp(-(x-x0)/tau) + a
+    fitfunction for a line
+        y(x) = a + b*x 
 
-    Initial guesses (in this order):
+    I.g.:
         g_a : offset
-        g_A : initial Amplitude
-        g_tau : decay constant
-        g_x0 : shift
-
+        g_b : linear slope
     """
-    fitfunc_str = 'A * exp(-(x-x0)/tau) + a'
 
+    fitfunc_str = 'a + b*x' 
+    
     a = fit.Parameter(g_a, 'a')
-    A = fit.Parameter(g_A, 'A')
-    tau = fit.Parameter(g_tau, 'tau')
-    x0 = fit.Parameter(g_x0, 'x0')
-    p0 = [a, A, tau, x0]
+    b = fit.Parameter(g_b, 'b')
+    #xsat = fit.Parameter(g_xsat, 'xsat')
+    p0 = [a, b]
 
     def fitfunc(x):
-        return a() + A() * np.exp(-(x-x0())/tau())
+        return a() + b()*x
 
     return p0, fitfunc, fitfunc_str

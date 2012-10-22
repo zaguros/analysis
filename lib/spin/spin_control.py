@@ -61,13 +61,15 @@ def plot_data(datapath,fid=(0.7763,0.9895),fiderr=(0.01,0.01), fit_data = True, 
     mwpower = e['mw_power']
     par_min = e['min_sweep_par']
     par_max = e['max_sweep_par']
+    #par_min=e['min_wait_time']
+    #par_max=e['max_wait_time']
     print par_min*1e-6
     noof_datapoints = e['noof_datapoints']
     noof_reps = e['completed_repetitions']
     if 'sweep_par_name' in e.keys():
         sp_name=e['sweep_par_name']
     else:
-        sp_name='Total free evolution time [ms]'
+        sp_name='Total free evolution time [ns]'
 
     e.close()
 
@@ -576,7 +578,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.878E9):
 
     return True
 
-def plot_ramsey(datapath, fit_data = True, save = True):
+def plot_ramsey(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True, save = True):
 
     plt.close('all')
     ###########################################
@@ -596,8 +598,8 @@ def plot_ramsey(datapath, fit_data = True, save = True):
     f_drive = e['mw_drive_freq']
     detuning = e['detuning']
     mwpower = e['mw_power']
-    tau_max = e['tau_min']
-    tau_min = e['tau_max']
+    tau_min = e['min_wait_time']
+    tau_max = e['max_wait_time']
     #pi_2_duration = e['pi_2_duration']
     pi_2_duration=25
     noof_datapoints = e['noof_datapoints']
@@ -622,14 +624,25 @@ def plot_ramsey(datapath, fit_data = True, save = True):
     tau = linspace(tau_min,tau_max,noof_datapoints)
     counts_during_readout = sum(raw_counts, axis = 1)
     SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    SSRO_readout_corr = zeros(len(SSRO_readout))
+    readout_error = zeros(len(SSRO_readout))
+    SSRO_uncor=SSRO_readout
+
+    for i in arange(len(SSRO_readout)):
+        ms0_events = SSRO_readout[i]*noof_reps
+        ms1_events = noof_reps*(1-SSRO_readout[i])
+        corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+        SSRO_readout_corr[i]=corr[0][0]
+        readout_error[i] = corr[1][0] 
+    SSRO_readout=SSRO_readout_corr
     #########################################
     ############ FITTING ####################
     #########################################
     print fit_data
     if fit_data:
-        FFT = fft.fft(counts_during_readout)
+        FFT = fft.fft(SSRO_readout)
         N = int(noof_datapoints)
-        timestep = (mw_max_len-mw_min_len)/float(noof_datapoints-1)
+        timestep = (tau_max-tau_min)/float(noof_datapoints-1)
         freq = fft.fftfreq(N,d = timestep)
 
         #Remove offset:
@@ -644,31 +657,31 @@ def plot_ramsey(datapath, fit_data = True, save = True):
         if save:
             figure1.savefig(datapath+'\\fft_signal_rabi.png')
 
-        offset_guess = counts_during_readout.min()+(counts_during_readout.max()+\
-                counts_during_readout.min())/2.0
+        offset_guess = SSRO_readout.min()+(SSRO_readout.max()+\
+                SSRO_readout.min())/2.0
         tau_guess = 1000
         
         #modulations:
         mod_freq_guess = freq[find_nearest(abs(FFT),abs(FFT).max())]
-        mod_amp_guess = (counts_during_readout.max()+counts_during_readout.min())/2.0
+        mod_amp_guess = (SSRO_readout.max()+SSRO_readout.min())/2.0
         mod_phase_guess = 0
 
-        print 'modulation frequency guess = ',freq_guess 
+        print 'modulation frequency guess = ',mod_freq_guess 
         print 'modulation amplitude guess = ',mod_amp_guess
 
     figure2 = plt.figure(2)
         
     if fit_data:
         tau_guess = 200
-        fit.fit1d(tau, counts_during_readout, 
+        fit.fit1d(tau, SSRO_readout, 
                 ramsey.fit_ramsey_gaussian_decay, 
                 tau_guess, offset_guess, 
-                (mod_freq_guess,mod_amp_guess,mod_phase_guess),
+                (mod_freq_guess,mod_amp_guess),
                 do_plot = True, do_print = True, newfig = False)
     print SSRO_readout
     plt.plot(tau,SSRO_readout, 'sk')
     plt.xlabel('\Delta t$ (ns)')
-    plt.ylabel('Integrated counts')
+    plt.ylabel('P(ms=0)')
     plt.title('Ramsey, driving $f$ ='+num2str(f_drive/1E6,1)+\
             ' MHz, power = '+num2str(mwpower,0)+' dBm,\n Detuning = '+\
             num2str(detuning/1E6,0)+' MHz, $\pi/2$ length = '+\
@@ -730,7 +743,7 @@ def plot_ramsey(datapath, fit_data = True, save = True):
 
     return True
 
-def plot_SE(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True, exp_guess=2.8, nr_of_pulses=1,save = True):
+def plot_SE(datapath, fid=(0.765,0.9895),fiderr=(0.01,0.01),fit_data = True, exp_guess=2.8, nr_of_pulses=1,save = True):
 
     plt.close('all')
     ###########################################
@@ -753,23 +766,22 @@ def plot_SE(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True, ex
     if 'fe_min' in e.keys():
         tau_max = e['fe_max']/2.
         tau_min = e['fe_min']/2.
-        print 'fe_min'
         if 'free_evol' in e.keys():
-            print 'free_evol'
-            tau_free_evol = e['free_evol']*2*1e-3
+            
+            tau_free_evol = e['free_evol']*1e-3
         else:
-            tau_free_evol = np.linspace(tau_min,tau_max,noof_datapoints)*2*1e-3
+            tau_free_evol = np.linspace(tau_min,tau_max,noof_datapoints)*2*1e-6
     else:    
         if 'max_sweep_par' in e.keys():
-            print 'max_sweep_par'
             tau_max = e['max_sweep_par']
             tau_min = e['min_sweep_par']
         else:
             tau_max = e['tau_max']
             tau_min = e['tau_min']
 
-        tau_free_evol = nr_of_pulses*linspace(tau_min,tau_max,noof_datapoints)*2*1e-3
-    
+        tau_free_evol = nr_of_pulses*linspace(tau_min,tau_max,noof_datapoints)*2*1e-6
+    #tau_free_evol=np.linspace(0,4260,11)
+    #tau_free_evol[0]=4
     noof_reps = e['completed_repetitions']
     e.close()
 
@@ -831,7 +843,7 @@ def plot_SE(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True, ex
     figure6 = plt.figure(6)
         
     if fit_data:
-        tau_guess = 5.30
+        tau_guess = 5
         offset_guess = SSRO_readout_corr.min()
         amp_guess=SSRO_readout_corr.max()-offset_guess
 
@@ -894,6 +906,20 @@ def plot_SE(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True, ex
     plt.title('Spin pumping')
     v.close()
     if save:
+
+        #Save a dat file for use in e.g. Origin with the rabi oscillation.
+        curr_date = '#'+time.ctime()+'\n'
+        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\n'
+        col_vals = str()
+        for k in arange(noof_datapoints):
+            col_vals += num2str(tau_free_evol[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\n'
+        fo = open(datapath+'\\SSRO_readout.dat', "w")
+        for item in [curr_date, col_names, col_vals]:
+            fo.writelines(item)
+        fo.close()
+
+
+
         figure5.savefig(datapath+'\\spin_pumping.png')
 
         #Save a dat file for use in e.g. Origin with the rabi oscillation.

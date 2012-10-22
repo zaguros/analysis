@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib import cbook
 import pickle
 
-from analysis import fit,common
-from analysis.lde import spcorr, sscorr, hht3, tpqi
+from fitting import fit,common
+from lde import spcorr, sscorr, tpqi
+from pq import hht3
 
 HHPFILEBASE='hhp_data'
 CHMAXTIME=2300
@@ -261,7 +262,35 @@ class LDEAnalysis:
         if not os.path.isdir(savedir):
             os.mkdir(savedir)
         return self.analyse_lde(runs,subruns,savedir=savedir, **kw)
-            
+    
+    def reanalyse_lde(self, w_start = (637,666), 
+            w_length=150, w_dt=-1, ch1_offset=-29, w_dt_min=-1, **kw):
+        
+        anal = SingleLDEAnalysis()
+
+        anal.w1_start = w_start
+        anal.w2_start = kw.get('w2_start', w_start)
+        w1_length=w_length
+        w2_length= kw.get('w2_length', w_length)
+        anal.w1_stop = (anal.w1_start[0]+w1_length,anal.w1_start[1]+w1_length)
+        anal.w2_stop = (anal.w2_start[0]+w2_length,anal.w2_start[1]+w2_length)
+        anal.dt_max=w_dt #NOTE with this number you can adjust the time difference between the photons
+        anal.dt_min=w_dt_min
+        anal.ch1_offset=ch1_offset#-4
+        
+        filter_ap_length=kw.get('filter_ap', 0)
+        anal.single_photon_range_start=(anal.w1_start[0]-filter_ap_length,anal.w1_start[1]-filter_ap_length)
+        anal.single_photon_range_stop=anal.w1_stop 
+        anal.hhp=self.all_events
+        anal.ssro1=self.all_ssro1
+        anal.ssro2=self.all_ssro2
+        anal.correlations()
+        apply_to_self=kw.pop('apply_to_self',True)
+        if apply_to_self:
+            self.total_corr,self.total_corr_00,self.total_corr_01,self.total_corr_10, self.total_corr_11 = \
+                    anal.uncond_corr, anal.corr_00, anal.corr_01, anal.corr_10, anal.corr_11
+        return anal.uncond_corr, anal.corr_00, anal.corr_01, anal.corr_10, anal.corr_11
+        
 
     def analyse_lde(self, runs, subruns, savedir='', w_start = (637,666), 
             w_length=150, w_dt=-1, ch1_offset=-29, w_dt_min=-1, **kw):
@@ -467,27 +496,38 @@ class LDEAnalysis:
         f.close()
 
 
-    def filter_on_gatephase(self):
+    def filter_on_gatephase(self, **kw):
         """returns the total correlations filtered on good gatephase. 
-        The condition should be an array of true/false values of 
-        length(self.total_corr)"""
+        kw: apply_to_self : boolean apply the filter to the total 
+        correlations total_corr_ij"""
         if len(np.where(self.all_gate_phases>0)[0])==0:
             return [],[],[]
         gate_phases=self.all_gate_phases[self.all_gate_phases!=0]
         fltr = gate_phases>0
-        return self.filter_correlations(fltr)
+        
+        return self.filter_correlations(fltr, **kw)
 
-    def filter_on_CR(self, lt1_min, lt2_min):
+    def filter_on_CR(self, lt1_min, lt2_min, **kw):
         """returns the total correlations filtered on CR checks after RO. 
-        Minimum counts during CR check for lt1 and lt2 should be given as arguments."""
+        Minimum counts during CR check for lt1 and lt2 should be given as arguments.
+        kw: apply_to_self : boolean apply the filter to the total 
+        correlations total_corr_ij"""
 
         if len(np.where(np.logical_and(self.all_CR1>lt1_min, self.all_CR2>lt2_min))[0])==0:
             return [],[],[]
         fltr = np.logical_and(self.all_CR1>lt1_min, self.all_CR2>lt2_min)
-        return self.filter_correlations(fltr)
+        return self.filter_correlations(fltr, **kw)
         
-    def filter_correlations(self, filter):
-        """returns the total correlations filtered on any Boolean array of length len(self.ssro1)"""
+    def filter_correlations(self, filter, **kw):
+        """returns the total correlations filtered on any Boolean array of length len(self.ssro1)
+        kw: apply_to_self : boolean apply the filter to the total 
+        correlations total_corr_ij"""
+        apply_to_self=kw.pop('apply_to_self',True)
+        if apply_to_self:
+            self.total_corr,self.total_corr_00,self.total_corr_01,self.total_corr_10, self.total_corr_11 = \
+            sscorr.correlations(self.all_ssro1[filter],
+                self.all_ssro2[filter], 
+                self.all_window_data[filter])
         return sscorr.correlations(self.all_ssro1[filter],
                 self.all_ssro2[filter], 
                 self.all_window_data[filter])
@@ -500,6 +540,10 @@ class LDEAnalysis:
         total_corr=kw.get('total_corr', self.total_corr) 
         total_corr_psi1=kw.get('total_corr_psi1', self.total_corr_00 + self.total_corr_11) 
         total_corr_psi2=kw.get('total_corr_psi2', self.total_corr_01 + self.total_corr_10)
+        
+        total_corr_err=sscorr.get_correlation_errors(total_corr)
+        total_corr_psi1_err=sscorr.get_correlation_errors(total_corr_psi1)
+        total_corr_psi2_err=sscorr.get_correlation_errors(total_corr_psi2)
       
         corrected_corr, corr_err=sscorr.ssro_correct_twoqubit_state_photon_numbers(total_corr, 
                 F0LT1, F0LT2, F1LT1, F1LT2, verbose = True, return_error_bars=True)
@@ -508,32 +552,25 @@ class LDEAnalysis:
         corrected_corr_psi2, corr_psi2_err=sscorr.ssro_correct_twoqubit_state_photon_numbers(total_corr_psi2, 
                 F0LT1, F0LT2, F1LT1, F1LT2, verbose = True, return_error_bars=True)
 
-        figure2=plt.figure()
-        plt.bar(np.arange(4),total_corr,color = 'g', alpha=0.5, align = 'center')
-        plt.xticks([0,1,2,3],['LT1=0,LT2=0','LT1=0, LT2>0','LT1>0, LT2=0','LT1>0, LT2>0'])
-        if save_plots:
-            figure2.savefig(os.path.join(self.savedir,self.savename)+'total_corr.png')
-            figure3=plt.figure()
-            plt.bar(np.arange(4),total_corr_psi1,color = 'g', alpha=0.5, align = 'center')
-            plt.xticks([0,1,2,3],['LT1=0,LT2=0','LT1=0, LT2>0','LT1>0, LT2=0','LT1>0, LT2>0'])
-            if save_plots:
-                figure3.savefig(os.path.join(self.savedir,self.savename)+'total_corr_psi1.png')
-        
-            figure4=plt.figure()
-            plt.bar(np.arange(4),total_corr_psi2,color = 'g', alpha=0.5, align = 'center')
-            plt.xticks([0,1,2,3],['LT1=0,LT2=0','LT1=0, LT2>0','LT1>0, LT2=0','LT1>0, LT2>0'])
-            if save_plots:
-                figure4.savefig(os.path.join(self.savedir,self.savename)+'total_corr_psi2.png')
-
+        sscorr.plot_uncorrected(total_corr, total_corr_err,
+                sav_fig=save_plots,save_path=\
+                 os.path.join(self.savedir,self.savename+'total_corr'))
+        sscorr.plot_uncorrected(total_corr_psi1, total_corr_psi1_err,
+                sav_fig=save_plots,save_path=\
+                 os.path.join(self.savedir,self.savename+'total_corr_psi1'))
+        sscorr.plot_uncorrected(total_corr_psi2, total_corr_psi2_err,
+                sav_fig=save_plots,save_path=\
+                 os.path.join(self.savedir,self.savename+'total_corr_psi2'))
+                 
         sscorr.plot_corrected(corrected_corr, corr_err,
                 sav_fig=save_plots,save_path=\
-                 os.path.join(self.savedir,self.savename+'total_corr_corrected'))
+                 os.path.join(self.savedir,self.savename+'total_corr'))
         sscorr.plot_corrected(corrected_corr_psi1, corr_psi1_err,
                 sav_fig=save_plots,save_path=\
-                 os.path.join(self.savedir,self.savename+'total_corr_psi1_corrected'))
+                 os.path.join(self.savedir,self.savename+'total_corr_psi1'))
         sscorr.plot_corrected(corrected_corr_psi2, corr_psi2_err,
                 sav_fig=save_plots,save_path=\
-                 os.path.join(self.savedir,self.savename+'total_corr_psi2_corrected'))
+                 os.path.join(self.savedir,self.savename+'total_corr_psi2'))
 
         ### g2 plots
         if save_plots:

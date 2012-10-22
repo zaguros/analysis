@@ -2,7 +2,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from analysis.lde import hht3, spcorr, ro_c_err
+from lde import spcorr, ro_c_err
+from pq import hht3
 
 DATFILEBASE = 'LDE'
 DATIDX = 0
@@ -341,6 +342,13 @@ def correlations(SSROs_adwin_LT1, SSROs_adwin_LT2, windows):
 def num2str(num, precision): 
     return "%0.*f" % (precision, num)
 
+def get_correlation_errors(correlations):
+    N11,N10,N01,N00=[float(i) for i in correlations]
+    #print N00, N01, N10, N11
+    return np.sqrt(np.asarray([(N00*(N01+N10+N11))/(N00+N01+N10+N11),\
+            (N01*(N00+N10+N11))/(N00+N01+N10+N11),(N10*(N00+N01+N11))/(N00+N01+N10+N11),\
+            ((N00+N01+N10)*N11)/(N00+N01+N10+N11)]))[::-1]
+    
 def ssro_correct_twoqubit_state_photon_numbers(correlations, F0a, F0b, F1a, F1b,
         return_error_bars=False, dF0a=0.01, dF0b=0.01, dF1a=0.01, dF1b=0.01, 
         verbose = True):
@@ -391,7 +399,9 @@ def ssro_correct_twoqubit_state_photon_numbers(correlations, F0a, F0b, F1a, F1b,
         
     if return_error_bars:
         N11,N10,N01,N00=correlations
-        return np.asarray(correlations_corrected), np.asarray(ro_c_err.get_readout_correction_errors(F0a, F0b, F1a, F1b, dF0a, dF0b, dF1a, dF1b, N00, N01, N10, N11))[::-1]
+        return np.asarray(correlations_corrected), \
+                np.asarray(ro_c_err.get_readout_correction_errors(F0a, F0b, F1a, F1b, dF0a,\
+                        dF0b, dF1a, dF1b, N00, N01, N10, N11))[::-1]
     
     return np.asarray(correlations_corrected)
 
@@ -404,22 +414,34 @@ def get_fidelity_error_sqrt_ZZ(correlations, F0a, F0b, F1a, F1b, dF0a=0.01, dF0b
     return ro_c_err.get_sqrt_product_error(F0a, F0b, F1a, F1b, dF0a, dF0b, dF1a, dF1b, N00, N01, N10, N11)
 
 def plot_corrected(corr,err=np.array([0,0,0,0]),sav_fig=False,save_path=''):
-    #print err
-    fig2=plt.figure()
+    if sav_fig:
+        fig2=plt.figure()
     plt.title('Corrected')
     plt.bar(np.arange(0,4), np.squeeze(np.asarray(corr)), yerr=err, align = 'center',
             color = '#436CDE')
     for k in range(4):
-        plt.text(k,0.8, num2str(np.squeeze(np.asarray(corr))[k],2), ha = 'center')
+        plt.text(k,0.01, num2str(np.squeeze(np.asarray(corr))[k],2), ha = 'center')
     plt.xlabel('States [LT1,LT2]')
     plt.ylabel('Correlations')
     plt.ylim([0,np.amax(corr)+np.amax(err)])
     plt.xticks([0,1,2,3], ['|-1-1>', '|-10>', '|0-1>', '|00>'])
     if sav_fig:
-        fig2.savefig(save_path+'correlation_corrected.png')
+        fig2.savefig(save_path+'_corrected.png')
 
-
-
+def plot_uncorrected(corr,err=np.array([0,0,0,0]),sav_fig=False,save_path=''):
+    #print err
+    if sav_fig:
+        fig2=plt.figure()
+    plt.title('Uncorrected')
+    plt.bar(np.arange(0,4), np.squeeze(np.asarray(corr)), yerr=err, align = 'center',color = 'g')
+    for k in range(4):
+        plt.text(k,0.01, num2str(np.squeeze(np.asarray(corr))[k],2), ha = 'center')
+    plt.xlabel('States [LT1,LT2]')
+    plt.ylabel('Correlations')
+    plt.ylim([0,np.amax(corr)+np.amax(err)])
+    plt.xticks([0,1,2,3],['|-1-1>', '|-10>', '|0-1>', '|00>'])
+    if sav_fig:
+        fig2.savefig(save_path+'_uncorrected.png')
 
 def get_channel_statistics(raw_double_click_data):
     """returns the division over windows/channels in the form
