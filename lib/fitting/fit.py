@@ -5,10 +5,6 @@ import pylab
 
 from matplotlib import pyplot
 
-# own tools
-import tools.plot as plot
-
-
 # taken from the scipy fitting cookbook:
 class Parameter:
     def __init__(self, value, name=''):
@@ -89,7 +85,7 @@ def fit1d(x, y, fitmethod, *arg, **kw):
 
     if do_plot:
         if newfig:
-            p = plot.Figure()
+            p = pyplot.figure()
             ax = pyplot.subplot(111)
             if ylog:
                 ax.set_yscale('log')
@@ -113,11 +109,11 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         # save, if requested, but only for own created plots
         if newfig:
             if do_save_plot:
-                p().savefig(save_plot_path+'_'+fitmethod.__name__+'.'+save_plot_format, 
+                p.savefig(save_plot_path+'_'+fitmethod.__name__+'.'+save_plot_format, 
                         format=save_plot_format)
 
             if do_close_plot:
-                p().clf()
+                p.clf()
                 pyplot.close('all')
 
     if ret:

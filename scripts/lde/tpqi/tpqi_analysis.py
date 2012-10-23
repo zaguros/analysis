@@ -4,155 +4,83 @@ import pprint
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
-from analysis import fit
+from analysis.lib.fitting import fit
+from analysis import config
+
+config.outputdir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/output'
+config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/tpqi'
 
 rcParams['mathtext.default'] = 'regular'
+rcParams['legend.numpoints'] = 1
 
 class TPQIAnalysis:
 
     def __init__(self):
+        self.savedir = os.path.join(config.outputdir, time.strftime('%Y%m%d')+'-tpqi')
         self.binwidth = 0.256
         self.pulsesep = 600.
-        self.files = ['coincidences_all.pkl', 'coincidences_winfull.pkl', 'coincidences_win150.pkl']
-        self.names = ['full window (incl laser)', 'tail (full)', 'tail (150 bins)']
+        self.fn = 'coincidences_win150.pkl'
         self.deltasinfile = range(-2,3)
-        self.offset = (666.-637.)*0.256
+        self.deltas = [-1,0,1]
+        self.offset = 666.-637.
         self.central = 2
-
-
-    def all_g2s(self):
+        self.tau = 12.5 / self.binwidth
+        self.centernormfactor = 0.5
+    
+    def get_g2_hist(self, range=(-256,256), bins=16):
+        # NOTE bins should be an even number!
         
-        for i,fn,n in zip(range(len(self.files)), self.files, self.names):
-
-            f = open(fn,'rb')
-            coincidences = pickle.load(f)
-            f.close()
-
-            fig = plt.figure()
-            ax = subplot(111)
-            ymax = 0
-
-            # histograms
-            for i,d in enumerate(self.deltasinfile):
-                h = [0] 
-                
-                if len(coincidences[i] > 0):
-                    h,bins,patches = plt.hist(
-                            np.array(coincidences[i])*self.binwidth+d*600+self.offset,
-                            histtype='step',
-                            color='k', hatch='//', 
-                            range=(-50+d*600,50+d*600), bins=101)                
-
-                if max(h) > ymax:
-                    ymax = max(h)
-
-            # labels
-            plt.xlabel('delay (ns)')
-            plt.ylabel('events')
-            plt.title(n)
-            plt.ylim((0,ymax*1.1))
-
-            for i,d in enumerate(self.deltasinfile):
-                if len(coincidences[i] > 0):
-                    y = ymax*0.95
-                    plt.text(d*600, y, str(len(coincidences[i])), ha='center', va='top')
-
-            fig.savefig(n+'.png')
-
-            #plt.xlim((-50,50))
-            #fig.savefig(n+' central peak.png')
-
-    def g2(self, fidx=2, normcenter=0.5, tau=12.5):
-        
-        fn = self.files[fidx]
-        f = open(fn,'rb')
-        coincidences = pickle.load(f)
+        f = open(os.path.join(config.datadir,self.fn),'rb')
+        self.coincidences = pickle.load(f)
         f.close()
 
-        fig,(ax1,ax2,ax3) = plt.subplots(1,3,sharey=True,figsize=(12,8))
+        self.peaks = {}
+        self.amplitudes = []
+        self.normpeaks = {}
 
-        peaks = {
-                -1: {
-                    'hy' : np.array([]),
-                    'hx' : np.array([]),
-                    'A' : 0.,
-                    'x' : np.array([]),
-                    'ax' : ax1,
-                    'norm' : 1.,
-                    'fit' : np.array([]),
-                    },
-                0: {
-                    'hy' : np.array([]),
-                    'hx' : np.array([]),
-                    'x' : np.array([]),
-                    'A' : 0.,
-                    'dw' : 0.,
-                    'ax' : ax2,
-                    'norm' : normcenter,
-                    'fit' : np.array([]),
-                    },
-                1: {
-                    'hy' : np.array([]),
-                    'hx' : np.array([]),
-                    'x' : np.array([]),
-                    'A' : 0.,
-                    'ax' : ax3,
-                    'norm' : 1.,
-                    'fit' : np.array([]),
-                    },
-                }
-        
         for i,d in enumerate(self.deltasinfile):
-            if d in peaks:
-                hy,hx = np.histogram(np.array(coincidences[i])*self.binwidth+self.offset, 
-                        bins=391, range=(-50,50))
+            if d in self.deltas:
+                hy,hx = np.histogram(np.array(self.coincidences[i])+self.offset, 
+                        bins=bins, range=range)
+                self.peaks[d] = (hy,hx)
 
-                peaks[d]['hy'] = hy
-                peaks[d]['hx'] = hx+d*600
-                peaks[d]['x'] = hx[:-1]+d*600+(hx[1]-hx[0])*0.5
+                if d != 0:
+                    A = fit.Parameter(max(hy))
 
+                    def fitfunc(x):
+                        return A()*exp(-abs(x)/self.tau)
 
-            if d in [-1,1]:
-                A = fit.Parameter(max(hy))
-                x0 = fit.Parameter(-0.3)
+                    fit.fit1d(hx[:-1]+(hx[1]-hx[0])/2., hy, None, fitfunc=fitfunc, p0=[A], do_print=True, 
+                            fixed=[])
 
-                def fitfunc(x):
-                    return A()*exp(-abs(x-x0())/tau)
-
-                fit.fit1d(peaks[d]['x']-d*600, hy, None, fitfunc=fitfunc, p0=[A,x0], do_print=True, 
-                        fixed=[1])
-                peaks[d]['A'] = A()
-                peaks[d]['fit'] = fitfunc(peaks[d]['x']-d*600)
-
-            if d == 0:
-                A = fit.Parameter(5.6*10./9., 'A')
-                dw = fit.Parameter(5e6/1e9, 'dw')
-                x0 = fit.Parameter(-0.3, 'x0')
-                B = fit.Parameter(1., 'B')
-                def fitfunc(x):
-                    return A() * exp(-abs(x-x0())/tau) * (1-B()*np.exp(-0.25 * dw()**2 * (x-x0())**2))
-
-                ret = fit.fit1d(peaks[d]['x'], hy, None, fitfunc=fitfunc, p0=[A,dw,x0,B], 
-                        do_print=True, fixed=[2], ret=True)
-
-                peaks[d]['A'] = A()
-                peaks[d]['dw'] = dw()
-                peaks[d]['fit'] = fitfunc(peaks[d]['x'])
-                peaks[d]['dw_err'] = ret['error_dict']['dw']
-
-        A_mean = 0.5*(peaks[-1]['A']+peaks[1]['A'])
-        print 'mean amplitude', A_mean
-        for p in peaks:
-            pk = peaks[p]
-            ax = peaks[p]['ax']
-            ax.plot(pk['hx'][:-1], pk['hy']/pk['A']*pk['norm'], 'k', drawstyle='steps')
-            if p == 0:
-                ax.plot(pk['x'], 0.5*np.exp(-abs(pk['x']/tau)), 'r--', lw=3)
-                ax.plot(pk['x'], pk['fit']/pk['A']*pk['norm'], 'r', lw=3)
+                    self.amplitudes.append(A())
+                    
+        # normalize peaks
+        self.meanamp = np.mean(self.amplitudes)
+        for d in self.peaks:
+            if d != 0:
+                self.normpeaks[d] = (self.peaks[d][0]/self.meanamp, self.peaks[d][1])
             else:
-                ax.plot(pk['x'], pk['fit']/pk['A']*pk['norm'], 'r', lw=3)
-            ax.set_xlim(p*600-50, p*600+50)
-            pk['ax'] = ''
+                # because we only have two coincidence windows; see labbook
+                self.normpeaks[d] = (self.peaks[d][0]/self.meanamp/2., self.peaks[d][1])
+                       
+        return True   
+
+    
+    # NOTE here the deltas are actually hardcoded; fine for now
+    def plot_g2(self, fits=True):
+        
+        self.g2fig,(ax1,ax2,ax3) = plt.subplots(1,3,sharey=True,figsize=(12,8))
+              
+        for d,ax in zip([-1,0,1], (ax1,ax2,ax3)):
+            ax.plot(self.normpeaks[d][1][1:],self.normpeaks[d][0],
+                    'k', drawstyle='steps')
+            if fits:
+                x = np.linspace(-300,300,101)
+                if d == 0:
+                    ax.plot(x, 0.5*np.exp(-abs(x)/self.tau), 'k', ls='--')
+                else:
+                    ax.plot(x, np.exp(-abs(x)/self.tau), 'k', ls='--')
 
 
         ax1.spines['right'].set_visible(False)
@@ -163,19 +91,85 @@ class TPQIAnalysis:
         ax3.yaxis.tick_right()
         ax2.yaxis.set_ticks_position('none')
         ax1.set_ylabel(r'$g^2(\tau)$')
-        ax2.set_xlabel(r'$\tau$ (ns)')
+        ax2.set_xlabel(r'$\tau$ (bins)')
         plt.subplots_adjust(wspace=0.15)
 
-        plt.suptitle('TPQI (150 bins)')
-        ax2.text(0,1.5, r'$\delta\omega = 2\pi \times$ (%.1f $\pm$ %.1f) MHz' % \
-                (peaks[0]['dw']*1e3/2./np.pi, peaks[0]['dw_err']*1e3/2./np.pi), va='top', ha='center')
-        # ax2.text(0,1.4, r'($2\pi \times 38$ MHz for fixed Amplitude)', va='top', ha='center')
-
-        f = open('peaks.pkl', 'wb')
-        pickle.dump(peaks, f)
-        f.close()
+    def projected_fidelity(self, crratio=1.1, corr=0.95):
         
+        self.fids = np.array([])
+        self.u_fids = np.array([])
+        
+        self.fids_crratio = np.array([])
+        self.u_fids_crratio = np.array([])
+
+        self.fids_corr = np.array([])
+        self.u_fids_corr = np.array([])
+        
+        self.dts = np.array([])
+
+        zp = self.peaks[0]
+        p1 = self.peaks[1]
+        pm1 = self.peaks[-1]
+        dt = zp[1][1]-zp[1][0]
+        length = len(zp[0])/2
+        
+        # NOTE formulas see labbook
+        for i in range(1,length+1):
+            self.dts = np.append(self.dts, i*dt)
+            
+            z = np.sum(zp[0][length-i:length+i])
+            s = np.sum(p1[0][length-i:length+i])+np.sum(pm1[0][length-i:length+i])
+            v = (s/4. - z/2.) / (s/4.)
+            self.fids = np.append(self.fids, 0.5 + 0.5*v)
+            
+            dip = 2*crratio/(1+crratio)**2
+            v_crratio = (dip*s/2. - z/2.) / (dip*s/2.)
+            self.fids_crratio = np.append(self.fids_crratio, 0.5 + 0.5*v_crratio)
+            
+            u_z = np.sqrt(z)
+            u_s = np.sqrt(s)
+            u_v = np.sqrt((2./s * u_z)**2 + ((1./s - 4.*(s/4.-z/2.)/s**2) * u_s)**2)
+            self.u_fids = np.append(self.u_fids, 0.5 * u_v)
+
+            u_v_crratio = np.sqrt((1./s/dip * u_z)**2 + ((1./s - 2./dip*(s/2.*dip-z/2.)/s**2) * u_s)**2)
+            self.u_fids_crratio = np.append(self.u_fids_crratio, 0.5*u_v_crratio)
+
+        self.fids_corr = self.fids_crratio * corr
+        self.u_fids_corr = self.u_fids_crratio * corr
+        
+        self.fidfig = plt.figure()
+        ax = plt.subplot(111)
+        ax.errorbar(self.dts, self.fids, yerr=self.u_fids, fmt='o',
+                label='identical emitters', mfc='w', mec='k', ecolor='k')
+        ax.errorbar(self.dts, self.fids_crratio, yerr=self.u_fids_crratio, fmt='v',
+                label='real emitters', mfc='w', mec='b', ecolor='b')
+        ax.errorbar(self.dts, self.fids_corr, yerr=self.u_fids_corr, fmt='o', 
+                label='real emitters, universal corr.', mfc='r', mec='r', ecolor='r')
+        
+        ax.set_xlabel(r'$| \tau |$ (bins)')
+        ax.set_ylabel('projected fidelity')
+        plt.legend()
+
+
+    def save(self):
+        if not os.path.isdir(self.savedir):
+            os.makedirs(self.savedir)
+
+        try:       
+            self.g2fig.savefig(os.path.join(self.savedir,'g2.png'))
+        except AttributeError:
+            print 'no g2 plot, skip...'
+
+        try:       
+            self.fidfig.savefig(os.path.join(self.savedir,'fidelity.png'))
+        except AttributeError:
+            print 'no fidelity plot, skip...'
+
+    
+       
 if __name__ == '__main__':
     a = TPQIAnalysis()
-    a.g2()
-    # a.all_g2s()
+    a.get_g2_hist()
+    a.plot_g2()
+    a.projected_fidelity()
+    a.save()
