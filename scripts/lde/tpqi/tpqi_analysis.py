@@ -7,7 +7,7 @@ from matplotlib import rcParams
 from analysis.lib.fitting import fit
 from analysis import config
 
-config.outputdir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/output'
+config.outputdir = r'/Users/wp/Documents/TUD/LDE/analysis/output'
 config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/tpqi'
 
 rcParams['mathtext.default'] = 'regular'
@@ -27,7 +27,7 @@ class TPQIAnalysis:
         self.tau = 12.5 / self.binwidth
         self.centernormfactor = 0.5
     
-    def get_g2_hist(self, range=(-256,256), bins=16):
+    def get_g2_hist(self, range=(-256,256), bins=64):
         # NOTE bins should be an even number!
         
         f = open(os.path.join(config.datadir,self.fn),'rb')
@@ -139,12 +139,12 @@ class TPQIAnalysis:
         
         self.fidfig = plt.figure()
         ax = plt.subplot(111)
-        ax.errorbar(self.dts, self.fids, yerr=self.u_fids, fmt='o',
-                label='identical emitters', mfc='w', mec='k', ecolor='k')
-        ax.errorbar(self.dts, self.fids_crratio, yerr=self.u_fids_crratio, fmt='v',
-                label='real emitters', mfc='w', mec='b', ecolor='b')
+        #ax.errorbar(self.dts, self.fids, yerr=self.u_fids, fmt='o',
+        #        label='identical emitters', mfc='w', mec='k', ecolor='k')
+        ax.errorbar(self.dts, self.fids_crratio, yerr=self.u_fids_crratio, fmt='o',
+                label='real emitters', mfc='w', mec='k', ecolor='k')
         ax.errorbar(self.dts, self.fids_corr, yerr=self.u_fids_corr, fmt='o', 
-                label='real emitters, universal corr.', mfc='r', mec='r', ecolor='r')
+                label='real emitters, universal corr.', mfc='w', mec='r', ecolor='r')
         
         ax.set_xlabel(r'$| \tau |$ (bins)')
         ax.set_ylabel('projected fidelity')
@@ -164,6 +164,18 @@ class TPQIAnalysis:
             self.fidfig.savefig(os.path.join(self.savedir,'fidelity.png'))
         except AttributeError:
             print 'no fidelity plot, skip...'
+
+
+        f = open(os.path.join(self.savedir, 'peak_histograms.pkl'), 'wb')
+        pickle.dump(self.peaks, f)
+        f.close()
+
+        f = open(os.path.join(self.savedir, 'peak_histograms_normalized.pkl'), 'wb')
+        pickle.dump(self.normpeaks, f)
+        f.close()
+
+        np.savez(os.path.join(self.savedir, 'fidelities'), fid=self.fids_crratio, u_fid=self.u_fids_crratio,
+                fid_corr=self.fids_corr, u_fid_corr=self.u_fids_corr, dts=self.dts)
 
     
        
