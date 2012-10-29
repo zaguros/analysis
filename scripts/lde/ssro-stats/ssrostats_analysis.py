@@ -3,12 +3,17 @@ import pickle
 import pprint
 import numpy as np
 from matplotlib import pyplot as plt
+from analysis import config
+
+config.outputdir = r'/Users/wp/Documents/TUD/LDE/analysis/output'
+config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/ssro-stats/ssros'
 
 
 class SSROStatAnalysis:
 
     def __init__(self):
-        self.srcfolder = '/Users/wp/Documents/TUD/LDE/data/ssro-stats'
+        self.srcfolder = config.datadir
+        self.savedir = os.path.join(config.outputdir, time.strftime('%Y%m%d')+'-ssro-stats')
         self.fname0 = 'ADwin_SSRO-000_fid_vs_ROtime.npz'
         self.fname1 = 'ADwin_SSRO-001_fid_vs_ROtime.npz'
         self.lt1suffix = 'LT1'
@@ -66,7 +71,9 @@ class SSROStatAnalysis:
 
                     self.fid[setup][state].append(fid[idx])
                     self.fiderr[setup][state].append(fiderr[idx])
-                    self.pathinfo[setup].append(date+'/'+timestamp)
+                    
+                    if fn == self.fname0:
+                        self.pathinfo[setup].append(date+'/'+timestamp)
 
     def stats(self):
         
@@ -159,11 +166,14 @@ if __name__ == '__main__':
     a.load_data()
     a.stats()
 
-    f = open('fidelities.pkl', 'wb')
+    if not os.path.exists(a.savedir):
+        os.makedirs(a.savedir)
+
+    f = open(os.path.join(a.savedir, 'fidelities.pkl'), 'wb')
     pickle.dump(a.meanfid, f)
     f.close()
 
-    f = open('stdevs.pkl', 'wb')
+    f = open(os.path.join(a.savedir, 'stdevs.pkl'), 'wb')
     pickle.dump(a.fidstdev, f)
     f.close()
 

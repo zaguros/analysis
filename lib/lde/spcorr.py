@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pq import hht3
+from analysis.lib.pq import hht3
 
 setup = 'lt1'
 
@@ -35,12 +35,12 @@ def correct_ssro_mismatch(SSROs_adwin_LT1, SSROs_adwin_LT2, noof_PLU_markers,
             if CR_adwin_LT1 != None:
                 CR_adwin_LT1 = np.insert(CR_adwin_LT1,i,-1)
     
-    print 'Detected missed PLU markers at SSRO LT2 array for indexes: ',bad_idx
-    print 'Compensating SSRO mismatch:'
-    print '\tADwin LT2 received PLU markers: ',noof_PLU_markers
-    print '\tADwin LT2 performed SSROs: ',noof_SSROs_adwin_LT2
-    print '\tADwin LT1 performed SSROs: ',noof_SSROs_adwin_LT1
-    print 'Finished adding -1 to SSRO LT1 data. Added %s element.'%(added_idxs)
+    # print 'Detected missed PLU markers at SSRO LT2 array for indexes: ',bad_idx
+    # print 'Compensating SSRO mismatch:'
+    # print '\tADwin LT2 received PLU markers: ',noof_PLU_markers
+    # print '\tADwin LT2 performed SSROs: ',noof_SSROs_adwin_LT2
+    # print '\tADwin LT1 performed SSROs: ',noof_SSROs_adwin_LT1
+    # print 'Finished adding -1 to SSRO LT1 data. Added %s element.'%(added_idxs)
     
     if CR_adwin_LT1 == None:
         return SSROs_adwin_LT1, added_idxs

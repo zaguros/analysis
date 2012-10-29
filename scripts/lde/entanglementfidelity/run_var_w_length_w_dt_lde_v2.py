@@ -1,5 +1,5 @@
 import os
-folders=[r'D:\bjhensen\data\ZZ',r'D:\bjhensen\data\XX',r'D:\bjhensen\data\X-X']
+folders=[r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde/ZZ',r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde/XX',r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde/X-X']
 for folder in folders:
     w_lengths=range(10,100,20)
     w_dts=range(10,100,10)

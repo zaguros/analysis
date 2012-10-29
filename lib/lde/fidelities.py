@@ -1,4 +1,4 @@
-from lde import sscorr, lde_analysis
+from analysis.lib.lde import sscorr, lde_analysis
 import os
 import numpy as np
 import matplotlib.pyplot as plt

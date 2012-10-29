@@ -1,7 +1,7 @@
 import numpy as np
 
 # own modules
-import analysis.fit as fit
+import analysis.lib.fitting.fit as fit
 
 
 ### common fitfunctions

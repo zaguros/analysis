@@ -9,7 +9,7 @@ import shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pq import hht3
+from analysis.lib.pq import hht3
 
 workingpath = ''
 
