@@ -4,9 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cbook
 import pickle
 
-from analysis.lib.fitting import fit,common
-from analysis.lib.lde import spcorr, sscorr, tpqi
-from analysis.lib.pq import hht3
+from analysis import fit,common
+from analysis.lde import spcorr, sscorr, hht3, tpqi
 
 HHPFILEBASE='hhp_data'
 CHMAXTIME=2300
