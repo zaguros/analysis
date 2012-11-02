@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from analysis import config
 
 config.outputdir = r'/Users/wp/Documents/TUD/LDE/analysis/output'
-config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/ssro-stats/ssros'
+config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/ssro-stats'
 
 
 class SSROStatAnalysis:
@@ -27,7 +27,7 @@ class SSROStatAnalysis:
                 'LT2' : {
                     0 : [],
                     1 : [],
-                    }
+                    },
                 }
 
         self.fiderr = {
@@ -38,7 +38,7 @@ class SSROStatAnalysis:
                 'LT2' : {
                     0 : [],
                     1 : [],
-                    }
+                    },
                 }
 
         self.pathinfo = {
@@ -65,7 +65,12 @@ class SSROStatAnalysis:
                     timestamp = folder[:4]
                     b,date = os.path.split(b)[-4:]
 
-                    setup = 'LT1' if path [-3:] == self.lt1suffix else 'LT2'
+                    
+                    if path[-3:] == self.lt1suffix:
+                        setup = 'LT1'
+                    else:
+                        setup = 'LT2'
+
                     state = 0 if fn == self.fname0 else 1
                     idx = self.lt1idx if path[-3:] == self.lt1suffix else self.lt2idx
 
@@ -85,7 +90,7 @@ class SSROStatAnalysis:
                 'LT2' : {
                     0 : 0.,
                     1 : 0.,
-                    }
+                    },
                 }
 
         self.fidstdev = {
@@ -96,20 +101,8 @@ class SSROStatAnalysis:
                 'LT2' : {
                     0 : 0.,
                     1 : 0.,
-                    }
-                }
-
-        self.fiderrsumofsquares = {
-                'LT1' : {
-                    0 : 0.,
-                    1 : 0.,
                     },
-                'LT2' : {
-                    0 : 0.,
-                    1 : 0.,
-                    }
                 }
-
 
         for setup in self.fid:
             for state in self.fid[setup]:
@@ -117,29 +110,27 @@ class SSROStatAnalysis:
                 print 'mean = %.4f' % np.mean(np.array(self.fid[setup][state]))
                 print 'statistical uncertainty = %.4f' % \
                         np.std(np.array(self.fid[setup][state]))
-                print 'error propagation uncertainty = %.4f' % \
-                        np.sqrt(np.sum((np.array(self.fiderr[setup][state])/len(self.fiderr[setup][state]))**2))
                 print ''
 
                 self.meanfid[setup][state] = np.mean(np.array(self.fid[setup][state]))
                 self.fidstdev[setup][state] = np.std(np.array(self.fid[setup][state]))
-                self.fiderrsumofsquares[setup][state] = \
-                        np.sqrt(np.sum((np.array(self.fiderr[setup][state])/len(self.fiderr[setup][state]))**2))
-
+                
 
         fig = plt.figure(figsize=(10,10))
         
         for i, setup, state in zip(range(1,5), ['LT1', 'LT1', 'LT2', 'LT2'], [0,1,0,1]):
 
             ax = plt.subplot(2,2,i)
-            ax.hist(self.fid[setup][state], color='k', histtype='step', hatch='/')
+            ax.hist(self.fid[setup][state], color='k', histtype='step', hatch='/')           
             ax.set_title(setup + ', ms = ' + str(state))
-            plt.text(ax.get_xlim()[0]+0.0002,1.,'%.4f +/- %.4f' % \
+            plt.text(ax.get_xlim()[0]+0.0004,4.,'%.4f +/- %.4f' % \
                     (self.meanfid[setup][state], self.fidstdev[setup][state]),
                     backgroundcolor='w')
-
+            ax.locator_params(nbins=4)
             ax.set_xlabel('Fidelity')
             ax.set_ylabel('Occurrences')
+
+        plt.tight_layout()
 
         fig = plt.figure(figsize=(10,10))
 
@@ -169,13 +160,22 @@ if __name__ == '__main__':
     if not os.path.exists(a.savedir):
         os.makedirs(a.savedir)
 
-    f = open(os.path.join(a.savedir, 'fidelities.pkl'), 'wb')
+    f = open(os.path.join(a.savedir, 'mean_fidelities.pkl'), 'wb')
     pickle.dump(a.meanfid, f)
     f.close()
 
-    f = open(os.path.join(a.savedir, 'stdevs.pkl'), 'wb')
+    f = open(os.path.join(a.savedir, 'mean_stdevs.pkl'), 'wb')
     pickle.dump(a.fidstdev, f)
     f.close()
+
+    f = open(os.path.join(a.savedir, 'fidelities.pkl'), 'wb')
+    pickle.dump(a.fid, f)
+    f.close()
+
+    f = open(os.path.join(a.savedir, 'stdevs.pkl'), 'wb')
+    pickle.dump(a.fiderr, f)
+    f.close()
+
 
 
 
