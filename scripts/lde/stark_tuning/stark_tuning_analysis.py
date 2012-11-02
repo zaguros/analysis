@@ -11,8 +11,9 @@ class StarkAnalysis:
 
     def __init__(self):
 
-        self.srcfolder = r'/Users/Hannes/Documents/data/LDE/analysis_data/stark_tuning'
+        self.srcfolder = r'D:\measuring\data\LDE\analysis_data\stark_tuning'
         self.scanidf = r'LT25nW_mw_True_0nW_green'
+        self.save_folder = r'D:\measuring\data\LDE\analysis_output\20121019-stark-tuning'
         self.common_freq_axis = np.linspace(40,90,5001)
 
     def find_nearest(self, array,value):
@@ -61,20 +62,20 @@ class StarkAnalysis:
     def plot_all_scans(self,scan_array,freq_min=51.,freq_max=72.):
 	idx_min = self.find_nearest(self.common_freq_axis,freq_min)
 	idx_max = self.find_nearest(self.common_freq_axis,freq_max)
-	scans_positive = [scan_array[int(i*2),idx_min:idx_max] for i in range(int(len(scan_array)/2.))]
-	print len(scans_positive)
-	scans_negative = [scan_array[int(i*2+1),idx_min:idx_max] for i in range(int((len(scan_array))/2.))]
-	print len(scans_negative)
+	self.scans_positive = [scan_array[int(i*2),idx_min:idx_max] for i in range(int(len(scan_array)/2.))]
+	print len(self.scans_positive)
+	self.scans_negative = [scan_array[int(i*2+1),idx_min:idx_max] for i in range(int((len(scan_array))/2.))]
+	print len(self.scans_negative)
 	fig = figure()
 	subplot(211)
-	imgplot = plt.imshow(scans_positive, cmap='bone_r', 
-	    aspect=(idx_max-idx_min)/100./len(scans_positive), extent=[freq_min,freq_max,18,1])#, norm=LogNorm())
+	imgplot = plt.imshow(self.scans_positive, cmap='bone_r', 
+	    aspect=(idx_max-idx_min)/100./len(self.scans_positive), extent=[freq_min,freq_max,18,1])#, norm=LogNorm())
 	plt.xlabel('frequency [GHz]')
 	plt.ylabel('positive voltages [V]')
 	imgplot.set_clim(1.,50.)
 	subplot(212)
-	imgplot = plt.imshow(scans_negative, cmap='bone_r', 
-	    aspect=(idx_max-idx_min)/100./len(scans_negative), extent=[freq_min,freq_max,-18,-1])
+	imgplot = plt.imshow(self.scans_negative, cmap='bone_r', 
+	    aspect=(idx_max-idx_min)/100./len(self.scans_negative), extent=[freq_min,freq_max,-18,-1])
 	plt.xlabel('frequency [GHz]')
 	plt.ylabel('negative voltages [V]')
 #	plt.colorbar()
@@ -86,8 +87,13 @@ if __name__ == '__main__':
     first_time = False
     a = StarkAnalysis()
     if first_time:
-	a.get_files()
+        a.get_files()
 	scan_array = a.mk_scan_array()
     a.plot_all_scans(scan_array=scan_array)
-        		
+
+    np.savez(os.path.join(a.save_folder,'stark_tuning.npz'),
+            all_scans=scan_array,
+            positiveV=a.scans_positive, 
+            negativeV=a.scans_negative,frequency=a.common_freq_axis)
+
 
