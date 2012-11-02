@@ -19,7 +19,7 @@ class TPQIAnalysis:
         self.savedir = os.path.join(config.outputdir, time.strftime('%Y%m%d')+'-tpqi')
         self.binwidth = 0.256
         self.pulsesep = 600.
-        self.fn = 'coincidences_win150.pkl'
+        self.fn = 'coincidences_winfull.pkl'
         self.deltasinfile = range(-2,3)
         self.deltas = [-1,0,1]
         self.offset = 666.-637.
@@ -81,7 +81,6 @@ class TPQIAnalysis:
                     ax.plot(x, 0.5*np.exp(-abs(x)/self.tau), 'k', ls='--')
                 else:
                     ax.plot(x, np.exp(-abs(x)/self.tau), 'k', ls='--')
-
 
         ax1.spines['right'].set_visible(False)
         ax2.spines['left'].set_visible(False)
