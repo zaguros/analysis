@@ -53,12 +53,11 @@ def fit_double_exp_decay_with_offset(g_a, g_A, g_tau, g_A2, g_tau2, *arg):
         g_a : offset
         g_A : initial Amplitude
         g_tau : decay constant
-        g_A : initial Amplitude 2
-        g_tau : decay constant 2
-
+        g_A2 : initial Amplitude 2
+        g_tau2 : decay constant 2
     """
     fitfunc_str = 'A * exp(-x/tau)+ A2 * exp(-x/tau2) + a'
-
+   
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
     tau = fit.Parameter(g_tau, 'tau')
@@ -68,6 +67,32 @@ def fit_double_exp_decay_with_offset(g_a, g_A, g_tau, g_A2, g_tau2, *arg):
 
     def fitfunc(x):
         return a() + A() * np.exp(-x/tau()) + A2() * np.exp(-x/tau2())
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_exp_decay_shifted_with_offset(g_a, g_A, g_tau, g_x0, *arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-(x-x0)/tau) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+        g_x0 : x offset
+    """
+
+    fitfunc_str = 'A * exp(-(x-x0)/tau) + a'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    tau = fit.Parameter(g_tau, 'tau')
+
+    x0 = fit.Parameter(g_x0, 'x0')
+    p0 = [a, A, tau, x0]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-(x-x0())/tau())
 
     return p0, fitfunc, fitfunc_str
 

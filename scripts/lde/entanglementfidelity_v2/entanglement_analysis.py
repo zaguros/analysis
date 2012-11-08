@@ -45,7 +45,7 @@ class EntanglementEventAnalysis:
         self.savedir = os.path.join(config.outputdir, time.strftime('%Y%m%d')+'-lde')
         self.name = name
 
-    def add_events(self, fp, start=600, stop=1000):
+    def add_events(self, fp, start=630, stop=880):
         idx = os.path.splitext(fp)[0][-3:]
         hhpf = np.load(fp)
         hhp = hhpf['hhp']
@@ -146,8 +146,9 @@ class EntanglementEventAnalysis:
                 os.makedirs(self.savedir)
             fig.savefig(os.path.join(self.savedir, self.name+'_correlations.png'))
 
-    def filter_times(self, mintimes=(639,668), window=150, dtmin=0, dtmax=50, 
-            offset=(0,19)):
+    def filter_times(self, mintimes=(639,668), window=150, dtmin=0, dtmax=50):
+        offset = (0,mintimes[1]-mintimes[0])
+        
         badidxs = []
         for i,e in enumerate(self.events):
             ch1 = int(e[CH1])
@@ -210,10 +211,10 @@ class FidelityAnalysis:
         self.rofids_regular = [self.F0_1, self.F0_2, self.F1_1, self.F1_2, 
                 self.u_F0_1, self.u_F0_2, self.u_F1_1, self.u_F1_2]
 
-        self.dtvals = np.arange(21).astype(int)*5 + 10
-        self.winvals = np.arange(21).astype(int)*10 + 20
-        self.ch0starts = np.arange(6).astype(int)*2 + 631
-        self.ch1starts = np.arange(6).astype(int)*2 + 660
+        self.dtvals = np.arange(21).astype(int)*10 + 10
+        self.winvals = np.arange(21).astype(int)*10 + 10
+        self.ch0starts = np.arange(6).astype(int)*2 + 633
+        self.ch1starts = np.arange(6).astype(int)*2 + 662
         
     def _get_fidelity(self, zzhist, xxhist, xmxhist, state='psi1'):
         rofids_regular = []
@@ -424,34 +425,65 @@ class FidelityAnalysis:
             f.close()
 
     
-    def plot_fidelity_map(self, ims, xticks, yticks, xlabel='x', ylabel='y'):
+    def plot_fidelity_map(self, psi1slice, psi2slice, 
+            xticks, yticks, xlabel='x', ylabel='y'):
         
-        fig = plt.figure(figsize=(8,8))
+        fig = plt.figure(figsize=(20,8))
         grid = ImageGrid(fig, 111, # similar to subplot(111)
-                nrows_ncols = (2,2),
+                nrows_ncols = (2,5),
                 axes_pad = 0.75,
                 # add_all=True,
-                label_mode = "1",
+                label_mode = "L",
                 cbar_mode = 'each',
                 cbar_size="5%",
                 cbar_pad="1%",
                 )
         
-        vmins = [0.5, 3., 0.5, 3.]
-        titles = ['F (psi1)', 'sigmas (psi1)', 'F (psi2)', 'sigmas (psi2)']
+        vmins = [0.5, 2., 0, 0, 0, 0.5, 2., 0, 0, 0]
+        vmaxs = [0.8, 5., 20, 20, 20, 0.8, 5., 20, 20, 20]
+        titles = ['F (psi1)', 'sigmas (psi1)', '$N p_{ZZ}(00) q$', '$N p_{ZZ}(11) q$',  '$N p_{ZZ}(00+11) q$',
+                'F (psi2)', 'sigmas (psi2)', '$N p_{ZZ}(00) q$', '$N p_{ZZ}(11) q$' , '$N p_{ZZ}(00+11) q$' ]
 
-        for i,im in enumerate(ims):
+        im0 = self.psi1fids[psi1slice]
+        im1 = (self.psi1fids[psi1slice]-0.5)/self.u_psi1fids[psi1slice]
+        im2 = self.rawpsi1correlations[psi1slice][...,ZZidx,0] * \
+                self.rawpsi1correlations[psi1slice][...,ZZidx,1:].sum(-1) / \
+                self.rawpsi1correlations[psi1slice][...,ZZidx,:].sum(-1)
+        im3 = self.rawpsi1correlations[psi1slice][...,ZZidx,-1] * \
+                self.rawpsi1correlations[psi1slice][...,ZZidx,:-1].sum(-1) / \
+                self.rawpsi1correlations[psi1slice][...,ZZidx,:].sum(-1)
+        im4 = self.rawpsi1correlations[psi1slice][...,ZZidx,[0,3]].sum(-1) * \
+                self.rawpsi1correlations[psi1slice][...,ZZidx,[1,2]].sum(-1) / \
+                self.rawpsi1correlations[psi1slice][...,ZZidx,:].sum(-1)
+        
+        im5 = self.psi2fids[psi2slice]
+        im6 = (self.psi2fids[psi2slice]-0.5)/self.u_psi2fids[psi2slice]
+        im7 = self.rawpsi2correlations[psi2slice][...,ZZidx,0] * \
+                self.rawpsi2correlations[psi2slice][...,ZZidx,1:].sum(-1) / \
+                self.rawpsi2correlations[psi2slice][...,ZZidx,:].sum(-1)
+        im8 = self.rawpsi2correlations[psi2slice][...,ZZidx,-1] * \
+                self.rawpsi2correlations[psi2slice][...,ZZidx,:-1].sum(-1) / \
+                self.rawpsi2correlations[psi2slice][...,ZZidx,:].sum(-1)
+        im9 = self.rawpsi2correlations[psi2slice][...,ZZidx,[0,3]].sum(-1) * \
+                self.rawpsi2correlations[psi2slice][...,ZZidx,[1,2]].sum(-1) / \
+                self.rawpsi2correlations[psi2slice][...,ZZidx,:].sum(-1)
+        
+        for i,im in enumerate([im0,im1,im2,im3,im4,im5,im6,im7,im8,im9]):
             img = grid[i].imshow(im, cmap=cm.gist_earth, origin='lower', 
-                    interpolation='nearest', vmin=vmins[i])
+                    interpolation='nearest', vmin=vmins[i], vmax=vmaxs[i])
             fig.colorbar(img, cax=grid.cbar_axes[i])
             grid[i].set_title(titles[i])
 
-        grid[2].set_xlabel(xlabel)
-        grid[2].set_ylabel(ylabel)
-        xt = grid[2].get_xticks().astype(int)[:-1]
-        grid[2].set_xticklabels(xticks[xt])
-        yt = grid[2].get_yticks().astype(int)[:-1]
-        grid[2].set_yticklabels(yticks[yt])
+        grid[5].set_xlabel(xlabel)
+        grid[5].set_ylabel(ylabel)
+        xt = grid[5].get_xticks().astype(int)[:-1]
+        grid[5].set_xticklabels(xticks[xt])
+        yt = grid[5].get_yticks().astype(int)[:-1]
+        grid[5].set_yticklabels(yticks[yt])
+
+        grid[0].set_yticklabels(yticks[yt])
+        for i in range(5,10):
+            grid[i].set_xticklabels(xticks[xt])
 
         return fig
 
@@ -461,50 +493,43 @@ class FidelityAnalysis:
         psi2dtidx = argmin(abs(self.dtvals - psi2dt))
         psi2winidx = argmin(abs(self.winvals - psi2win))
 
-        im0 = self.psi1fids[psi1dtidx,psi1winidx,:,:]
-        im1 = (self.psi1fids[psi1dtidx,psi1winidx,:,:]-0.5)/self.u_psi1fids[psi1dtidx,psi1winidx,:,:]
-        im2 = self.psi2fids[psi2dtidx,psi2winidx,:,:]
-        im3 = (self.psi2fids[psi2dtidx,psi2winidx,:,:]-0.5)/self.u_psi2fids[psi2dtidx,psi2winidx,:,:]
-
+        s1 = np.s_[psi1dtidx,psi1winidx,:,:]
+        s2 = np.s_[psi2dtidx,psi2winidx,:,:]
         xticks = self.ch1starts
         yticks = self.ch0starts
-
-        fig = self.plot_fidelity_map([im0,im1,im2,im3], xticks, yticks, 'ch1 start', 'ch0 start')
+        
+        fig = self.plot_fidelity_map(s1, s2, xticks, yticks, 'ch1 start', 'ch0 start')
+        
         if save:
             if not os.path.exists(self.savedir):
                 os.makedirs(self.savedir)
             fig.savefig(os.path.join(self.savedir, 'fidelities_vs_ch0_vs_ch1.png'))
 
-    def plot_map_window(self, save=True, ch0start=637, ch1start=666):
+    def plot_map_window(self, save=True, ch0start=635, ch1start=664):
         ch0idx = argmin(abs(self.ch0starts - ch0start))
         ch1idx = argmin(abs(self.ch1starts - ch1start))
 
-        im0 = self.psi1fids[:,:,ch0idx,ch1idx]
-        im1 = (self.psi1fids[:,:,ch0idx,ch1idx]-0.5)/self.u_psi1fids[:,:,ch0idx,ch1idx]
-        im2 = self.psi2fids[:,:,ch0idx,ch1idx]
-        im3 = (self.psi2fids[:,:,ch0idx,ch1idx]-0.5)/self.u_psi2fids[:,:,ch0idx,ch1idx]
-
+        s = np.s_[:,:,ch0idx,ch1idx]
         xticks = self.winvals
         yticks = self.dtvals
 
-        fig = self.plot_fidelity_map([im0,im1,im2,im3], xticks, yticks, 'window', 'dt')
+        fig = self.plot_fidelity_map(s, s, xticks, yticks, 'window', 'dt')
+        
         if save:
             if not os.path.exists(self.savedir):
                 os.makedirs(self.savedir)
-            fig.savefig(os.path.join(self.savedir, 'fidelities_vs_dt_vs_win.png'))
-
-    
-
+            fig.savefig(os.path.join(self.savedir, 'fidelities_vs_dt_vs_win_ch0%s_ch1%s.png' \
+                    % (str(ch0start), str(ch1start))))
 
 
 if __name__ == '__main__':
     #### get all fidelities
     fid = FidelityAnalysis('Fidelity')
-    fid.get_fidelities()
-    fid.save_fidelities()
-    #fid.load_fidelities('20121031-ldefidelity')
-    #fid.plot_map_starts()
-    #fid.plot_map_window()
+    #fid.get_fidelities()
+    #fid.save_fidelities()
+    fid.load_fidelities('20121102-ldefidelity')
+    # fid.plot_map_starts()
+    fid.plot_map_window()
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data
