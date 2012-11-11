@@ -337,12 +337,16 @@ class FidelityAnalysis:
                     state, mod, *rofids_extremal2)
 
             if F1 < F2:
+                # this is to set the correlations back to the ones
+                # corresponding to the lower fidelity
+                F1,u_F1 = self._fidelity_from_hists(zzhist, xxhist, xmxhist,
+                    state, mod, *rofids_extremal1)
                 return F1,u_F1 
             else: 
                 return F2,u_F2
 
 
-    def fidelity(self, mod=None):
+    def fidelity(self, mod=None):       
         self.F_psi1, self.u_F_psi1 = self._get_fidelity(
                 self.psi1_ZZ, self.psi1_XX, self.psi1_XmX, 
                 state='psi1', mod=mod)
@@ -571,19 +575,97 @@ class FidelityAnalysis:
             fig.savefig(os.path.join(self.savedir, 'fidelities%s_vs_dt_vs_win_ch0%s_ch1%s.png' \
                     % (suffix, str(ch0start), str(ch1start))))
 
+    def plot_correlations(self, state, ch0start, ch1start, dt, win, save=True):
+        bases = ['ZZ', 'XX', 'XmX']
+
+        def idx(arr, val):
+            return np.argmin(abs(arr-val))
+
+        ch0 = idx(self.ch0starts, ch0start)
+        ch1 = idx(self.ch1starts, ch1start)
+        dtidx = idx(self.dtvals, dt)
+        winidx = idx(self.winvals, win)
+
+        if state == 'psi1':
+            raw = self.rawpsi1correlations[dtidx,winidx,ch0,ch1,:,:]
+            corr = self.correctedpsi1correlations[dtidx,winidx,ch0,ch1,:,:]
+            u_corr = self.u_correctedpsi1correlations[dtidx,winidx,ch0,ch1,:,:]
+            fid = self.psi1fids[dtidx,winidx,ch0,ch1]
+            u_fid = self.u_psi1fids[dtidx,winidx,ch0,ch1]
+
+        else:
+            raw = self.rawpsi2correlations[dtidx,winidx,ch0,ch1,:,:]
+            corr = self.correctedpsi2correlations[dtidx,winidx,ch0,ch1,:,:]
+            u_corr = self.u_correctedpsi2correlations[dtidx,winidx,ch0,ch1,:,:]
+            fid = self.psi2fids[dtidx,winidx,ch0,ch1]
+            u_fid = self.u_psi2fids[dtidx,winidx,ch0,ch1]
+
+        
+        ind = np.arange(4)
+        w = 0.8
+        
+        fig,axs = plt.subplots(3,2,figsize=(8,12))
+        for i,base in enumerate(bases):
+            
+            maxheight = 0
+            rects = axs[i,0].bar(ind,raw[i,:], w, color='w', hatch='///')
+            axs[i,0].set_xticks(ind+w/2)
+            axs[i,0].set_xticklabels(['00', '01', '10', '11'])
+            axs[i,0].set_xlabel('State')
+            axs[i,0].set_xlim(-0.1, 3.9)
+            axs[i,0].set_ylabel('Occurrences')
+            axs[i,0].set_title(state+', '+base+', raw')
+            for j,r in enumerate(rects):
+                h = r.get_height()
+                if h > maxheight: 
+                    maxheight = h
+                axs[i,0].text(ind[j]+w/2, h+1, str(int(h)), ha='center', va='bottom')
+            
+            axs[i,0].set_ylim(0,maxheight+10)
+
+            rects = axs[i,1].bar(ind, corr[i,:], w, color='w', hatch='/',
+                    yerr=u_corr[i,:], ecolor='k')
+            axs[i,1].set_xticks(ind+w/2)
+            axs[i,1].set_xticklabels(['00', '01', '10', '11'])
+            axs[i,1].set_xlabel('State')
+            axs[i,1].set_xlim(-0.1, 3.9)
+            axs[i,1].set_ylabel('Fraction')
+            axs[i,1].set_ylim(-0.1,0.75) 
+            axs[i,1].hlines([0.], -0.1, 3.9, color='k')
+            axs[i,1].set_title(state+', '+base+', corrected')
+            for j,r in enumerate(rects):
+                h = r.get_height()
+                axs[i,1].text(ind[j]+w/2, h+0.05, '%.2f' % h, ha='center', va='bottom')
+
+            if i == 0:
+                axs[i,1].text(3.8, 0.7, 'F = %.3f $\pm$ %.3f' % (fid, u_fid),
+                        ha='right', va='center')
+
+        plt.tight_layout()
+
+        if save:
+            suffix = '' if self.mode == None else '_'+self.mode
+            if not os.path.exists(self.savedir):
+                os.makedirs(self.savedir)
+            fig.savefig(os.path.join(self.savedir, 'correlations%s_%s_w%d_dt%d_ch0%d_ch1%d.png' % \
+                    (suffix, state, win, dt, ch0start, ch1start)))
+
+
+
 
 if __name__ == '__main__':
     
     #### get all fidelities
     fid = FidelityAnalysis('Fidelity')
     
-    fid.mode = None
-    #fid.get_fidelities()
-    #fid.save_fidelities()
+    fid.mode = None # 'lowerbound'
+    # fid.get_fidelities()
+    # fid.save_fidelities()
     
-    fid.load_fidelities('20121108-ldefidelity')
+    fid.load_fidelities('20121109-ldefidelity')
     # fid.plot_map_starts()
-    fid.plot_map_window(ch0start=639,ch1start=668)
+    # fid.plot_map_window(ch0start=639,ch1start=668)
+    fid.plot_correlations('psi2', 639, 668, 90, 90)
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data
