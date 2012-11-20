@@ -174,7 +174,8 @@ def fit_AOM_powerdependence(g_a, g_xc, g_k, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_gauss(g_a, g_A, g_x0, g_sigma):
-    fitfunc_str = 'a + A * exp(-(x-x0)**2/sigma**2)'
+### i think there should be a factor 2 infront of the sigma
+    fitfunc_str = 'a + A * exp(-(x-x0)**2/(2*sigma**2))'
 
     a = fit.Parameter(g_a, 'a')
     x0 = fit.Parameter(g_x0, 'x0')
@@ -184,10 +185,68 @@ def fit_gauss(g_a, g_A, g_x0, g_sigma):
     p0 = [a, x0, A, sigma]
 
     def fitfunc(x):
-        return a() + A() * np.exp(-(x-x0())**2/sigma()**2)
+        return a() + A() * np.exp(-(x-x0())**2/(2*sigma()**2))
+    return p0, fitfunc, fitfunc_str
 
+def fit_2gauss(g_a1, g_A1, g_x01, g_sigma1, g_A2, g_x02, g_sigma2):
+### i think there should be a factor 2 infront of the sigma
+    fitfunc_str = 'a1 + A1 * exp(-(x-x01)**2/(2*sigma1**2)) +\
+            A2 * exp(-(x-x02)**2/(2*sigma2**2))'
+
+    a1 = fit.Parameter(g_a1, 'a1')
+    x01 = fit.Parameter(g_x01, 'x01')
+    A1 = fit.Parameter(g_A1, 'A1')
+    sigma1 = fit.Parameter(g_sigma1, 'sigma1')
+
+    x02 = fit.Parameter(g_x02, 'x02')
+    A2 = fit.Parameter(g_A2, 'A2')
+    sigma2 = fit.Parameter(g_sigma2, 'sigma2')
+
+
+    p0 = [a1, x01, A1, sigma1, x02, A2, sigma2]
+
+    def fitfunc(x):
+        return a1()+A1()*np.exp(-(x-x01())**2/(2*sigma1()**2))+\
+                A2()*np.exp(-(x-x02())**2/(2*sigma2()**2))
+    return p0, fitfunc, fitfunc_str
+
+def fit_lorentz(g_a, g_A, g_x0, g_gamma):
+    fitfunc_str = 'a + 2*A/np.pi*gamma/(4*(x-x0)**2+gamma**2)'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    gamma = fit.Parameter(g_gamma, 'gamma')
+
+    p0 = [a, A, x0, gamma]
+
+    def fitfunc(x):
+        return a() + 2*A()/np.pi*gamma()/(4*(x-x0())**2+gamma()**2)
 
     return p0, fitfunc, fitfunc_str
+
+def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
+            + 2*A2/np.pi*gamma2/(4*(x-x02)**2+gamma2**2)'
+
+    a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    x01 = fit.Parameter(g_x01, 'x01')
+    gamma1 = fit.Parameter(g_gamma1, 'gamma1')
+
+    A2 = fit.Parameter(g_A2, 'A2')
+    x02 = fit.Parameter(g_x02, 'x02')
+    gamma2 = fit.Parameter(g_gamma2, 'gamma2')
+
+    p0 = [a1, A1, x01, gamma1, A2, x02, gamma2]
+
+    def fitfunc(x):
+        return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
+                2*A2()/np.pi*gamma2()/(4*(x-x02())**2+gamma2()**2)
+
+    return p0, fitfunc, fitfunc_str
+
+
 
 def fit_line(g_a, g_b, *arg):
     """
