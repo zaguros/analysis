@@ -15,6 +15,7 @@ config.outputdir = r'/Users/wp/Documents/TUD/LDE/analysis/output'
 
 rcParams['mathtext.default'] = 'regular'
 rcParams['legend.numpoints'] = 1
+rcParams['legend.frameon'] = False
 
 
 class Emily:
@@ -22,11 +23,18 @@ class Emily:
     def __init__(self):
         self.savedir = os.path.join(config.outputdir, 
                 time.strftime('%Y%m%d')+'-ldefidelity') 
+        
+        # psi2 w=200
+        #self.N_ZZ = np.array([13,95,79,21], dtype=int)
+        #self.N_XX = np.array([13,46,46,31], dtype=int)
+        #self.N_XmX = np.array([36,20,20,45], dtype=int)
 
-        self.N_ZZ = np.array([8,72,66,16])
-        self.N_XX = np.array([9,34,37,21])
-        self.N_XmX = np.array([30,12,15,34])
-        self.state = 'psi2'
+        # psi1 w = 80
+        self.N_ZZ = np.array([5,72,51,34], dtype=int)
+        self.N_XX = np.array([39,30,18,54], dtype=int)
+        self.N_XmX = np.array([13,41,38,29], dtype=int)
+
+        self.state = 'psi1'
 
         # readout fidelities
         self.F0_1 = 0.923
@@ -34,8 +42,8 @@ class Emily:
         self.F0_2 = 0.818
         self.F1_2 = 0.996
 
-        self.prob_pts = 101
-        self.ab_pts = 101
+        self.prob_pts = 201
+        self.ab_pts = 201
         self.blocks = 1
         self.result_bins = 50
         self.F_bins = 50
@@ -48,12 +56,12 @@ class Emily:
         the variables) multiplied by the readout error. 
         p11 is given by 1-p00-p01-p10.
         """
-        
+        N = N.astype(int)
         perr00,perr01,perr10,perr11 = self._apply_readout_error(
                 p00,p01,p10,1.-p00-p01-p10)
-
-        lk = fac(N.sum()) / \
-                (fac(N[0])*fac(N[1])*fac(N[2])*fac(N[3])) * \
+      
+        lk = fac(N.sum(), exact=1) / \
+                (fac(N[0],exact=1)*fac(N[1],exact=1)*fac(N[2],exact=1)*fac(N[3],exact=1)) * \
                 perr00**N[0] * perr01**N[1] * perr10**N[2] * \
                 (1.-perr00-perr01-perr10)**N[3]
 
@@ -68,16 +76,18 @@ class Emily:
         the probabilities for the XX measurement have some constraints, and are
         in the end described by the parameters a and b (see lab book)
         """
+        N = N.astype(int)
         perr00,perr01,perr10,perr11 = self._apply_readout_error(
                 .25+a-b,
                 .25-a-b,
                 .25-a+b,
                 .25+a+b)
 
-        lk = fac(N.sum()) / \
-                (fac(N[0])*fac(N[1])*fac(N[2])*fac(N[3])) * \
+        lk = fac(N.sum(), exact=1) / \
+                (fac(N[0],exact=1)*fac(N[1],exact=1)*fac(N[2],exact=1)*fac(N[3],exact=1)) * \
                 perr00**N[0] * perr01**N[1] * perr10**N[2] * \
                 (1.-perr00-perr01-perr10)**N[3]
+        
         if type(a) == np.ndarray:
             lk[abs(b) > .25-abs(a)] = 0.
         elif abs(b) > .25-abs(a):
@@ -111,6 +121,7 @@ class Emily:
                     range=(0,1), density=False, weights=plk)[0]
             histLB += np.histogram(pp01+pp10-2*np.sqrt(pp00*(1.-pp00-pp01-pp10)), 
                     bins=self.result_bins, range=(0,1), density=False, weights=plk)[0]
+
         I = integrate.trapz(hist, dx=self.ZZ_dx)
         hist /= I
         ILB = integrate.trapz(histLB, dx=self.ZZ_dx)
@@ -139,7 +150,7 @@ class Emily:
         I = integrate.trapz(hist_XX,dx=self.XX_dx)
         hist_XX /= I
         
-        # we actually need the 
+        # we actually need the average of XX and XmX
         if XmX:
             I = integrate.trapz(hist_XmX, dx=self.XX_dx)
             hist_XmX /= I
@@ -185,97 +196,91 @@ class Emily:
         self.duration = time.time() - t0
         print 'calculation took %.1f secs' % self.duration
     
-    def analysis(self):
-        ZZ_fitx = F_fitx = np.linspace(0,1,501)
-        XX_fitx = np.linspace(-1,1,501)
-        sign = -1 if self.state == 'psi2' else 1
+    
+    def analysis(self, plot=True, do_fit=True, savefn=''):
+        # sign = -1 if self.state == 'psi2' else 1
 
-        # fit ZZ parity
-        sigma = fit.Parameter(0.03)
-        x0 = fit.Parameter(0.9)
-        def ff(x):
-            return 1./(sigma()*np.sqrt(2*np.pi)) * np.exp(-0.5*(x-x0())**2/sigma()**2)
-        fit.fit1d(self.ZZ_x, self.ZZparity_lk, None, fitfunc=ff,
-                p0=[sigma,x0], do_print=True)
+        ### fit the Fidelity
+        if do_fit:
+            sigma = fit.Parameter(0.05)
+            x0 = fit.Parameter(0.75)
+            def ff(x):
+                return 1./(sigma()*np.sqrt(2*np.pi)) * np.exp(-0.5*(x-x0())**2/sigma()**2)
+            fit.fit1d(self.F_x, self.F_lk, None, fitfunc=ff,
+                    p0=[sigma,x0], do_print=True)
+            self.F = x0()
+            self.u_F = sigma()
 
-        zz = self.ZZ_x[argmax(self.ZZparity_lk)]
-        u_zz = sigma()                
+            Ffitx = np.linspace(0,1,101)
+            Ffity = ff(Ffitx)
+
+            sigma = fit.Parameter(0.05)
+            x0 = fit.Parameter(0.75)
+            fit.fit1d(self.F_x, self.FLB_lk, None, fitfunc=ff,
+                    p0=[sigma,x0], do_print=True)
+            self.FLB = x0()
+            self.u_FLB = sigma()
+
+            FLBfitx = np.linspace(0,1,101)
+            FLBfity = ff(FLBfitx)
+
         
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(self.ZZ_x+self.ZZ_dx/2., self.ZZparity_lk, 'k', drawstyle='steps')
-        # ax.plot(self.ZZ_x, self.ZZparity_lk, 'ko')
-        ax.plot(ZZ_fitx, ff(ZZ_fitx), 'k-', lw='2')
-        ax.set_xlabel('ZZ parity')
-        ax.set_ylabel('Likelihood')
-        ax.text(0.1, 1, '%.3f $\pm$ %.3f' % (zz, u_zz))
+        if plot:
+            fig = plt.figure(figsize=(8,8))
+            ax = fig.add_subplot(311)
+            ax.plot(self.ZZ_x+self.ZZ_dx/2., self.ZZparity_lk, 'k', 
+                    drawstyle='steps', label='excl sqrt')
+            ax.plot(self.ZZ_x+self.ZZ_dx/2., self.ZZparityLB_lk, 'r', 
+                    drawstyle='steps', label='incl sqrt')
+            ax.set_xlabel('ZZ term')
+            ax.set_ylabel('Likelihood')
+            ax.legend(loc=2)
+                    
+            bx = fig.add_subplot(312)
+            bx.plot(self.XX_x+self.XX_dx/2., self.XXterm_lk, 'k', drawstyle='steps')
+            bx.set_xlabel('XX term')
+            bx.set_ylabel('Likelihood')
 
-        if not os.path.exists(self.savedir):
-            os.makedirs(self.savedir)
-        fig.savefig(os.path.join(self.savedir, 'MLE_ZZparity.png'))
+            cx = fig.add_subplot(313)
+            cx.plot(self.F_x+self.F_dx/2., self.F_lk, 'k', drawstyle='steps',
+                    label='excl sqrt')
+            if do_fit:
+                cx.plot(Ffitx, Ffity, 'k-', lw='2')
+            
+            cx.plot(self.F_x+self.F_dx/2., self.FLB_lk, 'r', drawstyle='steps',
+                    label='incl sqrt')
+            if do_fit:
+                cx.plot(FLBfitx, FLBfity, 'r-', lw='2')            
+            
+            cx.set_xlabel('Fidelity')
+            cx.set_ylabel('Likelihood')
+            
+            if do_fit:
+                cx.text(0.1, 1, '$F = %.3f \pm %.3f$' % (self.F, self.u_F),
+                        color='k')
+                cx.text(0.1, 3, '$F_{LB} = %.3f \pm %.3f$' % (self.FLB, self.u_FLB), 
+                        color='r')
+            cx.legend(loc=2)
 
+            plt.tight_layout()
 
-        ### same for the XX term
-        sigma = fit.Parameter(0.03)
-        x0 = fit.Parameter(0.5)
-        def ff(x):
-            return 1./(sigma()*np.sqrt(2*np.pi)) * np.exp(-0.5*(x-x0())**2/sigma()**2)
-        fit.fit1d(self.XX_x, self.XXterm_lk, None, fitfunc=ff,
-                p0=[sigma,x0], do_print=True)
+            if not os.path.exists(self.savedir):
+                os.makedirs(self.savedir)
+            if savefn == '':
+                savefn = 'MLE'
 
-        xx = x0() # x[argmax(self.XXterm_lk)]
-        u_xx = sigma()
+            suffix = '_'+self.state
+            fig.savefig(os.path.join(self.savedir, savefn+suffix+'.png'))
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(self.XX_x+self.XX_dx/2., self.XXterm_lk, 'k', drawstyle='steps')
-        # ax.plot(self.XX_x, self.XXterm_lk, 'ko')
-        ax.plot(XX_fitx, ff(XX_fitx), 'k-', lw='2')
-        ax.set_xlabel('XX term')
-        ax.set_ylabel('Likelihood')
-        ax.text(0.1, 1, '%.3f $\pm$ %.3f' % (xx, u_xx))
-
-        if not os.path.exists(self.savedir):
-            os.makedirs(self.savedir)
-        fig.savefig(os.path.join(self.savedir, 'MLE_XXterm.png'))
-        
-        ### Fidelity
-        sigma = fit.Parameter(0.05)
-        x0 = fit.Parameter(0.75)
-        def ff(x):
-            return 1./(sigma()*np.sqrt(2*np.pi)) * np.exp(-0.5*(x-x0())**2/sigma()**2)
-        fit.fit1d(self.F_x, self.F_lk, None, fitfunc=ff,
-                p0=[sigma,x0], do_print=True)
-        F = x0()
-        u_F = sigma()
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(self.F_x+self.F_dx/2., self.F_lk, 'k', drawstyle='steps')
-        ax.plot(F_fitx, ff(F_fitx), 'k-', lw='2')
-        
-        ### Fidelity lower bound
-        sigma = fit.Parameter(0.05)
-        x0 = fit.Parameter(0.75)
-        fit.fit1d(self.F_x, self.FLB_lk, None, fitfunc=ff,
-                p0=[sigma,x0], do_print=True)
-        FLB = x0()
-        u_FLB = sigma()
-
-        ax.plot(self.F_x+self.F_dx/2., self.FLB_lk, 'r', drawstyle='steps')
-        ax.plot(F_fitx, ff(F_fitx), 'r-', lw='2')
-        
-        ax.set_xlabel('Fidelity')
-        ax.set_ylabel('Likelihood')
-        ax.text(0.1, 1, '$F = %.3f \pm %.3f$' % (F, u_F))
-        ax.text(0.1, 0.5, '$F_{LB} = %.3f \pm %.3f$' % (FLB, u_FLB), color='r')
-
-
-    def save(self):
+    def save(self, savefn=''):
         if not os.path.exists(self.savedir):
             os.makedirs(self.savedir)
         
-        np.savez(os.path.join(self.savedir, 'MLEresults_%s' % self.state),
+        if savefn == '':
+            savefn = 'MLE'
+
+        suffix = '_'+self.state
+        np.savez(os.path.join(self.savedir, savefn+suffix),
                 pvals = self.pvals,
                 result_bin_edges = self.result_bin_edges,
                 ZZparity_lk = self.ZZparity_lk,
@@ -291,9 +296,9 @@ class Emily:
 if __name__ == '__main__':
     emily = Emily()
     emily.likelihood()
-    # emily.save()
-    # emily.load('20121111-ldefidelity')
     emily.analysis()
+    # emily.save()
+
 
 
 
