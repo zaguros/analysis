@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib import cbook
 import pickle
 
-from analysis import fit,common
-from analysis.lde import spcorr, sscorr, hht3, tpqi
+from analysis.lib.fitting import fit,common
+from analysis.lib.lde import spcorr, sscorr, tpqi
+from analysis.lib.pq import  hht3
 
 HHPFILEBASE='hhp_data'
 CHMAXTIME=2300
@@ -161,11 +162,21 @@ class SingleLDEAnalysis:
                     self.hhp[:,2]==2)])
         else:
             self.noof_hh_ssros=0
-        self.noof_valid_ssros=len(np.where(self.w>0)[0])
+        if len(self.w)>0:    
+            self.noof_valid_ssros=len(np.where(self.w>0)[0])
+        else:
+            self.noof_valid_ssros=0
         print 'Plu gave', self.noof_hh_ssros, 'entganglement events'
         print 'of which',self.noof_valid_ssros ,\
                 'are double click events according to the HH'
-    
+        if self.noof_valid_ssros >  self.noof_hh_ssros:
+            print 'w',self.w
+            print '-------------------------------'
+            if (len(self.hhp)>0):
+                print 'hhp', self.hhp[np.logical_and(self.hhp[:,3]==1, 
+                            self.hhp[:,2]==2)]
+
+            raise Exception('more valid than total plu events!')
 
     def save(self,savefile):
         np.savez(savefile, corr=self.uncond_corr, 
@@ -206,9 +217,9 @@ class LDEAnalysis:
         self.all_statistics_plu=[]
         self.all_double_click_statistics=[]
         
-        self.save_statistics_lt1=['get_noof_CR_checks','get_probe_counts']
-        self.save_statistics_lt2=['get_noof_seq_starts','get_noof_PLU_markers',
-                                        'get_noof_CR_checks','get_probe_counts']
+        self.save_statistics_lt1=['get_noof_CR_checks', 'get_below_threshold_events']
+        self.save_statistics_lt2=['get_noof_seq_starts', 'get_below_threshold_events', 
+                                    'get_noof_CR_checks']
     
         self.total_corr=np.zeros(4,dtype=np.uint32)
         self.total_corr_00=np.zeros(4,dtype=np.uint32)
@@ -357,7 +368,7 @@ class LDEAnalysis:
                 for d in self.g2_deltas]
         self.g2_coincidences_fullwindow = [np.array([],dtype=int) \
                 for d in self.g2_deltas]
-        
+        self.empty_subruns=0
         for _i, datfolder in np.ndenumerate(runs):
             self.all_runs.append(datfolder)
             i=_i[0]
@@ -386,6 +397,7 @@ class LDEAnalysis:
                     d.close()
                 if len(anal.hhdata)==0:
                     print 'run', datfolder, ', subrun', DATIDXSTR, 'EMPTY'
+                    self.empty_subruns+=1
                     anal.hhdata=np.array([np.zeros(4,dtype=np.uint32)])
                     anal.hhp=np.array([np.zeros(4,dtype=np.uint32)])
                     anal.w1=np.array([np.zeros(4,dtype=np.uint32)])
