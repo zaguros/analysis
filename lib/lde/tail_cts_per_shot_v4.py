@@ -296,10 +296,17 @@ def optical_rabi_resonant_fit_hannes(datafile, pulse_start, pulse_end,
         df = os.path.join(datafile)
         data = np.loadtxt(df, skiprows=10)
         counts = data[:,use_channel]
-    
+        
+    if rebins>0:
+        counts = rebin(counts,rebins)
+
+
     x = np.arange(0,len(counts))
-    time = x*binsize
-    
+
+    if rebins>0:
+        time = x*binsize*rebins
+    else:
+        time = x*binsize
     ###########################
     ###########################
     ## FITTING ROUTINE ########
@@ -350,7 +357,7 @@ def optical_rabi_resonant_fit_hannes(datafile, pulse_start, pulse_end,
     print 'fR =' + num2str(fR*1e3,5)+' MHz' +  '+/-' + num2str(fR_err*1e3,5)
     print 'period = '+num2str(1/fR,1)+' ns' 
     print 'tau = '+num2str(tau,5) + 'ns' + '+/-' +'+/-' + num2str(tau_err,5)
-
+    plt.close()
 
     if save:
         figure.savefig(os.path.join(os.path.split(datafile)[0],\
@@ -360,7 +367,7 @@ def optical_rabi_resonant_fit_hannes(datafile, pulse_start, pulse_end,
 
 
 def optical_rabi_resonant_fit_with_slope_hannes(datafile, pulse_start, pulse_end, 
-        use_channel = 1, save = True, max_rabi_amp = 0.9, binsize=256):
+        use_channel = 1, save = True, max_rabi_amp = 0.9, binsize=256, rebins = -1):
     """
     can process npz files and txt files.
     use channel specifies the HH channel, can be either 0 or 1.
@@ -378,9 +385,16 @@ def optical_rabi_resonant_fit_with_slope_hannes(datafile, pulse_start, pulse_end
         data = np.loadtxt(df, skiprows=10)
         counts = data[:,use_channel]
     
+    if rebins>0:
+        counts = rebin(counts,rebins)
+
+
     x = np.arange(0,len(counts))
-    time = x*binsize
-    
+
+    if rebins>0:
+        time = x*binsize*rebins
+    else:
+        time = x*binsize
     ###########################
     ###########################
     ## FITTING ROUTINE ########
@@ -392,8 +406,8 @@ def optical_rabi_resonant_fit_with_slope_hannes(datafile, pulse_start, pulse_end
     fR_init_guess = 0.100 #[GHz]
     tau_init_guess = 15 #[ns]
     ampl_init_guess = 0.5
-    offset_init_guess = 0.5
-    slope_init_guess = 0.0
+    offset_init_guess = 0.0
+    slope_init_guess = 0.0#1.2
 
     
     min_fit_bnd = pulse_start
@@ -409,7 +423,7 @@ def optical_rabi_resonant_fit_with_slope_hannes(datafile, pulse_start, pulse_end
 
     fit_result = fit.fit1d(time_fit, counts_fit, rabi.fit_rabi_damped_exp_with_offset_on_linslope, 
             fR_init_guess,ampl_init_guess, offset_init_guess, 
-            tau_init_guess, time_fit[0], slope_init_guess, 
+            tau_init_guess, time_fit[0], slope_init_guess, fixed=[],
             do_plot = True, newfig = False, ret = True,
             plot_fitonly = True, color = 'r', linewidth = 2.0)
     
@@ -427,6 +441,7 @@ def optical_rabi_resonant_fit_with_slope_hannes(datafile, pulse_start, pulse_end
     plt.ylim(0,1)
     plt.grid()
     plt.xlim(min_fit_bnd-10.0,max_fit_bnd+60.0)
+    plt.close()
 
     print 'fR =' + num2str(fR*1e3,5)+' MHz' +  '+/-' + num2str(fR_err*1e3,5)
     print 'period = '+num2str(1/fR,1)+' ns' 
@@ -545,12 +560,14 @@ def tail_cts_per_shot_txt_file(datapath, filename, lower,
             np.int(max_fit_bnd/bin_size)]
 
     laser_pulses = pulses_in_sequence*TPQI_starts
+
     
     if tail_mode == 1:
         tail_counts_per_shot = tail_area_ch1.sum()/np.float(laser_pulses)
     elif tail_mode == 0:
         tail_counts_per_shot = tail_area_ch0.sum()/np.float(laser_pulses)
     else:
+
         tail_counts_per_shot = (tail_area_ch0.sum()+tail_area_ch1.sum())\
                 /np.float(laser_pulses)
 

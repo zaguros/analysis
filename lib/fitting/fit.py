@@ -77,8 +77,10 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     if not success or cov == None: # FIXME: find a better solution!!!
         return False
 
+    fitx = linspace(x.min(), x.max(), fit_curve_points)
+
     # package the result neatly
-    result = result_dict(p1, cov, info, mesg, success, y, p0, fitfunc(x))
+    result = result_dict(p1, cov, info, mesg, success, y, p0, fitfunc(x),fitx,fitfunc(fitx))
 
     if do_print:
         print_fit_result(result)
@@ -95,7 +97,7 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         if not plot_fitonly:
             pyplot.plot(x, y, 'o', mfc='None', mec=color, label='data')
         
-        fitx = linspace(x.min(), x.max(), fit_curve_points)
+        
         pyplot.plot(fitx, fitfunc(fitx), '-', color = color, 
                 linewidth = linewidth, label='fit')
 
@@ -149,7 +151,7 @@ def fit1d_dat(filepath, *arg, **kw):
 
 # put all the fit results into a dictionary, calculate some more practical 
 # numbers
-def result_dict(p1, cov, info, mesg, success, y, p0, fitdata):
+def result_dict(p1, cov, info, mesg, success, y, p0, fitdata,fitx,fity):
     chisq = sum(info['fvec']*info['fvec'])
     dof = len(y)-len(p0)
     error_dict = {}
@@ -173,6 +175,8 @@ def result_dict(p1, cov, info, mesg, success, y, p0, fitdata):
         'error' : error_list,
         'error_dict' : error_dict, 
         'fitdata' : fitdata,
+        'fitx' : fitx,
+        'fity' : fity,
         'cov' : cov,
         'p0' : p0,
         }

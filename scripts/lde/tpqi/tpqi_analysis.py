@@ -24,10 +24,10 @@ class TPQIAnalysis:
         self.deltas = [-1,0,1]
         self.offset = 666.-637.
         self.central = 2
-        self.tau = 12.5 / self.binwidth
+        self.tau = 12.1 / self.binwidth
         self.centernormfactor = 0.5
     
-    def get_g2_hist(self, range=(-256,256), bins=64):
+    def get_g2_hist(self, range=(-260,260), bins=104):
         # NOTE bins should be an even number!
         
         f = open(os.path.join(config.datadir,self.fn),'rb')
@@ -43,6 +43,7 @@ class TPQIAnalysis:
                 hy,hx = np.histogram(np.array(self.coincidences[i])+self.offset, 
                         bins=bins, range=range)
                 self.peaks[d] = (hy,hx)
+                self.fitdt = hx[1]-hx[0]
 
                 if d != 0:
                     A = fit.Parameter(max(hy))
@@ -93,62 +94,79 @@ class TPQIAnalysis:
         ax2.set_xlabel(r'$\tau$ (bins)')
         plt.subplots_adjust(wspace=0.15)
 
-    def projected_fidelity(self, crratio=1.1, corr=0.95):
+    def visibility(self, crratio=1.1):
         
-        self.fids = np.array([])
-        self.u_fids = np.array([])
-        
-        self.fids_crratio = np.array([])
-        self.u_fids_crratio = np.array([])
-
-        self.fids_corr = np.array([])
-        self.u_fids_corr = np.array([])
-        
-        self.dts = np.array([])
+        self.visibility = np.array([])
+        self.u_visibility = np.array([])
+        self.fidelity = np.array([])
+        self.u_fidelity = np.array([])
+        self.counts = np.array([])
 
         zp = self.peaks[0]
-        p1 = self.peaks[1]
-        pm1 = self.peaks[-1]
-        dt = zp[1][1]-zp[1][0]
-        length = len(zp[0])/2
+        amp = 2*self.meanamp # this is also the expected height of the peak
+                             # in the middle for coherent light; (only two
+                             # windows)
+        dip = 2*crratio/(1+crratio)**2
         
+        # rebin the counts for more appropriate resolution of the visibility
+        # use these also for the fidelity measurements
+        self.binedges = np.array([0,5,10,20,30,50,100])
+        self.meandts = self.binedges[:-1] + (self.binedges[1:]-self.binedges[:-1])/2.
+        self.zprebinned, _be = np.histogram(
+                np.array(self.coincidences[self.central]), 
+                bins=np.append(-self.binedges[:0:-1], self.binedges))
+
+        length = len(self.meandts)
+
         # NOTE formulas see labbook
-        for i in range(1,length+1):
-            self.dts = np.append(self.dts, i*dt)
+        for i in range(0,length):
+            tpqicts = np.sum(self.zprebinned[length+i:length+i+1]) \
+                    + np.sum(self.zprebinned[length-i-1:length-i])
             
-            z = np.sum(zp[0][length-i:length+i])
-            s = np.sum(p1[0][length-i:length+i])+np.sum(pm1[0][length-i:length+i])
-            v = (s/4. - z/2.) / (s/4.)
-            self.fids = np.append(self.fids, 0.5 + 0.5*v)
+            def notpqicts(x0,x1):
+                return -2*dip*amp/self.fitdt*self.tau*(np.exp(-abs(x1)/self.tau)\
+                        - np.exp(-abs(x0)/self.tau))
             
-            dip = 2*crratio/(1+crratio)**2
-            v_crratio = (dip*s/2. - z/2.) / (dip*s/2.)
-            self.fids_crratio = np.append(self.fids_crratio, 0.5 + 0.5*v_crratio)
-            
-            u_z = np.sqrt(z)
-            u_s = np.sqrt(s)
-            u_v = np.sqrt((2./s * u_z)**2 + ((1./s - 4.*(s/4.-z/2.)/s**2) * u_s)**2)
-            self.u_fids = np.append(self.u_fids, 0.5 * u_v)
+            n = notpqicts(self.binedges[i], self.binedges[i+1])
+            v = (n-tpqicts)/n
+            u_v = np.sqrt(tpqicts)/n
+            F = 0.5*(1+v)
+            u_F = 0.5*u_v
 
-            u_v_crratio = np.sqrt((1./s/dip * u_z)**2 + ((1./s - 2./dip*(s/2.*dip-z/2.)/s**2) * u_s)**2)
-            self.u_fids_crratio = np.append(self.u_fids_crratio, 0.5*u_v_crratio)
-
-        self.fids_corr = self.fids_crratio * corr
-        self.u_fids_corr = self.u_fids_crratio * corr
+            self.visibility = np.append(self.visibility, v)
+            self.u_visibility = np.append(self.u_visibility, u_v)
+            self.fidelity = np.append(self.fidelity, F)
+            self.u_fidelity = np.append(self.u_fidelity, u_F)
+            self.counts = np.append(self.counts, tpqicts)        
         
+        ### plot visibility and projected fidelity 
         self.fidfig = plt.figure()
         ax = plt.subplot(111)
-        #ax.errorbar(self.dts, self.fids, yerr=self.u_fids, fmt='o',
-        #        label='identical emitters', mfc='w', mec='k', ecolor='k')
-        ax.errorbar(self.dts, self.fids_crratio, yerr=self.u_fids_crratio, fmt='o',
-                label='real emitters', mfc='w', mec='k', ecolor='k')
-        ax.errorbar(self.dts, self.fids_corr, yerr=self.u_fids_corr, fmt='o', 
-                label='real emitters, universal corr.', mfc='w', mec='r', ecolor='r')
-        
-        ax.set_xlabel(r'$| \tau |$ (bins)')
-        ax.set_ylabel('projected fidelity')
-        plt.legend()
+        ax.plot(self.binedges, np.append(self.visibility[0],self.visibility), 
+                'k', drawstyle='steps')
+        ax.errorbar(self.meandts, self.visibility, fmt='o', mec='k', mfc='w',
+                yerr=self.u_visibility, ecolor='k')
 
+        ax.set_xlabel(r'$| \tau |$ (bins)')
+        ax.set_ylabel('visibility')
+        ax.set_xlim(0,100)
+        ax.set_ylim(-0.5,1.1)
+
+        for i,dtval in enumerate(self.meandts):
+            ax.text(dtval, -0.45, # self.visibility[i]+self.u_visibility[i]+0.1,
+                'N\n=%d' % self.counts[i], ha='center', va='bottom')
+
+        ax2 = ax.twinx()
+        ax2.plot(self.binedges, np.append(self.fidelity[0], self.fidelity),
+                 'r', drawstyle='steps')
+        ax2.errorbar(self.meandts, self.fidelity, fmt='o', mec='r', mfc='w',
+                 yerr=self.u_fidelity, ecolor='r')
+        ax2.set_ylabel('fidelity', color='r')
+        for tl in ax2.get_yticklabels():
+            tl.set_color('r')
+
+        ax2.set_xlim(0,100)
+        ax2.set_ylim(0,1)
 
     def save(self):
         if not os.path.isdir(self.savedir):
@@ -160,7 +178,7 @@ class TPQIAnalysis:
             print 'no g2 plot, skip...'
 
         try:       
-            self.fidfig.savefig(os.path.join(self.savedir,'fidelity.png'))
+            self.fidfig.savefig(os.path.join(self.savedir,'visibility.png'))
         except AttributeError:
             print 'no fidelity plot, skip...'
 
@@ -173,8 +191,14 @@ class TPQIAnalysis:
         pickle.dump(self.normpeaks, f)
         f.close()
 
-        np.savez(os.path.join(self.savedir, 'fidelities'), fid=self.fids_crratio, u_fid=self.u_fids_crratio,
-                fid_corr=self.fids_corr, u_fid_corr=self.u_fids_corr, dts=self.dts)
+        np.savez(os.path.join(self.savedir, 'visibility'), 
+                visibility=self.visibility, 
+                u_visibility=self.u_visibility, 
+                binedges=self.binedges,
+                meandts=self.meandts,
+                fidelity=self.fidelity,
+                u_fidelity=self.u_fidelity,
+                zprebinned=self.zprebinned)
 
     
        
@@ -182,5 +206,5 @@ if __name__ == '__main__':
     a = TPQIAnalysis()
     a.get_g2_hist()
     a.plot_g2()
-    a.projected_fidelity()
+    a.visibility()
     a.save()

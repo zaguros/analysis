@@ -6,7 +6,7 @@ import pickle
 
 from analysis.lib.fitting import fit,common
 from analysis.lib.lde import spcorr, sscorr, tpqi
-from analysis.lib.pq import  hht3
+from analysis.lib.pq import hht3
 
 HHPFILEBASE='hhp_data'
 CHMAXTIME=2300
