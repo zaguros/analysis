@@ -27,7 +27,7 @@ class TPQIAnalysis:
         self.tau = 12.1 / self.binwidth
         self.centernormfactor = 0.5
     
-    def get_g2_hist(self, range=(-260,260), bins=26):
+    def get_g2_hist(self, range=(-260,260), bins=104):
         # NOTE bins should be an even number!
         
         f = open(os.path.join(config.datadir,self.fn),'rb')
@@ -43,6 +43,7 @@ class TPQIAnalysis:
                 hy,hx = np.histogram(np.array(self.coincidences[i])+self.offset, 
                         bins=bins, range=range)
                 self.peaks[d] = (hy,hx)
+                self.fitdt = hx[1]-hx[0]
 
                 if d != 0:
                     A = fit.Parameter(max(hy))
@@ -99,25 +100,34 @@ class TPQIAnalysis:
         self.u_visibility = np.array([])
         self.fidelity = np.array([])
         self.u_fidelity = np.array([])
-        self.dts = np.array([])
+        self.counts = np.array([])
 
         zp = self.peaks[0]
         amp = 2*self.meanamp # this is also the expected height of the peak
                              # in the middle for coherent light; (only two
                              # windows)
-        length = len(zp[0])/2
         dip = 2*crratio/(1+crratio)**2
-        dt = zp[1][1]-zp[1][0]
+        
+        # rebin the counts for more appropriate resolution of the visibility
+        # use these also for the fidelity measurements
+        self.binedges = np.array([0,5,10,20,30,50,100])
+        self.meandts = self.binedges[:-1] + (self.binedges[1:]-self.binedges[:-1])/2.
+        self.zprebinned, _be = np.histogram(
+                np.array(self.coincidences[self.central]), 
+                bins=np.append(-self.binedges[:0:-1], self.binedges))
+
+        length = len(self.meandts)
 
         # NOTE formulas see labbook
         for i in range(0,length):
-            self.dts = np.append(self.dts, i*dt)
-            tpqicts = np.sum(zp[0][length+i:length+i+1]) + np.sum(zp[0][length-i-1:length-i])
+            tpqicts = np.sum(self.zprebinned[length+i:length+i+1]) \
+                    + np.sum(self.zprebinned[length-i-1:length-i])
             
             def notpqicts(x0,x1):
-                return -2*dip*amp/dt*self.tau*(np.exp(-abs(x1)/self.tau) - np.exp(-abs(x0)/self.tau))
+                return -2*dip*amp/self.fitdt*self.tau*(np.exp(-abs(x1)/self.tau)\
+                        - np.exp(-abs(x0)/self.tau))
             
-            n = notpqicts(i*dt, (i+1)*dt)
+            n = notpqicts(self.binedges[i], self.binedges[i+1])
             v = (n-tpqicts)/n
             u_v = np.sqrt(tpqicts)/n
             F = 0.5*(1+v)
@@ -127,24 +137,30 @@ class TPQIAnalysis:
             self.u_visibility = np.append(self.u_visibility, u_v)
             self.fidelity = np.append(self.fidelity, F)
             self.u_fidelity = np.append(self.u_fidelity, u_F)
+            self.counts = np.append(self.counts, tpqicts)        
         
+        ### plot visibility and projected fidelity 
         self.fidfig = plt.figure()
         ax = plt.subplot(111)
-        ax.plot(np.append(0, self.dts+dt), np.append(self.visibility[0],self.visibility), 
+        ax.plot(self.binedges, np.append(self.visibility[0],self.visibility), 
                 'k', drawstyle='steps')
-        ax.errorbar(self.dts+dt/2., self.visibility, fmt='o', mec='k', mfc='w',
+        ax.errorbar(self.meandts, self.visibility, fmt='o', mec='k', mfc='w',
                 yerr=self.u_visibility, ecolor='k')
 
         ax.set_xlabel(r'$| \tau |$ (bins)')
         ax.set_ylabel('visibility')
         ax.set_xlim(0,100)
-        ax.set_ylim(-0.5,1)
+        ax.set_ylim(-0.5,1.1)
+
+        for i,dtval in enumerate(self.meandts):
+            ax.text(dtval, -0.45, # self.visibility[i]+self.u_visibility[i]+0.1,
+                'N\n=%d' % self.counts[i], ha='center', va='bottom')
 
         ax2 = ax.twinx()
-        ax2.plot(np.append(0,self.dts+dt), np.append(self.fidelity[0], self.fidelity),
-                'r', drawstyle='steps')
-        ax2.errorbar(self.dts+dt/2., self.fidelity, fmt='o', mec='r', mfc='w',
-                yerr=self.u_fidelity, ecolor='r')
+        ax2.plot(self.binedges, np.append(self.fidelity[0], self.fidelity),
+                 'r', drawstyle='steps')
+        ax2.errorbar(self.meandts, self.fidelity, fmt='o', mec='r', mfc='w',
+                 yerr=self.u_fidelity, ecolor='r')
         ax2.set_ylabel('fidelity', color='r')
         for tl in ax2.get_yticklabels():
             tl.set_color('r')
@@ -178,9 +194,11 @@ class TPQIAnalysis:
         np.savez(os.path.join(self.savedir, 'visibility'), 
                 visibility=self.visibility, 
                 u_visibility=self.u_visibility, 
-                dts=self.dts,
+                binedges=self.binedges,
+                meandts=self.meandts,
                 fidelity=self.fidelity,
-                u_fidelity=self.u_fidelity)
+                u_fidelity=self.u_fidelity,
+                zprebinned=self.zprebinned)
 
     
        
