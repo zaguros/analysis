@@ -694,7 +694,7 @@ if __name__ == '__main__':
     #### get all fidelities
     fid = FidelityAnalysis('Fidelity')
     
-    fid.mode = 'raw'
+    fid.mode = None
     fid.dtslices = False
     
     #fid.get_fidelities()
@@ -702,8 +702,8 @@ if __name__ == '__main__':
     
     fid.load_fidelities('20121120-ldefidelity')
     # fid.plot_map_starts()
-    fid.plot_map_window(ch0start=635,ch1start=664)
-    # fid.plot_correlations('psi2', 639, 668, 90, 90)
+    # fid.plot_map_window(ch0start=641,ch1start=670)
+    fid.plot_correlations('psi1', 639, 668, 80, 80)
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data
