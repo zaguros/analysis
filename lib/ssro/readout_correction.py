@@ -1,19 +1,44 @@
 import numpy as np
 
-################################################
-######### SAMPLE INPUT PARAMETERS ##############
-################################################
+def readout_fidelity(p0, p1, pgt0, peq0,
+        u_p0=0, u_p1=0, u_pgt0=0, u_peq0=0):
+    """
+    Calculates the SSRO fidelities for ms0/1 from the probabilities to measure
+    0/>0 photons in the SSRO calibration, taking into account intitalization 
+    infidelities in the calibration measurements.
 
-N_larger = 820.     #number of readout events with more than 0 photons
-N_equal = 180.      #number of readout events with 0 photons
+    input are measured quantities:
+    p0 : probability to have successfully initialized into 0,
+    p1 : probability to have successfully initialized into 1,
+    pgt0 : probability to measure >0 photons in the SSRO calibration
+        after preparing 0
+    peq0 : probability to measure =0 photons in the SSRO calibration
+        after preparing 1
 
-F0 = 0.82885
-F1 = 0.98575
+    u_* is the respective uncertainty
 
-F0_err = 0.01
-F1_err = 0.01
+    returns (F0, F1, u_F0, u_F1)
+    """
 
-def correct(N_larger, N_equal, F0, F1, F0_err, F1_err, verbose = True):
+    # formulas caculated with mathematica
+    F0 = -(1. - p0 - peq0 + p0*peq0 - p1*pgt0)/(-1.+p0+p1)
+    F1 = -(1. - p1 - p0*peq0 - pgt0 + p1*pgt0)/(-1.+p0+p1)
+
+    u_F0 = np.sqrt((-((-1+peq0)/(-1+p0+p1))+(1-p0-peq0+p0*peq0-p1*pgt0)/\
+        (-1+p0+p1)**2)**2*u_p0**2+(pgt0/(-1+p0+p1)+(1-p0-peq0+p0*peq0-p1*pgt0)/\
+        (-1+p0+p1)**2)**2*u_p1**2+((-1+p0)**2*u_peq0**2)/\
+        (-1+p0+p1)**2+(p1**2*u_pgt0**2)/(-1+p0+p1)**2)
+
+    u_F1 = np.sqrt((peq0/(-1+p0+p1)+(1-p1-p0*peq0-pgt0+p1*pgt0)/\
+            (-1+p0+p1)**2)**2*u_p0**2+(-((-1+pgt0)/(-1+p0+p1))+\
+            (1-p1-p0*peq0-pgt0+p1*pgt0)/(-1+p0+p1)**2)**2*u_p1**2+\
+            (p0**2*u_peq0**2)/(-1+p0+p1)**2+((-1+p1)**2*u_pgt0**2)/\
+            (-1+p0+p1)**2)
+
+    return F0,F1,u_F0,u_F1
+
+
+def correct(N_larger, N_equal, F0, F1, F0_err, F1_err, verbose=True):
     """
     Returns the read-out corrected amplitudes for given input parameters.
     Input: 
@@ -75,52 +100,65 @@ def correct(N_larger, N_equal, F0, F1, F0_err, F1_err, verbose = True):
     return {'r0' : r0, 'sigma_r0' : sigma_r0, 'r1' : r1, 'sigma_r1' : sigma_r1}
 
 
-
-########################################
-#### ENTANGLEMENT EVENT CALCULATION ####
-########################################
-
-
-N_equal_min = 0
-N_equal_max = 50
-
-N_larger_min = 50
-N_larger_max = 100
-
-b = np.zeros([N_equal_max-N_equal_min+1,N_equal_max-N_equal_min+1])
-c = np.zeros([N_larger_max-N_larger_min+1,N_larger_max-N_larger_min+1])
-for N_larger in range(N_larger_min,N_larger_max+1):
-    for N_equal in range(N_equal_min,N_equal_max+1):
-        a = correct(N_larger, N_equal, F0, F1, F0_err, F1_err, verbose = False)
-        b[N_larger-N_larger_min, N_equal-N_equal_min] = a['sigma_r0']
-        c[N_larger-N_larger_min, N_equal-N_equal_min] = a['sigma_r1']
-
-N_larger = range(N_larger_min,N_larger_max+1)
-N_equal = range(N_equal_min,N_equal_max+1)
-
-X,Y = meshgrid(N_equal, N_larger)
-
-plt.figure()
-plt.pcolor(X, Y, b)
-plt.colorbar()
-tick_xlocs = range(N_equal_min, N_equal_max, 5)
-tick_ylocs = range(N_larger_min, N_larger_max, 5)
-
-#string the shit
-xticklabels = yticklabels = list()
-for k in tick_xlocs:
-    xticklabels.append(str(k))
-for k in tick_ylocs:
-    yticklabels.append(str(k))
+if __name__ == '__main__':
     
-#plt.xticks(tick_xlocs, xticklabels)
-#plt.yticks(tick_ylocs, yticklabels)
+    ################################################
+    ######### SAMPLE INPUT PARAMETERS ##############
+    ################################################
 
-plt.xlabel('$N_{=0}$')
-plt.ylabel('$N_{>0}$')
-plt.title('Final error of the read-out corrected state')
-plt.xlim([N_equal_min,N_equal_max])
-plt.ylim([N_larger_min,N_larger_max])
+    N_larger = 820.     #number of readout events with more than 0 photons
+    N_equal = 180.      #number of readout events with 0 photons
+
+    F0 = 0.82885
+    F1 = 0.98575
+
+    F0_err = 0.01
+    F1_err = 0.01    
+    
+    ########################################
+    #### ENTANGLEMENT EVENT CALCULATION ####
+    ########################################
+    
+    N_equal_min = 0
+    N_equal_max = 50
+
+    N_larger_min = 50
+    N_larger_max = 100
+
+    b = np.zeros([N_equal_max-N_equal_min+1,N_equal_max-N_equal_min+1])
+    c = np.zeros([N_larger_max-N_larger_min+1,N_larger_max-N_larger_min+1])
+    for N_larger in range(N_larger_min,N_larger_max+1):
+        for N_equal in range(N_equal_min,N_equal_max+1):
+            a = correct(N_larger, N_equal, F0, F1, F0_err, F1_err, verbose = False)
+            b[N_larger-N_larger_min, N_equal-N_equal_min] = a['sigma_r0']
+            c[N_larger-N_larger_min, N_equal-N_equal_min] = a['sigma_r1']
+
+    N_larger = range(N_larger_min,N_larger_max+1)
+    N_equal = range(N_equal_min,N_equal_max+1)
+
+    X,Y = meshgrid(N_equal, N_larger)
+
+    plt.figure()
+    plt.pcolor(X, Y, b)
+    plt.colorbar()
+    tick_xlocs = range(N_equal_min, N_equal_max, 5)
+    tick_ylocs = range(N_larger_min, N_larger_max, 5)
+
+    #string the shit
+    xticklabels = yticklabels = list()
+    for k in tick_xlocs:
+        xticklabels.append(str(k))
+    for k in tick_ylocs:
+        yticklabels.append(str(k))
+        
+    #plt.xticks(tick_xlocs, xticklabels)
+    #plt.yticks(tick_ylocs, yticklabels)
+
+    plt.xlabel('$N_{=0}$')
+    plt.ylabel('$N_{>0}$')
+    plt.title('Final error of the read-out corrected state')
+    plt.xlim([N_equal_min,N_equal_max])
+    plt.ylim([N_larger_min,N_larger_max])
 
 
 
