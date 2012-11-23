@@ -46,7 +46,7 @@ def ro_c_dF(corr, F0a, F0b, F1a, F1b, dF0a, dF0b, dF1a, dF1b, ro_correct=True):
                         dF0a=dF0a, dF0b=dF0b, dF1a=dF1a, dF1b=dF1b)
     else:
         N11,N10,N01,N00=[float(i) for i in corr]
-        return sqrt((N00+N11)*(N01+N10)/(N00+N01+N10+N11)**3)
+        return np.sqrt((N00+N11)*(N01+N10)/(N00+N01+N10+N11)**3)
     
 def ro_c_dF_S(corr, F0a, F0b, F1a, F1b, dF0a, dF0b, dF1a, dF1b, ro_correct=True):
     if ro_correct:
@@ -75,8 +75,8 @@ def get_fidelity(ZZ_corr,XX_corr,XmX_corr,ro_correct=True, psi1=True, F0a=0.905,
                         if psi1 else ro_c_F_even(XmX_corr, F0a, F0b, F1a, F1b, dF0a, dF0b, dF1a, dF1b, ro_correct=ro_correct)
     dXmX=   ro_c_dF(XmX_corr, F0a, F0b, F1a, F1b, dF0a, dF0b, dF1a, dF1b, ro_correct=ro_correct)
     
-    XXavg = (XX/dXX**2 + XmX/dXmX**2)/(1/dXX**2+1/dXmX**2)
-    dXXavg= np.sqrt(1/(1/dXX**2+1/dXmX**2))
+    XXavg = XmX#(XX/dXX**2 + XmX/dXmX**2)/(1/dXX**2+1/dXmX**2)
+    dXXavg= dXmX#np.sqrt(1/(1/dXX**2+1/dXmX**2))
     
     F=ZZ/2. - ZZS + (XXavg - 1/2.)
     dF= np.sqrt(1/4.*dZZ**2 + dZZS**2 + dXXavg**2)
@@ -88,9 +88,10 @@ def get_fidelity(ZZ_corr,XX_corr,XmX_corr,ro_correct=True, psi1=True, F0a=0.905,
 class FidelityAnalysis:
 
     def __init__(self,**kw):
-        self.folder_ZZ=r'D:\analysis\data\lde\ZZ'
-        self.folder_XX=r'D:\analysis\data\lde\XX'
-        self.folder_XmX=r'D:\analysis\data\lde\X-X'
+        self.basepath=kw.pop('basepath',r'D:\analysis\data\lde')
+        self.folder_ZZ=os.path.join(self.basepath,'ZZ')
+        self.folder_XX=os.path.join(self.basepath,'XX')
+        self.folder_XmX=os.path.join(self.basepath,'X-X')
         self.F0b = 0.805
         self.F0a = 0.905 
         self.F1b = 0.998
