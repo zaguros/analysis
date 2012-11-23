@@ -117,6 +117,18 @@ def add_coincidences(c1, c2):
 
     return c1
 
+def add_coincidence_times(c1,c2):
+    if len(c1) == 0:
+        return c2
+    elif len(c2) == 0:
+        return c1
+
+    for i,c in enumerate(c1):
+        c1[i] = np.vstack((c1[i], c2[i]))
+
+    return c1
+
+
 def coincidences(data, deltas=range(-3,4), *arg, **kw):
     t0, t1 = hht3.get_clicks(data)
     
@@ -128,6 +140,40 @@ def coincidences(data, deltas=range(-3,4), *arg, **kw):
         c.append(_coincidences(t0.astype(int),t1.astype(int),delta))
 
     return deltas, c
+
+def coincidence_times(data, deltas=range(-3,4), *arg, **kw):
+    t0, t1 = hht3.get_clicks(data)
+
+    if t0.shape == (4,0) or t1.shape == (4,0):
+        return deltas, [ np.zeros((0,2)) for d in deltas ]
+
+    c = []
+    for delta in deltas:
+        c.append(_coincidence_times(t0.astype(int), t1.astype(int), delta))
+
+    return deltas, c
+
+
+def _coincidence_times(t0, t1, delta=0, *arg, **kw):
+    '''
+    returns coincidences from lists of ch0 and ch1 photons,
+    for specified delta (which peak in the pulsed g2 function).
+    each coincidence is a row containing (ch0_time, ch1_time) in a
+    Nx2 array.
+    '''
+    hist = np.zeros((0,2))
+    ch0, ch1 = _coincidence_clicks(t0, t1, delta=delta, *arg, **kw)
+    
+    # now process coincidences
+    pct = 0
+    for i,s in np.ndenumerate(ch0[:,0]):
+        _i = i[0]
+        _cond = np.where(ch1[:,0] == s)[0]
+        if len(_cond) > 0:
+            for _c in _cond:
+                hist = np.vstack((hist, np.array([ch0[i,1][0], ch1[_c,1]])))    
+    
+    return hist 
 
 def _coincidences(t0, t1, delta=0, *arg, **kw):
     
