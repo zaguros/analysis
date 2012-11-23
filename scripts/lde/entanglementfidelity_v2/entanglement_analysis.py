@@ -235,14 +235,15 @@ class FidelityAnalysis:
         #self.psi2_XmX_pt2 = None
 
         ### these are the values corrected for imperfect initialization
-        self.F0_1 = 0.923; self.u_F0_1 = 0.003
-        self.F1_1 = 0.996; self.u_F1_1 = 0.001
-        self.F0_2 = 0.818; self.u_F0_2 = 0.007
-        self.F1_2 = 0.996; self.u_F1_2 = 0.024
+        self.F0_1 = 0.921; self.u_F0_1 = 0.003
+        self.F1_1 = 0.997; self.u_F1_1 = 0.001
+        self.F0_2 = 0.822; self.u_F0_2 = 0.008
+        self.F1_2 = 0.989; self.u_F1_2 = 0.010
 
         self.F1_2_upper = 0.998; self.F1_2_lower = 0.962
         
-        self.dtvals = np.arange(11).astype(int)*20 + 20
+        self.dtvals = np.arange(11).astype(int)*10 + 10
+        # self.dtvals = np.array([20,40,100], dtype=int)
         self.winvals = np.arange(11).astype(int)*20 + 20
         self.ch0starts = np.arange(6).astype(int)*2 + 633
         self.ch1starts = np.arange(6).astype(int)*2 + 662
@@ -514,6 +515,8 @@ class FidelityAnalysis:
                 ch1starts=self.ch1starts)
 
     def load_fidelities(self, folder, fns=['fidelities', 'correlations']):
+        self.savedir = os.path.join(config.outputdir, folder)
+
         suffix = '' if self.mode == None else '_'+self.mode
         suffix += '' if self.dtslices == False else '_dtslices'
         for fn in fns:
@@ -538,7 +541,7 @@ class FidelityAnalysis:
                 )
         
         vmins = [0.5, 0. , None, None, None, 0.5, 0., None, None, None ]
-        vmaxs = [None, 3., None, None, None, None, 3., None, None, None ]
+        vmaxs = [None, None, None, None, None, None, None, None, None, None ]
         titles = ['F (psi1)', 'sigmas (psi1)', 'N', '$N p_{ZZ}(00)$', '$N p_{ZZ}(11)$',
                 'F (psi2)', 'sigmas (psi2)', 'N', '$N p_{ZZ}(00)$', '$N p_{ZZ}(11)$' ]
 
@@ -555,7 +558,7 @@ class FidelityAnalysis:
         im9 = self.rawpsi2correlations[psi2slice][...,ZZidx,-1]
                 
         for i,im in enumerate([im0,im1,im2,im3,im4,im5,im6,im7,im8,im9]):
-            img = grid[i].imshow(im, cmap=cm.gist_earth, origin='lower', 
+            img = grid[i].imshow(im, cmap=cm.gist_earth, origin='lower',
                     interpolation='nearest', vmin=vmins[i], vmax=vmaxs[i])
             fig.colorbar(img, cax=grid.cbar_axes[i])
             grid[i].set_title(titles[i])
@@ -694,16 +697,16 @@ if __name__ == '__main__':
     #### get all fidelities
     fid = FidelityAnalysis('Fidelity')
     
-    fid.mode = None
-    fid.dtslices = False
+    fid.mode = 'bestguess'
+    fid.dtslices = True
     
-    #fid.get_fidelities()
-    #fid.save_fidelities()
+    fid.get_fidelities()
+    fid.save_fidelities()
     
-    fid.load_fidelities('20121120-ldefidelity')
+    fid.load_fidelities('20121121-ldefidelity')
     # fid.plot_map_starts()
     # fid.plot_map_window(ch0start=641,ch1start=670)
-    fid.plot_correlations('psi1', 639, 668, 80, 80)
+    # fid.plot_correlations('psi1', 639, 668, 80, 80)
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data

@@ -42,11 +42,12 @@ class Emily:
         self.F0_2 = 0.818
         self.F1_2 = 0.996
 
-        self.prob_pts = 201
-        self.ab_pts = 201
+        self.prob_pts = 101
+        self.ab_pts = 101
         self.blocks = 1
         self.result_bins = 50
         self.F_bins = 50
+        self.fac_exact = 1
 
 
     def diag_likelihood(self, N, p00,p01,p10):
@@ -60,8 +61,11 @@ class Emily:
         perr00,perr01,perr10,perr11 = self._apply_readout_error(
                 p00,p01,p10,1.-p00-p01-p10)
       
-        lk = fac(N.sum(), exact=1) / \
-                (fac(N[0],exact=1)*fac(N[1],exact=1)*fac(N[2],exact=1)*fac(N[3],exact=1)) * \
+        lk = fac(N.sum(), exact=self.fac_exact) / \
+                (fac(N[0],exact=self.fac_exact) * \
+                fac(N[1],exact=self.fac_exact) * \
+                fac(N[2],exact=self.fac_exact) * \
+                fac(N[3],exact=self.fac_exact)) * \
                 perr00**N[0] * perr01**N[1] * perr10**N[2] * \
                 (1.-perr00-perr01-perr10)**N[3]
 
@@ -83,8 +87,11 @@ class Emily:
                 .25-a+b,
                 .25+a+b)
 
-        lk = fac(N.sum(), exact=1) / \
-                (fac(N[0],exact=1)*fac(N[1],exact=1)*fac(N[2],exact=1)*fac(N[3],exact=1)) * \
+        lk = fac(N.sum(), exact=self.fac_exact) / \
+                (fac(N[0],exact=self.fac_exact) * \
+                fac(N[1],exact=self.fac_exact) * \
+                fac(N[2],exact=self.fac_exact) * \
+                fac(N[3],exact=self.fac_exact)) * \
                 perr00**N[0] * perr01**N[1] * perr10**N[2] * \
                 (1.-perr00-perr01-perr10)**N[3]
         
