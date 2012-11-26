@@ -97,11 +97,11 @@ class TPQIAnalysis:
         self.savedir = os.path.join(config.outputdir, time.strftime('%Y%m%d')+'-tpqi')
         self.binwidth = 0.256
         self.pulsesep = 600.
-        self.offset = 666.-637.
-        self.central = 2
+        self.offset = 30.
+        self.central = 1
         self.tau = 12.1 / self.binwidth
         self.centernormfactor = 0.5
-        self.binedges = np.array([0,5,10,20,30,50,100])
+        self.binedges = np.array([0,5,10,20,30,50,100,200,300])
         self.meandts = self.binedges[:-1] + (self.binedges[1:]-self.binedges[:-1])/2.
         self.cumulative = True
         
@@ -231,7 +231,7 @@ class TPQIAnalysis:
 
         ax.set_xlabel(r'$| \tau |$ (bins)')
         ax.set_ylabel('visibility')
-        ax.set_xlim(0,100)
+        ax.set_xlim(0,self.windowlength)
         ax.set_ylim(-0.6,1.1)
 
         for i,dtval in enumerate(self.meandts):
@@ -247,7 +247,7 @@ class TPQIAnalysis:
         for tl in ax2.get_yticklabels():
             tl.set_color('r')
 
-        ax2.set_xlim(0,100)
+        ax2.set_xlim(0,self.windowlength)
         ax2.set_ylim(-0.1,1.1)
         ax2.grid(color='r')
 
@@ -292,8 +292,8 @@ def sweep():
     c = Coincidences()
     c.load_coincidences('20121122-tpqi')
 
-    for ch0 in range(630, 651, 2):
-        for l in range(100, 251, 50):
+    for ch0 in range(636, 651, 2):
+        for l in range(100, 301, 100):
             c.windowstart = (ch0, ch0+30)
             c.windowlength = l
             
@@ -301,7 +301,7 @@ def sweep():
             a.coincidences = c.filtered_coincidences()
             a.ch0start, a.ch1start = c.windowstart
             a.windowlength = c.windowlength
-            a.cumulative = True # False
+            a.cumulative = False
 
             a.g2_hist()
             a.plot_g2()
