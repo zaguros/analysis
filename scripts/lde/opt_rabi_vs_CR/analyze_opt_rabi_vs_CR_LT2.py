@@ -1,4 +1,5 @@
 import cPickle as pickle
+from analysis.lib.lde import tail_cts_per_shot_v4
 
 
 data_folder = r'D:\measuring\data\LDE\analysis_data\opt_rabi_vs_CR\2012-10-18_CRvsRabi'
@@ -61,7 +62,7 @@ fR_lp_err=[]
 for i in files_hp_long:
     print i
     file_name = os.path.join(data_folder,i)
-    fR, fR_err, tau, tau_err = tail_cts_per_shot_v4.optical_rabi_resonant_fit_with_slope_hannes(file_name,
+    fR, fR_err, tau, tau_err = tail_cts_per_shot_v4.optical_rabi_resonant_fit_hannes(file_name,
             5,33, use_channel=1, binsize=0.128, rebins = 4)
     tau_long_hp.append(tau)
     tau_long_hp_err.append(tau_err)
@@ -79,8 +80,8 @@ plt.title('decay time vs CR threshold high power (ca. 200 MHz rabi f)')
 for f in files_lp:
     print f
     file_name = os.path.join(data_folder,f)
-    fR, fR_err, tau, tau_err = tail_cts_per_shot_v4.optical_rabi_resonant_fit_with_slope_hannes(file_name,
-            5,49, use_channel=1, binsize=0.128, rebins = 4)
+    fR, fR_err, tau, tau_err = tail_cts_per_shot_v4.optical_rabi_resonant_fit_hannes(file_name,
+            8,35, use_channel=1, binsize=0.128, rebins = 4)
     tau_lp.append(tau)
     tau_lp_err.append(tau_err)
     fR_lp.append(fR)
@@ -92,7 +93,7 @@ plt.xlabel('CR threshold')
 plt.ylabel('Decay time [ns]')
 plt.title('decay time vs CR threshold low power (ca. 75 MHz rabi f)')
 
-np.savez(os.path.join(output_folder, 'LT2_fit_with_slope_range_6_49_lp_5_33_hp.npz'),
+np.savez(os.path.join(output_folder, 'LT2_fit_without_slope_8_35_lp_5_33_hp.npz'),
         powers_nW = [100,880], 
         rabi_f = [fR_lp,fR_long_hp], rabi_f_err = [fR_lp_err,fR_long_hp_err],
         damping = [tau_lp,tau_long_hp], damping_err = [tau_lp_err,tau_long_hp_err],

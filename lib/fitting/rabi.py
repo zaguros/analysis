@@ -1,4 +1,7 @@
-
+import numpy as np
+from numpy import *
+from scipy import optimize
+import pylab
 
 # our own modules
 import analysis.lib.fitting.fit as fit
@@ -27,7 +30,8 @@ def fit_rabi_simple(g_f, g_A, g_a, g_phi, *arg):
     # tau = fit.Parameter(g_tau, 'tau')
     p0 = [f, A, a, phi]
 
-    def fitfunc(x) : return a() + A() * cos(2*pi*(f()*x +phi()/360.))
+    def fitfunc(x) : 
+        return a() + A() * cos(2*pi*(f()*x +phi()/360.))
     return p0, fitfunc, fitfunc_str
 # end damped rabi
 
@@ -56,7 +60,8 @@ def fit_rabi_damped_exp(g_f, g_A, g_a, g_tau, *arg):
     p0 = [f, A, a, tau, phi]
 
     #print tau
-    def fitfunc(x) : return a() + A() * exp(-x/tau()) * cos(2*pi*( f()*x + phi()/360.))
+    def fitfunc(x):
+        return a() + A() * exp(-x/tau()) * cos(2*pi*( f()*x + phi()/360.))
     return p0, fitfunc, fitfunc_str
 # end damped rabi
 
@@ -83,7 +88,8 @@ def fit_rabi_damped_exp_with_offset(g_f, g_A, g_a, g_tau, g_off, *arg):
     p0 = [f, A, a, tau, x0]
 
     #print tau
-    def fitfunc(x) : return a() + A() * exp(-(x-x0())/tau()) * cos(2*pi*( f()*(x-x0())))
+    def fitfunc(x): 
+        return a() + A() * exp(-(x-x0())/tau()) * cos(2*pi*( f()*(x-x0())))
     return p0, fitfunc, fitfunc_str
 # end damped rabi
 
@@ -113,7 +119,8 @@ def fit_rabi_damped_exp_with_offset_on_linslope(g_f, g_A, g_a, g_tau, g_off, g_b
     p0 = [f, A, a, tau, x0, b]
 
     #print tau
-    def fitfunc(x) : return a() + b()*(x-x0()) + A() * exp(-(x-x0())/tau()) * cos(2*pi*( f()*(x-x0())))
+    def fitfunc(x): 
+        return a() + b()*(x-x0()) + A() * exp(-(x-x0())/tau()) * cos(2*pi*( f()*(x-x0())))
     return p0, fitfunc, fitfunc_str
 # end damped rabi
     
@@ -144,7 +151,8 @@ def fit_rabi_with_phase_on_linslope(g_f, g_A, g_a, g_b, g_phi, *arg):
     b = fit.Parameter(g_b, 'slope')
     phi = fit.Parameter(g_phi, 'phase')
     p0 = [f, A, a, b, phi]
-    def fitfunc(x): return a() + b()*x + A()*cos(2*pi*f()*x+phi())
+    def fitfunc(x): 
+        return a() + b()*x + A()*cos(2*pi*f()*x+phi())
     return p0, fitfunc, fitfunc_str
 # end rabi on a slope
 
@@ -171,7 +179,8 @@ def fit_rabi_on_linslope(g_f, g_A, g_a, g_b, *arg):
     a = fit.Parameter(g_a, 'offset')
     b = fit.Parameter(g_b, 'slope')
     p0 = [f, A, a, b]
-    def fitfunc(x): return a() + b()*x + A()*cos(2*pi*f()*x)
+    def fitfunc(x): 
+        return a() + b()*x + A()*cos(2*pi*f()*x)
     return p0, fitfunc, fitfunc_str
 # end rabi on a slope
 
@@ -204,7 +213,8 @@ def fit_rabi_damped_exp_on_linslope(g_f, g_A, g_a, g_b, g_phi, g_tau, *arg):
     phi = fit.Parameter(g_phi, 'phase')
     tau = fit.Parameter(g_tau, 'tau')
     p0 = [f, A, a, b, phi, tau]
-    def fitfunc(x): return a() + b()*x + A()*cos(2*pi*f()*x+phi())*exp(-x/tau())
+    def fitfunc(x): 
+        return a() + b()*x + A()*cos(2*pi*f()*x+phi())*exp(-x/tau())
     return p0, fitfunc, fitfunc_str
 # end rabi on a slope
 

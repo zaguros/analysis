@@ -32,8 +32,8 @@ for path in paths:
 
     for i in files:
         print i
-        fR, fR_err, tau, tau_err = tail_cts_per_shot_v4.optical_rabi_resonant_fit_with_slope_hannes(
-                os.path.join(path,i),32,76, use_channel=0, binsize=0.128)
+        fR, fR_err, tau, tau_err = tail_cts_per_shot_v4.optical_rabi_resonant_fit_hannes(
+                os.path.join(path,i),34,61, use_channel=0, binsize=0.128)
         tau_list.append(tau)
         tau_err_list.append(tau_err)
         fR_list.append(fR*1e3)
@@ -86,7 +86,7 @@ plt.xlabel('fitted Rabi frequency [MHz]')
 plt.ylabel('fitted Tau [ns]')
 plt.legend()
 
-np.savez(os.path.join(output_folder, 'LT1_fit_with_slope_range_32_76.npz'),
+np.savez(os.path.join(output_folder, 'LT1_fit_without_slope_range_34_61.npz'),
         powers_nW = [20,60,250], 
         rabi_f = all_fR, rabi_f_err = all_fR_err,
         damping = all_tau, damping_err = all_tau_err,

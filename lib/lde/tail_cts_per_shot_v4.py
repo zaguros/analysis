@@ -73,7 +73,7 @@ def rebin_centered(a, dt, start_bin, new_binsize):
     for x in np.arange(new_binsize):
         middle_bin += a[start_bin-np.int(np.floor(new_binsize/2.0))+x]
     
-    dt_middle_bin = mean(dt[start_bin-np.int(np.floor(new_binsize/2.0)):\
+    dt_middle_bin = np.mean(dt[start_bin-np.int(np.floor(new_binsize/2.0)):\
             start_bin-np.int(np.floor(new_binsize/2.0))+new_binsize])
      
     #determine how many elements are left in array
@@ -279,7 +279,7 @@ def optical_rabi_resonant_fit_simple(datafile, pulse_start, pulse_end,
 
 
 def optical_rabi_resonant_fit_hannes(datafile, pulse_start, pulse_end, 
-        use_channel = 1, save = True, max_rabi_amp = 0.9, binsize=256):
+        use_channel = 1, save = True, max_rabi_amp = 0.9, binsize=256, rebins = -1):
     """
     can process npz files and txt files.
     use channel specifies the HH channel, can be either 0 or 1.
