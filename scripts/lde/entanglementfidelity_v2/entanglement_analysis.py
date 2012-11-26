@@ -93,7 +93,7 @@ class EntanglementEventAnalysis:
 
         print 'found %d events in total' % len(self.events)
 
-    def correlations(self, plot=True, save=False, **kw):
+    def correlations(self, plot=True, save=False, failsafe=True, **kw):
         """
         gives correlation counts in the form [ms=00, 01, 10, 11]
         """
@@ -105,6 +105,9 @@ class EntanglementEventAnalysis:
                 self.psi1[idx] += 1
             else:
                 self.psi2[idx] += 1
+
+        if failsafe and (self.psi1.sum() == 0 or self.psi2.sum() == 0):
+            return False
 
         self.readout_correction(**kw)
 
@@ -120,6 +123,8 @@ class EntanglementEventAnalysis:
         
         if plot:
             self.plot_correlations()
+
+        return True
         
     def plot_correlations(self, save=False):
         fig,[[ax1,ax2],[ax3,ax4]] = plt.subplots(2,2,figsize=(8,8))
@@ -186,12 +191,15 @@ class EntanglementEventAnalysis:
     def readout_correction(self, F0_1=0.917, uF0_1=0.003, F1_1=0.993, 
             uF1_1=0.001, F0_2=0.809, uF0_2=0.007, F1_2=0.985, uF1_2=0.011):
         
+        # print ''
+        # print 'psi1:', self.psi1[::-1]
         p1, up1 = sscorr.ssro_correct_twoqubit_state_photon_numbers(
                 self.psi1[::-1], F0_1, F0_2, F1_1, F1_2, dF0a=uF0_1, dF1a=uF1_1,
                 dF0b=uF0_2, dF1b=uF1_2, return_error_bars=True, verbose=False)
         self.psi1_corrected = p1[::-1].reshape(-1)
         self.u_psi1_corrected = up1[::-1]
 
+        # print 'psi2:', self.psi2[::-1]
         p2,up2 = sscorr.ssro_correct_twoqubit_state_photon_numbers(
                 self.psi2[::-1], F0_1, F0_2, F1_1, F1_2, dF0a=uF0_1, dF1a=uF1_1,
                 dF0b=uF0_2, dF1b=uF1_2, return_error_bars=True, verbose=False)
@@ -214,6 +222,7 @@ class FidelityAnalysis:
         self.name = name
 
         self.mode = 'lowerbound'
+        self.dtslices = False
        
         self.psi1_ZZ = None
         self.psi1_XX = None
@@ -226,15 +235,16 @@ class FidelityAnalysis:
         #self.psi2_XmX_pt2 = None
 
         ### these are the values corrected for imperfect initialization
-        self.F0_1 = 0.923; self.u_F0_1 = 0.003
-        self.F1_1 = 0.996; self.u_F1_1 = 0.001
-        self.F0_2 = 0.818; self.u_F0_2 = 0.007
-        self.F1_2 = 0.996; self.u_F1_2 = 0.024
+        self.F0_1 = 0.921; self.u_F0_1 = 0.003
+        self.F1_1 = 0.997; self.u_F1_1 = 0.001
+        self.F0_2 = 0.822; self.u_F0_2 = 0.008
+        self.F1_2 = 0.989; self.u_F1_2 = 0.010
 
         self.F1_2_upper = 0.998; self.F1_2_lower = 0.962
         
-        self.dtvals = np.arange(21).astype(int)*10 + 10
-        self.winvals = np.arange(21).astype(int)*10 + 10
+        self.dtvals = np.arange(11).astype(int)*10 + 10
+        # self.dtvals = np.array([20,40,100], dtype=int)
+        self.winvals = np.arange(11).astype(int)*20 + 20
         self.ch0starts = np.arange(6).astype(int)*2 + 633
         self.ch1starts = np.arange(6).astype(int)*2 + 662
         
@@ -277,9 +287,18 @@ class FidelityAnalysis:
         return modifiers[mod](c,u_c)
     
     def _fidelity_from_hists(self, zzhist, xxhist, xmxhist, state, mod, *rofids):
-        c_zz, u_c_zz = self._get_corrected_correlations(zzhist, mod, *rofids)
-        c_xx, u_c_xx = self._get_corrected_correlations(xxhist, mod, *rofids)
-        c_xmx, u_c_xmx = self._get_corrected_correlations(xmxhist, mod, *rofids)
+        
+        if mod != 'raw' and mod != 'rawlowerbound' and mod != 'rawbestguess':
+            c_zz, u_c_zz = self._get_corrected_correlations(zzhist, mod, *rofids)
+            c_xx, u_c_xx = self._get_corrected_correlations(xxhist, mod, *rofids)
+            c_xmx, u_c_xmx = self._get_corrected_correlations(xmxhist, mod, *rofids)
+        else:
+            c_zz = zzhist.astype(float)/zzhist.sum()
+            u_c_zz = c_zz*(c_zz.sum()-c_zz)/c_zz.sum()
+            c_xx = xxhist.astype(float)/xxhist.sum()
+            u_c_xx = c_xx*(c_xx.sum()-c_xx)/c_xx.sum()
+            c_xmx = xmxhist.astype(float)/xmxhist.sum()
+            u_c_xmx = c_xmx*(c_xmx.sum()-c_xmx)/c_xmx.sum()
 
         if state == 'psi1':
             self.psi1_zz_corrected, self.u_psi1_zz_corrected = c_zz, u_c_zz
@@ -307,7 +326,7 @@ class FidelityAnalysis:
         xx_term = nxx*_xx + nxmx*_xmx
         u_xx_term = np.sqrt((nxx*_u_xx)**2 + (nxmx*_u_xmx)**2)
 
-        if mod=='bestguess':
+        if mod=='bestguess' or mod=='rawbestguess':
             sqrt_term = 0.
             u_sqrt_term = 0.
         
@@ -326,11 +345,11 @@ class FidelityAnalysis:
         rofids_extremal2 = [self.F0_1, self.F0_2, self.F1_1, self.F1_2_lower, 
                 self.u_F0_1, self.u_F0_2, self.u_F1_1, 0.]
 
-        if mod == None or mod == 'bestguess':
+        if mod == None or mod == 'bestguess' or mod == 'raw' or mod == 'rawbestguess':
             return self._fidelity_from_hists(zzhist, xxhist, xmxhist, 
                     state, mod, *rofids_regular)
         
-        if mod == 'lowerbound':
+        if mod == 'lowerbound' or mod == 'rawlowerbound':
             F1,u_F1 = self._fidelity_from_hists(zzhist, xxhist, xmxhist,
                     state, mod, *rofids_extremal1)
             F2,u_F2 = self._fidelity_from_hists(zzhist, xxhist, xmxhist,
@@ -344,7 +363,6 @@ class FidelityAnalysis:
                 return F1,u_F1 
             else: 
                 return F2,u_F2
-
 
     def fidelity(self, mod=None):       
         self.F_psi1, self.u_F_psi1 = self._get_fidelity(
@@ -404,20 +422,32 @@ class FidelityAnalysis:
                             len(self.dtvals)*len(self.winvals)*len(self.ch0starts)
 
                     for l,ch1start in enumerate(self.ch1starts):
-                        
-                        
+
+                        if self.dtslices and i>0:
+                            dtmin = self.dtvals[i-1]
+                        else:
+                            dtmin = 0
+
                         eZZ.events = ZZ0.copy()
-                        eZZ.filter_times(dtmax=dt, window=window, 
+                        eZZ.filter_times(dtmax=dt, dtmin=dtmin, window=window, 
                                 mintimes=(ch0start,ch1start))
-                        eZZ.correlations(plot=False, save=False)
                         eXX.events = XX0.copy()
-                        eXX.filter_times(dtmax=dt, window=window, 
+                        eXX.filter_times(dtmax=dt, dtmin=dtmin, window=window, 
                                 mintimes=(ch0start,ch1start))
-                        eXX.correlations(plot=False, save=False)
                         eXmX.events = XmX0.copy()
-                        eXmX.filter_times(dtmax=dt, window=window, 
+                        eXmX.filter_times(dtmax=dt, dtmin=dtmin, window=window, 
                                 mintimes=(ch0start,ch1start))
-                        eXmX.correlations(plot=False, save=False)
+
+                        # readout correction goes wrong when the sum of
+                        # coincidences is zero. we check this here.
+                        _zzcorr = eZZ.correlations(plot=False, save=False,
+                                failsafe=True)
+                        _xxcorr = eXX.correlations(plot=False, save=False,
+                                failsafe=True)
+                        _xmxcorr = eXmX.correlations(plot=False, save=False,
+                                failsafe=True)
+                        if not _zzcorr or not _xxcorr or not _xmxcorr:
+                            continue
                         
                         self.psi1_ZZ = eZZ.psi1
                         self.psi1_XX = eXX.psi1
@@ -433,7 +463,7 @@ class FidelityAnalysis:
                         self.rawpsi2correlations[i,j,k,l,ZZidx] = self.psi2_ZZ
                         self.rawpsi2correlations[i,j,k,l,XXidx] = self.psi2_XX
                         self.rawpsi2correlations[i,j,k,l,XmXidx] = self.psi2_XmX
-
+                        
                         self.fidelity(mod=self.mode)                
                         self.psi1fids[i,j,k,l] = self.F_psi1
                         self.u_psi1fids[i,j,k,l] = self.u_F_psi1
@@ -460,6 +490,8 @@ class FidelityAnalysis:
             os.makedirs(self.savedir)
         
         suffix = '' if self.mode == None else '_'+self.mode
+        suffix += '' if self.dtslices == False else '_dtslices'
+
         np.savez(os.path.join(self.savedir, 'fidelities'+suffix), 
                 psi1fids=self.psi1fids,
                 u_psi1fids=self.u_psi1fids, 
@@ -483,7 +515,10 @@ class FidelityAnalysis:
                 ch1starts=self.ch1starts)
 
     def load_fidelities(self, folder, fns=['fidelities', 'correlations']):
+        self.savedir = os.path.join(config.outputdir, folder)
+
         suffix = '' if self.mode == None else '_'+self.mode
+        suffix += '' if self.dtslices == False else '_dtslices'
         for fn in fns:
             f = np.load(os.path.join(config.outputdir, folder, fn+suffix+'.npz'))
             for k in f.keys():
@@ -494,9 +529,9 @@ class FidelityAnalysis:
     def plot_fidelity_map(self, psi1slice, psi2slice, 
             xticks, yticks, xlabel='x', ylabel='y'):
         
-        fig = plt.figure(figsize=(16,8))
+        fig = plt.figure(figsize=(20,8))
         grid = ImageGrid(fig, 111, # similar to subplot(111)
-                nrows_ncols = (2,4),
+                nrows_ncols = (2,5),
                 axes_pad = 0.75,
                 # add_all=True,
                 label_mode = "L",
@@ -505,36 +540,38 @@ class FidelityAnalysis:
                 cbar_pad="1%",
                 )
         
-        vmins = [0.5, 2., 5, 5, 0.5, 2., 5, 5 ]
-        vmaxs = [0.8, 5., 20, 20, 0.8, 5., 20, 20 ]
-        titles = ['F (psi1)', 'sigmas (psi1)', '$N p_{ZZ}(00)$', '$N p_{ZZ}(11)$',
-                'F (psi2)', 'sigmas (psi2)', '$N p_{ZZ}(00)$', '$N p_{ZZ}(11)$' ]
+        vmins = [0.5, 0. , None, None, None, 0.5, 0., None, None, None ]
+        vmaxs = [None, None, None, None, None, None, None, None, None, None ]
+        titles = ['F (psi1)', 'sigmas (psi1)', 'N', '$N p_{ZZ}(00)$', '$N p_{ZZ}(11)$',
+                'F (psi2)', 'sigmas (psi2)', 'N', '$N p_{ZZ}(00)$', '$N p_{ZZ}(11)$' ]
 
         im0 = self.psi1fids[psi1slice]
         im1 = (self.psi1fids[psi1slice]-0.5)/self.u_psi1fids[psi1slice]
-        im2 = self.rawpsi1correlations[psi1slice][...,ZZidx,0] 
-        im3 = self.rawpsi1correlations[psi1slice][...,ZZidx,-1]
+        im2 = self.rawpsi1correlations[psi1slice].sum(-1).sum(-1)
+        im3 = self.rawpsi1correlations[psi1slice][...,ZZidx,0] 
+        im4 = self.rawpsi1correlations[psi1slice][...,ZZidx,-1]
         
-        im4 = self.psi2fids[psi2slice]
-        im5 = (self.psi2fids[psi2slice]-0.5)/self.u_psi2fids[psi2slice]
-        im6 = self.rawpsi2correlations[psi2slice][...,ZZidx,0] 
-        im7 = self.rawpsi2correlations[psi2slice][...,ZZidx,-1]
+        im5 = self.psi2fids[psi2slice]
+        im6 = (self.psi2fids[psi2slice]-0.5)/self.u_psi2fids[psi2slice]
+        im7 = self.rawpsi2correlations[psi2slice].sum(-1).sum(-1)
+        im8 = self.rawpsi2correlations[psi2slice][...,ZZidx,0] 
+        im9 = self.rawpsi2correlations[psi2slice][...,ZZidx,-1]
                 
-        for i,im in enumerate([im0,im1,im2,im3,im4,im5,im6,im7]):
-            img = grid[i].imshow(im, cmap=cm.gist_earth, origin='lower', 
+        for i,im in enumerate([im0,im1,im2,im3,im4,im5,im6,im7,im8,im9]):
+            img = grid[i].imshow(im, cmap=cm.gist_earth, origin='lower',
                     interpolation='nearest', vmin=vmins[i], vmax=vmaxs[i])
             fig.colorbar(img, cax=grid.cbar_axes[i])
             grid[i].set_title(titles[i])
 
-        grid[4].set_xlabel(xlabel)
-        grid[4].set_ylabel(ylabel)
-        xt = grid[4].get_xticks().astype(int)[:-1]
-        grid[4].set_xticklabels(xticks[xt])
-        yt = grid[4].get_yticks().astype(int)[:-1]
-        grid[4].set_yticklabels(yticks[yt])
+        grid[5].set_xlabel(xlabel)
+        grid[5].set_ylabel(ylabel)
+        xt = grid[5].get_xticks().astype(int)[:-1]
+        grid[5].set_xticklabels(xticks[xt])
+        yt = grid[5].get_yticks().astype(int)[:-1]
+        grid[5].set_yticklabels(yticks[yt])
 
         grid[0].set_yticklabels(yticks[yt])
-        for i in range(4,8):
+        for i in range(5,10):
             grid[i].set_xticklabels(xticks[xt])
 
         return fig
@@ -554,6 +591,7 @@ class FidelityAnalysis:
         
         if save:
             suffix = '' if self.mode == None else '_'+self.mode
+            suffix += '' if self.dtslices == False else '_dtslices'
             if not os.path.exists(self.savedir):
                 os.makedirs(self.savedir)
             fig.savefig(os.path.join(self.savedir, 'fidelities%s_vs_ch0_vs_ch1.png' % suffix))
@@ -570,6 +608,8 @@ class FidelityAnalysis:
         
         if save:
             suffix = '' if self.mode == None else '_'+self.mode
+            suffix += '' if self.dtslices == False else '_dtslices'
+
             if not os.path.exists(self.savedir):
                 os.makedirs(self.savedir)
             fig.savefig(os.path.join(self.savedir, 'fidelities%s_vs_dt_vs_win_ch0%s_ch1%s.png' \
@@ -645,27 +685,28 @@ class FidelityAnalysis:
 
         if save:
             suffix = '' if self.mode == None else '_'+self.mode
+            suffix += '' if self.dtslices == False else '_dtslices'
+
             if not os.path.exists(self.savedir):
                 os.makedirs(self.savedir)
             fig.savefig(os.path.join(self.savedir, 'correlations%s_%s_w%d_dt%d_ch0%d_ch1%d.png' % \
                     (suffix, state, win, dt, ch0start, ch1start)))
-
-
-
 
 if __name__ == '__main__':
     
     #### get all fidelities
     fid = FidelityAnalysis('Fidelity')
     
-    fid.mode = None # 'lowerbound'
-    # fid.get_fidelities()
-    # fid.save_fidelities()
+    fid.mode = 'bestguess'
+    fid.dtslices = True
     
-    fid.load_fidelities('20121109-ldefidelity')
+    fid.get_fidelities()
+    fid.save_fidelities()
+    
+    fid.load_fidelities('20121121-ldefidelity')
     # fid.plot_map_starts()
-    # fid.plot_map_window(ch0start=639,ch1start=668)
-    fid.plot_correlations('psi2', 639, 668, 90, 90)
+    # fid.plot_map_window(ch0start=641,ch1start=670)
+    # fid.plot_correlations('psi1', 639, 668, 80, 80)
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data
