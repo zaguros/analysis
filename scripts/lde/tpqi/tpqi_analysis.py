@@ -101,7 +101,7 @@ class TPQIAnalysis:
         self.central = 1
         self.tau = 12.1 / self.binwidth
         self.centernormfactor = 0.5
-        self.binedges = np.array([0,5,10,20,30,50,100,200,300])
+        self.binedges = np.array([0,20,50,100,150])
         self.meandts = self.binedges[:-1] + (self.binedges[1:]-self.binedges[:-1])/2.
         self.cumulative = True
         
@@ -311,4 +311,17 @@ def sweep():
             plt.close('all')
 
 if __name__ == '__main__':
-    sweep()  
+    c = Coincidences()
+    c.load_coincidences('20121122-tpqi')
+    c.windowstart = (640,670)
+    c.windowlength = 150
+
+    a = TPQIAnalysis()
+    a.coincidences = c.filtered_coincidences()
+    a.ch0start, a.ch1start = c.windowstart
+    a.windowlength = c.windowlength
+    a.cumulative = True
+    a.g2_hist()
+    a.plot_g2()
+    a.analysis()
+    a.save()
