@@ -243,14 +243,14 @@ class FidelityAnalysis:
         self.F1_2_upper = 0.998; self.F1_2_lower = 0.962
         
         # self.dtvals = np.arange(11).astype(int)*20 + 20
-        self.dtvals = np.array([20,40,60,100,200,300], dtype=int)
-        self.win1vals = np.arange(5).astype(int)*50 + 100
-        self.win2vals = np.arange(11).astype(int)*25 + 50
+        self.dtvals = np.array([20,50,100,150], dtype=int)
+        self.win1vals = np.array([150]) # np.arange(5).astype(int)*50 + 100
+        self.win2vals = np.array([75,100]) # np.arange(11).astype(int)*25 + 50
         self.ch0start = 640
         # self.ch0starts = np.arange(3).astype(int)*2 + 636 
         # self.ch1starts = np.arange(3).astype(int)*2 + 668
         self.ch1offset = 30
-        self.dtmin = 10
+        self.dtmin = 0
         
     def _get_corrected_correlations(self, correlations, mod, *rofidelities):
         _c,_u_c = sscorr.ssro_correct_twoqubit_state_photon_numbers(
@@ -721,7 +721,7 @@ if __name__ == '__main__':
     fid.get_fidelities()
     fid.save_fidelities()
     
-    fid.load_fidelities('20121126-ldefidelity')
+    fid.load_fidelities('20121127-ldefidelity')
     # fid.plot_map_starts()
     # fid.plot_map_window(ch0start=641,ch1start=670)
     # fid.plot_correlations('psi1', 639, 668, 80, 80)
