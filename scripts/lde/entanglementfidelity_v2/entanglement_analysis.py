@@ -594,121 +594,81 @@ class FidelityAnalysis:
 
         return fig
 
-#     def plot_map_starts(self, save=True, psi1dt=20, psi1win=70, psi2dt=40, psi2win=200):       
-#         psi1dtidx = argmin(abs(self.dtvals - psi1dt))
-#         psi1winidx = argmin(abs(self.winvals - psi1win))
-#         psi2dtidx = argmin(abs(self.dtvals - psi2dt))
-#         psi2winidx = argmin(abs(self.winvals - psi2win))
-# 
-#         s1 = np.s_[psi1dtidx,psi1winidx,:,:]
-#         s2 = np.s_[psi2dtidx,psi2winidx,:,:]
-#         xticks = self.ch1starts
-#         yticks = self.ch0starts
-#         
-#         fig = self.plot_fidelity_map(s1, s2, xticks, yticks, 'ch1 start', 'ch0 start')
-#         
-#         if save:
-#             suffix = '' if self.mode == None else '_'+self.mode
-#             suffix += '' if self.dtslices == False else '_dtslices'
-#             if not os.path.exists(self.savedir):
-#                 os.makedirs(self.savedir)
-#             fig.savefig(os.path.join(self.savedir, 'fidelities%s_vs_ch0_vs_ch1.png' % suffix))
+    def plot_correlations(self, state, dt, win1, win2, save=True):
+        bases = ['ZZ', 'XX', 'XmX']
 
-#     def plot_map_window(self, save=True):
-#         # ch0idx = argmin(abs(self.ch0starts - ch0start))
-#         # ch1idx = argmin(abs(self.ch1starts - ch1start))
-# 
-#         s = np.s_[:,:,ch0idx,ch1idx]
-#         xticks = self.winvals
-#         yticks = self.dtvals
-# 
-#         fig = self.plot_fidelity_map(s, s, xticks, yticks, 'window', 'dt')
-#         
-#         if save:
-#             suffix = '' if self.mode == None else '_'+self.mode
-#             suffix += '' if self.dtslices == False else '_dtslices'
-# 
-#             if not os.path.exists(self.savedir):
-#                 os.makedirs(self.savedir)
-#             fig.savefig(os.path.join(self.savedir, 'fidelities%s_vs_dt_vs_win_ch0%s_ch1%s.png' \
-#                     % (suffix, str(ch0start), str(ch1start))))
+        def idx(arr, val):
+            return np.argmin(abs(arr-val))
 
-#     def plot_correlations(self, state, ch0start, ch1start, dt, win, save=True):
-#         bases = ['ZZ', 'XX', 'XmX']
-# 
-#         def idx(arr, val):
-#             return np.argmin(abs(arr-val))
-# 
-#         ch0 = idx(self.ch0starts, ch0start)
-#         ch1 = idx(self.ch1starts, ch1start)
-#         dtidx = idx(self.dtvals, dt)
-#         winidx = idx(self.winvals, win)
-# 
-#         if state == 'psi1':
-#             raw = self.rawpsi1correlations[dtidx,winidx,ch0,ch1,:,:]
-#             corr = self.correctedpsi1correlations[dtidx,winidx,ch0,ch1,:,:]
-#             u_corr = self.u_correctedpsi1correlations[dtidx,winidx,ch0,ch1,:,:]
-#             fid = self.psi1fids[dtidx,winidx,ch0,ch1]
-#             u_fid = self.u_psi1fids[dtidx,winidx,ch0,ch1]
-# 
-#         else:
-#             raw = self.rawpsi2correlations[dtidx,winidx,ch0,ch1,:,:]
-#             corr = self.correctedpsi2correlations[dtidx,winidx,ch0,ch1,:,:]
-#             u_corr = self.u_correctedpsi2correlations[dtidx,winidx,ch0,ch1,:,:]
-#             fid = self.psi2fids[dtidx,winidx,ch0,ch1]
-#             u_fid = self.u_psi2fids[dtidx,winidx,ch0,ch1]
-# 
-#         
-#         ind = np.arange(4)
-#         w = 0.8
-#         
-#         fig,axs = plt.subplots(3,2,figsize=(8,12))
-#         for i,base in enumerate(bases):
-#             
-#             maxheight = 0
-#             rects = axs[i,0].bar(ind,raw[i,:], w, color='w', hatch='///')
-#             axs[i,0].set_xticks(ind+w/2)
-#             axs[i,0].set_xticklabels(['00', '01', '10', '11'])
-#             axs[i,0].set_xlabel('State')
-#             axs[i,0].set_xlim(-0.1, 3.9)
-#             axs[i,0].set_ylabel('Occurrences')
-#             axs[i,0].set_title(state+', '+base+', raw')
-#             for j,r in enumerate(rects):
-#                 h = r.get_height()
-#                 if h > maxheight: 
-#                     maxheight = h
-#                 axs[i,0].text(ind[j]+w/2, h+1, str(int(h)), ha='center', va='bottom')
-#             
-#             axs[i,0].set_ylim(0,maxheight+10)
-# 
-#             rects = axs[i,1].bar(ind, corr[i,:], w, color='w', hatch='/',
-#                     yerr=u_corr[i,:], ecolor='k')
-#             axs[i,1].set_xticks(ind+w/2)
-#             axs[i,1].set_xticklabels(['00', '01', '10', '11'])
-#             axs[i,1].set_xlabel('State')
-#             axs[i,1].set_xlim(-0.1, 3.9)
-#             axs[i,1].set_ylabel('Fraction')
-#             axs[i,1].set_ylim(-0.1,0.75) 
-#             axs[i,1].hlines([0.], -0.1, 3.9, color='k')
-#             axs[i,1].set_title(state+', '+base+', corrected')
-#             for j,r in enumerate(rects):
-#                 h = r.get_height()
-#                 axs[i,1].text(ind[j]+w/2, h+0.05, '%.2f' % h, ha='center', va='bottom')
-# 
-#             if i == 0:
-#                 axs[i,1].text(3.8, 0.7, 'F = %.3f $\pm$ %.3f' % (fid, u_fid),
-#                         ha='right', va='center')
-# 
-#         plt.tight_layout()
-# 
-#         if save:
-#             suffix = '' if self.mode == None else '_'+self.mode
-#             suffix += '' if self.dtslices == False else '_dtslices'
-# 
-#             if not os.path.exists(self.savedir):
-#                 os.makedirs(self.savedir)
-#             fig.savefig(os.path.join(self.savedir, 'correlations%s_%s_w%d_dt%d_ch0%d_ch1%d.png' % \
-#                     (suffix, state, win, dt, ch0start, ch1start)))
+        dtidx = idx(self.dtvals, dt)
+        win1idx = idx(self.win1vals, win1)
+        win2idx = idx(self.win2vals, win2)
+
+        if state == 'psi1':
+            raw = self.rawpsi1correlations[dtidx,win1idx,win2idx,:,:]
+            corr = self.correctedpsi1correlations[dtidx,win1idx,win2idx,:,:]
+            u_corr = self.u_correctedpsi1correlations[dtidx,win1idx,win2idx,:,:]
+            fid = self.psi1fids[dtidx,win1idx,win2idx]
+            u_fid = self.u_psi1fids[dtidx,win1idx,win2idx]
+
+        else:
+            raw = self.rawpsi2correlations[dtidx,win1idx,win2idx,:,:]
+            corr = self.correctedpsi2correlations[dtidx,win1idx,win2idx,:,:]
+            u_corr = self.u_correctedpsi2correlations[dtidx,win1idx,win2idx,:,:]
+            fid = self.psi2fids[dtidx,win1idx,win2idx]
+            u_fid = self.u_psi2fids[dtidx,win1idx,win2idx]
+
+        
+        ind = np.arange(4)
+        w = 0.8
+        
+        fig,axs = plt.subplots(3,2,figsize=(8,12))
+        for i,base in enumerate(bases):
+            
+            maxheight = 0
+            rects = axs[i,0].bar(ind,raw[i,:], w, color='w', hatch='///')
+            axs[i,0].set_xticks(ind+w/2)
+            axs[i,0].set_xticklabels(['00', '01', '10', '11'])
+            axs[i,0].set_xlabel('State')
+            axs[i,0].set_xlim(-0.1, 3.9)
+            axs[i,0].set_ylabel('Occurrences')
+            axs[i,0].set_title(state+', '+base+', raw')
+            for j,r in enumerate(rects):
+                h = r.get_height()
+                if h > maxheight: 
+                    maxheight = h
+                axs[i,0].text(ind[j]+w/2, h+1, str(int(h)), ha='center', va='bottom')
+            
+            axs[i,0].set_ylim(0,maxheight+10)
+
+            rects = axs[i,1].bar(ind, corr[i,:], w, color='w', hatch='/',
+                    yerr=u_corr[i,:], ecolor='k')
+            axs[i,1].set_xticks(ind+w/2)
+            axs[i,1].set_xticklabels(['00', '01', '10', '11'])
+            axs[i,1].set_xlabel('State')
+            axs[i,1].set_xlim(-0.1, 3.9)
+            axs[i,1].set_ylabel('Fraction')
+            axs[i,1].set_ylim(-0.1,0.75) 
+            axs[i,1].hlines([0.], -0.1, 3.9, color='k')
+            axs[i,1].set_title(state+', '+base+', corrected')
+            for j,r in enumerate(rects):
+                h = r.get_height()
+                axs[i,1].text(ind[j]+w/2, h+0.05, '%.2f' % h, ha='center', va='bottom')
+
+            if i == 0:
+                axs[i,1].text(3.8, 0.7, 'F = %.3f $\pm$ %.3f' % (fid, u_fid),
+                        ha='right', va='center')
+
+        plt.tight_layout()
+
+        if save:
+            suffix = '' if self.mode == None else '_'+self.mode
+            suffix += '' if self.dtslices == False else '_dtslices'
+
+            if not os.path.exists(self.savedir):
+                os.makedirs(self.savedir)
+            fig.savefig(os.path.join(self.savedir, 'correlations%s_%s_win1%d_win2%d_dt%d.png' % \
+                    (suffix, state, win1, win2, dt)))
 
 if __name__ == '__main__':
     
@@ -718,13 +678,14 @@ if __name__ == '__main__':
     fid.mode = None
     fid.dtslices = False
     
-    fid.get_fidelities()
-    fid.save_fidelities()
+    # fid.get_fidelities()
+    # fid.save_fidelities()
     
-    fid.load_fidelities('20121127-ldefidelity')
+    fid.load_fidelities('20121128-ldefidelity')
     # fid.plot_map_starts()
     # fid.plot_map_window(ch0start=641,ch1start=670)
-    # fid.plot_correlations('psi1', 639, 668, 80, 80)
+    fid.plot_correlations('psi1', 50, 150, 75)
+    fid.plot_correlations('psi2', 100, 150, 150)
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data
