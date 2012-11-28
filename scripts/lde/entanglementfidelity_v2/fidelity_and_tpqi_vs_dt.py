@@ -20,79 +20,124 @@ rcParams['mathtext.default'] = 'regular'
 rcParams['legend.numpoints'] = 1
 
 ### set stuff
+tpqi_srcdir = '20121127-tpqi'
+fidelity_srcdir = '20121127-ldefidelity'
+ap_srcdir = '20121101-afterpulsing'
 
-tpqi_srcdir = '20121121-tpqi'
-fidelity_srcdir = '20121121-ldefidelity'
-
-state = 'psi2'
-ZZidx = 0
-XXidx = 1
-XmXidx = 2
-
-win = 140
-ch0start = 641
-ch1start = 670
+### tools
+def idx(arr, val):
+    return argmin(abs(arr-val))
 
 ### load the tpqi visibility data
-### TODO
-
-
-### load the fidelity data (best guess, i.e., sqrt-term=0)
-fid = {}
-f = np.load(os.path.join(config.outputdir,fidelity_srcdir,
-    'fidelities_bestguess_dtslices.npz'))
+tpqi = {}
+f = np.load(os.path.join(config.outputdir,tpqi_srcdir,
+    'cumulative_tpqi_ch0640_win150.npz'))
 for k in f.keys():
-    fid[k] = f[k]
+    tpqi[k] = f[k]
 f.close()
 
+### load the correlations
 corr = {}
 f = np.load(os.path.join(config.outputdir,fidelity_srcdir,
-    'correlations_bestguess_dtslices.npz'))
+    'correlations_dtmin0.npz'))
 for k in f.keys():
     corr[k] = f[k]
 f.close()
 
-# get the desired raw correlations
-_c = corr['raw'+state+'correlations']
-winidx = argmin(abs(corr['winvals']-win))
-ch0idx = argmin(abs(corr['ch0starts']-ch0start))
-ch1idx = argmin(abs(corr['ch1starts']-ch1start))
-c = _c[:,winidx,ch0idx,ch1idx,...]
-dtvals = corr['dtvals']
-edges = np.append(0,dtvals)
-meandtvals = edges[:-1] + (edges[1:]-edges[:-1])/2.
+### load the AP probability
+apf = np.load(os.path.join(config.outputdir, ap_srcdir, 
+    'afterpulsing_vs_nvcounts.npz'))
+aptvals = apf['tvals']
+apratios = apf['ratios']
+u_apratios = apf['u_ratios']
+apf.close()
 
-# do an MLE for each dt bin
-F = np.array([])
-u_F = np.array([])
-for i,dt in enumerate(dtvals):
-    emily = MLE.Emily()
-    emily.prob_pts = 101
-    emily.ab_pts = 101
-    emily.state = state
-    emily.N_ZZ = c[i,...,ZZidx,:]
-    emily.N_XX = c[i,...,XXidx,:]
-    emily.N_XmX = c[i,...,XmXidx,:]
-    emily.fac_exact = 0
-    emily.likelihood()
-    emily.analysis(savefn='MLE_win%d_ch0%d_ch1%d_dt%d' \
-            % (win,ch0start,ch1start,dt))
-    F = np.append(F, emily.F)
-    u_F = np.append(u_F, emily.u_F)
-    plt.close('all')
+apidx = idx(aptvals, 75)
+p_afterpulsing = apratios[apidx]
+u_p_afterpulsing = u_apratios[apidx]
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.plot(np.append(0,dtvals), np.append(F[0],F), 'k',
-        drawstyle='steps')
-ax.errorbar(meandtvals, F, fmt='o', mec='k', mfc='w',
-        yerr=u_F, ecolor='k')
 
-ax.set_xlabel('dt')
-ax.set_ylabel('Fidelity')
+ZZidx = 0
+XXidx = 1
+XmXidx = 2
 
-fig.savefig(os.path.join(savedir, 'F_vs_dtslice_win%d_ch0%d_ch1%d.png' \
-        % (win,ch0start,ch1start)))
+win1 = 150
+win2s = [150,75]
+states = ['psi2', 'psi1']
+
+for state,win2 in zip(states, win2s):
+    # get the desired raw correlations
+    _c = corr['raw'+state+'correlations']
+    win1idx = argmin(abs(corr['win1vals']-win1))
+    win2idx = argmin(abs(corr['win2vals']-win2))
+    c = _c[:,win1idx,win2idx,...]
+    dtvals = corr['dtvals']
+    edges = np.append(0,dtvals)
+    meandtvals = edges[:-1] + (edges[1:]-edges[:-1])/2.
+
+    # do an MLE for each dt bin
+    F = np.array([])
+    u_F = np.array([])
+    FLB = np.array([])
+    u_FLB = np.array([])
+    for i,dt in enumerate(dtvals):
+        emily = MLE.Emily()
+        emily.prob_pts = 101
+        emily.state = state
+        emily.N_ZZ = c[i,...,ZZidx,:]
+        emily.N_XX = c[i,...,XXidx,:]
+        emily.N_XmX = c[i,...,XmXidx,:]
+        emily.fac_exact = 1
+        emily.likelihood()
+        emily.analysis(save=False)
+        F = np.append(F, emily.F)
+        u_F = np.append(u_F, emily.u_F)
+        FLB = np.append(FLB, emily.FLB)
+        u_FLB = np.append(u_FLB, emily.u_FLB)
+        plt.close('all')
+
+    ### the psi2 figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    # expected value from the TPQI visibility
+    ax.plot(tpqi['binedges'], np.append(tpqi['fidelity'][0], tpqi['fidelity']),
+            'b', drawstyle='steps', label='TPQI')
+    ax.errorbar(tpqi['meandts']+2, tpqi['fidelity'], fmt='o', mec='b',
+            mfc='w', yerr=tpqi['u_fidelity'], ecolor='b')
+
+    # include afterpulsing
+    if state == 'psi1':
+        F_tpqi_ap = p_afterpulsing * 0.25 + \
+                (1-p_afterpulsing) * tpqi['fidelity']
+        u_F_tpqi_ap = ( ((0.25-tpqi['fidelity'])*u_p_afterpulsing)**2 + \
+                ((1-p_afterpulsing)*tpqi['u_fidelity'])**2 )**0.5
+        ax.plot(tpqi['binedges'], np.append(F_tpqi_ap[0], F_tpqi_ap),
+                'r', drawstyle='steps', label='TPQI+AP')
+        ax.errorbar(tpqi['meandts']+4, F_tpqi_ap, fmt='o', mec='r',
+                mfc='w', yerr=u_F_tpqi_ap, ecolor='r')
+
+
+    # fidelity best guess from spin-spin correlations
+    ax.plot(np.append(0,dtvals), np.append(F[0],F), 'k',
+            drawstyle='steps', label='LDE best guess')
+    ax.errorbar(meandtvals, F, fmt='o', mec='k', mfc='w',
+            yerr=u_F, ecolor='k')
+
+    # the lower bd
+    ax.plot(np.append(0,dtvals), np.append(FLB[0],FLB), 'k--',
+            drawstyle='steps', label='LDE lower bd')
+
+    ax.legend()
+    ax.set_xlabel('$dt_{max}$')
+    ax.set_ylabel('Fidelity')
+    ax.set_title(state)
+
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+
+    fig.savefig(os.path.join(savedir, state+'_F_vs_dtslice_win1%d_win2%d.png' \
+            % (win1,win2)))
 
 
     
