@@ -22,7 +22,7 @@ rcParams['legend.numpoints'] = 1
 
 ### set stuff
 
-fidelity_srcdir = '20121126-ldefidelity'
+fidelity_srcdir = '20121128-ldefidelity'
 
 state = 'psi2'
 ZZidx = 0
@@ -32,14 +32,14 @@ XmXidx = 2
 ### load the fidelity data (best guess, i.e., sqrt-term=0)
 fid = {}
 f = np.load(os.path.join(config.outputdir,fidelity_srcdir,
-    'fidelities.npz'))
+    'fidelities_dtmin0.npz'))
 for k in f.keys():
     fid[k] = f[k]
 f.close()
 
 corr = {}
 f = np.load(os.path.join(config.outputdir,fidelity_srcdir,
-    'correlations.npz'))
+    'correlations_dtmin0.npz'))
 for k in f.keys():
     corr[k] = f[k]
 f.close()
@@ -128,7 +128,7 @@ for i,win1 in enumerate(corr['win1vals']):
     ax.legend(loc=4)
     ax.set_title('Psi2, win1 = %d, win2 = %d' % (win1, win2))
 
-    fig.savefig(os.path.join(savedir, 'psi2_F_vs_dtslice_win1%d_win2%d.png' \
+    fig.savefig(os.path.join(savedir, 'Numbers_psi2_F_vs_dtslice_win1%d_win2%d.png' \
             % (win1,win2)))
 
 
@@ -218,7 +218,7 @@ for i,win2 in enumerate(corr['win2vals']):
     ax.legend(loc=4)
     ax.set_title('Psi1, win1 = %d, win2 = %d' % (win1, win2))
 
-    fig.savefig(os.path.join(savedir, 'psi1_F_vs_dtslice_win1%d_win2%d.png' \
+    fig.savefig(os.path.join(savedir, 'Numbers_psi1_F_vs_dtslice_win1%d_win2%d.png' \
             % (win1,win2)))
 
 

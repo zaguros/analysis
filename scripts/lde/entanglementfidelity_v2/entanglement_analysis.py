@@ -245,7 +245,7 @@ class FidelityAnalysis:
         # self.dtvals = np.arange(11).astype(int)*20 + 20
         self.dtvals = np.array([20,50,100,150], dtype=int)
         self.win1vals = np.array([150]) # np.arange(5).astype(int)*50 + 100
-        self.win2vals = np.array([75,100]) # np.arange(11).astype(int)*25 + 50
+        self.win2vals = np.array([75,150]) # np.arange(11).astype(int)*25 + 50
         self.ch0start = 640
         # self.ch0starts = np.arange(3).astype(int)*2 + 636 
         # self.ch1starts = np.arange(3).astype(int)*2 + 668

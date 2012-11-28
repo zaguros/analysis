@@ -21,7 +21,7 @@ rcParams['legend.numpoints'] = 1
 
 ### set stuff
 tpqi_srcdir = '20121127-tpqi'
-fidelity_srcdir = '20121127-ldefidelity'
+fidelity_srcdir = '20121128-ldefidelity'
 ap_srcdir = '20121101-afterpulsing'
 
 ### tools
