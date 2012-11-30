@@ -44,18 +44,20 @@ for k in f.keys():
     corr[k] = f[k]
 f.close()
 
-### load the AP probability
-apf = np.load(os.path.join(config.outputdir, ap_srcdir, 
-    'afterpulsing_vs_nvcounts.npz'))
-aptvals = apf['tvals']
-apratios = apf['ratios']
-u_apratios = apf['u_ratios']
-apf.close()
+# ### load the AP probability
+# apf = np.load(os.path.join(config.outputdir, ap_srcdir, 
+#     'afterpulsing_vs_nvcounts.npz'))
+# aptvals = apf['tvals']
+# apratios = apf['ratios']
+# u_apratios = apf['u_ratios']
+# apf.close()
+# 
+# apidx = idx(aptvals, 75)
+# p_afterpulsing = apratios[apidx]
+# u_p_afterpulsing = u_apratios[apidx]
 
-apidx = idx(aptvals, 75)
-p_afterpulsing = apratios[apidx]
-u_p_afterpulsing = u_apratios[apidx]
-
+p_afterpulsing = np.array([0.068, 0.093, 0.114, 0.11])
+u_p_afterpulsing = np.array([0, 0, 0, 0])
 
 ZZidx = 0
 XXidx = 1
