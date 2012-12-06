@@ -14,15 +14,15 @@ import MLE
 config.outputdir = r'/Users/wp/Documents/TUD/LDE/analysis/output'
 config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde'
 savedir = os.path.join(config.outputdir,
-                time.strftime('%Y%m%d')+'-ldefidelity')
+                time.strftime('%Y%m%d')+'-ldefidelity_manydts')
 
 rcParams['mathtext.default'] = 'regular'
 rcParams['legend.numpoints'] = 1
 
 ### set stuff
-tpqi_srcdir = '20121127-tpqi'
-fidelity_srcdir = '20121128-ldefidelity'
-ap_srcdir = '20121101-afterpulsing'
+tpqi_srcdir = '20121205-tpqi_manydts'
+fidelity_srcdir = '20121205-ldefidelity_manydts'
+ap_srcdir = '20121205-ldefidelity_manydts'
 
 ### tools
 def idx(arr, val):
@@ -56,16 +56,18 @@ f.close()
 # p_afterpulsing = apratios[apidx]
 # u_p_afterpulsing = u_apratios[apidx]
 
-p_afterpulsing = np.array([0.068, 0.093, 0.114, 0.11])
-u_p_afterpulsing = np.array([0, 0, 0, 0])
+
+p_afterpulsing = np.loadtxt(os.path.join(config.outputdir, ap_srcdir, 'apratios.dat'))
+u_p_afterpulsing = np.zeros(len(p_afterpulsing))
+# u_p_afterpulsing = np.array([0, 0, 0, 0])
 
 ZZidx = 0
 XXidx = 1
 XmXidx = 2
 
 win1 = 150
-win2s = [150,75]
-states = ['psi2', 'psi1']
+win2s = [75, 150]
+states = ['psi1', 'psi2']
 
 for state,win2 in zip(states, win2s):
     # get the desired raw correlations
@@ -105,7 +107,7 @@ for state,win2 in zip(states, win2s):
     # expected value from the TPQI visibility
     ax.plot(tpqi['binedges'], np.append(tpqi['fidelity'][0], tpqi['fidelity']),
             'b', drawstyle='steps', label='TPQI')
-    ax.errorbar(tpqi['meandts']+2, tpqi['fidelity'], fmt='o', mec='b',
+    ax.errorbar(tpqi['meandts'], tpqi['fidelity'], fmt='o', mec='b',
             mfc='w', yerr=tpqi['u_fidelity'], ecolor='b')
 
     # include afterpulsing
@@ -116,9 +118,11 @@ for state,win2 in zip(states, win2s):
                 ((1-p_afterpulsing)*tpqi['u_fidelity'])**2 )**0.5
         ax.plot(tpqi['binedges'], np.append(F_tpqi_ap[0], F_tpqi_ap),
                 'r', drawstyle='steps', label='TPQI+AP')
-        ax.errorbar(tpqi['meandts']+4, F_tpqi_ap, fmt='o', mec='r',
+        ax.errorbar(tpqi['meandts'], F_tpqi_ap, fmt='o', mec='r',
                 mfc='w', yerr=u_F_tpqi_ap, ecolor='r')
-
+    else:
+        F_tpqi_ap = np.zeros(len(tpqi['fidelity']))
+        u_F_tpqi_ap = np.zeros(len(tpqi['fidelity']))
 
     # fidelity best guess from spin-spin correlations
     ax.plot(np.append(0,dtvals), np.append(F[0],F), 'k',
@@ -140,6 +144,21 @@ for state,win2 in zip(states, win2s):
 
     fig.savefig(os.path.join(savedir, state+'_F_vs_dtslice_win1%d_win2%d.png' \
             % (win1,win2)))
+
+    np.savez(os.path.join(savedir, state+'_F_vs_dtslice_win1%d_win2%d' \
+            % (win1, win2)), 
+            tpqi_binedges = tpqi['binedges'],
+            tpqi_fidelity = tpqi['fidelity'],
+            tpqi_dt = tpqi['meandts'],
+            u_tpqi_fidelity = tpqi['u_fidelity'],
+            tpqi_fidelity_with_ap = F_tpqi_ap,
+            u_tpqi_fidelity_with_ap = u_F_tpqi_ap,
+            dt = meandtvals,
+            F = F,
+            u_F = u_F,
+            FLB = FLB,
+            u_FLB = u_FLB)
+
 
 
     
