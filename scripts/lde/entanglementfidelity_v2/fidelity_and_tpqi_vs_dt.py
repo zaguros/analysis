@@ -26,7 +26,7 @@ do_analysis = False
 do_howmuchdata = True
 
 # sources
-tpqi_srcdir = '20121205-tpqi_manydts'
+tpqi_srcdir = '20121214-tpqi_manydts'
 fidelity_srcdir = '20121205-ldefidelity_manydts'
 ap_srcdir = '20121205-ldefidelity_manydts'
 
