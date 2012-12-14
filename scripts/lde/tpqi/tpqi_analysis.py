@@ -107,7 +107,7 @@ class TPQIAnalysis:
         self.deltas = [-1,0,1]
         self.coincidences = [ np.array([]) for d in self.deltas ]
     
-    def g2_hist(self, range=(-260,260), bins=2*52):
+    def g2_hist(self, range=(-260,260), bins=1*52):
         # NOTE bins should be an even number!
         
         self.peaks = {}
@@ -149,10 +149,58 @@ class TPQIAnalysis:
                     'k', drawstyle='steps')
             if fits:
                 x = np.linspace(-300,300,101)
-                if d == 0:
-                    ax.plot(x, 2.*np.exp(-abs(x)/self.tau), 'k', ls='--')
+                if d == 0:                    
+                    # model for the shape of the central peak (from Bas,
+                    # according to Legero et al.)
+                    A = fit.Parameter(2.)
+                    dw = fit.Parameter(0.04)
+                    A2 = fit.Parameter(0.)
+                    def ff(x):
+                        return y0() + A()*np.exp(-abs(x)/self.tau)*\
+                                (1.-np.exp(-0.25*dw()**2*x**2))
+
+                    dx = self.normpeaks[0][1][1]-self.normpeaks[0][1][0]
+                    
+                    res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
+                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw,y0],
+                            do_print=True, fixed=[0,2],ret=True)
+                    
+                    ax.plot(x, 2.*np.exp(-abs(x)/self.tau), 'r--', lw=2)
+                    ax.plot(x, ff(x), 'r-', lw=2)                    
+                    ax.text(-290,1.8, ('$A = %.1f$ (fixed)'+'\n'+\
+                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz'+'\n'+\
+                            r'$y0 = 0$ (fixed)') % \
+                            (A(), dw()*0.256*1e3, res['error'][0]*0.256*1e3),
+                            color='r')
+
+                    res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
+                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw,y0],
+                            do_print=True, fixed=[2],ret=True)
+
+                    ax.plot(x, A()*np.exp(-abs(x)/self.tau), 'b--', lw=2)
+                    ax.plot(x, ff(x), 'b-', lw=2)
+                    ax.text(-290,1.5, ('$A = %.1f\pm%.1f$'+'\n'+\
+                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz'+'\n'+\
+                            r'$y0 = 0$ (fixed)') % \
+                            (A(), res['error'][0], dw()*0.256*1e3, res['error'][1]*0.256*1e3),
+                            color='b')
+
+                    res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
+                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw,y0],
+                            do_print=True, fixed=[],ret=True)
+
+                    ax.plot(x, y0() + A()*np.exp(-abs(x)/self.tau), 'g--', lw=2)
+                    ax.plot(x, ff(x), 'g-', lw=2)
+                    ax.text(-290,1.2, ('$A = %.1f\pm%.1f$'+'\n'+\
+                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz'+'\n'+\
+                            r'$y0 = %.2f \pm %.2f$') % \
+                            (A(), res['error'][0], dw()*0.256*1e3, 
+                                res['error'][1]*0.256*1e3, y0(), res['error'][2]),
+                            color='g')
+
+                    
                 else:
-                    ax.plot(x, np.exp(-abs(x)/self.tau), 'k', ls='--')
+                    ax.plot(x, np.exp(-abs(x)/self.tau), 'r-', lw=2)
 
         ax1.spines['right'].set_visible(False)
         ax2.spines['left'].set_visible(False)
@@ -161,7 +209,7 @@ class TPQIAnalysis:
         ax1.yaxis.tick_left()
         ax3.yaxis.tick_right()
         ax2.yaxis.set_ticks_position('none')
-        ax1.set_ylabel(r'$g^2(\tau)$')
+        ax1.set_ylabel(r'$g^{(2)}(\tau)$')
         ax2.set_xlabel(r'$\tau$ (bins)')
         plt.subplots_adjust(wspace=0.15)
 

@@ -22,7 +22,7 @@ rcParams['legend.numpoints'] = 1
 ### set stuff
 
 # what to do
-do_analysis = False
+do_analysis = True
 do_howmuchdata = True
 
 # sources
@@ -37,7 +37,7 @@ def idx(arr, val):
 ### load the tpqi visibility data
 tpqi = {}
 f = np.load(os.path.join(config.outputdir,tpqi_srcdir,
-    'cumulative_tpqi_ch0640_win150.npz'))
+    'cumulative_tpqi_ch0640_win1000.npz'))
 for k in f.keys():
     tpqi[k] = f[k]
 f.close()
