@@ -243,7 +243,7 @@ class FidelityAnalysis:
         self.F1_2_upper = 0.998; self.F1_2_lower = 0.962
         
         # self.dtvals = np.arange(11).astype(int)*20 + 20
-        self.dtvals = np.array([20,50,100,150], dtype=int)
+        self.dtvals = np.arange(10,151,2) # np.array([20,50,100,150], dtype=int)
         self.win1vals = np.array([150]) # np.arange(5).astype(int)*50 + 100
         self.win2vals = np.array([75,150]) # np.arange(11).astype(int)*25 + 50
         self.ch0start = 640
@@ -678,14 +678,14 @@ if __name__ == '__main__':
     fid.mode = None
     fid.dtslices = False
     
-    # fid.get_fidelities()
-    # fid.save_fidelities()
+    fid.get_fidelities()
+    fid.save_fidelities()
     
-    fid.load_fidelities('20121128-ldefidelity')
+    # fid.load_fidelities('20121128-ldefidelity')
     # fid.plot_map_starts()
     # fid.plot_map_window(ch0start=641,ch1start=670)
-    fid.plot_correlations('psi1', 50, 150, 75)
-    fid.plot_correlations('psi2', 100, 150, 150)
+    #fid.plot_correlations('psi1', 50, 150, 75)
+    #fid.plot_correlations('psi2', 100, 150, 150)
 
 
     #### use this way to extract (and filter) entanglement events from the hhp-data
