@@ -2,7 +2,7 @@ import os, time
 import numpy as np
 from numpy import *
 from matplotlib import pyplot as plt
-from analysis import fit, rabi, common, esr, ramsey, SE
+from analysis.lib.fitting import fit, rabi, common, esr, ramsey, SE
 
 def num2str(num, precision): 
     return "%0.*f" % (precision, num)
@@ -70,7 +70,7 @@ def SSRO_correct(SSRO_meas, F0, F1, F0err = 0.01, F1err = 0.01):
     return np.dot(corrmat, w1.reshape(2,1)).reshape(-1), \
             w1err
 
-def plot_data(datapath,fid=(0.7786,0.9926),fiderr=(4.15e-03,8.57e-04), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data = True, title='',with_detuning = False, save = True):
 
     plt.close('all')
     ###########################################
@@ -236,7 +236,7 @@ def plot_data(datapath,fid=(0.7786,0.9926),fiderr=(4.15e-03,8.57e-04), fit_data 
     return True
 
 
-def plot_data_MBI(datapath,fid=(0.788,0.9862),fiderr=(4.08e-04,1.162e-03), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_data = True, title='',with_detuning = False, save = True):
 
     plt.close('all')
     ###########################################
@@ -290,7 +290,8 @@ def plot_data_MBI(datapath,fid=(0.788,0.9862),fiderr=(4.08e-04,1.162e-03), fit_d
     readout_error = zeros(len(SSRO_readout))
     print len(SSRO_readout)
     if len(par) == 1:
-        par = np.linspace(1,20,20)
+        par = np.linspace(1,75,75)
+        sp_name='NR of RO steps'
     par_min = par.min()
     par_max = par.max()
     print len(par)
@@ -417,31 +418,36 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     ###########################################
     
     f = np.load(datapath+'\\'+spin_ro_file)
-    raw_counts = f['counts']
+    #raw_counts = f['counts']
     SSRO_counts = f['SSRO_counts']
-    repetitions = f['sweep_axis']
+    #repetitions = f['sweep_axis']
     t = f['time']
 
-    tot_size = len(repetitions)
-    reps_per_point = tot_size/float(noof_datapoints)
 
     idx = 0
     counts_during_readout = zeros(noof_datapoints)
     #mw_len = linspace(mw_min_len,mw_max_len,noof_datapoints)
     
-    counts_during_readout = sum(raw_counts, axis = 1)
-    SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    #counts_during_readout = sum(raw_counts, axis = 1)
+    #SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    counts_during_readout=SSRO_counts/float(noof_reps)
+    SSRO_readout=SSRO_counts/float(noof_reps)
 
     SSRO_readout_corr = zeros(len(SSRO_readout))
     readout_error = zeros(len(SSRO_readout))
-    
+    for i in arange(len(SSRO_readout)):
+        ms0_events = SSRO_readout[i]*noof_reps
+        ms1_events = noof_reps*(1-SSRO_readout[i])
+        corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+        SSRO_readout_corr[i]=corr[0][0]
+        readout_error[i] = corr[1][0] 
 
     #########################################
     ############ FITTING ####################
     #########################################
     
     if fit_data:
-        FFT = fft.fft(SSRO_readout)
+        FFT = fft.fft(SSRO_readout_corr)
         N = int(noof_datapoints)
         timestep = (mw_max_len-mw_min_len)/float(noof_datapoints-1)
         freq = fft.fftfreq(N,d = timestep)
@@ -459,9 +465,9 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
             figure1.savefig(datapath+'\\fft_signal_rabi.png')
 
         freq_guess = freq[find_nearest(abs(FFT),abs(FFT).max())]
-        amp_guess = (counts_during_readout.max()+counts_during_readout.min())/2.0
-        offset_guess = counts_during_readout.min()+(counts_during_readout.max()+\
-                counts_during_readout.min())/2.0
+        amp_guess = (SSRO_readout_corr.max()+SSRO_readout_corr.min())/2.0
+        offset_guess = SSRO_readout_corr.min()+(SSRO_readout_corr.max()+\
+                SSRO_readout_corr.min())/2.0
         phase_guess = 0
 
     figure3 = plt.figure(3)
@@ -476,7 +482,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
                 (0,0),(2.2E-3,0),(2*2.2E-3,0),
                 do_plot = True, do_print = True, newfig = False)
     elif fit_data:
-        [fit_result, p] = fit.fit1d(mw_len, counts_during_readout, rabi.fit_rabi_simple, 
+        [fit_result, p] = fit.fit1d(mw_len, SSRO_readout_corr, rabi.fit_rabi_simple, 
                 freq_guess, amp_guess, offset_guess, phase_guess,
                 do_plot = True, do_print = True, newfig = False, ret = True)
 
@@ -512,7 +518,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
                 (0,0),(2.2E-3,0),(2*2.2E-3,0),
                 do_plot = True, do_print = True, newfig = False)
     elif fit_data:
-        [fit_result, p] = fit.fit1d(mw_len, SSRO_readout, rabi.fit_rabi_simple, 
+        [fit_result, p] = fit.fit1d(mw_len, SSRO_readout_corr, rabi.fit_rabi_simple, 
                 freq_guess, amp_guess, offset_guess, phase_guess,
                 do_plot = True, do_print = True, newfig = False, ret = True)
 
@@ -537,17 +543,6 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     x = 6.0
     y = 8.0
 
-    figure4 = plt.figure(figsize=(x,y))
-    plt.pcolor(raw_counts, cmap = 'hot', antialiased=False)
-    plt.xlabel('Readout time (us)')
-    plt.ylabel('MW repetition number')
-    plt.title('Total histogram, integrated over repetitions')
-    plt.colorbar()
-    if save:
-        figure4.savefig(datapath+'\\histogram_counts_2d.png')
-
-    f.close()
-
 
     ###########################################
     ######## RO correct   #####################
@@ -555,12 +550,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
 
     if ro_correct:
 
-        for i in arange(len(SSRO_readout)):
-            ms0_events = SSRO_readout[i]*noof_reps
-            ms1_events = noof_reps*(1-SSRO_readout[i])
-            corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
-            SSRO_readout_corr[i]=corr[0][0]
-            readout_error[i] = corr[1][0] 
+       
         
         figure5=plt.figure()
 
@@ -621,7 +611,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
             fo.writelines(item)
         fo.close()
 
-    return True
+    return  [fit_result, p]
 
 def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8286E9):
     plt.close('all')
@@ -981,7 +971,7 @@ def plot_SE(datapath,fid=(0.788,0.991),fiderr=(2.885e-03,6.659e-04),fit_data = T
     ######## SPIN RO  #########################
     ###########################################
     
-    f = np.load(datapath+'\\'+spin_ro_file)
+    f = np.load(os.path.join(datapath,spin_ro_file))
     raw_counts = f['counts']
     SSRO_counts = f['SSRO_counts']
     repetitions = f['sweep_axis']

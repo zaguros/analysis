@@ -5,7 +5,8 @@ import os, time, sys
 import numpy as np
 import plot
 import qt
-from analysis import fit, rabi, common, esr, ramsey,spin_control
+from analysis.lib.fitting import fit, rabi, common, esr, ramsey
+from analysis.lib.spin import spin_control
 
 """
 Please note that this module is written for qtlab. It is intended for 

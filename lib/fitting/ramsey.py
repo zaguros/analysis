@@ -1,7 +1,7 @@
 from numpy import *
 
 # own stuff
-import analysis.fit as fit
+from analysis.lib.fitting import fit
 
 ### gaussian decay (FID, yielding T2*)
 def fit_FID_gauss(g_tau, g_A, g_a, *arg):
