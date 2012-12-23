@@ -100,14 +100,14 @@ class TPQIAnalysis:
         self.offset = 30.
         self.central = 1
         self.tau = 12.1 / self.binwidth
-        self.binedges = np.append(0, np.arange(10,151,2)) # np.array([0,20,50,100,150])
+        self.binedges = np.append(0, np.arange(2,501,2)) # np.array([0,20,50,100,150])
         self.meandts = self.binedges[:-1] + (self.binedges[1:]-self.binedges[:-1])/2.
         self.cumulative = True
         
         self.deltas = [-1,0,1]
         self.coincidences = [ np.array([]) for d in self.deltas ]
     
-    def g2_hist(self, range=(-260,260), bins=1*52):
+    def g2_hist(self, range=(-520,520), bins=2*52):
         # NOTE bins should be an even number!
         
         self.peaks = {}
@@ -154,50 +154,22 @@ class TPQIAnalysis:
                     # according to Legero et al.)
                     A = fit.Parameter(2.)
                     dw = fit.Parameter(0.04)
-                    A2 = fit.Parameter(0.)
                     def ff(x):
-                        return y0() + A()*np.exp(-abs(x)/self.tau)*\
+                        return A()*np.exp(-abs(x)/self.tau)*\
                                 (1.-np.exp(-0.25*dw()**2*x**2))
 
                     dx = self.normpeaks[0][1][1]-self.normpeaks[0][1][0]
                     
                     res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
-                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw,y0],
-                            do_print=True, fixed=[0,2],ret=True)
+                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw],
+                            do_print=True, fixed=[0],ret=True)
                     
                     ax.plot(x, 2.*np.exp(-abs(x)/self.tau), 'r--', lw=2)
                     ax.plot(x, ff(x), 'r-', lw=2)                    
                     ax.text(-290,1.8, ('$A = %.1f$ (fixed)'+'\n'+\
-                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz'+'\n'+\
-                            r'$y0 = 0$ (fixed)') % \
+                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz') % \
                             (A(), dw()*0.256*1e3, res['error'][0]*0.256*1e3),
                             color='r')
-
-                    res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
-                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw,y0],
-                            do_print=True, fixed=[2],ret=True)
-
-                    ax.plot(x, A()*np.exp(-abs(x)/self.tau), 'b--', lw=2)
-                    ax.plot(x, ff(x), 'b-', lw=2)
-                    ax.text(-290,1.5, ('$A = %.1f\pm%.1f$'+'\n'+\
-                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz'+'\n'+\
-                            r'$y0 = 0$ (fixed)') % \
-                            (A(), res['error'][0], dw()*0.256*1e3, res['error'][1]*0.256*1e3),
-                            color='b')
-
-                    res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
-                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw,y0],
-                            do_print=True, fixed=[],ret=True)
-
-                    ax.plot(x, y0() + A()*np.exp(-abs(x)/self.tau), 'g--', lw=2)
-                    ax.plot(x, ff(x), 'g-', lw=2)
-                    ax.text(-290,1.2, ('$A = %.1f\pm%.1f$'+'\n'+\
-                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz'+'\n'+\
-                            r'$y0 = %.2f \pm %.2f$') % \
-                            (A(), res['error'][0], dw()*0.256*1e3, 
-                                res['error'][1]*0.256*1e3, y0(), res['error'][2]),
-                            color='g')
-
                     
                 else:
                     ax.plot(x, np.exp(-abs(x)/self.tau), 'r-', lw=2)
