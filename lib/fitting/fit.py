@@ -1,7 +1,6 @@
 import numpy as np
 from numpy import *
 from scipy import optimize
-import pylab
 
 # taken from the scipy fitting cookbook:
 class Parameter:
