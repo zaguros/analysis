@@ -1,7 +1,7 @@
 import os, sys, time
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
-from analysis import fit, common, rabi
+from analysis.lib.fitting import fit, common, rabi
 import numpy as np
 
 try:
@@ -73,7 +73,7 @@ def rebin_centered(a, dt, start_bin, new_binsize):
     for x in np.arange(new_binsize):
         middle_bin += a[start_bin-np.int(np.floor(new_binsize/2.0))+x]
     
-    dt_middle_bin = mean(dt[start_bin-np.int(np.floor(new_binsize/2.0)):\
+    dt_middle_bin = np.mean(dt[start_bin-np.int(np.floor(new_binsize/2.0)):\
             start_bin-np.int(np.floor(new_binsize/2.0))+new_binsize])
      
     #determine how many elements are left in array
@@ -278,6 +278,181 @@ def optical_rabi_resonant_fit_simple(datafile, pulse_start, pulse_end,
 
 
 
+def optical_rabi_resonant_fit_hannes(datafile, pulse_start, pulse_end, 
+        use_channel = 1, save = True, max_rabi_amp = 0.9, binsize=256, rebins = -1):
+    """
+    can process npz files and txt files.
+    use channel specifies the HH channel, can be either 0 or 1.
+    """
+
+        
+    if '.npz' in datafile:
+        df = np.load(datafile)
+        if use_channel == 1:
+            counts = df['hist_ch1']
+        elif use_channel == 0:
+            counts = df['hist_ch0']
+    else:
+        df = os.path.join(datafile)
+        data = np.loadtxt(df, skiprows=10)
+        counts = data[:,use_channel]
+        
+    if rebins>0:
+        counts = rebin(counts,rebins)
+
+
+    x = np.arange(0,len(counts))
+
+    if rebins>0:
+        time = x*binsize*rebins
+    else:
+        time = x*binsize
+    ###########################
+    ###########################
+    ## FITTING ROUTINE ########
+    ###########################
+    ###########################
+
+    data_to_fit = counts
+
+    fR_init_guess = 0.100 #[GHz]
+    tau_init_guess = 15 #[ns]
+    ampl_init_guess = 0.5
+    offset_init_guess = 0.5
+
+
+    
+    min_fit_bnd = pulse_start
+    max_fit_bnd = pulse_end
+    
+    fit_range = range(find_nearest(time,min_fit_bnd),
+        find_nearest(time,max_fit_bnd))
+    time_fit = time[fit_range]
+    counts_fit = max_rabi_amp*counts[fit_range]/max(counts[fit_range])
+
+    figure = plt.figure(figsize=(8., 6.))
+    plt.hold(True)
+
+    fit_result = fit.fit1d(time_fit, counts_fit, rabi.fit_rabi_damped_exp_with_offset, 
+            fR_init_guess,ampl_init_guess, offset_init_guess, 
+            tau_init_guess, time_fit[0], 
+            do_plot = True, newfig = False, ret = True,
+            plot_fitonly = True, color = 'r', linewidth = 2.0)
+    
+    fitparams = fit_result[0]['params_dict']
+    errors = fit_result[0]['error_dict']
+    fR = fitparams['f']
+    fR_err = errors['f']
+    tau = fitparams['tau']
+    tau_err = errors['tau']
+
+    plt.plot(time, max_rabi_amp*counts/max(counts), '.', color = 'k')
+    plt.title('Rabi frequency = $2\pi \cdot$'+num2str(fR*1e3,1)+'MHz')
+    plt.xlabel('Time (ns)')
+    plt.ylabel('Normalized intensity (a.u.)')
+    plt.ylim(0,1)
+    plt.grid()
+    plt.xlim(min_fit_bnd-10.0,max_fit_bnd+60.0)
+
+    print 'fR =' + num2str(fR*1e3,5)+' MHz' +  '+/-' + num2str(fR_err*1e3,5)
+    print 'period = '+num2str(1/fR,1)+' ns' 
+    print 'tau = '+num2str(tau,5) + 'ns' + '+/-' +'+/-' + num2str(tau_err,5)
+    plt.close()
+
+    if save:
+        figure.savefig(os.path.join(os.path.split(datafile)[0],\
+                os.path.split(datafile)[1] + '_optical_rabi_fit_h.png'))
+
+    return fR, fR_err, tau, tau_err
+
+
+def optical_rabi_resonant_fit_with_slope_hannes(datafile, pulse_start, pulse_end, 
+        use_channel = 1, save = True, max_rabi_amp = 0.9, binsize=256, rebins = -1):
+    """
+    can process npz files and txt files.
+    use channel specifies the HH channel, can be either 0 or 1.
+    """
+
+        
+    if '.npz' in datafile:
+        df = np.load(datafile)
+        if use_channel == 1:
+            counts = df['hist_ch1']
+        elif use_channel == 0:
+            counts = df['hist_ch0']
+    else:
+        df = os.path.join(datafile)
+        data = np.loadtxt(df, skiprows=10)
+        counts = data[:,use_channel]
+    
+    if rebins>0:
+        counts = rebin(counts,rebins)
+
+
+    x = np.arange(0,len(counts))
+
+    if rebins>0:
+        time = x*binsize*rebins
+    else:
+        time = x*binsize
+    ###########################
+    ###########################
+    ## FITTING ROUTINE ########
+    ###########################
+    ###########################
+
+    data_to_fit = counts
+
+    fR_init_guess = 0.100 #[GHz]
+    tau_init_guess = 15 #[ns]
+    ampl_init_guess = 0.5
+    offset_init_guess = 0.0
+    slope_init_guess = 0.0#1.2
+
+    
+    min_fit_bnd = pulse_start
+    max_fit_bnd = pulse_end
+    
+    fit_range = range(find_nearest(time,min_fit_bnd),
+        find_nearest(time,max_fit_bnd))
+    time_fit = time[fit_range]
+    counts_fit = max_rabi_amp*counts[fit_range]/max(counts[fit_range])
+
+    figure = plt.figure(figsize=(8., 6.))
+    plt.hold(True)
+
+    fit_result = fit.fit1d(time_fit, counts_fit, rabi.fit_rabi_damped_exp_with_offset_on_linslope, 
+            fR_init_guess,ampl_init_guess, offset_init_guess, 
+            tau_init_guess, time_fit[0], slope_init_guess, fixed=[],
+            do_plot = True, newfig = False, ret = True,
+            plot_fitonly = True, color = 'r', linewidth = 2.0)
+    
+    fitparams = fit_result[0]['params_dict']
+    errors = fit_result[0]['error_dict']
+    fR = fitparams['f']
+    fR_err = errors['f']
+    tau = fitparams['tau']
+    tau_err = errors['tau']
+
+    plt.plot(time, max_rabi_amp*counts/max(counts), '.', color = 'k')
+    plt.title('Rabi frequency = $2\pi \cdot$'+num2str(fR*1e3,1)+'MHz')
+    plt.xlabel('Time (ns)')
+    plt.ylabel('Normalized intensity (a.u.)')
+    plt.ylim(0,1)
+    plt.grid()
+    plt.xlim(min_fit_bnd-10.0,max_fit_bnd+60.0)
+    plt.close()
+
+    print 'fR =' + num2str(fR*1e3,5)+' MHz' +  '+/-' + num2str(fR_err*1e3,5)
+    print 'period = '+num2str(1/fR,1)+' ns' 
+    print 'tau = '+num2str(tau,5) + 'ns' + '+/-' +'+/-' + num2str(tau_err,5)
+
+
+    if save:
+        figure.savefig(os.path.join(os.path.split(datafile)[0],\
+                os.path.split(datafile)[1] + '_optical_rabi_fit_with_slope_h.png'))
+
+    return fR, fR_err, tau, tau_err
 
 
 
@@ -385,12 +560,14 @@ def tail_cts_per_shot_txt_file(datapath, filename, lower,
             np.int(max_fit_bnd/bin_size)]
 
     laser_pulses = pulses_in_sequence*TPQI_starts
+
     
     if tail_mode == 1:
         tail_counts_per_shot = tail_area_ch1.sum()/np.float(laser_pulses)
     elif tail_mode == 0:
         tail_counts_per_shot = tail_area_ch0.sum()/np.float(laser_pulses)
     else:
+
         tail_counts_per_shot = (tail_area_ch0.sum()+tail_area_ch1.sum())\
                 /np.float(laser_pulses)
 

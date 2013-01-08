@@ -2,8 +2,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lde import spcorr, ro_c_err
-from pq import hht3
+from analysis.lib.lde import spcorr, ro_c_err
+from analysis.lib.pq import hht3
 
 DATFILEBASE = 'LDE'
 DATIDX = 0
@@ -135,14 +135,14 @@ def load_adwin_data(datfolder, DATIDX=0, *arg, **kw):
     invalid_SSROs_adwin_LT2 = np.where(SSROs_adwin_LT2==-1)[0]
         
     d.close()
-    print ''
-    print 'adwin LT1 detected SSROs: %d' % (noof_SSRO_triggers_LT1)   
-    print '  thereof invalid: %d' % len(invalid_SSROs_adwin_LT1)
-
-    print ''
-    print 'adwin LT2 detected SSROs: %d' % noof_PLU_markers
-    print '  thereof invalid: %d' % len(invalid_SSROs_adwin_LT2)
-
+#     print ''
+#     print 'adwin LT1 detected SSROs: %d' % (noof_SSRO_triggers_LT1)   
+#     print '  thereof invalid: %d' % len(invalid_SSROs_adwin_LT1)
+# 
+#     print ''
+#     print 'adwin LT2 detected SSROs: %d' % noof_PLU_markers
+#     print '  thereof invalid: %d' % len(invalid_SSROs_adwin_LT2)
+# 
     return SSROs_adwin_LT1, SSROs_adwin_LT2, CRs_adwin_LT1, CRs_adwin_LT2, gate_phase
 
 
