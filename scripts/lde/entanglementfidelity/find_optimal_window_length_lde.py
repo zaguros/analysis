@@ -1,9 +1,9 @@
 import os
-from analysis.lde import fidelities
+from lde import fidelities
         
-npz_file_ZZ=r'D:\bjhensen\data\ZZ\all_ro_cor_fast.npz'
-npz_file_XX=r'D:\bjhensen\data\XX\all_ro_cor_fast.npz'
-npz_file_XmX=r'D:\bjhensen\data\X-X\all_ro_cor_fast.npz'
+npz_file_ZZ=r'D:\measuring\analysis\data\lde\ZZ\all_ro_cor_fast.npz'
+npz_file_XX=r'D:\measuring\analysis\data\lde\XX\all_ro_cor_fast.npz'
+npz_file_XmX=r'D:\measuring\analysis\data\lde\X-X\all_ro_cor_fast.npz'
 dZZ=load(npz_file_ZZ)
 dXX=load(npz_file_XX)
 dXmX=load(npz_file_XmX)

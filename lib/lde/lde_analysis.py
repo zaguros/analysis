@@ -162,11 +162,21 @@ class SingleLDEAnalysis:
                     self.hhp[:,2]==2)])
         else:
             self.noof_hh_ssros=0
-        self.noof_valid_ssros=len(np.where(self.w>0)[0])
+        if len(self.w)>0:    
+            self.noof_valid_ssros=len(np.where(self.w>0)[0])
+        else:
+            self.noof_valid_ssros=0
         print 'Plu gave', self.noof_hh_ssros, 'entganglement events'
         print 'of which',self.noof_valid_ssros ,\
                 'are double click events according to the HH'
-    
+        if self.noof_valid_ssros >  self.noof_hh_ssros:
+            print 'w',self.w
+            print '-------------------------------'
+            if (len(self.hhp)>0):
+                print 'hhp', self.hhp[np.logical_and(self.hhp[:,3]==1, 
+                            self.hhp[:,2]==2)]
+
+            raise Exception('more valid than total plu events!')
 
     def save(self,savefile):
         np.savez(savefile, corr=self.uncond_corr, 

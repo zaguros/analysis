@@ -88,9 +88,9 @@ def get_fidelity(ZZ_corr,XX_corr,XmX_corr,ro_correct=True, psi1=True, F0a=0.905,
 class FidelityAnalysis:
 
     def __init__(self,**kw):
-        self.folder_ZZ=r'D:\analysis\data\lde\ZZ'
-        self.folder_XX=r'D:\analysis\data\lde\XX'
-        self.folder_XmX=r'D:\analysis\data\lde\X-X'
+        self.folder_ZZ=r'D:\measuring\analysis\data\lde\ZZ'
+        self.folder_XX=r'D:\measuring\analysis\data\lde\XX'
+        self.folder_XmX=r'D:\measuring\analysis\data\lde\X-X'
         self.F0b = 0.805
         self.F0a = 0.905 
         self.F1b = 0.998

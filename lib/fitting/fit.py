@@ -6,7 +6,7 @@ import pylab
 from matplotlib import pyplot
 
 # own tools
-import tools.plot as plot
+import analysis.lib.tools.plot as plot
 
 
 # taken from the scipy fitting cookbook:
