@@ -347,7 +347,7 @@ def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_d
     figure5 = plt.figure()
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
             offset_guess, init_amp_guess, decay_guess,
-            do_plot = True, do_print = True, newfig = False,
+            do_plot = True, do_print = False, newfig = False,
             plot_fitparams_xy = (0.5,0.5))
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
