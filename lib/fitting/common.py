@@ -2,8 +2,8 @@ import numpy as np
 
 # own modules
 import fit
-=======
-import analysis.lib.fitting.fit as fit
+#=======
+#import analysis.lib.fitting.fit as fit
 
 
 ### common fitfunctions
@@ -273,68 +273,3 @@ def fit_line(g_a, g_b, *arg):
     return p0, fitfunc, fitfunc_str
 
 
-def fit_nuclearSpinFlips_1 (g_A, g_offset, g_p, *arg):
-    """
-    fit function for nuclear spin flip probability
-    when reading out an electron spin state
-    """
-
-    fitfunc_str = '(1/6)*A*exp(-3*p*x)*(1+3*exp(2*p*x)+2*exp(3*p*x))+offset'
-    
-    A = fit.Parameter(g_A, 'A')
-    offset = fit.Parameter(g_offset, 'offset')
-    p = fit.Parameter(g_p, 'p')
-
-    p0 = [A, offset, p]
-    
-    def fitfunc(x):
-        return (1./6.)*A()*np.exp(-3.*p()*x)*(1.+3.*np.exp(2.*p()*x)+2.*np.exp(3.*p()*x))+offset()
-
-    return p0, fitfunc, fitfunc_str
-
-
-def fit_nuclearSpinFlips_2 (g_A, g_offset, g_p, *arg):
-    """
-    fit function for nuclear spin flip probability
-    when reading out an electron spin state
-    """
-
-    fitfunc_str = '(1/3)*A*exp(-3*p*x)*(-1+exp(3*p*x))+offset'
-    
-    A = fit.Parameter(g_A, 'A')
-    offset = fit.Parameter(g_offset, 'offset')
-    p = fit.Parameter(g_p, 'p')
-
-    p0 = [A, offset, p]
-    
-    def fitfunc(x):
-        return (1./3.)*A()*np.exp(-3.*p()*x)*(-1.+np.exp(3.*p()*x))+offset()
-
-    return p0, fitfunc, fitfunc_str
-
-
-def fit_nuclearSpinFlips_3 (g_A, g_offset, g_p, *arg):
-    """
-    fit function for nuclear spin flip probability
-    when reading out an electron spin state
-    """
-
-    fitfunc_str = '(1/6)*A*exp(-3*p*x)*((-1+exp(p*x))**2)*(1+2*exp(p*x))+offset'
-    
-    A = fit.Parameter(g_A, 'A')
-    offset = fit.Parameter(g_offset, 'offset')
-    p = fit.Parameter(g_p, 'p')
-
-    p0 = [A, offset, p]
-    
-    def fitfunc(x):
-        return (1./6.)*A()*np.exp(-3.*p()*x)*((-1.+np.exp(p()*x))**2)*(1.+2.*np.exp(p()*x))+offset()
-
-    return p0, fitfunc, fitfunc_str
-
-
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 998bfb9d754ee59f58c639b71f91f58a0a5b6921
