@@ -11,8 +11,8 @@ from analysis.lib.pq import hht3
 
 from analysis import config
 
-config.outputdir = r'/Users/wp/Documents/TUD/LDE/analysis/output'
-config.datadir = r'/Volumes/MURDERHORN/TUD/LDE/analysis/data/tpqi'
+config.outputdir = r'D:\bjhensen\data\20120814_HWP_ZZ\tpqi'
+config.datadir = r'D:\bjhensen\data\20120814_HWP_ZZ'
 
 rcParams['mathtext.default'] = 'regular'
 rcParams['legend.numpoints'] = 1
@@ -29,7 +29,8 @@ class Coincidences:
     def __init__(self):
         self.savedir = os.path.join(config.outputdir, time.strftime('%Y%m%d')+'-tpqi')
         # self.ldesrcdir = '/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde/X-X/2012-10-06_X-X' 
-        self.ldesrcdir = '/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde'
+        #self.ldesrcdir = '/Volumes/MURDERHORN/TUD/LDE/analysis/data/lde'
+        self.ldesrcdir = r'D:\bjhensen\data\20120814_HWP_ZZ'
         self.windowstart = (640, 670)
         self.windowlength = 150
         self.fnpattern = 'hhp_data'
@@ -125,7 +126,7 @@ class TPQIAnalysis:
                 A = fit.Parameter(max(hy))
 
                 def fitfunc(x):
-                    return A()*exp(-abs(x)/self.tau)
+                    return A()*np.exp(-abs(x)/self.tau)
 
                 fit.fit1d(hx[:-1]+(hx[1]-hx[0])/2., hy, None, fitfunc=fitfunc, p0=[A], do_print=True, 
                         fixed=[])
