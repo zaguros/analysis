@@ -21,7 +21,7 @@ import sys, os, time
 #from numpy import *
 import numpy as np
 from matplotlib import pyplot as plt
-from analysis import fit, rabi, common, esr, ramsey
+from analysis.lib.fitting import fit, common,rabi,esr,ramsey
 
 PREFIX = 'ADwin_SSRO'
 CR_SUFFIX = 'ChargeRO_after'
@@ -441,7 +441,7 @@ def analyze_SP_RO(sp_file, params,folder='',plot=True,save=True,do_print=False,r
     if folder == '':
         folder = os.getcwd()
 
-    v = load(folder+'\\'+sp_file)
+    v = np.load(folder+'/'+sp_file)
     Ex_RO_power = params['Ex_RO_amplitude']
     A_RO_power = params['Ex_RO_amplitude']
     Ex_SP_power = params['Ex_SP_amplitude']
@@ -516,7 +516,7 @@ def SP_RO_fitparam_vs_sweepparam(folder='',fitparam_nr=2,sweeppar='Ex_RO_power',
     for fn in files:        
         if (fitfile in fn) and ('.npz' in fn):
             idx = fn[len(suffix)+1:len(fn)-len(fitfile)-5]
-            params=load(folder + '\\' + suffix + '-'+idx+'_parameters_dict.npz')
+            params=np.load(folder + '\\' + suffix + '-'+idx+'_parameters_dict.npz')
             if (params['do_ms0']) and (params['do_ms1']):
                 altern = True
             else:

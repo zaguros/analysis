@@ -1,9 +1,6 @@
 import numpy as np
 from numpy import *
 from scipy import optimize
-import pylab
-
-from matplotlib import pyplot
 
 # taken from the scipy fitting cookbook:
 class Parameter:
@@ -18,31 +15,19 @@ class Parameter:
         return self.value
 
 ###############################################################################
-# tools, for formatting, printing, etc.
-###############################################################################
+# fitting a 1d function
+################################################################################
 
+# TODO 
+# - fitmethods should be classes
+# - fit should actually also be a class, and we want a simple function as
+# wrapper for interactive work; then we still need sth better for fixing,
+# though; good maybe: generally identify parameters by names
 def fit1d(x, y, fitmethod, *arg, **kw):
-    
+
     # process known kws
-    do_plot = kw.pop('do_plot', False)
-    do_save_plot = kw.pop('do_save_plot', False)
-    do_close_plot = kw.pop('do_close_plot', False)
-    save_plot_path = kw.pop('save_plot_path', 'fit.pdf')
-    save_plot_format = kw.pop('save_plot_format', 'pdf')
-    newfig = kw.pop('newfig', True)
-    plot_fitonly = kw.pop('plot_fitonly', False)
-    plot_fitresult = kw.pop('plot_fitresult', True)
-    color = kw.pop('color', 'b')
-    linewidth = kw.pop('linewidth', 1.0)
-
-    fit_curve_points = kw.pop('fit_curve_points', 501)
-    
-    ylog = kw.pop('ylog', False)
-    comment = kw.pop('comment', '')
-
     do_print = kw.pop('do_print', False)
-    ret = kw.pop('ret', False)
-
+    ret = kw.pop('ret')
     fixed = kw.pop('fixed', [])
 
     # use the standardized fitmethod: any arg is treated as initial guess
@@ -77,72 +62,17 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     if not success or cov == None: # FIXME: find a better solution!!!
         return False
 
-    fitx = linspace(x.min(), x.max(), fit_curve_points)
-
     # package the result neatly
-    result = result_dict(p1, cov, info, mesg, success, y, p0, fitfunc(x),fitx,fitfunc(fitx))
+    result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
+            fitfunc, fitfunc_str)
 
     if do_print:
         print_fit_result(result)
 
-    if do_plot:
-        if newfig:
-            p = pyplot.figure()
-            ax = pyplot.subplot(111)
-            if ylog:
-                ax.set_yscale('log')
-        else:
-            pass # pyplot.figure(figno)
-
-        if not plot_fitonly:
-            pyplot.plot(x, y, 'o', mfc='None', mec=color, label='data')
-        
-        
-        pyplot.plot(fitx, fitfunc(fitx), '-', color = color, 
-                linewidth = linewidth, label='fit')
-
-        # include the fit params in the plot, user can specify the figure coords 
-        if plot_fitresult:
-            params_xy = kw.pop('plot_fitparams_xy', (0.5, 0.15))
-            
-            params_str = comment + '\n' + fitfunc_str + '\n' + str_fit_params(result)
-            pyplot.figtext(params_xy[0], params_xy[1], params_str, size='x-small')
-
-        # save, if requested, but only for own created plots
-        if newfig:
-            if do_save_plot:
-                p.savefig(save_plot_path+'_'+fitmethod.__name__+'.'+save_plot_format, 
-                        format=save_plot_format)
-
-            if do_close_plot:
-                p.clf()
-                pyplot.close('all')
-
     if ret:
-        if do_plot: 
-            return result, p
-        else:
-            return result
+        return result
 
-# helper function: plot from datafile directly
-def fit1d_dat(filepath, *arg, **kw):
-
-    # known kws
-    xcol = kw.pop('xcol', 0)
-    ycol = kw.pop('ycol', 1)
-    kw['do_save_plot'] = kw.pop('do_save_plot', True)
-    kw['save_plot_path'] = kw.pop('save_plot_path', filepath[:-4])
-    ignore_start = kw.pop('ignore_start', 0)
-
-    # print kw
-
-    d = loadtxt(filepath)
-    x = d[ignore_start:,xcol]
-    y = d[ignore_start:,ycol]
-
-    return fit1d(x, y, comment=filepath, *arg, **kw)
-
-    
+    return
 
 
 ###############################################################################
@@ -151,7 +81,7 @@ def fit1d_dat(filepath, *arg, **kw):
 
 # put all the fit results into a dictionary, calculate some more practical 
 # numbers
-def result_dict(p1, cov, info, mesg, success, y, p0, fitdata,fitx,fity):
+def result_dict(p1, cov, info, mesg, success, x, y, p0, fitfunc, fitfunc_str):
     chisq = sum(info['fvec']*info['fvec'])
     dof = len(y)-len(p0)
     error_dict = {}
@@ -174,11 +104,12 @@ def result_dict(p1, cov, info, mesg, success, y, p0, fitdata,fitx,fity):
         'reduced_chisq': chisq/dof,
         'error' : error_list,
         'error_dict' : error_dict, 
-        'fitdata' : fitdata,
-        'fitx' : fitx,
-        'fity' : fity,
         'cov' : cov,
         'p0' : p0,
+        'fitfunc' : fitfunc,
+        'fitfunc_str' : fitfunc_str,
+        'x' : x,
+        'y' : y,
         }
     
     return result
@@ -203,7 +134,7 @@ def str_fit_params(result):
     return str
 
 def str_correlation_matrix(result):
-    str = "correlation matrix\:\n"
+    str = "correlation matrix:\n"
     str += "               "
     for i in range(len(result['p0'])): 
         str+= "%-10s" % (result['p0'][i].name,)
@@ -234,10 +165,3 @@ def print_fit_result(result):
     print str_fit_params(result)
     print str_correlation_matrix(result) 
     
-
-
-###############################################################################
-# common fit functions
-###############################################################################
-
-# tbd

@@ -101,15 +101,14 @@ class TPQIAnalysis:
         self.offset = 30.
         self.central = 1
         self.tau = 12.1 / self.binwidth
-        self.centernormfactor = 0.5
-        self.binedges = np.array([0,20,50,100,150])
+        self.binedges = np.append(0, np.arange(2,501,2)) # np.array([0,20,50,100,150])
         self.meandts = self.binedges[:-1] + (self.binedges[1:]-self.binedges[:-1])/2.
         self.cumulative = True
         
         self.deltas = [-1,0,1]
         self.coincidences = [ np.array([]) for d in self.deltas ]
     
-    def g2_hist(self, range=(-260,260), bins=104):
+    def g2_hist(self, range=(-520,520), bins=2*52):
         # NOTE bins should be an even number!
         
         self.peaks = {}
@@ -136,11 +135,7 @@ class TPQIAnalysis:
         # normalize peaks
         self.meanamp = np.mean(self.amplitudes)
         for d in self.peaks:
-            if d != 0:
-                self.normpeaks[d] = (self.peaks[d][0]/self.meanamp, self.peaks[d][1])
-            else:
-                # because we only have two coincidence windows; see labbook
-                self.normpeaks[d] = (self.peaks[d][0]/self.meanamp/2., self.peaks[d][1])
+            self.normpeaks[d] = (self.peaks[d][0]/self.meanamp, self.peaks[d][1])
                        
         return True   
 
@@ -155,10 +150,30 @@ class TPQIAnalysis:
                     'k', drawstyle='steps')
             if fits:
                 x = np.linspace(-300,300,101)
-                if d == 0:
-                    ax.plot(x, 0.5*np.exp(-abs(x)/self.tau), 'k', ls='--')
+                if d == 0:                    
+                    # model for the shape of the central peak (from Bas,
+                    # according to Legero et al.)
+                    A = fit.Parameter(2.)
+                    dw = fit.Parameter(0.04)
+                    def ff(x):
+                        return A()*np.exp(-abs(x)/self.tau)*\
+                                (1.-np.exp(-0.25*dw()**2*x**2))
+
+                    dx = self.normpeaks[0][1][1]-self.normpeaks[0][1][0]
+                    
+                    res=fit.fit1d(self.normpeaks[d][1][:-1]+dx/2., 
+                            self.normpeaks[d][0], None, fitfunc=ff, p0=[A,dw],
+                            do_print=True, fixed=[0],ret=True)
+                    
+                    ax.plot(x, 2.*np.exp(-abs(x)/self.tau), 'r--', lw=2)
+                    ax.plot(x, ff(x), 'r-', lw=2)                    
+                    ax.text(-290,1.8, ('$A = %.1f$ (fixed)'+'\n'+\
+                            r'$\delta\omega = 2\pi\times(%.0f\pm%.0f)$ MHz') % \
+                            (A(), dw()*0.256*1e3, res['error'][0]*0.256*1e3),
+                            color='r')
+                    
                 else:
-                    ax.plot(x, np.exp(-abs(x)/self.tau), 'k', ls='--')
+                    ax.plot(x, np.exp(-abs(x)/self.tau), 'r-', lw=2)
 
         ax1.spines['right'].set_visible(False)
         ax2.spines['left'].set_visible(False)
@@ -167,7 +182,7 @@ class TPQIAnalysis:
         ax1.yaxis.tick_left()
         ax3.yaxis.tick_right()
         ax2.yaxis.set_ticks_position('none')
-        ax1.set_ylabel(r'$g^2(\tau)$')
+        ax1.set_ylabel(r'$g^{(2)}(\tau)$')
         ax2.set_xlabel(r'$\tau$ (bins)')
         plt.subplots_adjust(wspace=0.15)
 
@@ -180,10 +195,8 @@ class TPQIAnalysis:
         self.counts = np.array([])
 
         zp = self.peaks[0]
-        amp = 2*self.meanamp # this is the expected height of the peak
-                             # in the middle for coherent light; (only two
-                             # windows!)
-        dip = 2*crratio/(1+crratio)**2
+        amp = 2*self.meanamp 
+        dip = 2*2*crratio/(1+crratio)**2
         
         # rebin the counts for more appropriate resolution of the visibility
         # use these also for the fidelity measurements
@@ -204,7 +217,7 @@ class TPQIAnalysis:
             
             def notpqicts(x0,x1):
                 return -2*dip*amp/self.fitdt*self.tau*(np.exp(-abs(x1)/self.tau)\
-                        - np.exp(-abs(x0)/self.tau))
+                        - np.exp(-abs(x0)/self.tau)) # factor two: absolute!
             
             if self.cumulative:
                 n = notpqicts(0, self.binedges[i+1])
@@ -232,12 +245,8 @@ class TPQIAnalysis:
 
         ax.set_xlabel(r'$| \tau |$ (bins)')
         ax.set_ylabel('visibility')
-        ax.set_xlim(0,self.windowlength)
-        ax.set_ylim(-0.6,1.1)
-
-        for i,dtval in enumerate(self.meandts):
-            ax.text(dtval, 1.0,
-                'N\n=%d' % self.counts[i], ha='center', va='top')
+        ax.set_xlim(0,self.binedges.max())
+        ax.set_ylim(0,1.1)
 
         ax2 = ax.twinx()
         ax2.plot(self.binedges, np.append(self.fidelity[0], self.fidelity),
@@ -248,8 +257,8 @@ class TPQIAnalysis:
         for tl in ax2.get_yticklabels():
             tl.set_color('r')
 
-        ax2.set_xlim(0,self.windowlength)
-        ax2.set_ylim(-0.1,1.1)
+        ax2.set_xlim(0,self.binedges.max())
+        ax2.set_ylim(0,1.1)
         ax2.grid(color='r')
 
     def save(self):
@@ -315,7 +324,7 @@ if __name__ == '__main__':
     c = Coincidences()
     c.load_coincidences('20121122-tpqi')
     c.windowstart = (640,670)
-    c.windowlength = 150
+    c.windowlength = 1000
 
     a = TPQIAnalysis()
     a.coincidences = c.filtered_coincidences()

@@ -51,7 +51,6 @@ class Emily:
         
         self.XX_independent = True
 
-
     def diag_likelihood(self, N, p00,p01,p10):
         """
         returns the value of the likelihood function, which is given by

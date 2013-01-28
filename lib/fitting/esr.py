@@ -1,7 +1,7 @@
 from numpy import *
 
 # own stuff
-import analysis.fit as fit
+from analysis.lib.fitting import fit as fit
 
 ### gaussian esr dips in the PL
 def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):

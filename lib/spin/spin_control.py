@@ -2,7 +2,8 @@ import os, time
 import numpy as np
 from numpy import *
 from matplotlib import pyplot as plt
-from analysis import fit, rabi, common, esr, ramsey, SE
+from analysis.lib.fitting import fit, rabi, common, esr, ramsey, SE
+from analysis.lib.tools import plot
 
 def num2str(num, precision): 
     return "%0.*f" % (precision, num)
@@ -13,6 +14,35 @@ def dec2str(num):
 def find_nearest(array,value):
     idx=(abs(array-value)).argmin()
     return idx
+
+def get_latest_data(string = 'ADwin_SSRO', datapath = ''):
+    meas_folder = r'D:\measuring\data'
+    currdate = time.strftime('%Y%m%d')
+    
+    if datapath == '':
+        df = os.path.join(meas_folder, currdate)
+    else:
+        df = datapath
+    
+    right_dirs = list()
+
+    if os.path.isdir(df):
+        for k in os.listdir(df):
+            if string in k:
+                right_dirs.append(k)
+        
+        if len(right_dirs) > 0:
+            latest_dir = os.path.join(df,right_dirs[len(right_dirs)-1])
+        else:
+            print 'No measurements containing %s in %s'%(string, df)
+        
+        print '\nAnalyzing data in %s'%latest_dir
+
+    else:
+        print 'Folder %s does not exist'%df
+        latest_dir = False
+
+    return latest_dir
 
 def SSRO_correct(SSRO_meas, F0, F1, F0err = 0.01, F1err = 0.01):
     w1 = SSRO_meas[:2].copy()
@@ -41,7 +71,7 @@ def SSRO_correct(SSRO_meas, F0, F1, F0err = 0.01, F1err = 0.01):
     return np.dot(corrmat, w1.reshape(2,1)).reshape(-1), \
             w1err
 
-def plot_data(datapath,fid=(0.7763,0.9895),fiderr=(0.01,0.01), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data = True, title='',with_detuning = False, save = True):
 
     plt.close('all')
     ###########################################
@@ -58,11 +88,11 @@ def plot_data(datapath,fid=(0.7763,0.9895),fiderr=(0.01,0.01), fit_data = True, 
             sp_file = k
 
     e = np.load(datapath+'\\'+stats_params_file)
-    mwpower = e['mw_power']
-    par_min = e['min_sweep_par']
-    par_max = e['max_sweep_par']
-    #par_min=e['min_wait_time']
-    #par_max=e['max_wait_time']
+    par = e['sweep_par']
+    par_min = par.min()
+    par_max=par.max()
+    
+    
     print par_min*1e-6
     noof_datapoints = e['noof_datapoints']
     noof_reps = e['completed_repetitions']
@@ -170,7 +200,7 @@ def plot_data(datapath,fid=(0.7763,0.9895),fiderr=(0.01,0.01), fit_data = True, 
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
             offset_guess, init_amp_guess, decay_guess,
             do_plot = True, do_print = True, newfig = False,
-            plot_fitparams_xy = (0.5,0.5))
+            plot_fitparams_xy = (0.5,0.5),ret=False)
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
     plt.xlabel('Time ($\mu$s)')
@@ -183,10 +213,10 @@ def plot_data(datapath,fid=(0.7763,0.9895),fiderr=(0.01,0.01), fit_data = True, 
 
         #Save a dat file for use in e.g. Origin with the rabi oscillation.
         curr_date = '#'+time.ctime()+'\n'
-        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\n'
+        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\tCol3:error SSRO Readout Cor\n'
         col_vals = str()
         for k in arange(noof_datapoints):
-            col_vals += num2str(par[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\n'
+            col_vals += num2str(par[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\t'+str(readout_error[k]) +'\n'
         fo = open(datapath+'\\SSRO_readout.dat', "w")
         for item in [curr_date, col_names, col_vals]:
             fo.writelines(item)
@@ -205,7 +235,287 @@ def plot_data(datapath,fid=(0.7763,0.9895),fiderr=(0.01,0.01), fit_data = True, 
 
     return True
 
-def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.9081,0.9913),fiderr=(0.002,0.0007)):
+
+def plot_data_MBI(datapath,fid=(0.8104,0.991),fiderr=(3.91e-03,9.392e-04), fit_data = True, title='',with_detuning = False, save = True):
+
+    
+    ###########################################
+    ######## MEASUREMENT SPECS ################
+    ###########################################
+    files = os.listdir(datapath)
+    do_weak=False
+    do_cond=False
+    for k in files:
+        if 'statics_and_parameters.npz' in k:
+            stats_params_file = k
+        if '0_Spin_RO.npz' in k:
+            spin_ro_file = k
+        if 'SP_histogram.npz' in k:
+            sp_file = k
+        if 'weak_Spin_RO.npz' in k:
+            weak_spin_ro_file = k
+            do_weak=True
+        if 'cond_Spin_RO.npz' in k:
+            cond_spin_ro_file = k
+            do_cond=True
+
+    e = np.load(datapath+'\\'+stats_params_file)
+    mwpower = e['mw_power']
+    par = e['sweep_par']
+
+
+    noof_datapoints = len(par)
+    if 'sweep_par_name' in e.keys():
+        print e['sweep_par_name']
+    else:
+        print "Sweep parameter name not defined."
+    
+ 
+    noof_reps = e['completed_repetitions']
+    if 'sweep_par_name' in e.keys():
+        sp_name=e['sweep_par_name']
+    else:
+        sp_name='Total free evolution time [ns]'
+
+    e.close()
+
+    
+    ###########################################
+    ######## SPIN RO  #########################
+    ###########################################
+    
+    f = np.load(datapath+'\\'+spin_ro_file)
+    
+  
+
+    t = f['time']
+
+    idx = 0
+
+    SSRO_readout = f['SSRO_counts']/float(noof_reps)
+    SSRO_readout_corr = zeros(len(SSRO_readout))
+    retdata = zeros(len(SSRO_readout))
+    readout_error = zeros(len(SSRO_readout))
+    print len(SSRO_readout)
+    if len(par) == 1:
+        par = np.linspace(1,75,75)
+        sp_name='NR of RO steps'
+    par_min = par.min()
+    par_max = par.max()
+    print len(par)
+    for i in arange(len(SSRO_readout)):
+        ms0_events = SSRO_readout[i]*noof_reps
+        ms1_events = noof_reps*(1-SSRO_readout[i])
+        corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+        SSRO_readout_corr[i]=corr[0][0]
+        retdata[i]=corr[0][0]
+        readout_error[i] = corr[1][0]  
+
+
+    figure2 = plt.figure(2)
+    plt.clf()
+    plt.plot(par,SSRO_readout, 'sk')
+
+    plt.ylim([0,1])
+    plt.xlabel(sp_name)
+    plt.ylabel('Fraction of events with > 0 counts')
+    plt.title(datapath)
+    plt.text(1.01*par_min,1.1*max(SSRO_readout),'')
+    if save:
+        figure2.savefig(datapath+'\\histogram_integrated_SSRO.png')
+
+    
+    figure3 = plt.figure(3)
+    plt.clf()
+    plt.errorbar(par,SSRO_readout_corr, fmt='o',yerr=readout_error)
+
+    plt.ylim([0,1.1])
+    plt.xlabel(sp_name)
+    plt.ylabel('P(ms=0), corrected for readout error')
+    plt.title(datapath)
+    plt.text(1.01*par_min,1.1*max(SSRO_readout_corr),'')
+    if save:
+        figure3.savefig(datapath+'\\SSRO_corrected.png')    
+
+    x = 6.0
+    y = 8.0
+
+    if do_weak:
+        
+        f = np.load(datapath+'\\'+weak_spin_ro_file)
+        
+      
+
+        t = f['time']
+
+        idx = 0
+
+        SSRO_weak_readout = f['SSRO_weak_counts']/float(noof_reps)
+        SSRO_weak_readout_corr = zeros(len(SSRO_weak_readout))
+        readout_error = zeros(len(SSRO_weak_readout))
+        print len(SSRO_weak_readout)
+        if len(par) == 1:
+            par = np.linspace(1,75,75)
+            sp_name='NR of RO steps'
+        par_min = par.min()
+        par_max = par.max()
+        print len(par)
+        for i in arange(len(SSRO_weak_readout)):
+            ms0_events = SSRO_weak_readout[i]*noof_reps
+            ms1_events = noof_reps*(1-SSRO_weak_readout[i])
+            corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+            SSRO_weak_readout_corr[i]=corr[0][0]
+            readout_error[i] = corr[1][0]  
+
+
+        figure2 = plt.figure(2)
+        plt.clf()
+        plt.plot(par,SSRO_weak_readout, 'sk')
+
+        plt.ylim([0,1])
+        plt.xlabel(sp_name)
+        plt.ylabel('Fraction of events with > 0 counts')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(SSRO_weak_readout),'')
+        if save:
+            figure2.savefig(datapath+'\\histogram_integrated_SSRO_weak.png')
+
+        
+        figure3 = plt.figure(3)
+        plt.clf()
+        plt.errorbar(par,SSRO_weak_readout_corr, fmt='o',yerr=readout_error)
+
+        plt.ylim([0,1.1])
+        plt.xlabel(sp_name)
+        plt.ylabel('P(ms=0) weak meas, corrected for readout error')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(SSRO_weak_readout_corr),'')
+        if save:
+            figure3.savefig(datapath+'\\SSRO_corrected_weak.png')    
+
+        x = 6.0
+        y = 8.0
+    if (do_cond) and (sum(SSRO_weak_readout)>.1):
+        
+        f = np.load(datapath+'\\'+cond_spin_ro_file)
+        
+      
+
+        t = f['time']
+
+        idx = 0
+
+        SSRO_cond_readout = f['SSRO_cond_counts']
+        SSRO_cond_readout_corr = zeros(len(SSRO_cond_readout))
+        correlation = zeros(len(SSRO_cond_readout))
+        readout_error = zeros(len(SSRO_cond_readout))
+        print len(SSRO_cond_readout)
+        if len(par) == 1:
+            par = np.linspace(1,75,75)
+            sp_name='NR of RO steps'
+        par_min = par.min()
+        par_max = par.max()
+        print len(par)
+        for i in arange(len(SSRO_cond_readout)):
+            ms0_events = SSRO_cond_readout[i]
+            
+            ms1_events = float(noof_reps)*SSRO_weak_readout[i]*(1-SSRO_cond_readout[i]/SSRO_weak_readout[i]/float(noof_reps))
+            correlation[i]= ((float(SSRO_cond_readout[i])/float(SSRO_weak_readout[i])/float(noof_reps))*2)-1
+            corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+            SSRO_cond_readout_corr[i]=corr[0][0]
+            readout_error[i] = corr[1][0]  
+        print 'correlation'
+        print correlation
+
+        figure2 = plt.figure(2)
+        plt.clf()
+        plt.plot(par,correlation, 'sk')
+
+        plt.ylim([-1,1])
+        plt.xlabel(sp_name)
+        plt.ylabel('Correlation with weak meas result')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(correlation),'')
+        if save:
+            figure2.savefig(datapath+'\\histogram_integrated_SSRO_cond.png')
+
+        
+        figure3 = plt.figure(3)
+        plt.clf()
+        plt.errorbar(par,SSRO_cond_readout_corr, fmt='o',yerr=readout_error)
+
+        plt.ylim([0,1])
+        plt.xlabel(sp_name)
+        plt.ylabel('P(ms=0), corrected for readout error')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(SSRO_cond_readout_corr),'')
+        if save:
+            figure3.savefig(datapath+'\\SSRO_corrected_cond.png')    
+
+        x = 6.0
+        y = 8.0
+    ###########################################
+    ######## SPIN PUMPING #####################
+    ###########################################
+    v = np.load(datapath+'\\'+sp_file)
+    sp_counts = v['counts']
+    sp_time = v['time']
+
+    offset_guess = sp_counts[len(sp_counts)-1]
+    init_amp_guess = sp_counts[2]
+    decay_guess = 10
+    print 'reloaded'
+    figure5 = plt.figure(10)
+    fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
+            offset_guess, init_amp_guess, decay_guess, do_print = True,ret=False,
+            plot_fitparams_xy = (0.5,0.5))
+    
+    plt.plot(sp_time/1E3,sp_counts,'sg')
+    plt.xlabel('Time ($\mu$s)')
+    plt.ylabel('Integrated counts')
+    plt.title('Spin pumping')
+    v.close()
+    print par
+    if save:
+        figure5.savefig(datapath+'\\spin_pumping.png')
+
+        #Save a dat file for use in e.g. Origin with the rabi oscillation.
+        curr_date = '#'+time.ctime()+'\n'
+        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\tCol3:error SSRO Readout Cor\n'
+        col_vals = str()
+        for k in arange(len(par)):
+            col_vals += num2str(par[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\t'+str(readout_error[k]) +'\n'
+        fo = open(datapath+'\\SSRO_readout.dat', "w")
+        for item in [curr_date, col_names, col_vals]:
+            fo.writelines(item)
+        fo.close()
+
+        #Save a dat file for use in e.g. Origin with the rabi oscillation.
+        #curr_date = '#'+time.ctime()+'\n'
+        #col_names = '#Col0: MW length (ns)\tCol1: SSRO corrected\n'
+        #col_vals = str()
+        #for k in arange(noof_datapoints):
+        #    col_vals += num2str(par[k],2)+'\t'+str(SSRO_readout[k])+'\n'
+        #fo = open(datapath+'\\SSRO_readout.dat', "w")
+        #for item in [curr_date, col_names, col_vals]:
+        #    fo.writelines(item)
+        #fo.close()
+    data={}    
+    data['x']=par
+    data['y']=retdata
+    data['yerr']=readout_error
+
+    if (do_cond) and (sum(SSRO_weak_readout)>.1):
+        data['y_cond']=SSRO_cond_readout_corr
+
+    if (do_cond) and (sum(SSRO_weak_readout)>.1):
+        data['y_weak']=SSRO_weak_readout_corr
+    return data
+
+
+
+
+def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8065,0.993),fiderr=(2.793e-03,5.853e-04)):
 
     plt.close('all')
     ###########################################
@@ -224,10 +534,11 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     e = np.load(datapath+'\\'+stats_params_file)
     f_drive = e['mw_drive_freq']
     mwpower = e['mw_power']
-    mw_min_len = e['min_sweep_par']
-    mw_max_len = e['max_sweep_par']
+    mw_min_len = e['sweep_par'].min()
+    mw_max_len = e['sweep_par'].max()
     noof_datapoints = e['noof_datapoints']
     noof_reps = e['completed_repetitions']
+    mw_len = e['sweep_par'] 
     e.close()
 
     
@@ -236,30 +547,35 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     ###########################################
     
     f = np.load(datapath+'\\'+spin_ro_file)
-    raw_counts = f['counts']
+    #raw_counts = f['counts']
     SSRO_counts = f['SSRO_counts']
-    repetitions = f['sweep_axis']
+    #repetitions = f['sweep_axis']
     t = f['time']
 
-    tot_size = len(repetitions)
-    reps_per_point = tot_size/float(noof_datapoints)
 
     idx = 0
     counts_during_readout = zeros(noof_datapoints)
-    mw_len = linspace(mw_min_len,mw_max_len,noof_datapoints)
-    counts_during_readout = sum(raw_counts, axis = 1)
-    SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    #mw_len = linspace(mw_min_len,mw_max_len,noof_datapoints)
+    #counts_during_readout = sum(raw_counts, axis = 1)
+    #SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    counts_during_readout=SSRO_counts/float(noof_reps)
+    SSRO_readout=SSRO_counts/float(noof_reps)
 
     SSRO_readout_corr = zeros(len(SSRO_readout))
     readout_error = zeros(len(SSRO_readout))
-    
+    for i in arange(len(SSRO_readout)):
+        ms0_events = SSRO_readout[i]*noof_reps
+        ms1_events = noof_reps*(1-SSRO_readout[i])
+        corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+        SSRO_readout_corr[i]=corr[0][0]
+        readout_error[i] = corr[1][0] 
 
     #########################################
     ############ FITTING ####################
     #########################################
     
     if fit_data:
-        FFT = fft.fft(SSRO_readout)
+        FFT = fft.fft(SSRO_readout_corr)
         N = int(noof_datapoints)
         timestep = (mw_max_len-mw_min_len)/float(noof_datapoints-1)
         freq = fft.fftfreq(N,d = timestep)
@@ -277,9 +593,9 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
             figure1.savefig(datapath+'\\fft_signal_rabi.png')
 
         freq_guess = freq[find_nearest(abs(FFT),abs(FFT).max())]
-        amp_guess = (counts_during_readout.max()+counts_during_readout.min())/2.0
-        offset_guess = counts_during_readout.min()+(counts_during_readout.max()+\
-                counts_during_readout.min())/2.0
+        amp_guess = (SSRO_readout_corr.max()+SSRO_readout_corr.min())/2.0
+        offset_guess = SSRO_readout_corr.min()+(SSRO_readout_corr.max()+\
+                SSRO_readout_corr.min())/2.0
         phase_guess = 0
 
     figure3 = plt.figure(3)
@@ -292,12 +608,13 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
                 rabi.fit_rabi_multiple_detunings, 
                 amp_guess, offset_guess, freq_guess, tau_guess,
                 (0,0),(2.2E-3,0),(2*2.2E-3,0),
-                do_plot = True, do_print = True, newfig = False)
+                do_print = True,ret=False)
     elif fit_data:
-        [fit_result, p] = fit.fit1d(mw_len, counts_during_readout, rabi.fit_rabi_simple, 
+        fit_result = fit.fit1d(mw_len, SSRO_readout_corr, rabi.fit_rabi_simple, 
                 freq_guess, amp_guess, offset_guess, phase_guess,
-                do_plot = True, do_print = True, newfig = False, ret = True)
-
+                do_print = True , ret = True)
+        fit_result['yerr']=readout_error
+        plot.plot_fit1d(fit_result,np.linspace(mw_len.min(),mw_len.max(),201))
         #pi_pulse_len = 0.5*1/fit_result['params_dict']['f']
         #pi_2_pulse_len = 0.5*pi_pulse_len
 
@@ -322,24 +639,6 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     ax1 = figure2.add_subplot(111)
     #plt.plot(mw_len,SSRO_readout, 'sk')
 
-    if fit_data and with_detuning:
-        tau_guess = 200
-        fit.fit1d(mw_len, SSRO_readout, 
-                rabi.fit_rabi_multiple_detunings, 
-                amp_guess, offset_guess, freq_guess, tau_guess,
-                (0,0),(2.2E-3,0),(2*2.2E-3,0),
-                do_plot = True, do_print = True, newfig = False)
-    elif fit_data:
-        [fit_result, p] = fit.fit1d(mw_len, SSRO_readout, rabi.fit_rabi_simple, 
-                freq_guess, amp_guess, offset_guess, phase_guess,
-                do_plot = True, do_print = True, newfig = False, ret = True)
-
-        pi_pulse_len = 0.5*1/fit_result['params_dict']['f']
-        pi_2_pulse_len = 0.5*pi_pulse_len
-
-        print 'pi pulse length = ', pi_pulse_len
-        print 'pi/2 pulse length = ',pi_2_pulse_len
-    
 
     #ax2 = figure2.add_subplot(111, sharex=ax1, frameon=False)
     #ax2.plot(mw_len,counts_during_readout, 'sk')
@@ -355,17 +654,6 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     x = 6.0
     y = 8.0
 
-    figure4 = plt.figure(figsize=(x,y))
-    plt.pcolor(raw_counts, cmap = 'hot', antialiased=False)
-    plt.xlabel('Readout time (us)')
-    plt.ylabel('MW repetition number')
-    plt.title('Total histogram, integrated over repetitions')
-    plt.colorbar()
-    if save:
-        figure4.savefig(datapath+'\\histogram_counts_2d.png')
-
-    f.close()
-
 
     ###########################################
     ######## RO correct   #####################
@@ -373,12 +661,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
 
     if ro_correct:
 
-        for i in arange(len(SSRO_readout)):
-            ms0_events = SSRO_readout[i]*noof_reps
-            ms1_events = noof_reps*(1-SSRO_readout[i])
-            corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
-            SSRO_readout_corr[i]=corr[0][0]
-            readout_error[i] = corr[1][0] 
+       
         
         figure5=plt.figure()
 
@@ -418,7 +701,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
             offset_guess, init_amp_guess, decay_guess,
             do_plot = True, do_print = True, newfig = False,
-            plot_fitparams_xy = (0.5,0.5))
+            plot_fitparams_xy = (0.5,0.5),ret=False)
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
     plt.xlabel('Time ($\mu$s)')
@@ -439,9 +722,9 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
             fo.writelines(item)
         fo.close()
 
-    return True
+    return  [fit_result]
 
-def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.878E9):
+def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
     plt.close('all')
 
     ###########################################
@@ -505,11 +788,10 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.878E9):
     plt.plot(mw_freq/1E9,counts_during_readout, '-ok')
 
     if fit_data:
-        fit_result, p = fit.fit1d(mw_freq/1E9, counts_during_readout, 
+        fit_result = fit.fit1d(mw_freq/1E9, counts_during_readout, 
                 esr.fit_ESR_gauss, offset_guess, dip_depth_guess, width_guess/1E9,
-                f_dip_guess/1E9, (noof_dips, dip_separation/1E9),
-                do_plot = True, do_print = True, newfig = False, ret = True)
-
+                f_dip_guess/1E9, (noof_dips, dip_separation/1E9), do_print = True, ret = True)
+        plot.plot_fit1d(fit_result,mw_freq/1E9)
         center_peak = fit_result['params_dict']['x0']
         splitting = fit_result['params_dict']['s0']
 
@@ -553,8 +835,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.878E9):
 
     figure4 = plt.figure(4)
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
-            offset_guess, init_amp_guess, decay_guess,
-            do_plot = True, do_print = True, newfig = False,
+            offset_guess, init_amp_guess, decay_guess, do_print = True, ret=False,
             plot_fitparams_xy = (0.5,0.5))
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
@@ -576,9 +857,19 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.878E9):
             fo.writelines(item)
         fo.close()
 
+        curr_date = '#'+time.ctime()+'\n'
+        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\n'
+        col_vals = str()
+        for k in arange(noof_datapoints):
+            col_vals += num2str(mw_freq[k]/1E9,10)+'\t'+str(SSRO_readout[k]) +'\n'
+        fo = open(datapath+'\\SSRO_readout.dat', "w")
+        for item in [curr_date, col_names, col_vals]:
+            fo.writelines(item)
+        fo.close()
+
     return True
 
-def plot_ramsey(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True, save = True):
+def plot_ramsey(datapath, fid=(0.7611,0.9895),fiderr=(4.264e-03,1.019e-03),fit_data = True, save = True):
 
     plt.close('all')
     ###########################################
@@ -728,22 +1019,22 @@ def plot_ramsey(datapath, fid=(0.7763,0.9895),fiderr=(0.01,0.01),fit_data = True
     plt.title('Spin pumping')
     v.close()
     if save:
-        figure4.savefig(datapath+'\\spin_pumping.png')
+        figure4.savefig(datapath+'\\spin_pumping.self.nr_of_shelving_pulsespng')
 
         #Save a dat file for use in e.g. Origin with the rabi oscillation.
         curr_date = '#'+time.ctime()+'\n'
-        col_names = '#Col0: Interpulse delay (ns)\tCol1: Integrated counts\n'
+        col_names = '#Col0: tau (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\tCol3:error SSRO Readout Cor\n'
         col_vals = str()
         for k in arange(noof_datapoints):
-            col_vals += num2str(tau[k],2)+'\t'+num2str(counts_during_readout[k],0)+'\n'
-        fo = open(datapath+'\\integrated_histogram.dat', "w")
+            col_vals += num2str(tau[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\t'+str(readout_error[k]) +'\n'
+        fo = open(datapath+'\\SSRO_readout.dat', "w")
         for item in [curr_date, col_names, col_vals]:
             fo.writelines(item)
         fo.close()
 
     return True
 
-def plot_SE(datapath, fid=(0.765,0.9895),fiderr=(0.01,0.01),fit_data = True, exp_guess=2.8, nr_of_pulses=1,save = True):
+def plot_SE(datapath,fid=(0.788,0.991),fiderr=(2.885e-03,6.659e-04),fit_data = True, exp_guess=2.8, nr_of_pulses=1,save = True):
 
     plt.close('all')
     ###########################################
@@ -789,7 +1080,7 @@ def plot_SE(datapath, fid=(0.765,0.9895),fiderr=(0.01,0.01),fit_data = True, exp
     ######## SPIN RO  #########################
     ###########################################
     
-    f = np.load(datapath+'\\'+spin_ro_file)
+    f = np.load(os.path.join(datapath,spin_ro_file))
     raw_counts = f['counts']
     SSRO_counts = f['SSRO_counts']
     repetitions = f['sweep_axis']
@@ -843,7 +1134,7 @@ def plot_SE(datapath, fid=(0.765,0.9895),fiderr=(0.01,0.01),fit_data = True, exp
     figure6 = plt.figure(6)
         
     if fit_data:
-        tau_guess = 5
+        tau_guess = 500
         offset_guess = SSRO_readout_corr.min()
         amp_guess=SSRO_readout_corr.max()-offset_guess
 
@@ -909,10 +1200,10 @@ def plot_SE(datapath, fid=(0.765,0.9895),fiderr=(0.01,0.01),fit_data = True, exp
 
         #Save a dat file for use in e.g. Origin with the rabi oscillation.
         curr_date = '#'+time.ctime()+'\n'
-        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\n'
+        col_names = '#Col0: MW length (ns)\tCol1: Integrated counts\tCol2: SSRO Readout corrected\tCol3: error SSRO Readout corrected\n'
         col_vals = str()
         for k in arange(noof_datapoints):
-            col_vals += num2str(tau_free_evol[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\n'
+            col_vals += num2str(tau_free_evol[k],2)+'\t'+str(SSRO_readout[k])+'\t' + str(SSRO_readout_corr[k]) +'\t'+str(readout_error[k]) +'\n'
         fo = open(datapath+'\\SSRO_readout.dat', "w")
         for item in [curr_date, col_names, col_vals]:
             fo.writelines(item)
