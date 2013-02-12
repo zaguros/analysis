@@ -6,38 +6,12 @@ import logging
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
 
+from analysis.lib.m2 import m2
 from measurement.lib.tools import toolbox
 
-# TODO need also a function that simply does all
-class SequenceSSROAnalysis:
-
-    def __init__(self, folder):
-        self.folder = folder
-        self.h5filepath = toolbox.measurement_filename(folder)
-        self.f = h5py.File(self.h5filepath, 'r')
-        self.name = self.f.keys()[0]
-        self.g = self.f[self.name]
-
-        self.measurementstring = os.path.split(self.folder)[1]
-        self.timestamp = os.path.split(os.path.split(self.folder)[0])[1] \
-                + '/' + self.measurementstring[:6]
-        self.measurementstring = self.measurementstring[7:]
-        
-
-    def adwingrp(self, name=''):
-        
-        if name != '':
-            adwingrpname = name
-        else:
-            if len(self.g.keys()) == 1:
-                adwingrpname = self.g.keys()[0]
-            else:
-                logging.error("More than one measurement. Please give a name")
-                return False
-
-        return self.g[adwingrpname]
+class SequenceSSROAnalysis(m2.M2Analysis):
     
-    def get_ssro_results(self, name=''):
+    def get_readout_results(self, name=''):
         adwingrp = self.adwingrp(name)
         
         self.reps = adwingrp['completed_reps'].value
@@ -55,15 +29,14 @@ class SequenceSSROAnalysis:
             self.sweep_pts = np.arange(len(self.ssro_results)) + 1
             self.sweep_name = 'sweep parameter'
 
-        self.sweepresult_fig = plt.figure()
-        ax = self.sweepresult_fig.add_subplot(111)
-        ax.plot(self.sweep_pts, self.normalized_ssro, 'ko-')
+        fig = self.default_fig()
+        ax = self.default_ax(fig)
+        ax.plot(self.sweep_pts, self.normalized_ssro, 'o-')
         ax.set_xlabel(self.sweep_name)
         ax.set_ylabel('avg (uncorrected) outcome')
-        ax.set_title(self.timestamp+'\n'+self.measurementstring)
 
         if save:
-            self.sweepresult_fig.savefig(
+            fig.savefig(
                 os.path.join(self.folder, 'ssro_result_vs_sweepparam.pdf'),
                 format='pdf')
 
@@ -96,11 +69,11 @@ class ElectronRabiAnalysis(SequenceSSROAnalysis):
 def darkesr(folder=os.getcwd()):
     a = DarkESRAnalysis(folder)
     a.get_sweep_pts()
-    a.get_ssro_results()
+    a.get_readout_results()
     a.plot_result_vs_sweepparam()
 
 def rabi(folder=os.getcwd()):
     a = ElectronRabiAnalysis(folder)
     a.get_sweep_pts()
-    a.get_ssro_results()
+    a.get_readout_results()
     a.plot_result_vs_sweepparam()
