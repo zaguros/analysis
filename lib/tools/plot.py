@@ -25,7 +25,14 @@ def plot_fit1d(res, fit_xvals, ax=None, ret=None, **kw):
     if plot_data:
         ax.plot(res['x'], res['y'], 'o', mfc='w', mew=1)
     
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), '-', lw=2)
+    else:
+        ax.plot(fit_xvals, res['fitfunc'](fit_xvals), '-', lw=2)
+        
+        if 'yerr' in res.keys():
+            ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'])
+        else:    
+            ax.plot(res['x'], res['y'], 'bo')
+        ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-')
 
     if print_info:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)

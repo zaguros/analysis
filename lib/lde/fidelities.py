@@ -92,15 +92,15 @@ class FidelityAnalysis:
         self.folder_ZZ=os.path.join(self.basepath,'ZZ')
         self.folder_XX=os.path.join(self.basepath,'XX')
         self.folder_XmX=os.path.join(self.basepath,'X-X')
-        self.F0b = 0.805
-        self.F0a = 0.905 
-        self.F1b = 0.998
-        self.F1a = 0.9937
+        self.F0b = 0.822
+        self.F0a = 0.9210 
+        self.F1b = 0.9892
+        self.F1a = 0.9965
         
-        self.dF0b = 0.01
-        self.dF0a = 0.01 
+        self.dF0b = 0.0075
+        self.dF0a = 0.0029 
         self.dF1b = 0.01
-        self.dF1a = 0.01
+        self.dF1a = 0.0009
 
     
     def analyse_fidelity(self,state,ro_correct=True,w_start = (637,666), w_length=270, w_dt=-1, **kw):
@@ -174,8 +174,8 @@ class FidelityAnalysis:
             self.XmX_corr = XmX_00 + XmX_11
         elif state == 'psi2':
             psi1=False
-            self.ZZ_corr=   ZZ_01 +  ZZ_10
-            self.XX_corr=   XX_01 +  XX_10
+            self.ZZ_corr=  ZZ_01 +  ZZ_10
+            self.XX_corr=  XX_01 +  XX_10
             self.XmX_corr= XmX_01 + XmX_10       
         else:
             raise(Exception('Unknown state' + state))
@@ -198,7 +198,7 @@ class FidelityAnalysis:
         print 'F:',self.F
         print 'sigma_F:', self.dF
         print 'total N:', self.ZZ_corr.sum()+self.XX_corr.sum()+self.XmX_corr.sum()
-
+        print self.ZZ_corr,self.XX_corr,self.XmX_corr
         print 'sigma_ZZ_contrib:', self.dZZ
         print 'sigma_XX_contrib:', self.dXX
 

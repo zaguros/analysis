@@ -3,6 +3,7 @@ import numpy as np
 from numpy import *
 from matplotlib import pyplot as plt
 from analysis.lib.fitting import fit, rabi, common, esr, ramsey, SE
+from analysis.lib.tools import plot
 
 def num2str(num, precision): 
     return "%0.*f" % (precision, num)
@@ -87,7 +88,6 @@ def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data
             sp_file = k
 
     e = np.load(datapath+'\\'+stats_params_file)
-    mwpower = e['mw_power']
     par = e['sweep_par']
     par_min = par.min()
     par_max=par.max()
@@ -200,7 +200,7 @@ def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
             offset_guess, init_amp_guess, decay_guess,
             do_plot = True, do_print = True, newfig = False,
-            plot_fitparams_xy = (0.5,0.5))
+            plot_fitparams_xy = (0.5,0.5),ret=False)
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
     plt.xlabel('Time ($\mu$s)')
@@ -236,21 +236,28 @@ def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data
     return True
 
 
-def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.8104,0.991),fiderr=(3.91e-03,9.392e-04), fit_data = True, title='',with_detuning = False, save = True):
 
-    plt.close('all')
+    
     ###########################################
     ######## MEASUREMENT SPECS ################
     ###########################################
     files = os.listdir(datapath)
-    
+    do_weak=False
+    do_cond=False
     for k in files:
         if 'statics_and_parameters.npz' in k:
             stats_params_file = k
-        if 'Spin_RO.npz' in k:
+        if '0_Spin_RO.npz' in k:
             spin_ro_file = k
         if 'SP_histogram.npz' in k:
             sp_file = k
+        if 'weak_Spin_RO.npz' in k:
+            weak_spin_ro_file = k
+            do_weak=True
+        if 'cond_Spin_RO.npz' in k:
+            cond_spin_ro_file = k
+            do_cond=True
 
     e = np.load(datapath+'\\'+stats_params_file)
     mwpower = e['mw_power']
@@ -287,6 +294,7 @@ def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_d
 
     SSRO_readout = f['SSRO_counts']/float(noof_reps)
     SSRO_readout_corr = zeros(len(SSRO_readout))
+    retdata = zeros(len(SSRO_readout))
     readout_error = zeros(len(SSRO_readout))
     print len(SSRO_readout)
     if len(par) == 1:
@@ -300,6 +308,7 @@ def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_d
         ms1_events = noof_reps*(1-SSRO_readout[i])
         corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
         SSRO_readout_corr[i]=corr[0][0]
+        retdata[i]=corr[0][0]
         readout_error[i] = corr[1][0]  
 
 
@@ -310,29 +319,141 @@ def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_d
     plt.ylim([0,1])
     plt.xlabel(sp_name)
     plt.ylabel('Fraction of events with > 0 counts')
-    plt.title(title)
-    plt.text(1.01*par_min,1.1*max(SSRO_readout),datapath)
+    plt.title(datapath)
+    plt.text(1.01*par_min,1.1*max(SSRO_readout),'')
     if save:
         figure2.savefig(datapath+'\\histogram_integrated_SSRO.png')
 
     
     figure3 = plt.figure(3)
     plt.clf()
-    plt.plot(par,SSRO_readout_corr, 'sk')
+    plt.errorbar(par,SSRO_readout_corr, fmt='o',yerr=readout_error)
 
-    plt.ylim([0,1.2*max(SSRO_readout_corr)])
+    plt.ylim([0,1.1])
     plt.xlabel(sp_name)
     plt.ylabel('P(ms=0), corrected for readout error')
-    plt.title(title)
-    plt.text(1.01*par_min,1.1*max(SSRO_readout_corr),datapath)
+    plt.title(datapath)
+    plt.text(1.01*par_min,1.1*max(SSRO_readout_corr),'')
     if save:
         figure3.savefig(datapath+'\\SSRO_corrected.png')    
 
     x = 6.0
     y = 8.0
 
-    
+    if do_weak:
+        
+        f = np.load(datapath+'\\'+weak_spin_ro_file)
+        
+      
 
+        t = f['time']
+
+        idx = 0
+
+        SSRO_weak_readout = f['SSRO_weak_counts']/float(noof_reps)
+        SSRO_weak_readout_corr = zeros(len(SSRO_weak_readout))
+        readout_error = zeros(len(SSRO_weak_readout))
+        print len(SSRO_weak_readout)
+        if len(par) == 1:
+            par = np.linspace(1,75,75)
+            sp_name='NR of RO steps'
+        par_min = par.min()
+        par_max = par.max()
+        print len(par)
+        for i in arange(len(SSRO_weak_readout)):
+            ms0_events = SSRO_weak_readout[i]*noof_reps
+            ms1_events = noof_reps*(1-SSRO_weak_readout[i])
+            corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+            SSRO_weak_readout_corr[i]=corr[0][0]
+            readout_error[i] = corr[1][0]  
+
+
+        figure2 = plt.figure(2)
+        plt.clf()
+        plt.plot(par,SSRO_weak_readout, 'sk')
+
+        plt.ylim([0,1])
+        plt.xlabel(sp_name)
+        plt.ylabel('Fraction of events with > 0 counts')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(SSRO_weak_readout),'')
+        if save:
+            figure2.savefig(datapath+'\\histogram_integrated_SSRO_weak.png')
+
+        
+        figure3 = plt.figure(3)
+        plt.clf()
+        plt.errorbar(par,SSRO_weak_readout_corr, fmt='o',yerr=readout_error)
+
+        plt.ylim([0,1.1])
+        plt.xlabel(sp_name)
+        plt.ylabel('P(ms=0) weak meas, corrected for readout error')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(SSRO_weak_readout_corr),'')
+        if save:
+            figure3.savefig(datapath+'\\SSRO_corrected_weak.png')    
+
+        x = 6.0
+        y = 8.0
+    if (do_cond) and (sum(SSRO_weak_readout)>.1):
+        
+        f = np.load(datapath+'\\'+cond_spin_ro_file)
+        
+      
+
+        t = f['time']
+
+        idx = 0
+
+        SSRO_cond_readout = f['SSRO_cond_counts']
+        SSRO_cond_readout_corr = zeros(len(SSRO_cond_readout))
+        correlation = zeros(len(SSRO_cond_readout))
+        readout_error = zeros(len(SSRO_cond_readout))
+        print len(SSRO_cond_readout)
+        if len(par) == 1:
+            par = np.linspace(1,75,75)
+            sp_name='NR of RO steps'
+        par_min = par.min()
+        par_max = par.max()
+        print len(par)
+        for i in arange(len(SSRO_cond_readout)):
+            ms0_events = SSRO_cond_readout[i]
+            
+            ms1_events = float(noof_reps)*SSRO_weak_readout[i]*(1-SSRO_cond_readout[i]/SSRO_weak_readout[i]/float(noof_reps))
+            correlation[i]= ((float(SSRO_cond_readout[i])/float(SSRO_weak_readout[i])/float(noof_reps))*2)-1
+            corr = SSRO_correct(array([ms1_events,ms0_events]),F0=fid[0],F1=fid[1],F0err=fiderr[0],F1err=fiderr[1])
+            SSRO_cond_readout_corr[i]=corr[0][0]
+            readout_error[i] = corr[1][0]  
+        print 'correlation'
+        print correlation
+
+        figure2 = plt.figure(2)
+        plt.clf()
+        plt.plot(par,correlation, 'sk')
+
+        plt.ylim([-1,1])
+        plt.xlabel(sp_name)
+        plt.ylabel('Correlation with weak meas result')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(correlation),'')
+        if save:
+            figure2.savefig(datapath+'\\histogram_integrated_SSRO_cond.png')
+
+        
+        figure3 = plt.figure(3)
+        plt.clf()
+        plt.errorbar(par,SSRO_cond_readout_corr, fmt='o',yerr=readout_error)
+
+        plt.ylim([0,1])
+        plt.xlabel(sp_name)
+        plt.ylabel('P(ms=0), corrected for readout error')
+        plt.title(datapath)
+        plt.text(1.01*par_min,1.1*max(SSRO_cond_readout_corr),'')
+        if save:
+            figure3.savefig(datapath+'\\SSRO_corrected_cond.png')    
+
+        x = 6.0
+        y = 8.0
     ###########################################
     ######## SPIN PUMPING #####################
     ###########################################
@@ -343,11 +464,10 @@ def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_d
     offset_guess = sp_counts[len(sp_counts)-1]
     init_amp_guess = sp_counts[2]
     decay_guess = 10
-
-    figure5 = plt.figure()
+    print 'reloaded'
+    figure5 = plt.figure(10)
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
-            offset_guess, init_amp_guess, decay_guess,
-            do_plot = True, do_print = True, newfig = False,
+            offset_guess, init_amp_guess, decay_guess, do_print = True,ret=False,
             plot_fitparams_xy = (0.5,0.5))
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
@@ -380,13 +500,22 @@ def plot_data_MBI(datapath,fid=(0.798,0.9929),fiderr=(4.07e-03,8.797e-04), fit_d
         #for item in [curr_date, col_names, col_vals]:
         #    fo.writelines(item)
         #fo.close()
+    data={}    
+    data['x']=par
+    data['y']=retdata
+    data['yerr']=readout_error
 
-    return True
+    if (do_cond) and (sum(SSRO_weak_readout)>.1):
+        data['y_cond']=SSRO_cond_readout_corr
+
+    if (do_cond) and (sum(SSRO_weak_readout)>.1):
+        data['y_weak']=SSRO_weak_readout_corr
+    return data
 
 
 
 
-def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.7570,0.98589),fiderr=(3.0325e-03,8.337e-04)):
+def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8065,0.993),fiderr=(2.793e-03,5.853e-04)):
 
     plt.close('all')
     ###########################################
@@ -427,7 +556,6 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     idx = 0
     counts_during_readout = zeros(noof_datapoints)
     #mw_len = linspace(mw_min_len,mw_max_len,noof_datapoints)
-    
     #counts_during_readout = sum(raw_counts, axis = 1)
     #SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
     counts_during_readout=SSRO_counts/float(noof_reps)
@@ -480,12 +608,13 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
                 rabi.fit_rabi_multiple_detunings, 
                 amp_guess, offset_guess, freq_guess, tau_guess,
                 (0,0),(2.2E-3,0),(2*2.2E-3,0),
-                do_plot = True, do_print = True, newfig = False)
+                do_print = True,ret=False)
     elif fit_data:
-        [fit_result, p] = fit.fit1d(mw_len, SSRO_readout_corr, rabi.fit_rabi_simple, 
+        fit_result = fit.fit1d(mw_len, SSRO_readout_corr, rabi.fit_rabi_simple, 
                 freq_guess, amp_guess, offset_guess, phase_guess,
-                do_plot = True, do_print = True, newfig = False, ret = True)
-
+                do_print = True , ret = True)
+        fit_result['yerr']=readout_error
+        plot.plot_fit1d(fit_result,np.linspace(mw_len.min(),mw_len.max(),201))
         #pi_pulse_len = 0.5*1/fit_result['params_dict']['f']
         #pi_2_pulse_len = 0.5*pi_pulse_len
 
@@ -510,24 +639,6 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     ax1 = figure2.add_subplot(111)
     #plt.plot(mw_len,SSRO_readout, 'sk')
 
-    if fit_data and with_detuning:
-        tau_guess = 200
-        fit.fit1d(mw_len, SSRO_readout, 
-                rabi.fit_rabi_multiple_detunings, 
-                amp_guess, offset_guess, freq_guess, tau_guess,
-                (0,0),(2.2E-3,0),(2*2.2E-3,0),
-                do_plot = True, do_print = True, newfig = False)
-    elif fit_data:
-        [fit_result, p] = fit.fit1d(mw_len, SSRO_readout_corr, rabi.fit_rabi_simple, 
-                freq_guess, amp_guess, offset_guess, phase_guess,
-                do_plot = True, do_print = True, newfig = False, ret = True)
-
-        pi_pulse_len = 0.5*1/fit_result['params_dict']['f']
-        pi_2_pulse_len = 0.5*pi_pulse_len
-
-        print 'pi pulse length = ', pi_pulse_len
-        print 'pi/2 pulse length = ',pi_2_pulse_len
-    
 
     #ax2 = figure2.add_subplot(111, sharex=ax1, frameon=False)
     #ax2.plot(mw_len,counts_during_readout, 'sk')
@@ -590,7 +701,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
             offset_guess, init_amp_guess, decay_guess,
             do_plot = True, do_print = True, newfig = False,
-            plot_fitparams_xy = (0.5,0.5))
+            plot_fitparams_xy = (0.5,0.5),ret=False)
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
     plt.xlabel('Time ($\mu$s)')
@@ -611,9 +722,9 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
             fo.writelines(item)
         fo.close()
 
-    return  [fit_result, p]
+    return  [fit_result]
 
-def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8286E9):
+def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
     plt.close('all')
 
     ###########################################
@@ -677,11 +788,10 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8286E9):
     plt.plot(mw_freq/1E9,counts_during_readout, '-ok')
 
     if fit_data:
-        fit_result, p = fit.fit1d(mw_freq/1E9, counts_during_readout, 
+        fit_result = fit.fit1d(mw_freq/1E9, counts_during_readout, 
                 esr.fit_ESR_gauss, offset_guess, dip_depth_guess, width_guess/1E9,
-                f_dip_guess/1E9, (noof_dips, dip_separation/1E9),
-                do_plot = True, do_print = True, newfig = False, ret = True)
-
+                f_dip_guess/1E9, (noof_dips, dip_separation/1E9), do_print = True, ret = True)
+        plot.plot_fit1d(fit_result,mw_freq/1E9)
         center_peak = fit_result['params_dict']['x0']
         splitting = fit_result['params_dict']['s0']
 
@@ -725,8 +835,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8286E9):
 
     figure4 = plt.figure(4)
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
-            offset_guess, init_amp_guess, decay_guess,
-            do_plot = True, do_print = True, newfig = False,
+            offset_guess, init_amp_guess, decay_guess, do_print = True, ret=False,
             plot_fitparams_xy = (0.5,0.5))
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
