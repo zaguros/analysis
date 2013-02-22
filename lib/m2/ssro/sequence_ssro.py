@@ -59,9 +59,7 @@ class ElectronRabiAnalysis(SequenceSSROAnalysis):
     sweep_name = 'MW pulse length (ns)'
     
     def get_sweep_pts(self, name=''):
-        self.sweep_pts = np.linspace(self.g.attrs['pulse_length_start'], 
-            self.g.attrs['pulse_length_stop'], 
-            self.g.attrs['pts'] )
+        self.sweep_pts = self.g.attrs['AWG_RO_MW_pulse_durations']
 
         return self.sweep_pts
 

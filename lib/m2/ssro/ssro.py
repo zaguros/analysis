@@ -248,4 +248,57 @@ def ssrocalib(folder):
     plt.close('all')
     a.mean_fidelity()
     a.finish()
-    
+
+class AWGSSROAnalysis(m2.M2Analysis):
+
+    def get_count_probability(self, name):
+        grp = self.adwingrp(name)
+        
+        self.reps = grp['completed_reps'].value
+        self.pts = grp.attrs['pts']
+        self.times = self.g.attrs['AWG_SSRO_durations']
+        self.counts = grp['RO_data'].value.reshape((-1,self.pts))
+
+        self.count_probability = np.array([float(len(np.where(self.counts[:,i]>0)[0])) \
+                for i in range(self.pts)]) / grp.attrs['SSRO_repetitions']
+
+        self.u_count_probability = np.sqrt(
+                self.count_probability*(1.-self.count_probability)/\
+                        grp.attrs['SSRO_repetitions'])
+
+def awgssro(folder, ymax=1.):
+    a = AWGSSROAnalysis(folder)
+
+    fig = a.default_fig()
+    ax = a.default_ax(fig)
+
+    for n,ms in zip(['ms0', 'ms1'], [0,1]):
+        a.get_count_probability(n)
+        ax.errorbar(a.times, a.count_probability, yerr=a.u_count_probability,
+                fmt='o', label=n)
+
+    ax.set_xlim(0,max(a.times))
+    ax.set_ylim(0,ymax)
+    ax.set_xlabel('RO time (ns)')
+    ax.set_ylabel('Cnt. prob.')
+    ax.legend()
+
+def awgssro_prjprob(folder, pop0=1./6):
+    a = AWGSSROAnalysis(folder)
+
+    fig = a.default_fig()
+    ax = a.default_ax(fig)
+
+    a.get_count_probability('ms0')
+    cpr0 = a.count_probability
+
+    a.get_count_probability('ms1')
+    cpr1 = a.count_probability
+
+    prjprob = cpr0*pop0 / (cpr0*pop0 + cpr1*(1.-pop0))
+    ax.plot(a.times, prjprob, 'o')
+
+    ax.set_xlabel('RO time (ns)')
+    ax.set_ylabel('Prob. for projection into 0')
+
+        

@@ -6,7 +6,7 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence_ssro
+from analysis.lib.m2.ssro import mbi
 from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
@@ -25,14 +25,18 @@ if timestamp != None:
 else:
     folder = toolbox.latest_data('Rabi')
 
-a = sequence_ssro.ElectronRabiAnalysis(folder)
+a = mbi.ElectronRabiAnalysis(folder)
 x = a.get_sweep_pts()
-y = a.get_readout_results()
+y = a.get_readout_results().reshape(-1)
+
+fig = a.default_fig(figsize=(6,4))
+ax = a.default_ax(fig)
+ax.errorbar(x,y,fmt='o',yerr=a.u_normalized_ssro.reshape(-1))
 
 fit_result = fit.fit1d(x, y, rabi.fit_rabi_damped_exp,
         guess_frq, guess_amp, guess_yof, guess_tau, fixed=[],
         do_print=True, ret=True)
-ax = plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ret='ax')
+plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax)
 
 ax.set_xlabel(r'MW pulse length ($\mu$s)')
 ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')

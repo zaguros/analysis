@@ -1,12 +1,17 @@
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 import h5py
+from measurement.lib.tools import toolbox
 
-fn = r'd:\measuring\data\20130212\191358_AdwinSSRO_SIL3_Ey_5nW\analysis.hdf5'
+fn = r'd:\measuring\data\20130219\195325_AdwinSSRO_SIL2_Ex_5nW\analysis.hdf5'
+
+
+fn = os.path.join(toolbox.latest_data('SSRO'), 'analysis.hdf5')
 f = h5py.File(fn, 'r')
 
-pi_inv_prob = 0.95
-noof_states = 12
+pi_inv_prob = 0.6
+noof_states = 6
 
 f0data = f['/fidelity/ms0']
 f1data = f['/fidelity/ms1']

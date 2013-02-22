@@ -57,10 +57,11 @@ class MBIAnalysis(m2.M2Analysis):
 
 class PostInitDarkESRAnalysis(MBIAnalysis):
     
-    sweep_name = 'MW frq. (Hz)'
+    sweep_name = 'MW frq. (MHz)'
 
     def get_sweep_pts(self, name=''):
-        self.sweep_pts = self.g.attrs['RO_MW_pulse_ssbmod_frqs'] + self.g.attrs['mw_frq']
+        self.sweep_name = 'MW frq. (MHz) - %.3f GHz' % (self.g.attrs['mw_frq']*1e-9)
+        self.sweep_pts = (self.g.attrs['RO_MW_pulse_ssbmod_frqs'])*1e-6
 
         return self.sweep_pts
     

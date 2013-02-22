@@ -12,14 +12,14 @@ from analysis.lib.fitting import fit, esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None
-guess_offset = 0.85
-guess_ctr = 2856.3
+timestamp = None # 
+guess_offset = 0.925
+guess_ctr = 2863
 guess_splitB = 30.
 guess_splitN = 2.184
 guess_splitC = 12.78
 guess_width = 0.2
-guess_amplitude = 0.08
+guess_amplitude = 0.12
 
 
 ### script
