@@ -5,8 +5,6 @@ import h5py
 from measurement.lib.tools import toolbox
 
 fn = r'd:\measuring\data\20130219\195325_AdwinSSRO_SIL2_Ex_5nW\analysis.hdf5'
-
-
 fn = os.path.join(toolbox.latest_data('SSRO'), 'analysis.hdf5')
 f = h5py.File(fn, 'r')
 
@@ -30,6 +28,6 @@ ax = fig.add_subplot(111)
 
 ax.plot(t[1:], p_prj0[1:], 'o-')
 ax.set_xlabel('time (us)')
-ax.set_ylabel('probability for projection into 0')
+ax.set_ylabel('$P_{MBI}$')
 ax.set_xlim(0,50)
-ax.set_title('F(MBI)\n$F(\pi) = %.2f$' % pi_inv_prob)
+# ax.set_title('F(MBI)\n$F(\pi) = %.2f$' % pi_inv_prob)
