@@ -13,7 +13,7 @@ def plot_fit1d(res, fit_xvals, ax=None, ret=None, **kw):
     # know keywords:
     print_info = kw.pop('print_info', True)
     info_xy = kw.pop('info_xy', (0.4, 0.85))
-    plot_data = kw.pop('plot_data', False)
+    plot_data = kw.pop('plot_data', True)
 
     if res == None:
         return False
@@ -23,16 +23,13 @@ def plot_fit1d(res, fit_xvals, ax=None, ret=None, **kw):
         ax = fig.add_subplot(111)
 
     if plot_data:
-        ax.plot(res['x'], res['y'], 'o', mfc='w', mew=1)
-    
-    else:
-        ax.plot(fit_xvals, res['fitfunc'](fit_xvals), '-', lw=2)
         
         if 'yerr' in res.keys():
             ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'])
         else:    
-            ax.plot(res['x'], res['y'], 'bo')
-        ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-')
+            ax.plot(res['x'], res['y'], 'o')
+    
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), '-', lw=2)
 
     if print_info:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)

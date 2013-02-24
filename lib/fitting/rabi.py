@@ -21,7 +21,7 @@ def fit_rabi_simple(g_f, g_A, g_a, g_phi, *arg):
 
 
     """
-    fitfunc_str = "a + A * cos(f*x + phi)"
+    fitfunc_str = "a + A * cos(2pi*(f*x + phi/360))"
 
     f = fit.Parameter(g_f, 'f')
     A = fit.Parameter(g_A, 'A')
@@ -35,6 +35,19 @@ def fit_rabi_simple(g_f, g_A, g_a, g_phi, *arg):
     return p0, fitfunc, fitfunc_str
 # end damped rabi
 
+def fit_rabi_fixed_upper(g_f, g_A, g_phi, g_k, *arg):
+    fitfunc_str = '(1-A) + A * exp(-kx) *cos(2pi*(f*x + phi/360))'
+    
+    f = fit.Parameter(g_f, 'f')
+    A = fit.Parameter(g_A, 'A')
+    phi = fit.Parameter(g_phi, 'phi')
+    k = fit.Parameter(g_k, 'k')
+    p0 = [f, A, phi, k]
+
+    def fitfunc(x) : 
+        return (1.-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x +phi()/360.))
+
+    return p0, fitfunc, fitfunc_str
 
 ### fit a rabi osc. that gets damped exponentially
 def fit_rabi_damped_exp(g_f, g_A, g_a, g_tau, *arg):

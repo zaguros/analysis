@@ -13,6 +13,25 @@ from measurement.lib.tools import toolbox
 from analysis.lib.m2 import m2
 
 
+# some general tools
+def get_SSRO_calibration(folder, readout_time):
+    fp = os.path.join(folder, 'analysis.hdf5')
+    f = h5py.File(fp, 'r')
+    
+    times = f['fidelity/time'].value
+    fids0 = f['fidelity/ms0'].value
+    fids1 = f['fidelity/ms1'].value
+
+    tidx = np.argmin(abs(times-readout_time))
+    f0 = fids0[tidx,1]
+    u_f0 = fids0[tidx,2]
+    f1 = fids1[tidx,1]
+    u_f1 = fids1[tidx,2]
+
+    return f0, u_f0, f1, u_f1
+
+
+# analysis classes and shortcut functions
 class SSROAnalysis(m2.M2Analysis):
     
     def get_run(self, name):

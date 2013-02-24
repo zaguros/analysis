@@ -6,41 +6,44 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import mbi
+from analysis.lib.m2.ssro import ssro, mbi
 from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
+from analysis.lib.math import error
+
 
 timestamp = None # '20130107231602'
-guess_frq = 1./4.
-guess_amp = 0.25
-guess_yof = 0.7
-guess_tau = 5
-guess_slope = 0.
-guess_xof = 0.
+guess_frq = 1./240
+guess_amp = 0.5
+guess_k = 0.
+guess_phi = 0.
 
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('Rabi')
+    folder = toolbox.latest_data('Rabi_SIL2')
 
-a = mbi.ElectronRabiAnalysis(folder)
-x = a.get_sweep_pts()
-y = a.get_readout_results().reshape(-1)
+a = mbi.MBIAnalysis(folder)
+a.get_sweep_pts()
+a.get_readout_results()
+a.get_electron_ROC()
+ax = a.plot_results_vs_sweepparam(ret='ax', )
 
-fig = a.default_fig(figsize=(6,4))
-ax = a.default_ax(fig)
-ax.errorbar(x,y,fmt='o',yerr=a.u_normalized_ssro.reshape(-1))
-
-fit_result = fit.fit1d(x, y, rabi.fit_rabi_damped_exp,
-        guess_frq, guess_amp, guess_yof, guess_tau, fixed=[],
+fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), rabi.fit_rabi_fixed_upper,
+        guess_frq, guess_amp, guess_phi, guess_k, fixed=[2,3],
         do_print=True, ret=True)
-plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax)
-
-ax.set_xlabel(r'MW pulse length ($\mu$s)')
-ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')
-ax.set_title(a.timestamp+'\n'+a.measurementstring)
+plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
+        plot_data=False)
 
 plt.savefig(os.path.join(folder, 'electronrabi_analysis.pdf'),
         format='pdf')
+
+### FFT
+# p0_fft = np.fft.fft(a.p0.reshape(-1), n=32)
+# frq = np.fft.fftfreq(32, d=(a.sweep_pts[1]-a.sweep_pts[0])/1e3)
+#  
+# fig = a.default_fig()
+# ax = a.default_ax(fig)
+# ax.plot(frq, p0_fft, 'o-')

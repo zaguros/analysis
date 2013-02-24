@@ -5,14 +5,17 @@ import logging
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-
 from analysis.lib.m2 import m2
+from analysis.lib.m2.ssro import ssro
 from sequence_ssro import SequenceSSROAnalysis
-
+from analysis.lib.math import error
+from measurement.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
     
     def get_readout_results(self, name=''):
+        self.result_corrected = False
+
         adwingrp = self.adwingrp(name)
         
         self.reps = self.g.attrs['reps_per_ROsequence']
@@ -23,38 +26,89 @@ class MBIAnalysis(m2.M2Analysis):
         self.u_normalized_ssro = \
             (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
 
-        return  self.normalized_ssro
+    def get_sweep_pts(self):
+        self.sweep_name = self.g.attrs['sweep_name']
+        self.sweep_pts = self.g.attrs['sweep_pts']
+
+    def get_electron_ROC(self, ssro_calib_folder=toolbox.latest_data('SSRO')):
+        self.p0 = np.zeros(self.normalized_ssro.shape)
+        self.u_p0 = np.zeros(self.normalized_ssro.shape)
+        
+        ro_durations = self.g.attrs['E_RO_durations']
+        roc = error.SingleQubitROC()
+
+        for i in range(len(self.normalized_ssro[0])):
+            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                ssro.get_SSRO_calibration(ssro_calib_folder, 
+                        ro_durations[i])
+            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                    self.u_normalized_ssro[:,i])
+            
+            self.p0[:,i] = p0
+            self.u_p0[:,i] = u_p0      
+        
+        self.result_corrected = True
+
 
     def plot_results_vs_sweepparam(self, name='', save=True, **kw):
         labels = kw.get('labels', None)
+        ret = kw.get('ret', None)
         
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
             self.sweep_name = 'sweep parameter'
         
-        fig = self.default_fig()
+        fig = self.default_fig(figsize=(6,4))
         ax = self.default_ax(fig)
         
         if labels == None:
             labels = ['RO #%d' % i for i in range(self.readouts)]
         
         for i in range(self.readouts):
-            ax.errorbar(self.sweep_pts, self.normalized_ssro[:,i], fmt='o-',
+            if not self.result_corrected:
+                ax.errorbar(self.sweep_pts, self.normalized_ssro[:,i], fmt='o-',
                     yerr=self.u_normalized_ssro[:,i], label=labels[i])
+            else:
+                ax.errorbar(self.sweep_pts, self.p0[:,i], fmt='o',
+                    yerr=self.u_p0[:,i], label=labels[i])
 
+        
         ax.set_xlabel(self.sweep_name)
-        ax.set_ylabel('avg (uncorrected) outcome')
+        if not self.result_corrected:
+            ax.set_ylabel('avg (uncorrected) outcome')
+        else:
+            ax.set_ylabel(r'$F(|0\rangle)$')
+        
         ax.legend()
+        ax.set_ylim(-0.05, 1.05)
 
         if save:
             fig.savefig(
                 os.path.join(self.folder, 'ssro_result_vs_sweepparam.pdf'),
                 format='pdf')
 
+        if ret == 'ax':
+            return ax
+        if ret == 'fig':
+            return fig
+
+    
     def finish(self):
         self.f.close()
 
+def analyze_single_sweep(folder, name='', correction='electron'):
+    a = MBIAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results(name)
+    
+    if correction=='electron':
+        a.get_electron_ROC()
+    
+    a.plot_results_vs_sweepparam()
+    a.finish()
 
+
+#### DEPRECATED
 class PostInitDarkESRAnalysis(MBIAnalysis):
     
     sweep_name = 'MW frq. (MHz)'
