@@ -236,7 +236,7 @@ def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data
     return True
 
 
-def plot_data_MBI(datapath,fid=(0.8104,0.991),fiderr=(3.91e-03,9.392e-04), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.7952,0.990),fiderr=(4.03e-03,9.3919e-04), fit_data = True, title='',with_detuning = False, save = True):
 
     
     ###########################################
@@ -515,7 +515,7 @@ def plot_data_MBI(datapath,fid=(0.8104,0.991),fiderr=(3.91e-03,9.392e-04), fit_d
 
 
 
-def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8065,0.993),fiderr=(2.793e-03,5.853e-04)):
+def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.7952,0.990),fiderr=(4.03e-03,9.3919e-04)):
 
     plt.close('all')
     ###########################################
