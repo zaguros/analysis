@@ -6,7 +6,7 @@ import logging
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2 import m2
-from analysis.lib.m2.ssro import ssro
+from analysis.lib.m2.ssro import ssro, readout_correction
 from sequence_ssro import SequenceSSROAnalysis
 from analysis.lib.math import error
 from measurement.lib.tools import toolbox
@@ -49,6 +49,32 @@ class MBIAnalysis(m2.M2Analysis):
         
         self.result_corrected = True
 
+    def get_N_ROC(self, F_init, u_F_init, F_RO_pulse, u_F_RO_pulse,
+            ssro_calib_folder=toolbox.latest_data('SSRO')):
+
+        self.p0 = np.zeros(self.normalized_ssro.shape)
+        self.u_p0 = np.zeros(self.normalized_ssro.shape)
+        
+        ro_durations = self.g.attrs['E_RO_durations']
+        roc = readout_correction.NuclearSpinROC()
+        roc.F_init = F_init
+        roc.u_F_init = u_F_init
+        roc.F_RO_pulse = F_RO_pulse
+        roc.u_F_RO_pulse = u_F_RO_pulse
+        
+        for i in range(len(self.normalized_ssro[0])):
+            roc.F0_ssro, roc.u_F0_ssro, roc.F1_ssro, roc.u_F1_ssro = \
+                ssro.get_SSRO_calibration(ssro_calib_folder,
+                        ro_durations[i])
+            
+            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                    self.u_normalized_ssro[:,i])
+          
+            self.p0[:,i] = p0
+            self.u_p0[:,i] = u_p0
+        
+        self.result_corrected = True
+
 
     def plot_results_vs_sweepparam(self, name='', save=True, **kw):
         labels = kw.get('labels', None)
@@ -79,8 +105,8 @@ class MBIAnalysis(m2.M2Analysis):
         else:
             ax.set_ylabel(r'$F(|0\rangle)$')
         
-        ax.legend()
         ax.set_ylim(-0.05, 1.05)
+        ax.legend(loc='best')
 
         if save:
             fig.savefig(
@@ -96,13 +122,20 @@ class MBIAnalysis(m2.M2Analysis):
     def finish(self):
         self.f.close()
 
-def analyze_single_sweep(folder, name='', correction='electron'):
+def analyze_single_sweep(folder, name='', correction='electron', **kw):
+    F_init = kw.pop('F_init', 1.)
+    u_F_init = kw.pop('u_F_init', 0.)
+    F_RO_pulse = kw.pop('F_RO_pulse', 1.)
+    u_F_RO_pulse = kw.pop('u_F_RO_pulse', 0.)
+
     a = MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name)
     
     if correction=='electron':
         a.get_electron_ROC()
+    elif correction == 'N':
+        a.get_N_ROC(F_init, u_F_init, F_RO_pulse, u_F_RO_pulse)
     
     a.plot_results_vs_sweepparam()
     a.finish()

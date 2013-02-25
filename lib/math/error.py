@@ -58,8 +58,9 @@ class SingleQubitROC:
         self.F0 = 1.
         self.F1 = 1.
         self.u_F0 = 0.
-        self.u_F1 = 0.
+        self.u_F1 = 0.        
 
+    def _setup(self):
         self._F0, self._F1 = sympy.symbols('F0 F1')
         self._p0 = sympy.symbols('p0')
 
@@ -74,8 +75,11 @@ class SingleQubitROC:
 
         self.p0_formula = Formula()
         self.p0_formula.formula = corr_p0
-
+    
+    
     def num_eval(self, p0, u_p0=None):
+        self._setup()
+
         self.p0_formula.values[self._F0] = self.F0
         self.p0_formula.values[self._F1] = self.F1
         self.p0_formula.uncertainties[self._F0] = self.u_F0
