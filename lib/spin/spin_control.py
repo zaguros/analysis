@@ -4,6 +4,10 @@ from numpy import *
 from matplotlib import pyplot as plt
 from analysis.lib.fitting import fit, rabi, common, esr, ramsey, SE
 from analysis.lib.tools import plot
+from analysis.lib.m2.ssro import ssro, readout_correction
+from analysis.lib.ssro import ssro_adwin as ssrosc
+from analysis.lib.math import error
+from measurement.lib.config import experiment_lt2 as explt2
 
 def num2str(num, precision): 
     return "%0.*f" % (precision, num)
@@ -71,7 +75,111 @@ def SSRO_correct(SSRO_meas, F0, F1, F0err = 0.01, F1err = 0.01):
     return np.dot(corrmat, w1.reshape(2,1)).reshape(-1), \
             w1err
 
-def plot_data(datapath,fid=(0.7943,0.9921),fiderr=(4.143e-04,1.07e-03), fit_data = True, title='',with_detuning = False, save = True):
+def get_MBI_readout_result(datapath,fname):
+
+    
+    ###########################################
+    ######## MEASUREMENT SPECS ################
+    ###########################################
+    files = os.listdir(datapath)
+    f=fname+'Spin_RO'
+    for k in files:
+        if 'statics_and_parameters.npz' in k:
+            stats_params_file = k
+        if f in k:
+            spin_ro_file = k
+
+    e = np.load(datapath+'\\'+stats_params_file)
+    par = e['sweep_par']
+    noof_datapoints = len(par)
+    noof_reps = e['completed_repetitions']
+    if 'sweep_par_name' in e.keys():
+        x_name=e['sweep_par_name']
+    else:
+        x_name='Total free evolution time [ns]'
+
+    e.close()
+    print fname
+
+    
+    ###########################################
+    ######## SPIN RO normalization  ###########
+    ###########################################
+    print datapath
+    print spin_ro_file
+    f = np.load(datapath+'\\'+spin_ro_file)
+  
+    
+    key='SSRO_'+fname+'counts'
+
+    SSRO_readout = f[key]
+    print SSRO_readout
+    ret_dict={'x':par,'y':SSRO_readout,'xname':x_name,'reps': noof_reps}
+    
+    return ret_dict
+
+
+def get_electron_ROC(normalized_ssro,reps,ssro_calib_folder=get_latest_data('SSRO')):
+    p0 = np.zeros(normalized_ssro.shape)
+    u_p0 = np.zeros(normalized_ssro.shape)
+    
+    ro_duration = explt2.ssroprotocol['RO_duration']
+    roc = error.SingleQubitROC()
+    [[roc.F0,roc.F1],[roc.uF0,roc.uF1]]=ssrosc.get_readout_corr(ro_duration,get_latest_data('ADwin_SSRO'))
+    u_normalized_ssro = (normalized_ssro*(1.-normalized_ssro)/reps)**0.5
+    p0, u_p0 = roc.num_eval(normalized_ssro,u_normalized_ssro)
+    print p0
+    print u_p0
+    return p0,u_p0
+
+
+def plot_ssro_vs_sweep(x,y,yerr,xname,yname,title,datapath):
+    figure1 = plt.figure(1)
+    plt.clf()
+    plt.errorbar(x,y, fmt='o',yerr=yerr)
+
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.ylim([0,1])
+    plt.title(title)
+    if save:
+        figure1.savefig(datapath+'\\'+title+'.png')
+    print 'look for file'
+    print datapath
+
+def analyse_plot_results_vs_sweepparam(fname,yname,title='',dataname='Spin_RO',datapath=''):
+    currdate = time.strftime('%Y%m%d')
+    dp=get_latest_data(fname,datapath)
+    ssro_result=get_MBI_readout_result(dp,dataname)
+    
+    reps=ssro_result['reps']
+    x=ssro_result['x']
+    y_norm=ssro_result['y']/float(reps)
+    [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)
+
+def analyse_weakcond_vs_sweepparam(fname,yname,title='',datapath=''):
+    currdate = time.strftime('%Y%m%d')
+    dp=get_latest_data(fname,datapath)
+    ssro_result_cond=get_MBI_readout_result(dp,'cond_')
+    ssro_result_weak=get_MBI_readout_result(dp,'weak_')
+    
+    reps=ssro_result_weak['reps']
+
+    x=ssro_result_weak['x']
+    y_norm_weak=ssro_result_weak['y']/float(reps)
+    y_norm_cond=ssro_result_cond['y']/map(float,ssro_result_weak['y'])
+    
+    [ssro_ro_cor_weak,ussro_ro_cor_weak]=get_electron_ROC(y_norm_weak,reps)
+    [ssro_ro_cor_cond,ussro_ro_cor_cond]=get_electron_ROC(y_norm_cond,np.mean(ssro_result_weak['y']))
+    plot_ssro_vs_sweep(x,ssro_ro_cor_weak,ussro_ro_cor_weak,ssro_result_weak['xname'],'P(ms0)',currdate+'-'+fname+'weak msmsnt result',dp)
+    plot_ssro_vs_sweep(x,ssro_ro_cor_cond,ussro_ro_cor_cond,ssro_result_cond['xname'],'P(ms0)',currdate+'-'+fname+'cond msmsnt result',dp)
+
+##############################################
+
+
+
+def plot_data(datapath,fid=(0.7901,0.991),fiderr=(4.07e-04,0.91265e-03), fit_data = True, title='',with_detuning = False, save = True):
 
     plt.close('all')
     ###########################################
