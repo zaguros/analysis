@@ -70,7 +70,7 @@ class SingleQubitROC:
 
         self.correction_matrix = self.error_matrix.inv()
         
-        corr_vec = self.correction_matrix * self._p0
+        corr_vec = self.correction_matrix * sympy.Matrix([self._p0, 1-self._p0])
         corr_p0 = corr_vec[0]
 
         self.p0_formula = Formula()
@@ -107,12 +107,12 @@ def simple_demo():
 def roc_demo():
     roc = SingleQubitROC()
    
-    roc.F0 = 0.9
-    roc.F1 = 0.99
+    roc.F0 = 0.8
+    roc.F1 = 0.9
     roc.u_F0 = 0.001
     roc.u_F1 = 0.001
 
-    xvals = linspace(0.01, 0.9, 21)
+    xvals = np.linspace(0.1, 0.8, 21)
     xerrs = xvals * 0.05
     yvals, yerrs = roc.num_eval(xvals, xerrs)
 

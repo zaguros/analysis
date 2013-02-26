@@ -56,8 +56,8 @@ def calc_meas_strength(x,t_max=214.,theta_min=6.):
     return measstren
 
 corr=(.728,1-.088)
-datafolders=['161812','161513']
-date='20130116'
+datafolders=['175338','175003']
+date='20130225'
 label=['mI=0','mI=+1']
 meas_folder=r'D:\measuring\data'
 
@@ -70,7 +70,7 @@ for i in datafolders:
     
     result=sc.plot_data_MBI(sc.get_latest_data(string=i,datapath=dp),fid=corr)
     plt.figure(75)
-    measstrent=(90*result['x']/214 +6)/90
+    measstrent=(90*result['x']/214 +2)/90
     t=result['x']
     result['x']=measstrent
     #result['x']=result['x']/191
@@ -96,10 +96,10 @@ dp=os.path.join(meas_folder, date)
 label=['mI=0','mI=+1']
 meas_folder=r'D:\measuring\data'
 
-
+'''
 date='20130225'
 Ncorr=(.961,1-0.103)
-Ncorr_err=(.0117,.0.011)
+Ncorr_err=(.0117,0.011)
 dp=os.path.join(meas_folder, date)
 result_zmeas=sc.plot_data_MBI(sc.get_latest_data('150542',datapath=dp),fid=corr)
 result_xmeas=sc.plot_data_MBI(sc.get_latest_data('162431',datapath=dp),fid=corr)
@@ -124,7 +124,7 @@ def plot_backaction():
 
     plt.figure(43)
 
-    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['yerr'],label='rho 11')
+    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['yerr'],label='rho 11'175003)
     plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['yerr'],label='rho 00')
     plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['yerr'],label='rho 01')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
@@ -137,6 +137,7 @@ def plot_backaction():
     plt.xlim ([0, 1])
     plt.legend(loc=2)
     plt.show()
+'''
 '''
 result_25ns=sc.plot_rabi(sc.get_latest_data(datafolders[0],datapath=dp),fid=corr)
 result_125ns=sc.plot_rabi(sc.get_latest_data(datafolders[1],datapath=dp),fid=corr)
