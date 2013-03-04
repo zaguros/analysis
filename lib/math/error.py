@@ -70,7 +70,7 @@ class SingleQubitROC:
 
         self.correction_matrix = self.error_matrix.inv()
         
-        corr_vec = self.correction_matrix * self._p0
+        corr_vec = self.correction_matrix * sympy.Matrix([self._p0, 1-self._p0])
         corr_p0 = corr_vec[0]
 
         self.p0_formula = Formula()
