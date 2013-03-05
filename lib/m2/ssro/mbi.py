@@ -12,7 +12,6 @@ from analysis.lib.math import error
 from measurement.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
-    
     def get_readout_results(self, name=''):
         self.result_corrected = False
 
@@ -21,7 +20,20 @@ class MBIAnalysis(m2.M2Analysis):
         self.reps = self.g.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']
         self.readouts = adwingrp.attrs['nr_of_ROsequences']
-        self.ssro_results = adwingrp['ssro_results'].value.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+        
+        discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
+        self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
+        
+        # print 'data points', len(adwingrp['ssro_results'].value)
+        # print 'reps', self.reps
+        # print 'discards', discards
+
+        if discards > 0:
+            results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
+        else:
+            results = adwingrp['ssro_results'].value
+
+        self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
         self.normalized_ssro = self.ssro_results/float(self.reps)
         self.u_normalized_ssro = \
             (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
@@ -49,7 +61,8 @@ class MBIAnalysis(m2.M2Analysis):
         
         self.result_corrected = True
 
-    def get_N_ROC(self, F_init, u_F_init, F_RO_pulse, u_F_RO_pulse,
+    def get_N_ROC(self, F_init=1, u_F_init=0, F_RO_pulse=1, u_F_RO_pulse=0,
+            F_RO_pulse_twopi=1, u_F_RO_pulse_twopi=0,
             ssro_calib_folder=toolbox.latest_data('SSRO')):
 
         self.p0 = np.zeros(self.normalized_ssro.shape)
@@ -61,6 +74,8 @@ class MBIAnalysis(m2.M2Analysis):
         roc.u_F_init = u_F_init
         roc.F_RO_pulse = F_RO_pulse
         roc.u_F_RO_pulse = u_F_RO_pulse
+        roc.F_RO_pulse_twopi = F_RO_pulse_twopi
+        roc.u_F_RO_pulse_twopi = u_F_RO_pulse_twopi
         
         for i in range(len(self.normalized_ssro[0])):
             roc.F0_ssro, roc.u_F0_ssro, roc.F1_ssro, roc.u_F1_ssro = \
@@ -75,10 +90,27 @@ class MBIAnalysis(m2.M2Analysis):
         
         self.result_corrected = True
 
+    def save(self, fname='analysis.hdf5'):
+        f = h5py.File(os.path.join(self.folder, fname), 'w')
+        g = f.create_group('readout_result')
+        
+        g.attrs['sweep_name'] = self.sweep_name
+
+        f['/readout_result/sweep_pts'] = self.sweep_pts
+        f['/readout_result/normalized_ssro'] = self.normalized_ssro
+        f['/readout_result/u_normalized_ssro'] = self.u_normalized_ssro
+        
+        if self.result_corrected:
+            f['readout_result/p0'] = self.p0
+            f['readout_result/u_p0'] = self.u_p0
+
+        f.close()
+        
 
     def plot_results_vs_sweepparam(self, name='', save=True, **kw):
         labels = kw.get('labels', None)
         ret = kw.get('ret', None)
+        ylim = kw.get('ylim', (-0.05, 1.05))
         
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
@@ -105,7 +137,7 @@ class MBIAnalysis(m2.M2Analysis):
         else:
             ax.set_ylabel(r'$F(|0\rangle)$')
         
-        ax.set_ylim(-0.05, 1.05)
+        ax.set_ylim(ylim)
         ax.legend(loc='best')
 
         if save:
@@ -127,6 +159,8 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     u_F_init = kw.pop('u_F_init', 0.)
     F_RO_pulse = kw.pop('F_RO_pulse', 1.)
     u_F_RO_pulse = kw.pop('u_F_RO_pulse', 0.)
+    F_RO_pulse_twopi = kw.pop('F_RO_pulse_twopi', 1.)
+    u_F_RO_pulse_twopi = kw.pop('u_F_RO_pulse_twopi', 0.)
 
     a = MBIAnalysis(folder)
     a.get_sweep_pts()
@@ -136,8 +170,9 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
         a.get_electron_ROC()
     elif correction == 'N':
         a.get_N_ROC(F_init, u_F_init, F_RO_pulse, u_F_RO_pulse)
-    
-    a.plot_results_vs_sweepparam()
+
+    a.save()    
+    a.plot_results_vs_sweepparam(**kw)
     a.finish()
 
 

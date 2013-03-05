@@ -18,11 +18,11 @@ a.get_readout_results()
 a.get_electron_ROC()
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
-x = a.sweep_pts.reshape(-1)
-y = a.p0.reshape(-1)
+x = a.sweep_pts.reshape(-1)[:]
+y = a.p0.reshape(-1)[:]
 
-x0 = fit.Parameter(0.15, 'x0')
-of = fit.Parameter(1., 'of')
+x0 = fit.Parameter(0.13, 'x0')
+of = fit.Parameter(.1, 'of')
 a = fit.Parameter(0., 'a')
 fitfunc_str = '(1-of) + a (x-x0)**2'
 

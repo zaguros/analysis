@@ -13,13 +13,13 @@ from analysis.lib.tools import plot
 
 ### settings
 timestamp = None # 
-guess_offset = 0.925
-guess_ctr = 2863
+guess_offset = 0.92
+guess_ctr = 2860.6
 guess_splitB = 30.
-guess_splitN = 2.184
-guess_splitC = 12.78
-guess_width = 0.2
-guess_amplitude = 0.12
+guess_splitN = 2.187
+guess_splitC = .377 #12.78
+guess_width = 0.1
+guess_amplitude = 0.07
 
 
 ### script
@@ -35,8 +35,9 @@ y = a.get_readout_results()
 # try fitting
 fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
         guess_amplitude, guess_width, guess_ctr,
-        (3, guess_splitN),
-        # (2, guess_splitB), (2, guess_splitC), (3, guess_splitN), 
+        # (2, guess_splitN), 
+        (2, guess_splitC),
+        # (2, guess_splitB),  (3, guess_splitN), 
         do_print=True, ret=True, fixed=[4])
 ax = plot.plot_fit1d(fit_result, x, ret='ax', plot_data=True)
 

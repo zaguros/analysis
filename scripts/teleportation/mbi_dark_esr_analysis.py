@@ -16,11 +16,11 @@ from analysis.lib.math import error
 ### settings
 timestamp = None # 
 
-guess_offset = 0.91
-guess_A_min1 = 0.
+guess_offset = 1
+guess_A_min1 = 0.5
 guess_A_plus1 = 0.
-guess_A_0 = 0.4
-guess_x0 = 2863.08 - 2820
+guess_A_0 = 0.
+guess_x0 = 2862.92
 guess_sigma = 0.45
 
 splitting = 2.184
@@ -45,25 +45,26 @@ if timestamp != None:
 else:
     folder = toolbox.latest_data('PostInitDarkESR')
 
-a = mbi.PostInitDarkESRAnalysis(folder)
-x = a.get_sweep_pts()
-y = a.get_readout_results().reshape(-1)
+a = mbi.MBIAnalysis(folder)
+a.get_sweep_pts()
+a.get_readout_results()
+a.get_electron_ROC()
+ax = a.plot_results_vs_sweepparam(ret='ax', )
+
+x = a.sweep_pts
+y = a.p0.reshape(-1)
 
 # try fitting
 fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma],
         fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
-ax = plot.plot_fit1d(fit_result, x, ret='ax', plot_data=True)
+plot.plot_fit1d(fit_result, x, ret='ax', plot_data=False, ax=ax)
 
-ax.set_xlabel('MW frq (MHz)')
-ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')
-ax.set_title(a.timestamp+'\n'+a.measurementstring)
-
-plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'), 
+plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
         format='pdf')
 
 pol = error.Formula()
 a0, am1, ap1 = sympy.symbols('a0, am1, ap1')
-pol.formula = a0 / (a0 + ap1 + am1)
+pol.formula = am1 / (a0 + ap1 + am1)
 pol.values[a0] = A_0()
 pol.values[am1] = A_min1()
 pol.values[ap1] = A_plus1()

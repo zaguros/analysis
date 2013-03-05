@@ -8,7 +8,7 @@ from measurement.lib.tools import toolbox
 fn = os.path.join(toolbox.latest_data('SSRO'), 'analysis.hdf5')
 f = h5py.File(fn, 'r')
 
-pi_inv_prob = 0.6
+pi_inv_prob = 0.5
 noof_states = 6
 
 f0data = f['/fidelity/ms0']
@@ -26,7 +26,7 @@ p_prj0 = pop0 * p0 / (pop0*p0 + pop1*p1)
 fig = plt.figure(figsize=(8,4))
 ax = fig.add_subplot(111)
 
-ax.plot(t[1:], p_prj0[1:], 'o-')
+ax.plot(t[2:], p_prj0[2:], 'o-')
 ax.set_xlabel('time (us)')
 ax.set_ylabel('probability for projection into 0')
 ax.set_xlim(0,50)
