@@ -10,12 +10,12 @@ class NuclearSpinROC(error.SingleQubitROC):
         self.u_F0_ssro = 0.
         self.F1_ssro = 1.
         self.u_F1_ssro = 0.
-        self.F_init = 0.98
-        self.u_F_init = 0.02
-        self.F0_RO_pulse = 0.9
-        self.u_F0_RO_pulse = 0.01745
-        self.F1_RO_pulse = 0.886
-        self.u_F1_RO_pulse = 0.011
+        self.F_init = 0.965
+        self.u_F_init = 0.047
+        self.F0_RO_pulse = 0.93977
+        self.u_F0_RO_pulse = 0.013
+        self.F1_RO_pulse = 1-.0937 
+        self.u_F1_RO_pulse = 0.0079
     
     def _setup(self):
         error.SingleQubitROC._setup(self)

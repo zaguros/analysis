@@ -26,6 +26,12 @@ date='20130126'
 label=['mI=-1','mI=0']
 meas_folder=r'D:\measuring\data'
 
+datafolders=['013420','014025']
+date='20130228'
+label=['mI=-1','mI=0']
+meas_folder=r'D:\measuring\data'
+
+
 dp=os.path.join(meas_folder, date)
 amp=[]
 phase=[]
@@ -37,7 +43,7 @@ for i in datafolders:
     offset_guess=0.5   
     freq=1e-3
     amp=0.5
-    result=sc.plot_data_MBI(sc.get_latest_data(string=i,datapath=dp),fid=(0.8125,0.991900))
+    result=sc.plot_data_MBI(sc.get_latest_data(string=i,datapath=dp),fid=(0.7924,0.9917))
     print result['yerr']
     plt.figure(75)
     fit_result = fit.fit1d(result['x'], result['y'], ramsey.fit_ramsey_gaussian_decay, 
