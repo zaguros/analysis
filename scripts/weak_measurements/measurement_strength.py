@@ -51,10 +51,10 @@ def make_hist(data,title=''):
     ax.set_zlabel('')
     ax.set_title(title)
     plt.show()
-def calc_meas_strength(x,t_max=214.,theta_min=6.):
+def calc_meas_strength(x,t_max=210.,theta_min=4.):
     measstren=(90*x/t_max +theta_min)/90
     return measstren
-
+'''
 corr=(.728,1-.088)
 datafolders=['175338','175003']
 date='20130225'
@@ -95,49 +95,63 @@ date='20130118'
 dp=os.path.join(meas_folder, date)
 label=['mI=0','mI=+1']
 meas_folder=r'D:\measuring\data'
-
 '''
-date='20130225'
-Ncorr=(.961,1-0.103)
-Ncorr_err=(.0117,0.011)
-dp=os.path.join(meas_folder, date)
-result_zmeas=sc.plot_data_MBI(sc.get_latest_data('150542',datapath=dp),fid=corr)
-result_xmeas=sc.plot_data_MBI(sc.get_latest_data('162431',datapath=dp),fid=corr)
-zmeas_x=calc_meas_strength(result_zmeas['x'],214,6)
-xmeas_x=calc_meas_strength(result_xmeas['x'],214,6)
-def plot_backaction():
-    plt.figure(42)
 
-    plt.errorbar(zmeas_x,result_zmeas['y_cond'],fmt='o', yerr=result_zmeas['yerr'],label='rho 11')
-    plt.errorbar(zmeas_x,1-result_zmeas['y_cond'],fmt='o', yerr=result_zmeas['yerr'],label='rho 00')
-    plt.errorbar(xmeas_x,result_xmeas['y_cond']-0.5,fmt='o',yerr=result_xmeas['yerr'],label='rho 01')
+date='20130227'
+zfolder='223541'
+yfolder='232520'
+xfolder='002126'
+#dp=os.path.join(meas_folder, date)
+result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date)
+result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+date='20130304'
+result_ymeas=sc.analyse_plot_results_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_y',d=date)
+result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+date='20130305'
+result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date)
+result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+
+zmeas_x=calc_meas_strength(result_zmeas['x'],210,4)
+xmeas_x=calc_meas_strength(result_xmeas['x'],210,4)
+def plot_backaction():
+    figure42=plt.figure(42)
+    #plt.figure(42)
+    print 'plotting backaction'
+    plt.clf()
+    plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='rho 11')
+    plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='rho 00')
+    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='<Sx>')
+    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='<Sy>')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
     plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'b-')
     plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-')
     plt.xlabel (' Measurement Strength (a.u.)', fontsize = 16)
     plt.ylabel ('Density Matrix Element', fontsize = 16)
     plt.title('Backaction conditioned on weak measurement',fontsize=16)
-    plt.ylim ([0, 1])
+    plt.ylim ([-0.1, 1])
     plt.xlim ([0, 1])
     plt.legend(loc=2)
     plt.show()
 
-    plt.figure(43)
-
-    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['yerr'],label='rho 11'175003)
-    plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['yerr'],label='rho 00')
-    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['yerr'],label='rho 01')
+    figure43=plt.figure(43)
+    #plt.figure(42)
+    print 'plotting backaction'
+    plt.clf()
+    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='rho 11')
+    plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='rho 00')
+    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='<Sx>')
+    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='<Sy>')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
-    plt.plot(np.linspace(0,1,100),np.ones(100)*.5,'b-')
-    plt.plot(np.linspace(0,1,100),np.ones(100)*.5,'g-')
+    plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'b-')
+    plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'g-')
     plt.xlabel (' Measurement Strength (a.u.)', fontsize = 16)
     plt.ylabel ('Density Matrix Element', fontsize = 16)
-    plt.title('State after weak measurement (unconditional)',fontsize=16)
-    plt.ylim ([0, 1])
+    plt.title('Backaction (unconditioned)',fontsize=16)
+    plt.ylim ([-.1, 1])
     plt.xlim ([0, 1])
     plt.legend(loc=2)
     plt.show()
-'''
+plot_backaction()    
 '''
 result_25ns=sc.plot_rabi(sc.get_latest_data(datafolders[0],datapath=dp),fid=corr)
 result_125ns=sc.plot_rabi(sc.get_latest_data(datafolders[1],datapath=dp),fid=corr)

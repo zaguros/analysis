@@ -1,6 +1,7 @@
 import os, time
 import numpy as np
 from numpy import *
+import sympy
 from matplotlib import pyplot as plt
 from analysis.lib.fitting import fit, rabi, common, esr, ramsey, SE
 from analysis.lib.tools import plot
@@ -9,6 +10,7 @@ from analysis.lib.ssro import ssro_adwin as ssrosc
 from analysis.lib.math import error
 from analysis.lib.spin import Nspin_twolevel_correction as Ncor
 from measurement.lib.config import experiment_lt2 as explt2
+
 
 def num2str(num, precision): 
     return "%0.*f" % (precision, num)
@@ -86,7 +88,7 @@ def get_MBI_readout_result(datapath,fname,key=''):
     ######## MEASUREMENT SPECS ################
     ###########################################
     files = os.listdir(datapath)
-    f=fname+'Spin_RO'
+    f=fname
     for k in files:
         if 'statics_and_parameters.npz' in k:
             stats_params_file = k
@@ -125,11 +127,13 @@ def get_MBI_readout_result(datapath,fname,key=''):
     return ret_dict
 
 
-def get_electron_ROC(normalized_ssro,reps,ssro_calib_folder=get_latest_data('SSRO')):
+def get_electron_ROC(normalized_ssro,reps,ssro_calib_folder=get_latest_data('SSRO'),RO_dur=''):
     p0 = np.zeros(normalized_ssro.shape)
     u_p0 = np.zeros(normalized_ssro.shape)
-    
-    ro_duration = explt2.ssroprotocol['RO_duration']
+    if RO_dur=='':
+        ro_duration = explt2.ssroprotocol['RO_duration']
+    else:
+        ro_duration=RO_dur
     roc = error.SingleQubitROC()
     [[roc.F0,roc.F1],[roc.uF0,roc.uF1]]=ssrosc.get_readout_corr(ro_duration,ssro_calib_folder)
     u_normalized_ssro = (normalized_ssro*(1.-normalized_ssro)/reps)**0.5
@@ -156,28 +160,30 @@ def get_nuclear_ROC(normalized_ssro,reps,ssro_calib_folder=get_latest_data('SSRO
     return p0,u_p0
 
 
-def plot_ssro_vs_sweep(x,y,yerr,xname,yname,title,datapath):
-    figure1 = plt.figure(1)
-    plt.clf()
-    plt.errorbar(x,y, fmt='o',yerr=yerr)
+def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',title='',datapath='',nr=1):
+    figure1 = plt.figure(nr)
+    ax=figure1.add_subplot(111)
+    ax.errorbar(x,y, fmt='o',yerr=yerr)
 
-    plt.xlabel(xname)
-    plt.ylabel(yname)
-    plt.ylim([-0.05,1.05])
-    plt.title(title)
+    ax.set_xlabel(xname)
+    ax.set_ylabel(yname)
+    ax.set_ylim(ylim)
+    ax.set_title(title)
     if save:
         figure1.savefig(datapath+'\\'+title+'.png')
+        figure1.savefig(datapath+'\\'+title+'.pdf',format='pdf')
     print 'look for file'
     print datapath
+    return ax
 
-def analyse_plot_results_vs_sweepparam(fname,yname,Nuclcor=False,title='',dataname='',datapath='',d=''):
+def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d=''):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
         currdate=d
 
     dp=get_latest_data(fname,datapath,d)
-    ssro_result=get_MBI_readout_result(dp,dataname)
+    ssro_result=get_MBI_readout_result(dp,dataname,key='SSRO_counts')
     
     reps=ssro_result['reps']
     x=ssro_result['x']
@@ -186,35 +192,40 @@ def analyse_plot_results_vs_sweepparam(fname,yname,Nuclcor=False,title='',datana
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,currdate+'-'+fname+title,dp,nr=1)
+    
+    res={'y':ssro_ro_cor,'uy':ussro_ro_cor,'x':x}
 
-def analyse_weakcond_vs_sweepparam(fname,yname,Nuclcor=False,title='',datapath='',d=''):
+    return res
+def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d=''):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
         currdate=d
     dp=get_latest_data(fname,datapath,d)
-    ssro_result_cond=get_MBI_readout_result(dp,'SSRO_cond_counts')
-    ssro_result_weak=get_MBI_readout_result(dp,'SSRO_weak_counts')
+    ssro_result_cond=get_MBI_readout_result(dp,dataname,key='SSRO_cond_counts')
+    ssro_result_weak=get_MBI_readout_result(dp,dataname,key='SSRO_weak_counts')
     
     reps=ssro_result_weak['reps']
 
     x=ssro_result_weak['x']
     y_norm_weak=ssro_result_weak['y']/float(reps)
     y_norm_cond=ssro_result_cond['y']/map(float,ssro_result_weak['y'])
-    [ssro_ro_cor_weak,ussro_ro_cor_weak]=get_electron_ROC(y_norm_weak,reps,ssro_calib_folder=get_latest_data('SSRO',date=currdate))
+    [ssro_ro_cor_weak,ussro_ro_cor_weak]=get_electron_ROC(y_norm_weak,reps,ssro_calib_folder=get_latest_data('SSRO',date=currdate),RO_dur=explt2.MBIprotocol['weak_RO_duration'])
     print 'do cond'
     if Nuclcor == False:
         [ssro_ro_cor_cond,ussro_ro_cor_cond]=get_electron_ROC(y_norm_cond,np.mean(ssro_result_weak['y'])
-                                                        ,ssro_calib_folder=get_latest_data('SSRO',date=currdate))
+                                                        ,ssro_calib_folder=get_latest_data('SSRO',date=currdate),RO_dur=explt2.MBIprotocol['RO_duration'])
     else:
         [ssro_ro_cor_cond,ussro_ro_cor_cond]=get_nuclear_ROC(y_norm_cond,np.mean(ssro_result_weak['y'])
                                                         ,ssro_calib_folder=get_latest_data('SSRO',date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor_weak,ussro_ro_cor_weak,ssro_result_weak['xname'],'P(ms0)',
-            currdate+'-'+fname+'weak msmsnt r175003esult',dp)
-    plot_ssro_vs_sweep(x,ssro_ro_cor_cond,ussro_ro_cor_cond,ssro_result_cond['xname'],'P(ms0)',
-            currdate+'-'+fname+'cond msmsnt result',dp)
+    plot_ssro_vs_sweep(x,ssro_ro_cor_weak,ussro_ro_cor_weak,ylim,ssro_result_weak['xname'],yname,
+            currdate+'-'+fname+'weak msmsnt r175003esult',dp,nr=1)
+    plot_ssro_vs_sweep(x,ssro_ro_cor_cond,ussro_ro_cor_cond,ylim,ssro_result_cond['xname'],yname,
+            currdate+'-'+fname+'cond msmsnt result',dp,nr=2)
+    res={'y_cond':ssro_ro_cor_cond,'y_weak':ssro_ro_cor_weak,'uy_cond':ussro_ro_cor_cond,'uy_weak':ussro_ro_cor_weak,'x':x}
 
+    return res
 def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname='',datapath='',d=''):
     if d == '':
         currdate = time.strftime('%Y%m%d')
@@ -235,7 +246,9 @@ def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname=
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)    
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)
+
+
 
 
 ##############################################
@@ -1034,6 +1047,7 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
 
     return  [fit_result]
 
+
 def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
     plt.close('all')
 
@@ -1053,10 +1067,18 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
     e = np.load(datapath+'\\'+stats_params_file)
     f_center = e['mw_center_freq']
     mwpower = e['mw_power']
-    mw_min_freq = e['min_mw_freq']
-    mw_max_freq = e['max_mw_freq']
+    #mw_min_freq = e['min_mw_freq']
+    #mw_max_freq = e['max_mw_freq']
     noof_datapoints = e['noof_datapoints']
     noof_reps = e['completed_repetitions']
+    repetitions = e['completed_repetitions']
+    if 'sweep_par' in e.keys():
+        mw_freq=e['sweep_par']
+    else:
+        mw_min_freq = e['min_mw_freq']
+        mw_max_freq = e['max_mw_freq']
+        mw_freq = np.linspace(mw_min_freq,mw_max_freq,noof_datapoints)*1e-9
+        
     e.close()
 
     ###########################################
@@ -1064,50 +1086,74 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
     ###########################################
     
     f = np.load(datapath+'\\'+spin_ro_file)
-    raw_counts = f['counts']
+    #raw_counts = f['counts']
     SSRO_counts = f['SSRO_counts']
-    repetitions = f['sweep_axis']
+    
     t = f['time']
-
-    SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
-
-    tot_size = len(repetitions)
-    reps_per_point = tot_size/float(noof_datapoints)
+    if 'sweep_par' in e.keys():
+        SSRO_readout = SSRO_counts/float(noof_reps)
+        counts_during_readout = SSRO_counts
+    else:
+        SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    print SSRO_readout
 
     idx = 0
-    counts_during_readout = zeros(noof_datapoints)
-    mw_freq = linspace(mw_min_freq,mw_max_freq,noof_datapoints)
-    counts_during_readout = sum(raw_counts, axis = 1)
-    counts_during_readout = SSRO_readout
+
+
+
+
+    [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(SSRO_readout,noof_reps,ssro_calib_folder=get_latest_data('SSRO'))
     #########################################
     ############ FITTING ####################
     #########################################
 
-    offset_guess = counts_during_readout.max()
-    dip_depth_guess = offset_guess - counts_during_readout.min()
+    guess_offset = ssro_ro_cor.max()
+    guess_A_min1 = 0.04
+    guess_A_plus1 = 0.01
+    guess_A_0 = 0.01
+    guess_x0 = 2.8289
+    guess_sigma = 0.00045
 
-    print offset_guess
-    print dip_depth_guess
-
-    width_guess = 1E6
-    f_dip_guess = f_dip
-    noof_dips = 3
-    dip_separation = 2E6
-
+    splitting = 2.19e-3
+    
+    A_min1 = fit.Parameter(guess_A_min1, 'A_min1')
+    A_plus1 = fit.Parameter(guess_A_plus1, 'A_plus1')
+    A_0 = fit.Parameter(guess_A_0, 'A_0')
+    o = fit.Parameter(guess_offset, 'o')
+    x0 = fit.Parameter(guess_x0, 'x0')
+    sigma = fit.Parameter(guess_sigma, 'sigma')
+    def fitfunc(x):
+        return o() - A_min1()*np.exp(-((x-(x0()-splitting))/sigma())**2) \
+            - A_plus1()*np.exp(-((x-(x0()+splitting))/sigma())**2) \
+            - A_0()*np.exp(-((x-x0())/sigma())**2) 
     figure2 = plt.figure(2)
-    plt.plot(mw_freq/1E9,counts_during_readout, '-ok')
+   
+    ax=plot_ssro_vs_sweep(mw_freq,ssro_ro_cor,ussro_ro_cor,[0.4,1.05],'MW freq (GHz)','P(ms=0)','Dark ESR',datapath,nr=1)
 
     if fit_data:
-        fit_result = fit.fit1d(mw_freq/1E9, counts_during_readout, 
-                esr.fit_ESR_gauss, offset_guess, dip_depth_guess, width_guess/1E9,
-                f_dip_guess/1E9, (noof_dips, dip_separation/1E9), do_print = True, ret = True)
-        plot.plot_fit1d(fit_result,np.linspace(mw_freq.min()/1E9,mw_freq.max()/1E9,501))
+        fit_result = fit.fit1d(mw_freq, ssro_ro_cor, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma],fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+        plot.plot_fit1d(fit_result,np.linspace(mw_freq.min(),mw_freq.max(),751),
+                ax=ax, plot_data=False,info_xy=(0.128,0.328))
         center_peak = fit_result['params_dict']['x0']
-        splitting = fit_result['params_dict']['s0']
+
 
         print '-1: f = ', (center_peak - splitting), ' GHz'
         print '0: f = ', center_peak, ' GHz'
         print '1: f = ', (center_peak + splitting), ' GHz'
+        print 'Populations: ',
+
+    pol = error.Formula()
+    a0, am1, ap1 = sympy.symbols('a0, am1, ap1')
+    pol.formula = max(0.,am1) / (max(0.,a0) + max(0.,ap1) + max(0.,am1))
+    pol.values[a0] = A_0()
+    pol.values[am1] = A_min1()
+    pol.values[ap1] = A_plus1()
+    pol.uncertainties[a0] = fit_result['error_dict']['A_0']
+    pol.uncertainties[am1] = fit_result['error_dict']['A_min1']
+    pol.uncertainties[ap1] = fit_result['error_dict']['A_plus1']
+
+    print 'Spin polarization mI=-1 = %.3f +/- %.3f' \
+            % (float(pol.value()), float(pol.uncertainty()))
 
     plt.xlabel('MW frequency (GHz)')
     plt.ylabel('Fraction of events N >0')
@@ -1120,16 +1166,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
     x = 6.0
     y = 8.0
 
-    figure3 = plt.figure(figsize=(x,y))
-    plt.pcolor(raw_counts, cmap = 'hot', antialiased=False)
-    plt.xlabel('Readout time (us)')
-    plt.ylabel('MW repetition number')
-    plt.title('Total histogram, integrated over repetitions')
-    plt.colorbar()
-    if save:
-        figure3.savefig(datapath+'\\histogram_counts_2d.png')
-
-    f.close()
+   
 
     ###########################################
     ######## SPIN PUMPING #####################
