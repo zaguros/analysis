@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.lines import Line2D
 
 from analysis.lib.fitting import fit
 
@@ -54,8 +55,14 @@ def plot_fit1d(res, fit_xvals, ax=None, ret=None, **kw):
 
     return
 
-#### Density matrix plotting
-def plot_dm(dm, **kw):
+#### Density matrix and state plotting
+def dm(dm, **kw):
+    '''
+    Plot the real and imaginary parts of a density matrix as 3d bar charts.
+    '''
+
+    dmlabel = kw.pop('dmlabel', r'$\rho$')
+
     dmr = dm.real
     dmi = dm.imag
 
@@ -68,12 +75,12 @@ def plot_dm(dm, **kw):
     xticks = [(r'$| %d \rangle$' % i) for i in range(lx)]
     yticks = [(r'$\langle %d |$' % i) for i in range(ly)]
 
-    plot_mat(dmr, axr, title=r'$\Re(\rho)$', 
+    matrix(dmr, axr, title=r'$\Re$'+dmlabel, 
             xticks=xticks, yticks=yticks, **kw)
-    plot_mat(dmi, axi, title=r'$\Im(\rho)$', 
+    matrix(dmi, axi, title=r'$\Im$'+dmlabel, 
             xticks=xticks, yticks=yticks, **kw)
 
-def plot_mat(mat, ax=None, **kw):
+def matrix(mat, ax=None, **kw):
     '''
     plot a matrix as 3d bar chart.
     '''
@@ -111,8 +118,8 @@ def plot_mat(mat, ax=None, **kw):
     if yticks == []:
         yticks = [str(i) for i in np.arange(ly)]
     
-    ax.w_xaxis.set_ticks(np.arange(lx) + 0.5)
-    ax.w_yaxis.set_ticks(np.arange(ly) + 0.5)
+    ax.w_xaxis.set_ticks(np.arange(lx) + 0.675)
+    ax.w_yaxis.set_ticks(np.arange(ly) + 0.675)
     ax.w_xaxis.set_ticklabels(xticks)
     ax.w_yaxis.set_ticklabels(yticks)
     ax.set_zlim3d([-1,1])
@@ -126,6 +133,88 @@ def plot_mat(mat, ax=None, **kw):
 
     return
 
+def msmnt_outcomes(outcomes, u_outcomes=None,
+        renormalize=True, ax=None, **kw):
+    '''
+    plot a bar plot with measurement outcomes.
 
+    arguments:
+    - renormalize : bool (True)
+      if True, assume data range is 0..1; renormalize to -1..1
+      else leave as is (and assume range is 0..1 per default)
+
+    known kws:
+    - fc : color ('RoyalBlue')
+      face color of the data bars
+    - xticks : array (None)
+      xaxis tick labels for the outcome bars
+    - reference : array (None)
+      reference values, to be shown for comparison (renormalized in the same way as
+      the data)
+    '''
+
+    fc = kw.pop('fc', 'RoyalBlue')
+    xticks = kw.pop('xticks', None)
+    reference = kw.pop('reference', None)
+    
+    if ax==None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+    # get the correct dimensions
+    l = len(outcomes)
+
+    # renormalization
+    if renormalize:
+        outcomes = outcomes*2 - 1.
+        if u_outcomes != None:
+            yerr = 2*u_outcomes.copy()
+        if reference != None:
+            ref = reference.copy()*2 - 1.
+    else:
+        if u_outcomes != None:
+            yerr = u_outcomes.copy()
+        if reference != None:
+            ref = reference.copy()
+
+    # plot the data
+    pos = np.arange(l)
+    w = 0.8
+
+    if reference != None:
+        ax.bar(pos, ref, w, color='w')
+    
+    kw = {}
+    if u_outcomes != None:
+        kw['yerr'] = yerr
+        kw['ecolor'] = 'k'
+        kw['capsize'] = 5
+
+    ax.bar(pos, outcomes, w, color=fc, **kw)
+
+    # format the plot
+    if not renormalize:
+        yticks = [0,0.25,0.5,0.75,1]
+        ylim = (-0.1,1.1)
+        ax.add_line(Line2D([-0.1, l-0.1], [0,0], color='k'))
+    else:
+        yticks = [-1,-0.5,0,0.5,1]
+        ylim = (-1.1,1.1)
+        ax.add_line(Line2D([-0.1, l-0.1], [0,0], color='k'))
+
+    if xticks == None:
+        xticks = [str(i) for i in range(l)]
+
+    ax.set_xticks(pos + 0.4)
+    ax.set_xlim(-0.1, l-0.1)
+    ax.set_xticklabels(xticks)
+
+    ax.set_yticks(yticks)
+    ax.set_ylim(ylim)
+
+
+
+
+    
 
 
