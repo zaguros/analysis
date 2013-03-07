@@ -7,22 +7,25 @@ from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import mbi
 
+timestamp = None
+
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('calib')
+    folder = toolbox.latest_data()
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results()
-a.get_electron_ROC()
+# a.get_electron_ROC()
+a.get_N_ROC(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
 
 x0 = fit.Parameter(0.13, 'x0')
-of = fit.Parameter(.1, 'of')
+of = fit.Parameter(0., 'of')
 a = fit.Parameter(0., 'a')
 fitfunc_str = '(1-of) + a (x-x0)**2'
 
