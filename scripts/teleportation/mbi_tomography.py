@@ -35,11 +35,14 @@ y12=a.p0.reshape(-1)[2] -0.5
 u_x11=a.u_p0.reshape(-1)[0]
 u_x12=a.u_p0.reshape(-1)[1]
 u_y12=a.u_p0.reshape(-1)[2]
-densitymatrix=np.matrix([[x11,x12+y12*1j],[x12-y12*1j,1-x11]])
-print 'Density matrix:'
-print densitymatrix
+densitymatrix=array([[x11,x12+y12*1j],[x12-y12*1j,1-x11]])
+plot.plot_dm(densitymatrix)
+densitymatrix2=np.matrix([[x11,x12+y12*1j],[x12-y12*1j,1-x11]])
+print 'Density Matrix:'
+print densitymatrix2
 print 'Error in [x11,x12,y12]:'
 print [u_x11,u_x12,u_y12]
+
 
 a.finish()
 

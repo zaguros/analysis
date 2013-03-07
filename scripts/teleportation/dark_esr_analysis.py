@@ -39,7 +39,7 @@ fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
         (2, guess_splitC),
         # (2, guess_splitB), 
         (3, guess_splitN), 
-        do_print=True, ret=True, fixed=[4])
+        do_print=True, ret=True, fixed=[4,5])
 ax = plot.plot_fit1d(fit_result, x, ret='ax', plot_data=True)
 
 ax.set_xlabel('MW frq (MHz)')
