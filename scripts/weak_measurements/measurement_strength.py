@@ -51,9 +51,18 @@ def make_hist(data,title=''):
     ax.set_zlabel('')
     ax.set_title(title)
     plt.show()
-def calc_meas_strength(x,t_max=210.,theta_min=4.):
-    measstren=(90*x/t_max +theta_min)/90
+def calc_meas_strength(x,t_zero=25.,t_star=700.):
+    measstren=theta(x)/90.
     return measstren
+
+def theta(tau,t_zero=25,t_star=1300.):
+    return 90-2*np.arccos(sqrt(S(tau,t_zero,t_star)))*180./np.pi
+
+def S(tau,t_zero=25,t_star=1300):
+    return np.exp(-(tau/t_star)**2)*np.cos(np.pi/4-(tau+t_zero)*np.pi*.002185/2.)**2
+
+
+
 '''
 corr=(.728,1-.088)
 datafolders=['175338','175003']
@@ -97,22 +106,22 @@ label=['mI=0','mI=+1']
 meas_folder=r'D:\measuring\data'
 '''
 
-date='20130227'
-zfolder='223541'
+date='20130305'
+zfolder='005909'
 yfolder='232520'
-xfolder='002126'
+xfolder='024929'
 #dp=os.path.join(meas_folder, date)
 result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date)
 result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
-date='20130304'
+
 result_ymeas=sc.analyse_plot_results_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_y',d=date)
 result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
-date='20130305'
+
 result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date)
 result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
 
-zmeas_x=calc_meas_strength(result_zmeas['x'],210,4)
-xmeas_x=calc_meas_strength(result_xmeas['x'],210,4)
+zmeas_x=calc_meas_strength(result_zmeas['x'],229,4)
+xmeas_x=calc_meas_strength(result_xmeas['x'],229,4)
 def plot_backaction():
     figure42=plt.figure(42)
     #plt.figure(42)
@@ -120,8 +129,8 @@ def plot_backaction():
     plt.clf()
     plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='rho 11')
     plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='rho 00')
-    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='<Sx>')
-    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='<Sy>')
+    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='Re(rho 01)')
+    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='Im(rho 01)')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
     plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'b-')
     plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-')
@@ -139,8 +148,8 @@ def plot_backaction():
     plt.clf()
     plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='rho 11')
     plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='rho 00')
-    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='<Sx>')
-    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='<Sy>')
+    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='Re(rho 01)')
+    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='Im(rho 01)')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
     plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'b-')
     plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'g-')
