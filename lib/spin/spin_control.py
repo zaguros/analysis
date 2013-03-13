@@ -45,6 +45,7 @@ def get_latest_data(string = 'ADwin_SSRO', datapath = '',date=''):
             latest_dir = os.path.join(df,right_dirs[len(right_dirs)-1])
         else:
             print 'No measurements containing %s in %s'%(string, df)
+            latest_dir=''
         
         print '\nAnalyzing data in %s'%latest_dir
 
@@ -256,7 +257,7 @@ def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname=
 
 
 
-def plot_data_MBI(datapath,fid=(0.8104,0.991),fiderr=(3.91e-03,9.392e-04), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.793,0.989),fiderr=(4.05e-03,1.02e-03), fit_data = True, title='',with_detuning = False, save = True):
 
     
     ###########################################
@@ -1048,7 +1049,12 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     return  [fit_result]
 
 
-def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
+def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d=''):
+  
+    if d=='':
+       date=time.strftime('%Y%m%d')
+    else:
+       date=d
     plt.close('all')
 
     ###########################################
@@ -1102,7 +1108,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
 
 
 
-    [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(SSRO_readout,noof_reps,ssro_calib_folder=get_latest_data('SSRO'))
+    [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(SSRO_readout,noof_reps,ssro_calib_folder=get_latest_data('SSRO',date=date))
     #########################################
     ############ FITTING ####################
     #########################################
