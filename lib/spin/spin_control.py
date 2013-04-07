@@ -1220,8 +1220,8 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
 
     guess_offset = ssro_ro_cor.max()
     guess_A_min1 = 0.04
-    guess_A_plus1 = 0.01
-    guess_A_0 = 0.01
+    guess_A_plus1 = 0.04
+    guess_A_0 = 0.04
     guess_x0 = 2.8289
     guess_sigma = 0.00045
 

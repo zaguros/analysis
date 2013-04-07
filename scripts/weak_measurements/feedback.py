@@ -84,9 +84,10 @@ foldernamez_8 = '180434'
 date='20130401'
 foldernamez_15 = '124303'
 
-
+date2='20130404'
 succesprob_fn=[foldernamez_2,foldernamez_4,foldernamez_6,foldernamez_8,foldernamez_15]
-RO_times=[2,4,6,8,15]
+succesprob_fn2=['111620','113803','114334','110834','114951','115605','120436','120919','121458','122045','131359']
+RO_times=[2,4,6,8,15,10,20,30,6,40,50,1,2,4,8,50]
 
 def targetstate_analysis(foldernamez,foldernamex, filename='Spin_RO',date=''):
     zdata_norm,zdata_corr=sc.plot_feedback(foldernamez, filename='Spin_RO',d=date)
@@ -107,6 +108,7 @@ def targetstate_analysis(foldernamez,foldernamex, filename='Spin_RO',date=''):
     res_all=[Sz[0],Sx[0],Sy[0]]
     res_feedback=[Sz[1],Sx[1],Sy[1]]
     res_heralded=[Sz[2],Sx[2],Sy[2]]
+    
     meas_strength = calc_meas_strength(50,12,1400)
     
     ideal=[np.sin(np.pi+meas_strength*np.pi/2.)/2.+0.5,np.cos(meas_strength*np.pi/2.)/2.,0]
@@ -130,14 +132,17 @@ def targetstate_analysis(foldernamez,foldernamex, filename='Spin_RO',date=''):
 
     return res_all,res_feedback,res_heralded
 
-def succesprob(folders,RO_times,date):
+def succesprob(folders,folderstwo,RO_times,date,date2):
     s_heralded=[]
     s_feedback=[]
     for fn in folders:
         zdata_norm,zdata_corr=sc.plot_feedback(fn, filename='Spin_RO',d=date)
         s_heralded.append(zdata_norm['SN'][2])
         s_feedback.append(zdata_norm['SN'][2]+(1-zdata_norm['SN'][2])*zdata_norm['FS'][2])
-
+    for fn in folderstwo:
+        zdata_norm,zdata_corr=sc.plot_feedback(fn, filename='Spin_RO',d=date2)
+        s_heralded.append(zdata_norm['SN'][1])
+        s_feedback.append(zdata_norm['SN'][1]+(1-zdata_norm['SN'][1])*zdata_norm['FS'][1])
     fig=plt.figure()
     ax=fig.add_subplot(111)
 
@@ -146,8 +151,8 @@ def succesprob(folders,RO_times,date):
     ax.set_ylabel('P(Succes)')
     ax.set_xlabel('RO duration (us)')
     ax.set_title('Probability to reach Target state')
-    ax.set_yticks([0,0.25,0.5])
+    ax.set_yticks([0,0.25,0.5,0.75,1])
     ax.legend(loc=2)
 
-#total,feedback,heralded=targetstate_analysis(foldernamez,foldernamex)    
-succesprob(succesprob_fn,RO_times,date)
+total,feedback,heralded=targetstate_analysis(foldernamez_2,foldernamex_2)    
+#succesprob(succesprob_fn,succesprob_fn2,RO_times,date,date2)
