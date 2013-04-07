@@ -51,14 +51,14 @@ def make_hist(data,title=''):
     ax.set_zlabel('')
     ax.set_title(title)
     plt.show()
-def calc_meas_strength(x,t_zero=25.,t_star=700.):
-    measstren=theta(x)/90.
+def calc_meas_strength(x,t_zero,t_star):
+    measstren=theta(x,t_zero,t_star)/90.
     return measstren
 
-def theta(tau,t_zero=25,t_star=1300.):
+def theta(tau,t_zero,t_star):
     return 90-2*np.arccos(sqrt(S(tau,t_zero,t_star)))*180./np.pi
 
-def S(tau,t_zero=25,t_star=1300):
+def S(tau,t_zero,t_star):
     return np.exp(-(tau/t_star)**2)*np.cos(np.pi/4-(tau+t_zero)*np.pi*.002185/2.)**2
 
 
@@ -106,10 +106,32 @@ label=['mI=0','mI=+1']
 meas_folder=r'D:\measuring\data'
 '''
 
-date='20130305'
-zfolder='005909'
-yfolder='232520'
-xfolder='024929'
+
+#date='20130305'
+#zfolder='005909'
+#yfolder='232520'
+#xfolder='024929'
+date='20130313'
+# min y:
+zfolder='214008'
+yfolder='224959'
+xfolder='224131'
+
+# mI-1:
+#zfolder='193905'
+#yfolder='185211'
+#xfolder='191458'
+
+# mI0:
+#zfolder='210551'
+#yfolder='201904'
+#xfolder='204243'
+
+# x:
+#zfolder='224310'
+#yfolder='213105'
+#xfolder='221323'
+
 #dp=os.path.join(meas_folder, date)
 result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date)
 result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
@@ -120,17 +142,18 @@ result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=T
 result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date)
 result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
 
-zmeas_x=calc_meas_strength(result_zmeas['x'],229,4)
-xmeas_x=calc_meas_strength(result_xmeas['x'],229,4)
+zmeas_x=calc_meas_strength(result_zmeas['x'],12,2000)
+xmeas_x=calc_meas_strength(result_xmeas['x'],12,2000)
+
 def plot_backaction():
     figure42=plt.figure(42)
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
-    plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='rho 11')
-    plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='rho 00')
-    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='Re(rho 01)')
-    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='Im(rho 01)')
+    plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='ms=-1,-1')
+    plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='ms=0,0')
+    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='Im(rho 01)')
+    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='Re(rho 01)')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
     plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'b-')
     plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-')
@@ -146,10 +169,10 @@ def plot_backaction():
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
-    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='rho 11')
-    plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='rho 00')
-    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='Re(rho 01)')
-    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='Im(rho 01)')
+    plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='ms= -1, -1')
+    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='ms=0,0')
+    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='Im(rho 01)')
+    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='Re(rho 01)')
     plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
     plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'b-')
     plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'g-')

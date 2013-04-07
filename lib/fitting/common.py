@@ -249,7 +249,6 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
     return p0, fitfunc, fitfunc_str
 
 
-
 def fit_line(g_a, g_b, *arg):
     """
     fitfunction for a line

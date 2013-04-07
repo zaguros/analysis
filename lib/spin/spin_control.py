@@ -2,6 +2,7 @@ import os, time
 import numpy as np
 from numpy import *
 import sympy
+import matplotlib
 from matplotlib import pyplot as plt
 from analysis.lib.fitting import fit, rabi, common, esr, ramsey, SE
 from analysis.lib.tools import plot
@@ -45,6 +46,7 @@ def get_latest_data(string = 'ADwin_SSRO', datapath = '',date=''):
             latest_dir = os.path.join(df,right_dirs[len(right_dirs)-1])
         else:
             print 'No measurements containing %s in %s'%(string, df)
+            latest_dir=''
         
         print '\nAnalyzing data in %s'%latest_dir
 
@@ -160,30 +162,49 @@ def get_nuclear_ROC(normalized_ssro,reps,ssro_calib_folder=get_latest_data('SSRO
     return p0,u_p0
 
 
-def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',title='',datapath='',nr=1):
-    figure1 = plt.figure(nr)
-    ax=figure1.add_subplot(111)
-    ax.errorbar(x,y, fmt='o',yerr=yerr)
-
-    ax.set_xlabel(xname)
-    ax.set_ylabel(yname)
+def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',label='',title='',datapath='',nr='',splot=111,save=True):
+    if nr=='':
+            if splot==111:
+                figure1 = plt.figure()
+            else: 
+                figure1 = plt.figure(figsize=(16,12))
+    else:
+            if splot==111:
+                figure1 = plt.figure(nr)
+            else:
+                figure1 = plt.figure(nr,figsize=(16,12))
+    matplotlib.rc('xtick',labelsize=14)
+    matplotlib.rc('ytick',labelsize=14)
+    ax=figure1.add_subplot(splot)
+    ax.errorbar(x,y, fmt='o',yerr=yerr,label=label)
+    
+    ax.set_xlabel(xname,fontsize=14)
+    ax.set_ylabel(yname,fontsize=14)
     ax.set_ylim(ylim)
     ax.set_title(title)
+
     if save:
-        figure1.savefig(datapath+'\\'+title+'.png')
-        figure1.savefig(datapath+'\\'+title+'.pdf',format='pdf')
+        print datapath
+        print title
+        print'where it should be saved'
+        print os.path.join(datapath,title+'.png')
+        figure1.savefig(os.path.join(datapath,title+'.png'))
+        figure1.savefig(os.path.join(datapath,title+'.pdf'),format='pdf')
     print 'look for file'
     print datapath
+    figure1.subplots_adjust(wspace=.3,hspace=.3)
+    if label!='':
+        ax.legend(loc=1)
     return ax
 
-def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d=''):
+def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='result',dataname='',datapath='',key='SSRO_counts',d=''):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
         currdate=d
 
     dp=get_latest_data(fname,datapath,d)
-    ssro_result=get_MBI_readout_result(dp,dataname,key='SSRO_counts')
+    ssro_result=get_MBI_readout_result(dp,dataname,key=key)
     
     reps=ssro_result['reps']
     x=ssro_result['x']
@@ -192,7 +213,7 @@ def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,titl
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,currdate+'-'+fname+title,dp,nr=1)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,datapath=dp,title=currdate+'-'+fname+title,nr=1)
     
     res={'y':ssro_ro_cor,'uy':ussro_ro_cor,'x':x}
 
@@ -248,15 +269,101 @@ def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname=
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)
 
+def get_feedback_data(foldername,filename='Spin_RO',d=''):
+    datapath=get_latest_data(foldername,date=d)
+    
+    files = os.listdir(datapath)
+    f=filename
+    for k in files:
+        if f in k:
+            spin_ro_file = k
 
+    data = np.load(datapath+'\\'+spin_ro_file)
+    reps_array=data['SN']+data['FF']+data['FS']
+    reps=reps_array[0]
+    data_norm={}
+    data_norm['sweep_par']=data['sweep_par']
+    data_norm['sweep_par_name']=data['sweep_par_name']
+    data_norm['SN']=data['SN']/(reps+0.)
+    data_norm['FS']=data['FS']/(reps-data['SN']+0.)
+    data_norm['FF']=data['FF']/(reps-data['SN']+0.)
+    data_norm['uSN']=(data_norm['SN']*(1-data_norm['SN'])/reps)**.5
+    data_norm['uFS']=(data_norm['FS']*(1-data_norm['FS'])/(reps-data['SN']+0.))**.5
+    data_norm['uFF']=(data_norm['FF']*(1-data_norm['FF'])/(reps-data['SN']+0.))**.5
+    
+    data_norm['FinalRO_SN']=data['FinalRO_SN']/(data['SN']+0.)
+    data_norm['FinalRO_FS']=data['FinalRO_FS']/(data['FS']+0.)
+    data_norm['FinalRO_FF']=data['FinalRO_FF']/(data['FF']+0.)
+    data_norm['FinalRO_Succes']=(data['FinalRO_SN']+data['FinalRO_FS'])/(data['SN']+data['FS']+0.)
+    data_norm['FinalRO_All']=(data['FinalRO_SN']+data['FinalRO_FS']+data['FinalRO_FF'])/(reps+0.)
+
+    data_corr={}
+    data_corr['sweep_par']=data['sweep_par']
+    data_corr['sweep_par_name']=data['sweep_par_name']
+    data_corr['FinalRO_SN'],data_corr['uFinalRO_SN']= get_nuclear_ROC(data_norm['FinalRO_SN'],data['SN'])
+    data_corr['FinalRO_FS'],data_corr['uFinalRO_FS']= get_nuclear_ROC(data_norm['FinalRO_FS'],data['FS'])
+    data_corr['FinalRO_FF'],data_corr['uFinalRO_FF']= get_nuclear_ROC(data_norm['FinalRO_FF'],data['FF'])
+    data_corr['FinalRO_Succes'],data_corr['uFinalRO_Succes']= get_nuclear_ROC(data_norm['FinalRO_Succes'],
+            data['FS']+data['SN'])
+    data_corr['FinalRO_All'],data_corr['uFinalRO_All']= get_nuclear_ROC(data_norm['FinalRO_All'],reps)
+    return data_norm,data_corr,datapath
+
+def plot_feedback(foldername, filename='Spin_RO',d=''):
+    data_norm, data_corr,dp = get_feedback_data (foldername, filename,d=d)
+    x = data_norm['sweep_par']
+
+    plot_ssro_vs_sweep(x,data_norm['SN'],data_norm['uSN'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='1st msmnt',datapath=dp,nr=2,splot=221,save=False)
+    plot_ssro_vs_sweep(x,data_norm['FS'],data_norm['uFS'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='2nd msmnt',datapath=dp,nr=2,splot=221,save=False)
+    plot_ssro_vs_sweep(x,data_norm['SN']+(1-data_norm['SN'])*data_norm['FS'],(data_norm['uSN']+data_norm['uFS'])/2.,ylim=[0,0.5],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='P(succes) total',datapath=dp,nr=2,splot=221,save=False)
+    plot_ssro_vs_sweep(x,data_corr['FinalRO_SN'],data_corr['uFinalRO_SN'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(mI=-1)',title='Final RO SN',datapath=dp,nr=2,splot=222,save=False)
+    plot_ssro_vs_sweep(x,data_corr['FinalRO_FS'],data_corr['uFinalRO_FS'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(mI=-1)',title='Final RO FS',datapath=dp,nr=2,splot=223,save=False)
+    plot_ssro_vs_sweep(x,data_corr['FinalRO_FF'],data_corr['uFinalRO_FF'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(mI=-1)',title='Final RO FF',datapath=dp,nr=2,splot=224,save=True)
+
+    plot_ssro_vs_sweep(x,data_corr['FinalRO_All'],data_corr['uFinalRO_All'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(mI=-1)',title='Final RO Compare',label='All',datapath=dp,nr=3,splot=111,save=False)
+    plot_ssro_vs_sweep(x,data_corr['FinalRO_Succes'],data_corr['uFinalRO_Succes'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(mI=-1)',title='Final RO Compare',label='Feedback',datapath=dp,nr=3,splot=111,save=False)
+    plot_ssro_vs_sweep(x,data_corr['FinalRO_SN'],data_corr['uFinalRO_SN'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(mI=-1)',title='Final RO Compare',label='Heralded',datapath=dp,nr=3,splot=111,save=True)
+
+    return data_norm,data_corr
 
 
 ##############################################
+def fit_sin(x,y,uy,savepath='',plot_fft=False):
+    FFT = fft.fft(y)
+    N = int(len(x))
+    timestep = (x[2]-x[1])
+    freq = fft.fftfreq(N,d = timestep)
+
+    #Remove offset:
+    FFT[freq == 0] = 0
+    if plot_fft:
+        
+        figure1 = plt.figure(1)
+        plt.bar(freq*1E3,abs(FFT), width = 0.4*1E3*(freq[1]-freq[0]), align = 'center')
+        plt.xlabel('Frequency (MHz)')
+        plt.ylabel('Amplitude')
+        plt.title('FFT (offset removed)')
+        
+        figure1.savefig(savepath+'\\fft_signal_rabi.png')
+
+    freq_guess = freq[find_nearest(abs(FFT),abs(FFT).max())]
+    amp_guess = (y.max()+y.min())/2.0
+    offset_guess = y.min()+(y.max()+y.min())/2.0
+    phase_guess = 0
+
+    figure3 = plt.figure(3)
+    plt.clf()
+    ax1 = figure3.add_subplot(111)
+
+    fit_result = fit.fit1d(x, y, rabi.fit_rabi_simple, 
+               freq_guess, amp_guess, offset_guess, phase_guess,
+            do_print = True , ret = True)
+    fit_result['yerr']=uy
+    plot.plot_fit1d(fit_result,np.linspace(x.min(),x.max(),201),plot_data=True)
+    return fit_result
 
 
 
-
-def plot_data_MBI(datapath,fid=(0.8104,0.991),fiderr=(3.91e-03,9.392e-04), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_data = True, title='',with_detuning = False, save = True):
 
     
     ###########################################
@@ -1048,7 +1155,12 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
     return  [fit_result]
 
 
-def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
+def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d=''):
+  
+    if d=='':
+       date=time.strftime('%Y%m%d')
+    else:
+       date=d
     plt.close('all')
 
     ###########################################
@@ -1095,22 +1207,21 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
         counts_during_readout = SSRO_counts
     else:
         SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
-    print SSRO_readout
 
     idx = 0
 
 
 
 
-    [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(SSRO_readout,noof_reps,ssro_calib_folder=get_latest_data('SSRO'))
+    [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(SSRO_readout,noof_reps,ssro_calib_folder=get_latest_data('SSRO',date=date))
     #########################################
     ############ FITTING ####################
     #########################################
 
     guess_offset = ssro_ro_cor.max()
     guess_A_min1 = 0.04
-    guess_A_plus1 = 0.01
-    guess_A_0 = 0.01
+    guess_A_plus1 = 0.04
+    guess_A_0 = 0.04
     guess_x0 = 2.8289
     guess_sigma = 0.00045
 
@@ -1127,8 +1238,10 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9):
             - A_plus1()*np.exp(-((x-(x0()+splitting))/sigma())**2) \
             - A_0()*np.exp(-((x-x0())/sigma())**2) 
     figure2 = plt.figure(2)
-   
-    ax=plot_ssro_vs_sweep(mw_freq,ssro_ro_cor,ussro_ro_cor,[0.4,1.05],'MW freq (GHz)','P(ms=0)','Dark ESR',datapath,nr=1)
+    dp=datapath
+    print dp
+
+    ax=plot_ssro_vs_sweep(mw_freq,ssro_ro_cor,ussro_ro_cor,[0.4,1.05],'MW freq (GHz)','P(ms=0)',title='Dark_ESR',datapath=dp,nr=1)
 
     if fit_data:
         fit_result = fit.fit1d(mw_freq, ssro_ro_cor, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma],fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
