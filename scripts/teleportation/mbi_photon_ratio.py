@@ -8,7 +8,7 @@ from measurement.lib.tools import toolbox
 fn = os.path.join(toolbox.latest_data('SSRO'), 'analysis.hdf5')
 f = h5py.File(fn, 'r')
 
-pi_inv_prob = 0.5
+pi_inv_prob = 0.45
 noof_states = 6
 
 f0data = f['/fidelity/ms0']

@@ -10,8 +10,9 @@ from analysis.lib.m2.ssro import ssro, mbi
 from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
-from analysis.lib.math import error
+from analysis.lib.math import error, tomography
 
+idealstate = 1/np.sqrt(2)*np.array([1,1])#np.array([1,0])#
 
 timestamp = None
 
@@ -24,25 +25,29 @@ else:
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results()
-a.get_N_ROC(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
+a.get_N_ROC(0.97,0.03,0.96,0.01,0.93,0.01)#(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
 
 a.save()    
-a.plot_results_vs_sweepparam()
+# a.plot_results_vs_sweepparam()
 
-x11=a.p0.reshape(-1)[0]
-x12=0.5-a.p0.reshape(-1)[1]
-y12=a.p0.reshape(-1)[2] -0.5
-u_x11=a.u_p0.reshape(-1)[0]
-u_x12=a.u_p0.reshape(-1)[1]
-u_y12=a.u_p0.reshape(-1)[2]
-densitymatrix=array([[x11,x12+y12*1j],[x12-y12*1j,1-x11]])
-plot.plot_dm(densitymatrix)
-densitymatrix2=np.matrix([[x11,x12+y12*1j],[x12-y12*1j,1-x11]])
+mz, u_mz = a.p0.reshape(-1)[0], a.u_p0.reshape(-1)[0]
+mx, u_mx = a.p0.reshape(-1)[1], a.u_p0.reshape(-1)[1]
+my, u_my = a.p0.reshape(-1)[2], a.u_p0.reshape(-1)[2]
+
+
+dm, u_dm = tomography.measured_single_qubit_dm(mx,my,mz,u_mx,u_my,u_mz)
+fid, u_fid = tomography.fidelity(idealstate, dm, u_dm)
+
+# plotting
+plot.dm(dm)
+plot.msmnt_outcomes(np.array([mx,my,mz]), np.array([u_mx, u_my, u_mz]),
+        xticks=['X', 'Y', 'Z'])
+
 print 'Density Matrix:'
-print densitymatrix2
-print 'Error in [x11,x12,y12]:'
-print [u_x11,u_x12,u_y12]
-
+print dm
+print 'Error:'
+print u_dm
+print 'Fidelity:', fid, '+/-', u_fid
 
 a.finish()
 

@@ -8,18 +8,18 @@ from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import sequence_ssro
 from measurement.lib.tools import toolbox
-from analysis.lib.fitting import fit, esr
+from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
 timestamp = None # 
 guess_offset = 0.92
-guess_ctr = 2862.6
+guess_ctr = 2821
 guess_splitB = 30.
 guess_splitN = 2.187
 guess_splitC = .377 #12.78
-guess_width = 0.1
-guess_amplitude = 0.07
+guess_width = 0.03
+guess_amplitude = 0.2
 
 
 ### script
@@ -27,9 +27,10 @@ if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
     folder = toolbox.latest_data('DarkESR')
+print folder
 
 a = sequence_ssro.DarkESRAnalysis(folder)
-x = a.get_sweep_pts() / 1e6
+x = a.get_sweep_pts()/1e6
 y = a.get_readout_results()
 
 # try fitting
