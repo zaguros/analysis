@@ -25,7 +25,7 @@ def measured_single_qubit_dm(mx, my, mz, u_mx=0., u_my=0., u_mz=0.):
     y = .5 - my; u_y = u_my
 
     return (np.array([[a, x+1j*y],[x-1j*y, 1.-a]]), 
-            np.array([[u_a, u_x+1j*u_y],[u_x-1j*u_y, 1.-u_a]]))
+            np.array([[u_a, u_x+1j*u_y],[u_x-1j*u_y, u_a]]))#1-u_a
 
 def fidelity(statevec, dm, u_dm):
     '''

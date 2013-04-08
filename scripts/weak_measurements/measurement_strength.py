@@ -151,6 +151,31 @@ xfolder='044207'
 #yfolder='065137'
 #xfolder='071845'
 
+#date='20130305'
+#zfolder='005909'
+#yfolder='232520'
+#xfolder='024929'
+date='20130313'
+# min y:
+zfolder='214008'
+yfolder='224959'
+xfolder='224131'
+
+# mI-1:
+#zfolder='193905'
+#yfolder='185211'
+#xfolder='191458'
+
+# mI0:
+#zfolder='210551'
+#yfolder='201904'
+#xfolder='204243'
+
+# x:
+#zfolder='224310'
+#yfolder='213105'
+#xfolder='221323'
+
 #dp=os.path.join(meas_folder, date)
 result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date)
 result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
@@ -164,11 +189,15 @@ result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=T
 zmeas_x=calc_meas_strength(result_zmeas['x'],12,3400)
 xmeas_x=calc_meas_strength(result_xmeas['x'],12,3400)
 
+zmeas_x=calc_meas_strength(result_zmeas['x'],12,2000)
+xmeas_x=calc_meas_strength(result_xmeas['x'],12,2000)
+
 def plot_backaction():
     figure42=plt.figure(42)
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
+
     plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='|mI=-1>',color='RoyalBlue')
     plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='|mI=0>',color='Crimson')
     plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='|y> (Im)',color='LimeGreen')
@@ -215,7 +244,7 @@ def plot_backaction():
 	plt.text(0.2, 1.2, r'initial state |mI=-1>')
 	plt.ylim ([-0.2, 1.3])
     	plt.yticks([0,0.5,1])
-	
+
     plt.xlabel (' Measurement Strength (a.u.)', fontsize = 16)
     plt.ylabel ('Density Matrix Element', fontsize = 16)
     plt.title('Backaction conditioned on weak measurement |mI=-1>',fontsize=16)
@@ -229,6 +258,7 @@ def plot_backaction():
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
+
     plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='|mI=-1>',color='RoyalBlue')
     plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='|mI=0>',color='Crimson')
     plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='|y> (Im)',color='LimeGreen')
@@ -277,6 +307,7 @@ def plot_backaction():
 	plt.ylim ([-0.2, 1.3])
     	plt.yticks([0,0.5,1])
 	
+
     plt.xlabel (' Measurement Strength (a.u.)', fontsize = 16)
     plt.ylabel ('Density Matrix Element', fontsize = 16)
     plt.title('Backaction (unconditioned)',fontsize=16)

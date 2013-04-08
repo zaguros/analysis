@@ -13,7 +13,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = '20130304181952'
+timestamp = None
 guess_frq = 1./180
 guess_amp = 0.5
 guess_k = 0.
@@ -23,16 +23,16 @@ guess_phi = 0.
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data()
+    folder = toolbox.latest_data('NMR_SIL2')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results()
-a.get_N_ROC(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
+a.get_N_ROC(0.97, 0.03, 0.96,0.01,0.93,0.01)#(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
 fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), rabi.fit_rabi_fixed_upper,
-        guess_frq, guess_amp, guess_phi, guess_k, fixed=[2,3],
+        guess_frq, guess_amp, guess_phi, guess_k, fixed=[1,2],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
         plot_data=False)
