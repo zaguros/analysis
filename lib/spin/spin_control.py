@@ -24,7 +24,7 @@ def find_nearest(array,value):
     return idx
 
 def get_latest_data(string = 'ADwin_SSRO', datapath = '',date=''):
-    meas_folder = r'D:\measuring\data'
+    meas_folder = r'D:\machielblok\Desktop\PhD\QTlab\data'
     if date=='':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -204,7 +204,9 @@ def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,titl
         currdate=d
 
     dp=get_latest_data(fname,datapath,d)
+
     ssro_result=get_MBI_readout_result(dp,dataname,key=key)
+
     
     reps=ssro_result['reps']
     x=ssro_result['x']
@@ -387,7 +389,6 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
             do_cond=True
 
     e = np.load(datapath+'\\'+stats_params_file)
-    mwpower = e['mw_power']
     par = e['sweep_par']
 
 
@@ -594,8 +595,9 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
     print 'reloaded'
     figure5 = plt.figure(10)
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
-            offset_guess, init_amp_guess, decay_guess, do_print = True,ret=False,
-            plot_fitparams_xy = (0.5,0.5))
+            offset_guess, init_amp_guess, decay_guess,
+            do_plot = True, do_print = True, newfig = False,
+            plot_fitparams_xy = (0.5,0.5),ret=False)
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
     plt.xlabel('Time ($\mu$s)')
@@ -639,22 +641,26 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
         data['y_weak']=SSRO_weak_readout_corr
     return data
 
-
-def plot_data(datapath,fid=(0.7901,0.991),fiderr=(4.07e-04,0.91265e-03), fit_data = True, title='',with_detuning = False, save = True):
-
-    plt.close('all')
+def plot_data_MBI(datapath,fid=(0.7814,0.9897),fiderr=(4.03e-03,1.047e-03), fit_data = True, title='',with_detuning = False, save = True):
     ###########################################
     ######## MEASUREMENT SPECS ################
     ###########################################
     files = os.listdir(datapath)
-    
+    do_weak=False
+    do_cond=False
     for k in files:
         if 'statics_and_parameters.npz' in k:
             stats_params_file = k
-        if 'Spin_RO.npz' in k:
+        if '0_Spin_RO.npz' in k:
             spin_ro_file = k
         if 'SP_histogram.npz' in k:
             sp_file = k
+        if 'weak_Spin_RO.npz' in k:
+            weak_spin_ro_file = k
+            do_weak=True
+        if 'cond_Spin_RO.npz' in k:
+            cond_spin_ro_file = k
+            do_cond=True
 
     e = np.load(datapath+'\\'+stats_params_file)
     par = e['sweep_par']
@@ -944,8 +950,7 @@ def plot_data(datapath,fid=(0.7901,0.991),fiderr=(4.07e-04,0.91265e-03), fit_dat
 
 
 
-
-def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.7952,0.990),fiderr=(4.03e-03,9.3919e-04)):
+def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8065,0.993),fiderr=(2.793e-03,5.853e-04)):
 
     plt.close('all')
     ###########################################
@@ -1154,6 +1159,16 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
 
     return  [fit_result]
 
+<<<<<<< HEAD
+def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d=''):
+  
+    if d=='':
+       date=time.strftime('%Y%m%d')
+    else:
+       date=d
+    plt.close('all')
+
+=======
 
 def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d=''):
   
@@ -1162,6 +1177,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
     else:
        date=d
     plt.close('all')
+>>>>>>> c40b567785887614e7af5b8fe3aaf34769ead25a
 
     ###########################################
     ######## MEASUREMENT SPECS ################
@@ -1250,6 +1266,8 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
         center_peak = fit_result['params_dict']['x0']
 
 
+
+
         print '-1: f = ', (center_peak - splitting), ' GHz'
         print '0: f = ', center_peak, ' GHz'
         print '1: f = ', (center_peak + splitting), ' GHz'
@@ -1311,7 +1329,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
         col_names = '#Col0: MW freq (GHz)\tCol1: Integrated counts\n'
         col_vals = str()
         for k in arange(noof_datapoints):
-            col_vals += num2str(mw_freq[k]/1E9,10)+'\t'+num2str(counts_during_readout[k],0)+'\n'
+            col_vals += num2str(mw_freq[k]/1E9,10)+'\t'+num2str(SSRO_readout[k],0)+'\n'
         fo = open(datapath+'\\integrated_histogram.dat', "w")
         for item in [curr_date, col_names, col_vals]:
             fo.writelines(item)
@@ -1327,7 +1345,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
             fo.writelines(item)
         fo.close()
 
-    return True
+    return fit_result,ssro_ro_cor,ussro_ro_cor
 
 def plot_ramsey(datapath, fid=(0.7611,0.9895),fiderr=(4.264e-03,1.019e-03),fit_data = True, save = True):
 

@@ -31,6 +31,10 @@ date='20130228'
 label=['mI=-1','mI=0']
 meas_folder=r'D:\measuring\data'
 
+datafolders=['120900','123020']
+date='20130313'
+label=['mI=-1','mI=0']
+meas_folder=r'D:\machielblok\Desktop\PhD\QTlab\data'
 
 dp=os.path.join(meas_folder, date)
 amp=[]
@@ -38,13 +42,13 @@ phase=[]
 plt.close('all')
 plt.figure(75)
 j=0
+color=['Crimson','RoyalBlue']
 for i in datafolders:    
     tau_guess = 3000
     offset_guess=0.5   
     freq=1e-3
     amp=0.5
-    result=sc.plot_data_MBI(sc.get_latest_data(string=i,datapath=dp),fid=(0.7924,0.9917))
-    print result['yerr']
+    result=sc.analyse_plot_results_vs_sweepparam(i,yname='P(mI=0)',Nuclcor=False,dataname='Spin_RO',d=date)
     plt.figure(75)
     fit_result = fit.fit1d(result['x'], result['y'], ramsey.fit_ramsey_gaussian_decay, 
                 tau_guess, offset_guess, (freq,amp,90),
@@ -54,9 +58,9 @@ for i in datafolders:
     #t=result['x']
     #result['x']=measstrent
     #result['x']=result['x']/191
-    plt.errorbar(result['x']/1000.,result['y'],fmt='o',yerr=result['yerr'],label=label[j])
+    plt.errorbar(result['x']/1000.,result['y'],fmt='o',yerr=result['uy'],label=label[j],color=color[j])
     fit_x=np.linspace(result['x'].min(),result['x'].max(),201)
-    plt.errorbar(fit_x/1000.,fit_result['fitfunc'](fit_x),fmt='-r')
+    plt.errorbar(fit_x/1000.,fit_result['fitfunc'](fit_x),fmt='-',color=color[j])
     #yerr_weak=np.sqrt(2*(1+np.cos(result['y']))/500.)/sin(result['x']*90*pi/180)
     #plt.errorbar(result['x'],2*(result['y']-0.5)/np.sin(result['x']*90*pi/180),fmt='o',yerr=yerr_weak,label=label[j])
     j=j+1
