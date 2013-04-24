@@ -4,8 +4,14 @@ import pylab as plt
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
 from analysis.lib.spin import spin_control as sc
-from matplotlib import rc
+import matplotlib
+matplotlib.use('PDF')
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+
 from mpl_toolkits.mplot3d import Axes3D
+from analysis.lib.tools import weaktools as tls
+from analysis.lib.math import tomography as tom
 
 #datafolders=['1154','1252','1258','1303','1310','1347','1351','1316','1326', '1453']
 #RO_time=[0,1,2,3,4,5,6,7,9, 11]
@@ -123,10 +129,10 @@ zfolder='004118'
 yfolder='233139'
 xfolder='000101'
 
-state='-1'
-zfolder='020210'
-yfolder='010717'
-xfolder='013224'
+#state='-1'
+#zfolder='020210'
+#yfolder='010717'
+#xfolder='013224'
 
 #0
 #zfolder='032201'
@@ -134,10 +140,10 @@ xfolder='013224'
 #xfolder='025425'
 
 #x
-state='X'
-zfolder='050829'
-yfolder='040013'
-xfolder='044207'
+#state='X'
+#zfolder='050829'
+#yfolder='040013'
+#xfolder='044207'
 
 #-x
 #state='-X'
@@ -155,11 +161,11 @@ xfolder='044207'
 #zfolder='005909'
 #yfolder='232520'
 #xfolder='024929'
-date='20130313'
+#date='20130313'
 # min y:
-zfolder='214008'
-yfolder='224959'
-xfolder='224131'
+#zfolder='214008'
+#yfolder='224959'
+#xfolder='224131'
 
 # mI-1:
 #zfolder='193905'
@@ -177,14 +183,14 @@ xfolder='224131'
 #xfolder='221323'
 
 #dp=os.path.join(meas_folder, date)
-result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date)
-result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date,save=False)
+result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date,save=False)
 
-result_ymeas=sc.analyse_plot_results_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_y',d=date)
-result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+result_ymeas=sc.analyse_plot_results_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_y',d=date,save=False)
+result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date,save=False)
 
-result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date)
-result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date,save=False)
+result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date,save=False)
 
 zmeas_x=calc_meas_strength(result_zmeas['x'],12,3400)
 xmeas_x=calc_meas_strength(result_xmeas['x'],12,3400)
@@ -193,7 +199,7 @@ zmeas_x=calc_meas_strength(result_zmeas['x'],12,2000)
 xmeas_x=calc_meas_strength(result_xmeas['x'],12,2000)
 
 def plot_backaction():
-    figure42=plt.figure(42)
+    figure42=plt.figure(42,figsize=[0.8,0.8])
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
@@ -254,7 +260,7 @@ def plot_backaction():
     plt.legend(loc=2,prop={'size':10})
     plt.show()
 
-    figure43=plt.figure(43)
+    figure43=plt.figure(43,figsize=[0.8,0.8])
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
@@ -317,8 +323,42 @@ def plot_backaction():
     plt.xticks([0,0.5,1])
     plt.legend(loc=2,prop={'size':10})
     plt.show()
+
+#plot_backaction()    
+
+dir='up'
+index=0
+postselect='cond'
+
+tau=result_xmeas['x'][index]
+t=str(tau)+'ns_'+postselect
+utau=1
+th=''
+if postselect!='cond':
+    zcor=result_zmeas['y'][index]
+    xcor=result_xmeas['y'][index]
+    ycor=result_ymeas['y'][index]
+
+    uzcor=result_zmeas['uy'][index]
+    uxcor=result_xmeas['uy'][index]
+    uycor=result_ymeas['uy'][index]
+else:
+    zcor=result_zcond['y_cond'][index]
+    xcor=result_xcond['y_cond'][index]
+    ycor=result_ycond['y_cond'][index]
+
+    uzcor=result_zcond['uy_cond'][index]
+    uxcor=result_xcond['uy_cond'][index]
+    uycor=result_ycond['uy_cond'][index]
+dm,f,uf,ideal=tls.calc_fidelity_psi(tau,zcor,xcor,utau,uzcor,uxcor,y=ycor,uy=uycor,th=th,dir=dir)
+idr=tls.make_rho(ideal[0]**2,ideal[1]*ideal[0])
+print idr
+
+tls.make_hist(dm[0],np.array([[0,0],[0,0]]),path=r'D:\machielblok\Desktop\PhD\QTlab\data\output\backaction',title=t)
+print 'Fidelity',f,'  +-',uf
+print 'Ideal state:', ideal
+print 'uz: ',uzcor,'  ux: ',uxcor
 '''
-plot_backaction()    
 
 result_25ns=sc.plot_rabi(sc.get_latest_data(datafolders[0],datapath=dp),fid=corr)
 result_125ns=sc.plot_rabi(sc.get_latest_data(datafolders[1],datapath=dp),fid=corr)
