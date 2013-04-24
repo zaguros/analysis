@@ -7,8 +7,8 @@ from analysis.lib.nv import nvlevels
 # settings
 timestamp = None
 
-Ex = 61.8
-Ey = 60.15
+Ex = 61.73
+Ey = 59.79
 
 lines = nvlevels.get_ES_ExEy(Ex,Ey)
 

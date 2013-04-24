@@ -258,7 +258,7 @@ def ssrocalib(folder=''):
         folder=get_latest_data()
     a = SSROAnalysis(folder)
     
-    for n,ms in zip(['ms0', 'ms1'], [0,1]): 
+    for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
         a.get_run(n)
         a.cpsh_hist(a.ro_counts, a.reps, name=n)
         a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n)
