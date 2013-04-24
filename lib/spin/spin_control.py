@@ -197,7 +197,7 @@ def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',label='',title='',d
         ax.legend(loc=1)
     return ax
 
-def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='result',dataname='',datapath='',key='SSRO_counts',d=''):
+def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='result',dataname='',datapath='',key='SSRO_counts',d='',save=True):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -215,12 +215,12 @@ def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,titl
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,datapath=dp,title=currdate+'-'+fname+title,nr=1)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,datapath=dp,title=currdate+'-'+fname+title,nr=1,save=save)
     
     res={'y':ssro_ro_cor,'uy':ussro_ro_cor,'x':x}
 
     return res
-def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d=''):
+def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d='',save=True):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -243,13 +243,13 @@ def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title=''
         [ssro_ro_cor_cond,ussro_ro_cor_cond]=get_nuclear_ROC(y_norm_cond,np.mean(ssro_result_weak['y'])
                                                         ,ssro_calib_folder=get_latest_data('SSRO',date=currdate))
     plot_ssro_vs_sweep(x,ssro_ro_cor_weak,ussro_ro_cor_weak,ylim,ssro_result_weak['xname'],yname,
-            currdate+'-'+fname+'weak msmsnt r175003esult',dp,nr=1)
+            currdate+'-'+fname+'weak msmsnt r175003esult',dp,nr=1,save=save)
     plot_ssro_vs_sweep(x,ssro_ro_cor_cond,ussro_ro_cor_cond,ylim,ssro_result_cond['xname'],yname,
-            currdate+'-'+fname+'cond msmsnt result',dp,nr=2)
+            currdate+'-'+fname+'cond msmsnt result',dp,nr=2,save=save)
     res={'y_cond':ssro_ro_cor_cond,'y_weak':ssro_ro_cor_weak,'uy_cond':ussro_ro_cor_cond,'uy_weak':ussro_ro_cor_weak,'x':x}
 
     return res
-def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname='',datapath='',d=''):
+def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname='',datapath='',d='',save=True):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -269,7 +269,7 @@ def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname=
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp,save=save)
 
 def get_feedback_data(foldername,filename='Spin_RO',d=''):
     datapath=get_latest_data(foldername,date=d)
@@ -302,18 +302,19 @@ def get_feedback_data(foldername,filename='Spin_RO',d=''):
     data_corr={}
     data_corr['sweep_par']=data['sweep_par']
     data_corr['sweep_par_name']=data['sweep_par_name']
-    data_corr['FinalRO_SN'],data_corr['uFinalRO_SN']= get_nuclear_ROC(data_norm['FinalRO_SN'],data['SN'])
-    data_corr['FinalRO_FS'],data_corr['uFinalRO_FS']= get_nuclear_ROC(data_norm['FinalRO_FS'],data['FS'])
-    data_corr['FinalRO_FF'],data_corr['uFinalRO_FF']= get_nuclear_ROC(data_norm['FinalRO_FF'],data['FF'])
+    data_corr['FinalRO_SN'],data_corr['uFinalRO_SN']= get_nuclear_ROC(data_norm['FinalRO_SN'],data['SN'],get_latest_data('SSRO',date=d))
+    data_corr['FinalRO_FS'],data_corr['uFinalRO_FS']= get_nuclear_ROC(data_norm['FinalRO_FS'],data['FS'],get_latest_data('SSRO',date=d))
+    data_corr['FinalRO_FF'],data_corr['uFinalRO_FF']= get_nuclear_ROC(data_norm['FinalRO_FF'],data['FF'],get_latest_data('SSRO',date=d))
     data_corr['FinalRO_Succes'],data_corr['uFinalRO_Succes']= get_nuclear_ROC(data_norm['FinalRO_Succes'],
-            data['FS']+data['SN'])
-    data_corr['FinalRO_All'],data_corr['uFinalRO_All']= get_nuclear_ROC(data_norm['FinalRO_All'],reps)
+            data['FS']+data['SN'],get_latest_data('SSRO',date=d))
+    data_corr['FinalRO_All'],data_corr['uFinalRO_All']= get_nuclear_ROC(data_norm['FinalRO_All'],reps,get_latest_data('SSRO',date=d))
     return data_norm,data_corr,datapath
 
 def plot_feedback(foldername, filename='Spin_RO',d=''):
     data_norm, data_corr,dp = get_feedback_data (foldername, filename,d=d)
     x = data_norm['sweep_par']
-
+    fig=plt.figure(2)
+    fig.clf()
     plot_ssro_vs_sweep(x,data_norm['SN'],data_norm['uSN'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='1st msmnt',datapath=dp,nr=2,splot=221,save=False)
     plot_ssro_vs_sweep(x,data_norm['FS'],data_norm['uFS'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='2nd msmnt',datapath=dp,nr=2,splot=221,save=False)
     plot_ssro_vs_sweep(x,data_norm['SN']+(1-data_norm['SN'])*data_norm['FS'],(data_norm['uSN']+data_norm['uFS'])/2.,ylim=[0,0.5],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='P(succes) total',datapath=dp,nr=2,splot=221,save=False)
@@ -1159,16 +1160,6 @@ def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_
 
     return  [fit_result]
 
-<<<<<<< HEAD
-def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d=''):
-  
-    if d=='':
-       date=time.strftime('%Y%m%d')
-    else:
-       date=d
-    plt.close('all')
-
-=======
 
 def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d=''):
   
@@ -1177,7 +1168,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
     else:
        date=d
     plt.close('all')
->>>>>>> c40b567785887614e7af5b8fe3aaf34769ead25a
+
 
     ###########################################
     ######## MEASUREMENT SPECS ################
@@ -1237,7 +1228,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
     guess_offset = ssro_ro_cor.max()
     guess_A_min1 = 0.04
     guess_A_plus1 = 0.04
-    guess_A_0 = 0.04
+    guess_A_0 = 0.00
     guess_x0 = 2.8289
     guess_sigma = 0.00045
 
