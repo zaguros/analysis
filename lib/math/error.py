@@ -38,8 +38,9 @@ class Formula:
 
     def num_eval(self, symbol, values, uncertainties=None):
         valfunc = lambdify(symbol, self.value(), 'numpy')
-        
-        if uncertainties == None:        
+        print values
+        print symbol
+	if uncertainties == None:        
             uncertaintyfunc = lambdify(symbol, self.uncertainty(), 'numpy')
             return valfunc(values), uncertaintyfunc(values)
         
