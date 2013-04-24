@@ -86,6 +86,7 @@ class SSROAnalysis(m2.M2Analysis):
             lastbin=-1, plot=True, **kw):
         
         name = kw.pop('name', '')
+        ret = kw.pop('ret', False)
  
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
@@ -105,6 +106,9 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder, 
                 'readout_relaxation'+fn_suffix+'.'+self.plot_format), 
                 format=self.plot_format)
+
+        if ret:
+            return ro_time, ro_countrate
 
     
     def spinpumping(self, sp_time, sp_counts, reps, binsize,
