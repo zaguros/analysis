@@ -86,6 +86,7 @@ class SSROAnalysis(m2.M2Analysis):
             lastbin=-1, plot=True, **kw):
         
         name = kw.pop('name', '')
+        ret = kw.pop('ret', False)
  
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
@@ -105,6 +106,9 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder, 
                 'readout_relaxation'+fn_suffix+'.'+self.plot_format), 
                 format=self.plot_format)
+
+        if ret:
+            return ro_time, ro_countrate
 
     
     def spinpumping(self, sp_time, sp_counts, reps, binsize,
@@ -253,10 +257,12 @@ class SSROAnalysis(m2.M2Analysis):
                 format=self.plot_format)
 
 
-def ssrocalib(folder):
+def ssrocalib(folder=''):
+    if folder=='':
+        folder=get_latest_data()
     a = SSROAnalysis(folder)
     
-    for n,ms in zip(['ms0', 'ms1'], [0,1]): 
+    for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
         a.get_run(n)
         a.cpsh_hist(a.ro_counts, a.reps, name=n)
         a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n)
@@ -267,7 +273,36 @@ def ssrocalib(folder):
     plt.close('all')
     a.mean_fidelity()
     a.finish()
+    
+def get_latest_data(string = 'AdwinSSRO', datapath = ''):
+    meas_folder = r'D:\measuring\data'
+    currdate = time.strftime('%Y%m%d')
+    
+    if datapath == '':
+        df = os.path.join(meas_folder, currdate)
+    else:
+        df = datapath
+    
+    right_dirs = list()
 
+    if os.path.isdir(df):
+        for k in os.listdir(df):
+            if string in k:
+                right_dirs.append(k)
+        
+        if len(right_dirs) > 0:
+            latest_dir = os.path.join(df,right_dirs[len(right_dirs)-1])
+        else:
+            print 'No measurements containing %s in %s'%(string, df)
+        
+        print '\nAnalyzing data in %s'%latest_dir
+
+    else:
+        print 'Folder %s does not exist'%df
+        latest_dir = False
+
+    return latest_dir
+    
 class AWGSSROAnalysis(m2.M2Analysis):
 
     def get_count_probability(self, name):

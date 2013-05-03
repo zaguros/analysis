@@ -14,7 +14,7 @@ from analysis.lib.math import error
 
 
 timestamp = None # '20130107231602'
-guess_frq = 1./200.
+guess_frq = 1./120.
 guess_amp = 0.5
 guess_k = 0.
 guess_phi = 0.
@@ -23,7 +23,7 @@ guess_phi = 0.
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('MBIElectronRabi')
+    folder = toolbox.latest_data('201650_MBIElectronRabi')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()

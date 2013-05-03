@@ -4,8 +4,14 @@ import pylab as plt
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
 from analysis.lib.spin import spin_control as sc
-from matplotlib import rc
+import matplotlib
+matplotlib.use('PDF')
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+
 from mpl_toolkits.mplot3d import Axes3D
+from analysis.lib.tools import weaktools as tls
+from analysis.lib.math import tomography as tom
 
 #datafolders=['1154','1252','1258','1303','1310','1347','1351','1316','1326', '1453']
 #RO_time=[0,1,2,3,4,5,6,7,9, 11]
@@ -20,8 +26,14 @@ def make_rho(z,x):
 
     rho=np.array([[x,z],[1-z,x]])
     return rho
-def make_hist(data,title=''):
-
+def make_rho_ideal(tau,input='X'):
+    s=calc_meas_strength(tau,12.,2400.)
+    x=np.cos(s*np.pi/2.)/2.
+    z=np.sin(np.pi+s*np.pi/2.)/2.+0.5
+    rho_cond=make_rho(z,x)
+    rho_uncond=make_rho(0.5,x)
+    return rho_cond, rho_uncond,s
+def make_hist(data,ideal=np.array([[0.5,0.5],[0.5,0.5]]),title=''):
     column_names = ['','']
     row_names = ['','']
 
@@ -42,8 +54,12 @@ def make_hist(data,title=''):
     dy = dx.copy()
     dz = data.flatten()
 
-    ax.bar3d(xpos,ypos,zpos, dx, dy, dz, color='RoyalBlue',alpha=0.75)
+    dzideal = ideal.flatten()
 
+    ax.bar3d(xpos,ypos,zpos, dx, dy, dz, color='RoyalBlue',alpha=0.65)
+    ax.bar3d(xpos,ypos,zpos, dx, dy, dzideal, color='b',alpha=0)
+    
+    
 #sh()
     ax.w_xaxis.set_ticklabels(column_names)
     ax.w_yaxis.set_ticklabels(row_names)
@@ -51,12 +67,12 @@ def make_hist(data,title=''):
     ax.set_zlabel('')
     ax.set_title(title)
     plt.show()
-def calc_meas_strength(x,t_zero,t_star):
+def calc_meas_strength(x,t_zero=12.,t_star=1400.):
     measstren=theta(x,t_zero,t_star)/90.
     return measstren
 
 def theta(tau,t_zero,t_star):
-    return 90-2*np.arccos(sqrt(S(tau,t_zero,t_star)))*180./np.pi
+    return 90-2*(np.arccos(sqrt(S(tau,t_zero,t_star))))*180./np.pi
 
 def S(tau,t_zero,t_star):
     return np.exp(-(tau/t_star)**2)*np.cos(np.pi/4-(tau+t_zero)*np.pi*.002185/2.)**2
@@ -106,16 +122,50 @@ label=['mI=0','mI=+1']
 meas_folder=r'D:\measuring\data'
 '''
 
+date='20130314'
+#-y
+state='Y'
+zfolder='004118'
+yfolder='233139'
+xfolder='000101'
+
+#state='-1'
+#zfolder='020210'
+#yfolder='010717'
+#xfolder='013224'
+
+#0
+#zfolder='032201'
+#yfolder='022809'
+#xfolder='025425'
+
+#x
+#state='X'
+#zfolder='050829'
+#yfolder='040013'
+#xfolder='044207'
+
+#-x
+#state='-X'
+#zfolder='062515'
+#yfolder='053455'
+#xfolder='060013'
+
+#y
+#state='-Y'
+#zfolder='074639'
+#yfolder='065137'
+#xfolder='071845'
 
 #date='20130305'
 #zfolder='005909'
 #yfolder='232520'
 #xfolder='024929'
-date='20130313'
+#date='20130313'
 # min y:
-zfolder='214008'
-yfolder='224959'
-xfolder='224131'
+#zfolder='214008'
+#yfolder='224959'
+#xfolder='224131'
 
 # mI-1:
 #zfolder='193905'
@@ -133,58 +183,183 @@ xfolder='224131'
 #xfolder='221323'
 
 #dp=os.path.join(meas_folder, date)
-result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date)
-result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+result_zmeas=sc.analyse_plot_results_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_Z',d=date,save=False)
+result_zcond=sc.analyse_weakcond_vs_sweepparam(zfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date,save=False)
 
-result_ymeas=sc.analyse_plot_results_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_y',d=date)
-result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+result_ymeas=sc.analyse_plot_results_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_y',d=date,save=False)
+result_ycond=sc.analyse_weakcond_vs_sweepparam(yfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date,save=False)
 
-result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date)
-result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date)
+result_xmeas=sc.analyse_plot_results_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='Spin_RO',title='strong_meas_res_x',d=date,save=False)
+result_xcond=sc.analyse_weakcond_vs_sweepparam(xfolder,yname='P(mI=0)',Nuclcor=True,dataname='cond_Spin_RO',title='',d=date,save=False)
+
+zmeas_x=calc_meas_strength(result_zmeas['x'],12,3400)
+xmeas_x=calc_meas_strength(result_xmeas['x'],12,3400)
 
 zmeas_x=calc_meas_strength(result_zmeas['x'],12,2000)
 xmeas_x=calc_meas_strength(result_xmeas['x'],12,2000)
 
 def plot_backaction():
-    figure42=plt.figure(42)
+    figure42=plt.figure(42,figsize=[0.8,0.8])
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
-    plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='ms=-1,-1')
-    plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='ms=0,0')
-    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='Im(rho 01)')
-    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='Re(rho 01)')
-    plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
-    plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'b-')
-    plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-')
+
+    plt.errorbar(zmeas_x,result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='|mI=-1>',color='RoyalBlue')
+    plt.errorbar(zmeas_x,1-result_zcond['y_cond'],fmt='o', yerr=result_zcond['uy_cond'],label='|mI=0>',color='Crimson')
+    plt.errorbar(xmeas_x,result_xcond['y_cond']-0.5,fmt='o',yerr=result_xcond['uy_cond'],label='|y> (Im)',color='LimeGreen')
+    plt.errorbar(xmeas_x,result_ycond['y_cond']-.5,fmt='o',yerr=result_ycond['uy_cond'],label='|x> (Re)',color='DarkOrange')
+    if state =='Y':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),ls='-',color='LimeGreen')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),ls='-',color='Crimson')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-',color='RoyalBlue')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='DarkOrange')
+	plt.text(0.2, 0.92, r'initial state |y>')
+    	plt.ylim ([-0.5, 1])
+    	plt.yticks([-0.5,0,0.5,1])
+
+    if state =='-Y':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.),ls='-',color='LimeGreen')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),ls='-',color='Crimson')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-',color='RoyalBlue')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='DarkOrange')
+	plt.text(0.2, 0.92, r'initial state |-y>')
+    	plt.ylim ([-0.5, 1])
+    	plt.yticks([-0.5,0,0.5,1])
+	
+    if state =='X':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),ls='-',color='DarkOrange')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),ls='-',color='Crimson')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-',color='RoyalBlue')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='LimeGreen')
+	plt.text(0.2, 0.92, r'initial state |x>')
+    	plt.ylim ([-0.5, 1])
+    	plt.yticks([-0.5,0,0.5,1])
+    if state =='-X':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.),ls='-',color='DarkOrange')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.+0.5),ls='-',color='Crimson')
+    	plt.plot(np.linspace(0,1,100),(np.sin(np.linspace(0,1,100)*np.pi/2.)/2.+0.5),'g-',color='RoyalBlue')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='LimeGreen')
+	plt.text(0.2, 0.92, r'initial state |-x>')
+    	plt.ylim ([-0.5, 1])
+    	plt.yticks([-0.5,0,0.5,1])
+    if state =='-1':
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),ls='-',color='LimeGreen')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),ls='-',color='Crimson')
+    	plt.plot(np.linspace(0,1,100),1+0*np.linspace(0,1,100),'g-',color='RoyalBlue')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='DarkOrange')
+	plt.text(0.2, 1.2, r'initial state |mI=-1>')
+	plt.ylim ([-0.2, 1.3])
+    	plt.yticks([0,0.5,1])
+
     plt.xlabel (' Measurement Strength (a.u.)', fontsize = 16)
     plt.ylabel ('Density Matrix Element', fontsize = 16)
-    plt.title('Backaction conditioned on weak measurement',fontsize=16)
-    plt.ylim ([-0.1, 1])
+    plt.title('Backaction conditioned on weak measurement |mI=-1>',fontsize=16)
+
     plt.xlim ([0, 1])
-    plt.legend(loc=2)
+    plt.xticks([0,0.5,1])
+    plt.legend(loc=2,prop={'size':10})
     plt.show()
 
-    figure43=plt.figure(43)
+    figure43=plt.figure(43,figsize=[0.8,0.8])
     #plt.figure(42)
     print 'plotting backaction'
     plt.clf()
-    plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='ms= -1, -1')
-    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='ms=0,0')
-    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='Im(rho 01)')
-    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='Re(rho 01)')
-    plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),'r-')
-    plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'b-')
-    plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,'g-')
+
+    plt.errorbar(zmeas_x,result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='|mI=-1>',color='RoyalBlue')
+    plt.errorbar(zmeas_x,1-result_zmeas['y'],fmt='o', yerr=result_zmeas['uy'],label='|mI=0>',color='Crimson')
+    plt.errorbar(xmeas_x,result_xmeas['y']-0.5,fmt='o',yerr=result_xmeas['uy'],label='|y> (Im)',color='LimeGreen')
+    plt.errorbar(xmeas_x,result_ymeas['y']-0.5,fmt='o',yerr=result_ymeas['uy'],label='|x> (Re)',color='DarkOrange')
+    
+    if state =='Y':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),color='LimeGreen',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='RoyalBlue',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='Crimson',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='DarkOrange')
+    	plt.text(0.2, 0.92, r'initial state |y>')
+	plt.ylim ([-0.5, 1])
+	plt.yticks([-0.5,0,0.5,1])
+
+    if state =='-Y':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.),color='LimeGreen',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='RoyalBlue',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='Crimson',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='DarkOrange')
+    	plt.text(0.2, 0.92, r'initial state |-y>')
+	plt.ylim ([-0.5, 1])
+	plt.yticks([-0.5,0,0.5,1])
+
+    if state =='X':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.linspace(0,1,100)*np.pi/2.)/2.),color='DarkOrange',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='RoyalBlue',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='Crimson',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='LimeGreen')
+    	plt.text(0.2, 0.92, r'initial state |x>')
+	plt.ylim ([-0.5, 1])
+	plt.yticks([-0.5,0,0.5,1])
+    if state =='-X':
+    	plt.plot(np.linspace(0,1,100),(np.cos(np.pi+np.linspace(0,1,100)*np.pi/2.)/2.),color='DarkOrange',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='RoyalBlue',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100)+0.5,color='Crimson',ls='-')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='LimeGreen')
+    	plt.text(0.2, 0.92, r'initial state |-x>')
+	plt.ylim ([-0.5, 1])
+	plt.yticks([-0.5,0,0.5,1])
+    if state =='-1':
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),ls='-',color='LimeGreen')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),ls='-',color='Crimson')
+    	plt.plot(np.linspace(0,1,100),1+0*np.linspace(0,1,100),'g-',color='RoyalBlue')
+    	plt.plot(np.linspace(0,1,100),0*np.linspace(0,1,100),'g-',color='DarkOrange')
+	plt.text(0.2, 1.2, r'initial state |mI=-1>')
+	plt.ylim ([-0.2, 1.3])
+    	plt.yticks([0,0.5,1])
+	
+
     plt.xlabel (' Measurement Strength (a.u.)', fontsize = 16)
     plt.ylabel ('Density Matrix Element', fontsize = 16)
     plt.title('Backaction (unconditioned)',fontsize=16)
-    plt.ylim ([-.1, 1])
+    
+    
     plt.xlim ([0, 1])
-    plt.legend(loc=2)
+    plt.xticks([0,0.5,1])
+    plt.legend(loc=2,prop={'size':10})
     plt.show()
-plot_backaction()    
+
+#plot_backaction()    
+
+dir='up'
+index=0
+postselect='cond'
+
+tau=result_xmeas['x'][index]
+t=str(tau)+'ns_'+postselect
+utau=1
+th=''
+if postselect!='cond':
+    zcor=result_zmeas['y'][index]
+    xcor=result_xmeas['y'][index]
+    ycor=result_ymeas['y'][index]
+
+    uzcor=result_zmeas['uy'][index]
+    uxcor=result_xmeas['uy'][index]
+    uycor=result_ymeas['uy'][index]
+else:
+    zcor=result_zcond['y_cond'][index]
+    xcor=result_xcond['y_cond'][index]
+    ycor=result_ycond['y_cond'][index]
+
+    uzcor=result_zcond['uy_cond'][index]
+    uxcor=result_xcond['uy_cond'][index]
+    uycor=result_ycond['uy_cond'][index]
+dm,f,uf,ideal=tls.calc_fidelity_psi(tau,zcor,xcor,utau,uzcor,uxcor,y=ycor,uy=uycor,th=th,dir=dir)
+idr=tls.make_rho(ideal[0]**2,ideal[1]*ideal[0])
+print idr
+
+tls.make_hist(dm[0],np.array([[0,0],[0,0]]),path=r'D:\machielblok\Desktop\PhD\QTlab\data\output\backaction',title=t)
+print 'Fidelity',f,'  +-',uf
+print 'Ideal state:', ideal
+print 'uz: ',uzcor,'  ux: ',uxcor
 '''
+
 result_25ns=sc.plot_rabi(sc.get_latest_data(datafolders[0],datapath=dp),fid=corr)
 result_125ns=sc.plot_rabi(sc.get_latest_data(datafolders[1],datapath=dp),fid=corr)
 result_225ns=sc.plot_rabi(sc.get_latest_data(datafolders[2],datapath=dp),fid=corr)

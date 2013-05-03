@@ -25,7 +25,7 @@ else:
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results()
-a.get_N_ROC(0.99, 0.02, 0.94, 0.005)
+a.get_N_ROC(0.97,0.03,0.96,0.01,0.93,0.01)#(0.99, 0.02, 0.94, 0.005)
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
 fit_result=fit.fit1d(a.sweep_pts, a.p0.reshape(-1), 

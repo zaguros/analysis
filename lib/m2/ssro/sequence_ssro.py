@@ -5,7 +5,7 @@ import logging
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import ssro, readout_correction
+from analysis.lib.m2.ssro import ssro
 from analysis.lib.math import error
 from analysis.lib.m2 import m2
 from measurement.lib.tools import toolbox

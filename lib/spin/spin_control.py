@@ -24,7 +24,7 @@ def find_nearest(array,value):
     return idx
 
 def get_latest_data(string = 'ADwin_SSRO', datapath = '',date=''):
-    meas_folder = r'D:\measuring\data'
+    meas_folder = r'D:\machielblok\Desktop\PhD\QTlab\data'
     if date=='':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -197,14 +197,16 @@ def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',label='',title='',d
         ax.legend(loc=1)
     return ax
 
-def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='result',dataname='',datapath='',key='SSRO_counts',d=''):
+def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='result',dataname='',datapath='',key='SSRO_counts',d='',save=True):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
         currdate=d
 
     dp=get_latest_data(fname,datapath,d)
+
     ssro_result=get_MBI_readout_result(dp,dataname,key=key)
+
     
     reps=ssro_result['reps']
     x=ssro_result['x']
@@ -213,12 +215,12 @@ def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,titl
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,datapath=dp,title=currdate+'-'+fname+title,nr=1)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ylim,ssro_result['xname'],yname,datapath=dp,title=currdate+'-'+fname+title,nr=1,save=save)
     
     res={'y':ssro_ro_cor,'uy':ussro_ro_cor,'x':x}
 
     return res
-def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d=''):
+def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='',dataname='',datapath='',d='',save=True):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -241,13 +243,13 @@ def analyse_weakcond_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title=''
         [ssro_ro_cor_cond,ussro_ro_cor_cond]=get_nuclear_ROC(y_norm_cond,np.mean(ssro_result_weak['y'])
                                                         ,ssro_calib_folder=get_latest_data('SSRO',date=currdate))
     plot_ssro_vs_sweep(x,ssro_ro_cor_weak,ussro_ro_cor_weak,ylim,ssro_result_weak['xname'],yname,
-            currdate+'-'+fname+'weak msmsnt r175003esult',dp,nr=1)
+            currdate+'-'+fname+'weak msmsnt r175003esult',dp,nr=1,save=save)
     plot_ssro_vs_sweep(x,ssro_ro_cor_cond,ussro_ro_cor_cond,ylim,ssro_result_cond['xname'],yname,
-            currdate+'-'+fname+'cond msmsnt result',dp,nr=2)
+            currdate+'-'+fname+'cond msmsnt result',dp,nr=2,save=save)
     res={'y_cond':ssro_ro_cor_cond,'y_weak':ssro_ro_cor_weak,'uy_cond':ussro_ro_cor_cond,'uy_weak':ussro_ro_cor_weak,'x':x}
 
     return res
-def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname='',datapath='',d=''):
+def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname='',datapath='',d='',save=True):
     if d == '':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -267,7 +269,7 @@ def analyse_correlations_weakstrong(fname,yname,Nuclcor=False,title='',dataname=
         [ssro_ro_cor,ussro_ro_cor]=get_electron_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
     else:
         [ssro_ro_cor,ussro_ro_cor]=get_nuclear_ROC(y_norm,reps,ssro_calib_folder=get_latest_data('SSRO',datapath,date=currdate))
-    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp)
+    plot_ssro_vs_sweep(x,ssro_ro_cor,ussro_ro_cor,ssro_result['xname'],yname,currdate+'-'+fname+title,dp,save=save)
 
 def get_feedback_data(foldername,filename='Spin_RO',d=''):
     datapath=get_latest_data(foldername,date=d)
@@ -300,18 +302,19 @@ def get_feedback_data(foldername,filename='Spin_RO',d=''):
     data_corr={}
     data_corr['sweep_par']=data['sweep_par']
     data_corr['sweep_par_name']=data['sweep_par_name']
-    data_corr['FinalRO_SN'],data_corr['uFinalRO_SN']= get_nuclear_ROC(data_norm['FinalRO_SN'],data['SN'])
-    data_corr['FinalRO_FS'],data_corr['uFinalRO_FS']= get_nuclear_ROC(data_norm['FinalRO_FS'],data['FS'])
-    data_corr['FinalRO_FF'],data_corr['uFinalRO_FF']= get_nuclear_ROC(data_norm['FinalRO_FF'],data['FF'])
+    data_corr['FinalRO_SN'],data_corr['uFinalRO_SN']= get_nuclear_ROC(data_norm['FinalRO_SN'],data['SN'],get_latest_data('SSRO',date=d))
+    data_corr['FinalRO_FS'],data_corr['uFinalRO_FS']= get_nuclear_ROC(data_norm['FinalRO_FS'],data['FS'],get_latest_data('SSRO',date=d))
+    data_corr['FinalRO_FF'],data_corr['uFinalRO_FF']= get_nuclear_ROC(data_norm['FinalRO_FF'],data['FF'],get_latest_data('SSRO',date=d))
     data_corr['FinalRO_Succes'],data_corr['uFinalRO_Succes']= get_nuclear_ROC(data_norm['FinalRO_Succes'],
-            data['FS']+data['SN'])
-    data_corr['FinalRO_All'],data_corr['uFinalRO_All']= get_nuclear_ROC(data_norm['FinalRO_All'],reps)
+            data['FS']+data['SN'],get_latest_data('SSRO',date=d))
+    data_corr['FinalRO_All'],data_corr['uFinalRO_All']= get_nuclear_ROC(data_norm['FinalRO_All'],reps,get_latest_data('SSRO',date=d))
     return data_norm,data_corr,datapath
 
 def plot_feedback(foldername, filename='Spin_RO',d=''):
     data_norm, data_corr,dp = get_feedback_data (foldername, filename,d=d)
     x = data_norm['sweep_par']
-
+    fig=plt.figure(2)
+    fig.clf()
     plot_ssro_vs_sweep(x,data_norm['SN'],data_norm['uSN'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='1st msmnt',datapath=dp,nr=2,splot=221,save=False)
     plot_ssro_vs_sweep(x,data_norm['FS'],data_norm['uFS'],ylim=[0,1],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='2nd msmnt',datapath=dp,nr=2,splot=221,save=False)
     plot_ssro_vs_sweep(x,data_norm['SN']+(1-data_norm['SN'])*data_norm['FS'],(data_norm['uSN']+data_norm['uFS'])/2.,ylim=[0,0.5],xname=data_norm['sweep_par_name'],yname='P(click)',title='',label='P(succes) total',datapath=dp,nr=2,splot=221,save=False)
@@ -387,7 +390,6 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
             do_cond=True
 
     e = np.load(datapath+'\\'+stats_params_file)
-    mwpower = e['mw_power']
     par = e['sweep_par']
 
 
@@ -594,8 +596,9 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
     print 'reloaded'
     figure5 = plt.figure(10)
     fit.fit1d(sp_time/1E3, sp_counts, common.fit_exp_decay_with_offset, 
-            offset_guess, init_amp_guess, decay_guess, do_print = True,ret=False,
-            plot_fitparams_xy = (0.5,0.5))
+            offset_guess, init_amp_guess, decay_guess,
+            do_plot = True, do_print = True, newfig = False,
+            plot_fitparams_xy = (0.5,0.5),ret=False)
     
     plt.plot(sp_time/1E3,sp_counts,'sg')
     plt.xlabel('Time ($\mu$s)')
@@ -639,22 +642,26 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
         data['y_weak']=SSRO_weak_readout_corr
     return data
 
-
-def plot_data(datapath,fid=(0.7901,0.991),fiderr=(4.07e-04,0.91265e-03), fit_data = True, title='',with_detuning = False, save = True):
-
-    plt.close('all')
+def plot_data_MBI(datapath,fid=(0.7814,0.9897),fiderr=(4.03e-03,1.047e-03), fit_data = True, title='',with_detuning = False, save = True):
     ###########################################
     ######## MEASUREMENT SPECS ################
     ###########################################
     files = os.listdir(datapath)
-    
+    do_weak=False
+    do_cond=False
     for k in files:
         if 'statics_and_parameters.npz' in k:
             stats_params_file = k
-        if 'Spin_RO.npz' in k:
+        if '0_Spin_RO.npz' in k:
             spin_ro_file = k
         if 'SP_histogram.npz' in k:
             sp_file = k
+        if 'weak_Spin_RO.npz' in k:
+            weak_spin_ro_file = k
+            do_weak=True
+        if 'cond_Spin_RO.npz' in k:
+            cond_spin_ro_file = k
+            do_cond=True
 
     e = np.load(datapath+'\\'+stats_params_file)
     par = e['sweep_par']
@@ -944,8 +951,7 @@ def plot_data(datapath,fid=(0.7901,0.991),fiderr=(4.07e-04,0.91265e-03), fit_dat
 
 
 
-
-def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.7952,0.990),fiderr=(4.03e-03,9.3919e-04)):
+def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8065,0.993),fiderr=(2.793e-03,5.853e-04)):
 
     plt.close('all')
     ###########################################
@@ -1163,6 +1169,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
        date=d
     plt.close('all')
 
+
     ###########################################
     ######## MEASUREMENT SPECS ################
     ###########################################
@@ -1221,7 +1228,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
     guess_offset = ssro_ro_cor.max()
     guess_A_min1 = 0.04
     guess_A_plus1 = 0.04
-    guess_A_0 = 0.04
+    guess_A_0 = 0.00
     guess_x0 = 2.8289
     guess_sigma = 0.00045
 
@@ -1248,6 +1255,8 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
         plot.plot_fit1d(fit_result,np.linspace(mw_freq.min(),mw_freq.max(),751),
                 ax=ax, plot_data=False,info_xy=(0.128,0.328))
         center_peak = fit_result['params_dict']['x0']
+
+
 
 
         print '-1: f = ', (center_peak - splitting), ' GHz'
@@ -1311,7 +1320,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
         col_names = '#Col0: MW freq (GHz)\tCol1: Integrated counts\n'
         col_vals = str()
         for k in arange(noof_datapoints):
-            col_vals += num2str(mw_freq[k]/1E9,10)+'\t'+num2str(counts_during_readout[k],0)+'\n'
+            col_vals += num2str(mw_freq[k]/1E9,10)+'\t'+num2str(SSRO_readout[k],0)+'\n'
         fo = open(datapath+'\\integrated_histogram.dat', "w")
         for item in [curr_date, col_names, col_vals]:
             fo.writelines(item)
@@ -1327,7 +1336,7 @@ def plot_dark_esr(datapath, fit_data = True, save = True, f_dip = 2.8295E9,d='')
             fo.writelines(item)
         fo.close()
 
-    return True
+    return fit_result,ssro_ro_cor,ussro_ro_cor
 
 def plot_ramsey(datapath, fid=(0.7611,0.9895),fiderr=(4.264e-03,1.019e-03),fit_data = True, save = True):
 

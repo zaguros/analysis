@@ -20,10 +20,12 @@ guess_offset = 1
 guess_A_min1 = 0.5
 guess_A_plus1 = 0.
 guess_A_0 = 0.
-guess_x0 = 2862.92
+guess_x0 = 2821.142
 guess_sigma = 0.45
+guess_Nsplit=0.380/2
 
-splitting = 2.184
+splitting = 2.189
+
 
 
 ### fitfunction
@@ -33,17 +35,21 @@ A_0 = fit.Parameter(guess_A_0, 'A_0')
 o = fit.Parameter(guess_offset, 'o')
 x0 = fit.Parameter(guess_x0, 'x0')
 sigma = fit.Parameter(guess_sigma, 'sigma')
+Nsplit = fit.Parameter(guess_Nsplit, 'Nsplit')
 
 def fitfunc(x):
-    return o() - A_min1()*np.exp(-((x-(x0()-splitting))/sigma())**2) \
-            - A_plus1()*np.exp(-((x-(x0()+splitting))/sigma())**2) \
-            - A_0()*np.exp(-((x-x0())/sigma())**2) 
+    return o() - A_min1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
+            - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
+            - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
+            - A_plus1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
+            - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
+            - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) 
 
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('PostInitDarkESR')
+    folder = toolbox.latest_data('153355')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
@@ -55,7 +61,7 @@ x = a.sweep_pts
 y = a.p0.reshape(-1)
 
 # try fitting
-fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma],
+fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0,x0, sigma,Nsplit],
         fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
 plot.plot_fit1d(fit_result, x, ret='ax', plot_data=False, ax=ax)
 
