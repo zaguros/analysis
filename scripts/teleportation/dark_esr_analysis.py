@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 0.92
-guess_ctr = 2821
+guess_ctr = 2844
 guess_splitB = 30.
 guess_splitN = 2.187
 guess_splitC = .377 #12.78
@@ -37,7 +37,7 @@ y = a.get_readout_results()
 fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
         guess_amplitude, guess_width, guess_ctr,
         # (2, guess_splitN), 
-        (2, guess_splitC),
+        # (2, guess_splitC),
         # (2, guess_splitB), 
         (3, guess_splitN), 
         do_print=True, ret=True, fixed=[4,5])

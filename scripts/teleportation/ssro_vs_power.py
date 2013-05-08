@@ -11,7 +11,7 @@ from analysis.lib.tools import plot
 from analysis.lib.m2.ssro import ssro
 
 
-folder = '/Users/wp/Dropbox/Teleportation/Experiments/2013-04.. LT1 FT setup/20130414/182332_AdwinSSRO_RO_saturation_power_SIL2_Ey_RO' # None
+folder = None
 timestamp = None
 
 if folder == None:
@@ -29,7 +29,7 @@ u_taus = []
 for g in a.g.items():
     gn = g[0]
     a.get_run(gn)
-    
+   
     pwr = int(string.split(gn, '_')[-1][:-2])
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
@@ -43,7 +43,7 @@ for g in a.g.items():
     ax.plot(t,c, 'o')
 
     res = fit.fit1d(t,c, common.fit_exp_decay_with_offset, 0, c[0], 10, 
-            ret=True, do_print=True)
+            ret=True, do_print=True, fixed=[])
     
     if res != False:
         plot.plot_fit1d(res, t, ax=ax, plot_data=False)
