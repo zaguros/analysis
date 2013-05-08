@@ -461,7 +461,7 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
     plt.ylim([0,1.1])
     plt.xlabel(sp_name)
     plt.ylabel('P(ms=0), corrected for readout error')
-    plt.title(datapath)
+    plt.title(os.path.split(datapath)[1])
     plt.text(1.01*par_min,1.1*max(SSRO_readout_corr),'')
     if save:
         figure3.savefig(datapath+'\\SSRO_corrected.png')    
