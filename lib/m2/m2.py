@@ -8,7 +8,7 @@ from measurement.lib.tools import toolbox
 
 class M2Analysis:
 
-    plot_format = 'pdf'
+    plot_format = 'png'
 
     def __init__(self, folder):
         self.folder = folder
