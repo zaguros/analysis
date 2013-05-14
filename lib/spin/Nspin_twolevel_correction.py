@@ -50,5 +50,6 @@ class NuclearSpinROC(error.SingleQubitROC):
         
         self.F1 = float(self.F1_formula.value())
         self.u_F1 = float(self.F1_formula.uncertainty())
+    
     #def num_eval(self, *arg, **kw):
     #    return error.SingleQubitROC.num_eval(self, *arg, **kw)

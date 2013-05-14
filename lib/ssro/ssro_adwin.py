@@ -35,7 +35,7 @@ PARAMS_SUFFIX = 'parameters'
 PARAM_REPS = 15
 PARAM_CYCLE_DURATION = 18
 
-def get_latest_data(string = 'AdwinSSRO', datapath = ''):
+def get_latest_data(string = 'Adwin_SSRO', datapath = ''):
     meas_folder = r'D:\measuring\data'
     currdate = time.strftime('%Y%m%d')
     
