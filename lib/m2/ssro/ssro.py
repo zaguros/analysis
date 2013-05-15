@@ -157,6 +157,8 @@ class SSROAnalysis(m2.M2Analysis):
             lastbin=None, plot=True, **kw):
         
         name = kw.pop('name', '')
+        save = kw.pop('save', True)
+        ret = kw.pop('ret', False)
  
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
@@ -181,16 +183,17 @@ class SSROAnalysis(m2.M2Analysis):
             fid = 1-pzero if ms == 0 else pzero # fidelity calc. depends on ms
             fid_dat = np.vstack((fid_dat, np.array([[t, fid, pzero_err]])))
 
-        f = self.analysis_h5data()
-        if not 'fidelity' in f:
-            f.create_group('fidelity')
+        if save:
+            f = self.analysis_h5data()
+            if not 'fidelity' in f:
+                f.create_group('fidelity')
 
-        g = f['/fidelity']
-        if dataset_name in g:
-            del  g[dataset_name]
+            g = f['/fidelity']
+            if dataset_name in g:
+                del  g[dataset_name]
         
-        g[dataset_name] = fid_dat
-        f.close()
+            g[dataset_name] = fid_dat
+            f.close()
 
         if plot:
             fig = plt.figure()
@@ -203,6 +206,10 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder, 
                 'fidelity'+fn_suffix+'.'+self.plot_format), 
                 format=self.plot_format)
+
+        if ret:
+            return fid_dat
+
 
     def mean_fidelity(self, plot=True, **kw):
         

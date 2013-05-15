@@ -2,13 +2,13 @@ import numpy as np
 import os
 #import sys
 
-def get_levels():
+def get_levels(**kw):
     """
     Returns an array with the ES energies as a function of strain Ex, 
     also returned
     """
     Ex=np.linspace(0,20,50)
-    return Ex,np.array([np.sort(get_ES(E_field=[i,0,0])[0]) for i in Ex])
+    return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
 def get_ES_ExEy(Ex,Ey,fast=False):
     """
@@ -65,7 +65,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     Bx = B_field[0]
     By = B_field[1]
     Bz = B_field[2]
-    lambdaA2=0.1              #observed
+    
+    lambdaA2=.1             #observed (see theory review by Manson)    
     lambda_par=5.3           #observed
     lambda_ort=1.5*lambda_par      #unknown, calculated by Maze, p9
     D1A1=2.87/3           #observed
@@ -76,7 +77,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     w2=np.sqrt(2)
     
     Vss = np.matrix([[D2A1, 0, D2E2*w2, 0, 0, 0],
-                    [0, D2A1, 0, D2E2 *w2, 0, 0],
+                    [0, D2A1, 0, D2E2*w2, 0, 0],
                     [D2E2*w2, 0, -2*D2A1, 0, 0, 0],
                     [0, D2E2*w2, 0, -2*D2A1, 0, 0],
                     [0, 0, 0, 0, D2A1 - 2*D2E1, 0],

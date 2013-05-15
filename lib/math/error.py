@@ -27,23 +27,28 @@ class Formula:
         return self.formula.subs(self.values)
 
     def uncertainty_squared(self):
-        usquared = 0.
-        for s in self.uncertainties:
-            usquared += (self.formula.diff(s).subs(self.values)*\
+        # usquared = 0.
+        for i,s in enumerate(self.uncertainties):
+            if i == 0:
+                usquared = (self.formula.diff(s).subs(self.values)*\
                     self.uncertainties[s])**2
+            else:
+                usquared += (self.formula.diff(s).subs(self.values)*\
+                    self.uncertainties[s])**2
+        
         return usquared
 
     def uncertainty(self):
         return sympy.sqrt(self.uncertainty_squared())
 
-    def num_eval(self, symbol, values, uncertainties=None):
+    def num_eval(self, symbol=None, values=None, uncertainties=None):
+        if symbol == None:
+            return self.value(), self.uncertainty()
+        
         valfunc = lambdify(symbol, self.value(), 'numpy')
-        print values
-        print symbol
-	if uncertainties == None:        
+        if uncertainties == None:        
             uncertaintyfunc = lambdify(symbol, self.uncertainty(), 'numpy')
             return valfunc(values), uncertaintyfunc(values)
-        
         else:
             u_sym = sympy.symbols('u_sym')
             usquared = self.uncertainty_squared() + \

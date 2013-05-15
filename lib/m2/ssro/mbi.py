@@ -25,10 +25,6 @@ class MBIAnalysis(m2.M2Analysis):
         discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
         self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
         
-        # print 'data points', len(adwingrp['ssro_results'].value)
-        # print 'reps', self.reps
-        # print 'discards', discards
-
         if discards > 0:
             results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
         else:

@@ -7,8 +7,8 @@ from analysis.lib.nv import nvlevels
 # settings
 timestamp = None
 
-Ex = 61.73
-Ey = 59.79
+Ex = 83.5
+Ey = 72.7
 
 lines = nvlevels.get_ES_ExEy(Ex,Ey)
 
@@ -16,7 +16,7 @@ lines = nvlevels.get_ES_ExEy(Ex,Ey)
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('LaserFrequencyScan')
+    folder = toolbox.latest_data('175918_LaserFrequencyScan')
 
 # get data
 fn = os.path.join(folder, os.path.split(folder)[1]+'.dat')
@@ -47,5 +47,7 @@ ax.text(lines[2], y1*0.95, '$E_y$', ha='center', va='top',
         color='r', backgroundcolor='w')
 ax.text(lines[3], y1*0.95, '$E_x$', ha='center', va='top',
         color='r', backgroundcolor='w')
+
+ax.set_xlim(min(frq), max(frq))
 
 
