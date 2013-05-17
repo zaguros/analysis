@@ -31,11 +31,10 @@ print folder
 
 a = sequence.SequenceAnalysis(folder)
 a.get_sweep_pts()
+a.get_readout_results('ssro')
 
-x = a.sweep_pts * 1e3
-y = a.get_readout_results(name='ssro')
-
-print x,y
+x = a.sweep_pts*1e3 # convert to MHz
+y = a.normalized_ssro
 
 # try fitting
 fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
@@ -51,8 +50,8 @@ ax.set_xlabel('MW frq (MHz)')
 ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')
 ax.set_title(a.timestamp+'\n'+a.measurementstring)
 
-plt.savefig(os.path.join(folder, 'darkesr_analysis.pdf'), 
-        format='pdf')
+plt.savefig(os.path.join(folder, 'darkesr_analysis.png'), 
+        format='png')
 
 
 
