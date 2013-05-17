@@ -5,7 +5,7 @@ import os
 from analysis.lib.m2 import m2
 #from measurement.scripts.lt2_scripts.m2.general_pulses import AdwinPulses as ap
 
-class GeneralPulseAnlysis(m2.M2Analysis):
+class GeneralPulsesSweepAnlysis(m2.M2Analysis):
 
     def plot(self, save_plots=True):
         
@@ -64,6 +64,6 @@ class GeneralPulseAnlysis(m2.M2Analysis):
         
 
 def analyse_pulses(fp):
-    a=GeneralPulseAnlysis(fp)
+    a=GeneralPulsesSweepAnlysis(fp)
     a.plot()
     return a
