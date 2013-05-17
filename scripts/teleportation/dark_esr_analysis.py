@@ -6,20 +6,20 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence_ssro
+from analysis.lib.m2.ssro import sequence
 from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
 timestamp = None # 
-guess_offset = 0.92
-guess_ctr = 2844
+guess_offset = 0.78
+guess_ctr = 2829
 guess_splitB = 30.
-guess_splitN = 2.187
+guess_splitN = 2.185
 guess_splitC = .377 #12.78
 guess_width = 0.03
-guess_amplitude = 0.2
+guess_amplitude = 0.05
 
 
 ### script
@@ -29,9 +29,13 @@ else:
     folder = toolbox.latest_data('DarkESR')
 print folder
 
-a = sequence_ssro.DarkESRAnalysis(folder)
-x = a.get_sweep_pts()/1e6
-y = a.get_readout_results()
+a = sequence.SequenceAnalysis(folder)
+a.get_sweep_pts()
+
+x = a.sweep_pts * 1e3
+y = a.get_readout_results(name='ssro')
+
+print x,y
 
 # try fitting
 fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
@@ -40,7 +44,7 @@ fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
         # (2, guess_splitC),
         # (2, guess_splitB), 
         (3, guess_splitN), 
-        do_print=True, ret=True, fixed=[4,5])
+        do_print=True, ret=True, fixed=[])
 ax = plot.plot_fit1d(fit_result, x, ret='ax', plot_data=True)
 
 ax.set_xlabel('MW frq (MHz)')
