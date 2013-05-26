@@ -12,20 +12,20 @@ timestamp = None
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('MBIElectronRabi_calib_CORPSE420')
+    folder = toolbox.latest_data('MBIElectronRabi')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
-a.get_readout_results()
+a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
 #a.get_N_ROC(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
-x = a.sweep_pts.reshape(-1)[1:]
-y = a.p0.reshape(-1)[1:]
+x = a.sweep_pts.reshape(-1)[1:-1]
+y = a.p0.reshape(-1)[1:-1]
 
-x0 = fit.Parameter(136, 'x0') #Guess of where this is the right value
-of = fit.Parameter(0.68136, 'of') #This is the value we need for 60deg CORPSE
+x0 = fit.Parameter(170, 'x0') #Guess of where this is the right value
+of = fit.Parameter(0.68136, 'of') #This is the value we need for 60deg, 300 deg and 420 deg CORPSE
 a = fit.Parameter(0.3/60, 'a')
 fitfunc_str = '-a (x-x0)'
 
