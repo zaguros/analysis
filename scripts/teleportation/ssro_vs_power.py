@@ -18,7 +18,7 @@ if folder == None:
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('AdwinSSRO_RO_saturation_power')
+        folder = toolbox.latest_data('AdwinSSRO')
 
 a = ssro.SSROAnalysis(folder)
 
@@ -26,8 +26,11 @@ pwrs = []
 taus = []
 u_taus = []
 
-for g in a.g.items():
+for g in a.g.items():    
     gn = g[0]
+    if 'instrument_settings' in gn:
+        continue
+    
     a.get_run(gn)
    
     pwr = int(string.split(gn, '_')[-1][:-2])
