@@ -17,27 +17,27 @@ timestamp = None
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('MBIElectronRabi_pi_calib')#'MBIElectronRabi_pi_calib')
+    folder = toolbox.latest_data('MBI')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
-a.get_readout_results()
+a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
-#a.get_N_ROC(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
-ax = a.plot_results_vs_sweepparam(ret='ax', )
+#a.get_N_ROC(1.00, 0.02, 0.94, 0.01, 0.96, 0.01)
+ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata')
 
-x = a.sweep_pts.reshape(-1)[:]
-y = a.p0.reshape(-1)[:]
+x = a.sweep_pts.reshape(-1)[8:]
+y = a.p0.reshape(-1)[8:]
 
-x0 = fit.Parameter(36, 'x0')
-of = fit.Parameter(0., 'of')
+x0 = fit.Parameter(0.19, 'x0')
+of = fit.Parameter(1., 'of')
 a = fit.Parameter(0., 'a')
 fitfunc_str = '(1-of) + a (x-x0)**2'
 
 def fitfunc(x):
     return (1.-of()) + a() * (x-x0())**2
 
-fit_result = fit.fit1d(x,y, None, p0=[x0,of,a], fitfunc=fitfunc,
+fit_result = fit.fit1d(x,y, None, p0=[of, a, x0], fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False)
