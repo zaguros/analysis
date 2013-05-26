@@ -14,11 +14,11 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 0.78
-guess_ctr = 2829
+guess_ctr = 2830.13
 guess_splitB = 30.
-guess_splitN = 2.185
+guess_splitN = 2.189
 guess_splitC = .377 #12.78
-guess_width = 0.03
+guess_width = 0.38
 guess_amplitude = 0.05
 
 
@@ -42,8 +42,8 @@ fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
         # (2, guess_splitN), 
         # (2, guess_splitC),
         # (2, guess_splitB), 
-        (3, guess_splitN), 
-        do_print=True, ret=True, fixed=[])
+        (3, guess_splitN),
+        do_print=True, ret=True, fixed=[4])
 ax = plot.plot_fit1d(fit_result, x, ret='ax', plot_data=True)
 
 ax.set_xlabel('MW frq (MHz)')
