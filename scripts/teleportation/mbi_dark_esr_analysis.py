@@ -16,15 +16,15 @@ from analysis.lib.math import error
 ### settings
 timestamp = None # 
 
-guess_offset = 0.8
+guess_offset = 1.0
 guess_A_min1 = 0.5
 guess_A_plus1 = 0.
 guess_A_0 = 0.
-guess_x0 = 2843.862
+guess_x0 = 2826.99
 guess_sigma = 0.45
-guess_Nsplit=2.189
+guess_Nsplit = 2.18
 
-splitting = 2.189
+splitting = 2.18
 
 
 
@@ -38,10 +38,10 @@ sigma = fit.Parameter(guess_sigma, 'sigma')
 Nsplit = fit.Parameter(guess_Nsplit, 'Nsplit')
 
 def fitfunc(x):
-    # return o() - A_min1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
-    #         - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
+    # return o() - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
+    #         - A_min1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
+    #         - A_plus1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
     #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
-    #         - A_plus1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
     #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
     #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) 
     return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
@@ -56,7 +56,7 @@ else:
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
-a.get_readout_results()
+a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
@@ -64,8 +64,8 @@ x = a.sweep_pts
 y = a.p0.reshape(-1)
 
 # try fitting
-fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma,Nsplit],
-        fitfunc = fitfunc, do_print=True, ret=True, fixed=[x0])
+fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma],
+        fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
 plot.plot_fit1d(fit_result, x, ret='ax', plot_data=False, ax=ax)
 
 plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),

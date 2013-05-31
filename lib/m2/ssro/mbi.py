@@ -139,8 +139,8 @@ class MBIAnalysis(m2.M2Analysis):
 
         if save:
             fig.savefig(
-                os.path.join(self.folder, 'ssro_result_vs_sweepparam.pdf'),
-                format='pdf')
+                os.path.join(self.folder, 'ssro_result_vs_sweepparam.'+self.plot_format),
+                format=self.plot_format)
 
         if ret == 'ax':
             return ax
@@ -172,57 +172,3 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     a.save()    
     a.plot_results_vs_sweepparam(**kw)
     a.finish()
-
-
-#### DEPRECATED
-class PostInitDarkESRAnalysis(MBIAnalysis):
-    
-    sweep_name = 'MW frq. (MHz)'
-
-    def get_sweep_pts(self, name=''):
-        self.sweep_name = 'MW frq. (MHz) - %.3f GHz' % (self.g.attrs['mw_frq']*1e-9)
-        self.sweep_pts = (self.g.attrs['RO_MW_pulse_ssbmod_frqs'])*1e-6
-
-        return self.sweep_pts
-    
-
-def esr(folder=os.getcwd()):
-    a = PostInitDarkESRAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results()
-    a.plot_results_vs_sweepparam()
-
-### ESR
-
-class ConditionalPrecessionAnalysis(MBIAnalysis):
-
-    sweep_name = 'time delay (us)'
-    
-    def get_sweep_pts(self, name=''):
-        self.sweep_pts = self.g.attrs['AWG_wait_before_RO_durations'] / 1000.
-        return self.sweep_pts
-
-
-def condprec(folder=os.getcwd()):
-    a = ConditionalPrecessionAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results()
-    a.plot_results_vs_sweepparam()
-        
-### conditional Precession
-
-class ElectronRabiAnalysis(MBIAnalysis):
-
-    sweep_name = 'MW pulse duration (us)'
-
-    def get_sweep_pts(self, name=''):
-        self.sweep_pts = self.g.attrs['AWG_RO_MW_pulse_durations'] / 1000.
-        return self.sweep_pts
-
-def erabi(folder=os.getcwd()):
-    a = ElectronRabiAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results()
-    a.plot_results_vs_sweepparam()
-
-### Electron Rabi
