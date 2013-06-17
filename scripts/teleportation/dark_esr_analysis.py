@@ -14,48 +14,64 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.829
+guess_ctr = 2.827
 guess_splitB = 30.
-guess_splitN = 2.187e-3
-guess_splitC = .377e-3 #12.78
+guess_splitN = 2.193e-3
+guess_splitC = .38e-3 #12.78
 guess_width = 0.03e-3
 guess_amplitude = 0.2
 
+def analyze_dark_esr(folder, ax=None, ret=None, **kw):
+
+    if ax == None:
+        fig, ax = plt.subplots(1,1)
+
+    a = sequence.SequenceAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results('ssro')
+    a.get_electron_ROC()
+
+    x = a.sweep_pts # convert to MHz
+    y = a.p0.reshape(-1)[:]
+    a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
+    ax.set_ylim(0.75,1.05)
+
+    # try fitting
+    fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
+            guess_amplitude, guess_width, guess_ctr,
+            # (2, guess_splitN), 
+            (2, guess_splitC),
+            # (2, guess_splitB),
+            (3, guess_splitN), 
+            do_print=True, ret=True, fixed=[4,5])
+    plot.plot_fit1d(fit_result, x, ax=ax, plot_data=False, **kw)
+
+    ax.set_xlabel('MW frq (GHz)')
+    ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')
+    ax.set_title(a.timestamp+'\n'+a.measurementstring)
+
+    plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
+            format='png')
+
+    if ret == 'f0':
+        f0 = fit_result['params_dict']['x0']
+        u_f0 = fit_result['error_dict']['x0']
+
+        ax.text(f0, 0.8, '$f_0$ = ({:.3f} +/- {:.3f})'.format(
+            (f0-2.8)*1e3, u_f0*1e3), ha='center')
+
+        return (f0-2.8)*1e3, u_f0*1e3
 
 ### script
-if timestamp != None:
-    folder = toolbox.data_from_time(timestamp)
-else:
-    folder = toolbox.latest_data('DarkESR')
-print folder
+if __name__ == '__main__':
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        folder = toolbox.latest_data('DarkESR')
 
-a = sequence.SequenceAnalysis(folder)
-a.get_sweep_pts()
-a.get_readout_results('ssro')
-a.get_electron_ROC()
+    analyze_dark_esr(folder)
 
 
-x = a.sweep_pts # convert to MHz
-y = a.p0.reshape(-1)[:]
-ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
-ax.set_ylim(0.75, 1.05)
-
-# try fitting
-fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
-        guess_amplitude, guess_width, guess_ctr,
-        # (2, guess_splitN), 
-        # (2, guess_splitC),
-        # (2, guess_splitB),
-        (3, guess_splitN), 
-        do_print=True, ret=True, fixed=[])
-plot.plot_fit1d(fit_result, x, ax=ax, plot_data=False)
-
-ax.set_xlabel('MW frq (GHz)')
-ax.set_ylabel(r'$F(|0\rangle)$')
-ax.set_title(a.timestamp+'\n'+a.measurementstring)
-
-plt.savefig(os.path.join(folder, 'darkesr_analysis.png'), 
-        format='png')
 
 
 

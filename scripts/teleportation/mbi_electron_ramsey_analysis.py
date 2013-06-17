@@ -13,12 +13,12 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = None # '20130107231602'
-guess_f1 = 1./5000.
-guess_A1 = 0.4
+timestamp = None#'20130530183305'#None # 
+guess_f1 = 1./200.
+guess_A1 = 0.5
 guess_phi1 = 0.
 
-guess_tau = 3000
+guess_tau = 600
 guess_a = 0.5
 
 
@@ -26,13 +26,13 @@ guess_a = 0.5
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('MBIElectronRamsey')
+    folder = toolbox.latest_data('MBIElectron')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
-a.get_readout_results()
+a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
-ax = a.plot_results_vs_sweepparam(ret='ax', )
+ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata' )
 
 fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_gaussian_decay,
         guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1), fixed=[1],

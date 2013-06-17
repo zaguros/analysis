@@ -5,10 +5,10 @@ from measurement.lib.tools import toolbox
 from analysis.lib.nv import nvlevels
 
 # settings
-timestamp = '20130605185601'
+timestamp = None
 
-Ex = 66.5
-Ey = 62.0
+Ex = 58.2
+Ey = 56.7
 
 lines = nvlevels.get_ES_ExEy(Ex,Ey)
 
@@ -16,7 +16,7 @@ lines = nvlevels.get_ES_ExEy(Ex,Ey)
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('')
+    folder = toolbox.latest_data('LaserFrequencyScan')
 
 # get data
 fn = os.path.join(folder, os.path.split(folder)[1]+'.dat')

@@ -35,11 +35,48 @@ class MBIAnalysis(m2.M2Analysis):
         self.u_normalized_ssro = \
             (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
 
+    def get_correlations(self, name=''):
+        adwingrp = self.adwingrp(name)
+        
+        self.reps = self.g.attrs['reps_per_ROsequence']
+        self.pts = adwingrp.attrs['sweep_length']
+        self.readouts = adwingrp.attrs['nr_of_ROsequences']
+        
+        discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
+        self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
+        
+        if discards > 0:
+            results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
+        else:
+            results = adwingrp['ssro_results'].value
+
+        _res = results.reshape((-1,self.pts,self.readouts))
+        c = np.zeros((self.reps, self.pts))
+
+        for i in range(self.readouts):
+            c += 2**i * (1-_res[:,:,i])
+
+        corrvals = range(2**self.readouts)
+        self.correlations = np.zeros((self.pts, len(corrvals)))
+        for v in corrvals:
+            for p in range(self.pts):
+                self.correlations[p,v] = len(np.where(c[:,p]==v)[0])
+
+        self.correlation_names = [np.binary_repr(v, width=self.readouts) for v in corrvals]
+        
+        self.normalized_correlations = self.correlations / float(self.reps)
+        self.u_normalized_correlations = (
+            self.normalized_correlations*(1.-self.normalized_correlations)/self.reps)**0.5
+
+
     def get_sweep_pts(self):
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
 
-    def get_electron_ROC(self, ssro_calib_folder=toolbox.latest_data('SSRO')):
+    def get_electron_ROC(self, ssro_calib_folder=''):
+        if ssro_calib_folder == '':
+            ssro_calib_folder = toolbox.latest_data('SSRO')
+
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
         
@@ -54,7 +91,7 @@ class MBIAnalysis(m2.M2Analysis):
                     self.u_normalized_ssro[:,i])
             
             self.p0[:,i] = p0
-            self.u_p0[:,i] = u_p0      
+            self.u_p0[:,i] = u_p0
         
         self.result_corrected = True
 
@@ -105,42 +142,65 @@ class MBIAnalysis(m2.M2Analysis):
         
 
     def plot_results_vs_sweepparam(self, name='', save=True, **kw):
+        mode = kw.get('mode', 'ssro_results')
         labels = kw.get('labels', None)
         ret = kw.get('ret', None)
         ylim = kw.get('ylim', (-0.05, 1.05))
+        ax = kw.get('ax', None)
         
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
             self.sweep_name = 'sweep parameter'
         
-        fig = self.default_fig(figsize=(6,4))
-        ax = self.default_ax(fig)
+        if ax == None:
+            fig = self.default_fig(figsize=(6,4))
+            ax = self.default_ax(fig)
+        else:
+            ax.set_title(self.timestamp+'\n'+self.measurementstring)
         
         if labels == None:
-            labels = ['RO #%d' % i for i in range(self.readouts)]
-        
-        for i in range(self.readouts):
-            if not self.result_corrected:
-                ax.errorbar(self.sweep_pts, self.normalized_ssro[:,i], fmt='o-',
-                    yerr=self.u_normalized_ssro[:,i], label=labels[i])
+            if mode != 'correlations':
+                labels = ['RO #%d' % i for i in range(self.readouts)]
             else:
-                ax.errorbar(self.sweep_pts, self.p0[:,i], fmt='o',
-                    yerr=self.u_p0[:,i], label=labels[i])
-
+                labels = self.correlation_names
         
-        ax.set_xlabel(self.sweep_name)
-        if not self.result_corrected:
-            ax.set_ylabel('avg (uncorrected) outcome')
+        if mode != 'correlations':
+            for i in range(self.readouts):
+                if not self.result_corrected:
+                    ax.errorbar(self.sweep_pts, self.normalized_ssro[:,i], fmt='o-',
+                        yerr=self.u_normalized_ssro[:,i], label=labels[i])
+                else:
+                    ax.errorbar(self.sweep_pts, self.p0[:,i], fmt='o',
+                        yerr=self.u_p0[:,i], label=labels[i])
+                    ax.axhspan(0,1,fill=False,ls='dotted')
+        
+            if not self.result_corrected:
+                ax.set_ylabel('avg (uncorrected) outcome')
+            else:
+                ax.set_ylabel(r'$F(|0\rangle)$')
+
         else:
-            ax.set_ylabel(r'$F(|0\rangle)$')
+            for i in range(len(self.correlation_names)):
+                ax.errorbar(self.sweep_pts, self.normalized_correlations[:,i], 
+                    fmt='o', yerr=self.u_normalized_correlations[:,i], 
+                    label=labels[i])
+            
+            ax.axhspan(0,1,fill=False,ls='dotted')
+            ax.set_ylabel('Probability')
         
+        ax.set_xlabel(self.sweep_name)       
         ax.set_ylim(ylim)
-        ax.legend(loc='best')
+        
+        if self.readouts > 1:
+            ax.legend(loc='best')
 
-        if save:
-            fig.savefig(
-                os.path.join(self.folder, 'ssro_result_vs_sweepparam.'+self.plot_format),
-                format=self.plot_format)
+        if save and ax != None:
+            try:
+                fig.savefig(
+                    os.path.join(self.folder, '{}_vs_sweepparam.'.format(mode) + self.plot_format),
+                    format=self.plot_format)
+            except:
+                print 'Figure has not been saved.'
 
         if ret == 'ax':
             return ax
@@ -152,6 +212,8 @@ class MBIAnalysis(m2.M2Analysis):
         self.f.close()
 
 def analyze_single_sweep(folder, name='', correction='electron', **kw):
+    mode = kw.pop('mode', 'ssro_results') # options 'correlations' | 'ssro_results'
+
     F_init = kw.pop('F_init', 1.)
     u_F_init = kw.pop('u_F_init', 0.)
     F0_RO_pulse = kw.pop('F0_RO_pulse', 1.)
@@ -162,8 +224,9 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     ret = kw.pop('ret', None)
 
     a = MBIAnalysis(folder)
-    a.get_sweep_pts()
+    a.get_sweep_pts()    
     a.get_readout_results(name)
+    a.get_correlations(name)
     
     if correction=='electron':
         a.get_electron_ROC()
@@ -172,7 +235,7 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
                 u_F1_RO_pulse)
 
     a.save()    
-    a.plot_results_vs_sweepparam(**kw)
+    a.plot_results_vs_sweepparam(mode=mode, **kw)
     a.finish()
     
     if ret == 'obj':

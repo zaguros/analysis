@@ -123,39 +123,46 @@ def fit_laserscan_from_file(file, plot=False,plot_save=True, **kw):
             plt.savefig(os.path.join(os.path.split(file)[0],'fitted_scan.png'))
     return fit_res
     
-def fit_laserscan(x,y,points=100,strain_min=0,strain_max=10,linewidth=0.1,fast=False):
+def fit_laserscan(x,y,points=100,strain_range=(0,10),Ex_range=None,Ey_range=None,linewidths=[0.1,0.1,0.4,0.2,0.1,0.1],fast=False):
     """
     Fit a laserscan with the theoretical NV spectrum, with frequency offset 
-    and strain as a free variable. the frequqncy offset search space is taken as 
-    the frequqcy axis range.
+    and strain as a free variable. 
     Input: x : frequency axis of the laser scan
            y : counts of the scan
            points: precision used in the fitting, eg the stepsize in both 
                    frequency offset and strain.
-           strain_min/max: defines the search space for the strain fit, in GHz.
+           strain_range: defines the search space for the strain fit, in GHz, in the form (min,max).
+           Ey_range: defines the search space for the Ey frequency, in GHz, in the form (min,max).
+                     if y_range is None, the frequency axis range (x is taken)
            linewidth: expected linewith used in the fitting procedure in GHz.
     Returns: the fitted peak Ex and Ey positions as [Ex,Ey] in GHz
     """
     
     l=len(x)
     fmax=max(x)
-    fmin=min(x)  
+    fmin=min(x)
     ls=points
-    A=np.zeros((ls,ls,l),dtype=np.bool)
-
-    fEys=np.linspace(fmin,fmax,ls)
-    fstrs=np.linspace(strain_min,strain_max,ls)
-    lw=linewidth
+    
+    if Ey_range==None:
+        fEys=np.unique(x[y>(2*np.median(y))])
+    else:
+        fEys=np.linspace(Ey_range[0],Ey_range[1],ls)
+        
+    if Ex_range==None:
+        fExs=np.copy(fEys)
+    else:
+        fExs=np.linspace(Ex_range[0],Ex_range[1],ls)
+    lw=linewidths
+    li=len(fEys)
+    lj=len(fExs)
+    A=np.zeros((li,lj,l),dtype=np.bool)
     for i,fEy in enumerate(fEys):
-        for j,fstr in enumerate(fstrs):
-            flev=get_ES_ExEy(fEy,fEy+fstr,fast)
-            A[i,j]=np.logical_and(x>(flev[0]-lw/2),x<(flev[0]+lw/2))+ \
-                        np.logical_and(x>(flev[1]-lw/2),x<(flev[1]+lw/2))+ \
-                        np.logical_and(x>(flev[2]-lw/2),x<(flev[2]+lw/2))+ \
-                        np.logical_and(x>(flev[3]-lw/2),x<(flev[3]+lw/2))+ \
-                        np.logical_and(x>(flev[4]-lw/2),x<(flev[4]+lw/2))+ \
-                        np.logical_and(x>(flev[5]-lw/2),x<(flev[5]+lw/2))
-
+        for j,fEx in enumerate(fExs):
+            if fEx<fEy or (fEx-fEy)<strain_range[0] or (fEx-fEy)>strain_range[1]:
+                continue
+            flev=get_ES_ExEy(fEx,fEy,fast)
+            for k in range(6):
+                A[i,j]=A[i,j]+ np.logical_and(x>(flev[k]-lw[k]/2),x<(flev[k]+lw[k]/2))
     result=np.sum(A*y,axis=2)
     im,jm=np.where(result==np.max(result))
     if len(im)>1:
@@ -163,9 +170,9 @@ def fit_laserscan(x,y,points=100,strain_min=0,strain_max=10,linewidth=0.1,fast=F
         d=0.
         imm=0
         for ii,imi in enumerate(im):
-            if fstrs[jm[ii]]>d:
-                d=fstrs[jm[ii]]
+            if (fExs[jm[ii]]-fEys[im[ii]])>d:
+                d=(fExs[jm[ii]]-fEys[im[ii]])
                 imm=ii
-            print ii,':', 'Ey:', fEys[imi], 'Ex:' , fEys[imi]+fstrs[jm[ii]]
-        return [fEys[im[imm]],fEys[im[imm]]+fstrs[jm[imm]]]
-    return [fEys[im],fEys[im]+fstrs[jm]]
+            print ii,':', 'Ey:', fEys[im[ii]], 'Ex:' , fExs[jm[ii]]
+        return np.array([fExs[jm[imm]],fEys[im[imm]],])
+    return np.ravel([fExs[jm],fEys[im],])

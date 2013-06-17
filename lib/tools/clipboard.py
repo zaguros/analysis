@@ -13,4 +13,11 @@ def copy_array(arr):
     for a in arr:
         to_str=to_str+str(a)+'\t'
     copy_str(to_str)
-    
+
+def copy_array_2d(arr):
+    to_str=''
+    for r in arr:
+        for c in r:
+            to_str=to_str+str(c)+'\t'
+        to_str=to_str+'\n'
+    copy_str(to_str)
