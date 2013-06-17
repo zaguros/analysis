@@ -158,6 +158,8 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     u_F0_RO_pulse = kw.pop('u_F0_RO_pulse', 0.)
     F1_RO_pulse = kw.pop('F1_RO_pulse', 1.)
     u_F1_RO_pulse = kw.pop('u_F1_RO_pulse', 0.)
+    
+    ret = kw.pop('ret', None)
 
     a = MBIAnalysis(folder)
     a.get_sweep_pts()
@@ -172,3 +174,8 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     a.save()    
     a.plot_results_vs_sweepparam(**kw)
     a.finish()
+    
+    if ret == 'obj':
+        return a
+        
+    

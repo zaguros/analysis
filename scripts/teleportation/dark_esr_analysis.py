@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.827
+guess_ctr = 2.829
 guess_splitB = 30.
 guess_splitN = 2.187e-3
 guess_splitC = .377e-3 #12.78
@@ -38,7 +38,7 @@ a.get_electron_ROC()
 x = a.sweep_pts # convert to MHz
 y = a.p0.reshape(-1)[:]
 ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
-ax.set_ylim(0.75,1.05)
+ax.set_ylim(0.75, 1.05)
 
 # try fitting
 fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
@@ -51,7 +51,7 @@ fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
 plot.plot_fit1d(fit_result, x, ax=ax, plot_data=False)
 
 ax.set_xlabel('MW frq (GHz)')
-ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')
+ax.set_ylabel(r'$F(|0\rangle)$')
 ax.set_title(a.timestamp+'\n'+a.measurementstring)
 
 plt.savefig(os.path.join(folder, 'darkesr_analysis.png'), 

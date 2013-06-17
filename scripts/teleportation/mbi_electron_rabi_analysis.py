@@ -60,13 +60,13 @@ if fit_startup:
 
 else:
     fit_result = fit.fit1d(a.sweep_pts[:], a.p0.reshape(-1)[:], rabi.fit_rabi_fixed_upper,
-        guess_frq, guess_amp, guess_phi, guess_k, fixed=[],
+        guess_frq, guess_amp, guess_phi, guess_k, fixed=[3],
         do_print=True, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1], 201), ax=ax,
         plot_data=False)
 
-    plt.savefig(os.path.join(folder, 'electronrabi_analysis.pdf'),
-        format='pdf')
+    plt.savefig(os.path.join(folder, 'electronrabi_analysis.png'),
+        format='png')
 
         
         

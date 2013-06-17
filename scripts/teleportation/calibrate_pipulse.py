@@ -26,10 +26,10 @@ a.get_electron_ROC()
 #a.get_N_ROC(1.00, 0.02, 0.94, 0.01, 0.96, 0.01)
 ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata')
 
-x = a.sweep_pts.reshape(-1)[8:]
-y = a.p0.reshape(-1)[8:]
+x = a.sweep_pts.reshape(-1)[4:-4]
+y = a.p0.reshape(-1)[4:-4]
 
-x0 = fit.Parameter(0.19, 'x0')
+x0 = fit.Parameter(0.16, 'x0')
 of = fit.Parameter(1., 'of')
 a = fit.Parameter(0., 'a')
 fitfunc_str = '(1-of) + a (x-x0)**2'

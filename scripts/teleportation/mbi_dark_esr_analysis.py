@@ -20,11 +20,11 @@ guess_offset = 1.0
 guess_A_min1 = 0.5
 guess_A_plus1 = 0.
 guess_A_0 = 0.
-guess_x0 = 2826.99
+guess_x0 = 2828.93
 guess_sigma = 0.45
-guess_Nsplit = 2.18
+guess_Nsplit = 2.185
 
-splitting = 2.18
+splitting = 2.185
 
 
 
