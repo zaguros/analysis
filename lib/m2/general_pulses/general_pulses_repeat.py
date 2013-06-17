@@ -26,9 +26,9 @@ class GeneralPulsesRepeatAnlysis(m2.M2Analysis):
         self.result=np.reshape(self.raw_result,(self.repetitions,self.max_element))
         self.first_count=self.grp['first_count'].value
         
-        #plot result
-        #plt.figure()
-        #plt.title(self.default_plot_title)
+        plot result
+        plt.figure()
+        plt.title(self.default_plot_title)
         #for i,x in enumerate(np.arange(self.max_element)):
         #    sp=plt.subplot(self.max_element,1,i+1)
         #    y=self.result[i]/(self.durations[i]*float(self.repetitions))
@@ -44,12 +44,12 @@ class GeneralPulsesRepeatAnlysis(m2.M2Analysis):
         #plot histograms
         #plt.figure()
         
-        #plt.plot(np.arange(len(histogram))*self.cycle_duration,histogram, 'o')
-        #plt.xlabel('time [s]')
-        #plt.ylabel('counts [Hz]')
-        #if save_plots:
-        #    plt.savefig(os.path.join(self.folder,'histogram.png'))
-        #    plt.close('all')
+        plt.plot(np.arange(len(self.histogram[0]))*self.cycle_duration,np.sum(self.histogram,axis=0), 'o')
+        plt.xlabel('time [s]')
+        plt.ylabel('counts [Hz]')
+        if save_plots:
+            plt.savefig(os.path.join(self.folder,'histogram.png'))
+            plt.close('all')
         
 
 def analyse_pulses(fp):
