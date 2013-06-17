@@ -29,7 +29,6 @@ def latest_data(contains='',):
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
     '''
-
     daydirs = os.listdir(datadir)
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
