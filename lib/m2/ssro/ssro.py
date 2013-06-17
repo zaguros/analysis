@@ -226,7 +226,9 @@ class SSROAnalysis(m2.M2Analysis):
 
         F = (fid0 + fid1)/2.
         F_err = np.sqrt(fid0_err**2 + fid1_err**2)
-        F_max = max(F)
+        maxidx = F.argmax()
+        F_max = F[maxidx]
+        F_max_err = F_err[maxidx]
         t_max = time[F.argmax()]
 
         meanfid = (_fid0[:,1]+_fid1[:,1])*0.5
@@ -254,7 +256,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_ylabel('RO fidelity')
             ax.set_ylim((0.5,1))
             ax.legend(loc=4)
-            plt.figtext(0.8, 0.5, "max. F=%.2f at t=%.2f us" % (F_max, t_max),
+            plt.figtext(0.8, 0.5, "max. F=({:.2f} +/- {:.2f})% at t={:.0f} us".format(F_max*100., F_max_err*100., t_max),
                     horizontalalignment='right')
 
             ax.set_title(self.default_plot_title + ': mean RO fidelity')
