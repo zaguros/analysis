@@ -7,14 +7,14 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, mbi
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
 from analysis.lib.math import error, tomography
 
 idealstate = np.array([1,0])#1/np.sqrt(2)*np.array([1,1])#
 
-timestamp = None
+timestamp = '20130616155042'
 
 ### script
 if timestamp != None:
@@ -25,7 +25,7 @@ else:
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='adwindata')
-a.get_N_ROC(1.00,0.00,0.94,0.01,0.96,0.01)#(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
+a.get_N_ROC(0.95,0.03,0.04,0.03,0.98,0.01,0.99,0.01)#(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
 
 a.save()    
 # a.plot_results_vs_sweepparam()
