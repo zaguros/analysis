@@ -6,11 +6,13 @@ import logging
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.spin import Nspin_twolevel_correction
+from analysis.lib.spin import Nspin_correction
+reload(Nspin_correction)
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
 from sequence_ssro import SequenceSSROAnalysis
 from analysis.lib.math import error
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
     def get_readout_results(self, name=''):
@@ -58,17 +60,21 @@ class MBIAnalysis(m2.M2Analysis):
         
         self.result_corrected = True
 
-    def get_N_ROC(self, F_init=1, u_F_init=0, F0_RO_pulse=1, u_F0_RO_pulse=0,
+    def get_N_ROC(self, P_min1=1, u_P_min1=0, P_0=1, u_P_0=0,
+            F0_RO_pulse=1, u_F0_RO_pulse=0,
             F1_RO_pulse=1, u_F1_RO_pulse=0,
             ssro_calib_folder=toolbox.latest_data('SSRO')):
-
+        
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
         
         ro_durations = self.g.attrs['E_RO_durations']
-        roc = Nspin_twolevel_correction.NuclearSpinROC()
-        roc.F_init = F_init
-        roc.u_F_init = u_F_init
+        roc = Nspin_correction.NuclearSpinROC()
+        roc.P_min1 = P_min1
+        roc.u_P_min1 = u_P_min1
+        roc.P_0 = P_0
+        roc.u_P_0 = u_P_0
+       
         roc.F0_RO_pulse = F0_RO_pulse
         roc.u_F0_RO_pulse = u_F0_RO_pulse
         roc.F1_RO_pulse = F1_RO_pulse
@@ -78,10 +84,10 @@ class MBIAnalysis(m2.M2Analysis):
             roc.F0_ssro, roc.u_F0_ssro, roc.F1_ssro, roc.u_F1_ssro = \
                 ssro.get_SSRO_calibration(ssro_calib_folder,
                         ro_durations[i])
-            
-            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+        
+            p0, u_p0 = roc.num_evaluation(self.normalized_ssro[:,i],
                     self.u_normalized_ssro[:,i])
-          
+            
             self.p0[:,i] = p0
             self.u_p0[:,i] = u_p0
         
@@ -152,11 +158,14 @@ class MBIAnalysis(m2.M2Analysis):
         self.f.close()
 
 def analyze_single_sweep(folder, name='', correction='electron', **kw):
-    F_init = kw.pop('F_init', 1.)
-    u_F_init = kw.pop('u_F_init', 0.)
-    F0_RO_pulse = kw.pop('F0_RO_pulse', 1.)
+    P_min1 = kw.pop('P_min1',0.95)
+    u_P_min1 = kw.pop('u_P_min1',0.)
+    P_0 = kw.pop('P_0',0.03)
+    u_P_0 = kw.pop('u_P_0',0.)
+    
+    F0_RO_pulse = kw.pop('F0_RO_pulse', 0.98)
     u_F0_RO_pulse = kw.pop('u_F0_RO_pulse', 0.)
-    F1_RO_pulse = kw.pop('F1_RO_pulse', 1.)
+    F1_RO_pulse = kw.pop('F1_RO_pulse', 0.99)
     u_F1_RO_pulse = kw.pop('u_F1_RO_pulse', 0.)
 
     a = MBIAnalysis(folder)
@@ -166,7 +175,7 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     if correction=='electron':
         a.get_electron_ROC()
     elif correction == 'N':
-        a.get_N_ROC(F_init, u_F_init, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
+        a.get_N_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
                 u_F1_RO_pulse)
 
     a.save()    
