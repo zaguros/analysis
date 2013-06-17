@@ -49,13 +49,18 @@ class SequenceAnalysis(m2.M2Analysis):
     
     def plot_result_vs_sweepparam(self, name='', save=True, **kw):
         ret = kw.get('ret', None)
+        ax = kw.get('ax', None)
 
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(len(self.ssro_results)) + 1
             self.sweep_name = 'sweep parameter'
 
-        fig = self.default_fig(figsize=(6,4))
-        ax = self.default_ax(fig)
+        if ax == None:
+            fig = self.default_fig(figsize=(6,4))
+            ax = self.default_ax(fig)
+        else:
+            save = False
+        
         if not self.result_corrected:
             ax.errorbar(self.sweep_pts, self.normalized_ssro, fmt='o-',
                 yerr=self.u_normalized_ssro)
