@@ -12,7 +12,7 @@ from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.tools import plot
 
-timestamp = None # '20130605232959'
+timestamp = None
 
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
@@ -26,18 +26,19 @@ a.get_electron_ROC()
 #a.get_N_ROC(1.00, 0.02, 0.94, 0.01, 0.96, 0.01)
 ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata')
 
-x = a.sweep_pts.reshape(-1)[:]
-y = a.p0.reshape(-1)[:]
+x = a.sweep_pts.reshape(-1)
+y = a.p0.reshape(-1)
 
-x0 = fit.Parameter(0.02, 'x0')
-of = fit.Parameter(1., 'of')
-a = fit.Parameter(0., 'a')
-fitfunc_str = '(1-of) + a (x-x0)**2'
+x0 = fit.Parameter(50, 'x0')
+a = fit.Parameter(0.5, 'a')
+o = fit.Parameter(0.5, 'o')
+c = fit.Parameter(1, 'c')
+fitfunc_str = '' # 'o + a * exp((x-x0)**2/c**2) * cos(2*pi*(f*x + phi))'
 
 def fitfunc(x):
-    return (1.-of()) + a() * (x-x0())**2
+    return o() + a() * np.exp(-(x-x0())**2/c()**2)
 
-fit_result = fit.fit1d(x,y, None, p0=[of, a, x0], fitfunc=fitfunc,
+fit_result = fit.fit1d(x,y, None, p0=[x0,a,o,c], fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False)

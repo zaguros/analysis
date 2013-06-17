@@ -20,11 +20,11 @@ guess_offset = 1.0
 guess_A_min1 = 0.5
 guess_A_plus1 = 0.
 guess_A_0 = 0.
-guess_x0 = 2826.99
-guess_sigma = 0.45
-guess_Nsplit = 2.18
+guess_x0 = 2827.093
+guess_sigma = 0.435
+guess_Nsplit = 2.187
 
-splitting = 2.18
+splitting = 2.187
 
 
 
@@ -58,15 +58,17 @@ a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
-ax = a.plot_results_vs_sweepparam(ret='ax', )
+ax = a.plot_results_vs_sweepparam(ret='ax',name='adwindata')
 
 x = a.sweep_pts
 y = a.p0.reshape(-1)
 
 # try fitting
-fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma],
+fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o],
         fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
-plot.plot_fit1d(fit_result, x, ret='ax', plot_data=False, ax=ax)
+plot.plot_fit1d(fit_result, x, plot_data=False, ax=ax)
+
+ax.set_ylim(0.4,1.05)
 
 plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
         format='pdf')
