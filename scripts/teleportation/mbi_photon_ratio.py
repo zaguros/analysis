@@ -4,11 +4,11 @@ from matplotlib import pyplot as plt
 import h5py
 from measurement.lib.tools import toolbox
 
-fn = r'd:\measuring\data\20130525\213632_AdwinSSRO_SSROCalibration_sil2_RO=2nW\analysis.hdf5'
-# fn = os.path.join(toolbox.latest_data('SSRO'), 'analysis.hdf5')
+# fn = r'd:\measuring\data\20130527\144131_AdwinSSRO_SSROCalibration_debug\analysis.hdf5'
+fn = os.path.join(toolbox.latest_data('SSRO'), 'analysis.hdf5')
 f = h5py.File(fn, 'r')
 
-pi_inv_prob = 0.7
+pi_inv_prob = 0.45
 noof_states = 6
 
 f0data = f['/fidelity/ms0']
