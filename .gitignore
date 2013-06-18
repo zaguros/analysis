@@ -5,3 +5,4 @@ output
 *.pyc
 *.bak
 *.BAK
+.DS_Store
