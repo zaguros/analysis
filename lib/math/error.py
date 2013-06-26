@@ -25,6 +25,11 @@ class Formula:
 
     def value(self):
         return self.formula.subs(self.values)
+        
+    def value_correlation(self):
+        # The formula gives a sympy matrix, which lambdify cannot work with properly
+        # We turn it into tuple here; lambdify accepts this.
+        return tuple(self.formula.subs(self.values))
 
     def uncertainty_squared(self):
         # usquared = 0.
@@ -35,6 +40,22 @@ class Formula:
             else:
                 usquared += (self.formula.diff(s).subs(self.values)*\
                     self.uncertainties[s])**2
+        
+        return usquared
+
+    def uncertainty_squared_correlation(self):
+        #Since formula gives a sympy matrix, we cannot square this term by term with **.
+        #We therefore square each term one by one, and thus create usquared..
+        usquared = {}
+        for i,s in enumerate(self.uncertainties):
+            if i == 0:
+                for j in range(4):
+                    usquared[j] = (self.formula.diff(s).subs(self.values)[j]*\
+                        self.uncertainties[s])**2
+            else:
+                for j in range(4):
+                    usquared[j] += (self.formula.diff(s).subs(self.values)[j]*\
+                        self.uncertainties[s])**2
         
         return usquared
 
@@ -56,7 +77,26 @@ class Formula:
             u = sympy.sqrt(usquared)
             uncertaintyfunc = lambdify((symbol, u_sym), u, 'numpy')
             return valfunc(values), uncertaintyfunc(values, uncertainties)
-
+    
+    def num_eval_correlation(self, symbol=None, values=None, uncertainties=None):
+        if symbol == None:
+            return self.value(), self.uncertainty()
+        
+        valfunc = lambdify(symbol, self.value_correlation(), 'numpy')
+        if uncertainties == None:        
+            uncertaintyfunc = lambdify(symbol, self.uncertainty(), 'numpy')
+            return valfunc(values), uncertaintyfunc(values)
+        else:
+            #We define u_sym as a 'DeferredVector' to be able to use it in lambdify as one input.
+            u_sym = sympy.DeferredVector('u_sym')
+            #To be able to square term by term in a sympy matrix, square terms separately:
+            usquared = {}
+            for j in range(4):
+                usquared[j] = self.uncertainty_squared_correlation()[j] + \
+                    (self.formula.diff(symbol).subs(self.values)[j] * u_sym[j])**2
+            u = (sympy.sqrt(usquared[0]),sympy.sqrt(usquared[1]),sympy.sqrt(usquared[2]),sympy.sqrt(usquared[3]))
+            uncertaintyfunc = lambdify((symbol, u_sym), u, 'numpy')
+            return valfunc(values), uncertaintyfunc(values, uncertainties)       
 
 class SingleQubitROC:
 
