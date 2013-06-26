@@ -10,7 +10,7 @@ from analysis.lib.tools import plot
 
 timestamp = None
 
-g_f = 1./360
+g_f = 1./0.45
 g_A = 0.5
 g_o = 0.5
 g_phi = 0.
@@ -34,15 +34,11 @@ a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
-x = a.sweep_pts.reshape(-1)[:] - 1
-y = a.p0.reshape(-1)[:]
+x = a.sweep_pts
+y = a.p0[:,1]       # .reshape(-1)
 
 fit_result = fit.fit1d(x, y, None,
-        fitfunc=fitfunc, p0=[A,o,phi], fixed=[], do_print=True, ret=True)
+        fitfunc=fitfunc, p0=[A,o,f,phi], fixed=[], do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(a.sweep_pts[0],a.sweep_pts[-1],201), ax=ax,
         plot_data=False)
-
-
-
-
 

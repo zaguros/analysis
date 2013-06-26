@@ -64,9 +64,14 @@ def stage_3_calibrations():
     pi2pi_pi_amp = pi_pi2pi(ax4)
 
     print 80*'='
+    print 'pi2pi mI=0'
+    print 80*'='
+    pi2pi_pi_mI0_amp = pi_pi2pi_mI0(ax5)
+
+    print 80*'='
     print 'Hard pi'
     print 80*'='
-    hard_pi_amp = pi_hard(ax5)
+    hard_pi_amp = pi_hard(ax6)
 
 
 
@@ -259,6 +264,19 @@ def CORPSE_pi(ax=None):
 
 def pi_pi2pi(ax=None):
     folder = toolbox.latest_data('cal_pi2pi_pi_'+name)
+    
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+        
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.165, 1, 0)
+    A = fit_result['params_dict']['x0']
+    u_A = fit_result['error_dict']['x0']
+    ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+
+    return A, u_A
+
+def pi_pi2pi_mI0(ax=None):
+    folder = toolbox.latest_data('cal_pi2pi_pi_mI0')
     
     if ax==None:
         fig,ax = plt.subplots(1,1)

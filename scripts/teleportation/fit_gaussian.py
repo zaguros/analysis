@@ -29,10 +29,10 @@ ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata')
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
 
-x0 = fit.Parameter(0, 'x0')
+x0 = fit.Parameter(150, 'x0')
 a = fit.Parameter(1., 'a')
 o = fit.Parameter(0.5, 'o')
-c = fit.Parameter(500, 'c')
+c = fit.Parameter(5, 'c')
 fitfunc_str = ''
 
 def fitfunc(x):
