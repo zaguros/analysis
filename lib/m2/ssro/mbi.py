@@ -230,6 +230,7 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     u_F1_RO_pulse = kw.pop('u_F1_RO_pulse', 0.)
     
     ret = kw.pop('ret', None)
+    mode = kw.pop('mode', 'ssro_results')
 
     a = MBIAnalysis(folder)
     a.get_sweep_pts()    
