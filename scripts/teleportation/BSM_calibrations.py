@@ -270,6 +270,19 @@ def pi_pi2pi(ax=None):
 
     return A, u_A
 
+def pi_pi2pi_len(ax=None):
+    folder = toolbox.latest_data('cal_pi2pi_pi_len_'+name)
+    
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+        
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.165, 1, 0)
+    A = fit_result['params_dict']['x0']
+    u_A = fit_result['error_dict']['x0']
+    ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+
+    return A, u_A    
+    
 def pi_hard(ax=None):
     folder = toolbox.latest_data('cal_hard_pi_'+name)
     
@@ -358,7 +371,7 @@ def CORPSE_fidelity(ax=None):
         fig,ax = plt.subplots(1,1)
         
     fit_result = epulse_fidelity(folder, ax, 1)
-    
+  
                                 
 if __name__ == '__main__':
     # calibrate_all()
