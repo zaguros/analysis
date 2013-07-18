@@ -40,6 +40,14 @@ def stage_1_calibrations():
     slow_pi_length = slow_pi(ax2)
 
 
+def stage_2_calibrations():
+    fig, ax = plt.subplots(1,1)
+
+    print 80*'='
+    print '4 MHz electron Rabi'
+    print 80*'='
+    CORPSE_freq = rabi_4mhz(ax)
+
 def stage_3_calibrations():
     fig, ([ax1, ax2],[ax3, ax4], [ax5, ax6]) = plt.subplots(3,2, figsize=(10,15))
     
@@ -48,10 +56,10 @@ def stage_3_calibrations():
     print 80*'='
     pi_4mhz_amp = pi_4mhz(ax1)
     
-    print 80*'='
-    print '4 MHz Pi/2'
-    print 80*'='
-    pi2_4mhz_amp = pi2_4mhz(ax2)
+    #print 80*'='
+    #print '4 MHz Pi/2'
+    #print 80*'='
+    #pi2_4mhz_amp = pi2_4mhz(ax2)
 
     print 80*'='
     print 'CORPSE pi'
@@ -68,10 +76,10 @@ def stage_3_calibrations():
     print 80*'='
     pi2pi_pi_mI0_amp = pi_pi2pi_mI0(ax5)
 
-    print 80*'='
-    print 'Hard pi'
-    print 80*'='
-    hard_pi_amp = pi_hard(ax6)
+    ##print 80*'='
+    #print 'Hard pi'
+    #print 80*'='
+    #hard_pi_amp = pi_hard(ax6)
 
 
 

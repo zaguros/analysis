@@ -40,6 +40,9 @@ class MBIAnalysis(m2.M2Analysis):
 
     def get_correlations(self, name=''):
         adwingrp = self.adwingrp(name)
+        self.result_correlation_corrected = False
+
+        print 10
         
         self.reps = self.g.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']
@@ -135,7 +138,7 @@ class MBIAnalysis(m2.M2Analysis):
         
         self.result_corrected = True
 
-    def get_correlation_ROC(self, P_min1=1, u_P_min1=0, P_0=1, u_P_0=0,
+    def get_correlation_ROC(self, P_min1=1, u_P_min1=0, P_0=0, u_P_0=0,
             F0_RO_pulse=1, u_F0_RO_pulse=0,
             F1_RO_pulse=1, u_F1_RO_pulse=0,
             ssro_calib_folder=toolbox.latest_data('SSRO')):
@@ -175,7 +178,7 @@ class MBIAnalysis(m2.M2Analysis):
         self.p_correlations = np.array(p_correlations).T
         self.u_p_correlations = np.array(u_p_correlations).T
         
-        self.result_corrected = True
+        self.result_correlation_corrected = True
 
     def save(self,correction, fname='analysis.hdf5'):
         f = h5py.File(os.path.join(self.folder, fname), 'w')
@@ -194,7 +197,7 @@ class MBIAnalysis(m2.M2Analysis):
         else:
             f['/readout_result/normalized_correlations'] = self.normalized_correlations
             f['/readout_result/u_normalized_correlations'] = self.u_normalized_correlations
-            if self.result_corrected:
+            if self.result_correlation_corrected:
                 f['readout_result/p_correlations'] = self.p_correlations
                 f['readout_result/u_p_correlations'] = self.u_p_correlations
                 
@@ -207,7 +210,7 @@ class MBIAnalysis(m2.M2Analysis):
         ret = kw.get('ret', None)
         ylim = kw.get('ylim', (-0.05, 1.05))
         ax = kw.get('ax', None)
-        
+
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
             self.sweep_name = 'sweep parameter'
@@ -240,8 +243,9 @@ class MBIAnalysis(m2.M2Analysis):
                 ax.set_ylabel(r'$F(|0\rangle)$')
 
         else:
+            print 2 
             for i in range(len(self.correlation_names)):
-                if not self.result_corrected:
+                if not self.result_correlation_corrected:
                     ax.errorbar(self.sweep_pts, self.normalized_correlations[:,i], 
                         fmt='o', yerr=self.u_normalized_correlations[:,i], 
                         label=labels[i])
@@ -296,8 +300,9 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     a = MBIAnalysis(folder)
     a.get_sweep_pts()    
     a.get_readout_results(name)
-    a.get_correlations(name)
-    
+    if mode == 'correlations':
+        a.get_correlations(name)
+
     if correction == 'electron':
         a.get_electron_ROC()
     elif correction == 'N':
@@ -307,8 +312,9 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
         a.get_correlation_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
                 u_F1_RO_pulse)
 
+
     a.save(correction)    
-    a.plot_results_vs_sweepparam(**kw)
+    a.plot_results_vs_sweepparam(mode = mode, **kw)
     a.finish()
     
     if ret == 'obj':

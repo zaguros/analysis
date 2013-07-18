@@ -39,15 +39,17 @@ class CorrelationsROC:
         # CNOT_err reflects the fidelities in the pi (F0) and 2pi (F1) parts of the pi-2pi pulse (as CNOT gate). 
         # Init_err includes populations in the three nitrogen lines after initialization in -1.
         #The inverse matrices are calculated before the tensorproduct, since this is much faster.
+        
         self.error_matrix_N = (sympy.Matrix([[self._F0_N_ssro, 1.-self._F1_N_ssro],[1.-self._F0_N_ssro, self._F1_N_ssro]]) * \
             sympy.Matrix([[self._F0_RO_pulse, 1.-self._F1_RO_pulse, 0.],[1.-self._F0_RO_pulse, self._F1_RO_pulse, 1.]]) * \
                 sympy.Matrix([[self._P_min1,self._P_0],[self._P_0,self._P_min1],[1.-self._P_0-self._P_min1,1.-self._P_0-self._P_min1]]))
  
         self.error_matrix_e = (sympy.Matrix([[self._F0_e_ssro, 1.-self._F1_e_ssro],[1.-self._F0_e_ssro, self._F1_e_ssro]]))
+        
         self.correction_matrix_N = self.error_matrix_N.inv()
         self.correction_matrix_e = self.error_matrix_e.inv()  
         self.correction_matrix = TensorProduct(self.correction_matrix_N,self.correction_matrix_e)
-        
+
         corr_vec =  self.correction_matrix * \
             sympy.Matrix([self._p_correlations[0], self._p_correlations[1], self._p_correlations[2], self._p_correlations[3]])
         corr_p_correlations = corr_vec
@@ -80,5 +82,4 @@ class CorrelationsROC:
         self.p0_formula.uncertainties[self._P_0] = self.u_P_0
 
         return self.p0_formula.num_eval_correlation(self._p_correlations, p_correlations.T , u_p_correlations.T)
-    
     
