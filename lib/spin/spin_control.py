@@ -24,7 +24,7 @@ def find_nearest(array,value):
     return idx
 
 def get_latest_data(string = 'ADwin_SSRO', datapath = '',date=''):
-    meas_folder = r'D:\machielblok\Desktop\PhD\QTlab\data'
+    meas_folder = r'D:\measuring\data'
     if date=='':
         currdate = time.strftime('%Y%m%d')
     else:
@@ -167,12 +167,12 @@ def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',label='',title='',d
             if splot==111:
                 figure1 = plt.figure()
             else: 
-                figure1 = plt.figure(figsize=(16,12))
+                figure1 = plt.figure(figsize=(32,24))
     else:
             if splot==111:
                 figure1 = plt.figure(nr)
             else:
-                figure1 = plt.figure(nr,figsize=(16,12))
+                figure1 = plt.figure(nr,figsize=(32,24))
     matplotlib.rc('xtick',labelsize=14)
     matplotlib.rc('ytick',labelsize=14)
     ax=figure1.add_subplot(splot)
@@ -194,7 +194,8 @@ def plot_ssro_vs_sweep(x,y,yerr,ylim=[0,1],xname='',yname='',label='',title='',d
     print datapath
     figure1.subplots_adjust(wspace=.3,hspace=.3)
     if label!='':
-        ax.legend(loc=1)
+        #ax.legend(loc=1)
+        a=2
     return ax
 
 def analyse_plot_results_vs_sweepparam(fname,yname,ylim=[0,1],Nuclcor=False,title='result',dataname='',datapath='',key='SSRO_counts',d='',save=True):
@@ -330,7 +331,7 @@ def plot_feedback(foldername, filename='Spin_RO',d=''):
 
 
 ##############################################
-def fit_sin(x,y,uy,savepath='',plot_fft=False):
+def fit_sin(x,y,uy,savepath='',fixed=[],fix_param=[],plot_fft=False,do_plot=True):
     FFT = fft.fft(y)
     N = int(len(x))
     timestep = (x[2]-x[1])
@@ -351,22 +352,27 @@ def fit_sin(x,y,uy,savepath='',plot_fft=False):
     freq_guess = freq[find_nearest(abs(FFT),abs(FFT).max())]
     amp_guess = (y.max()+y.min())/2.0
     offset_guess = y.min()+(y.max()+y.min())/2.0
-    phase_guess = 0
-
+    phase_guess=0
+    if 0 in fixed:
+        freq_guess=fix_param[0]
     figure3 = plt.figure(3)
     plt.clf()
     ax1 = figure3.add_subplot(111)
 
+    
     fit_result = fit.fit1d(x, y, rabi.fit_rabi_simple, 
-               freq_guess, amp_guess, offset_guess, phase_guess,
-            do_print = True , ret = True)
-    fit_result['yerr']=uy
-    plot.plot_fit1d(fit_result,np.linspace(x.min(),x.max(),201),plot_data=True)
+               freq_guess, amp_guess, offset_guess, phase_guess,fixed=fixed,
+            do_print = do_plot , ret = True)
+    
+    if fit_result:
+        fit_result['yerr']=uy  
+        if do_plot:
+            plot.plot_fit1d(fit_result,np.linspace(x.min(),x.max(),201),plot_data=do_plot)
     return fit_result
 
 
 
-def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.829,0.984),fiderr=(5.05e-03,1.82e-03), fit_data = True, title='',with_detuning = False, save = True):
 
     
     ###########################################
@@ -642,7 +648,7 @@ def plot_data_MBI(datapath,fid=(0.7906,0.9923),fiderr=(4.05e-03,1.02e-03), fit_d
         data['y_weak']=SSRO_weak_readout_corr
     return data
 
-def plot_data_MBI(datapath,fid=(0.7814,0.9897),fiderr=(4.03e-03,1.047e-03), fit_data = True, title='',with_detuning = False, save = True):
+def plot_data_MBI(datapath,fid=(0.829,0.984),fiderr=(5.05e-03,1.82e-03), fit_data = True, title='',with_detuning = False, save = True):
     ###########################################
     ######## MEASUREMENT SPECS ################
     ###########################################
@@ -677,7 +683,7 @@ def plot_data_MBI(datapath,fid=(0.7814,0.9897),fiderr=(4.03e-03,1.047e-03), fit_
     else:
         sp_name='Total free evolution time [ns]'
 
-    e.close()
+    
 
     
     ###########################################
@@ -697,8 +703,10 @@ def plot_data_MBI(datapath,fid=(0.7814,0.9897),fiderr=(4.03e-03,1.047e-03), fit_
     counts_during_readout = zeros(noof_datapoints)
     par = linspace(par_min,par_max,noof_datapoints)
     print par
-    counts_during_readout = sum(raw_counts, axis = 1)
-    SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    #counts_during_readout = sum(raw_counts, axis = 1)
+    #counts_during
+    #SSRO_readout = sum(SSRO_counts, axis = 1)/float(noof_reps)
+    SSRO_readout=SSRO_counts
     SSRO_readout_corr = zeros(len(SSRO_readout))
     readout_error = zeros(len(SSRO_readout))
 
@@ -951,7 +959,7 @@ def plot_data_MBI(datapath,fid=(0.7814,0.9897),fiderr=(4.03e-03,1.047e-03), fit_
 
 
 
-def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8065,0.993),fiderr=(2.793e-03,5.853e-04)):
+def plot_rabi(datapath, fit_data = True, with_detuning = False, save = True, ro_correct=False,fid=(0.8554,0.984),fiderr=(4.97e-03,1.73e-03)):
 
     plt.close('all')
     ###########################################

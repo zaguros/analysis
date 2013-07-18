@@ -65,7 +65,7 @@ def get_latest_data(string = 'Adwin_SSRO', datapath = ''):
     return latest_dir
 
 
-def run_single(folder='', ms=0, index=0):
+def run_single(folder='', ms=0, index=0,PREFIX=PREFIX):
     if folder == "":
         folder = os.getcwd()
 
@@ -93,7 +93,7 @@ def run_single(folder='', ms=0, index=0):
     crdata.close()
     params.close()
 
-def run_all(folder='', altern=True):
+def run_all(folder='', altern=True,PREFIX=PREFIX):
     if folder == "":
         folder = os.getcwd()
 
@@ -103,7 +103,7 @@ def run_all(folder='', altern=True):
         print i
   
         ms = 1 if (i%2 and altern) else 0
-        run_single(folder,ms,i)
+        run_single(folder,ms,i,PREFIX=PREFIX)
 
         if altern and i%2:
  
@@ -173,6 +173,7 @@ Measurement results:
 
     ### histogram for photon counts per shot (cpsh)
     cpsh = np.sum(rocounts[:,firstbin:lastbin], axis=1) # sum over all columns
+    
     #print cpsh
     #print max(cpsh)
     ax = plt.subplot(221)
@@ -642,9 +643,241 @@ def find_nearest(array,value):
     idx=(np.abs(array-value)).argmin()
     return idx
 
+def autoanalyze_single_ssro_seg(rodata, spdata, crdata, save_basepath, 
+        binsize=0.131072, reps=1e4, ms=0, closefigs=True, stop=0, firstbin=0):
+    """
+    Analyzes a single SSRO measurement (can do both ms=0/+-1).
+    creates an overview plot over the measurement results, and a plot
+    of the measurement fidelity vs the measurement time.
+    saves the fidelities and errors vs ro time.
+
+    """
+
+    if stop == 0:
+        stop = rodata['time'][-1]/1e3
+    #print rodata['time'][-1]/1e3
+    print 'stop = ',stop
+    lastbin = int(stop/binsize)
+    print 'lastbin = ',lastbin
+    print 'binsize = ',binsize
+    t0 = time.time()
+    ts = timestamp()
+
+    rocounts = rodata['counts']  #.transpose()
+
+    info = '' # will be populated with information that is written to a file
+    info = """Analyze SSRO measurement:
+
+Measurement settings:
+=====================
+
+repetitions: %d
+binsize [us]: %f
+stop analysis [us]: %f
+    -> last bin: %d
+
+Measurement results:
+====================
+
+""" % (reps, binsize, stop, lastbin)
+
+    annotation = 'repetitions: %d' % reps
+
+    cpsh_vs_ROtime = """# columns:
+# - time
+# - counts per shot
+"""
+
+    fig1 = plt.figure(figsize=(16,12))
+
+    ### histogram for photon counts per shot (cpsh)
+    #cpsh = np.sum(rocounts[:,firstbin:lastbin], axis=1) # sum over all columns
+    cpsh = rocounts[:]
+    #print cpsh
+    #print max(cpsh)
+    ax = plt.subplot(221)
+    plt.hist(cpsh, max(cpsh)+1, align='mid', label='counts')
+    plt.xlabel('counts/shot')
+    plt.ylabel('occurrences')
+    plt.title('counts per shot, m_s = %d' % ms)
+
+    mean_cpsh = sum(cpsh)/float(reps)
+    annotation += "\nmean c.p.sh. = %.2f" % (mean_cpsh)
+    info += "\nmean c.p.sh. = %.2f" % (mean_cpsh)
+
+    pzero = len(np.where(cpsh==0)[0])/float(reps)
+    annotation += "\np(0 counts) = %.2f" % (pzero)
+    info += "\np(0 counts) = %.2f" % (pzero)
+
+    plt.figtext(0.45, 0.85, annotation, horizontalalignment='right',
+            verticalalignment='top')
+    '''
+    ### spin relaxation during readout
+    ro_time = rodata['time'][:lastbin] # create time axis [us]
+    ro_countrate = np.sum(rocounts[:,:lastbin], axis=0) / (binsize*1e-6*reps) # [Hz]
+    #ro_countrate=np.array(rocounts[:]/ (binsize*1e-6*float(reps)))
+    np.savetxt(save_basepath + '_ro_countrate.dat',
+        np.array([ro_time, ro_countrate]).transpose())
+
+    ax = plt.subplot(222)
+    # ax.set_yscale('log') 
+    plt.plot(ro_time, ro_countrate, 'o')
+    plt.xlabel('RO time [ns]')
+    plt.ylabel('counts [Hz]')
+    plt.title('spin relaxation during readout')
+    '''
+    ### spin pumping data
+
+    # convert counts to Hz
+    sp = np.array([j/(binsize*1e-6*reps) for j in spdata['counts']]) 
+    ax = plt.subplot(223)
+    if False and len(spdata['counts'])>2:
+        offset_guess = spdata['counts'][len(spdata['counts'])-1]
+        init_amp_guess = spdata['counts'][2]
+        decay_guess = 10
+        
+
+        fit_result=fit.fit1d(spdata['time'][2:len(spdata['counts'])-1]/1E3, 
+                spdata['counts'][2:len(spdata['counts'])-1], 
+                common.fit_exp_decay_with_offset, 
+                offset_guess, init_amp_guess, decay_guess,
+                do_plot = True, do_print = True, newfig = False, ret=True,
+                plot_fitparams_xy = (0.5,0.5))
+
+    # ax.set_yscale('log')
+    # NOTE: spin pumping starts at 1 us, that is the first datapoint
+    # that is retrieved from the adwin. Fit might not be displayed properly
+    # anymore now...
+    plt.plot(spdata['time']+1E3, sp, 'o')
+    plt.xlabel('spin pumping time [ns]')
+    plt.ylabel('counts [Hz]')
+    plt.title('spin relaxation during pumping')
+
+    ### charge readout
+    ax = plt.subplot(224)
+    cr = crdata['counts']
+    plt.hist(cr, abs(max(cr)-min(cr)+1), label='cr')
+    #### plt.hist(cr[:,2], abs(max(cr[:,2])-min(cr[:,2]))+1, label='cr2')
+    plt.xlabel('counts')
+    plt.ylabel('occurences')
+    plt.title('charge readout statistics')
+    # plt.legend()
+
+    ### fidelity analysis
+    fid_dat = np.zeros((0,3))
+
+    for i in range(1,lastbin):
+        t = i*binsize
+        
+        # d: hist of counts, c: counts per shot
+        #print i
+        #print len(d)
+        d = np.sum(rocounts[:i])
+        #d = np.sum(rocounts)
+        c = np.sum(rocounts)/float(reps)
+
+        cpsh_vs_ROtime += '%f\t%f\n' % (t, c)
+        
+        # we get the fidelity from the probability to get zero counts in a
+        # shot 
+        pzero = len(np.where(d==0)[0])/float(reps)
+        pzero_err = np.sqrt(pzero*(1-pzero)/reps)
+        fid = 1-pzero if ms == 0 else pzero # fidelity calc. depends on ms
+        fid_dat = np.vstack((fid_dat, np.array([[t, fid, pzero_err]])))
+
+    fig2 = plt.figure()
+    plt.errorbar(fid_dat[:,0], fid_dat[:,1], fmt='o', yerr=fid_dat[:,2])
+    plt.xlabel('RO time [us]')
+    plt.ylabel('ms = %d RO fidelity' % ms)
+    plt.title('SSRO fidelity')
+
+    ### saving
+    infofile = open(save_basepath+'_autoanalysis.txt', 'w')
+    infofile.write(info)
+    infofile.close()
+
+    # fidelities
+    np.savez(os.path.join(save_basepath+'_fid_vs_ROtime'), time=fid_dat[:,0],
+            fid=fid_dat[:,1], fid_error=fid_dat[:,2])
+    np.savetxt(os.path.join(save_basepath+'_fid_vs_ROtime.dat'), fid_dat)
+
+    # counts per shot
+    f = open(save_basepath+'_cpsh_vs_ROtime.dat', 'w')
+    f.write(cpsh_vs_ROtime)
+    f.close()
+
+    fig1.savefig(save_basepath+'_autoanalysis.pdf', format='pdf')
+    fig2.savefig(save_basepath+'_fid_vs_ROtime.pdf', format='pdf')
+
+    totaltime = time.time() - t0
+    print 'autoanalysis took %.2f seconds' % totaltime
+
+    if closefigs:
+        fig1.clf(); fig2.clf()
+        plt.close('all')
 
 
 
+
+def run_single_seg(folder='', ms=0, index=0,PREFIX=PREFIX):
+    if folder == "":
+        folder = os.getcwd()
+
+    if index < 10:
+        SUFFIX = '-00'+str(index)
+    elif index < 100:
+        SUFFIX = '-0'+str(index)
+    else:
+        SUFFIX = str(index)
+
+    basepath = os.path.join(folder, PREFIX+SUFFIX)
+    params = np.load(basepath+'_'+PARAMS_SUFFIX+'.npz')
+
+    reps    = params['par_long'][PARAM_REPS]
+    binsize = params['par_long'][PARAM_CYCLE_DURATION]*.003333
+
+    rodata = np.load(basepath+'_'+RO_SUFFIX+'.npz')
+    spdata = np.load(basepath+'_'+SP_SUFFIX+'.npz')
+    crdata = np.load(basepath+'_'+CR_SUFFIX+'.npz')
+
+    autoanalyze_single_ssro_seg(rodata, spdata, crdata, basepath, ms=ms, 
+            binsize=binsize, reps=reps)
+    rodata.close()
+    spdata.close()
+    crdata.close()
+    params.close()
+
+def run_all_seg(folder='', altern=True,PREFIX=PREFIX):
+    if folder == "":
+        folder = os.getcwd()
+
+    allfiles = os.listdir(folder)
+    rofiles = [ f for f in allfiles if RO_SUFFIX in f ]
+    for i in range(len(rofiles)):
+        print i
+  
+        ms = 1 if (i%2 and altern) else 0
+        run_single_seg(folder,ms,i,PREFIX=PREFIX)
+
+        if altern and i%2:
+ 
+            if i < 10:
+                SUFFIX_i = '-00'+str(i)
+                SUFFIX_j = '-00'+str(i-1)
+            elif i == 10:
+                SUFFIX_i = '-0'+str(i)
+                SUFFIX_j = '-00'+str(i-1)
+            elif i < 100:
+                SUFFIX_i = '-0'+str(i)
+                SUFFIX_j = '-0'+str(i-1)
+
+            f1 = PREFIX+SUFFIX_i+'_fid_vs_ROtime.npz' 
+            f0 = PREFIX+SUFFIX_j+'_fid_vs_ROtime.npz'
+            t,f,ferr,fig = fidelities(folder,f0,f1)
+
+            np.savetxt(folder+'\\'+'totalfid-%d_+_%d.dat' % (i-1, i),(t,f,ferr))
+            fig.savefig(folder+'\\'+'totalfid-%d_+_%d.png' % (i-1, i))
+    
 
 
 
