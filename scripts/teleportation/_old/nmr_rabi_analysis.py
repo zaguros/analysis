@@ -23,12 +23,12 @@ guess_phi = 0.
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('NMR_SIL2')
+    folder = toolbox.latest_data('BSM_NRabi')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
-a.get_readout_results()
-a.get_N_ROC(0.97, 0.03, 0.96,0.01,0.93,0.01)#(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
+a.get_readout_results(name='adwindata')
+a.get_electron_ROC() #get_N_ROC(0.97, 0.03, 0.96,0.01,0.93,0.01)#(0.99, 0.02, 0.94, 0.01, 0.96, 0.01)
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
 fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), rabi.fit_rabi_fixed_upper,

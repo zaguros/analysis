@@ -6,18 +6,17 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.fitting import fit
-from analysis.lib.tools import plot
+from analysis.lib.tools import plot, toolbox
 from analysis.lib.m2.ssro import mbi
 reload(mbi)
 
-from analysis.lib.tools import toolbox
+timestamp = None#'20130710135342'
 
-timestamp = None#'20130710134201'
-
-g_f = 1./360#2.19290
+g_f = 1./360
 g_A = 0.5
 g_o = 0.5
-g_x0 = -110# 191
+g_x0= 40/180
+
 
 f = fit.Parameter(g_f, 'f')
 A = fit.Parameter(g_A, 'A')
@@ -35,14 +34,19 @@ else:
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='adwindata')
-a.get_electron_ROC()
-ax = a.plot_results_vs_sweepparam(ret='ax', )
+a.get_correlations(name = 'adwindata')
+ax = a.plot_results_vs_sweepparam(ret='ax', mode = 'correlations')
 
 x = a.sweep_pts
-y = a.p0[:,0] #a.p0[:,1]   #.reshape(-1)
 
-fit_result = fit.fit1d(x, y, None,
-        fitfunc=fitfunc, p0=[f,x0,A,o], fixed=[], do_print=True, ret=True)
+y = a.normalized_correlations[:,2]
+
+fit_result= fit.fit1d(x, y, None,
+        fitfunc=fitfunc, p0=[x0,A,o,f], fixed=[], do_print=True, ret=True)
+
+
+
+
 plot.plot_fit1d(fit_result, np.linspace(a.sweep_pts[0],a.sweep_pts[-1],201), ax=ax,
         plot_data=False)
 

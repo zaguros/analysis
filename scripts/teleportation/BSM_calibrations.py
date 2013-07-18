@@ -40,6 +40,14 @@ def stage_1_calibrations():
     slow_pi_length = slow_pi(ax2)
 
 
+def stage_2_calibrations():
+    fig, ax = plt.subplots(1,1)
+
+    print 80*'='
+    print '4 MHz electron Rabi'
+    print 80*'='
+    CORPSE_freq = rabi_4mhz(ax)
+
 def stage_3_calibrations():
     fig, ([ax1, ax2],[ax3, ax4], [ax5, ax6]) = plt.subplots(3,2, figsize=(10,15))
     
@@ -48,10 +56,10 @@ def stage_3_calibrations():
     print 80*'='
     pi_4mhz_amp = pi_4mhz(ax1)
     
-    print 80*'='
-    print '4 MHz Pi/2'
-    print 80*'='
-    pi2_4mhz_amp = pi2_4mhz(ax2)
+    #print 80*'='
+    #print '4 MHz Pi/2'
+    #print 80*'='
+    #pi2_4mhz_amp = pi2_4mhz(ax2)
 
     print 80*'='
     print 'CORPSE pi'
@@ -64,9 +72,14 @@ def stage_3_calibrations():
     pi2pi_pi_amp = pi_pi2pi(ax4)
 
     print 80*'='
-    print 'Hard pi'
+    print 'pi2pi mI=0'
     print 80*'='
-    hard_pi_amp = pi_hard(ax5)
+    pi2pi_pi_mI0_amp = pi_pi2pi_mI0(ax5)
+
+    ##print 80*'='
+    #print 'Hard pi'
+    #print 80*'='
+    #hard_pi_amp = pi_hard(ax6)
 
 
 
@@ -270,8 +283,8 @@ def pi_pi2pi(ax=None):
 
     return A, u_A
 
-def pi_pi2pi_len(ax=None):
-    folder = toolbox.latest_data('cal_pi2pi_pi_len_'+name)
+def pi_pi2pi_mI0(ax=None):
+    folder = toolbox.latest_data('cal_pi2pi_pi_mI0')
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
@@ -281,8 +294,8 @@ def pi_pi2pi_len(ax=None):
     u_A = fit_result['error_dict']['x0']
     ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
-    return A, u_A    
-    
+    return A, u_A
+
 def pi_hard(ax=None):
     folder = toolbox.latest_data('cal_hard_pi_'+name)
     
