@@ -25,10 +25,19 @@ class Parameter:
 # wrapper for interactive work; then we still need sth better for fixing,
 # though; good maybe: generally identify parameters by names
 def fit1d(x, y, fitmethod, *arg, **kw):
-
+    """
+    example: from analysis.lib.fitting import fit,common
+             x=np.array([0,1,2,3,4])
+             y=np.array([2,12,22,32,42])
+             fit_result=fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
+                    fixed=[0],do_print=True)
+             
+    
+    """
+    
     # process known kws
     do_print = kw.pop('do_print', False)
-    ret = kw.pop('ret')
+    ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
 
     # use the standardized fitmethod: any arg is treated as initial guess
@@ -71,7 +80,7 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         print_fit_result(result)
 
     if ret:
-        return result
+        return result       
 
     return
 
