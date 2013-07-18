@@ -61,7 +61,7 @@ class SequenceAnalysis(m2.M2Analysis):
         self.sweep_CR_sum=np.zeros(pts)
         
         for i in range(pts):
-            cr=self.cr_after[i::pts]
+            cr=self.cr_after[i+1::pts]
             max_cr=max(np.max(cr),max_cr)
             sweep_CR_hist.append(np.histogram(cr,bins=np.max(cr),normed=True))
             self.sweep_CR_sum[i]=float(np.sum(cr))/len(np.where(cr>0)[0])
