@@ -9,13 +9,15 @@ from analysis.lib import fitting
 from analysis.lib.m2.ssro import sequence_ssro
 from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
+reload(rabi)
+
 from analysis.lib.tools import plot
 
 timestamp = None # '20130107231602'
-guess_frq = 1./4.
-guess_amp = 0.25
-guess_yof = 0.7
-guess_tau = 5
+guess_frq = 1./300.
+guess_amp = 1
+guess_yof = 0.6
+guess_tau = 10000
 guess_slope = 0.
 guess_xof = 0.
 
@@ -25,18 +27,23 @@ if timestamp != None:
 else:
     folder = toolbox.latest_data('Rabi')
 
-a = sequence_ssro.ElectronRabiAnalysis(folder)
-x = a.get_sweep_pts()
-y = a.get_readout_results()
+a = sequence.SequenceAnalysis(folder)
+a.get_sweep_pts()
+a.get_readout_results('ssro')
+a.get_electron_ROC()
 
-fit_result = fit.fit1d(x, y, rabi.fit_rabi_damped_exp,
-        guess_frq, guess_amp, guess_yof, guess_tau, fixed=[],
+x = a.sweep_pts
+y = a.p0
+
+fit_result = fit.fit1d(x, y, rabi.fit_rabi_multiple_detunings,
+        guess_amp, guess_yof, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
         do_print=True, ret=True)
 ax = plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ret='ax')
 
-ax.set_xlabel(r'MW pulse length ($\mu$s)')
+ax.set_xlabel(r'MW pulse length (ns)')
 ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')
 ax.set_title(a.timestamp+'\n'+a.measurementstring)
 
-plt.savefig(os.path.join(folder, 'electronrabi_analysis.pdf'),
-        format='pdf')
+plt.savefig(os.path.join(folder, 'electronrabi_analysis.png'))
+
+# (-2.193e-3, 0), (2.193e-3, 0)
