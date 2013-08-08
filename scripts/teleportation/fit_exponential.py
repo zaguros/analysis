@@ -12,7 +12,7 @@ from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.tools import plot
 
-timestamp = None#'20130802145720'
+timestamp = '20130802141105'#'20130731181935' # '20130802141105'
 
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
@@ -29,21 +29,16 @@ ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
 
-
-# Note: if f is added below, there is a cosine superimposed on the Gaussian.
-x0 = fit.Parameter(-0.25, 'x0')
-a = fit.Parameter(0.5, 'a')
-o = fit.Parameter(0.5, 'o')
-c = fit.Parameter(1, 'c')
-f = fit.Parameter(1/0.5, 'f')
-fitfunc_str = 'o + a * exp( - ( (x-x0)/c )^2) * cos (2 pi f (x-x0))'
+a = fit.Parameter(0., 'a')
+o = fit.Parameter(1, 'o')
+c = fit.Parameter(25000, 'c')
+fitfunc_str = 'o - a exp(-x/c)'
 
 def fitfunc(x):
-    return o() + a() * np.exp( -((x-x0())/ c())**2) * np.cos(2*np.pi*f()*(x-x0()))
+    return o() + a() * np.exp( -(x) / (c()))
 
-fit_result = fit.fit1d(x,y, None, p0=[o,x0,a,c,f], fixed = [], fitfunc=fitfunc,
+fit_result = fit.fit1d(x,y, None, p0=[o,c,a], fixed=[0,2], fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
-print fitfunc_str
 plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False)
 

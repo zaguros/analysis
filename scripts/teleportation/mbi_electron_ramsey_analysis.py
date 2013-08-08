@@ -40,7 +40,7 @@ fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_gaussian
 plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
         plot_data=False)
 
-plt.savefig(os.path.join(folder, 'electronrabi_analysis.pdf'),
+plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
         format='pdf')
 
 ### FFT
