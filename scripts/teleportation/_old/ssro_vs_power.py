@@ -32,13 +32,14 @@ for g in a.g.items():
         continue
     
     a.get_run(gn)
+    #a.get_run('ms0')
    
-    pwr = int(string.split(gn, '_')[-1][:-2])
+    pwr = = int(string.split(gn, '_')[-1][:-2])
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
 
-    idx0 = argmax(_c)
-    idx1 = -1    
+    idx0 = argmax(_c)+1
+    idx1 = -1   
     t,c = _t[idx0:idx1]/1e3, _c[idx0:idx1]
 
     fig = plt.figure(figsize=(6,6))
