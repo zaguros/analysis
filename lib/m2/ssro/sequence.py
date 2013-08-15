@@ -164,7 +164,7 @@ def analyze_sweep(folder, name=''):
     a = SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name)
-    a.get_cr_resutls(name)
+    # a.get_cr_resutls(name)
     a.get_electron_ROC()
     a.plot_result_vs_sweepparam()
     a.finish()
