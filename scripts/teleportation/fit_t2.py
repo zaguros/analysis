@@ -27,10 +27,9 @@ i = 1
 r_max = 8
 
 for r in revivals_nrs:
-    if r==1:
-        name = 'revival_{}_'.format(r)
-    else:
-        name = 'revival_{}'.format(r)
+  
+    name = 'revival_{}_'.format(r)
+
 
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
@@ -41,7 +40,6 @@ for r in revivals_nrs:
     a.get_sweep_pts()
     a.get_readout_results(name='ssro')
     a.get_electron_ROC()
-    #a.get_N_ROC(1.00, 0.02, 0.94, 0.01, 0.96, 0.01)
     #ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
 
     x = a.sweep_pts.reshape(-1)[:]
