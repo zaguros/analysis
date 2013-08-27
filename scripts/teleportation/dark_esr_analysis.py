@@ -17,7 +17,7 @@ guess_offset = 1
 guess_ctr = 2.8265
 guess_splitB = 30.
 guess_splitN = 2.193e-3
-guess_splitC = .38e-3 #12.78
+guess_splitC = .8e-3 #12.78
 guess_width = 0.1e-3
 guess_amplitude = 0.25
 
