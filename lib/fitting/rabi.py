@@ -11,7 +11,7 @@ import analysis.lib.tools.plot as plot
 ### fit a rabi osc. that gets damped exponentially
 def fit_rabi_simple(g_f, g_A, g_a, g_phi, *arg):
     """
-    fits a cosine thats damped exponentially,
+    fits a cosine,
         y(x) = a + A * cos(2pi*f*x)
 
     Initial guesses, in this order:
