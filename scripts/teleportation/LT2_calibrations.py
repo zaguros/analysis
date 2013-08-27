@@ -40,8 +40,8 @@ def stage_1_calibrations():
     CORPSE_freq = rabi_8mhz(ax2)
 
 
-def stage_2_calibrations():
-    fig, (ax1,ax2) = plt.subplots(1,2, figsize = (10,4))
+def stage_2_calibrations(sil=9):
+    fig, ([ax1,ax2],[ax3,ax4]) = plt.subplots(2,2, figsize = (10,8))
 
     print 80*'='
     print 'CORPSE pi'
@@ -51,7 +51,27 @@ def stage_2_calibrations():
     print 80*'='
     print 'CORPSE pi/2'
     print 80*'='
-    CORPSE_pi2_amp = CORPSE_pi2(ax2)
+    CORPSE_pi2_amp = CORPSE_pi2(sil,ax=ax2)
+
+    print 80*'='
+    print 'CORPSE pi/2 alternative 2 x'
+    print 80*'='
+    CORPSE_pi2_amp = CORPSE_pi2_alt(sil,M=2,ax=ax3)
+
+    print 80*'='
+    print 'CORPSE pi/2 alternative 4 x'
+    print 80*'='
+    CORPSE_pi2_amp = CORPSE_pi2_alt(sil,M=4,ax=ax4)
+
+
+def stage_3_calibrations():
+
+    fig, ax = plt.subplots(1,1, figsize = (5,4))
+
+    print 80*'='
+    print 'Delta t'
+    print 80*'='
+    delta_t = dd_delta_t(ax)
 
 
 def CORPSE_fidelity_cal():
@@ -69,6 +89,14 @@ def CORPSE_pi2_fidelity_cal():
     print 'CORPSE pi/2 fidelity'
     print 80*'='
     CORPSE_pi2_fid = CORPSE_pi2_fidelity(ax)
+
+def dd_calibrate_fid(r=4):
+    fig, ax = plt.subplots(1,1)
+
+    print 80*'='
+    print 'dd sequence fidelity'
+    print 80*'='
+    dd_sequence_fid = dd_calibrate_fidelity(r,ax)
 
 ### generic calibration functions, don't use those directly
 def calibrate_epulse_amplitude(folder, ax, *args):
@@ -206,16 +234,16 @@ def CORPSE_pi(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.60,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.46,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    ax.text(0.42, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
 
 
-def CORPSE_pi2(ax=None):
-    folder = toolbox.latest_data('CORPSEPi2Calibration') 
+def CORPSE_pi2(sil,ax=None):
+    folder = toolbox.latest_data('CORPSEPi2Calibration_sil'+str(sil)+'M=1') 
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
@@ -227,10 +255,23 @@ def CORPSE_pi2(ax=None):
     u_b = fit_result['error_dict']['b']
     A = (0.5 - b) / a
     u_A = np.sqrt(A**2) * np.sqrt ( (u_a/a)**2 + (u_b/b)**2 )
-    ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    ax.text(0.42, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
  
+def CORPSE_pi2_alt(sil,M,ax=None):
+    folder = toolbox.latest_data('CORPSEPi2Calibration_sil'+str(sil)+str(M)) 
+    
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+        
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.46,  0, 0 )
+    A = fit_result['params_dict']['x0']
+    u_A = fit_result['error_dict']['x0']
+    ax.text(0.42, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+
+    return A, u_A 
+
 def CORPSE_fidelity(ax=None):
     folder = toolbox.latest_data('CORPSEPiCalibration') 
     
@@ -240,7 +281,7 @@ def CORPSE_fidelity(ax=None):
     fit_result = epulse_fidelity(folder, ax, 1)
     fid = fit_result['params_dict']['of']
     u_fid = fit_result['error_dict']['of']
-    ax.text(0.6, 0.5, 'of = (%.3f +/- %.3f)' % (fid, u_fid))
+    ax.text(0.42, 0.5, 'of = (%.3f +/- %.3f)' % (fid, u_fid))
 
     return fid, u_fid 
 
@@ -257,6 +298,33 @@ def CORPSE_pi2_fidelity(ax=None):
 
     return fid, u_fid 
                                 
+
+def dd_delta_t(ax=None):
+    folder = toolbox.latest_data('DynamicalDecoupling')
+
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+           
+    fit_result = calibrate_epulse_amplitude(folder, ax, -0.24,  1, 0 )
+    A = fit_result['params_dict']['x0']
+    u_A = fit_result['error_dict']['x0']
+    ax.text(-0.24, 0.5, 'dt = (%.3f +/- %.3f) ns' % (A, u_A))
+
+    return A, u_A 
+
+def dd_calibrate_fidelity(r, ax=None):
+    folder = toolbox.latest_data('DynamicalDecoupling')
+
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+           
+    fit_result = calibrate_epulse_amplitude(folder, ax, r*108,  1, 0 )
+    A = fit_result['params_dict']['of']
+    u_A = fit_result['error_dict']['of']
+    ax.text(r*108, 0.5, 'F = (%.3f +/- %.3f)' % (A, u_A))
+
+    return A, u_A 
+
 if __name__ == '__main__':
     # calibrate_all()
     stage_1_calibrations()

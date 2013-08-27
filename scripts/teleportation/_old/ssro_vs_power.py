@@ -34,7 +34,7 @@ for g in a.g.items():
     a.get_run(gn)
     #a.get_run('ms0')
    
-    pwr = = int(string.split(gn, '_')[-1][:-2])
+    pwr = int(string.split(gn, '_')[-1][:-2])
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
 

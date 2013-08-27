@@ -14,7 +14,7 @@ from analysis.lib.tools import toolbox
 
 timestamp = None #'20130801132824'
 
-g_f = 1./360.#8.593e-3#2.19290
+g_f = 1./80.#8.593e-3#2.19290
 g_A = 0.5
 g_o = 0.5
 g_x0 = 0

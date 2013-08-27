@@ -14,8 +14,8 @@ from analysis.lib.tools import plot
 
 timestamp = None
 
-nr_of_revivals = 11
-revivals_nrs = np.arange(11)
+nr_of_revivals = 15
+revivals_nrs = np.arange(14)+1
 
 
 fidelities = np.ones(nr_of_revivals)*0
@@ -23,7 +23,8 @@ revivals = np.ones(nr_of_revivals)*0
 u_fid = np.ones(nr_of_revivals)*0
 u_rev = np.ones(nr_of_revivals)*0
 
-i = 0
+i = 1
+r_max = 8
 
 for r in revivals_nrs:
     if r==1:
@@ -85,6 +86,11 @@ exp_x = revivals
 exp_y = fidelities
 exp_u_y = u_fid
 
+exp_x[0] = 0
+exp_y[0] = 1
+exp_u_y[0] = 0.2
+
+
 fig, ax = plt.subplots(1,1)
 
 ax.set_title(''+'\n'+'DynamicalDecoupling_t2')
@@ -101,19 +107,19 @@ fig.savefig(os.path.join(folder, 't2_result_vs_total_fet.png'),format='png')
         
 a_exp = fit.Parameter(0.5, 'a_exp')
 o_exp = fit.Parameter(0.5, 'o_exp')
-c_exp = fit.Parameter(400, 'c_exp')
-n = fit.Parameter(1, 'n')
+c_exp = fit.Parameter(200, 'c_exp')
+n = fit.Parameter(3, 'n')
 #a2_exp = fit.Parameter(0.18, 'a2_exp')
-c2_exp = fit.Parameter(700, 'c2_exp')
-n2 = fit.Parameter(3, 'n2')
+#c2_exp = fit.Parameter(700, 'c2_exp')
+#n2 = fit.Parameter(3, 'n2')
 
 def fitfunc_exp(x):
-    return o_exp() + a_exp() * np.exp( -(x/ c_exp())**n()) * np.exp( -(x/ c2_exp())**n2())
+    return o_exp() + a_exp() * np.exp( -(x/ c_exp())**n()) #* np.exp( -(x/ c2_exp())**n2())
 
-fitfunc_str_exp = 'o + a * e^(-(x/c)) * e^(-(x/c)^3)'
+fitfunc_str_exp = 'o + a * e^(-(x/c))'
 
-fit_result_exp = fit.fit1d(exp_x,exp_y, None, p0=[o_exp,a_exp,c_exp,n,c2_exp,n2], 
-        fixed = [3,5], fitfunc=fitfunc_exp,
+fit_result_exp = fit.fit1d(exp_x,exp_y, None, p0=[o_exp,a_exp,c_exp,n], 
+        fixed = [0,1,3], fitfunc=fitfunc_exp,
         fitfunc_str=fitfunc_str_exp, do_print=True, ret=True)
 
 print fitfunc_str_exp
@@ -121,7 +127,7 @@ print fitfunc_str_exp
 plot.plot_fit1d(fit_result_exp, np.linspace(exp_x[0],exp_x[-1],201), ax=ax,
         plot_data=True)
 
-t2 = fit_result_exp['params_dict']['c2_exp']
-u_t2 = fit_result_exp['error_dict']['c2_exp']
+t2 = fit_result_exp['params_dict']['c_exp']
+u_t2 = fit_result_exp['error_dict']['c_exp']
 
 ax.text(200, 0.5, 't2 = (%.3f +/- %.3f) us' % (t2, u_t2))

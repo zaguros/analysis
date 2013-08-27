@@ -54,6 +54,43 @@ def latest_data(contains='',):
 
     return os.path.join(datadir,daydir,measdir)
 
+def newer_data(starttimestamp, endtimestamp=None, contains='',):
+    '''
+    finds all matching data in the given range. default end is now.
+    '''
+    if endtimestamp == None:
+        endtimestamp = time.strftime("%Y%m%d%H%M%S")
+
+    results = []
+    daydirs = os.listdir(datadir)
+    if len(daydirs) == 0:
+        logging.warning('No data found in datadir')
+        return None
+    daydirs.sort()
+    
+    if len(endtimestamp) == 6:
+        endday = time.strftime('%Y%m%d')
+        endtime = endtimestamp
+    elif len(endtimestamp) == 14:
+        endday = endtimestamp[:8]
+        endtime = endtimestamp[8:]
+    else:
+        logging.warning("Cannot interpret timestamp '%s'" % endtimestamp)
+        return None
+
+    if len(starttimestamp) == 6:
+        startday = time.strftime('%Y%m%d')
+        starttime = starttimestamp
+    elif len(starttimestamp) == 14:
+        startday = starttimestamp[:8]
+        starttime = starttimestamp[8:]
+    else:
+        logging.warning("Cannot interpret timestamp '%s'" % starttimestamp)
+        return None
+
+    # TODO continue here
+
+    return None
 
 def data_from_time(timestamp):
     '''
