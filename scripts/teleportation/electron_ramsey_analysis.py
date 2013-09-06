@@ -13,16 +13,16 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = '200630'#None#'20130530183305'#None # 
-guess_f1 = 8e-3
+timestamp = '184802'#None#'20130530183305'#None # 
+guess_f1 = 1./150
 guess_A1 = 0.5
 guess_phi1 = 0.
-guess_f2 = 10e-3
+guess_f2 = 1./800
 guess_A2 = 0.5
 guess_phi2 = 0.
 
 
-guess_tau = 600
+guess_tau = 10000
 guess_a = 0.5
 
 
@@ -36,7 +36,7 @@ a = sequence.SequenceAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='ssro')
 a.get_electron_ROC()
-ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro' )
+ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
 
 fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_gaussian_decay,
         guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1), (guess_f2,guess_A2, guess_phi2), fixed=[1],

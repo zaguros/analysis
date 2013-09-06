@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.829
+guess_ctr = 2.9258
 guess_splitB = 30.
 guess_splitN = 2.193e-3
 guess_splitC = .8e-3 #12.78

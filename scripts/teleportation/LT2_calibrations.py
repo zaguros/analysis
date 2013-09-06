@@ -40,7 +40,7 @@ def stage_1_calibrations():
     CORPSE_freq = rabi_8mhz(ax2)
 
 
-def stage_2_calibrations(sil=9):
+def stage_2_calibrations(sil=5):
     fig, ([ax1,ax2],[ax3,ax4]) = plt.subplots(2,2, figsize = (10,8))
 
     print 80*'='
@@ -53,15 +53,15 @@ def stage_2_calibrations(sil=9):
     print 80*'='
     CORPSE_pi2_amp = CORPSE_pi2(sil,ax=ax2)
 
-    print 80*'='
-    print 'CORPSE pi/2 alternative 2 x'
-    print 80*'='
-    CORPSE_pi2_amp = CORPSE_pi2_alt(sil,M=2,ax=ax3)
-
-    print 80*'='
-    print 'CORPSE pi/2 alternative 4 x'
-    print 80*'='
-    CORPSE_pi2_amp = CORPSE_pi2_alt(sil,M=4,ax=ax4)
+    #print 80*'='
+    #print 'CORPSE pi/2 alternative 2 x'
+    #print 80*'='
+    #CORPSE_pi2_amp = CORPSE_pi2_alt(sil,M=2,ax=ax3)
+    #
+    #print 80*'='
+    #print 'CORPSE pi/2 alternative 4 x'
+    #print 80*'='
+    #CORPSE_pi2_amp = CORPSE_pi2_alt(sil,M=4,ax=ax4)
 
 
 def stage_3_calibrations():
