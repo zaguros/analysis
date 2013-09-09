@@ -14,10 +14,10 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.9258
+guess_ctr = 2.8265
 guess_splitB = 30.
 guess_splitN = 2.193e-3
-guess_splitC = .8e-3 #12.78
+# guess_splitC = .8e-3 #12.78
 guess_width = 0.1e-3
 guess_amplitude = 0.25
 
@@ -44,7 +44,7 @@ def analyze_dark_esr(folder, ax=None, ret=None, **kw):
             # (2, guess_splitB),
             (3, guess_splitN), 
             do_print=True, ret=True, fixed=[4])
-    plot.plot_fit1d(fit_result, x, ax=ax, plot_data=True, **kw)
+    plot.plot_fit1d(fit_result, x, ax=ax, plot_data=False, **kw)
 
     ax.set_xlabel('MW frq (GHz)')
     ax.set_ylabel(r'uncorrected fidelity $F(|0\rangle)$')

@@ -11,34 +11,20 @@ from measurement.lib.tools import toolbox
 
 from analysis.lib.m2.ssro import mbi
 from analysis.lib.m2.ssro import ssro
-
-import dark_esr_analysis
-
 reload(ssro)
-reload(dark_esr_analysis)
 
 # adapt
-name = 'sil2'
+name = 'hans-sil4'
 pi2_4mhz_value = 1. - 0.473
-
-
 
 def stage_1_calibrations():
     # ssro first
-    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,4))
-
-    print 80*'='
-    print 'Dark ESR'
-    print 80*'='
-    f0,u_f0 = dark_esr_analysis.analyze_dark_esr(
-        toolbox.latest_data('DarkESR'), ax=ax1, ret='f0',
-        print_info=False)
-    
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+  
     print 80*'='
     print 'Slow pi pulse for MBI'
     print 80*'='
-    slow_pi_length = slow_pi(ax2)
-
+    slow_pi_length = slow_pi(ax)
 
 def stage_2_calibrations():
     fig, ax = plt.subplots(1,1)
@@ -46,7 +32,7 @@ def stage_2_calibrations():
     print 80*'='
     print '4 MHz electron Rabi'
     print 80*'='
-    CORPSE_freq = rabi_4mhz(ax)
+    CORPSE_freq = fast_rabi(ax)
 
 def stage_3_calibrations():
     fig, ([ax1, ax2],[ax3, ax4], [ax5, ax6]) = plt.subplots(3,2, figsize=(10,15))
@@ -80,7 +66,6 @@ def stage_3_calibrations():
     #print 'Hard pi'
     #print 80*'='
     #hard_pi_amp = pi_hard(ax6)
-
 
 
 ### generic calibration functions, don't use those directly
@@ -132,7 +117,6 @@ def fit_linear(folder, ax, value, *args):
         plot_data=False, print_info=False)
         
     return fit_result
-
 
 def calibrate_epulse_rabi(folder, ax, *args, **kws):
     fit_phi = kws.pop('fit_phi', True)
@@ -208,12 +192,11 @@ def slow_pi(ax=None):
     
     return (0.5/f, 0.5/f**2 * u_f)
 
-
-def rabi_4mhz(ax=None):
-    folder = toolbox.latest_data('cal_4mhz_rabi'+name)
+def fast_rabi(ax=None):
+    folder = toolbox.latest_data('cal_fast_rabi_'+name)
     if ax==None:
         fig,ax = plt.subplots(1,1)
-    fit_result = calibrate_epulse_rabi(folder, ax, 1./250, 0.5, fit_k=False)
+    fit_result = calibrate_epulse_rabi(folder, ax, 1./125, 0.5, fit_k=False)
 
     f = fit_result['params_dict']['f']
     u_f = fit_result['error_dict']['f']
@@ -222,64 +205,51 @@ def rabi_4mhz(ax=None):
 
     return (f*1e3, u_f*1e3)
 
-def pi2_4mhz(ax=None):
-    folder = toolbox.latest_data('cal_4MHz_pi_over_2_'+name)
+def fast_pi(ax=None, do_print_text=True):
+    folder = toolbox.latest_data('cal_fast_pi_'+name)
+
     if ax==None:
-        fig,ax = plt.subplots(1,1)
-
-    #fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
-    #A = fit_result['params_dict']['x0']
-    #u_A = fit_result['error_dict']['x0']
-    #ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
-    fit_result = fit_linear(folder, ax, -0.1/0.15 , 1)
-    a = fit_result['params_dict']['a']
-    u_a = fit_result['error_dict']['a']
-    b = fit_result['params_dict']['b']
-    u_b = fit_result['error_dict']['b']
-
-    v = pi2_4mhz_value
-    A = (v - b)/a
-    u_A = np.sqrt( ((b-v)/a**2 * u_a)**2 + (1/a * u_b)**2 )
-    ax.text(0.6, 0.2, 'pi/2 = ({:.3f} +/- {:.3f}) V'.format(A, u_A) )
-
-    return A, u_A 
-    
-def pi_4mhz(ax=None):
-    folder = toolbox.latest_data('cal_4MHz_pi_'+name)
-    
-    if ax==None:
+        do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.8,  1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    
+    if do_print_text:
+        ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
 
-def CORPSE_pi(ax=None):
+def CORPSE_pi(ax=None, do_print_text=True):
     folder = toolbox.latest_data('CORPSEPiCalibration') # _'+name)
     
     if ax==None:
+        do_print_text = False
         fig,ax = plt.subplots(1,1)
         
     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    
+    if do_print_text:
+        ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
 
-def pi_pi2pi(ax=None):
+def pi_pi2pi(ax=None, do_print_text=True):
     folder = toolbox.latest_data('cal_pi2pi_pi_'+name)
     
     if ax==None:
+        do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.165, 1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.085, 1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    
+    if do_print_text:
+        ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
 
@@ -295,19 +265,6 @@ def pi_pi2pi_mI0(ax=None):
     ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
-
-def pi_hard(ax=None):
-    folder = toolbox.latest_data('cal_hard_pi_'+name)
-    
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
-        
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.85,  1, 0)
-    A = fit_result['params_dict']['x0']
-    u_A = fit_result['error_dict']['x0']
-    ax.text(0.81, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
-
-    return A, u_A 
 
 #### Not fully finished yet
 

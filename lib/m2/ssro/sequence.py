@@ -145,7 +145,8 @@ class SequenceAnalysis(m2.M2Analysis):
         else:
             ax.set_ylabel(r'$F(|0\rangle)$')
 
-        ax.set_ylim(-0.05, 1.05)
+        if self.result_corrected:
+            ax.set_ylim(-0.05, 1.05)
 
         if save:
             fig.savefig(
@@ -160,12 +161,14 @@ class SequenceAnalysis(m2.M2Analysis):
     def finish(self):
         self.f.close()
 
-def analyze_sweep(folder, name=''):
+def analyze_sweep(folder, name='', cr=False, roc=True):
     a = SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name)
-    a.get_cr_resutls(name)
-    #a.get_electron_ROC()
+    if cr:
+        a.get_cr_results(name)
+    if roc:
+        a.get_electron_ROC()
     a.plot_result_vs_sweepparam()
     a.finish()
     

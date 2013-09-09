@@ -14,8 +14,8 @@ from analysis.lib.math import error
 
 # fit_startup = False
 
-timestamp = None
-guess_frq = 1./220.
+timestamp = '20130907183620' # None
+guess_frq = 1./120.
 guess_amp = 0.5
 guess_k = 0.
 guess_phi = 0.
@@ -45,7 +45,7 @@ f = fit.Parameter(guess_frq, 'f')
 A = fit.Parameter(guess_amp, 'A')
 phi = fit.Parameter(guess_phi, 'phi')
 k = fit.Parameter(guess_k, 'k')
-p0 = [f, A, phi]
+p0 = [f, A]
 fitfunc_str = ''
 
 def fitfunc(x) : 
@@ -53,8 +53,9 @@ def fitfunc(x) :
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
-plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
-        plot_data=False)   
+
+plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
+        plot_data=False)
     
 # print 'The pulse length shift is:' + str(t_shift)
 

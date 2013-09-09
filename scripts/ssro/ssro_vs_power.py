@@ -34,7 +34,7 @@ for g in a.g.items():
     a.get_run(gn)
     #a.get_run('ms0')
    
-    pwr = int(string.split(gn, '_')[-1][:-2])
+    pwr = float(string.split(gn, '_')[-2])
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
 
@@ -64,9 +64,9 @@ plt.close('all')
 a.finish()
 
 sortidxs = argsort(pwrs)
-pwrs = np.array(pwrs)[sortidxs]
-taus = np.array(taus)[sortidxs]
-u_taus = np.array(u_taus)[sortidxs]
+pwrs = np.array(pwrs)[sortidxs][:]
+taus = np.array(taus)[sortidxs][:]
+u_taus = np.array(u_taus)[sortidxs][:]
 
 ks = 1./taus * 1e3
 u_ks = 1./taus**2 * u_taus * 1e3
