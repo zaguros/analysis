@@ -283,11 +283,64 @@ def ssrocalib(folder=''):
     a.mean_fidelity()
     a.finish()
 
-def thcalib(folder=''):
+def thcalib(folder='', analyze_probe = False):
     if folder=='':
         folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
     
+    if analyze_probe:
+        ths = [1,2,3,4,6,8,10,15,20,25,30]
+    else:
+        ths = np.linspace(5,45,9)
+
+    for i,th in enumerate(ths):
+        
+        if analyze_probe:
+            name = 'th_pres_{}_probe_{}'.format(pres[0],th)
+        else:
+            name = 'th_pres_{}_probe_{}'.format(th,th)
+        
+        a = sequence.SequenceAnalysis(folder)
+        a.get_cr_results(name, plot=True)
+        plt.close('all')
+
+        mean = a.get_mean_cr_cts()
+        means.append(mean)
+        
+        stats = a.adwingrp(name)['statistics'].value
+        fail = stats[2]
+        percentage_pass = 5000./(5000. + fail) * 100 #5000 is the number of succesfull measurements.
+        percentage_passes.append(percentage_pass)
+
+        a.finish()
+
+    fig = a.default_fig(figsize=(6,4))
+    ax = a.default_ax(fig)
+    ax.plot(ths, means,'o')
+    ax.set_xlabel('sweep threshold')
+    ax.set_ylabel('mean CR counts after sequence')
+    if save:
+        fig.savefig(
+            os.path.join(folder, 'post-CR_sum_vs_sweepparam.png'),
+            format='png')
+
+    fig = a.default_fig(figsize=(6,4))
+    ax = a.default_ax(fig)
+    ax.plot(ths[:], percentage_passes[:],'o')
+    ax.set_xlabel('sweep threshold')
+    ax.set_ylabel('percentage CR passes')
+    if save:
+        fig.savefig(
+            os.path.join(folder, 'percentage_CR_pass_vs_sweepparam.png'),
+            format='png')
+
+
+
+
+
+
+
+
     for n,th in zip(['th_pres_30.0_probe_30.0', 'th_pres_40.0_probe_40.0', 
             'th_pres_50.0_probe_50.0','th_pres_60.0_probe_60.0',
             'th_pres_70.0_probe_70.0','th_pres_80.0_probe_80.0',

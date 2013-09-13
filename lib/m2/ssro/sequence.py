@@ -54,9 +54,9 @@ class SequenceAnalysis(m2.M2Analysis):
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
     
-    def plot_cr_vs_sweep(self, save=True, max_cr=-1, ionization_crit=1):
-        pts=len(self.sweep_pts)
-        
+    def get_mean_cr_cts(self, save=True, pts=1, max_cr=-1):
+        ### plot the mean of the CR counts --- without the zero --- vs the sweep-param
+       
         if max_cr < 0:
             max_cr = np.max(self.cr_after)
 
@@ -69,6 +69,18 @@ class SequenceAnalysis(m2.M2Analysis):
                 bins=np.arange(max_cr+2)-0.5,
                 normed=True)
             self.sweep_CR_sum[i] = float(np.sum(cr))/len(np.where(cr>0)[0])
+
+        return self.sweep_CR_sum
+
+    def plot_cr_vs_sweep(self, save=True, max_cr=-1, ionization_crit=1):
+        pts=len(self.sweep_pts)
+        
+        if max_cr < 0:
+            max_cr = np.max(self.cr_after)
+
+        sweep_CR_hist = np.zeros((pts, max_cr+1))
+
+        self.sweep_CR_sum = self.get_mean_cr_cts(save, pts, max_cr)
 
         ### plot the mean of the CR counts --- without the zero --- vs the sweep-param
        
