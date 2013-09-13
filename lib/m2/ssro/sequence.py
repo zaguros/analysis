@@ -24,7 +24,7 @@ class SequenceAnalysis(m2.M2Analysis):
         
         return self.normalized_ssro
     
-    def get_cr_resutls(self, name='', plot=True):
+    def get_cr_results(self, name='', plot=True):
         adwingrp = self.adwingrp(name)   
         self.cr_before=adwingrp['CR_before'].value
         self.cr_after=adwingrp['CR_after'].value
@@ -54,49 +54,100 @@ class SequenceAnalysis(m2.M2Analysis):
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
     
-    def plot_cr_vs_sweep(self, save=True):
-        pts=len(self.sweep_pts)
-        sweep_CR_hist=[]
-        max_cr=0
-        self.sweep_CR_sum=np.zeros(pts)
+    def get_mean_cr_cts(self, save=True, pts=1, max_cr=-1):
+        ### plot the mean of the CR counts --- without the zero --- vs the sweep-param
+       
+        if max_cr < 0:
+            max_cr = np.max(self.cr_after)
+
+        sweep_CR_hist = np.zeros((pts, max_cr+1))
+        self.sweep_CR_sum = np.zeros(pts)
         
         for i in range(pts):
-            cr=self.cr_after[i+1::pts]
-            max_cr=max(np.max(cr),max_cr)
-            sweep_CR_hist.append(np.histogram(cr,bins=np.max(cr),normed=True))
-            self.sweep_CR_sum[i]=float(np.sum(cr))/len(np.where(cr>0)[0])
+            cr = self.cr_after[i::pts]
+            sweep_CR_hist[i,:], binedges = np.histogram(cr, 
+                bins=np.arange(max_cr+2)-0.5,
+                normed=True)
+            self.sweep_CR_sum[i] = float(np.sum(cr))/len(np.where(cr>0)[0])
+
+        return self.sweep_CR_sum
+
+    def plot_cr_vs_sweep(self, save=True, max_cr=-1, ionization_crit=1):
+        pts=len(self.sweep_pts)
+        
+        if max_cr < 0:
+            max_cr = np.max(self.cr_after)
+
+        sweep_CR_hist = np.zeros((pts, max_cr+1))
+
+        self.sweep_CR_sum = self.get_mean_cr_cts(save, pts, max_cr)
+
+        ### plot the mean of the CR counts --- without the zero --- vs the sweep-param
+       
         fig = self.default_fig(figsize=(6,4))
         ax = self.default_ax(fig)
-        ax.plot(self.sweep_pts,self.sweep_CR_sum,'o')
+        ax.plot(self.sweep_pts, self.sweep_CR_sum,'o')
         ax.set_xlabel(self.sweep_name)
+        ax.set_ylabel('mean CR counts after RO')
         if save:
             fig.savefig(
-                os.path.join(self.folder, 'cr_after_sum_vs_sweepparam.png'),
+                os.path.join(self.folder, 'post-CR_sum_vs_sweepparam.png'),
                 format='png')
         
-        zero_bar=np.array([h[0][0] for h in sweep_CR_hist])
+        ### plot the height of the zero CR counts bar vs the sweep-param
+
+        zero_bar = sweep_CR_hist[:,0:ionization_crit].sum(axis=-1).reshape(-1)
+        
         fig = self.default_fig(figsize=(6,4))
         ax = self.default_ax(fig)
         ax.plot(self.sweep_pts,zero_bar,'o')
         ax.set_xlabel(self.sweep_name)
+        ax.set_ylabel('Ionization probability')
         if save:
             fig.savefig(
-                os.path.join(self.folder, 'cr_after_0_vs_sweepparam.png'),
+                os.path.join(self.folder, 'post-CR_zero_vs_sweepparam.png'),
                 format='png')
-                
+
+        ### color plot of sweep-resolved CR counts
+
         fig = self.default_fig(figsize=(6,4))
         ax = self.default_ax(fig)
-        off=0
-        offstep=1.2*max([np.max(h[0]) for h in sweep_CR_hist])
-        for i,x in enumerate(self.sweep_pts):
-            xx=sweep_CR_hist[i][1][:-1]
-            yy=sweep_CR_hist[i][0]
-            ax.bar(xx,yy, bottom=off)
-            ax.text(max_cr,off,self.sweep_name+':'+str(x),horizontalalignment='right')
-            off=off+offstep
+
+        # xaxis = 
+        im = ax.imshow(sweep_CR_hist.transpose(), 
+            origin = 'lower',
+            aspect = 'auto',
+            interpolation='nearest',
+            cmap = 'gist_heat')
+
+        xt = ax.get_xticks().astype(int)
+        yt = ax.get_yticks()
+
+        xt = xt[xt>=0]
+        xt = xt[xt<pts]
+        ax.set_xticks(xt)
+        ax.set_xticklabels(self.sweep_pts[xt])
+
+        ax.set_ylabel('CR counts')
+        ax.set_xlabel(self.sweep_name)
+
+        cbar = fig.colorbar(im)
+        cbar.set_label('Occurrence')
+
+        # fig = self.default_fig(figsize=(6,4))
+        # ax = self.default_ax(fig)
+        # off=0
+        # offstep=1.2*max([np.max(h[0]) for h in sweep_CR_hist])
+        # for i,x in enumerate(self.sweep_pts):
+        #     xx=sweep_CR_hist[i][1][:-1]
+        #     yy=sweep_CR_hist[i][0]
+        #     ax.bar(xx,yy, bottom=off)
+        #     ax.text(max_cr,off,self.sweep_name+':'+str(x),horizontalalignment='right')
+        #     off=off+offstep
+        
         if save:
             fig.savefig(
-                os.path.join(self.folder, 'cr_after_vs_sweepparam.png'),
+                os.path.join(self.folder, 'post-CR_vs_sweepparam.png'),
                 format='png')
         
     def get_electron_ROC(self, **kw):
@@ -174,12 +225,12 @@ def analyze_sweep(folder, name='', cr=False, roc=True):
     
 def analyze_cr_only(folder,name=''):
     a = SequenceAnalysis(folder)
-    a.get_cr_resutls(name)
+    a.get_cr_results(name)
     a.finish()
     
 def analyze_cr_sweep(folder,name=''):
     a = SequenceAnalysis(folder)
-    a.get_cr_resutls(name)
+    a.get_cr_results(name)
     a.get_sweep_pts()
     a.plot_cr_vs_sweep()
     a.finish()
