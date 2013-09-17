@@ -9,10 +9,11 @@ from analysis.lib.fitting import fit, common
 from measurement.lib.tools import toolbox
 from analysis.lib.tools import plot
 from analysis.lib.m2.ssro import ssro
-
+from analysis.lib.m2.ssro import sequence
+reload(sequence)
 
 folder = None
-timestamp =None#'095551'#'180057'# None
+timestamp =None#'111857'# None#'095551'#'180057'# None
 
 if folder == None:
     if timestamp != None:
@@ -24,7 +25,7 @@ a = ssro.SSROAnalysis(folder)
 b = sequence.SequenceAnalysis(folder)
 
 runs = 1
-sweep_probes = 1 # 2 if also analyze_probe, 1 if only preselect.
+sweep_probes = 2 # 2 if also analyze_probe, 1 if only preselect.
 debug = False
 if debug:
     runs =2 
@@ -33,16 +34,15 @@ ths = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ]
 taus = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 u_taus =[ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 means = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
+u_means =  [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 percentage_passes = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 
-favo = False
 
-if favo:
-    favo_th = 15
-    favo_mean = []
-    favo_cr_pass = []
-    favo_k = []
-    favo_u_k = []
+favo_th = 15
+favo_mean = []
+favo_cr_pass = []
+favo_k = []
+favo_u_k = []
 
 
 
@@ -97,9 +97,10 @@ for g in a.g.items():
 
     b.get_cr_results(gn, plot=False)
 
-    mean = b.get_mean_cr_cts()
+    hist,mean,var = b.get_mean_cr_cts()
     means[probe][run-1].append(mean[0])
-    
+    u_means[probe][run-1].append(u_mean[0])
+
     stats = b.adwingrp(gn)['statistics'].value
     fail = stats[2]
     percentage_pass = 5000./(5000. + fail) * 100 #5000 is the number of succesfull measurements.
@@ -130,6 +131,7 @@ for r in np.arange(runs):
         taus[s][r] = np.array(taus[s][r])[sortidxs][:]
         u_taus[s][r] = np.array(u_taus[s][r])[sortidxs][:]
         means[s][r] = np.array(means[s][r])[sortidxs][:]
+        u_means[s][r] = np.array(u_means[s][r])[sortidxs][:]
         percentage_passes[s][r] = np.array(percentage_passes[s][r])[sortidxs][:]
 
         ks = 1./taus[s][r] * 1e3
@@ -148,10 +150,12 @@ for r in np.arange(runs):
 
         #fig = a.default_fig(figsize=(6,4))
         #ax2 = plt.subplot2grid((2,2),(0,1))#a.default_ax(fig)
-        ax2.plot(ths[s][r], means[s][r],'o')
+        ax2.errorbar(ths[s][r], means[s][r], yerr=means[s][r]/np.sqrt(5000), fmt='o', capsize=0, elinewidth=2)
+        #ax2.plot(ths[s][r], means[s][r],'o')
         ax2.set_xlabel('{} threshold'.format(p))
         ax2.set_ylabel('mean CR counts after sequence')
         ax2.set_title('\n' +'\n{} threshold for run {}, mean CR cts'.format(p,r+1))
+
 
         fig.savefig(
             os.path.join(folder, 'post-CR_sum_vs_sweepparam_th_{}_run_{}.png'.format(p,r+1)),
@@ -170,10 +174,7 @@ for r in np.arange(runs):
 
         #gather info about my favourite threshold combination(which occurs during the probe sweep):
         if s == 1:
-            print ths[s][r]
             th_index = list(ths[s][r]).index(favo_th)
-            print th_index
-            print means[s][r]
             favo_mean.append(means[s][r][th_index])
             favo_cr_pass.append(percentage_passes[s][r][th_index])
             favo_k.append(1/ taus[s][r][th_index] *1e3)
@@ -181,7 +182,7 @@ for r in np.arange(runs):
 
 # plot info for my favourite threshold
 
-if favo:
+if runs > 2 and sweep_probes > 1:
     fig, ([ax1,ax2,ax3]) = plt.subplots(3,1, figsize = (8,10))
     ax1.errorbar(np.arange(runs)+1, favo_k, yerr=favo_u_k, fmt='o', capsize=0, elinewidth=2)
 
@@ -204,6 +205,7 @@ if favo:
     ax3.set_xlabel('run number')
     ax3.set_ylabel('percentage CR passes')
     ax3.set_title('\n'+ 'CR passes vs. run for th:{}/{}'.format(30,favo_th))
+
 
     fig.savefig(
         os.path.join(folder, 'CR_passes_vs_run_for_ths_{}_{}'.format(30,favo_th)),
