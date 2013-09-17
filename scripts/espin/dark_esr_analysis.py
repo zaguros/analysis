@@ -14,12 +14,12 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.8265
+guess_ctr = 2.8288
 guess_splitB = 30.
 guess_splitN = 2.193e-3
 # guess_splitC = .8e-3 #12.78
-guess_width = 0.1e-3
-guess_amplitude = 0.25
+guess_width = 0.2e-3
+guess_amplitude = 0.3
 
 def analyze_dark_esr(folder, ax=None, ret=None, **kw):
 
