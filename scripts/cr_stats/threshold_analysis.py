@@ -23,8 +23,8 @@ if folder == None:
 a = ssro.SSROAnalysis(folder)
 b = sequence.SequenceAnalysis(folder)
 
-runs = 8
-sweep_probes = 2 # 2 if also analyze_probe, 1 if only preselect.
+runs = 1
+sweep_probes = 1 # 2 if also analyze_probe, 1 if only preselect.
 debug = False
 if debug:
     runs =2 
@@ -35,12 +35,14 @@ u_taus =[ [ [ ] for i in range (runs)] for s in range (sweep_probes) ]
 means = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 percentage_passes = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 
+favo = False
 
-favo_th = 15
-favo_mean = []
-favo_cr_pass = []
-favo_k = []
-favo_u_k = []
+if favo:
+    favo_th = 15
+    favo_mean = []
+    favo_cr_pass = []
+    favo_k = []
+    favo_u_k = []
 
 
 
@@ -149,7 +151,7 @@ for r in np.arange(runs):
         ax2.plot(ths[s][r], means[s][r],'o')
         ax2.set_xlabel('{} threshold'.format(p))
         ax2.set_ylabel('mean CR counts after sequence')
-        ax2.set_title('\n'+a.timestamp + '\n{} threshold for run {}, mean CR cts'.format(p,r+1))
+        ax2.set_title('\n' +'\n{} threshold for run {}, mean CR cts'.format(p,r+1))
 
         fig.savefig(
             os.path.join(folder, 'post-CR_sum_vs_sweepparam_th_{}_run_{}.png'.format(p,r+1)),
@@ -160,7 +162,7 @@ for r in np.arange(runs):
         ax3.plot(ths[s][r], percentage_passes[s][r],'o')
         ax3.set_xlabel('{} threshold'.format(p))
         ax3.set_ylabel('percentage CR passes')
-        ax3.set_title('\n'+a.timestamp + '\n{} th for run {}, CR pass prob'.format(p,r+1))
+        ax3.set_title('\n'+ '\n{} th for run {}, CR pass prob'.format(p,r+1))
 
         fig.savefig(
             os.path.join(folder, 'percentage_CR_pass_vs_sweepparam_th_{}_run_{}.png'.format(p,r+1)),
@@ -179,33 +181,33 @@ for r in np.arange(runs):
 
 # plot info for my favourite threshold
 
+if favo:
+    fig, ([ax1,ax2,ax3]) = plt.subplots(3,1, figsize = (8,10))
+    ax1.errorbar(np.arange(runs)+1, favo_k, yerr=favo_u_k, fmt='o', capsize=0, elinewidth=2)
 
-fig, ([ax1,ax2,ax3]) = plt.subplots(3,1, figsize = (8,10))
-ax1.errorbar(np.arange(runs)+1, favo_k, yerr=favo_u_k, fmt='o', capsize=0, elinewidth=2)
+    ax1.set_xlabel('run number')
+    ax1.set_ylabel('relaxation rate (kHz)')
+    ax1.set_title(a.timestamp + '\n Relaxation rate vs. run for th:{}/{}'.format(30,favo_th))
 
-ax1.set_xlabel('run number')
-ax1.set_ylabel('relaxation rate (kHz)')
-ax1.set_title(a.timestamp + '\n Relaxation rate vs. run for th:{}/{}'.format(30,favo_th))
+    fig.savefig(os.path.join(folder, 'Relaxation_rate_vs_run_for_ths_{}_{}'.format(30,favo_th)))
 
-fig.savefig(os.path.join(folder, 'Relaxation_rate_vs_run_for_ths_{}_{}'.format(30,favo_th)))
+    ax2.plot(np.arange(runs)+1, favo_mean,'o')
+    ax2.set_xlabel('run number')
+    ax2.set_ylabel('mean CR counts after sequence')
+    ax2.set_title('\n' + 'Mean post CR cts vs. run for th:{}/{}'.format(30,favo_th))
 
-ax2.plot(np.arange(runs)+1, favo_mean,'o')
-ax2.set_xlabel('run number')
-ax2.set_ylabel('mean CR counts after sequence')
-ax2.set_title('\n' + 'Mean post CR cts vs. run for th:{}/{}'.format(30,favo_th))
+    fig.savefig(
+        os.path.join(folder, 'Mean_post_CR_cts_vs_run_for_ths_{}_{}'.format(30,favo_th)),
+        format='png')
 
-fig.savefig(
-    os.path.join(folder, 'Mean_post_CR_cts_vs_run_for_ths_{}_{}'.format(30,favo_th)),
-    format='png')
+    ax3.plot(np.arange(runs)+1, favo_cr_pass,'o')
+    ax3.set_xlabel('run number')
+    ax3.set_ylabel('percentage CR passes')
+    ax3.set_title('\n'+ 'CR passes vs. run for th:{}/{}'.format(30,favo_th))
 
-ax3.plot(np.arange(runs)+1, favo_cr_pass,'o')
-ax3.set_xlabel('run number')
-ax3.set_ylabel('percentage CR passes')
-ax3.set_title('\n'+ 'CR passes vs. run for th:{}/{}'.format(30,favo_th))
-
-fig.savefig(
-    os.path.join(folder, 'CR_passes_vs_run_for_ths_{}_{}'.format(30,favo_th)),
-    format='png')
+    fig.savefig(
+        os.path.join(folder, 'CR_passes_vs_run_for_ths_{}_{}'.format(30,favo_th)),
+        format='png')
 
 
 
