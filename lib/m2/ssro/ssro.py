@@ -69,11 +69,12 @@ class SSROAnalysis(m2.M2Analysis):
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.hist(cpsh, max(cpsh)+1, align='mid', label='counts', 
-                    normed=True)
+            ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts', 
+                    normed=True, stacked=True)
             ax.set_xlabel('cts/shot')
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)
+            ax.set_xlim(-0.5, max(cpsh)+0.5)
 
             plt.figtext(0.85, 0.85, annotation, horizontalalignment='right',
                 verticalalignment='top')
