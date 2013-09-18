@@ -108,7 +108,10 @@ class MBIAnalysis(m2.M2Analysis):
     def get_N_ROC(self, P_min1=1, u_P_min1=0, P_0=1, u_P_0=0,
             F0_RO_pulse=1, u_F0_RO_pulse=0,
             F1_RO_pulse=1, u_F1_RO_pulse=0,
-            ssro_calib_folder=toolbox.latest_data('SSRO')):
+            ssro_calib_folder=None):
+
+        if ssro_calib_folder == None:
+            ssro_calib_folder = toolbox.latest_data('SSRO')
         
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
@@ -141,7 +144,10 @@ class MBIAnalysis(m2.M2Analysis):
     def get_correlation_ROC(self, P_min1=1, u_P_min1=0, P_0=0, u_P_0=0,
             F0_RO_pulse=1, u_F0_RO_pulse=0,
             F1_RO_pulse=1, u_F1_RO_pulse=0,
-            ssro_calib_folder=toolbox.latest_data('SSRO')):
+            ssro_calib_folder=None):
+
+        if ssro_calib_folder == None:
+            ssro_calib_folder = toolbox.latest_data('SSRO')
         
         #The shape below is [sweep_pts,4].
         self.p_correlations= np.zeros(self.normalized_correlations.shape)
