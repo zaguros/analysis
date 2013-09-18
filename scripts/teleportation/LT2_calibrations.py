@@ -12,7 +12,7 @@ from measurement.lib.tools import toolbox
 from analysis.lib.m2.ssro import sequence
 from analysis.lib.m2.ssro import ssro
 
-import dark_esr_analysis
+from analysis.scripts.espin import dark_esr_analysis
 
 reload(ssro)
 reload(dark_esr_analysis)
