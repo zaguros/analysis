@@ -38,14 +38,14 @@ def stage_3_calibrations():
     fig, ([ax1, ax2],[ax3, ax4], [ax5, ax6]) = plt.subplots(3,2, figsize=(10,15))
     
     print 80*'='
-    print '4 MHz Pi'
+    print 'fast pi pulse'
     print 80*'='
-    pi_4mhz_amp = pi_4mhz(ax1)
+    fast_pi_amp = fast_pi(ax1)
     
-    #print 80*'='
-    #print '4 MHz Pi/2'
-    #print 80*'='
-    #pi2_4mhz_amp = pi2_4mhz(ax2)
+    print 80*'='
+    print 'fast pi/2 pulse'
+    print 80*'='
+    fast_pi2_amp = fast_pi2(ax2)
 
     print 80*'='
     print 'CORPSE pi'
@@ -193,7 +193,7 @@ def slow_pi(ax=None):
     return (0.5/f, 0.5/f**2 * u_f)
 
 def fast_rabi(ax=None):
-    folder = toolbox.latest_data('cal_fast_rabi_'+name)
+    folder = toolbox.latest_data('cal_fast_rabi'+name)
     if ax==None:
         fig,ax = plt.subplots(1,1)
     fit_result = calibrate_epulse_rabi(folder, ax, 1./125, 0.5, fit_k=False)
@@ -217,9 +217,28 @@ def fast_pi(ax=None, do_print_text=True):
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(0.6, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(0.65, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
+
+
+def fast_pi2(ax=None):
+    folder = toolbox.latest_data('cal_fast_pi_over_2') 
+    
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+        
+    fit_result = fit_linear(folder, ax, -1,  1)
+    a = fit_result['params_dict']['a']
+    b = fit_result['params_dict']['b']
+    u_a = fit_result['error_dict']['a']
+    u_b = fit_result['error_dict']['b']
+    A = (0.5 - b) / a
+    u_A = np.sqrt(A**2) * np.sqrt ( (u_a/a)**2 + (u_b/b)**2 )
+    ax.text(0.65, 0.8, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+
+    return A, u_A 
+
 
 def CORPSE_pi(ax=None, do_print_text=True):
     folder = toolbox.latest_data('CORPSEPiCalibration') # _'+name)

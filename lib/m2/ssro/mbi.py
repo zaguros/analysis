@@ -21,9 +21,9 @@ class MBIAnalysis(m2.M2Analysis):
 
         adwingrp = self.adwingrp(name)
         
-        self.reps = self.g.attrs['reps_per_ROsequence']
-        self.pts = adwingrp.attrs['sweep_length']
-        self.readouts = adwingrp.attrs['nr_of_ROsequences']
+        self.reps = adwingrp['reps_per_ROsequence']
+        self.pts = adwingrp['sweep_length']
+        self.readouts = adwingrp['nr_of_ROsequences']
         
         discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
         self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
