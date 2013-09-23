@@ -154,8 +154,8 @@ for r in np.arange(runs):
         #ax2.plot(ths[s][r], means[s][r],'o')
         ax2.set_xlabel('{} threshold'.format(p))
         ax2.set_ylabel('mean CR counts after sequence')
-        ax2.set_title('\n'+a.timestamp + '\n{} threshold for run {}, mean CR cts'.format(p,r+1))
-        
+        ax2.set_title('\n' +'\n{} threshold for run {}, mean CR cts'.format(p,r+1))
+
 
         fig.savefig(
             os.path.join(folder, 'post-CR_sum_vs_sweepparam_th_{}_run_{}.png'.format(p,r+1)),
@@ -166,7 +166,7 @@ for r in np.arange(runs):
         ax3.plot(ths[s][r], percentage_passes[s][r],'o')
         ax3.set_xlabel('{} threshold'.format(p))
         ax3.set_ylabel('percentage CR passes')
-        ax3.set_title('\n'+a.timestamp + '\n{} th for run {}, CR pass prob'.format(p,r+1))
+        ax3.set_title('\n'+ '\n{} th for run {}, CR pass prob'.format(p,r+1))
 
         fig.savefig(
             os.path.join(folder, 'percentage_CR_pass_vs_sweepparam_th_{}_run_{}.png'.format(p,r+1)),
@@ -205,6 +205,7 @@ if runs > 2 and sweep_probes > 1:
     ax3.set_xlabel('run number')
     ax3.set_ylabel('percentage CR passes')
     ax3.set_title('\n'+ 'CR passes vs. run for th:{}/{}'.format(30,favo_th))
+
 
     fig.savefig(
         os.path.join(folder, 'CR_passes_vs_run_for_ths_{}_{}'.format(30,favo_th)),
