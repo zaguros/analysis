@@ -20,7 +20,6 @@ class M2Analysis:
         self.h5filepath = toolbox.measurement_filename(self.folder)
         self.f = h5py.File(self.h5filepath, 'r')
         self.name = self.f.keys()[0]
-        print self.name
         self.g = self.f[self.name]
 
         self.measurementstring = os.path.split(self.folder)[1]

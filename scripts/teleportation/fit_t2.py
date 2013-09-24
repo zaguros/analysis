@@ -7,15 +7,15 @@ from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import mbi
 from analysis.lib.fitting import fit
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.tools import plot
 
 timestamp = None
 
-nr_of_revivals = 15
-revivals_nrs = np.arange(14)+1
+nr_of_revivals = 7
+revivals_nrs = np.arange(nr_of_revivals)+1
 
 
 fidelities = np.ones(nr_of_revivals)*0
@@ -23,8 +23,8 @@ revivals = np.ones(nr_of_revivals)*0
 u_fid = np.ones(nr_of_revivals)*0
 u_rev = np.ones(nr_of_revivals)*0
 
-i = 1
-r_max = 8
+i = 0
+r_max = 9
 
 for r in revivals_nrs:
   
@@ -36,16 +36,23 @@ for r in revivals_nrs:
     else:
         folder = toolbox.latest_data(name)
 
-    a = sequence.SequenceAnalysis(folder)
+
+    a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
-    a.get_readout_results(name='ssro')
+    a.get_readout_results(name='adwindata')
     a.get_electron_ROC()
+    ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata')
+
+    #a = sequence.SequenceAnalysis(folder)
+    #a.get_sweep_pts()
+    #a.get_readout_results(name='ssro')
+    #a.get_electron_ROC()
     #ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
 
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
 
-    x0 = fit.Parameter(r*108.4, 'x0')
+    x0 = fit.Parameter(r*100.4, 'x0')
     a = fit.Parameter(0.5, 'a')
     o = fit.Parameter(0.5, 'o')
     c = fit.Parameter(10, 'c')
@@ -114,13 +121,11 @@ n = fit.Parameter(3, 'n')
 def fitfunc_exp(x):
     return o_exp() + a_exp() * np.exp( -(x/ c_exp())**n()) #* np.exp( -(x/ c2_exp())**n2())
 
-fitfunc_str_exp = 'o + a * e^(-(x/c))'
+fitfunc_str_exp = 'o + a * e^(-(x/c)^n)'
 
 fit_result_exp = fit.fit1d(exp_x,exp_y, None, p0=[o_exp,a_exp,c_exp,n], 
         fixed = [0,1,3], fitfunc=fitfunc_exp,
         fitfunc_str=fitfunc_str_exp, do_print=True, ret=True)
-
-print fitfunc_str_exp
 
 plot.plot_fit1d(fit_result_exp, np.linspace(exp_x[0],exp_x[-1],201), ax=ax,
         plot_data=True)
