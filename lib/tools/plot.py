@@ -7,6 +7,7 @@ from matplotlib.lines import Line2D
 
 from analysis.lib.fitting import fit
 
+
 # TODO implement formatting options
 def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
     '''
@@ -44,7 +45,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
             info_x = info_xy[0]
             info_y = info_xy[1]
 
-        plt.text(info_x, info_y, params_str, size='x-small',
+        ax.text(info_x, info_y, params_str, size='x-small',
                 color='k', ha='left', va='bottom', 
                 bbox=dict(facecolor='white', alpha=0.5))
     

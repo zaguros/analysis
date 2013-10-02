@@ -124,6 +124,22 @@ def result_dict(p1, cov, info, mesg, success, x, y, p0, fitfunc, fitfunc_str):
     
     return result
 
+def fitparam_table(result):
+    """
+    returns the list of parameters and a table with columns 
+    fitted value and the uncertainty (1 row for each parameter).
+    """
+    params = np.empty((0,2))
+    param_names = []
+
+    for n in result['params_dict']:
+        params = np.vstack((params, 
+            np.array([result['params_dict'][n], result['error_dict'][n]])))
+        param_names.append(n)
+
+    return param_names, params
+
+
 # convenient for pylab usage (or other interactive)
 def do_fit_func(fitfunc, p0, y, x):
     result = _fit_return(fit(fitfunc, p0, y, x), y, p0, fitfunc(x))
