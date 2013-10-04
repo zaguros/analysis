@@ -12,7 +12,7 @@ from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.tools import plot
 
-timestamp = '20130923200805'# None#'20130821171144'
+timestamp =  None#'20130821171144'
 
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
@@ -34,15 +34,15 @@ ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata')
 #ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
 
 x = a.sweep_pts.reshape(-1)[:]
-y = a.p0.reshape(-1)[:]
+y = a.p0[:,0].reshape(-1)[:]
 
 
 # Note: if f is added below, there is a cosine superimposed on the Gaussian.
-x0 = fit.Parameter(110, 'x0')
-a = fit.Parameter(0.5, 'a')
+x0 = fit.Parameter(100, 'x0')
+a = fit.Parameter(-0.5, 'a')
 o = fit.Parameter(0.5, 'o')
-c = fit.Parameter(15, 'c')
-f = fit.Parameter(1./500, 'f')
+c = fit.Parameter(500, 'c')
+#f = fit.Parameter(1./500, 'f')
 
 fitfunc_str = 'o + a * exp( - ( (x-x0)/c )^2) '#* cos (2 pi f (x-x0))'
 
@@ -52,7 +52,7 @@ def fitfunc(x):
 
 
 
-fit_result = fit.fit1d(x,y, None, p0=[o,x0,a,c], fixed = [], fitfunc=fitfunc,
+fit_result = fit.fit1d(x,y, None, p0=[o,x0,a,c], fixed = [0], fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
 print fitfunc_str
 
@@ -61,10 +61,10 @@ plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False)
 
 revival = fit_result['params_dict']['x0']
-maximum = - fit_result['params_dict']['a'] + fit_result['params_dict']['o']
+#maximum = - fit_result['params_dict']['a'] + fit_result['params_dict']['o']
 u_a = fit_result['error_dict']['a'] 
-u_o = fit_result['error_dict']['o']
-u_maximum = np.sqrt(u_a**2 + u_o**2)
+#u_o = fit_result['error_dict']['o']
+#u_maximum = np.sqrt(u_a**2 + u_o**2)
 #ax.text(revival-20, 0.3, 'F = (%.3f +/- %.3f)' % (maximum, u_maximum))
 
 

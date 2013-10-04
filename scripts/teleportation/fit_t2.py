@@ -14,8 +14,8 @@ from analysis.lib.tools import plot
 
 timestamp = None
 
-nr_of_revivals = 7
-revivals_nrs = np.arange(nr_of_revivals)+1
+nr_of_revivals = 11
+revivals_nrs = np.arange(nr_of_revivals)
 
 
 fidelities = np.ones(nr_of_revivals)*0
@@ -24,7 +24,7 @@ u_fid = np.ones(nr_of_revivals)*0
 u_rev = np.ones(nr_of_revivals)*0
 
 i = 0
-r_max = 9
+r_max = 7
 
 for r in revivals_nrs:
   
@@ -90,10 +90,6 @@ for r in revivals_nrs:
 exp_x = revivals
 exp_y = fidelities
 exp_u_y = u_fid
-
-exp_x[0] = 0
-exp_y[0] = 1
-exp_u_y[0] = 0.2
 
 
 fig, ax = plt.subplots(1,1)

@@ -303,21 +303,20 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     a.get_readout_results(name)
 
     
-    #if mode == 'correlations':
-    #    a.get_correlations(name)
+    if mode == 'correlations':
+        a.get_correlations(name)
 
-    #if correction == 'electron':
-    #    a.get_electron_ROC()
-    #elif correction == 'N':
-    #    a.get_N_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
-    #            u_F1_RO_pulse)
-    #elif correction == 'correlation':
-    #    a.get_correlation_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
-    #            u_F1_RO_pulse)
+    if correction == 'electron':
+        a.get_electron_ROC()
+    elif correction == 'N':
+        a.get_N_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
+                u_F1_RO_pulse)
+    elif correction == 'correlation':
+        a.get_correlation_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
+                u_F1_RO_pulse)
 
-
-    #a.save(correction)    
-    #a.plot_results_vs_sweepparam(mode = mode, **kw)
+    a.save(correction)    
+    a.plot_results_vs_sweepparam(mode = mode, **kw)
     a.finish()
     
     if ret == 'obj':
