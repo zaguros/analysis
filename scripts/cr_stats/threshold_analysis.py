@@ -6,11 +6,12 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib.fitting import fit, common
-from measurement.lib.tools import toolbox
 from analysis.lib.tools import plot
+from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.m2.ssro import sequence
 reload(sequence)
+
 
 folder = None
 timestamp =None#'111857'# None#'095551'#'180057'# None
@@ -25,19 +26,12 @@ a = ssro.SSROAnalysis(folder)
 b = sequence.SequenceAnalysis(folder)
 
 runs = 1
-sweep_probes = 2 # 2 if also analyze_probe, 1 if only preselect.
+sweep_probes = 1 # 2 if also analyze_probe, 1 if only preselect.
 debug = False
 if debug:
     runs =2 
 
 ths = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-taus = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-u_taus =[ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-means = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-u_means =  [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-percentage_passes = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-
-
 favo_th = 15
 favo_mean = []
 favo_cr_pass = []
@@ -48,9 +42,11 @@ favo_u_k = []
 
 # analyze the data
 
-for g in a.g.items():    
+for i,g in enumerate(a.g.items()):    
     gn = g[0]
     if 'instrument_settings' in gn:
+        continue
+    if i>7:
         continue
 
     a.get_run(gn)
@@ -99,7 +95,6 @@ for g in a.g.items():
 
     hist,mean,var = b.get_mean_cr_cts()
     means[probe][run-1].append(mean[0])
-    u_means[probe][run-1].append(u_mean[0])
 
     stats = b.adwingrp(gn)['statistics'].value
     fail = stats[2]
@@ -131,7 +126,6 @@ for r in np.arange(runs):
         taus[s][r] = np.array(taus[s][r])[sortidxs][:]
         u_taus[s][r] = np.array(u_taus[s][r])[sortidxs][:]
         means[s][r] = np.array(means[s][r])[sortidxs][:]
-        u_means[s][r] = np.array(u_means[s][r])[sortidxs][:]
         percentage_passes[s][r] = np.array(percentage_passes[s][r])[sortidxs][:]
 
         ks = 1./taus[s][r] * 1e3
