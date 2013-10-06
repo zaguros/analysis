@@ -20,13 +20,12 @@ class MBIAnalysis(m2.M2Analysis):
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
-        
-        self.reps = self.g.attrs['reps_per_ROsequence']
+
+        self.reps = adwingrp.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']
         self.readouts = adwingrp.attrs['nr_of_ROsequences']
-        
         discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
-        self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
+        self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))      
         
         if discards > 0:
             results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
@@ -41,8 +40,6 @@ class MBIAnalysis(m2.M2Analysis):
     def get_correlations(self, name=''):
         adwingrp = self.adwingrp(name)
         self.result_correlation_corrected = False
-
-        print 10
         
         self.reps = self.g.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']
@@ -77,7 +74,6 @@ class MBIAnalysis(m2.M2Analysis):
         self.normalized_correlations = self.correlations / float(self.reps)
         self.u_normalized_correlations = (
             self.normalized_correlations*(1.-self.normalized_correlations)/self.reps)**0.5
-
 
     def get_sweep_pts(self):
         self.sweep_name = self.g.attrs['sweep_name']
@@ -249,7 +245,6 @@ class MBIAnalysis(m2.M2Analysis):
                 ax.set_ylabel(r'$F(|0\rangle)$')
 
         else:
-            print 2 
             for i in range(len(self.correlation_names)):
                 if not self.result_correlation_corrected:
                     ax.errorbar(self.sweep_pts, self.normalized_correlations[:,i], 
@@ -304,8 +299,10 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     mode = kw.pop('mode', 'ssro_results')
 
     a = MBIAnalysis(folder)
-    a.get_sweep_pts()    
+    a.get_sweep_pts()
     a.get_readout_results(name)
+
+    
     if mode == 'correlations':
         a.get_correlations(name)
 
@@ -317,7 +314,6 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     elif correction == 'correlation':
         a.get_correlation_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
                 u_F1_RO_pulse)
-
 
     a.save(correction)    
     a.plot_results_vs_sweepparam(mode = mode, **kw)

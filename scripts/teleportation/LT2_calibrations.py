@@ -18,7 +18,7 @@ reload(ssro)
 reload(dark_esr_analysis)
 
 # adapt
-name = 'sil2'
+name = 'sil4'
 pi2_4mhz_value = 1. - 0.473
 
 
@@ -40,7 +40,7 @@ def stage_1_calibrations():
     CORPSE_freq = rabi_8mhz(ax2)
 
 
-def stage_2_calibrations(sil=5):
+def stage_2_calibrations(sil=4):
     fig, ([ax1,ax2],[ax3,ax4]) = plt.subplots(2,2, figsize = (10,8))
 
     print 80*'='
@@ -234,7 +234,7 @@ def CORPSE_pi(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.46,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.75,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     ax.text(0.42, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
@@ -243,7 +243,7 @@ def CORPSE_pi(ax=None):
 
 
 def CORPSE_pi2(sil,ax=None):
-    folder = toolbox.latest_data('CORPSEPi2Calibration_sil'+str(sil)+'M=1') 
+    folder = toolbox.latest_data('CORPSEPi2Calibration') 
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
