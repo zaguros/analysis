@@ -14,10 +14,10 @@ from analysis.lib.tools import toolbox
 
 timestamp = None#'20130710134201'
 
-g_f = 1./360#2.19290
+g_f = 1./180#2.19290
 g_A = 0.5
 g_o = 0.5
-g_x0 = -110# 191
+g_x0 = 0# 191
 
 f = fit.Parameter(g_f, 'f')
 A = fit.Parameter(g_A, 'A')

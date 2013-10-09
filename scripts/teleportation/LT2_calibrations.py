@@ -17,6 +17,9 @@ from analysis.scripts.espin import dark_esr_analysis
 reload(ssro)
 reload(dark_esr_analysis)
 
+# adapt
+name = 'sil4'
+pi2_4mhz_value = 1. - 0.473
 
 
 def stage_0p5_calibrations():
@@ -32,7 +35,6 @@ def stage_0p5_calibrations():
 
 def stage_1_calibrations():
     fig, ([ax1,ax2]) = plt.subplots(1,2, figsize = (10,4))
-
     # print 80*'='
     # print '8 MHz electron Rabi'
     # print 80*'='
@@ -289,7 +291,7 @@ def CORPSE_pi(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.46,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.75,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     of = fit_result['params_dict']['of']
@@ -299,7 +301,11 @@ def CORPSE_pi(ax=None):
     return A, u_A 
 
 
+<<<<<<< HEAD
 def CORPSE_pi2(ax=None):
+=======
+def CORPSE_pi2(sil,ax=None):
+>>>>>>> 732897fb636face56b347318fc106b79462ce1a7
     folder = toolbox.latest_data('CORPSEPi2Calibration') 
     
     if ax==None:

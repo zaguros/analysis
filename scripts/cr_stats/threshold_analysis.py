@@ -6,11 +6,12 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib.fitting import fit, common
-from measurement.lib.tools import toolbox
 from analysis.lib.tools import plot
+from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.m2.ssro import sequence
 reload(sequence)
+
 
 folder = None
 timestamp =  None#'111857'# None#'095551'#'180057'# None
@@ -47,9 +48,11 @@ favo_u_k = []
 
 # analyze the data
 
-for g in a.g.items():    
+for i,g in enumerate(a.g.items()):    
     gn = g[0]
     if 'instrument_settings' in gn:
+        continue
+    if i>7:
         continue
 
     a.get_run(gn)

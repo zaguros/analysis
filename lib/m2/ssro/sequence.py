@@ -28,7 +28,7 @@ class SequenceAnalysis(m2.M2Analysis):
         adwingrp = self.adwingrp(name)   
         self.cr_before=adwingrp['CR_before'].value
         self.cr_after=adwingrp['CR_after'].value
-        
+
         if plot:
             self._plot_cr('CR before '+name, self.cr_before)
             self._plot_cr('CR after '+name, self.cr_after)
@@ -37,7 +37,6 @@ class SequenceAnalysis(m2.M2Analysis):
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
 
-        
         fig = self.default_fig(figsize=(6,4))
         ax = self.default_ax(fig)
         ax.hist(cr_counts, abs(max(cr_counts)-min(cr_counts)+1), 
@@ -213,6 +212,8 @@ class SequenceAnalysis(m2.M2Analysis):
     def finish(self):
         self.f.close()
 
+
+
 def analyze_sweep(folder, name='', cr=False, roc=True):
     a = SequenceAnalysis(folder)
     a.get_sweep_pts()
@@ -228,7 +229,7 @@ def analyze_cr_only(folder,name=''):
     a = SequenceAnalysis(folder)
     a.get_cr_results(name)
     a.finish()
-    
+   
 def analyze_cr_sweep(folder,name=''):
     a = SequenceAnalysis(folder)
     a.get_cr_results(name)
