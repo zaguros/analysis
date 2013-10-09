@@ -42,10 +42,10 @@ def stage_3_calibrations():
     print 80*'='
     pi_4mhz_amp = pi_4mhz(ax1)
     
-    #print 80*'='
-    #print '4 MHz Pi/2'
-    #print 80*'='
-    #pi2_4mhz_amp = pi2_4mhz(ax2)
+    print 80*'='
+    print '4 MHz Pi/2'
+    print 80*'='
+    pi2_4mhz_amp = pi2_4mhz(ax2)
 
     print 80*'='
     print 'CORPSE pi'

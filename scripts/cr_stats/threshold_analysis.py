@@ -13,7 +13,7 @@ from analysis.lib.m2.ssro import sequence
 reload(sequence)
 
 folder = None
-timestamp =None#'111857'# None#'095551'#'180057'# None
+timestamp =  None#'111857'# None#'095551'#'180057'# None
 
 if folder == None:
     if timestamp != None:
@@ -25,7 +25,7 @@ a = ssro.SSROAnalysis(folder)
 b = sequence.SequenceAnalysis(folder)
 
 runs = 1
-sweep_probes = 2 # 2 if also analyze_probe, 1 if only preselect.
+sweep_probes = 1# 2 if also analyze_probe, 1 if only preselect.
 debug = False
 if debug:
     runs =2 
@@ -34,7 +34,6 @@ ths = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ]
 taus = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 u_taus =[ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 means = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
-u_means =  [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 percentage_passes = [ [ [ ] for i in range (runs)] for s in range (sweep_probes) ] 
 
 
@@ -58,7 +57,7 @@ for g in a.g.items():
     pro = int(string.split(gn, '_')[4])
     run = int(string.split(gn, '_')[6])
     analyze_probe = str(string.split(gn, '_')[8])
-    
+
     if debug:   
         if run > 2:
             continue
@@ -99,7 +98,6 @@ for g in a.g.items():
 
     hist,mean,var = b.get_mean_cr_cts()
     means[probe][run-1].append(mean[0])
-    u_means[probe][run-1].append(u_mean[0])
 
     stats = b.adwingrp(gn)['statistics'].value
     fail = stats[2]
@@ -131,7 +129,6 @@ for r in np.arange(runs):
         taus[s][r] = np.array(taus[s][r])[sortidxs][:]
         u_taus[s][r] = np.array(u_taus[s][r])[sortidxs][:]
         means[s][r] = np.array(means[s][r])[sortidxs][:]
-        u_means[s][r] = np.array(u_means[s][r])[sortidxs][:]
         percentage_passes[s][r] = np.array(percentage_passes[s][r])[sortidxs][:]
 
         ks = 1./taus[s][r] * 1e3
