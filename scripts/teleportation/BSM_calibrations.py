@@ -75,7 +75,7 @@ def stage_3_calibrations():
 def stage_4_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
-    print 'CORPSE pi phase shift'
+    print 'CORPSE pi phase shift (look for the maximum)'
     print 80*'='
     CORPSE_pi_phase = CORPSE_phase(ax)    
 
@@ -88,7 +88,7 @@ def stage_5_calibrations():
 
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
-    print 'UNROT evolution time calibration'
+    print 'UNROT evolution time calibration (look for the maximum)'
     print 80*'='
     UNROT_evolution_time = UNROT_evtime_large_range(ax)
 
@@ -101,7 +101,7 @@ def stage_6_calibrations():
 
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
-    print 'spin echo (LDE-BSM) calibrations'
+    print 'spin echo (LDE-BSM) calibrations (look for the minimum)'
     print 80*'='
     spin_echo_time = spin_echo(ax)
 
@@ -114,20 +114,20 @@ def stage_7_calibrations():
 
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
-    print 'Hadamard phase calibration (aim for 10 high (low for +LDE))'
+    print 'Hadamard phase calibration (aim for 10 high)'
     print 80*'='
     Hadamard_phase_cal = Hadamard_phase_large_range(ax, do_print_text=True)
 
 def stage_8_calibrations():
     # fig, ax = plt.subplots(1,1, figsize = (5,3))
     # print 80*'='
-    # print 'Hadamard evolution time calibration (aim for 11 high)'
+    # print 'Hadamard evolution time calibration (aim for 01 high)'
     # print 80*'='
     # Hadamard_evolution_time = Hadamard_ev_time(ax)
 
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
-    print 'Hadamard evolution time calibration (aim for 11 high (low for +LDE))'
+    print 'Hadamard evolution time calibration (aim for 01 high)'
     print 80*'='
     Hadamard_evolution_time = Hadamard_ev_time_large_range(ax)
 
@@ -577,7 +577,7 @@ def Hadamard_ev_time(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_parabolic(folder, ax, 50.7, 1, 0., which_correlation=3)
+    fit_result = fit_correlation_parabolic(folder, ax, 50.7, 1, 0., which_correlation=1)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
 
@@ -593,7 +593,7 @@ def Hadamard_ev_time_large_range(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_oscillation(folder, ax, 5.08, 1./0.05, -0.25, which_correlation=3)
+    fit_result = fit_correlation_oscillation(folder, ax, 5.08, 1./0.05, -0.25, which_correlation=1)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     

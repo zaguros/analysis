@@ -71,33 +71,23 @@ def stage_3_calibrations():
     DD_spin_echo_time = DD_spin_echo(ax)
 
 def stage_4_calibrations():
-    # fig, ax = plt.subplots(1,1, figsize = (5,4))
-    # print 80*'='
-    # print 'time between pi pulses'
-    # print 80*'='
-    # t_between_pi_pulses = t_between_pi(ax)
-
     fig, ax = plt.subplots(1,1, figsize = (5,4))
     print 80*'='
     print 'time between pi pulses'
     print 80*'='
-    calibrate_yxy_fetime = calibrate_yxy_fet(ax)
+    t_between_pi_pulses = t_between_pi(ax)
 
     # fig, ax = plt.subplots(1,1, figsize = (5,4))
     # print 80*'='
-    # print 'time between pi pulses'
+    # print 'yxy free evolution time'
+    # print 80*'='
+    # calibrate_yxy_fetime = calibrate_yxy_fet(ax)
+
+    # fig, ax = plt.subplots(1,1, figsize = (5,4))
+    # print 80*'='
+    # print 'xy4 free evolution time'
     # print 80*'='
     # calibrate_xy4_fetime = calibrate_xy4_fet(ax)
-
-
-# def stage_3_calibrations():
-
-#     fig, ax = plt.subplots(1,1, figsize = (5,4))
-
-#     print 80*'='
-#     print 'Delta t'
-#     print 80*'='
-#     delta_t = dd_delta_t(ax)
 
 
 def CORPSE_fidelity_cal():
@@ -301,11 +291,7 @@ def CORPSE_pi(ax=None):
     return A, u_A 
 
 
-<<<<<<< HEAD
 def CORPSE_pi2(ax=None):
-=======
-def CORPSE_pi2(sil,ax=None):
->>>>>>> 732897fb636face56b347318fc106b79462ce1a7
     folder = toolbox.latest_data('CORPSEPi2Calibration') 
     
     if ax==None:
