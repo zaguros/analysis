@@ -281,7 +281,7 @@ def CORPSE_pi(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.75,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.44,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     of = fit_result['params_dict']['of']
@@ -321,6 +321,19 @@ def C13_rev_small_range(ax=None):
 
     return revival, u_revival
 
+def T2_rev(ax=None):
+    folder = toolbox.latest_data('calibrate_T2') 
+    
+    if ax==None:
+        fig,ax = plt.subplots(1,1)
+        
+    fit_result = fit_gaussian(folder, ax, 110)
+    revival = fit_result['params_dict']['x0']
+    u_revival = fit_result['error_dict']['x0']
+    ax.text(revival-20, 0.3, 'tfet = (%.3f +/- %.3f)' % (revival, u_revival))
+
+    return revival, u_revival
+
 def C13_rev(ax=None):
     folder = toolbox.latest_data('calibrate_first_revival') 
     
@@ -343,7 +356,7 @@ def DD_spin_echo(ax=None):
     fit_result = calibrate_epulse_amplitude(folder, ax, 0.55,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.45, 0.5, 'dt = (%.3f +/- %.3f) us' % (A, u_A))
+    ax.text(0., 0.5, 'dt = (%.3f +/- %.3f) us' % (A, u_A))
 
     return A, u_A 
 
@@ -360,8 +373,8 @@ def t_between_pi(ax=None):
 
     return revival, u_revival
 
-def calibrate_yxy_fet(ax=None):
-    folder = toolbox.latest_data('calibrate_yxy') 
+def calibrate_xyx_fet(ax=None):
+    folder = toolbox.latest_data('calibrate_xyx') 
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
@@ -453,6 +466,8 @@ def dd_calibrate_fidelity(r, ax=None):
 
 if __name__ == '__main__':
     # calibrate_all()
-    stage_1_calibrations()
-    stage_2_calibrations()
-    stage_3_calibrations()
+    #stage_1_calibrations()
+    #stage_2_calibrations()
+    #stage_3_calibrations()
+    stage_4_calibrations()
+    #T2_rev()

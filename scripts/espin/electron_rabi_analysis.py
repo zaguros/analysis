@@ -21,7 +21,7 @@ guess_of = 1
 guess_phi = 0.
 guess_k = 0.
 
-mbi_analysis = True
+mbi_analysis = False
 
 o = fit.Parameter(guess_of, 'o')
 f = fit.Parameter(guess_frq, 'f')
@@ -41,6 +41,7 @@ if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('adwindata')
+    #a.get_readout_results('adwindata')
     a.get_electron_ROC()
     ax = a.plot_results_vs_sweepparam(ret='ax', name = 'adwindata')
 
