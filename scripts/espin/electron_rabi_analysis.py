@@ -41,6 +41,7 @@ if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('adwindata')
+    #a.get_readout_results('adwindata')
     a.get_electron_ROC()
     ax = a.plot_results_vs_sweepparam(ret='ax', name = 'adwindata')
 
