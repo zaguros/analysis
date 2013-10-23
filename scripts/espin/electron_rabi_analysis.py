@@ -21,7 +21,7 @@ guess_of = 1
 guess_phi = 0.
 guess_k = 0.
 
-mbi_analysis = True
+mbi_analysis = False
 
 o = fit.Parameter(guess_of, 'o')
 f = fit.Parameter(guess_frq, 'f')
