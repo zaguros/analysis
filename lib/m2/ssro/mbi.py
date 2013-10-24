@@ -20,12 +20,12 @@ class MBIAnalysis(m2.M2Analysis):
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
+
         self.reps = adwingrp.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']
         self.readouts = adwingrp.attrs['nr_of_ROsequences']
         discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
-        self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
-        
+        self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))      
         
         if discards > 0:
             results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
@@ -301,6 +301,8 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     a = MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name)
+
+    
     if mode == 'correlations':
         a.get_correlations(name)
 
@@ -312,7 +314,6 @@ def analyze_single_sweep(folder, name='', correction='electron', **kw):
     elif correction == 'correlation':
         a.get_correlation_ROC(P_min1, u_P_min1, P_0, u_P_0, F0_RO_pulse, u_F0_RO_pulse, F1_RO_pulse,
                 u_F1_RO_pulse)
-
 
     a.save(correction)    
     a.plot_results_vs_sweepparam(mode = mode, **kw)

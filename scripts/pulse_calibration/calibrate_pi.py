@@ -15,7 +15,7 @@ import calibration_funcs as funcs
 
 ### parameters
 timestamp = None
-msmt_type = 'mbi'
+msmt_type = 'sequence'
 guess_x0 = 0.08
 guess_of = 1
 guess_a = 0

@@ -25,7 +25,11 @@ class NuclearSpinROC:
            sympy.symbols('F0_ssro F1_ssro F0_RO_pulse F1_RO_pulse P_min1 P_0')
         self._p0 = sympy.symbols('p0')
                
-        #The error matrix is built up of three matrices RO_err, CNOT_err and Init_err. The first reflects fidelities of the electron RO, the second the fidelities in the pi (F0) and 2pi (F1) parts of the pi-2pi pulse (as CNOT gate). The third matrix includes populations in the three nitrogen lines after initialization in -1.
+        # The error matrix is built up of three matrices RO_err, CNOT_err and 
+        # Init_err. The first reflects fidelities of the electron RO, 
+        # the second the fidelities in the pi (F0) and 2pi (F1) parts of the 
+        # pi-2pi pulse (as CNOT gate). The third matrix includes populations 
+        # in the three nitrogen lines after initialization in -1.
         self.error_matrix =sympy.Matrix(
                                         [[self._F0_ssro, 1.-self._F1_ssro],
                                          [1.-self._F0_ssro, self._F1_ssro]])* \
