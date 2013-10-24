@@ -30,7 +30,6 @@ def get_SSRO_calibration(folder, readout_time):
 
     return f0, u_f0, f1, u_f1
 
-
 # analysis classes and shortcut functions
 class SSROAnalysis(m2.M2Analysis):
     
