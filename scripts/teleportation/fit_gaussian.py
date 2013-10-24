@@ -38,11 +38,12 @@ y = a.p0[:,0].reshape(-1)[:]
 
 
 # Note: if f is added below, there is a cosine superimposed on the Gaussian.
-x0 = fit.Parameter(100, 'x0')
+x0 = fit.Parameter(52, 'x0')
 a = fit.Parameter(-0.5, 'a')
 o = fit.Parameter(0.5, 'o')
-c = fit.Parameter(500, 'c')
+c = fit.Parameter(10, 'c')
 #f = fit.Parameter(1./500, 'f')
+
 
 fitfunc_str = 'o + a * exp( - ( (x-x0)/c )^2) '#* cos (2 pi f (x-x0))'
 

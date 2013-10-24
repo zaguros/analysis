@@ -13,7 +13,7 @@ from analysis.lib.m2.ssro import sequence
 reload(sequence)
 
 folder = None
-timestamp =None#'095551'#'180057'# None
+timestamp = None#'095551'#'180057'# None
 
 if folder == None:
     if timestamp != None:
@@ -79,10 +79,8 @@ for i,g in enumerate(a.g.items()):
     
     stats = b.adwingrp(gn)['statistics'].value
     fail = stats[2]
-    pts = np.linspace(5000,10000,11)[i-1]
-    print pts
+    pts = np.linspace(5000,10000,21)[i-1]
     percentage_pass = (pts/(pts + fail)) * 100 #5000 is the number of succesfull measurements.
-    print percentage_pass
     percentage_passes.append(percentage_pass)
 
     plt.close('all')

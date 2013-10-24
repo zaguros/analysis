@@ -8,7 +8,7 @@ from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.math import error
 from analysis.lib.m2 import m2
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 
 class SequenceAnalysis(m2.M2Analysis):
     
