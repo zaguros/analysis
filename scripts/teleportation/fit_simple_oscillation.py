@@ -12,9 +12,9 @@ reload(sequence)
 
 from analysis.lib.tools import toolbox
 
-timestamp = None #'20130801132824'
+timestamp = '171832'#None #'20130801132824'
 
-g_f = 1./80.#8.593e-3#2.19290
+g_f = 1./360.#8.593e-3#2.19290
 g_A = 0.5
 g_o = 0.5
 g_x0 = 0
@@ -44,7 +44,7 @@ x = a.sweep_pts
 y = a.p0 #a.p0[:,1]   #.reshape(-1)
 
 fit_result = fit.fit1d(x, y, None,
-        fitfunc=fitfunc, p0=[f,x0,A,o], fixed=[], do_print=True, ret=True)
+        fitfunc=fitfunc, p0=[f,x0,A,o], fixed=[1], do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(a.sweep_pts[0],a.sweep_pts[-1],201), ax=ax,
         plot_data=False)
 
