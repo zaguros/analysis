@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.8288
+guess_ctr = 2.8280
 guess_splitB = 30.
 guess_splitN = 2.193e-3
 # guess_splitC = .8e-3 #12.78
@@ -35,7 +35,8 @@ def analyze_dark_esr(folder, ax=None, ret=None, **kw):
     y = a.p0.reshape(-1)[:]
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     ax.set_ylim(0.65,1.05)
-
+    
+    guess_ctr = float(raw_input('Center guess?'))
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,

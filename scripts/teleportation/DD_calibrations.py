@@ -312,7 +312,7 @@ def CORPSE_vs_angle(ax=None):
     ax.text(50, 0.35, '$f_r$ = (%.6f +/- %.6f) \n $(f_r-f_0)/f_0$ = %.3f'  % (f, u_f, (f - f0)/f0),
         va='bottom', ha='left')
 
-    return A, u_A 
+    return f, u_f 
 
 
 # def CORPSE_pi2(ax=None):
@@ -377,7 +377,7 @@ def DD_spin_echo(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.55,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, -.15,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     ax.text(0., 0.5, 'dt = (%.3f +/- %.3f) us' % (A, u_A))

@@ -14,7 +14,7 @@ from analysis.lib.m2.ssro import ssro
 reload(ssro)
 
 # adapt
-name = 'hans-sil4'
+name = 'hans-sil1'
 pi2_4mhz_value = 1. - 0.473
 
 def stage_1_calibrations():
@@ -45,7 +45,7 @@ def stage_2_calibrations():
     print 80*'='
     print 'fast pi/2 pulse'
     print 80*'='
-    fast_pi2_amp = fast_pi2(ax2)
+    #fast_pi2_amp = fast_pi2(ax2)
 
     print 80*'='
     print 'CORPSE pi'
@@ -370,11 +370,13 @@ def slow_pi(ax=None):
     folder = toolbox.latest_data('cal_slow_pi_'+name)
     if ax==None:
         fig,ax = plt.subplots(1,1)
-    fit_result = calibrate_epulse_rabi(folder, ax, 1./5000, 0.5)
+    fit_result = calibrate_epulse_rabi(folder, ax, 0.015, 1.0, 0., fit_x0 = False, fit_k = False)
 
     f = fit_result['params_dict']['f']
     u_f = fit_result['error_dict']['f']
-    ax.text(500, 0.4, 'pi = (%.0f +/- %.0f) ns' % (0.5/f, 0.5/f**2 * u_f),
+    #ax.text(500, 0.4, 'pi = (%.0f +/- %.0f) ns' % (0.5/f, 0.5/f**2 * u_f),
+    #    va='bottom', ha='left')
+    ax.text(0.015, 0.4, 'pi = (%.4f +/- %.4f) V' % (0.5/f, 0.5/f**2 * u_f),
         va='bottom', ha='left')
     
     return (0.5/f, 0.5/f**2 * u_f)
@@ -434,12 +436,12 @@ def CORPSE_pi(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.36,  1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.53,  1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(0.32, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(0.53, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
 
@@ -512,13 +514,13 @@ def UNROT_evtime_large_range(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-        
-    fit_result = calibrate_epulse_rabi(folder, ax, 1./0.45, 0.5, guess_x0=51.08, double_ro='nitrogen', fit_x0 = True)
+    guess_x0 =  52.5   
+    fit_result = calibrate_epulse_rabi(folder, ax, 1./0.45, 0.5, guess_x0=guess_x0, double_ro='nitrogen', fit_x0 = True)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(51.03, 0.5, 'A = (%.3f +/- %.3f) us' % (A, u_A))
+        ax.text(guess_x0, 0.5, 'A = (%.3f +/- %.3f) us' % (A, u_A))
 
     return A, u_A 
 
@@ -541,13 +543,13 @@ def spin_echo(ax=None, do_print_text=True):
 
 
 def Hadamard_phase(ax=None, do_print_text=True):
-    folder = toolbox.latest_data('TestBSM_superposition_in') # _'+name)
+    folder = toolbox.latest_data('TestBSM_LDE_calibrate_H_phase') # _'+name)
     
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_parabolic(folder, ax, 10, 1, 0., which_correlation=2)
+    fit_result = fit_correlation_parabolic(folder, ax, 100, 1, 0., which_correlation=0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
@@ -556,13 +558,13 @@ def Hadamard_phase(ax=None, do_print_text=True):
     return A, u_A 
 
 def Hadamard_phase_large_range(ax=None, do_print_text=True):
-    folder = toolbox.latest_data('TestBSM') # _'+name)
+    folder = toolbox.latest_data('TestBSM_LDE_calibrate_H_phase') # _'+name)
     
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_oscillation(folder, ax, 10, 1./360, 0.25, which_correlation=2)
+    fit_result = fit_correlation_oscillation(folder, ax, 100, 1./360, 0.25, which_correlation=0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
@@ -577,12 +579,12 @@ def Hadamard_ev_time(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_parabolic(folder, ax, 50.7, 1, 0., which_correlation=1)
+    fit_result = fit_correlation_parabolic(folder, ax, 35.0, 1, 0., which_correlation=3)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
 
     if do_print_text:
-        ax.text(50.73, 0.8, 'evo time = (%.3f +/- %.3f) us' % (A, u_A))
+        ax.text(35.0, 0.8, 'evo time = (%.3f +/- %.3f) us' % (A, u_A))
 
     return A, u_A 
 
@@ -593,12 +595,12 @@ def Hadamard_ev_time_large_range(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_oscillation(folder, ax, 5.08, 1./0.05, -0.25, which_correlation=1)
+    fit_result = fit_correlation_oscillation(folder, ax, 35.08, 1./0.05/10., 0.25, which_correlation=3)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(5.07, 0.8, 'H phase = (%.4f +/- %.4f) ' % (A, u_A))
+        ax.text(35.07, 0.8, 'H phase = (%.4f +/- %.4f) ' % (A, u_A))
     return A, u_A 
 
 def pi_pi2pi(ax=None, do_print_text=True):
@@ -608,12 +610,12 @@ def pi_pi2pi(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.085, 1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.11, 1, 0)#ax, 0.085, 1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(0.07, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(0.11, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
 
