@@ -16,6 +16,7 @@ reload(sequence)
 folder = None
 timestamp =  None#'111857'# None#'095551'#'180057'# None
 
+
 if folder == None:
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
@@ -26,7 +27,8 @@ a = ssro.SSROAnalysis(folder)
 b = sequence.SequenceAnalysis(folder)
 
 runs = 1
-sweep_probes = 1# 2 if also analyze_probe, 1 if only preselect.
+sweep_probes = 1 # 2 if also analyze_probe, 1 if only preselect.
+
 debug = False
 if debug:
     runs =2 
@@ -75,7 +77,7 @@ for i,g in enumerate(a.g.items()):
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
 
-    idx0 = argmax(_c)
+    idx0 = np.argmax(_c)
     idx1 = -1 
     t,c = _t[idx0:idx1]/1e3, _c[idx0:idx1]
 
@@ -97,7 +99,7 @@ for i,g in enumerate(a.g.items()):
     ax.set_title(a.default_plot_title + ', ' + gn)
     fig.savefig(os.path.join(folder, 'sp_relaxation_Th_pre={}_Th_pro={}_run_{}_sweep_{}'.format(pre,pro, run, th)))
 
-    b.get_cr_results(gn, plot=False)
+    b.get_cr_results(gn, plot=True)
 
     hist,mean,var = b.get_mean_cr_cts()
     means[probe][run-1].append(mean[0])
@@ -127,11 +129,12 @@ for r in np.arange(runs):
         #print p+' threshold'
         #print 80*'='
 
-        sortidxs = argsort(ths[s][r])
+        sortidxs = np.argsort(ths[s][r])
         ths[s][r] = np.array(ths[s][r])[sortidxs][:]
         taus[s][r] = np.array(taus[s][r])[sortidxs][:]
         u_taus[s][r] = np.array(u_taus[s][r])[sortidxs][:]
         means[s][r] = np.array(means[s][r])[sortidxs][:]
+
         percentage_passes[s][r] = np.array(percentage_passes[s][r])[sortidxs][:]
 
         ks = 1./taus[s][r] * 1e3
@@ -173,12 +176,13 @@ for r in np.arange(runs):
             format='png')
 
         #gather info about my favourite threshold combination(which occurs during the probe sweep):
-        if s == 1:
-            th_index = list(ths[s][r]).index(favo_th)
-            favo_mean.append(means[s][r][th_index])
-            favo_cr_pass.append(percentage_passes[s][r][th_index])
-            favo_k.append(1/ taus[s][r][th_index] *1e3)
-            favo_u_k.append(1./taus[s][r][th_index]**2 * u_taus[s][r][th_index] * 1e3)
+        if runs > 2 and sweep_probes > 1:
+            if s == 1:
+                th_index = list(ths[s][r]).index(favo_th)
+                favo_mean.append(means[s][r][th_index])
+                favo_cr_pass.append(percentage_passes[s][r][th_index])
+                favo_k.append(1/ taus[s][r][th_index] *1e3)
+                favo_u_k.append(1./taus[s][r][th_index]**2 * u_taus[s][r][th_index] * 1e3)
 
 # plot info for my favourite threshold
 

@@ -20,16 +20,22 @@ SIL7=[52.7,59.5,r'D:\measuring\data\20130702\122103_LaserFrequencyScan_SIL7_Gree
 SIL5=[40.8,50.3,r'D:\measuring\data\20130702\173219_LaserFrequencyScan_SIL5_green_gv_0.0\173219_LaserFrequencyScan_SIL5_green_gv_0.0.npz',5]
 SIL1 = [71,78.4,r'D:\measuring\data\20130702\171520_LaserFrequencyScan_SIL1_red_gv_0.0\171520_LaserFrequencyScan_SIL1_red_gv_0.0.npz',1]
 datafolders=[SIL1,SIL5,SIL7,SIL8,SIL9,SIL10,SIL11,SIL15,SIL18]
-'''
+
 SIL1 = [32.6,49.3,r'D:\measuring\data\20130812\132500_LaserFrequencyScan_red_scan_coarse_Hans_SIL1_1nW_mw_gv_0.0\132500_LaserFrequencyScan_red_scan_coarse_Hans_SIL1_1nW_mw_gv_0.0.npz',1]
 SIL3 = [39.4,56.7,r'D:\measuring\data\20130812\135005_LaserFrequencyScan_red_scan_coarse_Hans_SIL3_1nW_mw_gv_0.0\135005_LaserFrequencyScan_red_scan_coarse_Hans_SIL3_1nW_mw_gv_0.0.npz',3]
 SIL4 = [61,63.17,r'D:\measuring\data\20130812\142112_LaserFrequencyScan_red_scan_coarse_Hans_SIL4_1nW_mw_gv_0.0\142112_LaserFrequencyScan_red_scan_coarse_Hans_SIL4_1nW_mw_gv_0.0.npz',4]
 SIL5 = [35.2,50.5,r'D:\measuring\data\20130812\154026_LaserFrequencyScan_red_scan_coarse_Hans_SIL5_1nW_mw_gv_0.0\154026_LaserFrequencyScan_red_scan_coarse_Hans_SIL5_1nW_mw_gv_0.0.npz',5]
 SIL7 = [68,74.5,r'D:\measuring\data\20130812\160400_LaserFrequencyScan_red_scan_coarse_Hans_SIL7_1nW_mw_gv_0.0\160400_LaserFrequencyScan_red_scan_coarse_Hans_SIL7_1nW_mw_gv_0.0.npz',7]
+'''
+
+SIL9 = [55.6,62.1,r'X:\data\20131015\121526_LaserFrequencyScan_red_scan_coarse_lt2_sil9_MWs_gv_0']
+SIL10 = [55.6,62.1,r'X:\data\20131015\132133_LaserFrequencyScan_red_scan_coarse_lt2_sil10_Green_gv_0']
+SIL18 = [50.12,55.0,r'X:\data\20131015\134109_LaserFrequencyScan_red_scan_coarse_lt2_sil18_Green_gv_0']
+SIL5 = [39.6,48.97,r'X:\data\20131015\135226_LaserFrequencyScan_red_scan_coarse_lt2_sil5_Green_gv_0']
 
 
 
-datafolders=[SIL1,SIL3,SIL4,SIL5,SIL7]#,SIL8,SIL11,SIL15,SIL18]
+datafolders=[SIL9]#,SIL8,SIL11,SIL15,SIL18]
 plt.figure(9)
 j=0
 n=25.5
