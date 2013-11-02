@@ -481,7 +481,7 @@ def tail_cts_per_shot_txt_file(datapath, filename, lower,
         elif tail_mode == 2:
             counts_res = counts_ch0+counts_ch1
     else:
-        data_res = np.loadtxt(os.path.join(datapath,filename))
+        data_res = np.loadtxt(os.path.join(datapath,filename), skiprows=10)
         counts_ch0 = data_res[:,0]
         counts_ch1 = data_res[:,1]
         if tail_mode == 1:
