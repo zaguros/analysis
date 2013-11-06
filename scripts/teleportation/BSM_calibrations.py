@@ -5,7 +5,7 @@ import h5py
 import logging
 import pprint
 
-from analysis.lib.fitting import fit, rabi
+from analysis.lib.fitting import fit
 from analysis.lib.tools import plot
 from measurement.lib.tools import toolbox
 
@@ -43,27 +43,26 @@ def stage_2_calibrations():
     fast_pi_amp = fast_pi(ax1)
     
     print 80*'='
-    print 'fast pi/2 pulse'
-    print 80*'='
-    fast_pi2_amp = fast_pi2(ax2)
-
-    print 80*'='
     print 'CORPSE pi'
     print 80*'='
-    CORPSE_pi_amp = CORPSE_pi(ax3)
+    CORPSE_pi_amp = CORPSE_pi(ax2)
 
     print 80*'='
     print 'pi2pi'
     print 80*'='
-    pi2pi_pi_amp = pi_pi2pi(ax4)
+    pi2pi_pi_amp = pi_pi2pi(ax3)
+
+    print 80*'='
+    print 'pi2pi, m_I=0'
+    print 80*'='
+    pi2pi_pi_mI0_amp = pi_pi2pi_mI0(ax4)
 
 def stage_3a_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
     print 'Nitrogen driving frequency'
     print 80*'='
-    nitrogen_frequency = N_frq(ax)  
-
+    nitrogen_frequency = N_frq(ax)
 
 def stage_3_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
@@ -79,19 +78,18 @@ def stage_4_calibrations():
     print 80*'='
     CORPSE_pi_phase = CORPSE_phase(ax)    
 
-def stage_5_calibrations(small_range=False):
-    if small_range:
-        fig, ax = plt.subplots(1,1, figsize = (5,3))
-        print 80*'='
-        print 'UNROT evolution time calibration small_range'
-        print 80*'='
-        UNROT_evolution_time = UNROT_evtime(ax)
-    else:
-        fig, ax = plt.subplots(1,1, figsize = (5,3))
-        print 80*'='
-        print 'UNROT evolution time calibration (look for the maximum)'
-        print 80*'='
-        UNROT_evolution_time = UNROT_evtime_large_range(ax)
+def stage_5_calibrations():
+    # fig, ax = plt.subplots(1,1, figsize = (5,3))
+    # print 80*'='
+    # print 'UNROT evolution time calibration'
+    # print 80*'='
+    # UNROT_evolution_time = UNROT_evtime(ax)
+
+    fig, ax = plt.subplots(1,1, figsize = (5,3))
+    print 80*'='
+    print 'UNROT evolution time calibration (look for the maximum)'
+    print 80*'='
+    UNROT_evolution_time = UNROT_evtime_large_range(ax)
 
 def stage_6_calibrations():
     # fig, ax = plt.subplots(1,1, figsize = (5,3))
@@ -371,11 +369,13 @@ def slow_pi(ax=None):
     folder = toolbox.latest_data('cal_slow_pi_'+name)
     if ax==None:
         fig,ax = plt.subplots(1,1)
-    fit_result = calibrate_epulse_rabi(folder, ax, 1./.04, 0.5)
+    fit_result = calibrate_epulse_rabi(folder, ax, 0.015, 1.0, 0., fit_x0 = False, fit_k = False)
 
     f = fit_result['params_dict']['f']
     u_f = fit_result['error_dict']['f']
-    ax.text(0.02, 0.4, 'pi = (%.4f +/- %.4f) V' % (0.5/f, 0.5/f**2 * u_f),
+    #ax.text(500, 0.4, 'pi = (%.0f +/- %.0f) ns' % (0.5/f, 0.5/f**2 * u_f),
+    #    va='bottom', ha='left')
+    ax.text(0.015, 0.4, 'pi = (%.4f +/- %.4f) V' % (0.5/f, 0.5/f**2 * u_f),
         va='bottom', ha='left')
     
     return (0.5/f, 0.5/f**2 * u_f)
@@ -434,13 +434,13 @@ def CORPSE_pi(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-    x_guess = 0.52    
-    fit_result = calibrate_epulse_amplitude(folder, ax, x_guess,  1, 0)
+        
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.53,  1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(x_guess, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(0.53, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
 
@@ -455,7 +455,7 @@ def N_frq(ax=None):
     ax.text(7.1, 0.3, '$N_{frq}$ = (%.3f +/- %.3f) MHz' % (x0, u_x0),
         va='bottom', ha='left')
 
-    return (x0, u_x0)
+    return (f*1e3, u_f*1e3)
 
 
 def N_rabi(ax=None):
@@ -466,7 +466,7 @@ def N_rabi(ax=None):
 
     f = fit_result['params_dict']['f']
     u_f = fit_result['error_dict']['f']
-    ax.text(100, 0.9, '$f_r$ = (%.3f +/- %.3f) kHz' % (f*1e3, u_f*1e3),
+    ax.text(100, 0.9, '$f_r$ = (%.3f +/- %.3f) MHz' % (f*1e3, u_f*1e3),
         va='bottom', ha='left')
     ax.text(100, 0.7, 'pi pulse = (%.3f +/- %.3f) us' % (1./(2*f), 1./(2*f)*u_f/f),
         va='bottom', ha='left')
@@ -480,13 +480,13 @@ def CORPSE_phase(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-    guess_x0 = 88
-    fit_result = calibrate_epulse_rabi(folder, ax, 1./360, 0.5, guess_x0=guess_x0, double_ro='electron', fit_x0 = True)
+        
+    fit_result = calibrate_epulse_amplitude(folder, ax, 107, 1, 0., double_ro='electron')
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(guess_x0, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(100, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A 
 
@@ -513,7 +513,7 @@ def UNROT_evtime_large_range(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-    guess_x0 = 50.6
+    guess_x0 =  52.5   
     fit_result = calibrate_epulse_rabi(folder, ax, 1./0.45, 0.5, guess_x0=guess_x0, double_ro='nitrogen', fit_x0 = True)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
@@ -542,13 +542,13 @@ def spin_echo(ax=None, do_print_text=True):
 
 
 def Hadamard_phase(ax=None, do_print_text=True):
-    folder = toolbox.latest_data('TestBSM_superposition_in') # _'+name)
+    folder = toolbox.latest_data('TestBSM_LDE_calibrate_H_phase') # _'+name)
     
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_parabolic(folder, ax, 10, 1, 0., which_correlation=2)
+    fit_result = fit_correlation_parabolic(folder, ax, 100, 1, 0., which_correlation=0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
@@ -557,13 +557,13 @@ def Hadamard_phase(ax=None, do_print_text=True):
     return A, u_A 
 
 def Hadamard_phase_large_range(ax=None, do_print_text=True):
-    folder = toolbox.latest_data('TestBSM') # _'+name)
+    folder = toolbox.latest_data('TestBSM_LDE_calibrate_H_phase') # _'+name)
     
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_correlation_oscillation(folder, ax, 10, 1./360, 0.25, which_correlation=2)
+    fit_result = fit_correlation_oscillation(folder, ax, 100, 1./360, 0.25, which_correlation=0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
@@ -577,13 +577,13 @@ def Hadamard_ev_time(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-    x0_guess = 35
-    fit_result = fit_correlation_parabolic(folder, ax, x0_guess, 1, 0., which_correlation=1)
+        
+    fit_result = fit_correlation_parabolic(folder, ax, 35.0, 1, 0., which_correlation=3)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
 
     if do_print_text:
-        ax.text(x0_guess, 0.8, 'evo time = (%.3f +/- %.3f) us' % (A, u_A))
+        ax.text(35.0, 0.8, 'evo time = (%.3f +/- %.3f) us' % (A, u_A))
 
     return A, u_A 
 
@@ -593,13 +593,13 @@ def Hadamard_ev_time_large_range(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-    x0_guess = 35 
-    fit_result = fit_correlation_oscillation(folder, ax, x0_guess, 1./0.5, -0.25, which_correlation=1)
+        
+    fit_result = fit_correlation_oscillation(folder, ax, 35.08, 1./0.05/10., 0.25, which_correlation=3)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(x0_guess, 0.8, 'H ev_time = (%.4f +/- %.4f) ' % (A, u_A))
+        ax.text(35.07, 0.8, 'H phase = (%.4f +/- %.4f) ' % (A, u_A))
     return A, u_A 
 
 def pi_pi2pi(ax=None, do_print_text=True):
@@ -608,14 +608,13 @@ def pi_pi2pi(ax=None, do_print_text=True):
     if ax==None:
         do_print_text = False
         fig,ax = plt.subplots(1,1)
-    
-    x_guess = 0.11
-    fit_result = calibrate_epulse_amplitude(folder, ax, x_guess , 1, 0)
+        
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.11, 1, 0)#ax, 0.085, 1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(x_guess, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(0.1, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
 
@@ -625,90 +624,90 @@ def pi_pi2pi_mI0(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.165, 1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.11, 1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    ax.text(0.1, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
 
-#### Not fully finished yet
+# #### Not fully finished yet
 
-def pi_397ns(ax=None):
-    folder = toolbox.latest_data('cal_397ns_pi_'+name)
+# def pi_397ns(ax=None):
+#     folder = toolbox.latest_data('cal_397ns_pi_'+name)
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.16,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.16,  1, 0)
 
-def hard_pi_duration(ax=None):
-    folder = toolbox.latest_data('cal_hard_pi_dur_'+name)
+# def hard_pi_duration(ax=None):
+#     folder = toolbox.latest_data('cal_hard_pi_dur_'+name)
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 120,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 120,  1, 0)
 
-def hard_pi_amplitude(ax=None):
-    folder = toolbox.latest_data('cal_hard_pi_amp_'+name)
+# def hard_pi_amplitude(ax=None):
+#     folder = toolbox.latest_data('cal_hard_pi_amp_'+name)
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.85,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.85,  1, 0)
           
     
-def CORPSE(ax=None):
-    folder = toolbox.latest_data('Test_CORPSE')
+# def CORPSE(ax=None):
+#     folder = toolbox.latest_data('Test_CORPSE')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     
-def CORPSE_60(ax=None):
-    folder = toolbox.latest_data('cal_CORPSE60')
+# def CORPSE_60(ax=None):
+#     folder = toolbox.latest_data('cal_CORPSE60')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
 
-def CORPSE_60_duration(ax=None):
-    folder = toolbox.latest_data('CORPSE_vs_60length')
+# def CORPSE_60_duration(ax=None):
+#     folder = toolbox.latest_data('CORPSE_vs_60length')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 52,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 52,  1, 0)
      
     
-def CORPSE_m300(ax=None):
-    folder = toolbox.latest_data('cal_CORPSEm300')
+# def CORPSE_m300(ax=None):
+#     folder = toolbox.latest_data('cal_CORPSEm300')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     
-def CORPSE_420(ax=None):
-    folder = toolbox.latest_data('cal_CORPSE420')
+# def CORPSE_420(ax=None):
+#     folder = toolbox.latest_data('cal_CORPSE420')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     
-def CORPSE_fidelity(ax=None):
-    folder = toolbox.latest_data('CORPSE')
+# def CORPSE_fidelity(ax=None):
+#     folder = toolbox.latest_data('CORPSE')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = epulse_fidelity(folder, ax, 1)
+#     fit_result = epulse_fidelity(folder, ax, 1)
   
                                 
-if __name__ == '__main__':
-    # calibrate_all()
-    stage_1_calibrations()
+# if __name__ == '__main__':
+#     # calibrate_all()
+#     stage_1_calibrations()

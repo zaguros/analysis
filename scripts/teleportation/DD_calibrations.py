@@ -18,7 +18,7 @@ reload(ssro)
 reload(dark_esr_analysis)
 
 # adapt
-name = 'sil4'
+name = 'sil10'
 pi2_4mhz_value = 1. - 0.473
 
 
@@ -34,7 +34,7 @@ def stage_0p5_calibrations():
         print_info=False)
 
 def stage_1_calibrations():
-    fig, ([ax1,ax2]) = plt.subplots(1,2, figsize = (10,4))
+    fig, ax = plt.subplots(1,1, figsize = (5,4))
     # print 80*'='
     # print '8 MHz electron Rabi'
     # print 80*'='
@@ -43,12 +43,20 @@ def stage_1_calibrations():
     print 80*'='
     print 'CORPSE pi'
     print 80*'='
-    CORPSE_pi_amp = CORPSE_pi(ax1)
+    CORPSE_pi_amp = CORPSE_pi(ax)
+
+    # print 80*'='
+    # print 'CORPSE pi/2'
+    # print 80*'='
+    # CORPSE_pi2_amp = CORPSE_pi2(ax2)
+
+def stage_1p5_calibrations():
+    fig, ax = plt.subplots(1,1, figsize = (5,4))
 
     print 80*'='
-    print 'CORPSE pi/2'
+    print 'CORPSE vs effective angle'
     print 80*'='
-    CORPSE_pi2_amp = CORPSE_pi2(ax2)
+    CORPSE_pi_amp = CORPSE_vs_angle(ax)
 
 def stage_2_calibrations():
     # fig, ax = plt.subplots(1,1, figsize = (5,4))
@@ -276,7 +284,7 @@ def rabi_8mhz(ax=None):
 
 
 def CORPSE_pi(ax=None):
-    folder = toolbox.latest_data('145946')#'CORPSEPiCalibration') 
+    folder = toolbox.latest_data('CORPSEPiCalibration') 
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
@@ -290,23 +298,39 @@ def CORPSE_pi(ax=None):
     ax.text(0.42, 0.8, 'fid = (%.3f +/- %.3f) V' % (of, u_of))
     return A, u_A 
 
-
-def CORPSE_pi2(ax=None):
-    folder = toolbox.latest_data('CORPSEPi2Calibration') 
+def CORPSE_vs_angle(ax=None):
+    folder = toolbox.latest_data('CORPSECalibration') 
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = fit_linear(folder, ax, -1,  1)
-    a = fit_result['params_dict']['a']
-    b = fit_result['params_dict']['b']
-    u_a = fit_result['error_dict']['a']
-    u_b = fit_result['error_dict']['b']
-    A = (0.5 - b) / a
-    u_A = np.sqrt(A**2) * np.sqrt ( (u_a/a)**2 + (u_b/b)**2 )
-    ax.text(0.42, 0.2, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    f0 = 1./360
+    fit_result = calibrate_epulse_rabi(folder, ax, f0, 0.5, fit_k=False)
 
-    return A, u_A 
+    f = fit_result['params_dict']['f']
+    u_f = fit_result['error_dict']['f']
+    ax.text(50, 0.35, '$f_r$ = (%.6f +/- %.6f) \n $(f_r-f_0)/f_0$ = %.3f'  % (f, u_f, (f - f0)/f0),
+        va='bottom', ha='left')
+
+    return f, u_f 
+
+
+# def CORPSE_pi2(ax=None):
+#     folder = toolbox.latest_data('CORPSECalibration') 
+    
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
+        
+#     fit_result = fit_linear(folder, ax, -1,  1)
+#     a = fit_result['params_dict']['a']
+#     b = fit_result['params_dict']['b']
+#     u_a = fit_result['error_dict']['a']
+#     u_b = fit_result['error_dict']['b']
+#     A = (0.5 - b) / a
+#     u_A = np.sqrt(A**2) * np.sqrt ( (u_a/a)**2 + (u_b/b)**2 )
+#     ax.text(0.42, 0.2, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+
+#     return A, u_A 
  
 def C13_rev_small_range(ax=None):
     folder = toolbox.latest_data('calibrate_first_revival') 
@@ -353,7 +377,7 @@ def DD_spin_echo(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.55,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, -.15,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     ax.text(0., 0.5, 'dt = (%.3f +/- %.3f) us' % (A, u_A))
