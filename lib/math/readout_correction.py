@@ -10,7 +10,7 @@ def single_qubit_outcome_with_ROC(zero_events, all_events, F0, u_F0, F1, u_F1):
 	returns P(0), u_P(0)
 	'''
 	if type(zero_events) == int or type(zero_events) == float:
-		frac0 = float(ms0_events)/all_events
+		frac0 = float(zero_events)/all_events
 		u_frac0 = np.sqrt(frac0*(1.-frac0)/all_events)
 	else:
 		raise('Only implemented so far for a single result. Change me!!!! :)')

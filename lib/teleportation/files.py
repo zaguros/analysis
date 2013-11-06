@@ -49,7 +49,7 @@ def delete_analysis_data(fp, name, subgroup=None):
         raise
 
     try:
-        agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
         if name in agrp.keys():
             del agrp[name]
         f.flush()
@@ -66,7 +66,7 @@ def set_analysis_data(fp, name, data, subgroup=None, **kw):
         raise
     
     try:
-        agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
         if name in agrp.keys():
             del agrp[name]
         agrp[name] = data
@@ -88,7 +88,7 @@ def has_analysis_data(fp, name, subgroup=None):
         print "Cannot open file", fp
         raise
     
-    agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+    agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
     if name in agrp.keys():
         f.close()
         return True
@@ -103,7 +103,7 @@ def get_analysis_data(fp, name, subgroup=None):
         print "Cannot open file", fp
         raise
         
-    agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+    agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
     
     if name not in agrp.keys():
         return None
