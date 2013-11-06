@@ -289,7 +289,7 @@ def CORPSE_pi(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.44,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.38,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     of = fit_result['params_dict']['of']
@@ -377,7 +377,7 @@ def DD_spin_echo(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, -.15,  1, 0 )
+    fit_result = calibrate_epulse_amplitude(folder, ax, -.1,  1, 0 )
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     ax.text(0., 0.5, 'dt = (%.3f +/- %.3f) us' % (A, u_A))
