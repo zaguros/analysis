@@ -12,7 +12,7 @@ from analysis.lib.m2.ssro import ssro
 
 
 folder = None
-timestamp = None
+timestamp =  None
 
 if folder == None:
     if timestamp != None:

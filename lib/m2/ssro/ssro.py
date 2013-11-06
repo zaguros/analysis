@@ -30,7 +30,6 @@ def get_SSRO_calibration(folder, readout_time):
 
     return f0, u_f0, f1, u_f1
 
-
 # analysis classes and shortcut functions
 class SSROAnalysis(m2.M2Analysis):
     
@@ -70,7 +69,7 @@ class SSROAnalysis(m2.M2Analysis):
             fig = plt.figure()
             ax = fig.add_subplot(111)
             ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts', 
-                    normed=True, stacked=True)
+                    normed=True) # , stacked=True)
             ax.set_xlabel('cts/shot')
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)

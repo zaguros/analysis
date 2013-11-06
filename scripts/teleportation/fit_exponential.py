@@ -18,7 +18,7 @@ timestamp = None#'20130823183658'# None#'20130802141105'#'20130731181935' # '201
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('183658')
+    folder = toolbox.latest_data()
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name = 'adwindata')
@@ -35,15 +35,15 @@ ax = a.plot_results_vs_sweepparam(ret='ax', name= 'adwindata')
 x = a.sweep_pts.reshape(-1)[:]
 y = a.normalized_ssro.reshape(-1)[:]
 
-a = fit.Parameter(-0.5, 'a')
+a = fit.Parameter(0.5, 'a')
 o = fit.Parameter(0.5, 'o')
-c = fit.Parameter(1500, 'c')
+c = fit.Parameter(12, 'c')
 fitfunc_str = 'o - a exp(-(x/c)**2)'
 
 def fitfunc(x):
     return o() + a() * np.exp( -(x)**2 / (c()**2))
 
-fit_result = fit.fit1d(x,y, None, p0=[o,c,a], fixed=[0,2], fitfunc=fitfunc,
+fit_result = fit.fit1d(x,y, None, p0=[o,c,a], fixed=[0], fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False)
