@@ -11,7 +11,6 @@ from analysis.lib.spin import N_and_e_spin_correction
 reload(N_and_e_spin_correction)
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
-from sequence_ssro import SequenceSSROAnalysis
 from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 
