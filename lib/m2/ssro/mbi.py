@@ -20,6 +20,7 @@ class MBIAnalysis(m2.M2Analysis):
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
+        self.adgrp = adwingrp
 
         self.reps = adwingrp.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']

@@ -43,27 +43,26 @@ def stage_2_calibrations():
     fast_pi_amp = fast_pi(ax1)
     
     print 80*'='
-    print 'fast pi/2 pulse'
-    print 80*'='
-    #fast_pi2_amp = fast_pi2(ax2)
-
-    print 80*'='
     print 'CORPSE pi'
     print 80*'='
-    CORPSE_pi_amp = CORPSE_pi(ax3)
+    CORPSE_pi_amp = CORPSE_pi(ax2)
 
     print 80*'='
     print 'pi2pi'
     print 80*'='
-    pi2pi_pi_amp = pi_pi2pi(ax4)
+    pi2pi_pi_amp = pi_pi2pi(ax3)
+
+    print 80*'='
+    print 'pi2pi, m_I=0'
+    print 80*'='
+    pi2pi_pi_mI0_amp = pi_pi2pi_mI0(ax4)
 
 def stage_3a_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
     print 80*'='
     print 'Nitrogen driving frequency'
     print 80*'='
-    nitrogen_frequency = N_frq(ax)  
-
+    nitrogen_frequency = N_frq(ax)
 
 def stage_3_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
@@ -615,7 +614,7 @@ def pi_pi2pi(ax=None, do_print_text=True):
     u_A = fit_result['error_dict']['x0']
     
     if do_print_text:
-        ax.text(0.11, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+        ax.text(0.1, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
 
@@ -625,90 +624,90 @@ def pi_pi2pi_mI0(ax=None):
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.165, 1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.11, 1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
-    ax.text(0.16, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+    ax.text(0.1, 0.5, 'A = (%.3f +/- %.3f) V' % (A, u_A))
 
     return A, u_A
 
-#### Not fully finished yet
+# #### Not fully finished yet
 
-def pi_397ns(ax=None):
-    folder = toolbox.latest_data('cal_397ns_pi_'+name)
+# def pi_397ns(ax=None):
+#     folder = toolbox.latest_data('cal_397ns_pi_'+name)
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.16,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.16,  1, 0)
 
-def hard_pi_duration(ax=None):
-    folder = toolbox.latest_data('cal_hard_pi_dur_'+name)
+# def hard_pi_duration(ax=None):
+#     folder = toolbox.latest_data('cal_hard_pi_dur_'+name)
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 120,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 120,  1, 0)
 
-def hard_pi_amplitude(ax=None):
-    folder = toolbox.latest_data('cal_hard_pi_amp_'+name)
+# def hard_pi_amplitude(ax=None):
+#     folder = toolbox.latest_data('cal_hard_pi_amp_'+name)
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.85,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.85,  1, 0)
           
     
-def CORPSE(ax=None):
-    folder = toolbox.latest_data('Test_CORPSE')
+# def CORPSE(ax=None):
+#     folder = toolbox.latest_data('Test_CORPSE')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     
-def CORPSE_60(ax=None):
-    folder = toolbox.latest_data('cal_CORPSE60')
+# def CORPSE_60(ax=None):
+#     folder = toolbox.latest_data('cal_CORPSE60')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
 
-def CORPSE_60_duration(ax=None):
-    folder = toolbox.latest_data('CORPSE_vs_60length')
+# def CORPSE_60_duration(ax=None):
+#     folder = toolbox.latest_data('CORPSE_vs_60length')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 52,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 52,  1, 0)
      
     
-def CORPSE_m300(ax=None):
-    folder = toolbox.latest_data('cal_CORPSEm300')
+# def CORPSE_m300(ax=None):
+#     folder = toolbox.latest_data('cal_CORPSEm300')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     
-def CORPSE_420(ax=None):
-    folder = toolbox.latest_data('cal_CORPSE420')
+# def CORPSE_420(ax=None):
+#     folder = toolbox.latest_data('cal_CORPSE420')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
+#     fit_result = calibrate_epulse_amplitude(folder, ax, 0.68,  1, 0)
     
-def CORPSE_fidelity(ax=None):
-    folder = toolbox.latest_data('CORPSE')
+# def CORPSE_fidelity(ax=None):
+#     folder = toolbox.latest_data('CORPSE')
     
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
+#     if ax==None:
+#         fig,ax = plt.subplots(1,1)
         
-    fit_result = epulse_fidelity(folder, ax, 1)
+#     fit_result = epulse_fidelity(folder, ax, 1)
   
                                 
-if __name__ == '__main__':
-    # calibrate_all()
-    stage_1_calibrations()
+# if __name__ == '__main__':
+#     # calibrate_all()
+#     stage_1_calibrations()
