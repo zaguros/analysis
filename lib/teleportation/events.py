@@ -120,7 +120,7 @@ def filter_marker(fp, chan):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
-    is_mrkr = events.get_markers(fp, chan)
+    is_mrkr = get_markers(fp, chan)
         
     f = h5py.File(fp, 'r')
     sync_numbers = f['/HH_sync_number-1'].value
