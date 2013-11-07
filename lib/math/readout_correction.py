@@ -13,7 +13,8 @@ def single_qubit_outcome_with_ROC(zero_events, all_events, F0, u_F0, F1, u_F1):
 		frac0 = float(zero_events)/all_events
 		u_frac0 = np.sqrt(frac0*(1.-frac0)/all_events)
 	else:
-		raise('Only implemented so far for a single result. Change me!!!! :)')
+		frac0 = zero_events.astype(float)/float(all_events)
+		u_frac0 = np.sqrt(frac0*(1.-frac0)/all_events)
 
 	roc = error.SingleQubitROC()
 	roc.F0, roc.u_F0, roc.F1, roc.u_F1 = F0, u_F0, F1, u_F1

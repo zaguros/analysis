@@ -3,6 +3,8 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 
+from analysis.lib.math import readout_correction as roc
+
 import files, events, settings, stats
 
 ##############################################################################
@@ -98,6 +100,50 @@ def plot_tail(fp, **kw):
     if ret=='subplots':
         return fig, (ax0, ax1)
 
+def plot_PLU_filter(folder):
+    fp = files.get_msmt_fp(folder)
+
+    # get the PLU marked photons first
+    is_ph_ch0, is_ph_ch1 = events.get_photons(fp)
+    is_ph = is_ph_ch0 | is_ph_ch1
+    is_ph_with_PLU_mrkr = is_ph & events.filter_marker(fp, 2)
+
+    # first window
+    fig, (ax0, ax1) = plot_photon_hist_filter_comparison(
+        fp, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
+        binedges=settings.PHOTONHIST_BINEDGES)
+
+    ax0.axvline(settings.CH0_START, color='k', linestyle='--')
+    ax0.text(settings.CH0_START+1, 1, '{} ns'.format(settings.CH0_START), color='k')
+    ax0.legend()
+    ax0.set_title('PLU (hardware) filter first pi-pulse ch0')
+
+    ax1.axvline(settings.CH1_START, color='k', linestyle='--')
+    ax1.text(settings.CH1_START+1, 1, '{} ns'.format(settings.CH1_START), color='k')
+    ax1.legend()
+    ax1.set_title('PLU (hardware) filter first pi-pulse ch1')
+
+    fig.savefig(os.path.join(folder, 'PLU_photons_window1.png'))
+
+    # second window
+    fig, (ax0, ax1) = plot_photon_hist_filter_comparison(
+        fp, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
+        binedges=settings.PHOTONHIST_BINEDGES + settings.PIPULSESEP)
+
+    ax0.axvline(settings.CH0_START+settings.PIPULSESEP, color='k', linestyle='--')
+    ax0.text(settings.CH0_START+settings.PIPULSESEP+1, 
+        1, '{} ns'.format(settings.CH0_START+settings.PIPULSESEP), color='k')
+    ax0.legend()
+    ax0.set_title('PLU (hardware) filter second pi-pulse ch0')
+
+    ax1.axvline(settings.CH1_START+settings.PIPULSESEP, color='k', linestyle='--')
+    ax1.text(settings.CH1_START+settings.PIPULSESEP+1, 
+        1, '{} ns'.format(settings.CH1_START+settings.PIPULSESEP), color='k')
+    ax1.legend()
+    ax1.set_title('PLU (hardware) filter second pi-pulse ch1')
+     
+    fig.savefig(os.path.join(folder, 'PLU_photons_window2.png'))
+
 
 ##############################################################################
 ### CR stat plotting
@@ -135,5 +181,125 @@ def plot_CR_hist_sequence_timeout(fp):
     fig.suptitle(files.get_msmt_header(fp) + ' -- CR histogram sequence timeout')
     folder, _fn = os.path.split(fp)
     fig.savefig(os.path.join(folder, 'CR_histogram_sequence_timeout.png'))
+
+
+##############################################################################
+### Readout correlations
+##############################################################################
+
+def plot_raw_readout_correlations(BSM_outcomes_psiminus, BSM_outcomes_psiplus, 
+    Bob_outcomes_psiminus, Bob_outcomes_psiplus, **kw):
+    
+    BSM_outcome_names = ['00', '01', '10', '11']
+
+    fig, ((ax_bsm_psiminus,ax_bob_psiminus), (ax_bsm_psiplus, ax_bob_psiplus)) = \
+        plt.subplots(2,2, figsize=(10,8), sharex=True)
+
+    for outcome in range(4):
+        ax_bsm_psiminus.bar(outcome, BSM_outcomes_psiminus[outcome], width=0.7, 
+                            color=settings.COLORS[0], ecolor='k')    
+        # ax_bsm_psiminus.text(outcome+0.35, 1.01,
+        #          '{}'.format(int(Bob_outcomes_psiminus[outcome,:].sum())),
+        #          ha='center', va='bottom',
+        #          color=settings.COLORS[0])
+        # ax_bsm_psiminus.text(outcome+0.35, BSM_probs_psiminus[outcome] + 0.05,
+        #          "{:.1f}%".format(BSM_probs_psiminus[outcome]*100),
+        #          va='bottom', ha='center')
+        
+        ax_bob_psiminus.bar(outcome, Bob_outcomes_psiminus[outcome,0],
+                            width=0.3, color=settings.COLORS[1],
+                            label = 'ms = 0' if outcome == 0 else '')
+        ax_bob_psiminus.bar(outcome+0.35, Bob_outcomes_psiminus[outcome,1],
+                            width=0.3, color=settings.COLORS[2],
+                            label = 'ms = 1' if outcome == 0 else '')
+        # ax_bob_psiminus.text(outcome+0.35, 1.01,
+        #          '{}'.format(int(Bob_outcomes_psiminus[outcome,0])),
+        #          ha='center', va='bottom',
+        #          color=settings.COLORS[1])
+        
+        ax_bsm_psiplus.bar(outcome, BSM_outcomes_psiplus[outcome], width=0.7, 
+                            color=settings.COLORS[0], ecolor='k')    
+        # ax_bsm_psiplus.text(outcome+0.35, 1.01,
+        #          '{}'.format(int(Bob_outcomes_psiplus[outcome,:].sum())),
+        #          ha='center', va='bottom',
+        #          color=settings.COLORS[0])
+        # ax_bsm_psiplus.text(outcome+0.35, BSM_probs_psiplus[outcome] + 0.05,
+        #          "{:.1f}%".format(BSM_probs_psiplus[outcome]*100),
+        #          va='bottom', ha='center')
+        
+        ax_bob_psiplus.bar(outcome, Bob_outcomes_psiplus[outcome,0],
+                            width=0.3, color=settings.COLORS[1])
+        ax_bob_psiplus.bar(outcome+0.35, Bob_outcomes_psiplus[outcome,1],
+                            width=0.3, color=settings.COLORS[2])
+        
+        # ax_bob_psiplus.text(outcome+0.35, 1.01,
+        #          '{}'.format(int(Bob_outcomes_psiplus[outcome,0])),
+        #          ha='center', va='bottom',
+        #          color=settings.COLORS[1])
+
+    ax_bsm_psiminus.set_xlim(-0.1, 3.8)
+    ax_bsm_psiminus.set_xticks(np.arange(4)+0.35)
+    ax_bsm_psiminus.set_xticklabels(BSM_outcome_names)
+    ax_bsm_psiminus.set_title('Psi- BSM outcomes')
+    ax_bsm_psiminus.set_ylabel('Events')
+    # ax_bsm_psiminus.set_ylim(-0.05, 1.2)
+    # ax_bsm_psiminus.axhline(0, c='k', ls=':')
+    # ax_bsm_psiminus.axhline(1, c='k', ls=':')
+
+    # ax_bob_psiminus.set_ylim(-0.05, 1.2)
+    # ax_bob_psiminus.axhline(0, c='k', ls=':')
+    # ax_bob_psiminus.axhline(1, c='k', ls=':')
+    ax_bob_psiminus.set_title('Psi- Bob readout')
+    ax_bob_psiminus.set_ylabel('Conditional results for Bob')
+    ax_bob_psiminus.legend(loc='best')
+
+    ax_bsm_psiplus.set_title('Psi+ BSM outcomes')
+    ax_bsm_psiplus.set_ylabel('Events')
+    # ax_bsm_psiplus.set_ylim(-0.05, 1.2)
+    # ax_bsm_psiplus.axhline(0, c='k', ls=':')
+    # ax_bsm_psiplus.axhline(1, c='k', ls=':')
+
+    # ax_bob_psiplus.set_ylim(-0.05, 1.2)
+    # ax_bob_psiplus.axhline(0, c='k', ls=':')
+    # ax_bob_psiplus.axhline(1, c='k', ls=':')
+    ax_bob_psiplus.set_title('Psi+ Bob readout')
+    ax_bob_psiplus.set_ylabel('Conditional results for Bob')
+       
+    ax_bsm_psiplus.set_xlabel('BSM results (N,e)')
+    ax_bob_psiplus.set_xlabel('BSM results (N,e)')
+
+    fig.suptitle('BSM / Bob SSRO Correlations')
+    # fig.savefig(os.path.join(folder, 'BSM-BobSSRO-correlations.png'))
+
+
+def plot_single_roc(zero_events, one_events, *ssro_fids, **kw):
+    fig, ax = plt.subplots(1,1, figsize=(4.5,4))
+
+    frac0 = float(zero_events)/(zero_events+one_events)
+    u_frac0 = np.sqrt(frac0*(1.-frac0)/(zero_events+one_events))
+
+    p0, u_p0 = roc.single_qubit_outcome_with_ROC(zero_events, zero_events+one_events, *ssro_fids)
+
+    ax.bar(range(2), [frac0, p0], 
+        color=[settings.COLORS[0], settings.COLORS[1]],
+        align='center', yerr=[u_frac0, u_p0], 
+        ecolor='k', width=0.8)
+
+    ax.text(0, 1.05, '{:.0f}+/-{:.0f} %'.format(frac0*100., u_frac0*100.),
+        ha='center', va='bottom', color=settings.COLORS[0])
+    ax.text(1, 1.05, '{:.0f}+/-{:.0f} %'.format(p0*100., u_p0*100.),
+        ha='center', va='bottom', color=settings.COLORS[1])
+
+    ax.set_xlim(-0.5,1.5)
+    ax.set_ylim(-0.05, 1.15)
+    ax.set_ylabel('P ($m_s =\, 0$)')
+
+    ax.set_xticks([0,1])
+    ax.set_xticklabels(['Raw', 'Corrected'])
+    ax.axvline(0.5, c='k', ls='--')
+    ax.axhline(0, c='k', ls=':')
+    ax.axhline(1, c='k', ls=':')
+
+    return fig, ax
 
 
