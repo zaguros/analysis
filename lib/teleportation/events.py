@@ -230,6 +230,30 @@ def fit_tail(fp, **kw):
 ### Teleportation events
 ##############################################################################
 
+def get_success_attempts(folder):
+    fp = files.get_msmt_fp(folder)
+    fname = files.get_msmt_name(fp)
+
+    f = h5py.File(fp, 'r')
+    sync_times = f['/HH_sync_time-1'].value * 1e-3 # we prefer ns over ps
+    sync_numbers = f['/HH_sync_number-1'].value
+    f.close()
+
+    is_PLU_mrkr = get_markers(fp, 2)
+    PLU_mrkr_sync_numbers = sync_numbers[is_PLU_mrkr]
+
+    attempts = np.zeros(PLU_mrkr_sync_numbers.size)
+    of = 0
+    for i, sn in enumerate(PLU_mrkr_sync_numbers):
+        a = (sn-of) % settings.SEQREPS
+        of = sn
+        attempts[i] = a
+
+    files.set_analysis_data(fp, 'successful_attempt_numbers', attempts)
+
+    return attempts
+
+
 def get_teleportation_events(folder, force_eval=False, verbose=True):
     fp = files.get_msmt_fp(folder)
     fname = files.get_msmt_name(fp)

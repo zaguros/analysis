@@ -156,7 +156,7 @@ def _plot_CR_hist(ax, heights, **kw):
     ax.set_ylabel('Events')
     ax.set_title(kw.get('title', ''))
     ax.set_xlim(-0.5, len(heights)-0.5 if len(heights) > 0 else 0.5)
-    
+   
 ### plotting of histograms
 def plot_CR_hist_total(fp):
     h1, b1 = stats.get_CR_hist_total(fp, 'lt1')
@@ -181,6 +181,41 @@ def plot_CR_hist_sequence_timeout(fp):
     fig.suptitle(files.get_msmt_header(fp) + ' -- CR histogram sequence timeout')
     folder, _fn = os.path.split(fp)
     fig.savefig(os.path.join(folder, 'CR_histogram_sequence_timeout.png'))
+
+def plot_CR_hist_before_after(fp):
+    h1b, b1b = stats.get_CR_hist_before(fp, 'lt1')
+    h1a, b1a = stats.get_CR_hist_after(fp, 'lt1')
+
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(12,5))
+    ax1.bar(np.arange(len(h1b)), h1b, align='center',
+        width=1, color=settings.COLORS[0], lw=0, alpha=0.7,
+        label='before')
+    ax1.bar(np.arange(len(h1a)), h1a, align='center',
+        width=1, color=settings.COLORS[1], lw=0, alpha=0.7,
+        label='after')
+    ax1.set_xlabel('CR counts')
+    ax1.set_ylabel('Events')
+    ax1.set_title('LT1')
+    ax1.set_xlim(left=-0.5)
+    ax1.legend(loc='best')
+
+    h2b, b2b = stats.get_CR_hist_before(fp, 'lt2')
+    h2a, b2a = stats.get_CR_hist_after(fp, 'lt2')
+
+    ax2.bar(np.arange(len(h2b)), h2b, align='center',
+        width=1, color=settings.COLORS[0], lw=0, alpha=0.7,
+        label='before')
+    ax2.bar(np.arange(len(h2a)), h2a, align='center',
+        width=1, color=settings.COLORS[1], lw=0, alpha=0.7,
+        label='after')
+    ax2.set_xlabel('CR counts')
+    ax2.set_title('LT2')
+    ax2.set_xlim(left=-0.5)
+    ax2.legend(loc='best')
+
+    fig.suptitle(files.get_msmt_header(fp) + ' -- CR histogram before/after')
+    folder, _fn = os.path.split(fp)
+    fig.savefig(os.path.join(folder, 'CR_histogram_before-after.png'))
 
 
 ##############################################################################
@@ -301,5 +336,36 @@ def plot_single_roc(zero_events, one_events, *ssro_fids, **kw):
     ax.axhline(1, c='k', ls=':')
 
     return fig, ax
+
+##############################################################################
+### Teleportation event stats
+##############################################################################
+
+def plot_success_attempt_distribution(attempts):
+    fig, ax = plt.subplots(1,1, figsize=(15,1.5))
+
+    h,b = np.histogram(attempts, 
+        bins=np.arange(-0.5, settings.SEQREPS))
+
+    im = ax.imshow(h.reshape((1,settings.SEQREPS)),
+        aspect='auto', cmap='Blues')
+    ax.set_xlabel('attempt')
+    ax.set_yticks([])
+
+    cbar = fig.colorbar(im, orientation='vertical',
+        aspect=3, ticks=[0, h.max()])
+    cbar.set_label('occurrences')
+
+    # ax.hist(attempts,
+    #     bins=np.arange(-0.5, settings.SEQREPS),
+    #     ec='None', color=settings.COLORS[0])
+
+    ax.set_title('Successful LDE attempts')
+
+    return fig, ax
+
+
+
+
 
 
