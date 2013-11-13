@@ -58,6 +58,24 @@ def delete_analysis_data(fp, name, subgroup=None):
         f.close()
         raise
 
+def clear_analysis_data(fp):
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    if settings.ANALYSISGRP in f.keys():
+        try:
+            del f[settings.ANALYSISGRP]
+            f.flush()
+            f.close()
+        except:
+            f.close()
+            raise
+    else:
+        f.close()
+
 def set_analysis_data(fp, name, data, subgroup=None, **kw):
     try:
         f = h5py.File(fp, 'r+')
@@ -104,7 +122,7 @@ def get_analysis_data(fp, name, subgroup=None):
         raise
         
     agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
-    
+
     if name not in agrp.keys():
         return None
     

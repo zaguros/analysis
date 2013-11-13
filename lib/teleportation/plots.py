@@ -323,7 +323,7 @@ def plot_single_roc(zero_events, one_events, *ssro_fids, **kw):
     ax.text(0, 1.05, '{:.0f}+/-{:.0f} %'.format(frac0*100., u_frac0*100.),
         ha='center', va='bottom', color=settings.COLORS[0])
     ax.text(1, 1.05, '{:.0f}+/-{:.0f} %'.format(p0*100., u_p0*100.),
-        ha='center', va='bottom', color=settings.COLORS[1])
+        ha='center', va='bottom', color=settings.COLORS[1])  
 
     ax.set_xlim(-0.5,1.5)
     ax.set_ylim(-0.05, 1.15)
@@ -347,7 +347,7 @@ def plot_success_attempt_distribution(attempts):
     h,b = np.histogram(attempts, 
         bins=np.arange(-0.5, settings.SEQREPS))
 
-    im = ax.imshow(h.reshape((1,settings.SEQREPS)),
+    im = ax.imshow(h.reshape((1, settings.SEQREPS)),
         aspect='auto', cmap='Blues')
     ax.set_xlabel('attempt')
     ax.set_yticks([])
