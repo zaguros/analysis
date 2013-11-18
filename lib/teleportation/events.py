@@ -467,9 +467,13 @@ def filter_event_times(teleportation_events, **kw):
     ch1_start = kw.pop('ch1_start', settings.CH1_START)
     window_length = kw.pop('window_length', settings.WINDOW_LENGTH)
     dt_max = kw.pop('dt_max', settings.DT_MAX)
+    second_window_length = kw.pop('second_window_length', window_length)
 
     ch0_stop = ch0_start + window_length
     ch1_stop = ch1_start + window_length
+
+    ch0_stop_w2 = ch0_start + second_window_length
+    ch1_stop_w2 = ch1_start + second_window_length
 
     tev = teleportation_events
     win1_ch0_valid = (tev[:,T_EV_COL_PH1_CHAN] == 0) & \
@@ -482,11 +486,11 @@ def filter_event_times(teleportation_events, **kw):
 
     win2_ch0_valid = (tev[:,T_EV_COL_PH2_CHAN] == 0) & \
         (tev[:,T_EV_COL_PH2_TIME] >= ch0_start) & \
-        (tev[:,T_EV_COL_PH2_TIME] <= ch0_stop)
+        (tev[:,T_EV_COL_PH2_TIME] <= ch0_stop_w2)
 
     win2_ch1_valid = (tev[:,T_EV_COL_PH2_CHAN] == 1) & \
         (tev[:,T_EV_COL_PH2_TIME] >= ch1_start) & \
-        (tev[:,T_EV_COL_PH2_TIME] <= ch1_stop)
+        (tev[:,T_EV_COL_PH2_TIME] <= ch1_stop_w2)
 
     wins_valid = (win1_ch0_valid | win1_ch1_valid) & (win2_ch0_valid | win2_ch1_valid)
 
@@ -494,6 +498,7 @@ def filter_event_times(teleportation_events, **kw):
 
     is_valid = (wins_valid & dt_valid)
     return is_valid
+
 
 def filter_attempt_number(teleportation_events, **kw):
     max_attempt_number = kw.pop('max_attempt_number', settings.MAX_ATTEMPT_NUMBER)
