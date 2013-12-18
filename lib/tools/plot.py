@@ -39,8 +39,8 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)
         
         if info_xy == 'auto':
-            info_x = ax.get_xlim()[0] + (ax.get_xlim()[1]-ax.get_xlim()[0])*0.02
-            info_y = ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.02
+            info_x = ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])*0.02
+            info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02
         else:
             info_x = info_xy[0]
             info_y = info_xy[1]

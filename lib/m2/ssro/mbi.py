@@ -11,12 +11,18 @@ from analysis.lib.spin import N_and_e_spin_correction
 reload(N_and_e_spin_correction)
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
-from sequence_ssro import SequenceSSROAnalysis
 from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
     def get_readout_results(self, name=''):
+        """
+        Get the readout results.
+        self.ssro_results contains the readout results (sum of the photons for 
+            a given sweep point and readout in a sequence)
+        self.normalized_ssro contains the normalized result (i.e., probability
+            for getting a photon)
+        """
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
@@ -39,6 +45,15 @@ class MBIAnalysis(m2.M2Analysis):
             (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
 
     def get_correlations(self, name=''):
+        """
+        computes the readout correlations between all readouts in a sequence.
+        we encode correlations in binary: 
+            C = \sum_i{ 2^i \times r_i }
+        where i is the i-th readout (i=0 is the first), and r is the SSRO result
+        of that readout, with r = 1 for ms=1, and r = 0 for ms=0.
+        (Yes, that's opposite to the normalized_ssro result, where 0 means
+        always 0 photons and 1 means always > 0 photons!) 
+        """
         adwingrp = self.adwingrp(name)
         self.result_correlation_corrected = False
         
@@ -70,7 +85,17 @@ class MBIAnalysis(m2.M2Analysis):
                 self.correlations[p,v] = len(np.where(c[:,p]==v)[0])
         
         #The correlations are ordered in the order Ne, in binary rep: 00,01,10,11 respectively.
-        self.correlation_names = [np.binary_repr(v, width=self.readouts) for v in corrvals]
+        _cnames = [np.binary_repr(
+            v, width=self.readouts)[::-1] for v in corrvals]
+        self.correlation_names = []
+        for cn in _cnames:
+            n = ''
+            for j in range(self.readouts):
+                if j > 0:
+                    n += ' & '
+                n += r'{}:$|{}\rangle$'.format(j+1, cn[j])
+
+            self.correlation_names.append(n)
         
         self.normalized_correlations = self.correlations / float(self.reps)
         self.u_normalized_correlations = (
@@ -256,7 +281,7 @@ class MBIAnalysis(m2.M2Analysis):
                         yerr=self.u_p_correlations[:,i], label=labels[i])
                     ax.axhspan(0,1,fill=False,ls='dotted')
             
-            if not self.result_corrected:
+            if not self.result_correlation_corrected:
                 ax.set_ylabel('avg (uncorrected) outcome')
             else:
                 ax.set_ylabel('Probability')
