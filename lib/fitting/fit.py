@@ -70,6 +70,7 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True)
     if not success or cov == None: # FIXME: find a better solution!!!
+        print 'ERROR: Fit did not converge !'
         return False
 
     # package the result neatly
