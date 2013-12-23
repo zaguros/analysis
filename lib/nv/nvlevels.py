@@ -66,9 +66,9 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     By = B_field[1]
     Bz = B_field[2]
     
-    lambdaA2=.1             #observed (see theory review by Manson)    
-    lambda_par=5.3           #observed
-    lambda_ort=1.5*lambda_par      #unknown, calculated by Maze, p9
+    lambdaA2=.1                  #observed (see theory review by Manson)    
+    lambda_par=5.3               #observed
+    #lambda_ort=1.5*lambda_par    #unknown, calculated by Maze, p9
     D1A1=2.87/3           #observed
     D2A1=1.42/3            #observed
     D2E1=1.55/2             #observed
@@ -95,8 +95,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
                     [-1j*(Bz + lambdaA2*Bz), 0, 1j*(Bx)/w2, -1j*(By)/w2, 0, 0],
                     [-1j*(By)/w2, -1j*(Bx)/w2, 0, -1j*lambdaA2*Bz, 1j*(By)/w2, -1j*(Bx)/w2],
                     [-1j*(Bx)/w2, 1j*(By)/w2, -1j*lambdaA2*Bz,    0, -1j*(Bx)/w2, -1j*(By)/w2],
-                    [0, 0, -1j*(By)/w2, 1j*(Bx)/w2, 0, 0],
-                    [0, 0, 1j*(Bx)/w2, 1j*(By)/w2, 0, 0]])
+                    [0, 0, -1j*(By)/w2, 1j*(Bx)/w2, 0, 1j*(Bz - lambdaA2*Bz)],
+                    [0, 0, 1j*(Bx)/w2, 1j*(By)/w2, -1j*(Bz - lambdaA2*Bz), 0]])
       
    
     VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0]) if transitions else 0
@@ -176,3 +176,13 @@ def fit_laserscan(x,y,points=100,strain_range=(0,10),Ex_range=None,Ey_range=None
             print ii,':', 'Ey:', fEys[im[ii]], 'Ex:' , fExs[jm[ii]]
         return np.array([fExs[jm[imm]],fEys[im[imm]],])
     return np.ravel([fExs[jm],fEys[im],])
+
+def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
+    
+    for str_split in np.linspace(0,20,20/precision):
+        levels=get_ES_ExEy(0,str_split,fast)
+        offset=(f1-levels[i1])
+        levels=levels+offset
+        #print levels
+        if abs(f2-levels[i2])<precision:
+            return levels[2]+str_split, levels[2]
