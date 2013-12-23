@@ -30,7 +30,6 @@ def get_SSRO_calibration(folder, readout_time):
 
     return f0, u_f0, f1, u_f1
 
-
 # analysis classes and shortcut functions
 class SSROAnalysis(m2.M2Analysis):
     
@@ -69,11 +68,12 @@ class SSROAnalysis(m2.M2Analysis):
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.hist(cpsh, max(cpsh)+1, align='mid', label='counts', 
-                    normed=True)
+            ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts', 
+                    normed=True) # , stacked=True)
             ax.set_xlabel('cts/shot')
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)
+            ax.set_xlim(-0.5, max(cpsh)+0.5)
 
             plt.figtext(0.85, 0.85, annotation, horizontalalignment='right',
                 verticalalignment='top')
@@ -226,7 +226,9 @@ class SSROAnalysis(m2.M2Analysis):
 
         F = (fid0 + fid1)/2.
         F_err = np.sqrt(fid0_err**2 + fid1_err**2)
-        F_max = max(F)
+        maxidx = F.argmax()
+        F_max = F[maxidx]
+        F_max_err = F_err[maxidx]
         t_max = time[F.argmax()]
 
         meanfid = (_fid0[:,1]+_fid1[:,1])*0.5
@@ -254,7 +256,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_ylabel('RO fidelity')
             ax.set_ylim((0.5,1))
             ax.legend(loc=4)
-            plt.figtext(0.8, 0.5, "max. F=%.2f at t=%.2f us" % (F_max, t_max),
+            plt.figtext(0.8, 0.5, "max. F=({:.2f} +/- {:.2f})% at t={:.0f} us".format(F_max*100., F_max_err*100., t_max),
                     horizontalalignment='right')
 
             ax.set_title(self.default_plot_title + ': mean RO fidelity')
@@ -266,7 +268,7 @@ class SSROAnalysis(m2.M2Analysis):
 
 def ssrocalib(folder=''):
     if folder=='':
-        folder=get_latest_data()
+        folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
     
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
@@ -280,35 +282,80 @@ def ssrocalib(folder=''):
     plt.close('all')
     a.mean_fidelity()
     a.finish()
-    
-def get_latest_data(string = 'AdwinSSRO', datapath = ''):
-    meas_folder = r'D:\measuring\data'
-    currdate = time.strftime('%Y%m%d')
-    
-    if datapath == '':
-        df = os.path.join(meas_folder, currdate)
-    else:
-        df = datapath
-    
-    right_dirs = list()
 
-    if os.path.isdir(df):
-        for k in os.listdir(df):
-            if string in k:
-                right_dirs.append(k)
+def thcalib(folder='', analyze_probe = False):
+    if folder=='':
+        folder=toolbox.latest_data('AdwinSSRO')
+    a = SSROAnalysis(folder)
+    
+    if analyze_probe:
+        ths = [1,2,3,4,6,8,10,15,20,25,30]
+    else:
+        ths = np.linspace(5,45,9)
+
+    for i,th in enumerate(ths):
         
-        if len(right_dirs) > 0:
-            latest_dir = os.path.join(df,right_dirs[len(right_dirs)-1])
+        if analyze_probe:
+            name = 'th_pres_{}_probe_{}'.format(pres[0],th)
         else:
-            print 'No measurements containing %s in %s'%(string, df)
+            name = 'th_pres_{}_probe_{}'.format(th,th)
         
-        print '\nAnalyzing data in %s'%latest_dir
+        a = sequence.SequenceAnalysis(folder)
+        a.get_cr_results(name, plot=True)
+        plt.close('all')
 
-    else:
-        print 'Folder %s does not exist'%df
-        latest_dir = False
+        mean = a.get_mean_cr_cts()
+        means.append(mean)
+        
+        stats = a.adwingrp(name)['statistics'].value
+        fail = stats[2]
+        percentage_pass = 5000./(5000. + fail) * 100 #5000 is the number of succesfull measurements.
+        percentage_passes.append(percentage_pass)
 
-    return latest_dir
+        a.finish()
+
+    fig = a.default_fig(figsize=(6,4))
+    ax = a.default_ax(fig)
+    ax.plot(ths, means,'o')
+    ax.set_xlabel('sweep threshold')
+    ax.set_ylabel('mean CR counts after sequence')
+    if save:
+        fig.savefig(
+            os.path.join(folder, 'post-CR_sum_vs_sweepparam.png'),
+            format='png')
+
+    fig = a.default_fig(figsize=(6,4))
+    ax = a.default_ax(fig)
+    ax.plot(ths[:], percentage_passes[:],'o')
+    ax.set_xlabel('sweep threshold')
+    ax.set_ylabel('percentage CR passes')
+    if save:
+        fig.savefig(
+            os.path.join(folder, 'percentage_CR_pass_vs_sweepparam.png'),
+            format='png')
+
+
+
+
+
+
+
+
+    for n,th in zip(['th_pres_30.0_probe_30.0', 'th_pres_40.0_probe_40.0', 
+            'th_pres_50.0_probe_50.0','th_pres_60.0_probe_60.0',
+            'th_pres_70.0_probe_70.0','th_pres_80.0_probe_80.0',
+            'th_pres_90.0_probe_90.0','th_pres_100.0_probe_100.0',
+            'th_pres_110.0_probe_110.0','th_pres_120.0_probe_120.0'], [30,40,50,60,70,80,90,100,110,120]): #zip((['ms0'], [0]):#
+        a.get_run(n)
+        a.cpsh_hist(a.ro_counts, a.reps, name=n)
+        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n)
+        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
+        a.charge_hist(a.cr_counts, name=n)
+        a.fidelity(a.ro_counts, a.reps, a.binsize, th, name=n)
+    
+    plt.close('all')
+    a.finish()
+
     
 class AWGSSROAnalysis(m2.M2Analysis):
 

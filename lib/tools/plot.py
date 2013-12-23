@@ -7,8 +7,9 @@ from matplotlib.lines import Line2D
 
 from analysis.lib.fitting import fit
 
+
 # TODO implement formatting options
-def plot_fit1d(res, fit_xvals, ax=None, ret=None, **kw):
+def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
     '''
     function to plot a fitresult as returned by analysis.lib.fitting.fit.fit1d().
     '''
@@ -30,20 +31,21 @@ def plot_fit1d(res, fit_xvals, ax=None, ret=None, **kw):
             ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'])
         else:    
             ax.plot(res['x'], res['y'], 'o')
-    
+    if fit_xvals == None:
+        fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
     ax.plot(fit_xvals, res['fitfunc'](fit_xvals), '-', lw=2)
 
     if print_info:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)
         
         if info_xy == 'auto':
-            info_x = ax.get_xlim()[0] + (ax.get_xlim()[1]-ax.get_xlim()[0])*0.02
-            info_y = ax.get_ylim()[0] + (ax.get_ylim()[1]-ax.get_ylim()[0])*0.02
+            info_x = ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])*0.02
+            info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02
         else:
             info_x = info_xy[0]
             info_y = info_xy[1]
 
-        plt.text(info_x, info_y, params_str, size='x-small',
+        ax.text(info_x, info_y, params_str, size='x-small',
                 color='k', ha='left', va='bottom', 
                 bbox=dict(facecolor='white', alpha=0.5))
     
