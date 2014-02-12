@@ -25,6 +25,7 @@ def stage_1_calibrations():
     print 'Slow pi pulse for MBI'
     print 80*'='
     slow_pi_length = slow_pi(ax)
+    #fig.savefig(os.path.join(folder, 'stage_1_calibrations.png'))
 
 def stage_2a_calibrations():
     fig, ax = plt.subplots(1,1)
@@ -33,6 +34,7 @@ def stage_2a_calibrations():
     print '4 MHz electron Rabi'
     print 80*'='
     CORPSE_freq = fast_rabi(ax)
+    #fig.savefig(os.path.join(folder, 'stage_2a_calibrations.png'))
 
 def stage_2_calibrations():
     fig, ([ax1, ax2],[ax3, ax4]) = plt.subplots(2,2, figsize=(10,10))
@@ -41,7 +43,7 @@ def stage_2_calibrations():
     print 'fast pi pulse'
     print 80*'='
     fast_pi_amp = fast_pi(ax1)
-    
+   
     print 80*'='
     print 'CORPSE pi'
     print 80*'='
@@ -56,6 +58,13 @@ def stage_2_calibrations():
     print 'pi2pi, m_I=0'
     print 80*'='
     pi2pi_pi_mI0_amp = pi_pi2pi_mI0(ax4)
+    #fig.savefig(os.path.join(folder, 'stage_2_calibrations.png'))
+
+def stage_2p5_calibration():
+    print 80*'='
+    print 'fast pi/2 pulse'
+    print 80*'='
+    fast_pi2_amp = fast_pi2()
 
 def stage_3a_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
@@ -63,6 +72,7 @@ def stage_3a_calibrations():
     print 'Nitrogen driving frequency'
     print 80*'='
     nitrogen_frequency = N_frq(ax)
+    #fig.savefig(os.path.join(folder, 'stage_2_calibrations.png'))
 
 def stage_3_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,3))
@@ -410,22 +420,57 @@ def fast_pi(ax=None, do_print_text=True):
     return A, u_A 
 
 
-def fast_pi2(ax=None):
+def fast_pi2():
     folder = toolbox.latest_data('cal_fast_pi_over_2') 
-    
-    if ax==None:
-        fig,ax = plt.subplots(1,1)
-        
-    fit_result = fit_linear(folder, ax, -1,  1)
-    a = fit_result['params_dict']['a']
-    b = fit_result['params_dict']['b']
-    u_a = fit_result['error_dict']['a']
-    u_b = fit_result['error_dict']['b']
-    A = (0.5 - b) / a
-    u_A = np.sqrt(A**2) * np.sqrt ( (u_a/a)**2 + (u_b/b)**2 )
-    ax.text(0.65, 0.8, 'A = (%.3f +/- %.3f) V' % (A, u_A))
+            
+    a = mbi.MBIAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results(name='adwindata')
+    a.get_electron_ROC()
+    #a.plot_results_vs_sweepparam(ax=ax, name='adwindata')
 
-    return A, u_A 
+    x = a.sweep_pts
+    y = a.p0.reshape(-1)
+    u_y = a.u_p0.reshape(-1)
+    n = a.sweep_name
+   
+    x2 = x[::2]
+    y2 = y[1::2] - y[::2]
+    u_y2 = np.sqrt(  u_y[1::2]**2 + u_y[::2]**2 )  
+        
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,4), sharex=True)
+    ax1.errorbar(x2, y2, yerr=u_y2, fmt='o')
+    ax1.set_xlabel(n)
+    ax1.set_title('Difference btw. Pi/2-Pi and Pi/2'+'\n'+a.timestamp)
+    ax1.set_ylabel('Difference')
+    
+    m = fit.Parameter((y[-1]-y[0])/(x[-1]-x[0]), 'm')
+    x0 = fit.Parameter(x2.mean(), 'x0')
+    p0 = [m, x0]
+    
+    def ff(x):
+        return m() * (x-x0())
+    fitfunc_str = 'm * (x - x0)'
+    
+    fit_result = fit.fit1d(x2, y2, None, p0=p0, fitfunc=ff,
+        fitfunc_str=fitfunc_str, do_print=True, ret=True)    
+        
+    ax2.errorbar(x2, y[0::2], yerr=u_y[0::2], fmt='o',
+                 label='Pi/2')
+    ax2.errorbar(x2, y[1::2], yerr=u_y[1::2], fmt='o',
+                 label='Pi/2 - Pi')
+    ax2.legend(frameon=True, framealpha=0.5)
+    ax2.set_ylabel('P(0)')
+    ax2.set_xlabel(n)
+    if fit_result != False:
+        ax2.axvline(x0(), c='k', lw=2)
+        ax2.axhline(0.5, c='k', lw=2)
+        ax2.set_title('X marks the spot')
+    
+        plot.plot_fit1d(fit_result, np.linspace(x2[0],x2[-1],201), ax=ax1,
+            plot_data=False, print_info=True)
+    
+    return x0(), 0
 
 
 def CORPSE_pi(ax=None, do_print_text=True):
@@ -435,7 +480,7 @@ def CORPSE_pi(ax=None, do_print_text=True):
         do_print_text = False
         fig,ax = plt.subplots(1,1)
         
-    fit_result = calibrate_epulse_amplitude(folder, ax, 0.53,  1, 0)
+    fit_result = calibrate_epulse_amplitude(folder, ax, 0.5,  1, 0)
     A = fit_result['params_dict']['x0']
     u_A = fit_result['error_dict']['x0']
     
