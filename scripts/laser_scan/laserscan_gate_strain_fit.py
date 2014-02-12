@@ -1,11 +1,27 @@
 from analysis.lib.fitting import fit,common
 from analysis.lib.nv import nvlevels
 from analysis.lib.tools import clipboard as cb
+from matplotlib import pyplot as plt
 plot_all=False
 fit_all=False
-
+plt.close('all')
 d=np.loadtxt(fn)
 gate=unique(d[:,3])
+
+def plot_laserscan(d,gv):
+        x=d[d[:,3]==gv,1]
+        y=d[d[:,3]==gv,2]
+        plt.figure()
+        plt.subplot(1,1,1)
+        plt.plot(x,y)
+        try:
+            gx= float(raw_input('Ey?'))
+            gy= float(raw_input('Ex?'))
+            x1,y2=nvlevels.get_ES_ExEy_plottable(gx,gy,np.max(y))
+            plt.plot(x1,y2)
+        except:
+            print 'could not understand input'
+        
 
 print 'gate voltages:'
 for i,gv in enumerate(gate):
@@ -15,14 +31,8 @@ for i,gv in enumerate(gate):
         plot_laserscan(d,gv)
 
 if not(plot_all):
-    gv=raw_input('Plot which gate voltage?')
-    plot_laserscan(d,gv)
-
-def plot_laserscan(d,gv):
-        x=d[d[:,3]==gv,1]
-        y=d[d[:,3]==gv,2]
-        figure()
-        plot(x,y)
+    i=int(raw_input('Plot which gate voltage?'))
+    plot_laserscan(d,gate[i])
 
 if fit_all:
 

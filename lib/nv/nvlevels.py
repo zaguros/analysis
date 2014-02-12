@@ -1,5 +1,8 @@
+#Bas Hensen 2013
+
 import numpy as np
 import os
+import scipy.constants as spc
 #import sys
 
 def get_levels(**kw):
@@ -46,38 +49,49 @@ def get_ES_ExEy_plottable(Ex,Ey,height):
         x=np.append(x,x[ii]-0.0001)
         x=np.append(x,x[ii]+0.0001)
         y[3*ii+1]=height
-    return np.sort(x),y
+    return [np.sort(x),y]
     
 def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     """Returns the eigenvalues and eigenvectors of the NV excited state 
     pertubation matrix.
     inputs:
     - E-field xyz vector in GHz
-    - B-field xyz vector in GHz
+    - B-field xyz vector in Gauss
     - Energy offset for the eigenvalues
     - boolean transitions - whether to return the transition energies 
     (ms0 energies increased by the zero-field splitting)
     """
-    
+    # [1]: Doherty, M. W. et al. Physics Reports 528, 1–45 (2013)
+    # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
+    # see also:
+    # Doherty, M. W., Manson, N. B., Delaney, P. & Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
+    # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
+
     Ex = E_field[0]
     Ey = E_field[1]
     Ez = E_field[2]
-    Bx = B_field[0]
-    By = B_field[1]
-    Bz = B_field[2]
     
-    lambdaA2=.1                  #observed (see theory review by Manson)    
-    lambda_par=5.3               #observed
-    #lambda_ort=1.5*lambda_par    #unknown, calculated by Maze, p9
-    D1A1=2.87/3           #observed
-    D2A1=1.42/3            #observed
-    D2E1=1.55/2             #observed
-    D2E2=.2/np.sqrt(2)        #observed
+    mu_B=spc.e*spc.hbar/(2*spc.m_e)/1e-4/spc.hbar  #GHz/Gauss
+    Bx = mu_B*B_field[0]
+    By = mu_B*B_field[1]
+    Bz = mu_B*B_field[2]
+    
+    #Bfield
+    lambdaA2=.1                  #observed, [1]   
+    g_es_par = 2.                #RT value, [1]
+    g_es_ort = 2.                #RT value, [1]              
+
+    lambda_par=5.3               #observed, [1] 
+    #lambda_ort_2=1.5*lambda_par #unknown, calculated by [2]
+    D1A1=2.88/3                  #observed, [1]
+    D2A1=1.42/3                  #observed, [1]
+    D2E1=1.55/2                  #observed, [1]
+    D2E2=.2/np.sqrt(2)           #observed, [1] AKA lambda_es_ort
 
     w2=np.sqrt(2)
     
     Vss = np.matrix([[D2A1, 0, D2E2*w2, 0, 0, 0],
-                    [0, D2A1, 0, D2E2*w2, 0, 0],
+                    [0, D2A1,  0, D2E2*w2, 0, 0],
                     [D2E2*w2, 0, -2*D2A1, 0, 0, 0],
                     [0, D2E2*w2, 0, -2*D2A1, 0, 0],
                     [0, 0, 0, 0, D2A1 - 2*D2E1, 0],
@@ -91,12 +105,12 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
                    [0, 0, -Ey, Ez - Ex, 0, 0],
                    [Ey, -Ex, 0, 0, Ez, 0],
                    [Ex, Ey, 0, 0, 0, Ez]])
-    Vb = np.matrix([[0, 1j*(Bz + lambdaA2*Bz), 1j*(By)/w2, 1j*(Bx)/w2, 0, 0],
-                    [-1j*(Bz + lambdaA2*Bz), 0, 1j*(Bx)/w2, -1j*(By)/w2, 0, 0],
-                    [-1j*(By)/w2, -1j*(Bx)/w2, 0, -1j*lambdaA2*Bz, 1j*(By)/w2, -1j*(Bx)/w2],
-                    [-1j*(Bx)/w2, 1j*(By)/w2, -1j*lambdaA2*Bz,    0, -1j*(Bx)/w2, -1j*(By)/w2],
-                    [0, 0, -1j*(By)/w2, 1j*(Bx)/w2, 0, 1j*(Bz - lambdaA2*Bz)],
-                    [0, 0, 1j*(Bx)/w2, 1j*(By)/w2, -1j*(Bz - lambdaA2*Bz), 0]])
+    Vb = np.matrix([[0,  1j*(g_es_par*Bz + lambdaA2*Bz), 1j*(g_es_ort*By)/w2,  1j*(g_es_ort*Bx)/w2, 0, 0],
+                    [-1j*(g_es_par*Bz + lambdaA2*Bz), 0, 1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2, 0, 0],
+                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 -1j*lambdaA2*Bz, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
+                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*lambdaA2*Bz,    0,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
+                    [0, 0, -1j*(g_es_ort*By)/w2, 1j*(g_es_ort*Bx)/w2,  0, 1j*(g_es_par*Bz - lambdaA2*Bz)],
+                    [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
    
     VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0]) if transitions else 0
