@@ -61,10 +61,10 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     - boolean transitions - whether to return the transition energies 
     (ms0 energies increased by the zero-field splitting)
     """
-    # [1]: Doherty, M. W. et al. Physics Reports 528, 1–45 (2013)
+    # [1]: Doherty, M. W. et al. Physics Reports 528, 1-45 (2013)
     # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
     # see also:
-    # Doherty, M. W., Manson, N. B., Delaney, P. & Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
+    # Doherty, M. W., Manson, N. B., Delaney, P. and Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
     # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
 
     Ex = E_field[0]
