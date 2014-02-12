@@ -71,10 +71,10 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     Ey = E_field[1]
     Ez = E_field[2]
     
-    mu_B=spc.e*spc.hbar/(2*spc.m_e)/1e-4/spc.hbar  #GHz/Gauss
-    Bx = mu_B*B_field[0]
-    By = mu_B*B_field[1]
-    Bz = mu_B*B_field[2]
+    mu_B=spc.e*spc.hbar/(2*spc.m_e)/spc.h/1e9  #GHz/Tesla
+    Bx = mu_B*B_field[0]*1e-4 #GHz
+    By = mu_B*B_field[1]*1e-4 #GHz
+    Bz = mu_B*B_field[2]*1e-4 #GHz
     
     #Bfield
     lambdaA2=.1                  #observed, [1]   
