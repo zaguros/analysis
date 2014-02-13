@@ -1,7 +1,7 @@
 from analysis.lib.nv import nvlevels
 import numpy as np
 b_range=np.linspace(0,1000,100) #gauss
-Ex=8/2. #Ex is approx strain_splitting divided by 2
+Ex=2.8/2. #Ex is approx strain_splitting divided by 2
 spectrum=np.zeros((6,))
 for Bz in b_range:
 	spectrum=np.vstack((spectrum,np.sort(nvlevels.get_ES(
