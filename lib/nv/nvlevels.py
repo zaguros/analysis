@@ -51,7 +51,7 @@ def get_ES_ExEy_plottable(Ex,Ey,height):
         y[3*ii+1]=height
     return [np.sort(x),y]
     
-def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
+def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     """Returns the eigenvalues and eigenvectors of the NV excited state 
     pertubation matrix.
     inputs:
@@ -78,8 +78,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     
     #Bfield
     lambdaA2=.1                  #observed, [1]   
-    g_es_par = 2.                #RT value, [1]
-    g_es_ort = 2.                #RT value, [1]              
+    g_es_par = 2.                #RT value, likely to be different at LT! [1]
+    g_es_ort = 2.                #RT value, likely to be different at LT! [1]              
 
     lambda_par=5.3               #observed, [1] 
     #lambda_ort_2=1.5*lambda_par #unknown, calculated by [2]
@@ -113,15 +113,74 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
                     [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
    
-    VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0]) if transitions else 0
-  
    
+    if kw.pop('transitions', False):
+        print 'transitions kw deprecated, use function get_transitions instead'
+        VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0])
+    else:
+        VGSoffset = 0.
+
     V = Vss + Vso + Ve + Vb + VGSoffset
     
     w,v=np.linalg.eig(V)
     
     return np.real(w+Ee0),v
     
+
+def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
+
+    Ex = E_field[0]
+    Ey = E_field[1]
+    Ez = E_field[2]
+    
+    mu_B=spc.e*spc.hbar/(2*spc.m_e)/spc.h/1e9  #GHz/Tesla
+    Bx = mu_B*B_field[0]*1e-4 #GHz
+    By = mu_B*B_field[1]*1e-4 #GHz
+    Bz = mu_B*B_field[2]*1e-4 #GHz
+
+    D1A1=2.88/3                  #observed, [1]
+    g_gs_par = 2.                #approx
+    g_gs_ort = 2.                #R
+    
+    Vss = np.diag([-2*D1A1, D1A1, D1A1])
+    Ve = np.diag([Ez, Ez, Ez])
+    Vb = np.matrix([[0, 1j*(g_gs_ort*By), -1j*(g_gs_ort*Bx)],
+                    [-1j*(g_gs_ort*By), 0, -1j*(g_gs_par*Bz)],
+                    [1j*(g_gs_ort*Bx), 1j*(g_gs_par*Bz), 0]])
+
+    V = Vss + Ve + Vb
+    
+    w,v=np.linalg.eig(V)
+    return np.real(w),v
+
+def get_optical_transitions(show_FB_E_transitions=True, show_FB_A_transitions=False, show_E_prime_flip_transitions=False, **kw):
+
+    E_GS=np.sort(get_GS(**kw)[0])
+    E_ES=np.sort(get_ES(**kw)[0])
+    allowed_transitions=np.array([E_ES[2]-E_GS[0],
+                                 E_ES[3]-E_GS[0],
+                                 E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
+                                 E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
+                                 E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])
+    E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
+                                        E_ES[1]-E_GS[1]])
+    FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
+                               E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]])
+    FB_A_transitions=np.array([E_ES[0]-E_GS[0],
+                               E_ES[1]-E_GS[0],
+                               E_ES[4]-E_GS[0],
+                               E_ES[5]-E_GS[0]])
+    transitions = allowed_transitions
+    if show_FB_E_transitions: 
+        transitions = np.append(transitions, FB_E_transitions)
+    if show_FB_A_transitions: 
+        transitions = np.append(transitions, FB_A_transitions)
+    if show_E_prime_flip_transitions: 
+        transitions = np.append(transitions, E_prime_flip_transitions)
+    return transitions
+
+
 def fit_laserscan_from_file(file, plot=False,plot_save=True, **kw):
     d=np.load(file)['data']
     x=d[:,1]
