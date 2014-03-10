@@ -17,7 +17,7 @@ def electron_T1_anal(timestamp=None, measurement_name = ['ssro'],Amplitude = 2./
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('T1')
+        folder = toolbox.latest_data('Decoupling')
 
     fit_results = []
     for k in range(0,len(measurement_name)): 
