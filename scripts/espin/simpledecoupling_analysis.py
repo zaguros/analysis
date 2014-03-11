@@ -7,17 +7,15 @@ from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, common
 
 
-def electron_T2_anal(timestamp=None, measurement_name = ['ssro'],Amplitude = 2./3, T2 = 500, offset = 1./3,do_print = False, explicit_dir = None, ROC = True):
+def electron_T2_anal(timestamp=None, measurement_name = ['ssro'],Amplitude = 2./3, T2 = 500, offset = 1./3,do_print = False, ROC = True):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
     Based on electron_T1_anal, modified by Adriaan Rol
     '''
-    if explicit_dir != None:
-        folder = explicit_dir
-        print folder
-    elif timestamp != None:
+
+    if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
         folder = toolbox.latest_data('SimpleDecoupling')
