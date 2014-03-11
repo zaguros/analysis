@@ -7,7 +7,7 @@ from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, common
 
 
-def electron_T2_anal(timestamp=None, measurement_name = ['ssro'],Amplitude = 2./3, T2 = 500, offset = 1./3,do_print = False, ROC = True):
+def electron_T2_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 2./3, T2 = 500, offset = 1./3,do_print = False):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
@@ -25,8 +25,7 @@ def electron_T2_anal(timestamp=None, measurement_name = ['ssro'],Amplitude = 2./
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results(measurement_name[k])
-        if ROC == True:
-            a.get_electron_ROC()
+        a.get_electron_ROC()
         ax = a.plot_result_vs_sweepparam(ret='ax')
 
         x = a.sweep_pts
