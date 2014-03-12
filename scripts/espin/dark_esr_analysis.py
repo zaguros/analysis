@@ -34,7 +34,7 @@ def analyze_dark_esr(folder, ax=None, ret=None, **kw):
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    ax.set_ylim(0.65,1.05)
+    ax.set_ylim(0.6,1.05)
     
     guess_ctr = float(raw_input('Center guess?'))
     # try fitting

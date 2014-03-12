@@ -59,13 +59,15 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     - B-field xyz vector in Gauss
     - Energy offset for the eigenvalues
     - boolean transitions - whether to return the transition energies 
-    (ms0 energies increased by the zero-field splitting)
+    (ms0 energies increased by the zero-field splitting)s
     """
     # [1]: Doherty, M. W. et al. Physics Reports 528, 1-45 (2013)
     # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
     # see also:
     # Doherty, M. W., Manson, N. B., Delaney, P. and Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
     # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
+
+    ### THT: this actually does not handle correctly the magnetic field yet in the case of transitions due to the GS Zeeman splittings
 
     Ex = E_field[0]
     Ey = E_field[1]
@@ -125,7 +127,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     w,v=np.linalg.eig(V)
     
     return np.real(w+Ee0),v
-    
+ 
 
 def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
 
