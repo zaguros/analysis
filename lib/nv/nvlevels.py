@@ -51,7 +51,7 @@ def get_ES_ExEy_plottable(Ex,Ey,height):
         y[3*ii+1]=height
     return [np.sort(x),y]
     
-def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,303.],Ee0=-1.94, **kw):
+def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     """Returns the eigenvalues and eigenvectors of the NV excited state 
     pertubation matrix.
     inputs:
