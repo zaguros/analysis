@@ -67,8 +67,6 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     # Doherty, M. W., Manson, N. B., Delaney, P. and Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
     # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
 
-    ### THT: this actually does not handle correctly the magnetic field yet in the case of transitions due to the GS Zeeman splittings
-
     Ex = E_field[0]
     Ey = E_field[1]
     Ez = E_field[2]
