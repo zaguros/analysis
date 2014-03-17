@@ -19,6 +19,8 @@ def plot_ES_b_dependence(strain_splitting=2.):
 	for i in range(6):
 		plt.plot(b_range,spectrum[:,i])
 
+
+
 def plot_ES_e_dependence(Bz=20.):
 	e_range=np.linspace(0,10,100) #gauss
 	spectrum=np.zeros((6,))
