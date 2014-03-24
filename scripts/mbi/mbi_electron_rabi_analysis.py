@@ -14,8 +14,8 @@ from analysis.lib.math import error
 
 # fit_startup = False
 
-timestamp = '20130907183620' # None
-guess_frq = 1./120.
+timestamp = None #'20130907183620' # None
+guess_frq = 1./200.
 guess_amp = 0.5
 guess_k = 0.
 guess_phi = 0.
