@@ -6,7 +6,7 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence_ssro, sequence, mbi
+from analysis.lib.m2.ssro import  sequence, mbi #sequence_ssro,
 from measurement.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 reload(rabi)

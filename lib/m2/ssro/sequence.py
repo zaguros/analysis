@@ -48,6 +48,10 @@ class SequenceAnalysis(m2.M2Analysis):
         fig.savefig(os.path.join(self.folder, 
             'cr_check_before'+fn_suffix+'.'+self.plot_format), 
             format=self.plot_format)
+
+    def fix_sweep_pts(self, new_sweep_name, new_sweep_pts_attr):
+        self.g.attrs['sweep_name']=new_sweep_name
+        self.g.attrs['sweep_pts']=self.g.attrs[new_sweep_pts_attr]
         
     def get_sweep_pts(self):
         self.sweep_name = self.g.attrs['sweep_name']

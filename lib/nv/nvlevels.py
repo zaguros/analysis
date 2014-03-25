@@ -94,7 +94,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
     Vb = np.matrix([[0, 1j*(Bz + lambdaA2*Bz), 1j*(By)/w2, 1j*(Bx)/w2, 0, 0],
                     [-1j*(Bz + lambdaA2*Bz), 0, 1j*(Bx)/w2, -1j*(By)/w2, 0, 0],
                     [-1j*(By)/w2, -1j*(Bx)/w2, 0, -1j*lambdaA2*Bz, 1j*(By)/w2, -1j*(Bx)/w2],
-                    [-1j*(Bx)/w2, 1j*(By)/w2, -1j*lambdaA2*Bz,    0, -1j*(Bx)/w2, -1j*(By)/w2],
+                    [-1j*(Bx)/w2, 1j*(By)/w2, +1j*lambdaA2*Bz,    0, -1j*(Bx)/w2, -1j*(By)/w2],
                     [0, 0, -1j*(By)/w2, 1j*(Bx)/w2, 0, 0],
                     [0, 0, 1j*(Bx)/w2, 1j*(By)/w2, 0, 0]])
       
