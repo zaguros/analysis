@@ -18,7 +18,7 @@ if folder == None:
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('AdwinSSRO')
+        folder = toolbox.latest_data('AdwinSSRO_RO_saturation')
 
 a = ssro.SSROAnalysis(folder)
 

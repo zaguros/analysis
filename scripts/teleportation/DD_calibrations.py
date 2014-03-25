@@ -33,30 +33,40 @@ def stage_0p5_calibrations():
         toolbox.latest_data('DarkESR'), ax=ax1, ret='f0',
         print_info=False)
 
+    fig.savefig(os.path.join(folder, 'stage_0p5_calibrations.png'))
+
 def stage_1_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,4))
     # print 80*'='
     # print '8 MHz electron Rabi'
     # print 80*'='
     # CORPSE_freq = rabi_8mhz(ax2)
-
+    folder = toolbox.latest_data('CORPSEPiCalibration') 
     print 80*'='
     print 'CORPSE pi'
     print 80*'='
-    CORPSE_pi_amp = CORPSE_pi(ax)
+    CORPSE_pi_amp = CORPSE_pi(folder, ax)
 
     # print 80*'='
     # print 'CORPSE pi/2'
     # print 80*'='
     # CORPSE_pi2_amp = CORPSE_pi2(ax2)
+    fig.savefig(os.path.join(folder, 'stage_0p5_calibrations.png'))
+
+#def stage_1p5_calibrations():
+#    fig, ax = plt.subplots(1,1, figsize = (5,4))
+#
+#    print 80*'='
+#    print 'CORPSE vs effective angle'
+#    print 80*'='
+#    CORPSE_pi_amp = CORPSE_vs_angle(ax)
+#    fig.savefig(os.path.join(folder, 'stage_1p5_calibrations.png'))
 
 def stage_1p5_calibrations():
-    fig, ax = plt.subplots(1,1, figsize = (5,4))
-
     print 80*'='
-    print 'CORPSE vs effective angle'
+    print 'CORPSE pi/2'
     print 80*'='
-    CORPSE_pi_amp = CORPSE_vs_angle(ax)
+    calibrate_pi2_noMBI(toolbox.latest_data('CORPSEPi2Calibration'))
 
 def stage_2_calibrations():
     # fig, ax = plt.subplots(1,1, figsize = (5,4))
@@ -66,25 +76,30 @@ def stage_2_calibrations():
     # C13_revival = C13_rev(ax)
 
     fig, ax = plt.subplots(1,1, figsize = (5,4))
+    folder = toolbox.latest_data('calibrate_first_revival') 
     print 80*'='
     print 'first C13 revival'
     print 80*'='
-    C13_revival_small_range = C13_rev_small_range(ax)
+    C13_revival_small_range = C13_rev_small_range(folder, ax)
+    fig.savefig(os.path.join(folder, 'stage_2_calibrations.png'))
 
 def stage_3_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,4))
+    folder = toolbox.latest_data('calibrate_LDE_spin_echo') 
     print 80*'='
     print 'LDE-DD spin echo time'
     print 80*'='
-    DD_spin_echo_time = DD_spin_echo(ax)
+    DD_spin_echo_time = DD_spin_echo(folder, ax)
+    fig.savefig(os.path.join(folder, 'stage_3_calibrations.png'))
 
 def stage_4_calibrations():
     fig, ax = plt.subplots(1,1, figsize = (5,4))
+    folder = toolbox.latest_data('t_between_pulses') 
     print 80*'='
     print 'time between pi pulses'
     print 80*'='
-    t_between_pi_pulses = t_between_pi(ax)
-
+    t_between_pi_pulses = t_between_pi(folder, ax)
+    fig.savefig(os.path.join(folder, 'stage_4_calibrations.png')) 
     # fig, ax = plt.subplots(1,1, figsize = (5,4))
     # print 80*'='
     # print 'yxy free evolution time'
@@ -265,6 +280,54 @@ def epulse_fidelity(folder, ax, *args):
        
     return fit_result
 
+def calibrate_pi2_noMBI(folder):
+    a = sequence.SequenceAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results('ssro')
+    a.get_electron_ROC()    
+    x = a.sweep_pts
+    y = a.p0
+    u_y = a.u_p0
+    n = a.sweep_name
+    a.finish()
+   
+    x2 = x[::2]
+    y2 = y[1::2] - y[::2]
+    u_y2 = np.sqrt(  u_y[1::2]**2 + u_y[::2]**2 )    
+    
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,4), sharex=True)
+    ax1.errorbar(x2, y2, yerr=u_y2, fmt='o')
+    ax1.set_xlabel(n)
+    ax1.set_title('Difference btw. Pi/2-Pi and Pi/2')
+    ax1.set_ylabel('Difference')
+    
+    m = fit.Parameter((y[-1]-y[0])/(x[-1]-x[0]), 'm')
+    x0 = fit.Parameter(y2.mean(), 'x0')
+    p0 = [m, x0]
+    
+    def ff(x):
+        return m() * (x-x0())
+    fitfunc_str = 'm * (x - x0)'
+    
+    fit_result = fit.fit1d(x2, y2, None, p0=p0, fitfunc=ff,
+        fitfunc_str=fitfunc_str, do_print=True, ret=True)    
+        
+    ax2.errorbar(x2, y[0::2], yerr=u_y[0::2], fmt='o',
+                 label='Pi/2')
+    ax2.errorbar(x2, y[1::2], yerr=u_y[1::2], fmt='o',
+                 label='Pi/2 - Pi')
+    ax2.legend(frameon=True, framealpha=0.5)
+    ax2.set_ylabel('P(0)')
+    ax2.set_xlabel(n)
+    ax2.axvline(x0(), c='k', lw=2)
+    ax2.axhline(0.5, c='k', lw=2)
+    ax2.set_title('X marks the spot')
+    
+    plot.plot_fit1d(fit_result, np.linspace(x2[0],x2[-1],201), ax=ax1,
+        plot_data=False, print_info=True)
+    
+    fig.savefig(os.path.join(folder, 'pi2_calibration.png'))
+
 ### end generic calibration functions
 
 ### actual functions to call, for specific calibrations    
@@ -283,9 +346,8 @@ def rabi_8mhz(ax=None):
     return (f*1e3, u_f*1e3)
 
 
-def CORPSE_pi(ax=None):
-    folder = toolbox.latest_data('CORPSEPiCalibration') 
-    
+def CORPSE_pi(folder, ax=None):
+      
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
@@ -332,9 +394,8 @@ def CORPSE_vs_angle(ax=None):
 
 #     return A, u_A 
  
-def C13_rev_small_range(ax=None):
-    folder = toolbox.latest_data('calibrate_first_revival') 
-    
+def C13_rev_small_range(folder, ax=None):
+        
     if ax==None:
         fig,ax = plt.subplots(1,1)
         
@@ -371,8 +432,7 @@ def C13_rev(ax=None):
 
     return revival, u_revival
 
-def DD_spin_echo(ax=None):
-    folder = toolbox.latest_data('calibrate_LDE_spin_echo') 
+def DD_spin_echo(folder, ax=None):
     
     if ax==None:
         fig,ax = plt.subplots(1,1)
@@ -384,8 +444,8 @@ def DD_spin_echo(ax=None):
 
     return A, u_A 
 
-def t_between_pi(ax=None):
-    folder = toolbox.latest_data('t_between_pulses') 
+def t_between_pi(folder, ax=None):
+
     
     if ax==None:
         fig,ax = plt.subplots(1,1)

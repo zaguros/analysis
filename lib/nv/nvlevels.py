@@ -1,5 +1,8 @@
+#Bas Hensen 2013
+
 import numpy as np
 import os
+import scipy.constants as spc
 #import sys
 
 def get_levels(**kw):
@@ -10,7 +13,7 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,20,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
-def get_ES_ExEy(Ex,Ey,fast=False):
+def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
     """
     Returns the six transition energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
@@ -19,8 +22,8 @@ def get_ES_ExEy(Ex,Ey,fast=False):
     strain=abs(Ex-Ey)/2.0
     offset=np.min([Ey,Ex])+strain
     if fast:
-        return np.sort(get_ES_fast(offset,strain))
-    return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94)[0])
+        return np.sort(get_ES_fast(offset,strain,transitions=transitions))
+    return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
 
 def get_ES_fast(f0,D,transitions=True):
     D=D/0.749
@@ -46,38 +49,49 @@ def get_ES_ExEy_plottable(Ex,Ey,height):
         x=np.append(x,x[ii]-0.0001)
         x=np.append(x,x[ii]+0.0001)
         y[3*ii+1]=height
-    return np.sort(x),y
+    return [np.sort(x),y]
     
-def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
+def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     """Returns the eigenvalues and eigenvectors of the NV excited state 
     pertubation matrix.
     inputs:
     - E-field xyz vector in GHz
-    - B-field xyz vector in GHz
+    - B-field xyz vector in Gauss
     - Energy offset for the eigenvalues
     - boolean transitions - whether to return the transition energies 
-    (ms0 energies increased by the zero-field splitting)
+    (ms0 energies increased by the zero-field splitting)s
     """
-    
+    # [1]: Doherty, M. W. et al. Physics Reports 528, 1-45 (2013)
+    # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
+    # see also:
+    # Doherty, M. W., Manson, N. B., Delaney, P. and Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
+    # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
+
     Ex = E_field[0]
     Ey = E_field[1]
     Ez = E_field[2]
-    Bx = B_field[0]
-    By = B_field[1]
-    Bz = B_field[2]
     
-    lambdaA2=.1             #observed (see theory review by Manson)    
-    lambda_par=5.3           #observed
-    lambda_ort=1.5*lambda_par      #unknown, calculated by Maze, p9
-    D1A1=2.87/3           #observed
-    D2A1=1.42/3            #observed
-    D2E1=1.55/2             #observed
-    D2E2=.2/np.sqrt(2)        #observed
+    mu_B=spc.e*spc.hbar/(2*spc.m_e)/spc.h/1e9  #GHz/Tesla
+    Bx = mu_B*B_field[0]*1e-4 #GHz
+    By = mu_B*B_field[1]*1e-4 #GHz
+    Bz = mu_B*B_field[2]*1e-4 #GHz
+    
+    #Bfield
+    lambdaA2=.1                  #observed, [1]   
+    g_es_par = 2.                #RT value, likely to be different at LT! [1]
+    g_es_ort = 2.                #RT value, likely to be different at LT! [1]              
+
+    lambda_par=5.3               #observed, [1] 
+    #lambda_ort_2=1.5*lambda_par #unknown, calculated by [2]
+    D1A1=2.88/3                  #observed, [1]
+    D2A1=1.42/3                  #observed, [1]
+    D2E1=1.55/2                  #observed, [1]
+    D2E2=.2/np.sqrt(2)           #observed, [1] AKA lambda_es_ort
 
     w2=np.sqrt(2)
     
     Vss = np.matrix([[D2A1, 0, D2E2*w2, 0, 0, 0],
-                    [0, D2A1, 0, D2E2*w2, 0, 0],
+                    [0, D2A1,  0, D2E2*w2, 0, 0],
                     [D2E2*w2, 0, -2*D2A1, 0, 0, 0],
                     [0, D2E2*w2, 0, -2*D2A1, 0, 0],
                     [0, 0, 0, 0, D2A1 - 2*D2E1, 0],
@@ -91,23 +105,82 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,transitions=True):
                    [0, 0, -Ey, Ez - Ex, 0, 0],
                    [Ey, -Ex, 0, 0, Ez, 0],
                    [Ex, Ey, 0, 0, 0, Ez]])
-    Vb = np.matrix([[0, 1j*(Bz + lambdaA2*Bz), 1j*(By)/w2, 1j*(Bx)/w2, 0, 0],
-                    [-1j*(Bz + lambdaA2*Bz), 0, 1j*(Bx)/w2, -1j*(By)/w2, 0, 0],
-                    [-1j*(By)/w2, -1j*(Bx)/w2, 0, -1j*lambdaA2*Bz, 1j*(By)/w2, -1j*(Bx)/w2],
-                    [-1j*(Bx)/w2, 1j*(By)/w2, +1j*lambdaA2*Bz,    0, -1j*(Bx)/w2, -1j*(By)/w2],
-                    [0, 0, -1j*(By)/w2, 1j*(Bx)/w2, 0, 0],
-                    [0, 0, 1j*(Bx)/w2, 1j*(By)/w2, 0, 0]])
+    Vb = np.matrix([[0,  1j*(g_es_par*Bz + lambdaA2*Bz), 1j*(g_es_ort*By)/w2,  1j*(g_es_ort*Bx)/w2, 0, 0],
+                    [-1j*(g_es_par*Bz + lambdaA2*Bz), 0, 1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2, 0, 0],
+                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 -1j*lambdaA2*Bz, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
+                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*lambdaA2*Bz,    0,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
+                    [0, 0, -1j*(g_es_ort*By)/w2, 1j*(g_es_ort*Bx)/w2,  0, 1j*(g_es_par*Bz - lambdaA2*Bz)],
+                    [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
    
-    VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0]) if transitions else 0
-  
    
+    if kw.pop('transitions', False):
+        print 'transitions kw deprecated, use function get_transitions instead'
+        VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0])
+    else:
+        VGSoffset = 0.
+
     V = Vss + Vso + Ve + Vb + VGSoffset
     
     w,v=np.linalg.eig(V)
     
     return np.real(w+Ee0),v
+ 
+
+def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
+
+    Ex = E_field[0]
+    Ey = E_field[1]
+    Ez = E_field[2]
     
+    mu_B=spc.e*spc.hbar/(2*spc.m_e)/spc.h/1e9  #GHz/Tesla
+    Bx = mu_B*B_field[0]*1e-4 #GHz
+    By = mu_B*B_field[1]*1e-4 #GHz
+    Bz = mu_B*B_field[2]*1e-4 #GHz
+
+    D1A1=2.88/3                  #observed, [1]
+    g_gs_par = 2.                #approx
+    g_gs_ort = 2.                #R
+    
+    Vss = np.diag([-2*D1A1, D1A1, D1A1])
+    Ve = np.diag([Ez, Ez, Ez])
+    Vb = np.matrix([[0, 1j*(g_gs_ort*By), -1j*(g_gs_ort*Bx)],
+                    [-1j*(g_gs_ort*By), 0, -1j*(g_gs_par*Bz)],
+                    [1j*(g_gs_ort*Bx), 1j*(g_gs_par*Bz), 0]])
+
+    V = Vss + Ve + Vb
+    
+    w,v=np.linalg.eig(V)
+    return np.real(w),v
+
+def get_optical_transitions(show_FB_E_transitions=True, show_FB_A_transitions=False, show_E_prime_flip_transitions=False, **kw):
+
+    E_GS=np.sort(get_GS(**kw)[0])
+    E_ES=np.sort(get_ES(**kw)[0])
+    allowed_transitions=np.array([E_ES[2]-E_GS[0],
+                                 E_ES[3]-E_GS[0],
+                                 E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
+                                 E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
+                                 E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])
+    E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
+                                        E_ES[1]-E_GS[1]])
+    FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
+                               E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]])
+    FB_A_transitions=np.array([E_ES[0]-E_GS[0],
+                               E_ES[1]-E_GS[0],
+                               E_ES[4]-E_GS[0],
+                               E_ES[5]-E_GS[0]])
+    transitions = allowed_transitions
+    if show_FB_E_transitions: 
+        transitions = np.append(transitions, FB_E_transitions)
+    if show_FB_A_transitions: 
+        transitions = np.append(transitions, FB_A_transitions)
+    if show_E_prime_flip_transitions: 
+        transitions = np.append(transitions, E_prime_flip_transitions)
+    return transitions
+
+
 def fit_laserscan_from_file(file, plot=False,plot_save=True, **kw):
     d=np.load(file)['data']
     x=d[:,1]
@@ -176,3 +249,13 @@ def fit_laserscan(x,y,points=100,strain_range=(0,10),Ex_range=None,Ey_range=None
             print ii,':', 'Ey:', fEys[im[ii]], 'Ex:' , fExs[jm[ii]]
         return np.array([fExs[jm[imm]],fEys[im[imm]],])
     return np.ravel([fExs[jm],fEys[im],])
+
+def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
+    
+    for str_split in np.linspace(0,20,20/precision):
+        levels=get_ES_ExEy(0,str_split,fast)
+        offset=(f1-levels[i1])
+        levels=levels+offset
+        #print levels
+        if abs(f2-levels[i2])<precision:
+            return levels[2]+str_split, levels[2]
