@@ -175,5 +175,13 @@ def measurement_filename(directory=os.getcwd(), ext='hdf5'):
                 os.path.join(directory,fn))
         return None
 
+def get_plot_title_from_folder(folder):
+    measurementstring = os.path.split(folder)[1]
+    timestamp = os.path.split(os.path.split(folder)[0])[1] \
+            + '/' + measurementstring[:6]
+    measurementstring = measurementstring[7:]        
+    default_plot_title = timestamp+'\n'+measurementstring
+    return default_plot_title
+
     
 
