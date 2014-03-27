@@ -11,22 +11,26 @@ class M2Analysis:
 
     plot_format = 'png'
 
-    def __init__(self, folder):
+    def __init__(self, folder, **kw):
         self.folder = folder
-        self.load_hdf5data()
+        self.load_hdf5data(**kw)
         
 
-    def load_hdf5data(self):
+    def load_hdf5data(self, **kw):
         self.h5filepath = toolbox.measurement_filename(self.folder)
-        self.f = h5py.File(self.h5filepath, 'r')
-        self.name = self.f.keys()[0]
-        self.g = self.f[self.name]
+        h5mode=kw.pop('hdf5_mode', 'r')
+        self.f = h5py.File(self.h5filepath,h5mode)
+        for k in self.f.keys():
+            if type(self.f[k])==h5py.Group:
+                self.name = k
+                #print k
+        self.g = self.f[self.name]      
 
         self.measurementstring = os.path.split(self.folder)[1]
         self.timestamp = os.path.split(os.path.split(self.folder)[0])[1] \
                 + '/' + self.measurementstring[:6]
         self.measurementstring = self.measurementstring[7:]        
-        self.default_plot_title = self.timestamp+'\n'+self.measurementstring
+        self.default_plot_title = self.timestamp+'\n'+self.measurementstring      
 
     def finish(self):
         self.f.close()
@@ -64,6 +68,14 @@ class M2Analysis:
         ax.set_title(self.timestamp+'\n'+self.measurementstring)
 
         return ax
+
+    def save_fig_incremental_filename(self,fig,savename):
+            i=1
+            sfn=os.path.join(self.folder, savename+'-{}.png'.format(i))
+            while(os.path.exists(sfn)):
+                sfn=os.path.splitext(sfn)[0][:-2]+'-{}.png'.format(i)
+                i=i+1
+            fig.savefig(sfn,format='png')
 
 
 
