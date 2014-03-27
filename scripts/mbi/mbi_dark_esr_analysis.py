@@ -14,13 +14,15 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = None # 
+timestamp = None #
+
+
 
 guess_offset = 1.0
 guess_A_min1 = 0.5
 guess_A_plus1 = 0.1
 guess_A_0 = 0.1
-guess_x0 = 3734.387
+guess_x0 = 3749.905
 guess_sigma = 0.435
 guess_Nsplit = 2.195
 
@@ -42,11 +44,11 @@ def fitfunc(x):
     #         - A_plus1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
     #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
     #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-    #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) 
+    #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2)
     return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
             - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
             - A_0()*np.exp(-((x-x0())/sigma())**2) \
-          
+
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)

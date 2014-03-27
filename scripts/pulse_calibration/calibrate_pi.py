@@ -11,12 +11,12 @@ from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
 from analysis.lib.math import error
 
-import calibration_funcs as funcs
+import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 
 ### parameters
 timestamp = None
-msmt_type = 'sequence'
-guess_x0 = 0.08
+msmt_type = 'mbi'
+guess_x0 = 0.78
 guess_of = 1
 guess_a = 0
 
@@ -50,4 +50,8 @@ else:
     raise Exception('Unknown msmt type')
 
 res = funcs.calibrate_pulse_amplitude(x, y, ax, guess_x0, guess_of, guess_a)
+plt.savefig(os.path.join(folder, 'pulse_calibration.pdf'),
+        format='pdf')
+plt.savefig(os.path.join(folder, 'pulse_calibration.png'),
+        format='png')
 
