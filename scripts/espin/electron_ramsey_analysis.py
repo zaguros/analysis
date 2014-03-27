@@ -13,7 +13,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = '184802'#None#'20130530183305'#None # 
+timestamp = None#'184802'#None#'20130530183305'#None # 
 guess_f1 = 1./150
 guess_A1 = 0.5
 guess_phi1 = 0.
