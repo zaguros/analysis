@@ -31,13 +31,14 @@ ret=f0,
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
 
+    # here we find the first of the three dips
     j=0
     for j < len(y)-2:
         while y[j]>0.95*y[j+1] # such that we account for noise
             k = j 
             j = j+1
         j = len(y)-2
-    guess_ctr = x[k]e-3 #convert to GHz
+    guess_ctr = x[k]*1e-3+ guess_splitN #convert to GHz and go to middle dip
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,

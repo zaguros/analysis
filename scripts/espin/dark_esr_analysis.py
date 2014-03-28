@@ -21,7 +21,7 @@ guess_splitN = 2.193e-3
 guess_width = 0.2e-3
 guess_amplitude = 0.3
 
-def analyze_dark_esr(folder, ax=None, ret=None, **kw):
+def analyze_dark_esr(folder,center_guess = True, ax=None, ret=None, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -36,7 +36,18 @@ def analyze_dark_esr(folder, ax=None, ret=None, **kw):
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     ax.set_ylim(0.6,1.05)
     
-    guess_ctr = float(raw_input('Center guess?'))
+    if center_guess == True:
+        guess_ctr = float(raw_input('Center guess?'))
+    else:
+        j=0
+        for j < len(y)-2:
+            while y[j]>0.93*y[j+1] # such that we account for noise
+                k = j 
+                j = j+1
+            j = len(y)-2
+        guess_ctr = x[k]*1e-3+ guess_splitN #convert to GHz and go to middle dip
+
+
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
