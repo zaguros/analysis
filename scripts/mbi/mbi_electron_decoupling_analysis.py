@@ -39,7 +39,7 @@ t_shift = 0
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
-
+'''
 o = fit.Parameter(guess_o, 'o')
 f = fit.Parameter(guess_frq, 'f')
 A = fit.Parameter(guess_amp, 'A')
@@ -61,7 +61,7 @@ plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.pdf'),
         format='pdf')
 plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.png'),
         format='png')
-
+'''
 
 
 
