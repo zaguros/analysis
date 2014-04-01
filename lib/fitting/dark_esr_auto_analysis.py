@@ -3,19 +3,19 @@ import numpy as np
 import h5py
 import logging
 
-from analysis.lib import fitting
+
 from analysis.lib.m2.ssro import sequence
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
-from analysis.lib.tools import plot
+
 
 
 def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-timestamp = None, 
-ret='f0', 
+timestamp = None,
+ret='f0',
 **kw):
 
     if timestamp != None:
@@ -35,16 +35,16 @@ ret='f0',
     j=0
     if j < len(y)-2:
         while y[j]>0.93*y[j+1]: # such that we account for noise
-            k = j 
+            k = j
             j = j+1
         j = len(y)-2
     guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
-            (3, guess_splitN), 
+            (3, guess_splitN),
             do_print=True, ret=True, fixed=[4])
-    
+
 
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
