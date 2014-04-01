@@ -76,7 +76,7 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
 
         depth = 0.
         for p in pts:
-            depth += A() * exp(-((x-p)/sigma())**2)
+            depth += -1*abs(A()) * exp(-((x-p)/sigma())**2)
 
         return a() - depth
 

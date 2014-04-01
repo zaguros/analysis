@@ -10,7 +10,7 @@ try:
     import qt
     datadir = qt.config['datadir']
 except:
-    datadir = r'd:\measuring\data'
+    datadir = r'M:\tnw\ns\qt\Diamond\Autobackup\LT2\data' #'d:\measuring\data'
 
 def nearest_idx(array, value):
     '''
@@ -56,6 +56,7 @@ def latest_data(contains='', older_than=None):
 
     If no fitting data is found, an exception is raised.
     '''
+
     daydirs = os.listdir(datadir)
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
@@ -71,6 +72,7 @@ def latest_data(contains='', older_than=None):
         all_measdirs.sort()
         
         measdirs = []
+
         for d in all_measdirs:
             
             # this routine verifies that any output directory is a 'valid' directory
