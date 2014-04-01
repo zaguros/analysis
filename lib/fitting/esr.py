@@ -37,6 +37,7 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
     sigma = fit.Parameter(g_sigma, 'sigma')
     x0 = fit.Parameter(g_x0, 'x0')
     p0 = [a, A, sigma, x0]
+    g_p0 = [g_a, g_A, g_sigma, g_x0]
 
     print 'fitting with %d splittings' % no_splits
 
@@ -76,7 +77,7 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
 
         depth = 0.
         for p in pts:
-            depth += -1*abs(A()) * exp(-((x-p)/sigma())**2)
+            depth += A() * exp(-((x-p)/sigma())**2)
 
         return a() - depth
 

@@ -10,7 +10,7 @@ try:
     import qt
     datadir = qt.config['datadir']
 except:
-    datadir = r'M:\tnw\ns\qt\Diamond\Autobackup\LT2\data' #'d:\measuring\data'
+    datadir = r'D:\jcramer3\My Documents\data' #'d:\measuring\data'
 
 def nearest_idx(array, value):
     '''
