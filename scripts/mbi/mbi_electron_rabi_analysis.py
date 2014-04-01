@@ -15,7 +15,7 @@ from analysis.lib.math import error
 # fit_startup = False
 
 timestamp = None #'20130907183620' # None
-guess_frq = 1./200.
+guess_frq = 1./400.
 guess_amp = 0.5
 guess_k = 0.
 guess_phi = 0.
@@ -48,7 +48,7 @@ k = fit.Parameter(guess_k, 'k')
 p0 = [f, A]
 fitfunc_str = ''
 
-def fitfunc(x) : 
+def fitfunc(x) :
     return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
@@ -77,12 +77,12 @@ plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.png'),
     # plt.savefig(os.path.join(folder, 'electronrabi_analysis.pdf'),
         # format='pdf')
 
-        
-        
+
+
 ### FFT
 # p0_fft = np.fft.fft(a.p0.reshape(-1), n=32)
 # frq = np.fft.fftfreq(32, d=(a.sweep_pts[1]-a.sweep_pts[0])/1e3)
-#  
+#
 # fig = a.default_fig()
 # ax = a.default_ax(fig)
 # ax.plot(frq, p0_fft, 'o-')

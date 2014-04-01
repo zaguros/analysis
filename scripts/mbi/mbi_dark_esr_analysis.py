@@ -22,7 +22,7 @@ guess_offset = 1.0
 guess_A_min1 = 0.5
 guess_A_plus1 = 0.1
 guess_A_0 = 0.1
-guess_x0 = 3749.905
+guess_x0 = 3765
 guess_sigma = 0.435
 guess_Nsplit = 2.195
 
