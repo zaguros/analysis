@@ -4,6 +4,7 @@ import pylab as plt
 import numpy as np
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
+from analysis.lib.nv import nvlevels
 #from analysis.lib.spin import spin_control as sc
 
 '''
@@ -36,12 +37,11 @@ SIL5 = [39.6,48.97,r'X:\data\20131015\135226_LaserFrequencyScan_red_scan_coarse_
 SIL4 = [58,75,r'D:\jcramer3\Desktop\104559_LaserFrequencyScan_Hans_sil4_line_scan_2MW_green_gv_0\104559_LaserFrequencyScan_Hans_sil4_line_scan_2MW_green_gv_0.npz']
 SIL4 = [58,75,r'D:\jcramer3\Desktop\201946_LaserFrequencyScan_Hans_sil4_line_scan_noMW_green_gv_0\201946_LaserFrequencyScan_Hans_sil4_line_scan_noMW_green_gv_0.npz']
 SIL1 = [40,65,r'D:\jcramer3\Desktop\204539_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0\204539_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0.npz']
-SIL1 = [40,65,r'D:\jcramer3\Desktop\180058_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0\180058_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0.npz']
-#SIL1 = [40,65,r'D:\jcramer3\Desktop\183159_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0\183159_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0.npz']
+##SIL1 = [40,65,r'D:\jcramer3\Desktop\183159_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0\183159_LaserFrequencyScan_Hans_sil1_line_scan_2MW_green_gv_0.npz']
 SIL4 = [58,75,r'D:\jcramer3\Desktop\095332_LaserFrequencyScan_Hans_sil4_line_scan_2MW_0green_gv_0\095332_LaserFrequencyScan_Hans_sil4_line_scan_2MW_0green_gv_0.npz']
 
 
-datafolders=[SIL4]#,SIL8,SIL11,SIL15,SIL18]
+datafolders=[SIL1]#,SIL8,SIL11,SIL15,SIL18]
 plt.figure(9,figsize=(20, 6))
 j=0
 n=25.5
@@ -54,17 +54,17 @@ for i in datafolders:
     #    plt.text(i[0]-1,j+0.5,'Ey',fontsize=8)
     #if (i[1]!=0):
     #    plt.text(i[1]+0.3,j+0.5,'Ex',fontsize=8)
-    name='SIL4'
+    name='SIL1'
     plt.text(n,j+0.1,name,fontsize=10)
     j=j+1
     result.close()
-plt.xlim([57,76])
-plt.ylim([0,0.1])
+plt.xlim([40,65])
+plt.ylim([0,0.03])
 plt.xlabel ('Relative Frequency [GHz]')   
 plt.ylabel ('Counts (Normalized)')   
 
-Ex= 68.7 #46.88#
-Ey = 66.04 #56.07#
+Ex= 46.754#68.7 #
+Ey = 55.94#66.04 #
 B_field=[0.,0.,300.]
 x2,y2 = nvlevels.get_transitions_ExEy_plottable(Ex,Ey,1,B_field=B_field,show_E_transitions=True,
                                                 show_A_transitions=False,show_FB_E_transitions=False, 
@@ -89,4 +89,4 @@ plt.plot(x5,y5)
 plt.plot(x6,y6)
 
 legend(['data','E-transitions','A-transitions','FB-E-transitions','FB-A-transitions','Eprime-flip-transitions'])
-plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/SIL4_3.png')
+plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/SIL1_5.png')
