@@ -4,14 +4,15 @@ import h5py
 import logging
 
 from matplotlib import pyplot as plt
-
+del toolbox
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, sequence
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, ramsey
 from analysis.lib.tools import plot
 from analysis.lib.math import error
 
+reload(toolbox)
 
 timestamp = None#'184802'#None#'20130530183305'#None # 
 t_ramsey=1/2.19e6

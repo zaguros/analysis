@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import sequence
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
@@ -40,8 +40,8 @@ def analyze_dark_esr(folder,center_guess = True, ax=None, ret=None, **kw):
         guess_ctr = float(raw_input('Center guess?'))
     else:
         j=0
-        for j < len(y)-2:
-            while y[j]>0.93*y[j+1] # such that we account for noise
+        while j < len(y)-2:
+            while y[j]>0.93*y[j+1]: # such that we account for noise
                 k = j 
                 j = j+1
             j = len(y)-2
