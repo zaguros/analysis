@@ -12,16 +12,16 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None #
+timestamp = None #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
-guess_splitN = 2.193e-3
+guess_splitN = 2.195e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
 guess_amplitude = 0.3
 
-def analyze_dark_esr(folder,center_guess = True, ax=None, ret=None, **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -45,8 +45,8 @@ def analyze_dark_esr(folder,center_guess = True, ax=None, ret=None, **kw):
                 k = j
                 j = j+1
             j = len(y)-2
-        guess_ctr = x[k]*1e-3+ guess_splitN #convert to GHz and go to middle dip
-
+        guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
+        print 'guess_ctr= '+str(x[k])
 
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
@@ -77,7 +77,7 @@ def analyze_dark_esr(folder,center_guess = True, ax=None, ret=None, **kw):
 ### script
 if __name__ == '__main__':
     if timestamp != None:
-        folder = toolbox.data_from_time(timestamp)
+        folder = toolbox.latest_data(timestamp)
     else:
         folder = toolbox.latest_data('DarkESR')
 
