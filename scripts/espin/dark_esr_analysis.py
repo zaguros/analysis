@@ -16,7 +16,7 @@ timestamp = None #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
-guess_splitN = 2.195e-3
+guess_splitN = 2.165e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
 guess_amplitude = 0.3
@@ -55,7 +55,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
             # (2, guess_splitC),
             # (2, guess_splitB),
             (3, guess_splitN),
-            do_print=True, ret=True, fixed=[4])
+            do_print=True, ret=True, fixed=[])
     plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
 
     ax.set_xlabel('MW frq (GHz)')

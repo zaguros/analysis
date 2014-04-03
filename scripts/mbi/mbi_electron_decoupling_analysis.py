@@ -39,6 +39,9 @@ t_shift = 0
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
+
+''' add the fit function:
+'''
 '''
 o = fit.Parameter(guess_o, 'o')
 f = fit.Parameter(guess_frq, 'f')
