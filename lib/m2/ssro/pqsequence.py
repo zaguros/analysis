@@ -12,12 +12,22 @@ from analysis.lib.tools import toolbox
 
 class PQSequenceAnalysis(sequence.SequenceAnalysis):
 
+    def __init__(self, **kw):
+        sequence.SequenceAnalysis.__init__(self, **kw)
+        pq_folder=kw.pop('pq_folder', None)
+        if pq_folder != None:
+            h5filepath = toolbox.measurement_filename(pq_folder)
+            h5mode=kw.get('hdf5_mode', 'r')
+            self.pqf = h5py.File(h5filepath,h5mode)
+        else:
+            self.pqf=self.f
+
     def get_photons(self):
         """
         returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
         """
-        channel = self.f['/PQ_channel-1'].value
-        special = self.f['/PQ_special-1'].value
+        channel = self.pqf['/PQ_channel-1'].value
+        special = self.pqf['/PQ_special-1'].value
 
         is_not_special = special==0
         is_channel_0 = channel==0
@@ -30,8 +40,8 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
 
     def get_tail_vs_sweep(self, syncs_per_sweep, channel, start, tail_length, pq_binsize=1e-3, hist_binsize=1.0, verbose= False):#ns
         is_ph = self.get_photons()[channel]
-        sync_time_ns = self.f['/PQ_sync_time-1'].value * pq_binsize
-        sync_nrs=self.f['/PQ_sync_number-1'].value  
+        sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize
+        sync_nrs=self.pqf['/PQ_sync_number-1'].value  
 
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(len(self.ssro_results)) + 1
