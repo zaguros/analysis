@@ -59,7 +59,7 @@ def main(labpc = False):
     plt.plot(tau*1e6,fingerprint_signal[0,:]*pulseF,label='test_spin1')
     plt.plot(tau*1e6,fingerprint_signal[1,:]*pulseF,label = 'test_spin2')
     # plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,label = 'test_spin3')
-    plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'c--',label ='Combined signal of test spins',linewidth=1.75)
+    # plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'c--',label ='Combined signal of test spins',linewidth=.5)
     plt.plot(data_tau,signal,'r--',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
     plt.show()
@@ -67,7 +67,7 @@ def main(labpc = False):
 
 
 
-def Fingerprint(HFs_par,HFs_orth,B_field,N,tau):
+def Fingerprint(HFs_par,HFs_orth,B_field,N,tau,input_in_radial_freq = False):
     '''
     Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght and an array of times and returns the signal at those times for that specific spin.
     '''
@@ -81,8 +81,9 @@ def Fingerprint(HFs_par,HFs_orth,B_field,N,tau):
     print 'tau larmor = %s' %tau_larmor
     M=np.zeros([np.size(HFs_par),np.size(tau)])
     for i,HF_par in enumerate(HFs_par):
-        HF_par = HF_par*2*np.pi #Convert to radial frequency
-        HF_orth = HFs_orth[i]*2*np.pi #convert to radial frequency
+        if input_in_radial_freq == False:
+            HF_par = HF_par*2*np.pi #Convert to radial frequency
+            HF_orth = HFs_orth[i]*2*np.pi #convert to radial frequency
         omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
         alpha = omega_tilde*tau
         beta = omega_larmor*tau
