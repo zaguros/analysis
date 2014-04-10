@@ -1,4 +1,5 @@
 #Simulates the response of a single carbon atom to a number of decoupling pulses
+#Script by MAR
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -22,8 +23,8 @@ def main(labpc = False):
     ## Hyperfine strenghts ##
     ####################
 
-    HF_par = [30e3,-23e3, 0]
-    HF_orth =[100e3,38e3,0]
+    HF_par = [30e3,-23e3, 178e3]
+    HF_orth =[100e3,38e3,80e3]
 
     fingerprint_signal = Fingerprint(HF_par,HF_orth,B_Field,N,tau)
 
@@ -56,11 +57,11 @@ def main(labpc = False):
     plt.figure()
     plt.xlabel('tau(us)')
     plt.ylabel('Signal')
-    plt.plot(tau*1e6,fingerprint_signal[0,:]*pulseF,label='test_spin1')
-    plt.plot(tau*1e6,fingerprint_signal[1,:]*pulseF,label = 'test_spin2')
-    # plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,label = 'test_spin3')
+    # plt.plot(tau*1e6,fingerprint_signal[0,:]*pulseF,'r',label='test_spin1')
+    # plt.plot(tau*1e6,fingerprint_signal[1,:]*pulseF,'g',label = 'test_spin2')
+    plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,'m',label = 'test_spin3')
     # plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'c--',label ='Combined signal of test spins',linewidth=.5)
-    plt.plot(data_tau,signal,'r--',linewidth = 0.5,label='measured_data')
+    plt.plot(data_tau,signal,'b.--',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
     plt.show()
 

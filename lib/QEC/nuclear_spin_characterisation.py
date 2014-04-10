@@ -1,8 +1,54 @@
 #Module that contains functions to simulate nuclear spin responses to decoupling sequences
 import numpy as np
 
+#Physical constants needed in  module
+gamma_c = 1.071e3 #g-factor for C13 in Hz/G
+
 def fingerprint():
     pass
+
+def calc_hyperfine_from_tau(tau_k,k,B_field):
+    '''
+    calculates the parallel component fo the hyperfine interaction in Hz using formula (3) from Taminiau et al. (2012) PRL
+    This formula is valid in the approximation of high magnetic field (Omega_Larmor >> Omega_HF)
+    ------
+    inputs
+    ------
+    tau:        tau in seconds where the dip is observed
+    k:           estimated order of the dip
+    B_field:   Magnetic field strength in Gauss
+    ------
+    returns
+    ------
+    HF_par:   parallel component of the hyperfine interaction in Hz
+    '''
+
+    omega_L = 2*np.pi *gamma_c*B_field #in Radial freq
+
+    HF_par = ((2*k-1)*np.pi/tau_k-2*omega_L)
+    HF_par = HF_par/(2*np.pi) #convert back to freq in Hz
+
+    return HF_par
+
+def calc_tau_from_HF(HF_par,k,B_field):
+    '''
+    calculates the resonance tau  from the hyperfine interaction in Hz  using formula (3) from Taminiau et al. (2012) PRL
+    This formula is valid in the approximation of high magnetic field (Omega_Larmor >> Omega_HF)
+    ------
+    inputs
+    ------
+    HF_par:  Parallel component of the HF in Hz
+    k:           order of the dip
+    B_field:   Magnetic field strength in Gauss
+    ------
+    returns
+    ------
+    tau_k:     tau in seconds of dip order k
+    '''
+    HF_par = HF_par *2*np.pi #convert to radial freq
+    omega_L = 2*np.pi *gamma_c*B_field #in radial frequency
+    tau_k = (2*k-1)*np.pi/(2*omega_L+HF_par)
+    return tau_k
 
 def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
     '''
@@ -22,8 +68,6 @@ def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
     measured signal is M.prod(axis=0)
 
     '''
-    #physical constants
-    gamma_c = 1.071e3 #g-factor for C13 in Hz/G
     #Model parameters
     omega_larmor = 2*np.pi*gamma_c*B_field #radial frequency
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
