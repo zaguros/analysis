@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = None #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
@@ -40,11 +40,10 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
         guess_ctr = float(raw_input('Center guess?'))
     else:
         j=0
-        if j < len(y)-2:
-            while y[j]>0.93*y[j+1]: # such that we account for noise
-                k = j
-                j = j+1
-            j = len(y)-2
+        while y[j]>0.9 and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
+            k = j
+            j += 1
+        #j = len(y)-2
         guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
         print 'guess_ctr= '+str(x[k])
 
