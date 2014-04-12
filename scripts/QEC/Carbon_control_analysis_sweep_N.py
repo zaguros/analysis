@@ -8,12 +8,11 @@ from matplotlib import pyplot as plt
 
 reload(common)
 
-def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offset = 0.5, amplitude = 0.5, position =0, T2 = 800, power=2, plot_fit = True, do_print = False, show_guess = False):
+def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],frequency = 1/30, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, plot_fit = True, do_print = False, show_guess = False):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
-    Based on electron_T1_anal, modified by Adriaan Rol
     '''
 
     if timestamp != None:
@@ -32,13 +31,14 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
 
-        p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
+        p0, fitfunc, fitfunc_str = common.fit_decaying_cos(frequency,offset, amplitude, phase, decay_constant)
 
         #plot the initial guess
         if show_guess:
             ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,2])
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3])
+
 
         ## plot data and fit as function of total time
         if plot_fit == True:
@@ -50,6 +50,11 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
         format='pdf')
         plt.savefig(os.path.join(folder, 'analyzed_result.png'),
         format='png')
+
+        fig = a.default_fig(figsize=(6,4))
+        ax = a.default_ax(fig)
+        ax.plot(a.sweep_pts, a.p0, '-b', lw=1)
+
 
         ## plot data and fit as function of tau
         #plt.figure()
@@ -143,3 +148,4 @@ plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.png'),
 # fig = a.default_fig()
 # ax = a.default_ax(fig)
 # ax.plot(frq, p0_fft, 'o-')
+

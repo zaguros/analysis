@@ -14,10 +14,10 @@ from analysis.lib.math import error
 
 reload(toolbox)
 
-timestamp = None#'184802'#None#'20130530183305'#None #
+timestamp = None#'155611'#'154018'#'184802'#None#'20130530183305'#None #
 t_ramsey=1/2.19e6
 gamma=2.8e6
-bs=[500]
+bs=[8]
 dtime=20e-6
 ### script
 if timestamp != None:
