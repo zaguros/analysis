@@ -15,7 +15,7 @@ def get_levels(**kw):
 
 def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
     """
-    Returns the six transition energies in GHz of the ES of the NV centre, 
+    Returns the six energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
     """
     
@@ -24,6 +24,21 @@ def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
     if fast:
         return np.sort(get_ES_fast(offset,strain,transitions=transitions))
     return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
+
+def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
+                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True):
+    """
+    Returns the six transition energies in GHz of the ES of the NV centre, 
+    when given the Energies of the Ex and Ey transitions in GHz
+    """
+    
+    strain=abs(Ex-Ey)/2.0
+    offset=np.min([Ey,Ex])+strain
+
+    return np.sort(get_optical_transitions(E_field=[strain,0,0],B_field=[0.,0.,300.],Ee0=offset-0.97,
+                            show_E_transitions=show_E_transitions,show_A_transitions=show_A_transitions,
+                            show_FB_E_transitions=show_FB_E_transitions, 
+                            show_FB_A_transitions=show_FB_A_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions))
 
 def get_ES_fast(f0,D,transitions=True):
     D=D/0.749
@@ -44,6 +59,25 @@ def get_ES_ExEy_plottable(Ex,Ey,height):
     Ey transitions in GHz
     """
     x=get_ES_ExEy(Ex,Ey)
+    y=np.zeros(3*len(x))
+    for ii in range(len(x)):
+        x=np.append(x,x[ii]-0.0001)
+        x=np.append(x,x[ii]+0.0001)
+        y[3*ii+1]=height
+    return [np.sort(x),y]
+
+def get_transitions_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
+                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True):
+    """
+    Returns an array plottable with qt.Plot2D of the six transition energies 
+    in GHz of the ES of the NV centre, when given the Energies of the Ex and 
+    Ey transitions in GHz
+    """
+    x=get_transitions_ExEy(Ex,Ey,B_field=B_field,
+                            show_E_transitions=show_E_transitions,show_A_transitions=show_A_transitions,
+                            show_FB_E_transitions=show_FB_E_transitions,
+                            show_FB_A_transitions=show_FB_A_transitions, 
+                            show_E_prime_flip_transitions=show_E_prime_flip_transitions)
     y=np.zeros(3*len(x))
     for ii in range(len(x)):
         x=np.append(x,x[ii]-0.0001)
@@ -94,8 +128,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
                     [0, D2A1,  0, D2E2*w2, 0, 0],
                     [D2E2*w2, 0, -2*D2A1, 0, 0, 0],
                     [0, D2E2*w2, 0, -2*D2A1, 0, 0],
-                    [0, 0, 0, 0, D2A1 - 2*D2E1, 0],
-                    [0, 0, 0, 0, 0, D2A1 + 2*D2E1]])
+                    [0, 0, 0, 0, D2A1 - 2        *D2E1, 0],
+                    [0, 0, 0, 0, 0, D2A1 + 2 *D2E1]])
             
     Vso = np.diag([-lambda_par, -lambda_par, 0, 0, lambda_par, lambda_par])
     
@@ -107,8 +141,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
                    [Ex, Ey, 0, 0, 0, Ez]])
     Vb = np.matrix([[0,  1j*(g_es_par*Bz + lambdaA2*Bz), 1j*(g_es_ort*By)/w2,  1j*(g_es_ort*Bx)/w2, 0, 0],
                     [-1j*(g_es_par*Bz + lambdaA2*Bz), 0, 1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2, 0, 0],
-                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 -1j*lambdaA2*Bz, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
-                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*lambdaA2*Bz,    0,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
+                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 0, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
+                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2,  0,    0,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
                     [0, 0, -1j*(g_es_ort*By)/w2, 1j*(g_es_ort*Bx)/w2,  0, 1j*(g_es_par*Bz - lambdaA2*Bz)],
                     [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
@@ -153,25 +187,30 @@ def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
     w,v=np.linalg.eig(V)
     return np.real(w),v
 
-def get_optical_transitions(show_FB_E_transitions=True, show_FB_A_transitions=False, show_E_prime_flip_transitions=False, **kw):
+def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
+                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True, **kw):
 
     E_GS=np.sort(get_GS(**kw)[0])
     E_ES=np.sort(get_ES(**kw)[0])
-    allowed_transitions=np.array([E_ES[2]-E_GS[0],
-                                 E_ES[3]-E_GS[0],
-                                 E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
+    E_transitions=np.array([E_ES[2]-E_GS[0],
+                                 E_ES[3]-E_GS[0]])
+    A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
-                                        E_ES[1]-E_GS[1]])
+                                        E_ES[1]-E_GS[1]])   # 4 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
-                               E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]])
+                               E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]]) # 4 transitions
     FB_A_transitions=np.array([E_ES[0]-E_GS[0],
                                E_ES[1]-E_GS[0],
                                E_ES[4]-E_GS[0],
-                               E_ES[5]-E_GS[0]])
-    transitions = allowed_transitions
+                               E_ES[5]-E_GS[0]])    # 4 transitions
+    transitions = []
+    if show_E_transitions:
+        transitions = np.append(transitions, E_transitions)
+    if show_A_transitions:
+        transitions = np.append(transitions, A_transitions)
     if show_FB_E_transitions: 
         transitions = np.append(transitions, FB_E_transitions)
     if show_FB_A_transitions: 

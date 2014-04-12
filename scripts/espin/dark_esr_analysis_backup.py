@@ -12,16 +12,16 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = None #
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
-guess_splitN = 2.165e-3
+guess_splitN = 2.193e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
 guess_amplitude = 0.3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
+def analyze_dark_esr(folder,center_guess = True, ax=None, ret=None, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -40,12 +40,13 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
         guess_ctr = float(raw_input('Center guess?'))
     else:
         j=0
-        while y[j]>0.9 and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
-            k = j
-            j += 1
-        #j = len(y)-2
-        guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-        print 'guess_ctr= '+str(x[k])
+        if j < len(y)-2:
+            while y[j]>0.93*y[j+1]: # such that we account for noise
+                k = j
+                j = j+1
+            j = len(y)-2
+        guess_ctr = x[k]*1e-3+ guess_splitN #convert to GHz and go to middle dip
+
 
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
@@ -54,7 +55,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
             # (2, guess_splitC),
             # (2, guess_splitB),
             (3, guess_splitN),
-            do_print=True, ret=True, fixed=[])
+            do_print=True, ret=True, fixed=[4])
     plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
 
     ax.set_xlabel('MW frq (GHz)')
@@ -76,7 +77,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
 ### script
 if __name__ == '__main__':
     if timestamp != None:
-        folder = toolbox.latest_data(timestamp)
+        folder = toolbox.data_from_time(timestamp)
     else:
         folder = toolbox.latest_data('DarkESR')
 

@@ -33,7 +33,7 @@ def verify_timestamp(timestamp):
         tstamp = timestamp[8:]
     else:
         raise Exception("Cannot interpret timestamp '%s'" % timestamp)
-        
+
     return daystamp, tstamp
 
 def is_older(ts0, ts1):
@@ -50,29 +50,31 @@ def latest_data(contains='', older_than=None):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
-    
-    if older_than is not None, than the latest data that fits and that 
+
+    if older_than is not None, than the latest data that fits and that
     is older than the date given by the timestamp older_than is returned.
 
     If no fitting data is found, an exception is raised.
     '''
+
     daydirs = os.listdir(datadir)
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
         return None
 
     daydirs.sort()
-    
+
     measdirs = []
     i = len(daydirs)-1
-    while len(measdirs) == 0 and i >= 0:       
+    while len(measdirs) == 0 and i >= 0:
         daydir = daydirs[i]
         all_measdirs = [d for d in os.listdir(os.path.join(datadir, daydir))]
         all_measdirs.sort()
-        
+
         measdirs = []
+
         for d in all_measdirs:
-            
+
             # this routine verifies that any output directory is a 'valid' directory
             # (i.e, obeys the regular naming convention)
             _timestamp = daydir + d[:6]
@@ -88,7 +90,7 @@ def latest_data(contains='', older_than=None):
                         continue
                 measdirs.append(d)
         i -= 1
-        
+
     if len(measdirs) == 0:
         raise Exception('No fitting data found.')
 
@@ -110,7 +112,7 @@ def latest_data(contains='', older_than=None):
 #         logging.warning('No data found in datadir')
 #         return None
 #     daydirs.sort()
-    
+
 #     if len(endtimestamp) == 6:
 #         endday = time.strftime('%Y%m%d')
 #         endtime = endtimestamp
@@ -143,8 +145,8 @@ def data_from_time(timestamp):
     daydirs = os.listdir(datadir)
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')
-    
-    daydirs.sort()    
+
+    daydirs.sort()
     daystamp, tstamp = verify_timestamp(timestamp)
 
     if not os.path.isdir(os.path.join(datadir,daystamp)):
@@ -153,7 +155,7 @@ def data_from_time(timestamp):
 
     measdirs = [ d for d in os.listdir(os.path.join(datadir,daystamp)) \
             if d[:6] == tstamp ]
-    
+
     if len(measdirs) == 0:
         logging.warning("Requested data '%s'/'%s' not found" \
                 % (daystamp, tstamp))
@@ -179,9 +181,9 @@ def get_plot_title_from_folder(folder):
     measurementstring = os.path.split(folder)[1]
     timestamp = os.path.split(os.path.split(folder)[0])[1] \
             + '/' + measurementstring[:6]
-    measurementstring = measurementstring[7:]        
+    measurementstring = measurementstring[7:]
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
 
-    
+
 

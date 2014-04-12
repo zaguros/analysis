@@ -61,13 +61,13 @@ y = a.p0
 
 fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
 
-def fitfunc(x): 
+def fitfunc(x):
     return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
-        plot_data=False)  
+        plot_data=False)
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 plt.savefig(os.path.join(folder, 'electronrabi_analysis_fit.png'))

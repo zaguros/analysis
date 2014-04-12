@@ -17,7 +17,7 @@ from analysis.lib.m2 import m2
 def get_SSRO_calibration(folder, readout_time):
     fp = os.path.join(folder, 'analysis.hdf5')
     f = h5py.File(fp, 'r')
-    
+
     times = f['fidelity/time'].value
     fids0 = f['fidelity/ms0'].value
     fids1 = f['fidelity/ms1'].value
@@ -32,13 +32,13 @@ def get_SSRO_calibration(folder, readout_time):
 
 # analysis classes and shortcut functions
 class SSROAnalysis(m2.M2Analysis):
-    
+
     def get_run(self, name):
         grp = self.adwingrp(name)
-        
+
         self.reps = grp['completed_reps'].value
         self.cycle_duration = grp.attrs['cycle_duration']
-        
+
         self.repetitions = np.arange(self.reps)
         self.ro_time = self.ssro_time = np.arange(grp.attrs['SSRO_duration']) * \
                 self.cycle_duration * 10./3.
@@ -53,7 +53,7 @@ class SSROAnalysis(m2.M2Analysis):
 
     def cpsh_hist(self, ro_counts, reps, firstbin=0, lastbin=-1, plot=True, **kw):
         name = kw.pop('name', '')
- 
+
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
 
@@ -68,7 +68,7 @@ class SSROAnalysis(m2.M2Analysis):
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts', 
+            ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts',
                     normed=True) # , stacked=True)
             ax.set_xlabel('cts/shot')
             ax.set_ylabel('probability')
@@ -78,16 +78,16 @@ class SSROAnalysis(m2.M2Analysis):
             plt.figtext(0.85, 0.85, annotation, horizontalalignment='right',
                 verticalalignment='top')
 
-            fig.savefig(os.path.join(self.folder, 
-                'cpsh'+fn_suffix+'.'+self.plot_format), 
+            fig.savefig(os.path.join(self.folder,
+                'cpsh'+fn_suffix+'.'+self.plot_format),
                 format=self.plot_format)
 
-    def readout_relaxation(self, ro_time, ro_counts, reps, binsize, 
+    def readout_relaxation(self, ro_time, ro_counts, reps, binsize,
             lastbin=-1, plot=True, **kw):
-        
+
         name = kw.pop('name', '')
         ret = kw.pop('ret', False)
- 
+
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
 
@@ -103,24 +103,24 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_ylabel('counts [Hz]')
             ax.set_title(self.default_plot_title + title_suffix)
 
-            fig.savefig(os.path.join(self.folder, 
-                'readout_relaxation'+fn_suffix+'.'+self.plot_format), 
+            fig.savefig(os.path.join(self.folder,
+                'readout_relaxation'+fn_suffix+'.'+self.plot_format),
                 format=self.plot_format)
 
         if ret:
             return ro_time, ro_countrate
 
-    
+
     def spinpumping(self, sp_time, sp_counts, reps, binsize,
             plot=True, **kw):
 
         name = kw.pop('name', '')
- 
+
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
-        
+
         sp = np.array([j/(binsize*1e-6*reps) for j in sp_counts])
-        
+
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -128,38 +128,38 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_xlabel('spin pumping time [ns]')
             ax.set_ylabel('counts [Hz]')
             ax.set_title(self.default_plot_title + title_suffix)
-            
-            fig.savefig(os.path.join(self.folder, 
-                'spinpumping'+fn_suffix+'.'+self.plot_format), 
+
+            fig.savefig(os.path.join(self.folder,
+                'spinpumping'+fn_suffix+'.'+self.plot_format),
                 format=self.plot_format)
 
     def charge_hist(self, cr_counts, plot=True, **kw):
-        
+
         name = kw.pop('name', '')
- 
+
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
 
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.hist(cr_counts, abs(max(cr_counts)-min(cr_counts)+1), 
+            ax.hist(cr_counts, abs(max(cr_counts)-min(cr_counts)+1),
                     normed=True)
             ax.set_xlabel('counts during CR check')
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)
-            
-            fig.savefig(os.path.join(self.folder, 
-                'cr_check'+fn_suffix+'.'+self.plot_format), 
+
+            fig.savefig(os.path.join(self.folder,
+                'cr_check'+fn_suffix+'.'+self.plot_format),
                 format=self.plot_format)
 
     def fidelity(self, ro_counts, reps, binsize, ms,
             lastbin=None, plot=True, **kw):
-        
+
         name = kw.pop('name', '')
         save = kw.pop('save', True)
         ret = kw.pop('ret', False)
- 
+
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
         dataset_name = name if name != '' else 'fidelity'
@@ -171,13 +171,13 @@ class SSROAnalysis(m2.M2Analysis):
 
         for i in range(1,lastbin):
             t = i*binsize
-            
+
             # d: hist of counts, c: counts per shot
             d = np.sum(ro_counts[:,:i], axis=1)
             c = np.sum(d)/float(reps)
 
             # we get the fidelity from the probability to get zero counts in a
-            # shot 
+            # shot
             pzero = len(np.where(d==0)[0])/float(reps)
             pzero_err = np.sqrt(pzero*(1-pzero)/reps)
             fid = 1-pzero if ms == 0 else pzero # fidelity calc. depends on ms
@@ -191,7 +191,7 @@ class SSROAnalysis(m2.M2Analysis):
             g = f['/fidelity']
             if dataset_name in g:
                 del  g[dataset_name]
-        
+
             g[dataset_name] = fid_dat
             f.close()
 
@@ -203,8 +203,8 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_ylabel('ms = %d RO fidelity' % ms)
             ax.set_title(self.default_plot_title + title_suffix)
 
-            fig.savefig(os.path.join(self.folder, 
-                'fidelity'+fn_suffix+'.'+self.plot_format), 
+            fig.savefig(os.path.join(self.folder,
+                'fidelity'+fn_suffix+'.'+self.plot_format),
                 format=self.plot_format)
 
         if ret:
@@ -212,7 +212,7 @@ class SSROAnalysis(m2.M2Analysis):
 
 
     def mean_fidelity(self, plot=True, **kw):
-        
+
         f = self.analysis_h5data()
         g = f['/fidelity']
         _fid0 = g['ms0']
@@ -261,8 +261,8 @@ class SSROAnalysis(m2.M2Analysis):
 
             ax.set_title(self.default_plot_title + ': mean RO fidelity')
 
-            fig.savefig(os.path.join(self.folder, 
-                'mean_fidelity.'+self.plot_format), 
+            fig.savefig(os.path.join(self.folder,
+                'mean_fidelity.'+self.plot_format),
                 format=self.plot_format)
 
 
@@ -270,7 +270,7 @@ def ssrocalib(folder=''):
     if folder=='':
         folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
-    
+
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
         a.get_run(n)
         a.cpsh_hist(a.ro_counts, a.reps, name=n)
@@ -278,7 +278,7 @@ def ssrocalib(folder=''):
         a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
         a.charge_hist(a.cr_counts, name=n)
         a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
-    
+
     plt.close('all')
     a.mean_fidelity()
     a.finish()
@@ -287,26 +287,26 @@ def thcalib(folder='', analyze_probe = False):
     if folder=='':
         folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
-    
+
     if analyze_probe:
         ths = [1,2,3,4,6,8,10,15,20,25,30]
     else:
         ths = np.linspace(5,45,9)
 
     for i,th in enumerate(ths):
-        
+
         if analyze_probe:
             name = 'th_pres_{}_probe_{}'.format(pres[0],th)
         else:
             name = 'th_pres_{}_probe_{}'.format(th,th)
-        
+
         a = sequence.SequenceAnalysis(folder)
         a.get_cr_results(name, plot=True)
         plt.close('all')
 
         mean = a.get_mean_cr_cts()
         means.append(mean)
-        
+
         stats = a.adwingrp(name)['statistics'].value
         fail = stats[2]
         percentage_pass = 5000./(5000. + fail) * 100 #5000 is the number of succesfull measurements.
@@ -341,7 +341,7 @@ def thcalib(folder='', analyze_probe = False):
 
 
 
-    for n,th in zip(['th_pres_30.0_probe_30.0', 'th_pres_40.0_probe_40.0', 
+    for n,th in zip(['th_pres_30.0_probe_30.0', 'th_pres_40.0_probe_40.0',
             'th_pres_50.0_probe_50.0','th_pres_60.0_probe_60.0',
             'th_pres_70.0_probe_70.0','th_pres_80.0_probe_80.0',
             'th_pres_90.0_probe_90.0','th_pres_100.0_probe_100.0',
@@ -352,16 +352,16 @@ def thcalib(folder='', analyze_probe = False):
         a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
         a.charge_hist(a.cr_counts, name=n)
         a.fidelity(a.ro_counts, a.reps, a.binsize, th, name=n)
-    
+
     plt.close('all')
     a.finish()
 
-    
+
 class AWGSSROAnalysis(m2.M2Analysis):
 
     def get_count_probability(self, name):
         grp = self.adwingrp(name)
-        
+
         self.reps = grp['completed_reps'].value
         self.pts = grp.attrs['pts']
         self.times = self.g.attrs['AWG_SSRO_durations']
@@ -409,4 +409,4 @@ def awgssro_prjprob(folder, pop0=1./6):
     ax.set_xlabel('RO time (ns)')
     ax.set_ylabel('Prob. for projection into 0')
 
-        
+
