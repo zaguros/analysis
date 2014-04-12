@@ -14,11 +14,11 @@ from analysis.lib.tools import plot
 ### settings
 timestamp = None # 
 guess_offset = 1
-guess_ctr = 2.8280
+guess_ctr = 2.8098
 guess_splitB = 30.
-guess_splitN = 2.193e-3
-# guess_splitC = .8e-3 #12.78
-guess_width = 0.2e-3
+guess_splitN = 2.197e-3 #2.193e-3
+guess_splitC = 1e-3 #12.78
+guess_width = 0.8e-3
 guess_amplitude = 0.3
 
 def analyze_dark_esr(folder, ax=None, ret=None, **kw):
@@ -36,15 +36,15 @@ def analyze_dark_esr(folder, ax=None, ret=None, **kw):
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     ax.set_ylim(0.6,1.05)
     
-    guess_ctr = float(raw_input('Center guess?'))
+    #guess_ctr = float(raw_input('Center guess?'))
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             # (2, guess_splitN), 
-            # (2, guess_splitC),
+             (2, guess_splitC),
             # (2, guess_splitB),
             (3, guess_splitN), 
-            do_print=True, ret=True, fixed=[4])
+            do_print=True, ret=True, fixed=[])
     plot.plot_fit1d(fit_result, x, ax=ax, plot_data=False, **kw)
 
     ax.set_xlabel('MW frq (GHz)')

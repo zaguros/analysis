@@ -18,7 +18,7 @@ reload(ssro)
 reload(dark_esr_analysis)
 
 # adapt
-name = 'sil10'
+name = 'sil2'
 pi2_4mhz_value = 1. - 0.473
 
 
@@ -292,6 +292,7 @@ def calibrate_pi2_noMBI(folder):
     a.finish()
    
     x2 = x[::2]
+    print x2
     y2 = y[1::2] - y[::2]
     u_y2 = np.sqrt(  u_y[1::2]**2 + u_y[::2]**2 )    
     
@@ -553,5 +554,5 @@ if __name__ == '__main__':
     #stage_1_calibrations()
     #stage_2_calibrations()
     #stage_3_calibrations()
-    stage_4_calibrations()
-    #T2_rev()
+    #stage_4_calibrations()
+    T2_rev()

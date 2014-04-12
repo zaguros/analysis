@@ -75,3 +75,27 @@ def fit_ramsey_gaussian_decay(g_tau, g_a, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_ramsey_hyperfinelines_fixed(g_tau, g_A, g_a,g_det,g_hf,g_phi1,g_phi2,g_phi3, *arg):
+    """
+    fitfunction for a gaussian decay,
+        y(x) = a + A*exp(-(x/tau)**2)
+
+    Initial guesses (in this order):
+        g_tau : decay constant
+        g_A : amplitude
+        g_a : offset
+    """
+    
+    tau = fit.Parameter(g_tau, 'tau')
+    A = fit.Parameter(g_A, 'A')
+    a = fit.Parameter(g_a, 'a')
+    det = fit.Parameter(g_det, 'det')
+    hf = fit.Parameter(g_hf, 'hf')
+    phi1 = fit.Parameter(g_phi1, 'phi1')
+    phi2 = fit.Parameter(g_phi2, 'phi2')
+    phi3 = fit.Parameter(g_phi3, 'phi3')
+    p0 = [tau, A, a,det,hf,phi1,phi2,phi3]
+    fitfunc_str = 'sumf of three cos and decay'
+
+    def fitfunc(x): return a() + A()*exp(-(x/tau())**2) * (cos(2*pi*det()*x+phi1())+cos(2*pi*(det()-hf())*x+phi2())+cos(2*pi*(det()+hf())*x+phi3()))/3.
+    return p0, fitfunc, fitfunc_str
