@@ -4,6 +4,7 @@ import numpy as np
 #Physical constants needed in  module
 gamma_c = 1.071e3 #g-factor for C13 in Hz/G
 
+
 def fingerprint():
     pass
 
