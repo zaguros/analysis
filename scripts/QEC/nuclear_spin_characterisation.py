@@ -8,6 +8,16 @@ import analysis.lib.qec.nuclear_spin_characterisation as SC
 ################
 #input arguments ##
 ################
+def estimate_HFs():
+    B_Field = 304.12 #Gauss
+    tau_list = [1e-6,1e-6,4.1e-6,5.5e-6,7.0e-6,8.5e-6,11.7e-6,13.2e-6,14.7e-6]
+    for k, tau in enumerate(tau_list):
+
+        hf = SC.calc_hyperfine_from_tau(tau,k+1,B_Field)
+        print 'tau = ' + str(tau) +', k = ' +str(k+1)
+        print hf
+
+
 def main(labpc = False):
 
 
@@ -16,18 +26,18 @@ def main(labpc = False):
     ##############
     N = 16 #Integer
     tau=np.linspace(0, 15e-6, 15000) #seconds
-    B_Field = 300 #Gauss
+    B_Field = 304.12 #Gauss
     pulseF = .86 #correction factor on final signal for plotting (pulse fidelity )
-
+    estimate_HFs()
 
 
     ####################
     ## Hyperfine strenghts ##
     ####################
 
-    HF_par = [30e3,-23e3, 178e3]
-    HF_par = [30e3,-23e3, -274e3]
-    HF_orth =[100e3,38e3,15e3]
+    # HF_par = [30e3,-23e3, 178e3]
+    HF_par = [28e3,-56e3, 24807]
+    HF_orth =[90e3,120e3,30e3]
 
     M = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,N,tau)
     fingerprint_signal = ((M+1)/2)
@@ -63,8 +73,8 @@ def main(labpc = False):
 
     plt.plot(tau*1e6,fingerprint_signal[0,:]*pulseF,'r',label='test_spin1')
     plt.plot(tau*1e6,fingerprint_signal[1,:]*pulseF,'g',label = 'test_spin2')
-    # plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,'m',label = 'test_spin3')
-    # plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'c--',label ='Combined signal of test spins',linewidth=.5)
+    plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,'c',label = 'test_spin3')
+    # plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
     plt.plot(data_tau,signal,'b.--',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
     plt.show()
@@ -91,4 +101,5 @@ def load_dd_fingerprintdata(h5filepath='/Users/Adriaan/Documents/Python_Programs
     return xdata,ydata
 
 main()
+# estimate_HFs()
 # load_dd_fingerprintdata()
