@@ -8,15 +8,6 @@ import analysis.lib.qec.nuclear_spin_characterisation as SC
 ################
 #input arguments ##
 ################
-def estimate_HFs():
-    B_Field = 304.12 #Gauss
-    tau_list = [1e-6,1e-6,4.1e-6,5.5e-6,7.0e-6,8.5e-6,11.7e-6,13.2e-6,14.7e-6]
-    for k, tau in enumerate(tau_list):
-
-        hf = SC.calc_hyperfine_from_tau(tau,k+1,B_Field)
-        print 'tau = ' + str(tau) +', k = ' +str(k+1)
-        print hf
-
 
 def main(labpc = False):
 
@@ -25,19 +16,31 @@ def main(labpc = False):
     ## exp params ##
     ##############
     N = 16 #Integer
-    tau=np.linspace(0, 15e-6, 15000) #seconds
+    tau=np.linspace(0e-6, 15e-6, 15000) #seconds
     B_Field = 304.12 #Gauss
     pulseF = .86 #correction factor on final signal for plotting (pulse fidelity )
-    estimate_HFs()
 
 
     ####################
     ## Hyperfine strenghts ##
-    ####################
+    # ####################
+    # Values that seem to work for N=16
+    # HF_par = [28e3,-56e3, 27e3]
+    # HF_orth =[90e3,120e3,30e3]
 
-    # HF_par = [30e3,-23e3, 178e3]
-    HF_par = [28e3,-56e3, 24807]
-    HF_orth =[90e3,120e3,30e3]
+    # HF_par = [28e3,-58.5e3, 27e3]
+    # HF_orth =[90e3,120.5e3,30e3]
+
+    # HF_par = [28e3,-56.7e3, 27e3]
+    # HF_orth =[90e3,122e3,30e3]
+
+    # HF_par = [28e3,-57e3, 27e3]
+    # HF_orth =[90e3,118e3,30e3]
+
+    HF_par = [28e3,-62.5e3, 27e3]
+    HF_orth =[90e3,130e3,30e3]
+
+
 
     M = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,N,tau)
     fingerprint_signal = ((M+1)/2)
@@ -49,13 +52,19 @@ def main(labpc = False):
         #Script that uses toolbox functions
     else:
         filepaths = []
-        filepath = '/Users/Adriaan/Documents/Python_Programs/Data/fingerprint_data/TIMESTAMP_DecouplingSequence_Fingerprint_Hans_sil1_N1024/TIMESTAMP_DecouplingSequence_Fingerprint_Hans_sil1_N1024.hdf5'
-        # timestamps = ['223450', '223801', '224119', '224446', '231158','225215', '225614', '230023', '231645', '232118', '232603', '233057', '233605']
-        timestamps = ['223450', '223801', '224119', '224446', '231158','225215', '225614', '230023', '231645', '232118', '232603', '233057', '233605', '234654', '111324', '111725', '112126', '112529', '112930', '113614', '114015', '114416', '114818', '115220', '115622', '120024', '120426','120825']#, '130753']
+        if N ==16:
+            filepath = '/Users/Adriaan/Documents/teamdiamond/data/fingerprint_data/TIMESTAMP_DecouplingSequence_Fingerprint_Hans_sil1_N1024/TIMESTAMP_DecouplingSequence_Fingerprint_Hans_sil1_N1024.hdf5'
+            timestamps = ['223450', '223801', '224119', '224446', '231158','225215', '225614', '230023', '231645', '232118', '232603', '233057', '233605', '234654', '111324', '111725', '112126', '112529', '112930', '113614', '114015', '114416', '114818', '115220', '115622', '120024', '120426','120825']#, '130753']
+        elif N ==32:
+            filepath = '/Users/Adriaan/Documents/Python_Programs/Data/fingerprint_data/TIMESTAMP_DecouplingSequence_Hans_sil1_N32/TIMESTAMP_DecouplingSequence_Hans_sil1_N32.hdf5'
+            timestamps =['101732','102646','104011',
+'105345']
 
 
         for i, timestamp in enumerate(timestamps):
             filepaths.append(filepath.replace("TIMESTAMP",timestamp))
+
+
         data_tau= []
         signal = []
         for filep in filepaths:
@@ -74,8 +83,8 @@ def main(labpc = False):
     plt.plot(tau*1e6,fingerprint_signal[0,:]*pulseF,'r',label='test_spin1')
     plt.plot(tau*1e6,fingerprint_signal[1,:]*pulseF,'g',label = 'test_spin2')
     plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,'c',label = 'test_spin3')
-    # plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
-    plt.plot(data_tau,signal,'b.--',linewidth = 0.5,label='measured_data')
+    plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
+    plt.plot(data_tau,signal,'b.-',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
     plt.show()
 
