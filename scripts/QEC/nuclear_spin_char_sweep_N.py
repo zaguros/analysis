@@ -19,9 +19,9 @@ def main(labpc = False):
     N = 16
     tau=np.linspace(0e-6, 15e-6, 15000) #seconds
 
-    N_swp = np.array(range(0,124,4)) #Integer
-    # tau= 6.522e-6 #seconds
-    tau_swpN = 6.622e-6
+    N_swp = np.array(range(0,300,4)) #Integer
+    tau_swpN= 6.522e-6 #seconds
+    # tau_swpN = 6.622e-6
     B_Field = 304.12 #Gauss
     pulseF = .86 #correction factor on final signal for plotting (pulse fidelity )
 
@@ -29,14 +29,24 @@ def main(labpc = False):
     ####################
     ## Hyperfine strenghts ##
     # ####################
-    # HF_par = [28e3,-62.5e3, 27e3]
-    # HF_orth =[90e3,130e3,30e3]
+    HF_par = [28e3,-62.5e3, 27e3]
+    HF_orth =[90e3,130e3,30e3]
+
+    HF_par = [30e3,-62.5e3, 27e3]
+    HF_orth =[80e3,130e3,30e3]
+
 
     # HF_par = [28e3,-62.5e3, 27e3]
     # HF_orth =[45e3,130e3,30e3]
 
-    HF_par = [28e3,-62.5e3, 27e3]
-    HF_orth =[45e3,130e3,30e3]
+    # HF_par = [26.5e3,-62.5e3, 27e3]
+    # HF_orth =[43e3,130e3,30e3]
+
+    # HF_par = [38e3,-62.5e3, 27e3]
+    # HF_orth =[39e3,130e3,30e3]
+
+    #### STupid been tuning spin 1 on a peak for spin 2
+
 
 
     Mn = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,N_swp,tau_swpN)
@@ -58,7 +68,7 @@ def main(labpc = False):
         # timestamps = ['165509']
         datestamp = '20140408'
         # timestamps = ['174302']
-        timestamps = ['164854']
+        timestamps = ['164854','165446'] #tau = 6.522us , testspin 1
 
         datadir = '/Users/Adriaan/Documents/teamdiamond/data/'
         filepath = datadir+'/'+datestamp+'/TIMESTAMP_DecouplingSequence_Hans_sil1_C2_sweep_N/TIMESTAMP_DecouplingSequence_Hans_sil1_C2_sweep_N.hdf5'
