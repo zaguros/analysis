@@ -75,7 +75,11 @@ def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
 
 
     print 'tau larmor = %s' %tau_larmor
-    M=np.zeros([np.size(HFs_par),np.size(tau)])
+
+    if np.size(tau)!=1:
+        M=np.zeros([np.size(HFs_par),np.size(tau)])
+    else:
+        M = np.zeros([np.size(HFs_par),np.size(N)])
     for i,HF_par in enumerate(HFs_par):
         HF_par = HF_par*2*np.pi #Convert to radial frequency
         HF_orth = HFs_orth[i]*2*np.pi #convert to radial frequency
