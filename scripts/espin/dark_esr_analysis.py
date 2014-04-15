@@ -44,8 +44,12 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
             k = j
             j += 1
         #j = len(y)-2
-        guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-        print 'guess_ctr= '+str(x[k])
+        if k > len(y)-3:
+            print 'Could not find dip'
+            break
+        else:
+            guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
+            print 'guess_ctr= '+str(x[k])
 
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
