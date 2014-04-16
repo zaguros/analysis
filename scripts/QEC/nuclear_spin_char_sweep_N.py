@@ -51,9 +51,11 @@ def main(labpc = False):
     HF_orth =[80e3,28.5e3,132e3]
 
     Mn = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,N_swp,tau_swpN)
+    sweep_N_comb_signal = ((Mn.prod(axis=0) +1)/2)
     sweep_N_signal = ((Mn+1)/2)
 
     Mt = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,N,tau)
+    FP_comb_signal  = ((Mt.prod(axis=0) +1)/2)
     FP_signal = ((Mt+1)/2)
 
 
@@ -114,7 +116,7 @@ def main(labpc = False):
     plt.plot(N_swp,sweep_N_signal[0,:]*pulseF,'r.-',label='test_spin1')
     plt.plot(N_swp,sweep_N_signal[1,:]*pulseF,'c.-',label='test_spin2')
     plt.plot(N_swp,sweep_N_signal[2,:]*pulseF,'g.-',label='test_spin3')
-    # plt.plot(N_swp,sweep_N_signal.prod(axis=0)*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
+    plt.plot(N_swp,sweep_N_comb_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
     plt.plot(data_N,signal_swp_N,'b.-',linewidth = 0.5,label='measured_data')
     plt.plot(n,cos_fit,'r-',linewidth = 0.5,label='cos fit of data')
     plt.legend(loc=4)
@@ -126,10 +128,11 @@ def main(labpc = False):
 
     plt.xlabel('tau')
     plt.ylabel('Signal')
-    # plt.plot(tau*1e6,FP_signal[0,:]*pulseF,'r-',label='test_spin1')
-    # plt.plot(tau*1e6,FP_signal[1,:]*pulseF,'c-',label='test_spin2')
+    plt.plot(tau*1e6,FP_signal[0,:]*pulseF,'r-',label='test_spin1')
+    plt.plot(tau*1e6,FP_signal[1,:]*pulseF,'c-',label='test_spin2')
     plt.plot(tau*1e6,FP_signal[2,:]*pulseF,'g-',label='test_spin3')
-    plt.xlim(8.3,9.2)
+    plt.plot(tau*1e6,FP_comb_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
+    plt.xlim(0,15)
 
     plt.plot(data_tau,signal_tau,'b.-',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
