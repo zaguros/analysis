@@ -62,7 +62,7 @@ y = a.p0
 fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
 
 def fitfunc(x):
-    return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
+    return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
         do_print=True, ret=True)
