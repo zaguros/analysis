@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, mbi
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
 from analysis.lib.math import error
@@ -15,10 +15,10 @@ import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 
 ### parameters
 timestamp = None#'175555' #'160434'
-msmt_type = 'mbi'
 guess_x0 = 6.62
 guess_of = 0.1
 guess_a = 0
+do_fit = False
 
 ### script
 if timestamp != None:
@@ -36,10 +36,12 @@ ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax')
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
 
+print 'minimum'
+print x[np.argmin(y)]
 
+if do_fit:
+	res = funcs.calibrate_pulse_amplitude(x, y, ax, guess_x0, guess_of, guess_a)
 
-
-#res = funcs.calibrate_pulse_amplitude(x, y, ax, guess_x0, guess_of, guess_a)
 plt.savefig(os.path.join(folder, 'sweep_tau.pdf'),
         format='pdf')
 plt.savefig(os.path.join(folder, 'sweep_tau.png'),

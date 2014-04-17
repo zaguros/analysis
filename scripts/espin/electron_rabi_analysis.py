@@ -7,14 +7,14 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import  sequence, mbi #sequence_ssro,
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 reload(rabi)
 
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./200.
+guess_frq = 1./8
 guess_amp = 0.
 guess_of = 1
 # guess_slope = 0.

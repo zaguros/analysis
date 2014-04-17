@@ -16,7 +16,7 @@ timestamp = None #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
-guess_splitN = 2.165e-3
+guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
 guess_amplitude = 0.3
@@ -46,10 +46,10 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
         #j = len(y)-2
         if k > len(y)-3:
             print 'Could not find dip'
-            break
+            return
         else:
             guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-            print 'guess_ctr= '+str(x[k])
+            print 'guess_ctr= '+str(guess_ctr)
 
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
