@@ -43,6 +43,7 @@ def main(labpc = False):
 
 
     M = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,N,tau)
+    comb_fp_signal = ((M.prod(axis=0)+1)/2)
     fingerprint_signal = ((M+1)/2)
     #########################
     ##### Importing data #######
@@ -83,7 +84,7 @@ def main(labpc = False):
     plt.plot(tau*1e6,fingerprint_signal[0,:]*pulseF,'r',label='test_spin1')
     plt.plot(tau*1e6,fingerprint_signal[1,:]*pulseF,'g',label = 'test_spin2')
     plt.plot(tau*1e6,fingerprint_signal[2,:]*pulseF,'c',label = 'test_spin3')
-    plt.plot(tau*1e6,fingerprint_signal.prod(axis=0)*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
+    plt.plot(tau*1e6,comb_fp_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
     plt.plot(data_tau,signal,'b.-',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
     plt.show()
