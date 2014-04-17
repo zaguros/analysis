@@ -15,7 +15,7 @@ def main(labpc = False):
     ##############
     ## exp params ##
     ##############
-    N = 32 #Integer
+    N = 16 #Integer
     tau=np.linspace(0e-6, 15e-6, 15000) #seconds
     B_Field = 304.12 #Gauss
     pulseF = .86 #correction factor on final signal for plotting (pulse fidelity )
