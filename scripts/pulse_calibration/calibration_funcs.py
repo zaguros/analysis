@@ -7,7 +7,7 @@ import pprint
 
 from analysis.lib.fitting import fit
 from analysis.lib.tools import plot
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 
 def calibrate_pulse_amplitude(x, y, ax, *args):
     x0 = fit.Parameter(args[0], 'x0')

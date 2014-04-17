@@ -13,12 +13,12 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = None#'184802'#None#'20130530183305'#None # 
-guess_f1 = 1./150
+timestamp = None#20130530183305'#None #
+guess_f1 = 2.184e-3
 guess_A1 = 0.5
 guess_phi1 = 0.
 guess_f2 = 1./800
-guess_A2 = 0.5
+guess_A2 = 0
 guess_phi2 = 0.
 
 
@@ -50,7 +50,7 @@ plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
 ### FFT
 # p0_fft = np.fft.fft(a.p0.reshape(-1), n=32)
 # frq = np.fft.fftfreq(32, d=(a.sweep_pts[1]-a.sweep_pts[0])/1e3)
-#  
+#
 # fig = a.default_fig()
 # ax = a.default_ax(fig)
 # ax.plot(frq, p0_fft, 'o-')

@@ -20,7 +20,7 @@ class SequenceAnalysis(m2.M2Analysis):
         self.ssro_results = adwingrp['RO_data'].value
         self.normalized_ssro = self.ssro_results/(float(self.reps)/len(self.sweep_pts))
         self.u_normalized_ssro = \
-            (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
+            (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)/len(self.sweep_pts)))**0.5  #this is quite ugly, maybe replace?
         
         return self.normalized_ssro
     
@@ -48,6 +48,10 @@ class SequenceAnalysis(m2.M2Analysis):
         fig.savefig(os.path.join(self.folder, 
             'cr_check_before'+fn_suffix+'.'+self.plot_format), 
             format=self.plot_format)
+
+    def fix_sweep_pts(self, new_sweep_name, new_sweep_pts_attr):
+        self.g.attrs['sweep_name']=new_sweep_name
+        self.g.attrs['sweep_pts']=self.g.attrs[new_sweep_pts_attr]
         
     def get_sweep_pts(self):
         self.sweep_name = self.g.attrs['sweep_name']

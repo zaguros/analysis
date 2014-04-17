@@ -489,7 +489,7 @@ def tail_cts_per_shot_txt_file(datapath, filename, lower,
         else:
             counts_res = counts_ch0
 
-
+    print np.sum(counts_ch0)
     x_res = np.arange(0,len(counts_res))
     time_res = x_res*bin_size
 
@@ -572,7 +572,8 @@ def tail_cts_per_shot_txt_file(datapath, filename, lower,
                 /np.float(laser_pulses)
 
     print 'Tail counts per shot = ',num2str(tail_counts_per_shot*1E4,2),'E-4'
-    plt.title('Tail counts per shot:'+num2str(tail_counts_per_shot*1E4,2)+'E-4')
+    plt.title('Tail counts per shot:'+num2str(tail_counts_per_shot*1E4,2)+'E-4'+'\n'+filename
+        )
     
     try:
         speech.say(num2str(tail_counts_per_shot*1E4,2)+\
