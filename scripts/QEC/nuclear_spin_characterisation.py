@@ -15,7 +15,7 @@ def main(labpc = False):
     ##############
     ## exp params ##
     ##############
-    N = 16 #Integer
+    N = 32 #Integer
     tau=np.linspace(0e-6, 15e-6, 15000) #seconds
     B_Field = 304.12 #Gauss
     pulseF = .86 #correction factor on final signal for plotting (pulse fidelity )
@@ -57,7 +57,7 @@ def main(labpc = False):
             filepath = '/Users/Adriaan/Documents/teamdiamond/data/fingerprint_data/TIMESTAMP_DecouplingSequence_Fingerprint_Hans_sil1_N1024/TIMESTAMP_DecouplingSequence_Fingerprint_Hans_sil1_N1024.hdf5'
             timestamps = ['223450', '223801', '224119', '224446', '231158','225215', '225614', '230023', '231645', '232118', '232603', '233057', '233605', '234654', '111324', '111725', '112126', '112529', '112930', '113614', '114015', '114416', '114818', '115220', '115622', '120024', '120426','120825']#, '130753']
         elif N ==32:
-            filepath = '/Users/Adriaan/Documents/Python_Programs/Data/fingerprint_data/TIMESTAMP_DecouplingSequence_Hans_sil1_N32/TIMESTAMP_DecouplingSequence_Hans_sil1_N32.hdf5'
+            filepath = '/Users/Adriaan/Documents/teamdiamond/data/fingerprint_data/TIMESTAMP_DecouplingSequence_Hans_sil1_N32/TIMESTAMP_DecouplingSequence_Hans_sil1_N32.hdf5'
             timestamps =['101732','102646','104011',
 '105345']
 
@@ -87,10 +87,11 @@ def main(labpc = False):
     plt.plot(tau*1e6,comb_fp_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
     plt.plot(data_tau,signal,'b.-',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
+    plt.xlim(10,16)
     plt.show()
 
 
-def load_dd_fingerprintdata(h5filepath='/Users/Adriaan/Documents/Python_Programs/Data/fingerprint_data/233605_DecouplingSequence_Fingerprint_Hans_sil1_N1024/233605_DecouplingSequence_Fingerprint_Hans_sil1_N1024.hdf5'):
+def load_dd_fingerprintdata(h5filepath='/Users/Adriaan/Documents/teamdiamond/Data/fingerprint_data/233605_DecouplingSequence_Fingerprint_Hans_sil1_N1024/233605_DecouplingSequence_Fingerprint_Hans_sil1_N1024.hdf5'):
     '''
     Loads fingerprint data when not on a lab pc
     '''
