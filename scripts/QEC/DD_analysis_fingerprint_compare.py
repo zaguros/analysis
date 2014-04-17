@@ -94,8 +94,6 @@ a.u_p0  = cum_u_p0
 
 ax.plot(a.sweep_pts, a.p0, '.-r', lw=1)
 
-cursor = Cursor(ax, useblit=True, color='gray', linewidth =1)
-
 plt.savefig(os.path.join(folder, 'combined_result.pdf'),
 format='pdf')
 plt.savefig(os.path.join(folder, 'combined_result.png'),
