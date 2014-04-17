@@ -3,16 +3,12 @@ Script to analyze the dynamical decoupling data
 '''
 
 import numpy as np
-import os
 from analysis.lib.tools import toolbox
-from analysis.lib.tools import plot
-from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 import analysis.lib.qec.nuclear_spin_characterisation as SC #used for simulating FP response of spins
 # import magnettools as mt # Does not work atm because of qt lab being imported in MT
 
 from matplotlib import pyplot as plt
-
 reload(common)
 
 def fingerprint_compare(disp_sim_spin = True):
@@ -39,8 +35,6 @@ def fingerprint_compare(disp_sim_spin = True):
 
 
     ## Data location ##
-    measurement_name = ['adwindata']
-
     timestamps_16 = ['20140407_223450', '20140407_223801', '20140407_224119',
     '20140407_224446', '20140407_231158','20140407_225215', '20140407_225614',
      '20140407_230023', '20140407_231645', '20140407_232118', '20140407_232603',
