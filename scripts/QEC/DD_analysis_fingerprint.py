@@ -54,6 +54,7 @@ a.u_p0  = cum_u_p0
 
 fig = a.default_fig(figsize=(18,4))
 ax = a.default_ax(fig)
+ax.set_xlim(4,6)
 ax.plot(a.sweep_pts, a.p0, '.-b', lw=1)
 
 
