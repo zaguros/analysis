@@ -40,7 +40,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None, **kw):
         guess_ctr = float(raw_input('Center guess?'))
     else:
         j=0
-        while y[j]>0.9 and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
+        while y[j]>0.85 and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
             k = j
             j += 1
         #j = len(y)-2
