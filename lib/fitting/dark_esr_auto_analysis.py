@@ -47,7 +47,7 @@ ret='f0',
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             (3, guess_splitN),
-            do_print=True, ret=True, fixed=[])
+            do_print=True, ret=True, fixed=[4])
 
 
     if ret == 'f0':
