@@ -8,9 +8,11 @@ from analysis.lib.m2.ssro import mbi
 import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating FP response of spins
 # import magnettools as mt # Does not work atm because of qt lab being imported in MT
 import matplotlib.cm as cm
-
 from matplotlib import pyplot as plt
-#reload(common)
+
+import analysis.scripts.QEC_data_analysis.hyperfine_params as hyperfine_params; reload(hyperfine_params) 
+hf = hyperfine_params.hyperfine_params
+hf = hyperfine_params.hyperfine_params
 
 def fingerprint(disp_sim_spin = True):
 
@@ -20,16 +22,16 @@ def fingerprint(disp_sim_spin = True):
     ###################
 
     if disp_sim_spin == True:
-            HF_par =   [30e3,  27.0e3, -62.5e3, 45e3, 17e3, -15e3, -23e3, 10e3, 8e3, -9.3e3,   -10e3]
-            HF_orth = [80e3,  28.5e3, 132.0e3, 20e3, 10e3, 12e3,   12e3, 8e3, 12e3,   13e3,   5e3]
-
+            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par']]
+            HF_perp =   [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp']]
+          
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file
             B_Field = 304.12 # use magnet tools  Bz = (msp1_f**2 - msm1_f**2)/(4.*ZFS*g_factor)
 
             tau_lst = np.linspace(0,52e-6,10000)
-            Mt16 = SC.dyn_dec_signal(HF_par,HF_orth,B_Field,64,tau_lst)
+            Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,64,tau_lst)
             FP_signal16 = ((Mt16+1)/2)
 
     ## Data location ##
