@@ -26,14 +26,14 @@ def sweep_N_analysis(tau,N_steps):
     ## Data location ##
     ssro_calib_folder = 'd:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1'
 
-    a, folder = load_mult_dat(tau, number_of_msmts = total_pts/pts_per_run, ssro_calib_folder=ssro_calib_folder)
+    a, folder = load_mult_dat(tau, number_of_msmts = total_pts/pts_per_run,N_steps=N_steps, ssro_calib_folder=ssro_calib_folder)
 
 
     ############
     ## Plotting ###
     ############
 
-    fig = a.default_fig(figsize=(200,5))
+    fig = a.default_fig(figsize=(14,8))
     ax = a.default_ax(fig)
     # ax.set_xlim(23.4,25)
     # ax.set_xlim(0,73)
@@ -53,23 +53,23 @@ def sweep_N_analysis(tau,N_steps):
         format='png')
 
 
-def load_mult_dat(tau, number_of_msmts, ssro_calib_folder=''):
+def load_mult_dat(tau, number_of_msmts, N_steps=4,ssro_calib_folder=''):
   cum_pts = 0
   print number_of_msmts
   for kk in range(number_of_msmts):
     print kk
     print str(tau)
     folder = toolbox.latest_data(contains=str(tau), older_than=None)
-    print folder
+    # print folder
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
-    a.get_readout_results(name='adwindata')#name='measurement_for_tau_'+str(tau*1e9)+'_' + str(kk))
+    a.get_readout_results(name='measurement'+ str(kk))
     a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
     cum_pts += a.pts
        
     pts         = 11
-    N_start    = (kk+0)     * (pts-1)*N_step 
-    N_end      = (kk+1+0) * (pts-1)*N_step
+    N_start    = (kk+0)     * (pts-1)*N_steps 
+    N_end      = (kk+1+0) * (pts-1)*N_steps
     N_list     = np.linspace(N_start, N_end, pts)
 
     if kk == 0:
@@ -91,7 +91,7 @@ def load_mult_dat(tau, number_of_msmts, ssro_calib_folder=''):
 
 
 
-sweep_N_analysis(18102,4)
+sweep_N_analysis(30412,16)
 
 
 
