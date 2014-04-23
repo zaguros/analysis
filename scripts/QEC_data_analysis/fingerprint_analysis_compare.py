@@ -9,7 +9,7 @@ import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating
 # import magnettools as mt # Does not work atm because of qt lab being imported in MT
 
 from matplotlib import pyplot as plt
-reload(common)
+# reload(common)
 
 def fingerprint_compare(disp_sim_spin = True):
 
