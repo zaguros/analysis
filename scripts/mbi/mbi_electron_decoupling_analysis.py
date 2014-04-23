@@ -25,7 +25,7 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
-        a.get_readout_results(name='adwindata')
+        a.get_readout_results(name=measurement_name[k])
         a.get_electron_ROC()
         ax = a.plot_results_vs_sweepparam(ret='ax')
 
