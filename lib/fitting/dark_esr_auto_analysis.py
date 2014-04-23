@@ -33,16 +33,17 @@ ret='f0',
 
     # here we find the first of the three dips
     j=0
+    print 'j = '+str(j)
     while y[j]>0.85 and j < len(y)-2: # such that we account for noise
         k = j
         j = j+1
-    #j = len(y)-2
-    if k > len(y)-3:
+
+    if k > len(y)-5:
         print 'Could not find dip'
         return
     else:
         guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-        print 'guess_ctr= '+str(guess_ctr)
+        print 'guess_ctr = '+str(guess_ctr)
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
