@@ -22,8 +22,8 @@ def fingerprint(disp_sim_spin = True):
     ###################
 
     if disp_sim_spin == True:
-            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par']]
-            HF_perp =   [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp']]
+            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'], hf['C12']['par']]
+            HF_perp =   [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp']]
           
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
@@ -59,6 +59,12 @@ def fingerprint(disp_sim_spin = True):
       colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
       for tt in range(len(HF_par)):
         ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
+    if True:
+        tot_signal = np.ones(len(tau_lst))
+        for tt in range(len(HF_par)):
+          tot_signal = tot_signal * Mt16[tt,:]
+        fin_signal = (tot_signal+1)/2.0   
+        ax.plot(tau_lst*1e6, fin_signal,':g',lw=1,label = 'tot')
     plt.legend(loc=4)
 
     print folder

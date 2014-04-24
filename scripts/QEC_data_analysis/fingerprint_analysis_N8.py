@@ -58,6 +58,12 @@ def fingerprint(disp_sim_spin = True):
       colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
       for tt in range(len(HF_par)):
         ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
+    if True:
+        tot_signal = np.ones(len(tau_lst))
+        for tt in range(len(HF_par)):
+          tot_signal = tot_signal * Mt16[tt,:]
+        fin_signal = (tot_signal+1)/2.0   
+        ax.plot(tau_lst*1e6, fin_signal,':g',lw=1,label = 'tot')
     plt.legend(loc=4)
 
     print folder
