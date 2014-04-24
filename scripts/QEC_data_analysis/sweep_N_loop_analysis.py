@@ -9,11 +9,10 @@ import analysis.lib.QEC.nuclear_spin_characterisation as SC
 import matplotlib.cm as cm
 import os
 from matplotlib import pyplot as plt
-
-import analysis.scripts.QEC_data_analysis.hyperfine_params as hyperfine_params; reload(hyperfine_params) 
-hf = hyperfine_params.hyperfine_params
-
-def sweep_N_analysis(tau,N_steps):
+from analysis.lib.tools import plot
+from analysis.lib.fitting import fit, common
+reload(fit)
+def sweep_N_analysis(tau,N_steps,plot_fit = False, do_print = True, show_guess = False):
 
 
     ###################
@@ -27,39 +26,47 @@ def sweep_N_analysis(tau,N_steps):
     ssro_calib_folder = 'd:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1'
 
     a, folder = load_mult_dat(tau, number_of_msmts = total_pts/pts_per_run,N_steps=N_steps, ssro_calib_folder=ssro_calib_folder)
-
+    a.p0 = a.p0*2-1
 
     ############
     ## Plotting ###
     ############
 
-    fig = a.default_fig(figsize=(14,8))
-    ax = a.default_ax(fig)
+
+    ax = a.plot_results_vs_sweepparam(ret='ax')
     # ax.set_xlim(23.4,25)
     # ax.set_xlim(0,73)
     # start, end = ax.get_xlim()
     # ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
-    # ax.set_ylim(-0.05,1.05)
-   
-    ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
+    ax.set_ylim(-1.05,1.05)
+    
+    x = a.sweep_pts.reshape(-1)[:]
+    y = a.p0.reshape(-1)[:]
+    fit_results = []
+    p0, fitfunc, fitfunc_str = common.fit_decaying_cos(1/45.,0, 1, 0, 40000)
+    print fitfunc
+    #plot the initial guess
+    if show_guess:
+        ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+    ax.plot(x,y)
+    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3])
+    # print fitfunc(np.linspace(0,x[-1],201))
+    ## plot data and fit as function of total time
+    if plot_fit == True:
+        plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
 
-    # plt.legend(loc=4)
+    fit_results.append(fit_result)
 
-    print folder
-    plt.savefig(os.path.join(folder, 'sweep_N_analysis.pdf'),
-        format='pdf')
-    plt.savefig(os.path.join(folder, 'sweep_N_analysis.png'),
-        format='png')
-
+    plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+    format='pdf')
+    plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+    format='png')
 
 def load_mult_dat(tau, number_of_msmts, N_steps=4,ssro_calib_folder=''):
   cum_pts = 0
-  print number_of_msmts
   for kk in range(number_of_msmts):
-    print kk
-    print str(tau)
-    folder = toolbox.latest_data(contains=str(tau), older_than=None)
+    folder = toolbox.latest_data(contains=str(tau), older_than='140424')
     # print folder
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
@@ -89,9 +96,15 @@ def load_mult_dat(tau, number_of_msmts, N_steps=4,ssro_calib_folder=''):
 
   return a, folder
 
-
-
-sweep_N_analysis(30412,16)
+# sweep_N_analysis(8640,4)
+tau_list = [6.522,18.102,31.138,54.294,6.620,9.560,8.088,12.500,11.010,8.640,8.828,9.558,12.038,12.086,18.576,6.456,
+                15.066,6.726,9.712,12.706,7.068,10.214,13.352,14.918,21.192,21.211,24.328,24.366,13.528,9.824,12.848,
+                17.378,9.854,11.370,12.888,15.920,22.570,24.132,30.354,11.701,14.820,24.172,27.294,30.412,16.500]
+N_steps_list = [4,4,4,4,8,8,8,8,8,4,4,4,4,4,4,8,8,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,8,8,8,8,16,16,16,16,16,16,16,16,16]
+    
+for jj in range(len(tau_list)):
+    print int(tau_list[jj]*1e3)
+    sweep_N_analysis(int(tau_list[jj]*1e3),N_steps_list[jj])
 
 
 

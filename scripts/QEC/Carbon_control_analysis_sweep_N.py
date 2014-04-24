@@ -5,10 +5,11 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
+reload(common)
 
 reload(common)
 
-def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],frequency = 1/30, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, plot_fit = True, do_print = False, show_guess = False):
+def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, plot_fit = False, do_print = False, show_guess = True):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.

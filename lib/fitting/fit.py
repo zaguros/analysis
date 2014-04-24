@@ -34,7 +34,6 @@ def fit1d(x, y, fitmethod, *arg, **kw):
              
     
     """
-    
     # process known kws
     do_print = kw.pop('do_print', False)
     ret = kw.pop('ret', False)

@@ -31,7 +31,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     A = fit.Parameter(g_A, 'A')
     phi = fit.Parameter(g_phi, 'phi')
     t   = fit.Parameter(g_t, 't')
-
+    print 'guessed frequency is '+str(g_f)
     p0 = [f, a, A,phi,t]
 
     def fitfunc(x):
