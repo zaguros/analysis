@@ -13,7 +13,7 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
-    Based on electron_T1_anal, modified by Adriaan Rol
+    Based on electron_T1_anal,
     '''
 
     if timestamp != None:

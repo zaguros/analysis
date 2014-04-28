@@ -14,7 +14,7 @@ import analysis.scripts.QEC_data_analysis.hyperfine_params as hyperfine_params; 
 hf = hyperfine_params.hyperfine_params
 hf = hyperfine_params.hyperfine_params
 
-def fingerprint(disp_sim_spin = True):
+def fingerprint(disp_sim_spin = True,timestamps = None):
 
 
     ###################
@@ -34,7 +34,6 @@ def fingerprint(disp_sim_spin = True):
             FP_signal16 = ((Mt16+1)/2)
 
     ## Data location ##
-    timestamps =['20140418_185913', '20140419_233953'] 
     ssro_calib_folders = ['d:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1',
                         'd:\\measuring\\data\\20140419\\123556_AdwinSSRO_SSROCalibration_Hans_sil1']
     a, folder = load_mult_dat(timestamps, number_of_msmts = [90,90], ssro_calib_folders =ssro_calib_folders)
@@ -106,7 +105,7 @@ def load_mult_dat(timestamps, number_of_msmts, ssro_calib_folders=['']):
    return a, folder
 
 
-fingerprint()
+fingerprint(timestamps =['20140418_185913', '20140419_233953'] )
 
 
 
