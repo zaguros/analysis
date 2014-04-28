@@ -1,7 +1,7 @@
 '''
 Script to analyze the dynamical decoupling data
 '''
-
+import os
 import numpy as np
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
@@ -44,10 +44,10 @@ def fingerprint(disp_sim_spin = True):
     ## Plotting ###
     ############
 
-    fig = a.default_fig(figsize=(8,5))
+    fig = a.default_fig(figsize=(200,5))
     ax = a.default_ax(fig)
-    ax.set_xlim(15.0,15.5)
-    #ax.set_xlim(0,73)
+    # ax.set_xlim(15.0,15.5)
+    ax.set_xlim(0,73)
     start, end = ax.get_xlim()
     ax.xaxis.set_ticks(np.arange(start, end, 0.05))
 
@@ -55,7 +55,7 @@ def fingerprint(disp_sim_spin = True):
    
     ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
     
-    if disp_sim_spin == False:
+    if disp_sim_spin == True:
       colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
       for tt in range(len(HF_par)):
         ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
