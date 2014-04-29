@@ -4,7 +4,7 @@ under dynamical decoupling gates. By THT '''
 import numpy as np
 import qutip
 import analysis.lib.QEC.hyperfine_params as hf
-import matplotlib as plt
+from matplotlib import pyplot as plt
 
 def pauli():
     '''Define pauli spin matrices'''
@@ -66,7 +66,7 @@ def calc_operators_inner_product(operator1, operator2):
     '''calculate inner product of rotation axis'''
     pass
 
-def characterize_DD_unit(carbon_nr = 1, B_field = 300, tau_list = np.linspace(0,5e-6,101)):
+def characterize_DD_unit(carbon_nr = 1, B_field = 300, tau_list = np.linspace(0,5000,501)):
     '''gives a full characterization of the rotation matrix
     for a single DD unit tau - X - 2tau - X - tau'''
 
@@ -74,17 +74,20 @@ def characterize_DD_unit(carbon_nr = 1, B_field = 300, tau_list = np.linspace(0,
     angle1 = np.zeros(len(tau_list))
     X_proj_0 = np.zeros(len(tau_list)); Y_proj_0 = np.zeros(len(tau_list)); Z_proj_0 = np.zeros(len(tau_list))
     X_proj_1 = np.zeros(len(tau_list)); Y_proj_1 = np.zeros(len(tau_list)); Z_proj_1 = np.zeros(len(tau_list))
+    innerprod =np.zeros(len(tau_list))
 
     A_par = 2*np.pi*100e3
     A_perp = 2*np.pi*30e3
     omega_Larmor = 2*np.pi*300 * 1.07e3
 
     for i in range(len(tau_list)):
-        tau = tau_list[i]
-        print str(tau) + ' out of ' + str(max(tau_list))
+        tau = tau_list[i]*1e-9
+        if i%10 == 0:
+            print str(tau_list[i]) + ' out of ' + str(max(tau_list))
         V0, V1 = c13_rotation_matrix(tau, omega_Larmor, A_par, A_perp)
         axes0, angle0[i] = calc_operator_rotation_axis_and_angle(V0)
         axes1, angle1[i] = calc_operator_rotation_axis_and_angle(V1)
+
         X_proj_0[i] = axes0[0]
         Y_proj_0[i] = axes0[1]
         Z_proj_0[i] = axes0[2]
@@ -92,19 +95,46 @@ def characterize_DD_unit(carbon_nr = 1, B_field = 300, tau_list = np.linspace(0,
         Y_proj_1[i] = axes1[1]
         Z_proj_1[i] = axes1[2]
 
+        innerprod[i] = X_proj_0[i]*X_proj_1[i] + Y_proj_0[i]*Y_proj_1[i] + Z_proj_0[i]*Z_proj_1[i]
 
+    #plots
+    plt.close('all')
 
+    f, ax = plt.subplots(3,3)
+    ax[0,0].plot(tau_list/1e3,X_proj_0, '-', lw=1,label = 'data')
+    ax[0,0].set_title('X projection ms=0'); ax[0,0].set_xlabel('tau (us)')
 
+    ax[1,0].plot(tau_list/1e3,X_proj_1, '-', lw=1,label = 'data')
+    ax[1,0].set_title('X projection ms=1'); ax[1,0].set_xlabel('tau (us)')
 
+    ax[2,0].plot(tau_list/1e3,(X_proj_0-X_proj_1), '-', lw=1,label = 'data')
+    ax[2,0].set_title('X projection ms=0 - X projection ms=1'); ax[2,0].set_xlabel('tau (us)')
 
+    ax[0,1].plot(tau_list/1e3,Y_proj_0, '-', lw=1,label = 'data')
+    ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
 
+    ax[1,1].plot(tau_list/1e3,Y_proj_1, '-', lw=1,label = 'data')
+    ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
 
+    ax[2,1].plot(tau_list/1e3,(Y_proj_0-Y_proj_1), '-', lw=1,label = 'data')
+    ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
 
+    ax[0,2].plot(tau_list/1e3,Z_proj_0, '-', lw=1,label = 'data')
+    ax[0,2].set_title('Z projection ms=0'); ax[0,2].set_xlabel('tau (us)')
 
+    ax[1,2].plot(tau_list/1e3,Z_proj_1, '-', lw=1,label = 'data')
+    ax[1,2].set_title('Z projection ms=1'); ax[1,2].set_xlabel('tau (us)')
 
+    ax[2,2].plot(tau_list/1e3,(Z_proj_0-Z_proj_1), '-', lw=1,label = 'data')
+    ax[2,2].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,2].set_xlabel('tau (us)')
 
+    f2, ax2 = plt.subplots(2,1)
+    ax2[0].plot(tau_list/1e3,innerprod, '-', lw=1,label = 'data')
+    ax2[0].set_title('axis innerporduct'); ax2[0].set_xlabel('tau (us)')
+    ax2[1].plot(tau_list/1e3,angle0/np.pi, '-', lw=1,label = 'data')
+    ax2[1].set_title('rotation_angle'); ax2[1].set_xlabel('tau (us)'); ax2[1].set_ylim(0,2)
 
-
+    plt.show()
 
 
 print 'succes'
