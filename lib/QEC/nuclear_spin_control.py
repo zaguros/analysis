@@ -61,6 +61,12 @@ ket0, bra0, ket1, bra1, rho0, rho1, rhom = basic_spin_states() # Basic states
 def print_matrix(Qobject):
     print np.round(Qobject.full()*100)/100
 
+def find_phase_gate(total_time, carbon_nr, axis_phase):
+    '''function to determine the parameters of the preceding DD phase
+    gate to set the phase, NOTE, implementation pending on the experimental implementation'''
+    pass
+
+
 ###################################
 ### Nuclear evolution and gates ###
 ###################################
@@ -199,6 +205,10 @@ def nuclear_ramsey_no_init(carbon_nr, tau_wait, N_wait_list, B_field=304.22):
     plt.show()
     return S[i]
 
+def nuclear_init_gate(carbon_nr, init_state):
+    '''function that returns a gate sequence for nuclear spin initialization
+    seq = y - Ren - x - Rz - Ren '''
+    pass
 
 ##########################################
 ### Nuclear evolution characterization ###
