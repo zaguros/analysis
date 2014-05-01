@@ -52,4 +52,11 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],freq
         plt.savefig(os.path.join(folder, 'analyzed_result.png'),
         format='png')
 
+        freq = fit_results[0]['params_dict']['f']
+        period = 1/freq 
+        print 'Period is %s pulses ' %(period)
+        N_pi = round(period*.5/2)*2.0 
+        N_pi2 = round(period/2*.25)*2.0
+        print 'Pi pulse: %s pulses' %N_pi
+        print 'Pi2 pulse: %s pulses' %N_pi2
     return fit_results

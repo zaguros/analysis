@@ -1,10 +1,7 @@
 hyperfine_params = {}
 hyperfine_params['C1']  = {'par' : 30.0e3, 'perp':80.0e3}
 hyperfine_params['C2']  = {'par' : 27.0e3, 'perp':28.5e3}
-
 hyperfine_params['C3']  = {'par' :-51.0e3, 'perp':105.0e3}
-
-
 hyperfine_params['C4']  = {'par' : 45e3,   'perp':20e3}
 hyperfine_params['C5']  = {'par' : 17e3,   'perp':10e3}
 hyperfine_params['C6']  = {'par' :-15e3,   'perp':12e3}

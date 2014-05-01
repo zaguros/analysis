@@ -14,8 +14,8 @@ reload(rabi)
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./8
-guess_amp = 0.
+guess_frq = 1./150
+guess_amp = 0.5
 guess_of = 1
 # guess_slope = 0.
 guess_phi = 0.
@@ -64,7 +64,7 @@ fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
 def fitfunc(x):
     return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
 
-fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
+fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)
