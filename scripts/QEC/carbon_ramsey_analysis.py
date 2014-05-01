@@ -9,7 +9,7 @@ reload(common)
 
 reload(common)
 
-def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, plot_fit = False, do_print = False, show_guess = True):
+def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, plot_fit = False, do_print = False, show_guess = True):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
@@ -19,7 +19,7 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],freq
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('Decoupling')
+        folder = toolbox.latest_data('CarbonRamsey')
 
     fit_results = []
     for k in range(0,len(measurement_name)):
@@ -52,11 +52,4 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],freq
         plt.savefig(os.path.join(folder, 'analyzed_result.png'),
         format='png')
 
-        freq = fit_results[0]['params_dict']['f']
-        period = 1/freq 
-        print 'Period is %s pulses ' %(period)
-        N_pi = round(period*.5/2)*2.0 
-        N_pi2 = round(period/2*.25)*2.0
-        print 'Pi pulse: %s pulses' %N_pi
-        print 'Pi2 pulse: %s pulses' %N_pi2
     return fit_results

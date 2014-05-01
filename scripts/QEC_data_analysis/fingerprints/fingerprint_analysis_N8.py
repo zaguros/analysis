@@ -5,14 +5,13 @@ Script to analyze the dynamical decoupling data
 import numpy as np
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
-import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating FP response of spins
-# import magnettools as mt # Does not work atm because of qt lab being imported in MT
+import analysis.lib.QEC.nuclear_spin_characterisation as SC 
 import matplotlib.cm as cm
+import os
 from matplotlib import pyplot as plt
 
-import analysis.scripts.QEC_data_analysis.hyperfine_params as hyperfine_params; reload(hyperfine_params) 
-hf = hyperfine_params.hyperfine_params
-hf = hyperfine_params.hyperfine_params
+import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params) 
+hf = module_hyperfine_params.hyperfine_params
 
 def fingerprint(disp_sim_spin = True):
 
@@ -22,8 +21,8 @@ def fingerprint(disp_sim_spin = True):
     ###################
 
     if disp_sim_spin == True:
-            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'], hf['C12']['par']]
-            HF_perp =   [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp']]
+            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par']]
+            HF_perp =   [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp']]
           
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
@@ -31,13 +30,13 @@ def fingerprint(disp_sim_spin = True):
             B_Field = 304.12 # use magnet tools  Bz = (msp1_f**2 - msm1_f**2)/(4.*ZFS*g_factor)
 
             tau_lst = np.linspace(0,72e-6,10000)
-            Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,16,tau_lst)
+            Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,8,tau_lst)
             FP_signal16 = ((Mt16+1)/2)
 
     ## Data location ##
-    timestamp ='20140419_005744'
-    ssro_calib_folder = 'd:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1'
-    a, folder = load_mult_dat(timestamp, number_of_msmts = 140, ssro_calib_folder=ssro_calib_folder)
+    timestamp ='20140420_110552'
+    ssro_calib_folder = 'D:\\measuring\data\\20140420\\104001_AdwinSSRO_SSROCalibration_Hans_sil1'
+    a, folder = load_mult_dat(timestamp, number_of_msmts = 164, ssro_calib_folder=ssro_calib_folder)
  
 
     ############
@@ -74,7 +73,6 @@ def fingerprint(disp_sim_spin = True):
         format='png')
 
 
-
 def load_mult_dat(timestamp, number_of_msmts, ssro_calib_folder=''):
    cum_pts = 0
    for kk in range(number_of_msmts):
@@ -101,9 +99,6 @@ def load_mult_dat(timestamp, number_of_msmts, ssro_calib_folder=''):
 
    return a, folder
 
-
-
-fingerprint()
 
 
 
