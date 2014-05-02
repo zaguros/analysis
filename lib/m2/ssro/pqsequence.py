@@ -12,8 +12,8 @@ from analysis.lib.tools import toolbox
 
 class PQSequenceAnalysis(sequence.SequenceAnalysis):
 
-    def __init__(self, **kw):
-        sequence.SequenceAnalysis.__init__(self, **kw)
+    def __init__(self, folder, **kw):
+        sequence.SequenceAnalysis.__init__(self,folder, **kw)
         pq_folder=kw.pop('pq_folder', None)
         if pq_folder != None:
             h5filepath = toolbox.measurement_filename(pq_folder)
@@ -50,7 +50,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         self.sync_nrs=self.pqf['/PQ_sync_number-1'].value  
         self.sweep_length = len(self.sweep_pts)
         self.syncs_per_sweep = noof_syncs_per_sweep_pt
-        self.sweep_idxs=np.mod(np.floor(self.sync_nrs/self.syncs_per_sweep),self.sweep_length)
+        self.sweep_idxs=np.mod(np.floor((self.sync_nrs-1)/self.syncs_per_sweep),self.sweep_length)
 
     
 
@@ -205,7 +205,7 @@ class TailAnalysis(PQSequenceAnalysis):
 
 
 
-class FastSSROAnalysis(PQSequenceAnalysis)
+class FastSSROAnalysis(PQSequenceAnalysis):
 
     def get_sweep_points(self):
         PQSequenceAnalysis.get_sweep_points(self)
