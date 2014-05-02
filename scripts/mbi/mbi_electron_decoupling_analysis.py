@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
@@ -13,7 +13,7 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
-    Based on electron_T1_anal, modified by Adriaan Rol
+    Based on electron_T1_anal,
     '''
 
     if timestamp != None:
@@ -25,7 +25,7 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
-        a.get_readout_results(name='adwindata')
+        a.get_readout_results(name=measurement_name[k])
         a.get_electron_ROC()
         ax = a.plot_results_vs_sweepparam(ret='ax')
 

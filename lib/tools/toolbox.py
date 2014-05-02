@@ -48,20 +48,27 @@ def is_older(ts0, ts1):
     returns True if timestamp ts0 is an earlier data than timestamp ts1,
     False otherwise.
     '''
-    dstamp0, tstamp0 = verify_timestamp(ts0)
-    dstamp1, tstamp1 = verify_timestamp(ts1)
+    if ts0 == None or ts1 == None:
+        return True
+    else:
 
-    return (dstamp0+tstamp0) < (dstamp1+tstamp1)
+        dstamp0, tstamp0 = verify_timestamp(ts0)
+        dstamp1, tstamp1 = verify_timestamp(ts1)
 
-def latest_data(contains='', older_than=None):
+        return (dstamp0+tstamp0) < (dstamp1+tstamp1)
+
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
 
     if older_than is not None, than the latest data that fits and that
     is older than the date given by the timestamp older_than is returned.
+    if newer_than is not None, than the latest data that fits and that
+    is newer than the date given by the timestamp newer_than is returned
 
-    If no fitting data is found, an exception is raised.
+    If no fitting data is found, an exception is raised. Except when you specifically ask not to to
+    this in: raise_exc = False, then a 'False' is returned.
     '''
 
     daydirs = os.listdir(datadir)
@@ -91,20 +98,29 @@ def latest_data(contains='', older_than=None):
                 continue
             timestamp = dstamp+tstamp
 
-            if contains in d:
+            if contains in d:              
+                
                 if older_than != None:
                     if not is_older(timestamp, older_than):
                         continue
+                if newer_than != None:
+                    if not is_older(newer_than,timestamp):
+                        continue
                 measdirs.append(d)
+
         i -= 1
 
     if len(measdirs) == 0:
-        raise Exception('No fitting data found.')
-
-    measdirs.sort()
-    measdir = measdirs[-1]
-
-    return os.path.join(datadir,daydir,measdir)
+        if raise_exc == True:
+            raise Exception('No fitting data found.')
+        else:
+            return False
+    else:
+        measdirs.sort()
+        measdir = measdirs[-1]
+        if return_timestamp == False:
+            return os.path.join(datadir,daydir,measdir)
+        else: return str(daydir)+str(measdir[:6]) , os.path.join(datadir,daydir,measdir)
 
 # def newer_data(starttimestamp, endtimestamp=None, contains='',):
 #     '''

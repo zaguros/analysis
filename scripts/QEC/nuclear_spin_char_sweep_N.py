@@ -19,10 +19,10 @@ def main(labpc = False):
     N = 16
     tau=np.linspace(0e-6, 15e-6, 15000) #seconds
 
-    N_swp = np.array(range(0,40,2)) #Integer
+    N_swp = np.array(range(0,400,2)) #Integer
     # tau_swpN= 6.522e-6 #seconds
-    # tau_swpN = 6.622e-6
-    tau_swpN = 8.840e-6
+    tau_swpN = 6.62e-6
+    # tau_swpN = 12.08e-6 #8.840e-6
     B_Field = 304.12 #Gauss
     pulseF = .86 #correction factor on final signal for plotting (pulse fidelity )
 
@@ -116,11 +116,11 @@ def main(labpc = False):
     plt.plot(N_swp,sweep_N_signal[0,:]*pulseF,'r.-',label='test_spin1')
     plt.plot(N_swp,sweep_N_signal[1,:]*pulseF,'c.-',label='test_spin2')
     plt.plot(N_swp,sweep_N_signal[2,:]*pulseF,'g.-',label='test_spin3')
-    plt.plot(N_swp,sweep_N_comb_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
-    plt.plot(data_N,signal_swp_N,'b.-',linewidth = 0.5,label='measured_data')
-    plt.plot(n,cos_fit,'r-',linewidth = 0.5,label='cos fit of data')
+    plt.plot(N_swp,sweep_N_comb_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=1.5)
+    # plt.plot(data_N,signal_swp_N,'b.-',linewidth = 0.5,label='measured_data')
+    # plt.plot(n,cos_fit,'r-',linewidth = 0.5,label='cos fit of data')
     plt.legend(loc=4)
-
+    plt.grid()
 
     plt.figure()
     plt.xlabel('tau')
@@ -131,8 +131,9 @@ def main(labpc = False):
     plt.plot(tau*1e6,FP_signal[0,:]*pulseF,'r-',label='test_spin1')
     plt.plot(tau*1e6,FP_signal[1,:]*pulseF,'c-',label='test_spin2')
     plt.plot(tau*1e6,FP_signal[2,:]*pulseF,'g-',label='test_spin3')
-    plt.plot(tau*1e6,FP_comb_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=.9)
+    plt.plot(tau*1e6,FP_comb_signal*pulseF,'k--',label ='Combined signal of test spins',linewidth=1.5)
     plt.xlim(0,15)
+    plt.grid()
 
     plt.plot(data_tau,signal_tau,'b.-',linewidth = 0.5,label='measured_data')
     plt.legend(loc=4)
