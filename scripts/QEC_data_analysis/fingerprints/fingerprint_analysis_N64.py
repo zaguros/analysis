@@ -48,7 +48,7 @@ def fingerprint(disp_sim_spin = True):
     # ax.set_xlim(15.0,15.5)
     ax.set_xlim(0,73)
     start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start, end, 0.05))
+    ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
     ax.set_ylim(-0.05,1.05)
    

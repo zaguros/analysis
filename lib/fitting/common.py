@@ -39,6 +39,29 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_double_decaying_cos(g_f1, g_a1, g_A1, g_phi1, g_t1, g_f2, g_a2, g_A2, g_phi2, g_t2, *arg):
+    fitfunc_str = '''(A1 *exp(-x/t1) cos(2pi * (f1*x + phi1/360) ) + a1)*2-1)*
+                     (A2 *exp(-x/t2) cos(2pi * (f2*x + phi2/360) ) + a2)*2-1)/2+1/2'''
+
+    f1 = fit.Parameter(g_f1, 'f1')
+    a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    phi1 = fit.Parameter(g_phi1, 'phi1')
+    t1   = fit.Parameter(g_t1, 't1')
+
+    f2 = fit.Parameter(g_f2, 'f2')
+    a2 = fit.Parameter(g_a2, 'a2')
+    A2 = fit.Parameter(g_A2, 'A2')
+    phi2 = fit.Parameter(g_phi2, 'phi2')
+    t2   = fit.Parameter(g_t2, 't2')
+
+    p0 = [f1, a1, A1, phi1, t1, f2, a2, A2, phi2, t2]
+
+    def fitfunc(x):
+        return (a1() + A1()*np.exp(-x/t1()) * np.cos(2*np.pi*( f1()*x + phi1()/360.)))*(a2() + A2()*np.exp(-x/t2()) * np.cos(2*np.pi*( f2()*x + phi2()/360.)))/2+0.5
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_exp_decay_with_offset(g_a, g_A, g_tau, *arg):
     """
     fitfunction for an exponential decay,
@@ -162,7 +185,7 @@ def fit_saturation_with_offset_linslope(g_a, g_b, g_A, g_xsat, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_poly(indices, *arg):
-    fitfunc_str = 'sum_n ( a[n] * x[n] )'
+    fitfunc_str = 'sum_n ( a[n] * x**n )'
 
     idx = 0
     p0 = []
@@ -176,6 +199,20 @@ def fit_poly(indices, *arg):
         return val
 
     return p0, fitfunc, fitfunc_str
+
+def fit_parabole(g_o, g_A, g_c, *arg):
+    fitfunc_str = 'o + A * (x-c)**2'
+
+    o = fit.Parameter(g_o, 'o')
+    A = fit.Parameter(g_A, 'A')
+    c = fit.Parameter(g_c, 'c')
+    p0 = [o, A, c]
+
+    def fitfunc(x):
+        return o() + A() * (x-c())**2 
+
+    return p0, fitfunc, fitfunc_str
+
 
 def fit_AOM_powerdependence(g_a, g_xc, g_k, *arg):
     fitfunc_str = 'a * exp(-exp(-k*(x-xc)))'

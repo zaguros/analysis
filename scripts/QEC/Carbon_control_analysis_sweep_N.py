@@ -7,9 +7,10 @@ from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 reload(common)
 
-reload(common)
 
-def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, plot_fit = False, do_print = False, show_guess = True):
+def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'], 
+            frequency = [1], offset = [0.5], amplitude = [0.5],  decay_constant = [200],phase =[0], 
+            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
@@ -32,14 +33,18 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],freq
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
 
-        p0, fitfunc, fitfunc_str = common.fit_decaying_cos(frequency,offset, amplitude, phase, decay_constant)
-
-        #plot the initial guess
-        if show_guess:
-            ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
-
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3])
-
+        if len(frequency) == 1:
+            p0, fitfunc, fitfunc_str = common.fit_decaying_cos(frequency[0],offset[0], amplitude[0], phase[0], decay_constant[0])
+            #plot the initial guess
+            if show_guess:
+                ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3])
+        elif len(frequency) == 2:
+            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0],offset[0], amplitude[0], phase[0], decay_constant[0], frequency[1],offset[1], amplitude[1], phase[1], decay_constant[1])
+            if show_guess:
+                ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3,8])
+                 
 
         ## plot data and fit as function of total time
         if plot_fit == True:
@@ -52,7 +57,7 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],freq
         plt.savefig(os.path.join(folder, 'analyzed_result.png'),
         format='png')
 
-        freq = fit_results[0]['params_dict']['f']
+        freq = fit_results[0]['params_dict']['f1']
         period = 1/freq 
         print 'Period is %s pulses ' %(period)
         N_pi = round(period*.5/2)*2.0 
