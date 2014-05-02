@@ -28,8 +28,8 @@ def plot_sim_vs_Bx(spin_list=['C1'],Bx_list = [-0.7,0,0.7],B_Field = 304.12, N =
 			Bx = Bx_list[b]
 			print spin_list[ii]
 
-			HF_par 	= [hf[spin_list[ii]]['par']  - hf[spin_list[ii]]['perp']*Bx/B_Field]
-			HF_perp = [hf[spin_list[ii]]['perp'] + hf[spin_list[ii]]['par']*Bx/B_Field]
+			HF_par 	= [10e3]#[hf[spin_list[ii]]['par']  - hf[spin_list[ii]]['perp']*Bx/B_Field]
+			HF_perp = [100e3]#[hf[spin_list[ii]]['perp'] + hf[spin_list[ii]]['par']*Bx/B_Field]
 
 			print Bx/B_Field
 
@@ -39,12 +39,12 @@ def plot_sim_vs_Bx(spin_list=['C1'],Bx_list = [-0.7,0,0.7],B_Field = 304.12, N =
 			print HF_par
 			print HF_perp
 
-			tau_lst = np.linspace(11.8e-6,12.3e-6,5000)
+			tau_lst = np.linspace(10.e-6,24.5e-6,5000)
 			Mt = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,N,tau_lst)
 			FP_signal = ((Mt+1)/2)
 			ax.plot(tau_lst*1e6, FP_signal[0,:],'-',lw=.8,label = 'spin_'+spin_list[ii]+'_Bx_'+str(Bx))
 		ax.set_xlabel('tau (us)')
 		plt.legend(loc=4)
 
-plot_sim_vs_Bx(spin_list=['C3'],Bx_list = [-5,-1.5,0,1.5,5],B_Field = 304.12, N =32)
+plot_sim_vs_Bx(spin_list=['C10'],Bx_list = [-7,-1.5,0,1.5,7],B_Field = 304.12, N =32)
 # ['C1','C3','C10']
