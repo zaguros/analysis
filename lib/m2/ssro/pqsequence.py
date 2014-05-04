@@ -52,8 +52,6 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         self.syncs_per_sweep = noof_syncs_per_sweep_pt
         self.sweep_idxs=np.mod(np.floor((self.sync_nrs-1)/self.syncs_per_sweep),self.sweep_length)
 
-    
-
 class TailAnalysis(PQSequenceAnalysis):
 
     def get_tail_vs_sweep(self, channel, start_ns, tail_length_ns, pq_binsize_ns=1e-3, hist_binsize_ns=1.0, verbose= False):
@@ -87,12 +85,12 @@ class TailAnalysis(PQSequenceAnalysis):
 
             print 'total_sweeps in window:', len(valid_tail_idxs) 
             print 'total ph in window with sweep element 0:', len(np.where(valid_tail_idxs==0)[0])
-            print 'div factor:', (self.reps*syncs_per_sweep/self.sweep_length)
+            print 'div factor:', (self.reps*self.syncs_per_sweep/self.sweep_length)
         self.tail_cts_per_sweep_idx=np.zeros(self.sweep_length)
         
         for sweep_idx in range(self.sweep_length):
             self.tail_cts_per_sweep_idx[sweep_idx]= \
-                                float(len(np.where(valid_tail_idxs==sweep_idx)[0])) / (self.reps*syncs_per_sweep/self.sweep_length)
+                                float(len(np.where(valid_tail_idxs==sweep_idx)[0])) / (self.reps*self.syncs_per_sweep/self.sweep_length)
             self.tail_hist_h[sweep_idx], self.tail_hist_b = \
                                 np.histogram(sync_time_ns[np.where(is_ph & (self.sweep_idxs == sweep_idx))], bins=hist_bins)
 
@@ -203,15 +201,42 @@ class TailAnalysis(PQSequenceAnalysis):
         if ret == 'fig':
             return fig
 
+class TailAnalysisIntegrated(TailAnalysis):  
 
+    def get_sweep_idxs(self,  noof_syncs_per_sweep_pt=1):
+        self.syncs_per_sweep = noof_syncs_per_sweep_pt
+
+    def get_tail_vs_sweep(self, channel, start_ns, tail_length_ns, pq_binsize_ns=1e-3, verbose= False):
+        """
+        Integrate & make a time histogram of all photon clicks on given channel,
+        that arrive between start_ns and start_ns+tail_length_ns.
+        Normalizes the integrated result to 1/(self.reps*syncs_per_sweep/self.sweep_length)
+        """
+        if not hasattr(self,'reps'):
+            self.get_readout_results('ssro')
+        if not hasattr(self, 'sweep_pts'):
+            print 'get_sweep_pts first'
+            return
+        if not hasattr(self, 'sweep_idxs'):
+            print 'get_sweep_idxs first'
+            return
+
+        hist_bins = np.arange(start_ns-pq_binsize_ns*.5,start_ns+1*tail_length_ns+pq_binsize_ns,pq_binsize_ns)
+        start=np.floor(start_ns/pq_binsize_ns)
+        length=np.floor(tail_length_ns/pq_binsize_ns)
+
+        self.tail_hist_h = (self.pqf['PQ_hist{}'.format(channel)].value)[start:start+length,:]
+        self.tail_hist_b = np.linspace(start_ns, start_ns+tail_length_ns, len(self.tail_hist_h[:,0]))
+        self.tail_cts_per_sweep_idx = np.sum(self.tail_hist_h, axis=0) / float(self.reps*self.syncs_per_sweep/self.sweep_length)
+       
 
 class FastSSROAnalysis(PQSequenceAnalysis):
 
     def get_sweep_points(self):
         PQSequenceAnalysis.get_sweep_points(self)
-        a.sweep_pts=np.hstack((e,e) for e in a.sweep_pts)
+        self.sweep_pts=np.hstack((e,e) for e in self.sweep_pts)
 
-    def get_fastssro_results(self,channel,pq_binsize_ns, hist_binsize_ns, verbose= False):
+    def get_fastssro_results(self,channel,pq_binsize_ns, hist_binsize_ns):
         if not hasattr(self,'reps'):
             self.get_readout_results('ssro')
         if not hasattr(self, 'sweep_pts'):
@@ -351,7 +376,22 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         self.plot_relaxation(sweep_index,ms=1)
         self.plot_mean_fidelity(sweep_index)
 
+class FastSSROAnalysisIntegrated(FastSSROAnalysis):
 
+    def get_fastssro_results(self,channel,pq_binsize_ns):
+        self.hist_binsize_ns = pq_binsize_ns
+        self.hist = self.pqf['PQ_hist{}'.format(channel)].value
+    
+    def _get_relaxation(self, ms, sweep_index, start, length):
+        start = np.floor(start / self.hist_binsize_ns)
+        length = np.floor(length / self.hist_binsize_ns)
+        return self.hist[start:start+length,2*sweep_index+ms]
+
+    def _get_fidelity_and_mean_cpsh(self,ms,sweep_index, start, length):
+        start = np.floor(start / self.hist_binsize_ns)
+        length = np.floor(length / self.hist_binsize_ns)
+        cpsh=np.sum(self.hist[start:start+length,2*sweep_index+ms])
+        #fidelity not possible!
 
 def analyze_tail(folder, name='ssro', cr=False, roc=True):
     a = TailAnalysis(folder)
