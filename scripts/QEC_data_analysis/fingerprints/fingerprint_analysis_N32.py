@@ -11,7 +11,7 @@ import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating
 import matplotlib.cm as cm
 from matplotlib import pyplot as plt
 
-import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params) 
+import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params)
 hf = module_hyperfine_params.hyperfine_params
 
 def fingerprint(disp_sim_spin = True):
@@ -22,8 +22,8 @@ def fingerprint(disp_sim_spin = True):
     ###################
 
     if disp_sim_spin == True:
-            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par']]
-            HF_perp =  [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp']]
+            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par'], hf['C13']['par']]
+            HF_perp =  [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp'], hf['C13']['perp']]
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file
@@ -52,7 +52,7 @@ def fingerprint(disp_sim_spin = True):
     ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
     ax.set_ylim(-0.05,1.05)
-   
+
     ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
     if disp_sim_spin == True:
       colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
@@ -62,7 +62,7 @@ def fingerprint(disp_sim_spin = True):
         tot_signal = np.ones(len(tau_lst))
         for tt in range(len(HF_par)):
           tot_signal = tot_signal * Mt16[tt,:]
-        fin_signal = (tot_signal+1)/2.0   
+        fin_signal = (tot_signal+1)/2.0
         ax.plot(tau_lst*1e6, fin_signal,':g',lw=2,label = 'tot')
     plt.legend(loc=4)
 
@@ -93,7 +93,7 @@ def load_mult_dat(timestamps, number_of_msmts, ssro_calib_folders=['']):
         cum_sweep_pts = np.concatenate((cum_sweep_pts, np.linspace(2.0+kk*(50)*10e-3, 2.5+kk*(50)*10e-3, 51)))
         cum_p0 = np.concatenate((cum_p0, a.p0))
         cum_u_p0 = np.concatenate((cum_u_p0, a.u_p0))
-      elif tt==1:  
+      elif tt==1:
         cum_sweep_pts = np.concatenate((cum_sweep_pts, np.linspace(2.0+(kk+90)*(50)*10e-3, 2.5+(kk+90)*(50)*10e-3, 51)))
         cum_p0 = np.concatenate((cum_p0, a.p0))
         cum_u_p0 = np.concatenate((cum_u_p0, a.u_p0))
