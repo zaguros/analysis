@@ -7,7 +7,7 @@ import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
 
 ### import the hyperfine parameters ###
-import hyperfine_params as hf_params; reload(hf)
+import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
 
 ### import the experimental values for tau and N ###
@@ -130,7 +130,7 @@ def c13_gate_multiqubit(carbon_nr, number_of_pulses, tau, B_field):
 ### Experiments ###
 ###################
 
-def nuclear_rabi_no_init(carbon_nr, tau, nr_of_pulses_list=np.linspace(0,100,51), B_field=304.22):
+def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.225):
     '''nuclear Rabi experiment without init
     scheme: x - Ren(N) - x - RO'''
 
@@ -145,22 +145,27 @@ def nuclear_rabi_no_init(carbon_nr, tau, nr_of_pulses_list=np.linspace(0,100,51)
     electron_x = qutip.tensor(x,Id)
     electron_mx = qutip.tensor(mx,Id)
 
-    #sequence and RO
-    S = np.zeros(len(nr_of_pulses_list))
-    for i, N in enumerate(nr_of_pulses_list):
-        gate = c13_gate(carbon_nr, N, tau, B_field)         # Define nuclear spin gate
+    S_tot = np.ones(len(nr_of_pulses_list))
+    for kk, carbon_nr in enumerate(carbon_nrs):
+        #sequence and RO
+        S = np.zeros(len(nr_of_pulses_list))
+        for i, N in enumerate(nr_of_pulses_list):
+            gate = c13_gate(carbon_nr, N, tau, B_field)         # Define nuclear spin gate
 
-        seq  = electron_x*gate*electron_x                   # Define gate sequence
-        rho_final = seq*rho_init*seq.dag()                  # Apply gate sequence
+            seq  = electron_x*gate*electron_x                   # Define gate sequence
+            rho_final = seq*rho_init*seq.dag()                  # Apply gate sequence
 
-        rho_el_final = rho_final.ptrace(0)                  # Trace out the nuclear spin
-        #S[i] = qutip.expect(sz, rho_el_final) + 1./2       # Z measurement two alternative ways
-        S[i] = qutip.fidelity(rho0, rho_el_final)**2
+            rho_el_final = rho_final.ptrace(0)                  # Trace out the nuclear spin
+            S[i] = qutip.expect(sz, rho_el_final)*2            # Z measurement two alternative ways
+            #S[i] = qutip.fidelity(rho0, rho_el_final)**2
+
+        ## Cumulative signal ##
+        S_tot = S_tot*S
 
 
     ## plot ##
     f, ax = plt.subplots(1)
-    ax.plot(nr_of_pulses_list, S, 'o-', lw=1)
+    ax.plot(nr_of_pulses_list, (S_tot+1)/2., 'o-', lw=1)
     ax.set_title('P(ms=0)'); ax.set_xlabel('N')
     plt.show()
     return S[i]
