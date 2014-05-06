@@ -53,6 +53,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
             print 'guess_ctr= '+str(guess_ctr)
 
     # try fitting
+
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             # (2, guess_splitN),
@@ -68,7 +69,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 
     plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
             format='png')
-
+    print ret
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
         u_f0 = fit_result['error_dict']['x0']
@@ -77,7 +78,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
             (f0-2.8)*1e3, u_f0*1e3), ha='center')
 
         return (f0-2.8)*1e3, u_f0*1e3
-
+    return fit_result
 ### script
 if __name__ == '__main__':
     if timestamp != None:
@@ -85,7 +86,7 @@ if __name__ == '__main__':
     else:
         folder = toolbox.latest_data('DarkESR')
 
-    analyze_dark_esr(folder)
+    fit_result=analyze_dark_esr(folder)
 
 
 

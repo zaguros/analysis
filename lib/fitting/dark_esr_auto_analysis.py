@@ -29,9 +29,14 @@ ret='f0',
     y = a.p0.reshape(-1)[:]
 
     # Find the most left esr resonance
+    ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
+    guess_offset=np.average(y)
+    dip_threshold=guess_offset-1.5*np.std(y)
+    print guess_offset
+    print dip_threshold
     j=0
     print 'j = '+str(j)
-    while y[j]>0.9 and j < len(y)-2: # such that we account for noise
+    while y[j]>dip_threshold and j < len(y)-2: # such that we account for noise
         k = j
         j = j+1
 
@@ -41,6 +46,8 @@ ret='f0',
     else:
         guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
         print 'guess_ctr = '+str(guess_ctr)
+
+    ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
@@ -75,8 +82,13 @@ ret='f0',
 
     guess_ctr = x[y.argmin()]
     print 'guess_ctr = '+str(guess_ctr)
+    ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
+    guess_offset=np.average(y)
+    dip_threshold=guess_offset-1.5*np.std(y)
+    print guess_offset
+    print dip_threshold
 
-    if min(y) > 0.9:
+    if min(y) > dip_threshold:
         print 'Could not find dip'
         return
 

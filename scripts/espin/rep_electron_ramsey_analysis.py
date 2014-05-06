@@ -14,10 +14,10 @@ from analysis.lib.math import error
 
 reload(toolbox)
 
-timestamp = '192057'#None#'155611'#'154018'#'184802'#None#'20130530183305'#None #
+timestamp = '154444'#'154012'#None#'155611'#'154018'#'184802'#None#'20130530183305'#None #
 t_ramsey=1/2.19e6
 gamma=2.8e6
-bs=[8]
+bs=[30]
 dtime=20e-6
 ### script
 if timestamp != None:
@@ -30,7 +30,7 @@ a.get_sweep_pts()
 a.get_readout_results(name='ssro')
 fig = a.default_fig(figsize=(24,4))
 ax = a.default_ax(fig)
-for j in arange(len(bs)):
+for j in np.arange(len(bs)):
     binsize=bs[j]
 
     a.sweep_pts=np.ones(a.reps/binsize)
@@ -39,7 +39,7 @@ for j in arange(len(bs)):
     a.u_normalized_ssro=np.ones(a.reps/binsize)
 
     print binsize
-    for i in arange(a.reps/binsize):
+    for i in np.arange(a.reps/binsize):
 
         a.normalized_ssro[i]=sum(a.ssro_results[i*binsize:(i+1)*binsize])/float(binsize)
         a.u_normalized_ssro[i]=(a.normalized_ssro[i]*(1.-a.normalized_ssro[i])/binsize)**0.5
