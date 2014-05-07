@@ -152,7 +152,7 @@ def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76
         for i, N in enumerate(nr_of_pulses_list):
             gate = c13_gate(carbon_nr, N, tau, B_field)         # Define nuclear spin gate
 
-            seq  = electron_x*gate*electron_x                   # Define gate sequence
+            seq  = electron_mx*gate*electron_x                   # Define gate sequence
             rho_final = seq*rho_init*seq.dag()                  # Apply gate sequence
 
             rho_el_final = rho_final.ptrace(0)                  # Trace out the nuclear spin
@@ -240,7 +240,7 @@ def characterize_c13_DD_unit(carbon_nr, B_field=304.22, tau_list = np.linspace(1
     print A_par/2./np.pi
     print A_perp/2./np.pi
 
-    characterize_DD_unit(A_par,A_perp,B_field=304.22,tau_list=tau_list)
+    characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
 
 def characterize_DD_unit(A_par = 2*np.pi*100e3, A_perp = 2*np.pi*30e3, B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
     '''gives a full characterization of the rotation matrix
@@ -251,7 +251,7 @@ def characterize_DD_unit(A_par = 2*np.pi*100e3, A_perp = 2*np.pi*30e3, B_field =
     X_proj_0 = np.zeros(len(tau_list)); Y_proj_0 = np.zeros(len(tau_list)); Z_proj_0 = np.zeros(len(tau_list))
     X_proj_1 = np.zeros(len(tau_list)); Y_proj_1 = np.zeros(len(tau_list)); Z_proj_1 = np.zeros(len(tau_list))
     innerprod =np.zeros(len(tau_list)); pulses_for_pi2 = np.zeros(len(tau_list)); signal=np.zeros(len(tau_list))
-
+    print B_field
     omega_Larmor = 2 * np.pi * B_field * 1.07e3
 
     for i in range(len(tau_list)):
