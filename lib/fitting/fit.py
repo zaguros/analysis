@@ -75,8 +75,8 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # package the result neatly
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
-    print 'info',info
-    print 'p1',p1
+    # print 'info',info
+    # print 'p1',p1
     #print 'cov',cov
 
     #print 'dof',dof

@@ -32,11 +32,11 @@ ret='f0',
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
     guess_offset=np.average(y)
     dip_threshold=guess_offset-1.5*np.std(y)
-    print guess_offset
-    print dip_threshold
+    # print guess_offset
+    # print dip_threshold
     j=0
     print 'j = '+str(j)
-    while y[j]>dip_threshold and j < len(y)-2: # such that we account for noise
+    while y[j]>0.93*y[j+1] and j < len(y)-2: # such that we account for noise
         k = j
         j = j+1
 
@@ -52,7 +52,7 @@ ret='f0',
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             (3, guess_splitN),
-            do_print=True, ret=True, fixed=[4])
+            do_print=False, ret=True, fixed=[4])
 
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
@@ -85,8 +85,8 @@ ret='f0',
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
     guess_offset=np.average(y)
     dip_threshold=guess_offset-1.5*np.std(y)
-    print guess_offset
-    print dip_threshold
+    # print guess_offset
+    # print dip_threshold
 
     if min(y) > dip_threshold:
         print 'Could not find dip'
@@ -94,7 +94,7 @@ ret='f0',
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
-            do_print=True, ret=True, fixed=[])
+            do_print=False, ret=True, fixed=[])
 
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']

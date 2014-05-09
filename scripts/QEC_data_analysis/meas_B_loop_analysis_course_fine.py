@@ -42,12 +42,12 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
     # print older_than, newer_than
     iteration = 0
 
-    if type == 'course':
-        contains_name_m = 'magnet_msm1_coarse'
-        contains_name_p = 'magnet_msp1_coarse'
-    else:
-        contains_name_m = 'magnet_msm1_fine'
-        contains_name_p = 'magnet_msp1_fine'
+    # if type == 'course':
+    #     contains_name_m = 'magnet_msm1_coarse'
+    #     contains_name_p = 'magnet_msp1_coarse'
+    # else:
+    #     contains_name_m = 'magnet_msm1_fine'
+    #     contains_name_p = 'magnet_msp1_fine'
 
     while toolbox.latest_data(contains='magnet_msm1_coarse', older_than=older_than, newer_than=newer_than,raise_exc = False)!=False:
         print 'iteration'+str(iteration)
@@ -58,7 +58,7 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration', older_than=older_than_SSRO)
         
         #msm1 coarse
-        timestamp,folder = toolbox.latest_data(contains='magnet_msm1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
+        timestamp1,folder = toolbox.latest_data(contains='magnet_msm1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
         print 'm folder '+folder
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
@@ -90,7 +90,7 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
          
         #msm1 fine
         timestamp,folder = toolbox.latest_data(contains='magnet_msp1_fine', older_than=older_than, newer_than=newer_than,return_timestamp = True)
-        print 'm folder '+folder
+        print 'p folder '+folder
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results('ssro')
@@ -98,9 +98,9 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
 
         f0pf_temp,u_f0pf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(3.73) 
 
-        print f0p_temp >0 and f0m_temp >0
-        if f0p_temp >0 and f0m_temp >0:
-            Bz_measured, Bx_measured = amt.get_B_field(msm1_freq=f0mf_temp*1e9, msp1_freq=f0pf_temp*1e9, u_msm1_freq =u_f0m_temp ,u_msp1_freq=u_f0p_temp)
+        print 'fitted values:'+ str(f0pc_temp)+' ; '+str(f0mc_temp)+' ; '+ str(f0pc_temp)+' ; '+str(f0mc_temp)
+        if f0pc_temp >0 and f0mc_temp >0:
+            Bz_measured, Bx_measured = amt.get_B_field(msm1_freq=f0mf_temp*1e9, msp1_freq=f0pf_temp*1e9, u_msm1_freq =u_f0mf_temp ,u_msp1_freq=u_f0pf_temp)
             f_centrec = (f0mc_temp+f0pc_temp)/2
             f_centre_errorc = np.sqrt(u_f0mc_temp**2+u_f0pc_temp**2)/2
             f_diffc = (f_centrec-ZFS*1e-9)*1e6
@@ -109,28 +109,29 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
             f_centre_errorf = np.sqrt(u_f0mf_temp**2+u_f0pf_temp**2)/2
             f_difff = (f_centref-ZFS*1e-9)*1e6
             f_diff_errorf = f_centre_errorf*1e6
-            f0mc.append(f0m_temp)
-            u_f0mc.append(u_f0m_temp)
-            f0pc.append(f0p_temp)
-            u_f0pc.append(u_f0p_temp)
-            f0mf.append(f0m_temp)
-            u_f0mf.append(u_f0m_temp)
-            f0pf.append(f0p_temp)
-            u_f0pf.append(u_f0p_temp)
+
+            f0mc.append(f0mc_temp)
+            u_f0mc.append(u_f0mc_temp)
+            f0pc.append(f0pc_temp)
+            u_f0pc.append(u_f0pc_temp)
+            f0mf.append(f0mf_temp)
+            u_f0mf.append(u_f0mf_temp)
+            f0pf.append(f0pf_temp)
+            u_f0pf.append(u_f0pf_temp)
             f_centrec_list.append(f_centrec)
-            f_centrec_error_list.append(f_centre_errorc)
+            f_centre_errorc_list.append(f_centre_errorc)
             f_diffc_list.append(f_diffc)
             f_diffc_error_list.append(f_diff_errorc)
             f_centref_list.append(f_centref)
-            f_centref_error_list.append(f_centre_errorf)
+            f_centre_errorf_list.append(f_centre_errorf)
             f_difff_list.append(f_difff)
-            f_diff_errorf_list.append(f_diff_errorf)
+            f_difff_error_list.append(f_diff_errorf)
             Bx_field_measured.append(Bx_measured)
             Bz_field_measured.append(Bz_measured)
             timestamp_list.append(timestamp)
             it_list.append(iteration)
 
-        older_than = str(int(timestamp)-1)
+        older_than = str(int(timestamp1)-1)
 
         iteration = iteration+1
         print iteration
@@ -138,14 +139,23 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
     
     it_list = linspace(0,len(it_list)-1,len(it_list))
     
-    np.savez('test_B_field_drift',f0m=f0m,
-            u_f0m=u_f0m,
-            f0p=f0p,
-            u_f0p=u_f0p,
-            f_centre_list=f_centre_list,
-            f_centre_error_list=f_centre_error_list,
-            f_diff_list=f_diff_list,
-            f_diff_error_list=f_diff_error_list,
+    np.savez('test_B_field_drift',
+            f0mc=f0mc,
+            u_f0mc=u_f0mc,
+            f0pc=f0pc,
+            u_f0pc=u_f0pc,
+            f0mf=f0mf,
+            u_f0mf=u_f0mf,
+            f0pf=f0pf,
+            u_f0pf=u_f0pf,
+            f_centrec_list=f_centrec_list,
+            f_centrec_error_list=f_centre_errorc_list,
+            f_diffc_list=f_diffc_list,
+            f_diffc_error_list=f_diffc_error_list,
+            f_centref_list=f_centref_list,
+            f_centref_error_list=f_centre_errorf_list,
+            f_difff_list=f_difff_list,
+            f_difff_error_list=f_difff_error_list,
             Bx_field_measured=Bx_field_measured,
             Bz_field_measured=Bz_field_measured,
             timestamp_list=timestamp_list,
@@ -153,29 +163,34 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
 
 def plot_meas_B_loop():
 
-    d = np.load('B_field_drift.npz')
+    d = np.load('test_B_field_drift.npz')
     f0mc = d['f0mc']; u_f0mc = d['u_f0mc']; f0pc = d['f0pc'] ;u_f0pc = d['u_f0pc']
     f0mf = d['f0mf']; u_f0mf = d['u_f0mf']; f0pf = d['f0pf'] ;u_f0pf = d['u_f0pf']
     Bx_field_measured = d['Bx_field_measured']
     Bz_field_measured = d['Bz_field_measured']
-    f_centre_list = d['f_centre_list']; f_diff_list=d['f_diff_list']
-    timestamp_list = d['timestamp_list']
-    f_centre_error_list= d['f_centre_error_list']
+    f_centrec_list = d['f_centrec_list']; f_diffc_list=d['f_diffc_list']
+    f_centrec_error_list= d['f_centrec_error_list'];f_diffc_error_list = d['f_diffc_error_list']
+    f_centref_list = d['f_centref_list']; f_difff_list=d['f_difff_list']
+    f_centref_error_list= d['f_centref_error_list'];f_difff_error_list = d['f_difff_error_list']
     it_list = d['it_list']
-    f_diff_error_list = d['f_diff_error_list']
+
 
     Bz_diff_list = [j-304.21 for j in Bz_field_measured]
     Bz_error = [1/(4.*ZFS*g_factor*Bz_field_measured[j])*
-            (f0p[j]**2*u_f0p[j]**2+f0m[j]**2*u_f0m[j]**2)**(1/2.) for j in range(len(Bz_field_measured))]
-    Bx_error = [1/Bx_field_measured[j]*(f0m[j]**2*u_f0m[j]**2/g_factor**2
+            (f0pf[j]**2*u_f0pf[j]**2+f0mf[j]**2*u_f0mf[j]**2)**(1/2.) for j in range(len(Bz_field_measured))]
+    Bx_error = [1/Bx_field_measured[j]*(f0mf[j]**2*u_f0mf[j]**2/g_factor**2
             +(ZFS-g_factor*Bz_field_measured[j])**2*Bz_error[j]**2) for j in range(len(Bx_field_measured))]
 
-    print len(Bz_field_measured)
+    # print len(Bz_field_measured)
     total_B = [(Bx_field_measured[j]**2+Bz_field_measured[j]**2)**(1/2.) for j in range(len(Bz_field_measured))]
     total_B_error = [1/total_B[j]*(Bx_field_measured[j]**2*Bx_error[j]**2+Bz_field_measured[j]**2*Bz_error[j]**2)**(1/2.) for j in range(len(Bz_field_measured))]
 
-    mean_f_centre   = np.mean(f_diff_list)
-    stdev_f_centre  = np.std(f_diff_list)
+    mean_f_centrec   = np.mean(f_diffc_list)
+    stdev_f_centrec  = np.std(f_diffc_list)
+
+    mean_f_centref   = np.mean(f_difff_list)
+    stdev_f_centref  = np.std(f_difff_list)
+
     mean_Bx         = np.mean(Bx_field_measured)
     stdev_Bx        = np.std(Bx_field_measured)
     mean_Bz         = np.mean(Bz_diff_list)   
@@ -186,50 +201,71 @@ def plot_meas_B_loop():
 
     fig = figure(1,figsize=(18,5))
     ax = fig.add_subplot(111)
-    ax.errorbar(it_list,f_diff_list,f_diff_error_list)
-    ax.errorbar(it_list,f_diff_list,f_diff_error_list)
+    ax.errorbar(it_list,f_diffc_list,f_diffc_error_list)
     ax.set_xlabel('msmt #')
-    ax.set_ylabel('relative centrer freq (kHz) (offset 2.87748 GHz)')
-    figure(2,figsize=(18,5))
+    ax.set_ylabel('relative course center freq (kHz) (offset 2.87748 GHz)')
+    plt.savefig('freq_vs_time_course',format='png')
+
+    fig = figure(2,figsize=(18,5))
+    ax = fig.add_subplot(111)
+    ax.errorbar(it_list,f_difff_list,f_difff_error_list)
+    ax.set_xlabel('msmt #')
+    ax.set_ylabel('relative fine center freq (kHz) (offset 2.87748 GHz)')
+    plt.savefig('freq_vs_time_fine',format='png')
+
+    figure(3,figsize=(18,5))
     plt.errorbar(it_list,Bx_field_measured, Bx_error)
     plt.xlabel('msmt #')
     plt.ylabel('measured Bx field (G)')
-    plt.savefig('Bx_vs_time',format='png')
-    figure(3,figsize=(18,5))
+    plt.savefig('Bx_vs_time_fine',format='png')
+    figure(4,figsize=(18,5))
     plt.errorbar(it_list,Bz_diff_list,Bz_error)
     plt.xlabel('msmt #')
     plt.ylabel('measured relative Bz (G) (offset 304.21 G)')
-    plt.savefig('Bz_vs_time',format='png')
-    figure(4)
-    n, bins, patches = plt.hist(f_diff_list,50,normed = 1)
-    bincenters = 0.5*(bins[1:]+bins[:-1])
-    y = mlab.normpdf( bincenters, mean_f_centre, stdev_f_centre)
-    plt.plot(bincenters, y, 'r--', linewidth=1)
-    plt.xlabel('binned relative center freq (kHz)')
-    plt.title('Mean '+str(mean_f_centre)+' kHz, stdev '+str(stdev_f_centre)+' kHz')
-    plt.savefig('binned_freq',format='png')
+    plt.savefig('Bz_vs_time_fine',format='png')
+
+
     figure(5)
+    n, bins, patches = plt.hist(f_diffc_list,50,normed = 1)
+    bincenters = 0.5*(bins[1:]+bins[:-1])
+    y = mlab.normpdf( bincenters, mean_f_centrec, stdev_f_centrec)
+    plt.plot(bincenters, y, 'r--', linewidth=1)
+    plt.xlabel('binned relative course center freq (kHz)')
+    plt.title('Mean '+str(mean_f_centrec)+' kHz, stdev '+str(stdev_f_centrec)+' kHz')
+    plt.savefig('binned_freq_c',format='png')
+
+    figure(6)
+    n, bins, patches = plt.hist(f_difff_list,50,normed = 1)
+    bincenters = 0.5*(bins[1:]+bins[:-1])
+    y = mlab.normpdf( bincenters, mean_f_centref, stdev_f_centref)
+    plt.plot(bincenters, y, 'r--', linewidth=1)
+    plt.xlabel('binned relative fine center freq (kHz)')
+    plt.title('Mean '+str(mean_f_centref)+' kHz, stdev '+str(stdev_f_centref)+' kHz')
+    plt.savefig('binned_freq_f',format='png')
+
+
+    figure(7)
     n, bins, patches = plt.hist(Bx_field_measured,50,normed = 1)
     bincenters = 0.5*(bins[1:]+bins[:-1])
     y = mlab.normpdf( bincenters, mean_Bx, stdev_Bx)
     plt.plot(bincenters, y, 'r--', linewidth=1)
     plt.xlabel('binned Bx (G)')
     plt.title('Mean '+str(mean_Bx)+' G, stdev '+str(stdev_Bx)+' G')
-    plt.savefig('binned_Bx',format='png')
-    figure(6)
+    plt.savefig('binned_Bx_fine',format='png')
+    figure(8)
     n, bins, patches = plt.hist(Bz_diff_list,50,normed = 1)
     bincenters = 0.5*(bins[1:]+bins[:-1])
     y = mlab.normpdf( bincenters, mean_Bz, stdev_Bz)
     plt.plot(bincenters, y, 'r--', linewidth=1)
     plt.xlabel('binned relative Bz (G) (offset 304.21 G)')
     plt.title('Mean '+str(mean_Bz+304.21)+' G, stdev '+str(stdev_Bz)+' G')
-    plt.savefig('binned_Bz',format='png')
+    plt.savefig('binned_Bz_fine',format='png')
 
 
 
 
 
 
-fit_B_msmt_loop(older_than = '20140428101106', newer_than = '20140426092819')
+fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140505070707')
 
 plot_meas_B_loop()
