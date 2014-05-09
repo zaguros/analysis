@@ -22,8 +22,8 @@ def fingerprint(disp_sim_spin = True):
     ###################
 
     if disp_sim_spin == True:
-            HF_par =   [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par'], hf['C13']['par']]
-            HF_perp =  [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp'], hf['C13']['perp']]
+            HF_par =  [hf['C7']['par']]# [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par'], hf['C13']['par']]
+            HF_perp = [hf['C7']['perp']]# [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp'], hf['C13']['perp']]
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file

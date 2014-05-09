@@ -42,7 +42,7 @@ elif msmt_type == 'mbi':
     a.get_readout_results(name='adwindata')
     a.get_electron_ROC()
     ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax')
-    ax.set_ylim(-0.1,0.4)
+    ax.set_ylim(-0.1,1)
 
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]

@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None#'153547' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
@@ -62,7 +62,6 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 
     plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
             format='png')
-    print fit_result
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
         u_f0 = fit_result['error_dict']['x0']

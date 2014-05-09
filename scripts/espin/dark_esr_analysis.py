@@ -12,11 +12,11 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = '20140505073931'#'123435'#'153547' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '140508190948' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
-guess_splitN = 2.196*1e-3
+guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
 guess_amplitude = 0.3
@@ -33,21 +33,15 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
-
-    print x
-    print y
-
-    ax.plot(x,y)
-
-    # a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    # ax.set_ylim(0.6,1.05)
+    a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
+    ax.set_ylim(0.6,1.05)
 
 
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
     else:
         j=0
-        while y[j]>0.93*y[j+1]: # such that we account for noise
+        while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
             k = j
             j += 1
         #j = len(y)-2
@@ -55,11 +49,10 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
             print 'Could not find dip'
             return
         else:
-            print x[k]
             guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
             print 'guess_ctr= '+str(guess_ctr)
 
-    # # try fitting
+    # try fitting
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
@@ -89,10 +82,9 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 ### script
 if __name__ == '__main__':
     if timestamp != None:
-        folder = toolbox.latest_data(contains='magnet_msm1_coarse', older_than=timestamp,return_timestamp = False)
+        folder = toolbox.latest_data(timestamp)
     else:
         folder = toolbox.latest_data('DarkESR')
-    print folder
 
     fit_result=analyze_dark_esr(folder)
 
