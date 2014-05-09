@@ -75,8 +75,8 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # package the result neatly
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
-    print 'info',info
-    print 'p1',p1
+    #print 'info',info
+    #print 'p1',p1
     #print 'cov',cov
 
     #print 'dof',dof
@@ -105,8 +105,8 @@ def result_dict(p1, cov, info, mesg, success, x, y, p0, fitfunc, fitfunc_str):
     # print cov, success, mesg, info
     for i,pmin in enumerate(p1):
         error_dict[p0[i].name] = sqrt(cov[i,i])*sqrt(chisq/dof)
-        print chisq
-        print dof   
+        #print chisq
+        #print dof   
         error_list.append(sqrt(cov[i,i])*sqrt(chisq/dof))
         params_dict[p0[i].name] = pmin
 

@@ -5,7 +5,7 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import ssro, mbi
+from analysis.lib.m2.ssro import ssro, mbi; reload(mbi)
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
@@ -31,7 +31,7 @@ a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
-ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax')
+ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax', fmt = '-o')
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
@@ -47,6 +47,6 @@ plt.savefig(os.path.join(folder, 'sweep_tau.pdf'),
 plt.savefig(os.path.join(folder, 'sweep_tau.png'),
         format='png')
 
-fig = a.default_fig(figsize=(6,4))
-ax = a.default_ax(fig)
-ax.plot(a.sweep_pts, a.p0, '-b', lw=1)
+# fig = a.default_fig(figsize=(6,4))
+# ax = a.default_ax(fig)
+# ax.plot(a.sweep_pts, a.p0, '-ob', lw=1)

@@ -30,8 +30,9 @@ ret='f0',
 
     # Find the most left esr resonance
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
+    ## THT: this makes the loop go haywire if there is no ESR dip (it always finds something = bad)
     guess_offset=np.average(y)
-    dip_threshold=guess_offset-1.5*np.std(y)
+    dip_threshold=0.9#guess_offset-1.5*np.std(y)
     print guess_offset
     print dip_threshold
     j=0
