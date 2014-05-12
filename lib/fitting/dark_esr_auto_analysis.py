@@ -12,7 +12,9 @@ guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
 timestamp = None,
+add_folder = None,
 ret='f0',
+ssro_calib_folder='',
 **kw):
 
     if timestamp != None:
@@ -20,10 +22,14 @@ ret='f0',
     else:
         folder = toolbox.latest_data('DarkESR')
 
+    if add_folder !=None:
+        folder = add_folder
+
+    print folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
-    a.get_electron_ROC()
+    a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
@@ -31,29 +37,30 @@ ret='f0',
     # Find the most left esr resonance
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
     ## THT: this makes the loop go haywire if there is no ESR dip (it always finds something = bad)
-    guess_offset=np.average(y)
-    dip_threshold=0.9#guess_offset-1.5*np.std(y)
-    print guess_offset
-    print dip_threshold
-    j=0
-    print 'j = '+str(j)
-    while y[j]>dip_threshold and j < len(y)-2: # such that we account for noise
-        k = j
-        j = j+1
 
-    if k > len(y)-5:
+    j=0
+    min_dip_depth = 0.9
+    print 'j = '+str(j)
+    print folder
+    print y[21]
+    k = len(y)
+    while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
+        k = j
+        j += 1
+    #j = len(y)-2
+    if k > len(y)-3:
         print 'Could not find dip'
         return
     else:
         guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-        print 'guess_ctr = '+str(guess_ctr)
-
+        print 'guess_ctr= '+str(guess_ctr)
+        print 'k'+str(k)
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             (3, guess_splitN),
-            do_print=True, ret=True, fixed=[4])
+            do_print=True, ret=True, fixed=[])
 
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
@@ -65,7 +72,9 @@ guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
 timestamp = None,
+add_folder = None,
 ret='f0',
+ssro_calib_folder='',
 **kw):
 
     if timestamp != None:
@@ -73,10 +82,14 @@ ret='f0',
     else:
         folder = toolbox.latest_data('DarkESR')
 
+
+    if add_folder !=None:
+        folder = add_folder
+
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
-    a.get_electron_ROC()
+    a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
@@ -89,9 +102,9 @@ ret='f0',
     print guess_offset
     print dip_threshold
 
-    if min(y) > dip_threshold:
-        print 'Could not find dip'
-        return
+    # if min(y) > dip_threshold:
+    #     print 'Could not find dip'
+    #     return
 
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,

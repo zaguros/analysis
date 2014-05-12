@@ -65,8 +65,8 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0mc_temp,u_f0mc_temp = dark_esr_auto_analysis.analyze_dark_esr(None, 2.196*1e-3, add_folder = folder)
-         
+        f0mc_temp,u_f0mc_temp = dark_esr_auto_analysis.analyze_dark_esr(None,2.18e-3, add_folder = folder,ssro_calib_folder=ssro_calib_folder)
+        print f0mc_temp,u_f0mc_temp
         #msm1 fine
         timestamp,folder = toolbox.latest_data(contains='magnet_msm1_fine', older_than=older_than, newer_than=newer_than,return_timestamp = True)
         print 'm folder '+folder
@@ -75,8 +75,8 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0mf_temp,u_f0mf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(2.02)     
-
+        f0mf_temp,u_f0mf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(2.02, add_folder = folder,ssro_calib_folder=ssro_calib_folder)     
+        print f0mf_temp,u_f0mf_temp
         #msp
         #msm1 coarse
         timestamp,folder = toolbox.latest_data(contains='magnet_msp1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
@@ -86,8 +86,8 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0pc_temp,u_f0pc_temp = dark_esr_auto_analysis.analyze_dark_esr(None, 2.196*1e-3, add_folder = folder)
-         
+        f0pc_temp,u_f0pc_temp = dark_esr_auto_analysis.analyze_dark_esr(None, 2.18e-3, add_folder = folder,ssro_calib_folder=ssro_calib_folder)
+        print f0pc_temp,u_f0pc_temp
         #msm1 fine
         timestamp,folder = toolbox.latest_data(contains='magnet_msp1_fine', older_than=older_than, newer_than=newer_than,return_timestamp = True)
         print 'p folder '+folder
@@ -96,8 +96,8 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0pf_temp,u_f0pf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(3.73) 
-
+        f0pf_temp,u_f0pf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(3.73, add_folder = folder,ssro_calib_folder=ssro_calib_folder) 
+        print f0pf_temp,u_f0pf_temp
         print 'fitted values:'+ str(f0pc_temp)+' ; '+str(f0mc_temp)+' ; '+ str(f0pc_temp)+' ; '+str(f0mc_temp)
         if f0pc_temp >0 and f0mc_temp >0:
             Bz_measured, Bx_measured = amt.get_B_field(msm1_freq=f0mf_temp*1e9, msp1_freq=f0pf_temp*1e9, u_msm1_freq =u_f0mf_temp ,u_msp1_freq=u_f0pf_temp)
@@ -176,10 +176,10 @@ def plot_meas_B_loop():
 
 
     Bz_diff_list = [j-304.21 for j in Bz_field_measured]
-    Bz_error = [1/(4.*ZFS*g_factor*Bz_field_measured[j])*
-            (f0pf[j]**2*u_f0pf[j]**2+f0mf[j]**2*u_f0mf[j]**2)**(1/2.) for j in range(len(Bz_field_measured))]
-    Bx_error = [1/Bx_field_measured[j]*(f0mf[j]**2*u_f0mf[j]**2/g_factor**2
-            +(ZFS-g_factor*Bz_field_measured[j])**2*Bz_error[j]**2) for j in range(len(Bx_field_measured))]
+    Bz_error = 0.0007*ones(len(Bz_diff_list))#[1/(4.*ZFS*g_factor*Bz_field_measured[j])*
+            #((f0pf[j]*1e9)**2*(u_f0pf[j]*1e9)**2+(f0mf[j]*1e9)**2*(u_f0mf[j]*1e9)**2)**(1/2.) for j in range(len(Bz_field_measured))]
+    Bx_error = 0.3*ones(len(Bz_diff_list))#[1/Bx_field_measured[j]*((f0mf[j]*1e9)**2*(u_f0mf[j]*1e9)**2/g_factor**2
+            # +(ZFS-g_factor*Bz_field_measured[j])**2*Bz_error[j]**2)**(1/2.) for j in range(len(Bx_field_measured))]
 
     # print len(Bz_field_measured)
     total_B = [(Bx_field_measured[j]**2+Bz_field_measured[j]**2)**(1/2.) for j in range(len(Bz_field_measured))]
@@ -196,33 +196,40 @@ def plot_meas_B_loop():
     mean_Bz         = np.mean(Bz_diff_list)   
     stdev_Bz        = np.std(Bz_diff_list)
 
-    print np.mean(total_B)
-    print np.std(total_B)
+    # print np.mean(total_B)
+    # print np.std(total_B)
+    # print mean[f_centref_error_list]
+    print sum(u_f0mf)/float(len(u_f0mf))
+    print sum(f_centref_error_list)/float(len(f_centref_error_list))
+    print sum(Bz_error)/float(len(Bz_error))
+    print sum(Bx_error)/float(len(Bx_error))
 
-    fig = figure(1,figsize=(18,5))
-    ax = fig.add_subplot(111)
-    ax.errorbar(it_list,f_diffc_list,f_diffc_error_list)
-    ax.set_xlabel('msmt #')
-    ax.set_ylabel('relative course center freq (kHz) (offset 2.87748 GHz)')
-    plt.savefig('freq_vs_time_course',format='png')
 
-    fig = figure(2,figsize=(18,5))
-    ax = fig.add_subplot(111)
-    ax.errorbar(it_list,f_difff_list,f_difff_error_list)
-    ax.set_xlabel('msmt #')
-    ax.set_ylabel('relative fine center freq (kHz) (offset 2.87748 GHz)')
-    plt.savefig('freq_vs_time_fine',format='png')
 
-    figure(3,figsize=(18,5))
-    plt.errorbar(it_list,Bx_field_measured, Bx_error)
-    plt.xlabel('msmt #')
-    plt.ylabel('measured Bx field (G)')
-    plt.savefig('Bx_vs_time_fine',format='png')
-    figure(4,figsize=(18,5))
-    plt.errorbar(it_list,Bz_diff_list,Bz_error)
-    plt.xlabel('msmt #')
-    plt.ylabel('measured relative Bz (G) (offset 304.21 G)')
-    plt.savefig('Bz_vs_time_fine',format='png')
+    # fig = figure(1,figsize=(18,5))
+    # ax = fig.add_subplot(111)
+    # ax.errorbar(it_list,f_diffc_list,f_diffc_error_list)
+    # ax.set_xlabel('msmt #')
+    # ax.set_ylabel('relative course center freq (kHz) (offset 2.87748 GHz)')
+    # plt.savefig('freq_vs_time_course',format='png')
+
+    # fig = figure(2,figsize=(18,5))
+    # ax = fig.add_subplot(111)
+    # ax.errorbar(it_list,f_difff_list,f_difff_error_list)
+    # ax.set_xlabel('msmt #')
+    # ax.set_ylabel('relative fine center freq (kHz) (offset 2.87748 GHz)')
+    # plt.savefig('freq_vs_time_fine',format='png')
+
+    # figure(3,figsize=(18,5))
+    # plt.errorbar(it_list,Bx_field_measured, Bx_error)
+    # plt.xlabel('msmt #')
+    # plt.ylabel('measured Bx field (G)')
+    # plt.savefig('Bx_vs_time_fine',format='png')
+    # figure(4,figsize=(18,5))
+    # plt.errorbar(it_list,Bz_diff_list,Bz_error)
+    # plt.xlabel('msmt #')
+    # plt.ylabel('measured relative Bz (G) (offset 304.21 G)')
+    # plt.savefig('Bz_vs_time_fine',format='png')
 
 
     figure(5)
@@ -232,7 +239,7 @@ def plot_meas_B_loop():
     plt.plot(bincenters, y, 'r--', linewidth=1)
     plt.xlabel('binned relative course center freq (kHz)')
     plt.title('Mean '+str(mean_f_centrec)+' kHz, stdev '+str(stdev_f_centrec)+' kHz')
-    plt.savefig('binned_freq_c',format='png')
+    # plt.savefig('binned_freq_c',format='png')
 
     figure(6)
     n, bins, patches = plt.hist(f_difff_list,50,normed = 1)
@@ -241,31 +248,33 @@ def plot_meas_B_loop():
     plt.plot(bincenters, y, 'r--', linewidth=1)
     plt.xlabel('binned relative fine center freq (kHz)')
     plt.title('Mean '+str(mean_f_centref)+' kHz, stdev '+str(stdev_f_centref)+' kHz')
-    plt.savefig('binned_freq_f',format='png')
+    # plt.savefig('binned_freq_f',format='png')
 
 
-    figure(7)
-    n, bins, patches = plt.hist(Bx_field_measured,50,normed = 1)
-    bincenters = 0.5*(bins[1:]+bins[:-1])
-    y = mlab.normpdf( bincenters, mean_Bx, stdev_Bx)
-    plt.plot(bincenters, y, 'r--', linewidth=1)
-    plt.xlabel('binned Bx (G)')
-    plt.title('Mean '+str(mean_Bx)+' G, stdev '+str(stdev_Bx)+' G')
-    plt.savefig('binned_Bx_fine',format='png')
-    figure(8)
-    n, bins, patches = plt.hist(Bz_diff_list,50,normed = 1)
-    bincenters = 0.5*(bins[1:]+bins[:-1])
-    y = mlab.normpdf( bincenters, mean_Bz, stdev_Bz)
-    plt.plot(bincenters, y, 'r--', linewidth=1)
-    plt.xlabel('binned relative Bz (G) (offset 304.21 G)')
-    plt.title('Mean '+str(mean_Bz+304.21)+' G, stdev '+str(stdev_Bz)+' G')
-    plt.savefig('binned_Bz_fine',format='png')
-
-
-
+    # figure(7)
+    # n, bins, patches = plt.hist(Bx_field_measured,50,normed = 1)
+    # bincenters = 0.5*(bins[1:]+bins[:-1])
+    # y = mlab.normpdf( bincenters, mean_Bx, stdev_Bx)
+    # plt.plot(bincenters, y, 'r--', linewidth=1)
+    # plt.xlabel('binned Bx (G)')
+    # plt.title('Mean '+str(mean_Bx)+' G, stdev '+str(stdev_Bx)+' G')
+    # plt.savefig('binned_Bx_fine',format='png')
+    # figure(8)
+    # n, bins, patches = plt.hist(Bz_diff_list,50,normed = 1)
+    # bincenters = 0.5*(bins[1:]+bins[:-1])
+    # y = mlab.normpdf( bincenters, mean_Bz, stdev_Bz)
+    # plt.plot(bincenters, y, 'r--', linewidth=1)
+    # plt.xlabel('binned relative Bz (G) (offset 304.21 G)')
+    # plt.title('Mean '+str(mean_Bz+304.21)+' G, stdev '+str(stdev_Bz)+' G')
+    # plt.savefig('binned_Bz_fine',format='png')
 
 
 
-fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140505070707')
+
+
+
+fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
+# fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
+# fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
 
 plot_meas_B_loop()

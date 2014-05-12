@@ -54,54 +54,54 @@ def fingerprint_loop(older_than = None, newer_than = None,contains = '',number =
           histdata_1521.append(y[idx_1521])
           histdata_1531.append(y[idx_1531])
           ax.errorbar(x,y,y_error)
+        print y_error
+#     print os.path.join(folder, 'fingerprint_'+filename+'.pdf')
+#     plt.savefig(os.path.join(folder, 'fingerprint_'+filename+'.pdf'),
+#         format='pdf')
+#     plt.savefig(os.path.join(folder, 'fingerprint_'+filename+'.png'),
+#         format='png')
 
-    print os.path.join(folder, 'fingerprint_'+filename+'.pdf')
-    plt.savefig(os.path.join(folder, 'fingerprint_'+filename+'.pdf'),
-        format='pdf')
-    plt.savefig(os.path.join(folder, 'fingerprint_'+filename+'.png'),
-        format='png')
+#     mean_hist_1531 = np.mean(histdata_1531)
+#     stdev_histdata_1531 = np.std(histdata_1531)
+#     print 'dip 15.31'
+#     print mean_hist_1531
+#     print stdev_histdata_1531
 
-    mean_hist_1531 = np.mean(histdata_1531)
-    stdev_histdata_1531 = np.std(histdata_1531)
-    print 'dip 15.31'
-    print mean_hist_1531
-    print stdev_histdata_1531
+#     figure(number*10)
+#     n, bins, patches = plt.hist(histdata_1531,50,normed = 1)
+#     bincenters = 0.5*(bins[1:]+bins[:-1])
+#     y = mlab.normpdf( bincenters, mean_hist_1531, stdev_histdata_1531)
+#     plt.plot(bincenters, y, 'r--', linewidth=1)
+#     plt.xlabel('binned relative depth of dip')
+#     plt.title('Histogram of dip at tau = 15.31 us')
+#     plt.savefig('binned_data'+filename,format='png')
 
-    figure(number*10)
-    n, bins, patches = plt.hist(histdata_1531,50,normed = 1)
-    bincenters = 0.5*(bins[1:]+bins[:-1])
-    y = mlab.normpdf( bincenters, mean_hist_1531, stdev_histdata_1531)
-    plt.plot(bincenters, y, 'r--', linewidth=1)
-    plt.xlabel('binned relative depth of dip')
-    plt.title('Histogram of dip at tau = 15.31 us')
-    plt.savefig('binned_data'+filename,format='png')
+#     mean_hist_1521 = np.mean(histdata_1521)
+#     stdev_histdata_1521 = np.std(histdata_1521)
+#     print 'dip 15.21'
+#     print mean_hist_1521
+#     print stdev_histdata_1521
 
-    mean_hist_1521 = np.mean(histdata_1521)
-    stdev_histdata_1521 = np.std(histdata_1521)
-    print 'dip 15.21'
-    print mean_hist_1521
-    print stdev_histdata_1521
+#     figure(number*11)
+#     n, bins, patches = plt.hist(histdata_1521,50,normed = 1)
+#     bincenters = 0.5*(bins[1:]+bins[:-1])
+#     y = mlab.normpdf( bincenters, mean_hist_1521, stdev_histdata_1521)
+#     plt.plot(bincenters, y, 'r--', linewidth=1)
+#     plt.xlabel('binned relative depth of dip')
+#     plt.title('Histogram of dip at tau = 15.21 us')
+#     plt.savefig('binned_data15_2'+filename,format='png')
 
-    figure(number*11)
-    n, bins, patches = plt.hist(histdata_1521,50,normed = 1)
-    bincenters = 0.5*(bins[1:]+bins[:-1])
-    y = mlab.normpdf( bincenters, mean_hist_1521, stdev_histdata_1521)
-    plt.plot(bincenters, y, 'r--', linewidth=1)
-    plt.xlabel('binned relative depth of dip')
-    plt.title('Histogram of dip at tau = 15.21 us')
-    plt.savefig('binned_data15_2'+filename,format='png')
-
-# fingerprint_loop(older_than = '20140505090835', newer_than = '20140502190202',contains='around18',number = 1,filename = 'loop_total')
+# # fingerprint_loop(older_than = '20140505090835', newer_than = '20140502190202',contains='around18',number = 1,filename = 'loop_total')
 
 # fingerprint_loop(older_than = '20140505090835', newer_than = '20140503215120',contains='around18',number = 2,filename = 'loop_1')
 
 # fingerprint_loop(older_than = '20140503215120', newer_than = '20140502190202',contains='around18',number = 3,filename = 'loop_1')
 
-fingerprint_loop(older_than = '20140505090835', newer_than = '20140502190202',contains='around15',number = 1,filename = 'loop_total')
+fingerprint_loop(older_than = '20140505090835', newer_than = '201405005090000',contains='around15',number = 1,filename = 'loop_total')
 
-fingerprint_loop(older_than = '20140505090835', newer_than = '20140503215120',contains='around15',number = 2,filename = 'loop_1')
+# fingerprint_loop(older_than = '20140505090835', newer_than = '20140503215120',contains='around15',number = 2,filename = 'loop_1')
 
-fingerprint_loop(older_than = '20140503215120', newer_than = '20140502190202',contains='around15',number = 3,filename = 'loop_2')
+# fingerprint_loop(older_than = '20140503215120', newer_than = '20140502190202',contains='around15',number = 3,filename = 'loop_2')
 
 
 
