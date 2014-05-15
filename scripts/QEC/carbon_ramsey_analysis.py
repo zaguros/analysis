@@ -32,6 +32,10 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],frequency = 1
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
 
+
+
+
+        ax.plot(x,y)
         p0, fitfunc, fitfunc_str = common.fit_decaying_cos(frequency,offset, amplitude, phase, decay_constant)
 
         #plot the initial guess

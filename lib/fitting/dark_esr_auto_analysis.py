@@ -29,7 +29,7 @@ ssro_calib_folder='',
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
-    a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
+    a.get_electron_ROC()
 
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
@@ -89,7 +89,7 @@ ssro_calib_folder='',
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
-    a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
+    a.get_electron_ROC()
 
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
