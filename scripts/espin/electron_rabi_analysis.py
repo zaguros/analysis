@@ -13,8 +13,8 @@ reload(rabi)
 
 from analysis.lib.tools import plot
 
-timestamp = None#'20140408125318'
-guess_frq = 1./10
+timestamp = None#'135246'#'20140408125318'
+guess_frq = 1./360
 guess_amp = 0.5
 guess_of = 1
 # guess_slope = 0.
@@ -35,7 +35,7 @@ fitfunc_str = ''
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('ElectronRabi')
+    folder = toolbox.latest_data()
 
 if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
