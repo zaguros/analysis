@@ -9,7 +9,7 @@ import numpy as np
 
 
 ### Import the magnet parameters
-nm_per_step         = 150
+nm_per_step         = 73
 radius              = 5.
 thickness           = 4.
 strength_constant   = 1.3
@@ -62,7 +62,7 @@ def get_magnet_position(msm1_freq=current_f_msm1,msp1_freq = current_f_msp1,ms =
     if ms is 'plus':
         B_field = convert_f_to_Bz(freq=msp1_freq)
     if solve_by == 'list':
-        d = np.linspace(10.0,10.1,10**4+1) # ! this is the right domain for B around 300 G
+        d = np.linspace(10.0,10.1,10**5+1) # ! this is the right domain for B around 300 G
         B_field_difference = np.zeros(len(d))
         for j in [int(i) for i in np.linspace(0,len(d)-1,len(d))]:
             B_field_difference[j] = abs(B_field-get_field_at_position(d[j]))
