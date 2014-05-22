@@ -16,7 +16,7 @@ import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 ### parameters
 timestamp = None
 msmt_type = 'mbi'
-guess_x0 = 0.81
+guess_x0 = 0.74
 guess_of = 0.2
 guess_a = 0
 

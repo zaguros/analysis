@@ -134,6 +134,24 @@ def Ren_gate(carbon_nr, B_field=304.22, phase=0):
 
     return Ren
 
+def waittime(carbon_nr, time, B_field=304.22):
+    '''calculates the evolution matrices for a single
+    Carbon spin, electron is always qubit 1'''
+
+    omega_Larmor = 2 * np.pi * B_field * 1.07e3
+    A_par = 2 * np.pi * hf['C' + str(carbon_nr)]['par']
+    A_perp = 2 * np.pi *hf['C' + str(carbon_nr)]['perp']
+
+    H0 = omega_Larmor * Iz
+    H1 = (A_par+omega_Larmor)*Iz + A_perp*Ix
+
+    expH0 = (-1j*H0*tau).expm();    expH1 = (-1j*H1*tau).expm()
+    Utot = qutip.tensor(rho0,expH0) + qutip.tensor(rho1,expH1)
+    print_matrix(Utot)
+
+    return Utot
+
+
 def xn_gate(carbon_nr, phase):
     pass
 
@@ -205,6 +223,48 @@ def nuclear_ramsey_no_init(carbon_nr, tau_wait, N_wait_list, B_field=304.22):
     electron_x  = qutip.tensor(x,Id)
     electron_mx = qutip.tensor(mx,Id)
     Ren         = c13_gate(carbon_nr, N, tau, B_field)
+
+    #sequence and RO
+    S = np.zeros(len(N_wait_list))
+    for i, N_wait in enumerate(N_wait_list):
+
+        DD_wait = c13_gate(carbon_nr, N_wait, tau_wait, B_field)         # Define DD waiting gate
+
+        seq  = electron_mx*Ren*DD_wait*Ren*electron_x                   # Define gate sequence
+        rho_final = seq*rho_init*seq.dag()                  # Apply gate sequence
+
+        rho_el_final = rho_final.ptrace(0)                  # Trace out the nuclear spin
+        #S[i] = qutip.expect(sz, rho_el_final) + 1./2       # Z measurement two alternative ways
+        S[i] = qutip.fidelity(rho0, rho_el_final)**2
+
+    ## plot ##
+    f, ax = plt.subplots(1)
+    ax.plot(N_wait_list*2*tau_wait*1e6, S, 'o-', lw=1)
+    ax.set_title('P(ms=0)'); ax.set_xlabel('Evolution_time (us)')
+    plt.show()
+    return S[i]
+
+def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait, N_wait_list, B_field=304.22):
+    '''nuclear Rabi experiment without init or DD
+    scheme: y - Ren - x - wait - y - Ren - x - RO'''
+
+    #initial states
+    rho_nuc_i = rhom
+    rho_el_i  = rho0
+    rho_init  = qutip.tensor(rho_el_i,rho_nuc_i)
+    print 'initial state = '
+    print_matrix(rho_init)
+
+    #wait time pulses, in this case taken from the msmt_params
+    N   = mp['C' + str(carbon_nr) + '_Ren_N']
+    tau = mp['C' + str(carbon_nr) + '_Ren_tau']
+
+    #gates
+    electron_x  = qutip.tensor(x,Id)
+    electron_y = qutip.tensor(y,Id)
+    Ren         = c13_gate(carbon_nr, N, tau, B_field)
+
+
 
     #sequence and RO
     S = np.zeros(len(N_wait_list))

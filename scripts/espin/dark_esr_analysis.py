@@ -25,7 +25,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration', older_than='20140505093333')
+    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
     print ssro_calib_folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
