@@ -77,7 +77,6 @@ def nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp):
     #Hamiltonian for ms=0 and ms=+/-1
     H0 = omega_Larmor * Iz
     H1 = (A_par+omega_Larmor)*Iz + A_perp*Ix
-
     #Evolution during tau for ms=0 and ms=+/-1
     expH0 = (-1j*H0*tau).expm();    expH1 = (-1j*H1*tau).expm()
     #Evolution during a decouple unit
@@ -85,10 +84,27 @@ def nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp):
 
     return V0, V1
 
+
+def nuclear_Ren_matrix(carbon_nr,B_field=304.22):
+    ''' difference to Ren_gate is that this gives two matrices, can combine'''
+
+    #Hamiltonian for ms=0 and ms=+/-1
+    omega_Larmor = 2 * np.pi * B_field * 1.07e3
+    A_par = 2 * np.pi * hf['C' + str(carbon_nr)]['par']
+    A_perp = 2 * np.pi *hf['C' + str(carbon_nr)]['perp']
+    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    tau = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
+
+    U0, U1 = nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp)
+
+    return U0, U1
+
+
 def nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp):
     '''Gives the evolution matrix for number_of_pulses pulses'''
 
     V0, V1 = nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp)
+
     U0 = V0 ** (number_of_pulses/2)
     U1 = V1 ** (number_of_pulses/2)
 
