@@ -54,13 +54,30 @@ Id, Ix, Iy, Iz = pauli()                                # Nuclear spin operators
 X,Y,Z,x,y,z,mX,mY,mZ,mx,my,mz = basic_spin_rotations()  # Basic gates
 ket0, bra0, ket1, bra1, rho0, rho1, rhom = basic_spin_states() # Basic states
 
+def any_pure_state(alpha,beta,return_psi = False,return_rho = True):
+    '''gives out your psi and if wanted your rho for a state alpha 0 + beta 1 '''
+    psi = alpha*ket0+beta*ket1
+    rho = psi*psi.dag()
+    # print psi
+    # print rho
+    if return_psi == True:
+        return psi
+    if return_rho == True:
+        return rho
+
+def any_mixed_state(alpha,beta):
+    '''gives out a mixture of rho0 and rho1'''
+    rho = alpha *rho0+beta*rho1
+    return rho
+
+
 ###########################
 ### Auxilairy functions ###
 ###########################
 
 def print_matrix(Qobject):
     print np.round(Qobject.full()*100)/100
-
+    print type(np.round(Qobject.full()*100)/100)
 def find_phase_gate(total_time, carbon_nr, axis_phase):
     '''function to determine the parameters of the preceding DD phase
     gate to set the phase, NOTE, implementation pending on the experimental implementation'''
@@ -159,6 +176,126 @@ def c13_gate_multiqubit(carbon_nr, number_of_pulses, tau, B_field):
     '''calculates the evolution matrices a multiqubit space,
     the electron is always qubit 1'''
     pass
+
+
+
+###################
+### Pauli Sets ###
+###################
+
+def single_qubit_pauli(rho, do_plot = False):
+    ii=-0.5
+    pauli_set = []
+    ii_list = []
+    xticks_list = ['II','X','Y','Z']
+
+    for oper in [Id, 2*sx,2*sy,2*sz]:
+
+        pauli_set.append(qutip.expect(oper,rho))
+        ii_list.append(ii)
+        ii = ii+1
+
+    return pauli_set, ii_list, xticks_list
+    if do_plot ==True:
+        fig = plt.figure()
+        ax = plt.subplot(111)
+        ax.bar(ii_list, pauli_set, width=1)
+        plt.xticks(np.arange(0, 4, 1.0))
+        ax.set_xticklabels(xticks_list)
+
+def multi_qubit_pauli(rho,do_plot=False):
+    
+    no_qubits = np.size(qutip.dims(rho))/2
+    ii=-0.5
+    pauli_set = []
+    ii_list = []
+
+    xticks_list = ['X','Y','Z']
+    final_x_tick_list = []
+    oper_list = [2*sx,2*sy,2*sz]
+    final_oper_list =[]
+
+
+    if no_qubits ==2:
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+ff)
+        for ff in xticks_list:
+            final_x_tick_list.append(ff+'I')
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,ff))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(ff,Id))
+        for jj in oper_list:
+            for kk in oper_list:
+                final_oper_list.append(qutip.tensor(jj,kk))
+        for jj in xticks_list:
+            for kk in xticks_list:
+                final_x_tick_list.append(jj+kk)
+
+    if no_qubits ==3:
+        
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+'I'+ff)
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+ff+'I')
+        for ff in xticks_list:
+            final_x_tick_list.append(ff+'I'+'I')
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,Id,ff))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,ff,Id))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(ff,Id,Id))
+        for jj in oper_list:
+            for kk in oper_list:
+                for hh in oper_list:
+                    final_oper_list.append(qutip.tensor(jj,kk,hh))
+        for jj in xticks_list:
+            for kk in xticks_list:
+                for hh in xticks_list:
+                    final_x_tick_list.append(jj+kk+hh)
+    
+    if no_qubits ==4:
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+'I'+'I'+ff)
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+'I'+ff+'I')
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+ff+'I'+'I')
+        for ff in xticks_list:
+            final_x_tick_list.append(ff+'I'+'I'+'I')
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,Id,Id,ff))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,Id,ff,Id))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,ff,Id,Id))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(ff,Id,Id,Id))
+        for jj in oper_list:
+            for kk in oper_list:
+                for hh in oper_list:
+                    for mm in oper_list:
+                        final_oper_list.append(qutip.tensor(jj,kk,hh,mm))
+        for jj in xticks_list:
+            for kk in xticks_list:
+                for hh in xticks_list:
+                    for mm in xticks_list:
+                        final_x_tick_list.append(jj+kk+hh+mm)
+    
+    for oper in final_oper_list:                   
+        pauli_set.append(qutip.expect(oper,rho))
+        ii_list.append(ii)
+        ii = ii+1
+    
+
+    if do_plot == True:
+        fig = plt.figure()
+        ax = plt.subplot(111)
+        ax.bar(ii_list, pauli_set, width=1)
+        plt.xticks(np.arange(0, len(final_oper_list)-1, 1.0))
+        ax.set_xticklabels(final_x_tick_list)
+    return pauli_set, ii_list, final_x_tick_list
 
 ###################
 ### Experiments ###
@@ -286,10 +423,205 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait, N_wait_list, B_field=304.2
     plt.show()
     return S[i]
 
-def nuclear_init_gate(carbon_nr, init_state):
-    '''function that returns a gate sequence for nuclear spin initialization
-    seq = y - Ren - x - Rz - Ren '''
-    pass
+
+######################
+### Initialization ### NOTE: FOR MULTIPLE C13 SPINS THE PHASE GATES SHOULD BE ADDED!!
+######################
+
+def nuclear_init_single(carbon_nr,do_plot = False):
+    '''function that returns a gate sequence for a single nuclear spin initialization
+    seq = y - Ren - x - Rz - Ren  note: Z-gate not yet calculated in right way'''
+
+    rho = qutip.tensor(rho0,rhom)
+
+    yel = qutip.tensor(y,Id)
+    xel = qutip.tensor(x,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nr,B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren = qutip.tensor(rho0,U0)+qutip.tensor(rho1,U1)
+    Ren_id = qutip.tensor(rho0,U0id)+qutip.tensor(rho1,U1id)
+
+    Rz = qutip.tensor(Id,z)
+
+    seq = Ren*Rz*xel*Ren*yel
+    seq_id = Ren_id*Rz*xel*Ren_id*yel
+
+    rho_final = seq*rho*seq.dag()  
+    rho_final_id = seq_id*rho*seq_id.dag()  
+
+
+    rho_nucl = rho_final.ptrace(1)
+    rho_nucl_id = rho_final_id.ptrace(1)
+
+    if do_plot == True:
+        fig = plt.figure()
+        ax = plt.subplot(111)
+
+        for rho_n in [rho_nucl,rho_nucl_id]:
+            pauli_set, ii_list, x_ticks_list = single_qubit_pauli(rho_n)
+            ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5)
+
+        plt.xticks(np.arange(0, 4, 1.0))
+        ax.set_xticklabels(x_ticks_list)
+
+        print 'Fidelity to ideal state:'
+        print qutip.fidelity(rho_nucl,rho_nucl_id)
+    return rho_nucl, rho_nucl_id
+
+
+def three_spin_encoding(carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
+    ''' encodes your three chosen C13 spins in the state alpha(xxx)+beta(-x-x-x)
+    note: it depends on the direction of the Ren gate for each C13 spin if it will be + or -x, see documentation'''
+
+    # define density matrices
+    rho_C1, rho_C1_id = nuclear_init_single(carbon_nrs[0])
+    rho_C2, rho_C2_id = nuclear_init_single(carbon_nrs[1])
+    rho_C3, rho_C3_id = nuclear_init_single(carbon_nrs[2])
+
+    psi_el = alpha*ket0-1j*beta*ket1
+    rho_el = psi_el*psi_el.dag()
+    print rho_el
+    rho = qutip.tensor(rho_el,rho_C1,rho_C2,rho_C3)
+    rho_id = qutip.tensor(rho_el,rho_C1_id,rho_C2_id,rho_C3_id)
+    print rho_id
+    rho_C = qutip.tensor(rho_C1,rho_C2,rho_C3)
+    rho_C_id = qutip.tensor(rho_C1_id,rho_C2_id,rho_C3_id)
+
+
+    #define gates
+    xel = qutip.tensor(x,Id,Id,Id)
+    yel = qutip.tensor(x,Id,Id,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[0],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C1 = qutip.tensor(rho0,U0,Id,Id)+qutip.tensor(rho1,U1,Id,Id)
+    Ren_C1_id = qutip.tensor(rho0,U0id,Id,Id)+qutip.tensor(rho1,U1id,Id,Id)
+    Rz_C1 = qutip.tensor(Id,z,Id,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[1],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C2 = qutip.tensor(rho0,Id,U0,Id)+qutip.tensor(rho1,Id,U1,Id)
+    Ren_C2_id = qutip.tensor(rho0,Id,U0id,Id)+qutip.tensor(rho1,Id,U1id,Id)
+    Rz_C2 = qutip.tensor(Id,Id,z,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[2],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C3 = qutip.tensor(rho0,Id,Id,U0)+qutip.tensor(rho1,Id,Id,U1)
+    Ren_C3_id = qutip.tensor(rho0,Id,Id,U0id)+qutip.tensor(rho1,Id,Id,U1id)
+    Rz_C3 = qutip.tensor(Id,Id,Id,z)
+
+    # define and apply full sequence
+    seq = xel*Rz_C3*Rz_C2*Rz_C1*Ren_C3*Ren_C2*Ren_C1
+    seq_id = xel*Rz_C3*Rz_C2*Rz_C1*Ren_C3_id*Ren_C2_id*Ren_C1_id
+    rho_after = seq*rho*seq.dag()
+    rho_after_id = seq_id*rho_id*seq_id.dag()
+
+    #measure electron to be in zero
+    el0 = qutip.tensor(rho0,Id,Id,Id)
+    rho_final_id = el0*rho_after_id*el0.dag()
+    rho_final = el0*rho_after*el0.dag()
+
+    norm_id = qutip.fidelity(rho0,rho_final_id.ptrace([0]))
+    norm = qutip.fidelity(rho0,rho_final.ptrace([0]))
+
+    rho_final = 1/norm**2*rho_final.ptrace([1,2,3])
+    rho_final_id = 1/norm_id**2*rho_final_id.ptrace([1,2,3])
+
+
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    for rho_n in [rho_final,rho_final_id]:
+        pauli_set, ii_list, x_ticks_list = multi_qubit_pauli(rho_n)
+        ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5)
+
+    plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
+    ax.set_xticklabels(x_ticks_list)
+    print 'Fidelity to ideal state:'
+    print qutip.fidelity(rho_final,rho_final_id)
+
+
+def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
+    ''' encodes your three chosen C13 spins in the state alpha(xxx)+beta(-x-x-x)
+    note: it depends on the direction of the Ren gate for each C13 spin if it will be + or -x, see documentation'''
+
+    # define density matrices
+    rho_C1, rho_C1_id = nuclear_init_single(carbon_nrs[0])
+    rho_C2, rho_C2_id = nuclear_init_single(carbon_nrs[1])
+
+    psi_el = alpha*ket0-1j*beta*ket1
+    rho_el = psi_el*psi_el.dag()
+    print rho_el
+    rho = qutip.tensor(rho_el,rho_C1,rho_C2)
+    rho_id = qutip.tensor(rho_el,rho_C1_id,rho_C2_id)
+    print rho_id
+    rho_C = qutip.tensor(rho_C1,rho_C2)
+    rho_C_id = qutip.tensor(rho_C1_id,rho_C2_id)
+
+
+    #define gates
+    xel = qutip.tensor(x,Id,Id)
+    yel = qutip.tensor(x,Id,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[0],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C1 = qutip.tensor(rho0,U0,Id)+qutip.tensor(rho1,U1,Id)
+    Ren_C1_id = qutip.tensor(rho0,U0id,Id)+qutip.tensor(rho1,U1id,Id)
+    Rz_C1 = qutip.tensor(Id,z,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[1],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C2 = qutip.tensor(rho0,Id,U0)+qutip.tensor(rho1,Id,U1)
+    Ren_C2_id = qutip.tensor(rho0,Id,U0id)+qutip.tensor(rho1,Id,U1id)
+    Rz_C2 = qutip.tensor(Id,Id,z)
+
+
+    # define and apply full sequence
+    seq = xel*Rz_C2*Rz_C1*Ren_C2*Ren_C1
+    seq_id = xel*Rz_C2*Rz_C1*Ren_C2_id*Ren_C1_id
+    rho_after = seq*rho*seq.dag()
+    rho_after_id = seq_id*rho_id*seq_id.dag()
+
+    #measure electron to be in zero
+    el0 = qutip.tensor(rho0,Id,Id)
+    rho_final_id = el0*rho_after_id*el0.dag()
+    rho_final = el0*rho_after*el0.dag()
+
+    norm_id = qutip.fidelity(rho0,rho_final_id.ptrace([0]))
+    norm = qutip.fidelity(rho0,rho_final.ptrace([0]))
+
+    rho_final = 1/norm**2*rho_final.ptrace([1,2])
+    rho_final_id = 1/norm_id**2*rho_final_id.ptrace([1,2])
+
+    print 'Fidelity to ideal state:'
+    print qutip.fidelity(rho,rho_id)
+
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    for rho_n in [rho_final,rho_final_id]:
+        pauli_set, ii_list, x_ticks_list = multi_qubit_pauli(rho_n)
+        ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5)
+
+    plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
+    ax.set_xticklabels(x_ticks_list)
 
 ##########################################
 ### Nuclear evolution characterization ###
