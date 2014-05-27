@@ -52,6 +52,59 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         self.syncs_per_sweep = noof_syncs_per_sweep_pt
         self.sweep_idxs=np.mod(np.floor((self.sync_nrs-1)/self.syncs_per_sweep),self.sweep_length)
 
+    def get_markers(self, chan):
+        """
+        returns a filter (1d-array): whether events are markers on the given channel
+        """
+        channel = self.pqf['/PQ_channel-1'].value
+        special = self.pqf['/PQ_special-1'].value
+        
+        is_special = special==1
+        is_channel = channel==chan
+    
+        return (is_special & is_channel)
+
+    def plot_histogram(self,channel,start=None,length=None,fltr=None,hist_binsize=1,save=True, **kw):
+        ret = kw.get('ret', None)
+        ax = kw.get('ax', None)
+        if ax == None:
+            fig = self.default_fig(figsize=(6,4))
+            ax = self.default_ax(fig)
+        else:
+            save = False
+
+        if start==None:
+            start=self.g.attrs['MIN_SYNC_BIN']
+        if length == None:
+            stop = self.g.attrs['MAX_SYNC_BIN']
+        else:
+            stop = start + length
+
+        is_ph = self.get_photons()[channel]
+        if fltr == None:
+            fltr=is_ph
+        else:
+            fltr=fltr & is_ph
+
+        bins = np.arange(start-.5,stop,hist_binsize)
+        y,x=np.histogram(self.pqf['/PQ_sync_time-1'].value[np.where(fltr)], bins=bins)
+        x=x[:-1]
+        y=y/float(self.reps)
+        
+        ax.plot(x,y)
+        #ax.colorbar()
+        ax.set_xlabel('Time [bins]')
+        ax.set_ylabel('Counts per rep per bin')
+
+        if save:
+            self.save_fig_incremental_filename(fig,'histogram_chan_{}'.format(channel))
+        
+        if ret == 'ax':
+            return ax
+        if ret == 'fig':
+            return fig
+
+
 class TailAnalysis(PQSequenceAnalysis):
 
     def get_tail_vs_sweep(self, channel, start_ns, tail_length_ns, pq_binsize_ns=1e-3, hist_binsize_ns=1.0, verbose= False):
@@ -245,11 +298,14 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         if not hasattr(self, 'sweep_idxs'):
             print 'get_sweep_idxs first'
             return
+        sync_nrs=self.pqf['/PQ_sync_number-1'].value
+        if sync_nrs[-1] != self.reps:
+            print 'WARNING last sync number ({}) != noof reps ({})! Sync error?'.format(sync_nrs[-1],self.reps)
         self.reps_per_sweep = float(self.reps)/len(self.sweep_pts)
         self.is_ph = self.get_photons()[channel]
         self.hist_binsize_ns = hist_binsize_ns
         self.sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
-        self.extra_time_ns = (self.g.attrs['pq_sync_length']+self.g.attrs['wait_length'])*1e9
+        self.extra_time_ns = (self.g.attrs['wait_length'])*1e9 #self.g.attrs['pq_sync_length']+
 
     def _get_relaxation(self, ms, sweep_index, start, length):
         bins = np.arange(start-self.hist_binsize_ns*.5,start+length,self.hist_binsize_ns)
@@ -263,13 +319,15 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             #print len(np.unique(vsync))
             return float(len(np.unique(vsync)))/self.reps_per_sweep,cpsh
         elif ms == 1:
+            #print 'len vsync',len(vsync)
+            #print 'unique vsync',len(np.unique(vsync))
             return float(self.reps_per_sweep-len(np.unique(vsync)))/self.reps_per_sweep,cpsh
         
     def _get_RO_window(self, ms, sweep_index):
         if ms == 0:
-            start = start= self.g.attrs['A_SP_durations_AWG'][sweep_index]*1e9 + self.extra_time_ns
+            start = start= self.g.attrs['A_SP_durations_AWG'][sweep_index]*1e9 + 2*self.extra_time_ns
         elif ms ==1:
-            start= self.g.attrs['E_SP_durations_AWG'][sweep_index]*1e9 + self.extra_time_ns
+            start= self.g.attrs['E_SP_durations_AWG'][sweep_index]*1e9 + 2*self.extra_time_ns
         length = self.g.attrs['E_RO_durations_AWG'][sweep_index]*1e9
         return start, length
 
@@ -336,11 +394,14 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             f1[i],_tmp = self._get_fidelity_and_mean_cpsh(1,sweep_index, start1, l)
             mf[i] = (f0[i]+f1[i])/2.
         ax.plot(x,f0, 'b-')
-        ax.plot(x,f1, 'r-')
-        ax.plot(x,mf, 'g-')
+        ax.plot(x,f1, 'g-')
+        ax.plot(x,mf, 'r-')
         #ax.colorbar()
+        ax.set_ylim(0.5,1.01)
         ax.set_xlabel('Time after RO start [ns]')
         ax.set_ylabel('Fidelity')
+
+        print 'Fidelity at RO time = {}: ms0 {:.2f}, ms1 {:.2f}, mean {:.2f}'.format(len0,f0[-1]*100.,f1[-1]*100.,mf[-1]*100.)
 
         if save:
             self.save_fig_incremental_filename(fig,'mean fidelity_'+name)
@@ -349,6 +410,8 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             return ax
         if ret == 'fig':
             return fig
+        if ret == 'fid':
+            return x,f0,f1,mf
         
     def plot_fidelity_cpsh_vs_sweep(self, save=True, **kw):
         ret = kw.get('ret', None)
@@ -379,11 +442,11 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         print len(x), len(f0)
         #print x, f0
         ax.plot(x,f0, 'bo')
-        ax.plot(x,f1, 'ro')
-        ax.plot(x,mf, 'go')
+        ax.plot(x,f1, 'go')
+        ax.plot(x,mf, 'ro')
         ax2=ax.twinx()
         ax2.plot(x, mcpsh0, 'b-')
-        ax2.plot(x, mcpsh1, 'r-')
+        ax2.plot(x, mcpsh1, 'g-')
         ax.set_xlabel(self.sweep_name)
         ax.set_ylabel('Fidelity')
         ax2.set_ylabel('Ms=0 mean counts per shot')
@@ -419,6 +482,99 @@ class FastSSROAnalysisIntegrated(FastSSROAnalysis):
         cpsh=np.sum(self.hist[start:start+length,2*sweep_index+ms])
         #fidelity not possible!
 
+class RandomPulseAnalysis(PQSequenceAnalysis):
+
+    def get_ro_vs_random_result(self,pq_binsize_ns,save=True, **kw):
+        ret = kw.get('ret', None)
+        ax = kw.get('ax', None)
+        if ax == None:
+            fig = self.default_fig(figsize=(4,4))
+            ax = self.default_ax(fig)
+        else:
+            save = False
+
+        sync_nrs=self.pqf['/PQ_sync_number-1'].value 
+        
+        is_marker_1_event=self.get_markers(1)
+        is_marker_2_event=self.get_markers(2)
+        print 'bias toward 0 : {:.2f} % '.format(50-float(len(np.where(is_marker_1_event)[0]))/(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100),', error : {:.2f} %'.format(1/np.sqrt(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100)
+        print 'noof syncs:', sync_nrs[-1]
+        print 'Detected marker events : ', len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0])
+        
+        is_photon_0, is_rnd_clk=self.get_photons()
+        sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
+
+        noof_reps_wo_rnd_clk=len(np.unique(sync_nrs[is_rnd_clk]))
+        print 'syncs without a random click: {} / {} = {:.2f} %'.format(self.reps-noof_reps_wo_rnd_clk, self.reps, float(self.reps-noof_reps_wo_rnd_clk)/self.reps*100.)
+        is_last_random_click=np.append(np.diff(np.asarray(is_rnd_clk, dtype='int'))==-1,is_rnd_clk[-1])
+        self.plot_histogram(1,start=190,length=450,fltr=is_last_random_click)
+
+        start=kw.pop('start_ns',(200e-9*3+50e-9+700e-9+100e-9)*1e9)
+        length =self.g.attrs['SSRO_duration']*1e3
+
+        st_fltr = (start  <= sync_time_ns) &  (sync_time_ns< (start + length))
+
+        is_photon_0_in_ro_window = st_fltr & is_photon_0
+
+        photon_in_0_ro_window_sync_numbers = sync_nrs[np.where(is_photon_0_in_ro_window)]
+        marker_1_sync_numbers= sync_nrs[np.where(is_marker_1_event)]
+        marker_2_sync_numbers= sync_nrs[np.where(is_marker_2_event)]
+
+        noof_marker_1_ro_ms0_events=len(np.where(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers))[0])
+        noof_marker_2_ro_ms0_events=len(np.where(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers))[0])
+        noof_marker_1_ro_ms1_events=len(np.where(np.invert(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)))[0])
+        noof_marker_2_ro_ms1_events=len(np.where(np.invert(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)))[0])
+
+        print 'MA1 & RO0: {}, MA1 & RO1: {}, MA2 & RO0: {}, MA2 & RO1: {}'.format(noof_marker_1_ro_ms0_events, noof_marker_1_ro_ms1_events,noof_marker_2_ro_ms0_events, noof_marker_2_ro_ms1_events)
+
+        ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('SSROCalibration'))
+
+        ma_1_p0=(float(noof_marker_1_ro_ms0_events)/(noof_marker_1_ro_ms1_events+noof_marker_1_ro_ms0_events))
+        ma_1_u_p0 = np.sqrt(ma_1_p0*(1-ma_1_p0)/(noof_marker_1_ro_ms1_events+noof_marker_1_ro_ms0_events))
+        ma_2_p0=(float(noof_marker_2_ro_ms0_events)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))
+        ma_2_u_p0 = np.sqrt(ma_2_p0*(1-ma_2_p0)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))        
+       
+        ro_duration = self.g.attrs['SSRO_duration']
+        roc = error.SingleQubitROC()
+        roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+            ssro.get_SSRO_calibration(ssro_calib_folder, 
+                    ro_duration)
+
+        p0, u_p0 = roc.num_eval(np.array([ma_1_p0,ma_2_p0]),np.array([ma_1_u_p0,ma_2_u_p0]))
+
+        ax.bar( range(2),p0, 
+            #color=[settings.COLORS[0], settings.COLORS[1]],
+            align='center', yerr=u_p0, 
+            ecolor='k', width=0.8)
+
+        ax.text(0, -.15, 'Rnd_no = 0',ha='center', va='bottom')
+        ax.text(1, -.15, 'Rnd_no = 1',ha='center', va='bottom')
+        ax.set_xticks([0,1])
+        #ax.text(1, 1.05, '{:.0f}+/-{:.0f} %'.format(p0*100., u_p0*100.),
+        #    ha='center', va='bottom', color=settings.COLORS[1])  
+
+        ax.text(0, 1.02,'F0: {:.2f} %'.format(p0[0]*100),ha='center', va='bottom')
+        ax.text(1, 1.02,'F0: {:.2f} %'.format(p0[1]*100),ha='center', va='bottom')
+        ax.set_ylabel('Fidelity ms0')
+        ax.set_ylim(0,1.1)
+        if save:
+            self.save_fig_incremental_filename(fig,'random_mw_correlation_corrected')
+        
+        if ret == 'ax':
+            return ax
+        if ret == 'fig':
+            return fig
+        print p0, u_p0
+
+
+    def filter_on_same_sync_number(self,source_sync_numbers, target_sync_numbers):
+        """
+        returns a filter for target_sync_numbers that's true for all sync numbers that are also
+        in source_sync_numbers.
+        """
+        return np.in1d(target_sync_numbers, source_sync_numbers)
+
+
 def analyze_tail(folder, name='ssro', cr=False, roc=True):
     a = TailAnalysis(folder)
     a.get_sweep_pts()
@@ -444,6 +600,6 @@ def fast_ssro_calib(folder, name='ssro',cr=True):
 
     a.get_sweep_idxs(noof_syncs_per_sweep_pt=1)
     a.get_fastssro_results(channel=0,pq_binsize_ns=1e-3, hist_binsize_ns=1.0)
-    a.plot_fidelity_cpsh_vs_sweep(RO_length=None)
+    a.plot_fidelity_cpsh_vs_sweep(RO_length_ns=None)
     a.ssro_plots(sweep_index = 0)
     a.finish()
