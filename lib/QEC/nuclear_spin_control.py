@@ -151,7 +151,7 @@ def Ren_gate(carbon_nr, B_field=304.22, phase=0):
 
     return Ren
 
-def waittime(carbon_nr, time, B_field=304.22):
+def waittime(carbon_nr, time, B_field=304.22,return_indiv = False):
     '''calculates the evolution matrices for a single
     Carbon spin, electron is always qubit 1'''
 
@@ -166,7 +166,10 @@ def waittime(carbon_nr, time, B_field=304.22):
     Utot = qutip.tensor(rho0,expH0) + qutip.tensor(rho1,expH1)
     print_matrix(Utot)
 
-    return Utot
+    if return_indiv == False:
+        return Utot
+    if return_indiv == True:
+        return expH0, expH1
 
 
 def xn_gate(carbon_nr, phase):
@@ -606,7 +609,7 @@ def check_entangled_state(alpha = 1./np.sqrt(2), beta = 1/np.sqrt(2), state ='++
     rho_final = 1/norm**2*rho_final.ptrace([1,2,3])
 
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(100,5))
     ax = plt.subplot(111)
 
     pauli_set, ii_list, x_ticks_list = multi_qubit_pauli(rho_final)
@@ -614,7 +617,8 @@ def check_entangled_state(alpha = 1./np.sqrt(2), beta = 1/np.sqrt(2), state ='++
 
     plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
     ax.set_xticklabels(x_ticks_list)
-
+    # ax.set_title('entangled state = 1/sqrt(2)*(' + str(alpha*np.sqrt(2)) +' |xxx>' + str(beta*np.sqrt(2)) + ' |-x-x-x>)')
+    ax.set_title('entangled state = (' + str(alpha) +' |xxx>' + str(beta) + ' |-x-x-x>)')
     return rho_final
 
 def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
@@ -627,10 +631,10 @@ def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
 
     psi_el = alpha*ket0-1j*beta*ket1
     rho_el = psi_el*psi_el.dag()
-    print rho_el
+
     rho = qutip.tensor(rho_el,rho_C1,rho_C2)
     rho_id = qutip.tensor(rho_el,rho_C1_id,rho_C2_id)
-    print rho_id
+
     rho_C = qutip.tensor(rho_C1,rho_C2)
     rho_C_id = qutip.tensor(rho_C1_id,rho_C2_id)
 
@@ -691,13 +695,13 @@ def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
 ### Error detection ###
 #######################
 
-def parity_msmt(qubits=[0,1],carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2), error_list = []):
+def parity_msmt(qubits=[0,1],carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2), error_list = ['Q1','Q2']):
     '''implements an error or not on the two qubits that are selected, then parity is measured
     no partial error yet'''
 
-    rho_enc, rho_enc_id = three_spin_encoding(carbon_nrs=carbon_nrs,alpha=alpha,beta=beta,do_plot=False)
-    rho_enc = qutip.tensor(rho0,rho_enc)
-    rho_enc_id = qutip.tensor(rho0,rho_enc_id)
+    rho_enc_start, rho_enc_start_id = three_spin_encoding(carbon_nrs=carbon_nrs,alpha=alpha,beta=beta,do_plot=False)
+    rho_enc = qutip.tensor(rho0,rho_enc_start)
+    rho_enc_id = qutip.tensor(rho0,rho_enc_start_id)
 
     #define gates
     xel = qutip.tensor(x,Id,Id,Id)
@@ -766,11 +770,12 @@ def parity_msmt(qubits=[0,1],carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.s
     rho_el_after = rho_after.ptrace(0)
     rho_el_after_id = rho_after_id.ptrace(0)
 
-    print 'Fidelity to ideal after state:'
+    print 'Fidelity to ideal el after state:'
     print qutip.fidelity(rho_el_after,rho_el_after_id)
 
-    print 'Fidelity to opposite after state:'
+    print 'Fidelity to opposite el after state:'
     print qutip.fidelity(rho_el_after,X*rho_el_after_id*X.dag())
+
 
     fig = plt.figure()
     ax = plt.subplot(111)
@@ -780,6 +785,102 @@ def parity_msmt(qubits=[0,1],carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.s
 
     plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
     ax.set_xticklabels(x_ticks_list)
+    ax.set_title('electron state for encoded state 1/sqrt(2)'+str(alpha*np.sqrt(2))+ '|xxx>'+str(beta*np.sqrt(2))+ ' |-x-x-x>')
+    
+    #project electron
+    el0 = qutip.tensor(rho_el_after_id,Id,Id,Id)
+    rho_final_id = el0*rho_after_id*el0.dag()
+    rho_final = el0*rho_after*el0.dag()
+
+    norm_id = qutip.fidelity(rho_el_after_id,rho_final_id.ptrace([0]))
+    norm = qutip.fidelity(rho_el_after_id,rho_final.ptrace([0]))
+
+    rho_enc_final = 1/norm**2*rho_final.ptrace([1,2,3])
+    rho_enc_final_id = 1/norm_id**2*rho_final_id.ptrace([1,2,3])
+
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    rho_enc_exp = [rho_enc_start,rho_enc_final]
+    colors = ["red", "blue"]
+    labels = ['exp before parity msmst','exp after parity msmt']
+    for ii in [0,1]:
+        pauli_set, ii_list, x_ticks_list = multi_qubit_pauli(rho_enc_exp[ii], do_plot = False)
+        ax.bar(ii_list, np.real(pauli_set), color = colors[ii], width=1,alpha = 0.5,label = labels[ii])
+
+    plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
+    ax.set_xticklabels(x_ticks_list) 
+    ax.legend() 
+
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    rho_enc =[rho_enc_start_id,rho_enc_final_id]
+    colors = ["red", "blue"]
+    labels = ['id before parity msmst','id after parity msmt']
+    for ii in [0,1]:
+        pauli_set, ii_list, x_ticks_list = multi_qubit_pauli(rho_enc[ii], do_plot = False)
+        ax.bar(ii_list, np.real(pauli_set), color = colors[ii],width=1,alpha = 0.5,label = labels[ii])
+
+    plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
+    ax.set_xticklabels(x_ticks_list)  
+    ax.legend() 
+
+def three_qubit_msmt_via_el(carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2),state ='+++' ,meas = 'XXX'):
+
+    # rho_enc_start, rho_enc_start_id = three_spin_encoding(carbon_nrs=carbon_nrs,alpha=alpha,beta=beta,do_plot=False)
+    rho_enc_start_id = check_entangled_state(alpha = alpha, beta = beta, state = state) # for now
+    rho_enc_id = qutip.tensor(rho0,rho_enc_start_id)
+
+    #define gates
+    xel = qutip.tensor(x,Id,Id,Id)
+    yel = qutip.tensor(x,Id,Id,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[0],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C1 = qutip.tensor(rho0,U0,Id,Id)+qutip.tensor(rho1,U1,Id,Id)
+    Ren_C1_id = qutip.tensor(rho0,U0id,Id,Id)+qutip.tensor(rho1,U1id,Id,Id)
+    Rz_C1 = qutip.tensor(Id,z,Id,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[1],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C2 = qutip.tensor(rho0,Id,U0,Id)+qutip.tensor(rho1,Id,U1,Id)
+    Ren_C2_id = qutip.tensor(rho0,Id,U0id,Id)+qutip.tensor(rho1,Id,U1id,Id)
+    Rz_C2 = qutip.tensor(Id,Id,z,Id)
+
+    U0, U1 = nuclear_Ren_matrix(carbon_nrs[2],B_field=304.22)
+    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
+    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
+    U0id = qutip.Qobj(U0id)
+    U1id = qutip.Qobj(U1id)
+    Ren_C3 = qutip.tensor(rho0,Id,Id,U0)+qutip.tensor(rho1,Id,Id,U1)
+    Ren_C3_id = qutip.tensor(rho0,Id,Id,U0id)+qutip.tensor(rho1,Id,Id,U1id)
+    Rz_C3 = qutip.tensor(Id,Id,Id,z)
+    # project to el
+    seq_id = yel*Ren_C2_id*Ren_C1_id*yel
+    rho_after_id =seq_id*rho_enc_id*seq_id.dag()
+
+#project electron
+    rho_el_after_id = rho_after_id.ptrace(0)
+    el0 = qutip.tensor(rho_el_after_id,Id,Id,Id)
+    rho_final_id = el0*rho_after_id*el0.dag()
+
+    norm_id = qutip.fidelity(rho_el_after_id,rho_final_id.ptrace([0]))
+
+    rho_enc_final_id = 1/norm_id**2*rho_final_id.ptrace([1,2,3])
+
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    pauli_set, ii_list, x_ticks_list = single_qubit_pauli(rho_el_after_id, do_plot = False)
+    ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5)
+
+    plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
+    ax.set_xticklabels(x_ticks_list)
+    ax.set_title('electron state')
 
 ##########################################
 ### Nuclear evolution characterization ###
