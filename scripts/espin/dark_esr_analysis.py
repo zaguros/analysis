@@ -36,7 +36,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     y = a.p0.reshape(-1)[:]
     # ax.plot(x,y)
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    ax.set_ylim(0.6,1.05)
+    ax.set_ylim(0.1,1.05)
 
 
     if center_guess == True:

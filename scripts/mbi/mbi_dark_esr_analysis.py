@@ -26,6 +26,14 @@ guess_x0 = 3730
 guess_sigma = 0.435
 guess_Nsplit = 2.185
 
+if 1:
+    guess_offset = 1.0
+    guess_A_min1 = 0
+    guess_A_plus1 = 0
+    guess_A_0 = 0
+    guess_x0 = 3730
+    guess_sigma = 0.435
+    guess_Nsplit = 2.185
 
 
 ### fitfunction
@@ -66,7 +74,7 @@ y = a.p0.reshape(-1)
 
 # try fitting
 fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
-        fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+        fitfunc = fitfunc, do_print=True, ret=True, fixed=[0,1,2,3,5])
 plot.plot_fit1d(fit_result, linspace(min(x), max(x), 1000), plot_data=False, ax=ax)
 
 
@@ -77,7 +85,7 @@ plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
 plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.png'),
         format='png')
 
-
+'''
 pol = error.Formula()
 a0, am1, ap1 = sympy.symbols('a0, am1, ap1')
 pol.formula = am1 / (a0 + ap1 + am1)
@@ -90,3 +98,4 @@ pol.uncertainties[ap1] = fit_result['error_dict']['A_plus1']
 
 print 'Spin polarization = %.3f +/- %.3f' \
         % (float(pol.value()), float(pol.uncertainty()))
+'''
