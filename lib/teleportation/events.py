@@ -73,9 +73,7 @@ def get_coincidences(fp):
     # this works nicely on sorted arrays
     multiple_photon_sync_numbers = np.unique(photon_sync_numbers[1:] == \
                                              photon_sync_numbers[:-1])
-    dts = np.array([])
-
-    return
+    return multiple_photon_sync_numbers
 
 
 ### photon histograms
