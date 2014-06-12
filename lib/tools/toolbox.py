@@ -5,6 +5,7 @@ import os
 import time
 import logging
 import numpy as np
+import h5py
 
 try:
     import qt
@@ -211,7 +212,7 @@ def get_plot_title_from_folder(folder):
 
 
 
-############### 2014-06-11, Hannes: here i am putting some of wolgang's teleporation tools: file management etc.
+############### 2014-06-11, Hannes: here i am putting some of wolgang's teleporation tools: file management etc. 
 
 def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     filepaths = []
@@ -247,107 +248,6 @@ def get_msmt_header(fp):
     root, folder = os.path.split(_root)
     daystamp = os.path.split(root)[1]
     return daystamp + '/' + folder
-
-
-### basic functionality for analysis data
-def delete_analysis_data(fp, name, analysisgrp = 'analysis', subgroup=None):
-    try:
-        f = h5py.File(fp, 'r+')
-    except:
-        print "Cannot open file", fp
-        raise
-
-    try:
-        agrp = f.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
-        if name in agrp.keys():
-            del agrp[name]
-        f.flush()
-        f.close()        
-    except:
-        f.close()
-        raise
-
-def clear_analysis_data(fp, analysisgrp = 'analysis'):
-    try:
-        f = h5py.File(fp, 'r+')
-    except:
-        print "Cannot open file", fp
-        raise
-
-    if analysisgrp in f.keys():
-        try:
-            del f[analysisgrp]
-            f.flush()
-            f.close()
-        except:
-            f.close()
-            raise
-    else:
-        f.close()
-
-def set_analysis_data(fp, name, data, analysisgrp = 'analysis', subgroup=None, **kw):
-    try:
-        f = h5py.File(fp, 'r+')
-    except:
-        print "Cannot open file", fp
-        raise
-    
-    try:
-        agrp = f.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
-        if name in agrp.keys():
-            del agrp[name]
-        agrp[name] = data
-        f.flush()
-        
-        for k in kw:
-            agrp[name].attrs[k] = kw[k]
-        
-        f.flush()
-        f.close()        
-    except:
-        f.close()
-        raise
-        
-def has_analysis_data(fp, name, analysisgrp = 'analysis', subgroup=None):
-    try:
-        f = h5py.File(fp, 'r+')
-    except:
-        print "Cannot open file", fp
-        raise
-    
-    agrp = f.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
-    if name in agrp.keys():
-        f.close()
-        return True
-    else:
-        f.close()
-        return False
-    
-def get_analysis_data(fp, name, analysisgrp = 'analysis', subgroup=None):
-    try:
-        f = h5py.File(fp, 'r+')
-    except:
-        print "Cannot open file", fp
-        raise
-        
-    agrp = f.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
-
-    if name not in agrp.keys():
-        return None
-    
-    dat = agrp[name].value
-    attrs = {}
-    for (an, av) in agrp[name].attrs.items():
-        attrs[an] = av
-        
-    f.close()
-        
-    return dat, attrs
-
-
-
-
-
 
 
 
