@@ -14,7 +14,7 @@ reload(rabi)
 from analysis.lib.tools import plot
 
 timestamp = None#'135246'#'20140408125318'
-guess_frq = 1./360
+guess_frq = 1./2500
 guess_amp = 0.5
 guess_of = 1
 # guess_slope = 0.
