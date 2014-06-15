@@ -14,8 +14,8 @@ from analysis.lib.math import error
 
 # fit_startup = False
 
-timestamp = None #'20130907183620' # None
-guess_frq = 1./350.
+timestamp = None#'214152'#None#'170356'#None #'20130907183620' # None
+guess_frq = 1./400.
 guess_amp = 0.5
 guess_k = 0.
 guess_phi = 0.
@@ -45,7 +45,7 @@ f = fit.Parameter(guess_frq, 'f')
 A = fit.Parameter(guess_amp, 'A')
 phi = fit.Parameter(guess_phi, 'phi')
 k = fit.Parameter(guess_k, 'k')
-p0 = [f, A]
+p0 = [f, A,o]
 fitfunc_str = ''
 
 def fitfunc(x) :

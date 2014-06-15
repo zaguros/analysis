@@ -3,9 +3,12 @@ import numpy as np
 import h5py
 import logging
 
+from matplotlib import pyplot as plt
+from analysis.lib.tools import plot
 from analysis.lib.m2.ssro import sequence
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
+
 
 def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
@@ -15,6 +18,7 @@ timestamp = None,
 add_folder = None,
 ret='f0',
 ssro_calib_folder='',
+do_save=False,
 **kw):
 
     if timestamp != None:
@@ -61,7 +65,19 @@ ssro_calib_folder='',
             guess_amplitude, guess_width, guess_ctr,
             (3, guess_splitN),
             do_print=True, ret=True, fixed=[])
-
+    print 'fit finished'
+    print do_save
+    if do_save:
+        print 'saving data and fit'
+        if fit_result:
+            #print 'fit result'
+            #print fit_result
+            
+            fig, ax = plt.subplots(1,1)
+            plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
+            plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
+            format='png')
+            plt.close(fig)
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
         u_f0 = fit_result['error_dict']['x0']
