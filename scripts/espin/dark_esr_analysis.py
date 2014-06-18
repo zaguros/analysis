@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp =None#'20140617_110540' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 '''
 guess_offset = 1
 guess_ctr = 2.8280
@@ -31,7 +31,7 @@ guess_x0 = 3.730
 guess_sigma = 0.435e-3
 guess_Nsplit = 2.196e-3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.9 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.8 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -48,7 +48,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     #ax.set_ylim(0.1,1.05)
 
-
+    
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
     else:
@@ -59,7 +59,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
             k = j
             j += 1
         #j = len(y)-2
-        if k > len(y)-3:
+        if k > len(y)-5:
             print 'Could not find dip'
             return
         else:
@@ -88,9 +88,9 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 - A_0()*np.exp(-((x-x0())/sigma())**2) \
     
     try:
-        fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
-        fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
-        '''
+        # fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
+        # fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+        
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
@@ -98,7 +98,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 # (2, guess_splitB),
                 (3, guess_splitN),
                 do_print=True, ret=True, fixed=[])
-        '''
+        
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
         Population_left=fit_result['params'][0]/Norm
