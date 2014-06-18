@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, mbi
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
 from analysis.lib.math import error
@@ -16,8 +16,8 @@ import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 ### parameters
 timestamp = None
 msmt_type = 'mbi'
-guess_x0 = 0.78
-guess_of = 1
+guess_x0 = 0.1
+guess_of = 0.2
 guess_a = 0
 
 ### script
@@ -42,6 +42,7 @@ elif msmt_type == 'mbi':
     a.get_readout_results(name='adwindata')
     a.get_electron_ROC()
     ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax')
+    ax.set_ylim(-0.1,1)
 
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]

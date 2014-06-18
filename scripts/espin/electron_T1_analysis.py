@@ -1,10 +1,12 @@
 import numpy as np
+import os, sys
 from analysis.lib.m2.ssro import sequence
 from analysis.lib.tools import plot
 from measurement.lib.tools import toolbox
 
 from matplotlib import pyplot as plt
 from analysis.lib.fitting import fit, common
+from matplotlib import pyplot as plt
 
 
 def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 2./3, T1 = 500, offset = 1./3,do_print = False):
@@ -34,5 +36,11 @@ def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 2./3
         fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
         fit_results.append(fit_result)
+
+        plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+        format='pdf')
+        plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+        format='png')
+
 
     return fit_results

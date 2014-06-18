@@ -1,20 +1,74 @@
-import os, sys
 import numpy as np
-import h5py
-import logging
-
+import os
+from analysis.lib.tools import toolbox
+from analysis.lib.tools import plot
+from analysis.lib.fitting import fit, common
+from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 
-from analysis.lib import fitting
-from analysis.lib.m2.ssro import ssro, mbi
-from measurement.lib.tools import toolbox
-from analysis.lib.fitting import fit, rabi
-from analysis.lib.tools import plot
-from analysis.lib.math import error
+reload(common)
 
+def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offset = 0.5, amplitude = 0.5, position =0, T2 = 800, power=2, plot_fit = True, do_print = False, show_guess = False):
+    ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
+    Inputs:
+    timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
+    measurement_name: list of measurement names
+    Based on electron_T1_anal,
+    '''
+
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        folder = toolbox.latest_data('Decoupling')
+
+    fit_results = []
+    for k in range(0,len(measurement_name)):
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name=measurement_name[k])
+        a.get_electron_ROC()
+        ax = a.plot_results_vs_sweepparam(ret='ax')
+
+        x = a.sweep_pts.reshape(-1)[:]
+        y = a.p0.reshape(-1)[:]
+
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
+
+        #plot the initial guess
+        if show_guess:
+            ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,2])
+
+        ## plot data and fit as function of total time
+        if plot_fit == True:
+            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+
+        fit_results.append(fit_result)
+
+        plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+        format='pdf')
+        plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+        format='png')
+
+        ## plot data and fit as function of tau
+        #plt.figure()
+        #plt.plot(np.linspace(0,x[-1],201), fit_result['fitfunc'](np.linspace(0,x[-1],201)), ':', lw=2)
+        #plt.plot(x, y, '.', lw=2)
+
+
+
+
+    return fit_results
+
+
+
+
+
+'''
 # fit_startup = False
 
-timestamp = None #'20130907183620' # None
+timestamp = '20140403184323' #'20130907183620' # None
 guess_frq = 1./200.
 guess_amp = 0.5
 guess_k = 0.
@@ -39,6 +93,9 @@ t_shift = 0
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
+'''
+''' add the fit function:
+'''
 '''
 o = fit.Parameter(guess_o, 'o')
 f = fit.Parameter(guess_frq, 'f')

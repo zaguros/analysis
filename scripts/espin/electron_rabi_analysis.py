@@ -7,14 +7,14 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import  sequence, mbi #sequence_ssro,
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 reload(rabi)
 
 from analysis.lib.tools import plot
 
-timestamp = None # '20130107231602'
-guess_frq = 1./120.
+timestamp = None#'135246'#'20140408125318'
+guess_frq = 1/0.01#1./2500
 guess_amp = 0.5
 guess_of = 1
 # guess_slope = 0.
@@ -35,7 +35,7 @@ fitfunc_str = ''
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('ElectronRabi')
+    folder = toolbox.latest_data()
 
 if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
@@ -62,9 +62,9 @@ y = a.p0
 fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
 
 def fitfunc(x):
-    return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
+    return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
 
-fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
+fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)

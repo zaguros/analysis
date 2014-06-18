@@ -254,7 +254,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, F, fmt='.', yerr=F_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0.5,1))
+            ax.set_ylim((0.0,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. F=({:.2f} +/- {:.2f})% at t={:.0f} us".format(F_max*100., F_max_err*100., t_max),
                     horizontalalignment='right')
@@ -264,6 +264,25 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder,
                 'mean_fidelity.'+self.plot_format),
                 format=self.plot_format)
+
+        if plot:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
+            max_Prob_ms0 = Prob_ms0.max()
+            time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('Prob. photon came from ms=0')
+            ax.set_ylim((0.9,1))
+            plt.figtext(0.8, 0.5, "max. {:.2f} at t={:.0f} us".format(max_Prob_ms0*100., time_max_Prob_ms0),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
+
+            fig.savefig(os.path.join(self.folder,
+                'projectivity.'+self.plot_format),
+                format=self.plot_format)    
 
 
 def ssrocalib(folder=''):

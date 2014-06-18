@@ -24,6 +24,40 @@ class SequenceAnalysis(m2.M2Analysis):
         
         return self.normalized_ssro
     
+    def get_magnetometry_results(self, name=''):
+        self.result_corrected = False
+
+        adwingrp = self.adwingrp(name)        
+        self.reps = adwingrp['completed_reps'].value
+        self.RO_results = adwingrp['RO_data'].value
+        self.phase = adwingrp['set_phase'].value
+                
+        return self.RO_results, self.phase
+   
+    def get_magnetometry_phase_calibration(self, name=''):
+        self.result_corrected = False
+
+        adwingrp = self.adwingrp(name)        
+        self.reps = adwingrp['completed_reps'].value
+        RO_clicks = adwingrp['RO_data'].value
+        phase = adwingrp['set_phase'].value
+
+        phase_values = np.unique(phase)
+        self.ssro_results = np.zeros(len(phase_values))
+        ind = 0
+        for j in phase_values:
+            self.ssro_results [ind] = np.sum(RO_clicks[np.where(phase==j)])
+            ind = ind+1
+        self.sweep_pts = phase_values
+        
+        self.normalized_ssro = self.ssro_results/(float(self.reps))
+        self.u_normalized_ssro = \
+            (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)))**0.5  #this is quite ugly, maybe replace?
+        
+        return self.normalized_ssro
+
+
+
     def get_cr_results(self, name='', plot=True):
         adwingrp = self.adwingrp(name)   
         self.cr_before=adwingrp['CR_before'].value
@@ -156,7 +190,8 @@ class SequenceAnalysis(m2.M2Analysis):
         
     def get_electron_ROC(self, **kw):
         ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('SSROCalibration'))
-                
+        if ssro_calib_folder == '':
+                ssro_calib_folder = toolbox.latest_data('SSROCalibration')
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
         

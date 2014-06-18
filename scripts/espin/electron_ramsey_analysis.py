@@ -7,18 +7,18 @@ from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, sequence
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, ramsey
 from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = None#'20130530183305'#None #
-guess_f1 = 1./150
+timestamp = None#20130530183305'#None #
+guess_f1 = 2.184e-3
 guess_A1 = 0.5
 guess_phi1 = 0.
 guess_f2 = 1./800
-guess_A2 = 0.5
+guess_A2 = 0
 guess_phi2 = 0.
 
 

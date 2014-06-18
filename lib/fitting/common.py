@@ -9,7 +9,7 @@ import fit
 ### common fitfunctions
 def fit_cos(g_f, g_a, g_A, g_phi, *arg):
     fitfunc_str = 'A * cos(2pi * (f*x + phi/360) ) + a'
-    
+
     f = fit.Parameter(g_f, 'f')
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
@@ -22,6 +22,47 @@ def fit_cos(g_f, g_a, g_A, g_phi, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+
+def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
+    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + phi/360) ) + a'
+
+    f = fit.Parameter(g_f, 'f')
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    phi = fit.Parameter(g_phi, 'phi')
+    t   = fit.Parameter(g_t, 't')
+    print 'guessed frequency is '+str(g_f)
+    p0 = [f, a, A,phi,t]
+
+    def fitfunc(x):
+        return a() + A()*np.exp(-x/t()) * np.cos(2*np.pi*( f()*x + phi()/360.))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, *arg):
+    ''' quite a specific function, for electron nuclear control, maybe place somewhere else '''
+    fitfunc_str = '''(A1 *exp(-x/t1) cos(2pi * (f1*x + phi1/360) ) + a1)*
+                     (A2 *exp(-x/t2) cos(2pi * (f2*x + phi2/360) ) + a2)/2+1/2'''
+
+    f1 = fit.Parameter(g_f1, 'f1')
+    #a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    phi1 = fit.Parameter(g_phi1, 'phi1')
+    t1   = fit.Parameter(g_t1, 't1')
+
+    f2 = fit.Parameter(g_f2, 'f2')
+    #a2 = fit.Parameter(g_a2, 'a2')
+    A2 = fit.Parameter(g_A2, 'A2')
+    phi2 = fit.Parameter(g_phi2, 'phi2')
+    t2   = fit.Parameter(g_t2, 't2')
+
+    #p0 = [f1, a1, A1, phi1, t1, f2, a2, A2, phi2, t2]
+    p0 = [f1, A1, phi1, t1, f2, A2, phi2, t2]
+
+    def fitfunc(x):
+        return (1 - A1() + A1()*np.exp(-x/t1()) * np.cos(2*np.pi*( f1()*x + phi1()/360.)))*(1-A2() + A2()*np.exp(-x/t2()) * np.cos(2*np.pi*( f2()*x + phi2()/360.)))/2+0.5
+
+    return p0, fitfunc, fitfunc_str
 
 def fit_exp_decay_with_offset(g_a, g_A, g_tau, *arg):
     """
@@ -59,7 +100,7 @@ def fit_double_exp_decay_with_offset(g_a, g_A, g_tau, g_A2, g_tau2, *arg):
         g_tau2 : decay constant 2
     """
     fitfunc_str = 'A * exp(-x/tau)+ A2 * exp(-x/tau2) + a'
-   
+
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
     tau = fit.Parameter(g_tau, 'tau')
@@ -109,7 +150,7 @@ def fit_saturation(g_A, g_xsat, *arg):
     """
 
     fitfunc_str = 'A * x / (x + x_sat)'
-    
+
     A = fit.Parameter(g_A, 'A')
     xsat = fit.Parameter(g_xsat, 'xsat')
     p0 = [A, xsat]
@@ -133,7 +174,7 @@ def fit_saturation_with_offset_linslope(g_a, g_b, g_A, g_xsat, *arg):
     """
 
     fitfunc_str = 'a + b*x + A * x / (x + x_sat)'
-    
+
     a = fit.Parameter(g_a, 'a')
     b = fit.Parameter(g_b, 'b')
     A = fit.Parameter(g_A, 'A')
@@ -146,7 +187,7 @@ def fit_saturation_with_offset_linslope(g_a, g_b, g_A, g_xsat, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_poly(indices, *arg):
-    fitfunc_str = 'sum_n ( a[n] * x[n] )'
+    fitfunc_str = 'sum_n ( a[n] * x**n )'
 
     idx = 0
     p0 = []
@@ -160,6 +201,20 @@ def fit_poly(indices, *arg):
         return val
 
     return p0, fitfunc, fitfunc_str
+
+def fit_parabole(g_o, g_A, g_c, *arg):
+    fitfunc_str = 'o + A * (x-c)**2'
+
+    o = fit.Parameter(g_o, 'o')
+    A = fit.Parameter(g_A, 'A')
+    c = fit.Parameter(g_c, 'c')
+    p0 = [o, A, c]
+
+    def fitfunc(x):
+        return o() + A() * (x-c())**2
+
+    return p0, fitfunc, fitfunc_str
+
 
 def fit_AOM_powerdependence(g_a, g_xc, g_k, *arg):
     fitfunc_str = 'a * exp(-exp(-k*(x-xc)))'
@@ -188,6 +243,21 @@ def fit_gauss(g_a, g_A, g_x0, g_sigma):
 
     def fitfunc(x):
         return a() + A() * np.exp(-(x-x0())**2/(2*sigma()**2))
+    return p0, fitfunc, fitfunc_str
+
+def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
+    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n)'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    T = fit.Parameter(g_T, 'T')
+    n = fit.Parameter(g_n, 'n')
+
+    p0 = [a, A, x0, T, n]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-(x-x0())**n()/(T()**n()))
     return p0, fitfunc, fitfunc_str
 
 def fit_2gauss(g_a1, g_A1, g_x01, g_sigma1, g_A2, g_x02, g_sigma2):
@@ -252,15 +322,15 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
 def fit_line(g_a, g_b, *arg):
     """
     fitfunction for a line
-        y(x) = a + b*x 
+        y(x) = a + b*x
 
     I.g.:
         g_a : offset
         g_b : linear slope
     """
 
-    fitfunc_str = 'a + b*x' 
-    
+    fitfunc_str = 'a + b*x'
+
     a = fit.Parameter(g_a, 'a')
     b = fit.Parameter(g_b, 'b')
     #xsat = fit.Parameter(g_xsat, 'xsat')
@@ -271,4 +341,23 @@ def fit_line(g_a, g_b, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+
+def fit_general_exponential_dec_cos(g_a, g_A, g_T, g_n,g_f,g_phi, g_x0=0):
+    # Fits with a general exponential modulated by a cosine
+    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    T = fit.Parameter(g_T, 'T')
+    n = fit.Parameter(g_n, 'n')
+    f = fit.Parameter(g_f, 'f')
+    phi = fit.Parameter(g_phi, 'phi')
+
+
+    p0 = [a, A, x0, T, n,f,phi]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-(x-x0())**n()/(T()**n()))*np.cos(2*np.pi*( f()*x + phi()/360.))
+    return p0, fitfunc, fitfunc_str
 

@@ -5,12 +5,17 @@ import os
 import time
 import logging
 import numpy as np
+import h5py
 
 try:
     import qt
     datadir = qt.config['datadir']
 except:
-    datadir = r'd:\measuring\data'
+    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below)
+    if os.name == 'posix':
+        datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
+    else:
+        datadir = r'd:\measuring\data'
 
 def nearest_idx(array, value):
     '''
@@ -31,6 +36,9 @@ def verify_timestamp(timestamp):
     elif len(timestamp) == 14:
         daystamp = timestamp[:8]
         tstamp = timestamp[8:]
+    elif len(timestamp) == 15: #### In case day and timestamp separted by _
+        daystamp = timestamp[:8]
+        tstamp = timestamp[9:]
     else:
         raise Exception("Cannot interpret timestamp '%s'" % timestamp)
 
@@ -41,20 +49,27 @@ def is_older(ts0, ts1):
     returns True if timestamp ts0 is an earlier data than timestamp ts1,
     False otherwise.
     '''
-    dstamp0, tstamp0 = verify_timestamp(ts0)
-    dstamp1, tstamp1 = verify_timestamp(ts1)
+    if ts0 == None or ts1 == None:
+        return True
+    else:
 
-    return (dstamp0+tstamp0) < (dstamp1+tstamp1)
+        dstamp0, tstamp0 = verify_timestamp(ts0)
+        dstamp1, tstamp1 = verify_timestamp(ts1)
 
-def latest_data(contains='', older_than=None):
+        return (dstamp0+tstamp0) < (dstamp1+tstamp1)
+
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
 
     if older_than is not None, than the latest data that fits and that
     is older than the date given by the timestamp older_than is returned.
+    if newer_than is not None, than the latest data that fits and that
+    is newer than the date given by the timestamp newer_than is returned
 
-    If no fitting data is found, an exception is raised.
+    If no fitting data is found, an exception is raised. Except when you specifically ask not to to
+    this in: raise_exc = False, then a 'False' is returned.
     '''
 
     daydirs = os.listdir(datadir)
@@ -84,20 +99,29 @@ def latest_data(contains='', older_than=None):
                 continue
             timestamp = dstamp+tstamp
 
-            if contains in d:
+            if contains in d:              
+                
                 if older_than != None:
                     if not is_older(timestamp, older_than):
                         continue
+                if newer_than != None:
+                    if not is_older(newer_than,timestamp):
+                        continue
                 measdirs.append(d)
+
         i -= 1
 
     if len(measdirs) == 0:
-        raise Exception('No fitting data found.')
-
-    measdirs.sort()
-    measdir = measdirs[-1]
-
-    return os.path.join(datadir,daydir,measdir)
+        if raise_exc == True:
+            raise Exception('No fitting data found.')
+        else:
+            return False
+    else:
+        measdirs.sort()
+        measdir = measdirs[-1]
+        if return_timestamp == False:
+            return os.path.join(datadir,daydir,measdir)
+        else: return str(daydir)+str(measdir[:6]) , os.path.join(datadir,daydir,measdir)
 
 # def newer_data(starttimestamp, endtimestamp=None, contains='',):
 #     '''
@@ -184,6 +208,46 @@ def get_plot_title_from_folder(folder):
     measurementstring = measurementstring[7:]
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
+
+
+
+
+############### 2014-06-11, Hannes: here i am putting some of wolgang's teleporation tools: file management etc. 
+
+def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
+    filepaths = []
+    suffixlen = len(suffix)
+    
+    for root,dirs,files in os.walk(folder):
+        for f in files:
+            if len(f) > suffixlen and f[-suffixlen:] == suffix and pattern in f:
+                filepaths.append(os.path.join(root, f))
+    
+    return filepaths
+
+def get_msmt_name(fp):
+    """
+    This assumes that there is only one group, whose name is the msmt name.
+    """
+    _root, fn = os.path.split(fp)
+    f = h5py.File(fp, 'r')
+    for k in f.keys():
+        if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
+            f.close()
+            return k
+    
+    raise Exception('Cannot find the name of the measurement.')
+
+def get_msmt_fp(folder, ext='hdf5'):
+    dirname = os.path.split(folder)[1]
+    fn = dirname+'.'+ext
+    return os.path.join(folder, fn)
+
+def get_msmt_header(fp):
+    _root, fn = os.path.split(fp)
+    root, folder = os.path.split(_root)
+    daystamp = os.path.split(root)[1]
+    return daystamp + '/' + folder
 
 
 
