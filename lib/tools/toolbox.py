@@ -5,6 +5,7 @@ import os
 import time
 import logging
 import numpy as np
+import h5py
 
 try:
     import qt
@@ -207,6 +208,46 @@ def get_plot_title_from_folder(folder):
     measurementstring = measurementstring[7:]
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
+
+
+
+
+############### 2014-06-11, Hannes: here i am putting some of wolgang's teleporation tools: file management etc. 
+
+def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
+    filepaths = []
+    suffixlen = len(suffix)
+    
+    for root,dirs,files in os.walk(folder):
+        for f in files:
+            if len(f) > suffixlen and f[-suffixlen:] == suffix and pattern in f:
+                filepaths.append(os.path.join(root, f))
+    
+    return filepaths
+
+def get_msmt_name(fp):
+    """
+    This assumes that there is only one group, whose name is the msmt name.
+    """
+    _root, fn = os.path.split(fp)
+    f = h5py.File(fp, 'r')
+    for k in f.keys():
+        if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
+            f.close()
+            return k
+    
+    raise Exception('Cannot find the name of the measurement.')
+
+def get_msmt_fp(folder, ext='hdf5'):
+    dirname = os.path.split(folder)[1]
+    fn = dirname+'.'+ext
+    return os.path.join(folder, fn)
+
+def get_msmt_header(fp):
+    _root, fn = os.path.split(fp)
+    root, folder = os.path.split(_root)
+    daystamp = os.path.split(root)[1]
+    return daystamp + '/' + folder
 
 
 

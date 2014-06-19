@@ -8,7 +8,11 @@ from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, sequence
 from analysis.lib.math import error
 from analysis.lib.m2 import m2
+from analysis.lib.pq import pq_tools
 from analysis.lib.tools import toolbox
+
+from analysis.lib.fitting import fit, common
+from analysis.lib.tools import plot
 
 class PQSequenceAnalysis(sequence.SequenceAnalysis):
 
@@ -26,22 +30,6 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         else:
             self.pqf=self.f
 
-    def get_photons(self):
-        """
-        returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
-        """
-        channel = self.pqf['/PQ_channel-1'].value
-        special = self.pqf['/PQ_special-1'].value
-
-        is_not_special = special==0
-        is_channel_0 = channel==0
-        is_channel_1 = channel==1
-
-        is_photon_0 = np.logical_and(is_not_special, is_channel_0)
-        is_photon_1 = np.logical_and(is_not_special, is_channel_1)
-
-        return is_photon_0, is_photon_1
-
     def get_sweep_idxs(self,  noof_syncs_per_sweep_pt=1):
         """
         Calculate the sweep-index for each PQ event, 
@@ -55,18 +43,6 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         self.sweep_length = len(self.sweep_pts)
         self.syncs_per_sweep = noof_syncs_per_sweep_pt
         self.sweep_idxs=np.mod(np.floor((self.sync_nrs-1)/self.syncs_per_sweep),self.sweep_length)
-
-    def get_markers(self, chan):
-        """
-        returns a filter (1d-array): whether events are markers on the given channel
-        """
-        channel = self.pqf['/PQ_channel-1'].value
-        special = self.pqf['/PQ_special-1'].value
-        
-        is_special = special==1
-        is_channel = channel==chan
-    
-        return (is_special & is_channel)
 
     def plot_histogram(self,channel,start=None,length=None,fltr=None,hist_binsize=1,save=True, **kw):
         ret = kw.get('ret', None)
@@ -84,7 +60,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         else:
             stop = start + length
 
-        is_ph = self.get_photons()[channel]
+        is_ph = pq_tools.get_photons(self.pqf)[channel]
         if fltr == None:
             fltr=is_ph
         else:
@@ -93,9 +69,11 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         bins = np.arange(start-.5,stop,hist_binsize)
         y,x=np.histogram(self.pqf['/PQ_sync_time-1'].value[np.where(fltr)], bins=bins)
         x=x[:-1]
+        print 'Total clicks:', np.sum(y)
         y=y/float(self.reps)
         
-        ax.plot(x,y)
+        
+        ax.semilogy(x,y)
         #ax.colorbar()
         ax.set_xlabel('Time [bins]')
         ax.set_ylabel('Counts per rep per bin')
@@ -126,7 +104,7 @@ class TailAnalysis(PQSequenceAnalysis):
             print 'get_sweep_idxs first'
             return
 
-        is_ph = self.get_photons()[channel]
+        is_ph = pq_tools.get_photons(self.pqf)[channel]
         sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
 
         hist_bins = np.arange(start_ns-hist_binsize_ns*.5,start_ns+1*tail_length_ns+hist_binsize_ns,hist_binsize_ns)
@@ -306,7 +284,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         if sync_nrs[-1] != self.reps:
             print 'WARNING last sync number ({}) != noof reps ({})! Sync error?'.format(sync_nrs[-1],self.reps)
         self.reps_per_sweep = float(self.reps)/len(self.sweep_pts)
-        self.is_ph = self.get_photons()[channel]
+        self.is_ph = pq_tools.get_photons(self.pqf)[channel]
         self.hist_binsize_ns = hist_binsize_ns
         self.sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
         self.extra_time_ns = (self.g.attrs['wait_length'])*1e9 #self.g.attrs['pq_sync_length']+
@@ -344,7 +322,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             length = self.g.attrs['E_SP_durations_AWG'][sweep_index]*1e9 
         return start, length
 
-    def plot_relaxation(self,sweep_index,ms,st, save=True, **kw):
+    def plot_relaxation(self, sweep_index, ms, st, save=True, **kw):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
         if ax == None:
@@ -372,6 +350,61 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             return ax
         if ret == 'fig':
             return fig
+
+    def plot_relaxation_vs_sweep(self, ms, st, save=True, **kw):
+        ret = kw.get('ret', None)
+        ax = kw.get('ax', None)
+        ax2 = kw.get('ax2', None)
+        if ax == None:
+            fig = self.default_fig(figsize=(6,4))
+            ax = self.default_ax(fig)
+            fig2 = self.default_fig(figsize=(10,6))
+            #fig2.title('Relaxation fit vs' + self.sweep_name)
+        else:
+            save = False
+        name= '_ms'+ str(ms) + '_' + str(st)
+        sweep=self.sweep_pts[::2]
+        taus=np.zeros(len(sweep))
+        for i,sw in enumerate(sweep):
+            #print i
+            start,length=getattr(self,'_get_'+st+'_window')(ms,i)
+            y,x=self._get_relaxation(ms, i, start, length)
+            x=x[:-1]
+            res = fit.fit1d(x,y, common.fit_exp_decay_shifted_with_offset, 0, y[0], 1000, x[0], 
+            ret=True, do_print=False, fixed=[3])
+    
+            if res != False:
+                ax2=plt.subplot(3,np.ceil(float(len(sweep)+1)/3),i+1)
+                plot.plot_fit1d(res, x, ax=ax2, plot_data=True, print_info=False)
+                ax2.text(ax2.get_xlim()[-1]*0.8,ax2.get_ylim()[-1]*0.8, '{:.2f}'.format(sw),horizontalalignment='right')
+                if (res['params_dict']['A'] > 10*res['params_dict']['a']):
+                    taus[i]=res['params_dict']['tau']/1e3
+                else:
+                    print 'Sweep point {} ignored'.format(i)
+            else:
+                print 'Could not fit sweep point {}'.format(i)
+        
+        xx=sweep[taus!=0]
+        yy=taus[taus!=0]
+        
+        res2 = fit.fit1d(xx,yy, common.fit_exp_decay_shifted_with_offset, 10, yy[0], 2*xx[0], xx[0], 
+                ret=True, do_print=True, fixed=[])
+        ax.plot(sweep,taus, 'o')
+        if res2 != False:
+            plot.plot_fit1d(res2, xx, ax=ax, plot_data=False, print_info=True)
+        #ax.colorbar()
+        ax.set_xlabel(self.sweep_name)
+        ax.set_ylabel('ms={} {}-relaxation time [us]'.format(ms,st))
+        return res
+
+        if save:
+            self.save_fig_incremental_filename(fig,name+'_relaxation_vs_sweep')
+        
+        if ret == 'ax':
+            return ax
+        if ret == 'fig':
+            return fig
+        
 
     def plot_mean_fidelity(self, sweep_index, save=True, plot_points=100, **kw):
         ro_length = kw.pop('RO_length_ns', None)
@@ -499,13 +532,13 @@ class RandomPulseAnalysis(PQSequenceAnalysis):
 
         sync_nrs=self.pqf['/PQ_sync_number-1'].value 
         
-        is_marker_1_event=self.get_markers(1)
-        is_marker_2_event=self.get_markers(2)
+        is_marker_1_event=pq_tools.get_markers(self.pqf,1)
+        is_marker_2_event=pq_tools.get_markers(self.pqf,2)
         print 'bias toward 0 : {:.2f} % '.format(50-float(len(np.where(is_marker_1_event)[0]))/(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100),', error : {:.2f} %'.format(1/np.sqrt(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100)
         print 'noof syncs:', sync_nrs[-1]
         print 'Detected marker events : ', len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0])
         
-        is_photon_0, is_rnd_clk=self.get_photons()
+        is_photon_0, is_rnd_clk=pq_tools.get_photons(self.pqf)
         sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
 
         noof_reps_wo_rnd_clk=len(np.unique(sync_nrs[is_rnd_clk]))
@@ -524,10 +557,10 @@ class RandomPulseAnalysis(PQSequenceAnalysis):
         marker_1_sync_numbers= sync_nrs[np.where(is_marker_1_event)]
         marker_2_sync_numbers= sync_nrs[np.where(is_marker_2_event)]
 
-        noof_marker_1_ro_ms0_events=len(np.where(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers))[0])
-        noof_marker_2_ro_ms0_events=len(np.where(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers))[0])
-        noof_marker_1_ro_ms1_events=len(np.where(np.invert(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)))[0])
-        noof_marker_2_ro_ms1_events=len(np.where(np.invert(self.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)))[0])
+        noof_marker_1_ro_ms0_events=len(np.where(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers))[0])
+        noof_marker_2_ro_ms0_events=len(np.where(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers))[0])
+        noof_marker_1_ro_ms1_events=len(np.where(np.invert(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)))[0])
+        noof_marker_2_ro_ms1_events=len(np.where(np.invert(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)))[0])
 
         print 'MA1 & RO0: {}, MA1 & RO1: {}, MA2 & RO0: {}, MA2 & RO1: {}'.format(noof_marker_1_ro_ms0_events, noof_marker_1_ro_ms1_events,noof_marker_2_ro_ms0_events, noof_marker_2_ro_ms1_events)
 
@@ -571,12 +604,7 @@ class RandomPulseAnalysis(PQSequenceAnalysis):
         print p0, u_p0
 
 
-    def filter_on_same_sync_number(self,source_sync_numbers, target_sync_numbers):
-        """
-        returns a filter for target_sync_numbers that's true for all sync numbers that are also
-        in source_sync_numbers.
-        """
-        return np.in1d(target_sync_numbers, source_sync_numbers)
+
 
 
 def analyze_tail(folder, name='ssro', cr=False, roc=True):

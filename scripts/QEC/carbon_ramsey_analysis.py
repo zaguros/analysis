@@ -8,8 +8,11 @@ from matplotlib import pyplot as plt
 reload(common)
 
 
-def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp ='',frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2, plot_fit = False, do_print = False, show_guess = True):
-    ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
+def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
+        frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2, 
+        plot_fit = False, do_print = False, show_guess = True):
+    ''' 
+    Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
@@ -20,8 +23,9 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
     else:
         folder = toolbox.latest_data('CarbonRamsey')
 
-    #Currently the manual (dirty) way of implementing the SSRO calib to be correct. Better would be to implement this in the toolbox get_electron_ROC function
-    if ssro_calib_timestamp != None:
+    if ssro_calib_timestamp == None: 
+        ssro_calib_folder = toolbox.latest_data('SSRO')
+    else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
         print ssro_calib_folder
@@ -37,9 +41,6 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
 
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
-
-
-
 
         ax.plot(x,y)
         p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, decay_constant,exponent,frequency ,phase )
