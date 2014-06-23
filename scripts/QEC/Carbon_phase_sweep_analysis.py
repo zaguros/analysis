@@ -8,16 +8,17 @@ from matplotlib import pyplot as plt
 reload(common)
 
 
-def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
-        frequency = 1, offset = 0.5, x0 = 0,  amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2, 
-        plot_fit = False, do_print = False, fixed = [2], show_guess = True):
+def Carbon_phase_sweep(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
+        frequency = 1, offset = 0.5, amplitude = 0.5,  phase =0, 
+        fixed = [], 
+        plot_fit = False, do_print = False, show_guess = True):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
     List of parameters (order important for 'fixed') 
-    offset, amplitude, decay_constant,exponent,frequency ,phase 
+    [freq, offset, Amplitude, phase] 
     '''
 
     if timestamp != None:
@@ -45,8 +46,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         y = a.p0.reshape(-1)[:]
 
         ax.plot(x,y)
-        p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
-                x0, decay_constant,exponent,frequency ,phase )
+        p0, fitfunc, fitfunc_str = common.fit_cos(frequency, offset, amplitude ,phase )
 
 
 
