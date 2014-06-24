@@ -14,12 +14,14 @@ from analysis.lib.math import error
 
 # fit_startup = False
 
-timestamp = None#'214152'#None#'170356'#None #'20130907183620' # None
+timestamp = '135116'#None'214152'#None#'170356'#None #'20130907183620' # None
 guess_frq = 1./400.
-guess_amp = 0.5
-guess_k = 0.
+guess_amp = -0.14
 guess_phi = 0.
-guess_o = 1.
+guess_frq2 = 1./100.
+guess_amp2 = -0.01
+guess_phi2 = 0.
+guess_o = 0.8
 
 ### script
 if timestamp != None:
@@ -44,12 +46,15 @@ o = fit.Parameter(guess_o, 'o')
 f = fit.Parameter(guess_frq, 'f')
 A = fit.Parameter(guess_amp, 'A')
 phi = fit.Parameter(guess_phi, 'phi')
-k = fit.Parameter(guess_k, 'k')
-p0 = [f, A,o]
+f2 = fit.Parameter(guess_frq, 'f2')
+A2 = fit.Parameter(guess_amp, 'A2')
+phi2 = fit.Parameter(guess_phi, 'phi2')
+
+p0 = [o, A,f2,A2]
 fitfunc_str = ''
 
 def fitfunc(x) :
-    return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
+    return o() + A() *cos(2*pi*(f()*x - phi()))+A2() *cos(2*pi*(f2()*x - phi2()))
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
