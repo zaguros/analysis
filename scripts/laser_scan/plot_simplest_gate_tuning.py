@@ -57,19 +57,19 @@ from analysis.lib.nv import nvlevels
 
 
 gate_V = np.array(
-		 [8,22,55,90])
-E_y =  	 [52.8,	49.75,	48.7, 47.68]
-E_x =    [56.35,	54.99,	54.,53.9]
+		 [0,-9,-18,9,18])
+E_y =  	 [75.44,75.98,76.27,75.29,74.92]
+E_x =    [78.22,78.53,78.9,78.87,78.88]
 
 
-title= 'Pippin Sil3 Voltage on 21 boosting with green'
+title= 'The 111 no1 enlarge Sil18 27V on 24, tuning 22 - SSRO tuning'
 fig = plt.figure()
 ax = fig.add_subplot(111)
 
 ax.plot(gate_V, E_x, 'bo', ms = 8, label = '$E_x$')
 ax.plot(gate_V, E_y, 'ro', ms = 8, label = '$E_y$')
 
-ax.set_xlabel('green power during yellow repump [uW]')
+ax.set_xlabel('Voltage on Gate [V]')
 ax.set_ylabel('frequency [GHz]')
 ax.set_title(title)
 
