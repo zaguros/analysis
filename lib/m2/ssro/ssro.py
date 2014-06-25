@@ -211,7 +211,7 @@ class SSROAnalysis(m2.M2Analysis):
             return fid_dat
 
 
-    def mean_fidelity(self, plot=True, **kw):
+    def mean_fidelity(self, plot=True, plot_photon_ms0=True, **kw):
 
         f = self.analysis_h5data()
         g = f['/fidelity']
@@ -265,8 +265,27 @@ class SSROAnalysis(m2.M2Analysis):
                 'mean_fidelity.'+self.plot_format),
                 format=self.plot_format)
 
+        if plot_photon_ms0:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
+            max_Prob_ms0 = Prob_ms0.max()
+            time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('Prob. photon came from ms=0')
+            ax.set_ylim((0.9,1))
+            plt.figtext(0.8, 0.5, "max. {:.2f} at t={:.0f} us".format(max_Prob_ms0*100., time_max_Prob_ms0),
+                    horizontalalignment='right')
 
-def ssrocalib(folder=''):
+            ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
+
+            fig.savefig(os.path.join(self.folder,
+                'projectivity.'+self.plot_format),
+                format=self.plot_format)    
+
+
+def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
     if folder=='':
         folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
@@ -280,7 +299,7 @@ def ssrocalib(folder=''):
         a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
 
     plt.close('all')
-    a.mean_fidelity()
+    a.mean_fidelity(plot,plot_photon_ms0)
     a.finish()
 
 def thcalib(folder='', analyze_probe = False):

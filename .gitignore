@@ -6,5 +6,5 @@ output
 *.bak
 *.BAK
 *.png
-*.ipynb
+.ipynb
 .DS_Store

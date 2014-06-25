@@ -16,6 +16,7 @@ from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, ramsey
 from analysis.lib.tools import plot
 from analysis.lib.math import error
+from analysis.lib.tools import toolbox as tb
 
 
 def bin_data (data = [], bin_size = 50):
@@ -26,7 +27,7 @@ def bin_data (data = [], bin_size = 50):
 		binned_data.append(v)
 	return binned_data
 
-def clean_data (folder = '', sub_string = ''):
+def clean_data_different_folders(folder = '', sub_string = ''):
 	#takes all files in the folder with a given sub-strin gin the filename,
 	#bins the data and checks at which point the data becomes zero due to ionization.
 	#Only datasets with a number of valid data greater then 'threshold_data' are kept
@@ -38,7 +39,7 @@ def clean_data (folder = '', sub_string = ''):
 	all_results = {}
 	for d in os.listdir(folder):
 		if (d.find (sub_string)>-1):
-			print d
+			#print d
 			folder0 = folder+d
 			a = sequence.SequenceAnalysis(folder0)
 			a.get_sweep_pts()
@@ -58,15 +59,55 @@ def clean_data (folder = '', sub_string = ''):
 	all_results ['max_ind'] = ind
 	print 'Nr of good datasets: '+str(ind)
 	return all_results
+def clean_data (folder = ''):
+	#takes all hdf5 data in the folder
+	#bins the data and checks at which point the data becomes zero due to ionization.
+	#Only datasets with a number of valid data greater then 'threshold_data' are kept
+	
+	b_size = 500
+	threshold_data = 1000
+	thr_ind = threshold_data/b_size
+	ind = 0
+	all_results = {}
+	final=True
+	i=-1
+	a = sequence.SequenceAnalysis(folder)
+	a.get_sweep_pts()
+	print folder
+	while((final) & (i<500)):
+		i=i+1
+		try:
+			a.get_readout_results(name='rep_'+str(i))
+			print str('analysing rep. #' + str(i) )
+			results = a.ssro_results
+			a.get_sweep_pts()
+			
+			binned =  bin_data (data = results, bin_size=b_size)
+			binned.append(0)
+			binned = np.array(binned)
+			indice = np.nonzero(binned<0.001) [0] [0] 
+			print indice
+			if (indice>thr_ind):
+				results = results [:(indice-1)*b_size]
+				all_results [str(ind)] = results
+				ind = ind + 1
+			
+		except:
+			final=False
+			print 'done'
+			a.finish()
 
-def correlation (results = [], bin_size = 100, N =500):
-	wait_time =0.
+	all_results ['max_ind'] = ind
+	print 'Nr of good datasets: '+str(ind)
+	return all_results	
+
+
+
+def correlation (results = [], bin_size = 100, N =1000):
+	wait_time=0.
 	print 'N = ',N
 	nr_datasets = results ['max_ind']
 	ind = 0
-	indice_massimo = []
-	decay = []
-	err_decay = []
 	for counter in np.arange(nr_datasets):
 		dati = results [str(counter)]
 		if (len(dati)>2*N+1):
@@ -76,17 +117,14 @@ def correlation (results = [], bin_size = 100, N =500):
 				b = dati
 							
 			t = np.arange(len(b))*bin_size*(20e-6+wait_time*1e-6)	
-			phase = b
-			mu = np.mean(phase)
-			sigma = np.std(phase)
-			corr = np.correlate (phase-mu, phase-mu, 'full')/(np.correlate(phase-mu, phase-mu)+0.)
+			mu = np.mean(b)
+			sigma = np.std(b)
+			corr = np.correlate (b-mu, b-mu, 'full')/(np.correlate(b-mu, b-mu)+0.)
 			t_corr = (np.arange (len(corr))-len(corr)/2.)*(wait_time+20.)*1e-6*bin_size
 
 			nn = len(corr)
 			corr2 = corr [nn/2-N:nn/2+N]
 			t_corr2 = t_corr [nn/2-N:nn/2+N]
-			ind_max = corr2.argmax()
-			indice_massimo.append (ind_max)	
 			
 			if (ind == 0):
 				avg_corr = corr2			
@@ -98,7 +136,7 @@ def correlation (results = [], bin_size = 100, N =500):
 	avg_corr = avg_corr/max(avg_corr)			
 	return t_corr2, avg_corr
 	
-def plot_time_series (results = [], bin_size=1, nr = []):
+def plot_time_series (results = [], bin_size=1, nr = [],time_single_ramsey=20e-3):
 
 	nr_datasets = results ['max_ind']
 	if (nr==[]):
@@ -111,7 +149,7 @@ def plot_time_series (results = [], bin_size=1, nr = []):
 			else:
 				b = data
 		
-		t = np.arange(len(b))*(20e-3)*bin_size
+		t = np.arange(len(b))*(time_single_ramsey)*bin_size
 		plt.figure()
 		plt.plot (t, b, 'b')
 		plt.plot (t, b, '.r')
@@ -251,16 +289,23 @@ def plot_data_28april ():
 	plt.show()
 
 
-f0 = r'Z:/Diamond/Projects/Magnetometry with adaptive measurements/Data/20140505/'
-data = clean_data (folder=f0, sub_string = '45_hf_')
-plot_time_series (results = data, bin_size=25)
-t, corr = correlation (results=data, bin_size=1)
+f0 = tb.latest_data('hf_500usA0E0')
+#f0 = 'D:/measuring/data/20140515/190415_RepElectronRamseyCORPSE_SIL4_3_hf_1000usA0E0'
+data = clean_data (f0)
+plot_time_series (results = data, bin_size=50,time_single_ramsey=30e-3,nr=[1,2,3,4,5])
+t, corr = correlation (results=data, bin_size=1,N=500)
 
 x = np.arange (len(corr))-len(corr)/2
-plt.plot (x, corr, linewidth =2)
-plt.xlim ([0, 150])
+plt.semilogy (x, corr, linewidth =2)
+
+plt.xlim ([1, 500])
 plt.ylim ([0,1])
 plt.xlabel ('nr of ramseys')
 plt.show()
 
+plt.plot(x, corr, '.', linewidth =2)
+plt.xlim ([1, 500])
+#plt.ylim ([0,1])
+plt.xlabel ('nr of ramseys')
+plt.show()
 
