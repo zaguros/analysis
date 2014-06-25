@@ -13,23 +13,28 @@ from analysis.lib.tools import plot
 
 ### settings
 timestamp =None#'20140617_110540' #' #'114103_PulsarD' #YYYYmmddHHMMSS
-'''
+
 guess_offset = 1
-guess_ctr = 2.8280
+guess_x0 = 2.8280
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
+guess_splitB = 30.
+guess_splitN = 2.18e-3
+# guess_splitC = .8e-3 #12.78
+guess_width = 0.2e-3
+#guess_sigma = 0.2e-3
 guess_amplitude = 0.3
-'''
+
 # try fitting
-guess_offset = 1.0
-guess_A_min1 = 0
-guess_A_plus1 = 0
-guess_A_0 = 0.8
-guess_x0 = 3.730
-guess_sigma = 0.435e-3
-guess_Nsplit = 2.196e-3
+#guess_offset = 1.0
+guess_A_min1 = 0.3
+guess_A_plus1 = 0.3
+guess_A_0 = 0.3
+#guess_x0 = 3.730
+#guess_sigma = 0.435e-3
+#guess_splitN = 2.196e-3
 
 def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.8 , **kw):
 

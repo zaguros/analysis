@@ -48,11 +48,10 @@ def get_multiple_photon_syncs(pqf):
 def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True):
 
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
-        print 'Yeah'
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
         return c  
     
-    print 'no mister no'
+
 
     sync_time = pqf['/PQ_sync_time-1'].value
     total_time = pqf['/PQ_time-1'].value
