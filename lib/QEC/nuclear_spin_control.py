@@ -129,10 +129,8 @@ def waittime(carbon_nr, time, B_field=304.22):
     H0 = omega_Larmor * Iz
     H1 = (A_par+omega_Larmor)*Iz + A_perp*Ix
 
-    expH0 = (-1j*H0*tau).expm();    expH1 = (-1j*H1*tau).expm()
+    expH0 = (-1j*H0*time).expm();    expH1 = (-1j*H1*time).expm()
     Utot = qutip.tensor(rho0,expH0) + qutip.tensor(rho1,expH1)
-    print_matrix(Utot)
-
     return Utot
 
 
@@ -206,7 +204,7 @@ def nuclear_ramsey_no_init(carbon_nr, tau_wait, N_wait_list, B_field=304.22):
     #gates
     electron_x  = qutip.tensor(x,Id)
     electron_mx = qutip.tensor(mx,Id)
-    Ren         = c13_gate(carbon_nr, N, tau, B_field)
+    Ren         = c13_gate(carbon_nr, N[0], tau[0], B_field)
 
     #sequence and RO
     S = np.zeros(len(N_wait_list))
@@ -228,7 +226,7 @@ def nuclear_ramsey_no_init(carbon_nr, tau_wait, N_wait_list, B_field=304.22):
     plt.show()
     return S[i]
 
-def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait, N_wait_list, B_field=304.22):
+def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
     '''nuclear Rabi experiment without init or DD
     scheme: y - Ren - x - wait - y - Ren - x - RO'''
 
@@ -246,18 +244,26 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait, N_wait_list, B_field=304.2
     #gates
     electron_x  = qutip.tensor(x,Id)
     electron_y = qutip.tensor(y,Id)
-    Ren         = c13_gate(carbon_nr, N, tau, B_field)
-
+    Ren         = c13_gate(carbon_nr, N[0], tau[0], B_field)
 
 
     #sequence and RO
-    S = np.zeros(len(N_wait_list))
-    for i, N_wait in enumerate(N_wait_list):
+    S = np.zeros(len(tau_wait_list))
+    for i, tau_wait in enumerate(tau_wait_list):
 
-        DD_wait = c13_gate(carbon_nr, N_wait, tau_wait, B_field)         # Define DD waiting gate
+        wait_gate = waittime(carbon_nr, tau_wait, B_field)         # Define DD waiting gate
 
-        seq  = electron_mx*Ren*DD_wait*Ren*electron_x                   # Define gate sequence
-        rho_final = seq*rho_init*seq.dag()                  # Apply gate sequence
+        seq1  = electron_x*Ren*electron_y                   # Define gate sequence
+        rho_seq1 = seq1*rho_init*seq1.dag()
+
+        seq2 = wait_gate
+        rho_seq2 = seq2*rho_seq1*seq2.dag()
+        #electron dephasing
+        rho_seq2a =    0.5*qutip.tensor(z,Id)*rho_seq2*qutip.tensor(z,Id).dag() + 0.5*qutip.tensor(mz,Id)*rho_seq2*qutip.tensor(mz,Id).dag()
+
+        seq3 = electron_x*Ren*electron_y
+        rho_final = seq3*rho_seq2a*seq3.dag()
+
 
         rho_el_final = rho_final.ptrace(0)                  # Trace out the nuclear spin
         #S[i] = qutip.expect(sz, rho_el_final) + 1./2       # Z measurement two alternative ways
@@ -265,7 +271,7 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait, N_wait_list, B_field=304.2
 
     ## plot ##
     f, ax = plt.subplots(1)
-    ax.plot(N_wait_list*2*tau_wait*1e6, S, 'o-', lw=1)
+    ax.plot(tau_wait_list, S, 'o-', lw=1)
     ax.set_title('P(ms=0)'); ax.set_xlabel('Evolution_time (us)')
     plt.show()
     return S[i]
