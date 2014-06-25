@@ -362,3 +362,19 @@ def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
         return a() + A() * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
     return p0, fitfunc, fitfunc_str
 
+def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
+
+    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    T = fit.Parameter(g_T, 'T')
+    n = fit.Parameter(g_n, 'n')
+    f = fit.Parameter(g_f, 'f')
+    phi = fit.Parameter(g_phi, 'phi')
+
+    p0 = [a, A, x0, T, n, f, phi]
+    def fitfunc(x):
+        return a() + A() * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
+    return p0, fitfunc, fitfunc_str
