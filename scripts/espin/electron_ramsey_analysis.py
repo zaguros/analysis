@@ -62,7 +62,7 @@ if fit_result != False :
 plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
         format='pdf')
 
-test=a.normalized_ssro
+
 
 
 ### FFT
