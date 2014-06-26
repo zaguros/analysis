@@ -24,7 +24,8 @@ def Carbon_phase_sweep(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('CarbonRamsey')
+        #folder = toolbox.latest_data('CarbonR')
+        folder = toolbox.latest_data('CarbonT1')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -60,7 +61,7 @@ def Carbon_phase_sweep(timestamp=None, measurement_name = ['adwindata'], ssro_ca
 
         ## plot data and fit as function of total time
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
 
         fit_results.append(fit_result)
 
