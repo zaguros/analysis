@@ -57,21 +57,45 @@ from analysis.lib.nv import nvlevels
 
 
 gate_V = np.array(
-		 [-18,-22.5,-27])
-E_y =  	 [74.87,74.77,74.275]
-E_x =    [77.0,76.94,76.71]
+		 [8,22,55,90])
+E_y =  	 [52.8,	49.75,	48.7, 47.68]
+E_x =    [56.35,	54.99,	54.,53.9]
+gate_V = np.array([ -12,	-9,	-6,	0,	0,	0,	5,	9,	18])
+E_y =  	 [74.37, 74.59, 74.41, 74.35, 74.51, 74.45, 74.51, 74.71, 75.06]
+E_x =    [77.19, 77.10,  -1, -1 ,-1 , -1 , 76.5, 76.85, 77.93]
+E_p = 	 [68.51, 68.68, 68.35, 68.14, 68.33, 68.33, -1, 68.62, 69.28]
+
+Yellow_tuning_on_Ey = [27.66, 27.73, 26.56, 25.72,26.10,26.04, 26.36, 27.62, 30.64]
+Yellow_tuning_on_Ex = [27.82, 28.06, -1,-1,-1,-1, 26.98,28.04, 30.80 ]
 
 
-title= 'The 111 no1 enlarge Sil1 tuning 24 - ssro'
+title= 'SAM Sil 5 Voltage on D1 & D3 during SSRO'
 fig = plt.figure()
 ax = fig.add_subplot(111)
+ax.set_ylim([73,80])
 
 ax.plot(gate_V, E_x, 'bo', ms = 8, label = '$E_x$')
 ax.plot(gate_V, E_y, 'ro', ms = 8, label = '$E_y$')
+#ax.plot(gate_V, E_p, 'go', ms = 8, label = '$E\'$')
 
-ax.set_xlabel('Voltage on Gate [V]')
+
+ax.set_xlabel('gate voltage [uW]')
+ax.set_ylabel('frequency [GHz]')
+ax.set_title(title)
+
+ax.legend(loc=0)
+
+
+#fig2 = plt.figure()
+#ax2 = fig.add_subplot(111)
+#ax2.set_ylim([25,32])
+
+#ax2.plot(gate_V, Yellow_tuning_on_Ex, 'bo', ms = 8, label = 'tun.  on $E_x$')
+#ax2.plot(gate_V, Yellow_tuning_on_Ey, 'ro', ms = 8, label = 'tun. on $E_y$')
+
+ax.set_xlabel('gate voltage [uW]')
 ax.set_ylabel('frequency [GHz]')
 ax.set_title(title)
 
 
-ax.legend(loc=5)
+ax2.legend(loc=0)

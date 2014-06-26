@@ -13,8 +13,8 @@ reload(rabi)
 
 from analysis.lib.tools import plot
 
-timestamp = None#'135246'#'20140408125318'
-guess_frq = 1/0.01#1./2500
+timestamp = None#'20140408125318'
+guess_frq = 1./200.
 guess_amp = 0.5
 guess_of = 1
 # guess_slope = 0.
@@ -35,7 +35,7 @@ fitfunc_str = ''
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data()
+    folder = toolbox.latest_data('ElectronRabi')
 
 if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
@@ -64,10 +64,12 @@ fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
 def fitfunc(x):
     return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
 
-fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
+fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)
+
+print "pi pulse = {:.2f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 plt.savefig(os.path.join(folder, 'electronrabi_analysis_fit.png'))
