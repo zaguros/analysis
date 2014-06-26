@@ -57,12 +57,12 @@ from analysis.lib.nv import nvlevels
 
 
 gate_V = np.array(
-		 [0,-9,-18,9,18])
-E_y =  	 [75.44,75.98,76.27,75.29,74.92]
-E_x =    [78.22,78.53,78.9,78.87,78.88]
+		 [-18,-22.5,-27])
+E_y =  	 [74.87,74.77,74.275]
+E_x =    [77.0,76.94,76.71]
 
 
-title= 'The 111 no1 enlarge Sil18 27V on 24, tuning 22 - SSRO tuning'
+title= 'The 111 no1 enlarge Sil1 tuning 24 - ssro'
 fig = plt.figure()
 ax = fig.add_subplot(111)
 
