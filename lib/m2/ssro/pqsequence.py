@@ -384,12 +384,19 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             else:
                 print 'Could not fit sweep point {}'.format(i)
         
-        xx=sweep[taus!=0]
-        yy=taus[taus!=0]
+        xx=sweep[taus>1.]
+        yy=taus[taus>1.]
         
-        res2 = fit.fit1d(xx,yy, common.fit_exp_decay_shifted_with_offset, 10, yy[0], 2*xx[0], xx[0], 
+        #y(x) = A * exp(-(x-x0)/tau) + a
+        #g_a : offset
+        #g_A : initial Amplitude
+        #g_tau : decay constant
+        #g_x0 : x offset
+        res2 = fit.fit1d(xx,yy, common.fit_exp_decay_with_offset, 10, yy[0], xx[len(xx)/2]/2.,  
                 ret=True, do_print=True, fixed=[])
-        ax.plot(sweep,taus, 'o')
+        ax.plot(xx,yy, 'o')
+        #ax.plot(sweep,10+yy[0]*np.exp(-(sweep- xx[0])/(xx[len(xx)/2]/2.)))
+        
         if res2 != False:
             plot.plot_fit1d(res2, xx, ax=ax, plot_data=False, print_info=True)
         #ax.colorbar()

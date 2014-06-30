@@ -290,7 +290,13 @@ def fit_laserscan(x,y,points=100,strain_range=(0,10),Ex_range=None,Ey_range=None
     return np.ravel([fExs[jm],fEys[im],])
 
 def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
-    
+    """
+    Returns the Ey, Ex frequencys, when given two frequencies f1,f2, 
+    belonging to the i1,i2'th transitions respectively, 
+    counting from the lowest frequency. 
+    At low strain these would be
+    i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
+    """
     for str_split in np.linspace(0,20,20/precision):
         levels=get_ES_ExEy(0,str_split,fast)
         offset=(f1-levels[i1])
@@ -298,3 +304,19 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
         #print levels
         if abs(f2-levels[i2])<precision:
             return levels[2]+str_split, levels[2]
+
+def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
+    """
+    returns the fraction of ms=0 character of a given ES eigenstate, 
+    selected by the transition number, counting from the lowest frequency. 
+    At low strain these would be
+    transition_index = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
+    """
+    w,v = get_ES(E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
+    ws,vs=np.sort(w),np.transpose(v)[np.argsort(w)]
+
+    #aa=0
+    #for i in range(6):
+    #    aa=aa+np.abs(vs[i,2])**2
+    #print aa
+    return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2

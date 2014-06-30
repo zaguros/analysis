@@ -15,7 +15,7 @@ def fit_cos(g_f, g_a, g_A, g_phi, *arg):
     A = fit.Parameter(g_A, 'A')
     phi = fit.Parameter(g_phi, 'phi')
 
-    p0 = [f, a, A,phi] #Note: If you do not want to use a fit argument set fixed when using in fit1d 
+    p0 = [f, a, A,phi] #Note: If you do not want to use a fit argument set fixed when using in fit1d
 
     def fitfunc(x):
         return a() + A() * np.cos(2*np.pi*( f()*x + phi()/360.))
@@ -343,7 +343,7 @@ def fit_line(g_a, g_b, *arg):
 
 
 def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
-    # NOTE: Order of arguments has changed to remain consistent with fitting params order 
+    # NOTE: Order of arguments has changed to remain consistent with fitting params order
     # NOTE: removed g_x0=0 as a default argument. This should be handed explicitly to the function to prevent confusion
     # Fits with a general exponential modulated by a cosine
     fitfunc_str = 'a + A * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
@@ -364,7 +364,7 @@ def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
 
 def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
 
-    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
+    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n  *  cos(2pi *(f*x+phi/360) )'
 
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
@@ -374,7 +374,19 @@ def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
     f = fit.Parameter(g_f, 'f')
     phi = fit.Parameter(g_phi, 'phi')
 
-    p0 = [a, A, x0, T, n, f, phi]
-    def fitfunc(x):
-        return a() + A() * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
+    if g_n == 0:
+        p0 = [a, A, x0, f, phi]
+        def fitfunc(x):
+            return a() + A() * np.cos(2*np.pi*( f()*x + phi()/360.))
+    else:
+        p0 = [a, A, x0, T, n, f, phi]
+        def fitfunc(x):
+            return a() + A() * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
+
     return p0, fitfunc, fitfunc_str
+
+
+
+
+
+
