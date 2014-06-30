@@ -211,7 +211,7 @@ class SSROAnalysis(m2.M2Analysis):
             return fid_dat
 
 
-    def mean_fidelity(self, plot=True, **kw):
+    def mean_fidelity(self, plot=True, plot_photon_ms0=True, **kw):
 
         f = self.analysis_h5data()
         g = f['/fidelity']
@@ -254,7 +254,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, F, fmt='.', yerr=F_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0.0,1))
+            ax.set_ylim((0.5,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. F=({:.2f} +/- {:.2f})% at t={:.0f} us".format(F_max*100., F_max_err*100., t_max),
                     horizontalalignment='right')
@@ -265,7 +265,7 @@ class SSROAnalysis(m2.M2Analysis):
                 'mean_fidelity.'+self.plot_format),
                 format=self.plot_format)
 
-        if plot:
+        if plot_photon_ms0:
             fig = plt.figure()
             ax = fig.add_subplot(111)
             Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
@@ -285,7 +285,7 @@ class SSROAnalysis(m2.M2Analysis):
                 format=self.plot_format)    
 
 
-def ssrocalib(folder=''):
+def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
     if folder=='':
         folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
@@ -299,7 +299,7 @@ def ssrocalib(folder=''):
         a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
 
     plt.close('all')
-    a.mean_fidelity()
+    a.mean_fidelity(plot,plot_photon_ms0)
     a.finish()
 
 def thcalib(folder='', analyze_probe = False):
