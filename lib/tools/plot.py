@@ -33,7 +33,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
             ax.plot(res['x'], res['y'], 'o')
     if fit_xvals == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), '-', lw=2)
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-', lw=2)
 
     if print_info:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)
