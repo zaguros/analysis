@@ -47,20 +47,22 @@ def fpga_calibration_analysis (folder):
     print ssro_calib_folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
-    a.get_magnetometry_data(name='adwindata')
-
+    t=a.get_magnetometry_data(name='adwindata')
+    print 'a clicks', np.sum(a.clicks, axis=0)
     a.get_electron_ROC()
     y = a.p0
     uy = a.u_p0
 
     a.get_sweep_pts()
     x = a.sweep_pts
-    print len(x)
-    print len(y)
-    print y
-    print x
-    print a.reps
-    print len(a.sweep_pts)
+    print 'x ',x
+    print 'y', y
+    print 'a',a
+    #print y
+    #print x
+    #print a.reps
+    #print len(a.sweep_pts)
+    #print sum(y)
     nn = a.sweep_name
     ax = a.plot_result_vs_sweepparam(ret='ax')
 
@@ -68,7 +70,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False
 
     if do_fit:
-        guess_frq = 1./30
+        guess_frq = 1./3500
         guess_amp = 0.3
         guess_of = 1
         # guess_slope = 0.

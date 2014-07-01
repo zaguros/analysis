@@ -24,8 +24,8 @@ def Carbon_phase_sweep(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        #folder = toolbox.latest_data('CarbonR')
-        folder = toolbox.latest_data('CarbonT1')
+        folder = toolbox.latest_data('CarbonR')
+        # folder = toolbox.latest_data('CarbonT1')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')

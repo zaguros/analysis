@@ -32,7 +32,8 @@ def get_pflip_Ey(strain_splitting):
 	p0 = 0.012 #spin flip probability at zero strain
 	S0 = 15.   #GHz, the spoint where Ey becomes degenerate with E12
 	pflip = p0*(S0/(S0 - strain_splitting)) #phenomological model for the spin flip probability 
-											#TODO: verify with nvlevels eigenstate model
+											# well approximated by:
+											# (1-nvlevels.get_ms0_fraction(strain_splitting,2,theta_x=0))+0.095
 	return pflip
 
 def get_Ey_vs_strain_saturation(strain_splitting,saturation_counts):
