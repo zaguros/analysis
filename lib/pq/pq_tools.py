@@ -145,6 +145,18 @@ def filter_on_same_sync_number(source_sync_numbers, target_sync_numbers):
     """
     return np.in1d(target_sync_numbers, source_sync_numbers)
 
+def filter_marker(pqf, chan):
+    """
+    Note: at the moment this filter includes the marker events on which we filter.
+    """
+    is_mrkr = get_markers(pqf, chan)
+
+    sync_numbers = pqf['/PQ_sync_number-1'].value
+
+    marker_sync_numbers = sync_numbers[is_mrkr]
+    
+    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)    
+
 
 ##############################################################################
 ### File management
