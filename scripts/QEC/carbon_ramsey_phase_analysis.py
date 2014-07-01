@@ -12,7 +12,7 @@ reload(plot)
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], 
             frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], 
             fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True,fitexp = None):
-    ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
+    ''' 
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
@@ -69,7 +69,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],
 
         ## plot fit
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False,print_info = False)
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
 
         fit_results.append(fit_result)
         ax.set_xlabel('Free evolution time (us)')

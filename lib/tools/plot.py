@@ -19,7 +19,8 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
     info_xy = kw.pop('info_xy', 'auto')
     plot_data = kw.pop('plot_data', True)
     
-    if res == None:
+    if res == None or res == False:
+        print 'plot_fit1d: No fit result.'
         return False
     
     if ax == None:
@@ -35,7 +36,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
     ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-', lw=2)
 
-    if print_info:
+    if print_info and res['success']:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)
         
         if info_xy == 'auto':

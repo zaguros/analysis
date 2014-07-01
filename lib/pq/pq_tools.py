@@ -48,11 +48,10 @@ def get_multiple_photon_syncs(pqf):
 def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True):
 
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
-        print 'Yeah'
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
         return c  
     
-    print 'no mister no'
+
 
     sync_time = pqf['/PQ_sync_time-1'].value
     total_time = pqf['/PQ_time-1'].value
@@ -145,6 +144,18 @@ def filter_on_same_sync_number(source_sync_numbers, target_sync_numbers):
     in source_sync_numbers.
     """
     return np.in1d(target_sync_numbers, source_sync_numbers)
+
+def filter_marker(pqf, chan):
+    """
+    Note: at the moment this filter includes the marker events on which we filter.
+    """
+    is_mrkr = get_markers(pqf, chan)
+
+    sync_numbers = pqf['/PQ_sync_number-1'].value
+
+    marker_sync_numbers = sync_numbers[is_mrkr]
+    
+    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)    
 
 
 ##############################################################################
