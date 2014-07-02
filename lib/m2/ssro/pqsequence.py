@@ -383,9 +383,9 @@ class FastSSROAnalysis(PQSequenceAnalysis):
                     print 'Sweep point {} ignored'.format(i)
             else:
                 print 'Could not fit sweep point {}'.format(i)
-        
-        xx=sweep[taus>1.]
-        yy=taus[taus>1.]
+        skip_points = kw.get('skip_points', 0)
+        xx=sweep[taus>1.][skip_points:]
+        yy=taus[taus>1.][skip_points:]
         
         #y(x) = A * exp(-(x-x0)/tau) + a
         #g_a : offset
