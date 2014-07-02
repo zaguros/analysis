@@ -651,7 +651,7 @@ def three_spin_encoding(carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2
 
     return rho_final, rho_final_id
 
-def check_entangled_state(alpha = 1./np.sqrt(2), beta = 1/np.sqrt(2), state ='+++'):
+def check_entangled_state(alpha = 1./np.sqrt(2), beta = 1/np.sqrt(2), state ='++-'):
     ''' Creates a simple density matrix for a state that we wish to encode in.
      alplha xxx+beta -x-x-x and permutations: +-+ etc'''
  # define density matrices
