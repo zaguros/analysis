@@ -68,9 +68,9 @@ class SequenceAnalysis(m2.M2Analysis):
         print self.reps
         print len(self.sweep_pts)
         self.clicks = np.squeeze(np.reshape(RO_clicks, (self.reps/len(self.sweep_pts), len(self.sweep_pts))))
-        self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps))
+        self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps)/len(self.sweep_pts))
         self.u_normalized_ssro = \
-            (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)))**0.5  #this is quite ugly, maybe replace?
+            (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)/len(self.sweep_pts)))**0.5  #this is quite ugly, maybe replace?
         
         return self.normalized_ssro
 

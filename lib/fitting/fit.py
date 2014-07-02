@@ -69,18 +69,20 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True)
     if not success or cov == None: # FIXME: find a better solution!!!
+        success = False
         print 'ERROR: Fit did not converge !'
-        return False
-
-    # package the result neatly
+        #return False
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
+
+    # package the result neatly
+    
     #print 'info',info
     #print 'p1',p1
     #print 'cov',cov
 
     #print 'dof',dof
-    if do_print:
+    if do_print and success:
         print_fit_result(result)
 
     if ret:
@@ -96,19 +98,22 @@ def fit1d(x, y, fitmethod, *arg, **kw):
 # put all the fit results into a dictionary, calculate some more practical 
 # numbers
 def result_dict(p1, cov, info, mesg, success, x, y, p0, fitfunc, fitfunc_str):
-    chisq = sum(info['fvec']*info['fvec'])
-    dof = len(y)-len(p0)
+    chisq = 1
+    dof = 1
     error_dict = {}
     error_list = []
     params_dict = {}
     
     # print cov, success, mesg, info
-    for i,pmin in enumerate(p1):
-        error_dict[p0[i].name] = sqrt(cov[i,i])*sqrt(chisq/dof)
-        #print chisq
-        #print dof   
-        error_list.append(sqrt(cov[i,i])*sqrt(chisq/dof))
-        params_dict[p0[i].name] = pmin
+    if success:
+        chisq = sum(info['fvec']*info['fvec'])
+        dof = len(y)-len(p0)
+        for i,pmin in enumerate(p1):
+            error_dict[p0[i].name] = sqrt(cov[i,i])*sqrt(chisq/dof)
+            #print chisq
+            #print dof   
+            error_list.append(sqrt(cov[i,i])*sqrt(chisq/dof))
+            params_dict[p0[i].name] = pmin
 
     result = {
         'success' : success,

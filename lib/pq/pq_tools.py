@@ -145,6 +145,18 @@ def filter_on_same_sync_number(source_sync_numbers, target_sync_numbers):
     """
     return np.in1d(target_sync_numbers, source_sync_numbers)
 
+def filter_marker(pqf, chan):
+    """
+    Note: at the moment this filter includes the marker events on which we filter.
+    """
+    is_mrkr = get_markers(pqf, chan)
+
+    sync_numbers = pqf['/PQ_sync_number-1'].value
+
+    marker_sync_numbers = sync_numbers[is_mrkr]
+    
+    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)    
+
 
 ##############################################################################
 ### File management
@@ -215,7 +227,7 @@ def get_photon_hist(pqf, **kw):
     force_eval = kw.pop('force_eval', True)
     start = kw.pop('start', 0) 
     length = kw.pop('length', 1e6) 
-    hist_binsize= kw.pop('hist_binsize', 1) 
+    hist_binsize= kw.pop('hist_binsize', 1e3) 
     
     if not force_eval and has_analysis_data(pqf, 'photon_histogram'):
         h, h_attrs = get_analysis_data(pqf, 'photon_histogram')
