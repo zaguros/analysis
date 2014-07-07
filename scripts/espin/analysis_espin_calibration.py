@@ -8,7 +8,7 @@ reload(ramsey)
 
 def analyse_Ramsey(folder='', T2 = 3e3, Ampl = -1./3, detuning = 3e-3,hf_N = 2.17e-3, *arg):
 
-	timestamp = None
+	timestamp = kw.pop(timestamp, None)
 
 	guess_tau = T2
 	guess_a = 0.5
@@ -34,7 +34,7 @@ def analyse_Ramsey(folder='', T2 = 3e3, Ampl = -1./3, detuning = 3e-3,hf_N = 2.1
 
 	ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
 
-	params_0, fitfunc_0, fitfunc_str_0 = ramsey.fit_ramsey_14N_fixed_13C_opt_LF(guess_tau, guess_A, guess_a, guess_det, guess_hf_N)
+	params_0, fitfunc_0, fitfunc_str_0 = ramsey.fit_ramsey_14N_fixed_13C_opt(guess_tau, guess_A, guess_a, guess_det, guess_hf_N)
 	x_0=np.linspace(0,a.sweep_pts[-1],1000)
 	ax.plot(x_0,fitfunc_0(x_0), 'r--', lw=1)
 	#fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)

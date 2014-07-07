@@ -15,25 +15,25 @@ from analysis.lib.tools import plot
 timestamp =None#'20140617_110540' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 3.730
+guess_x0 = 2.8280
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.2e-3
 guess_splitB = 30.
-guess_splitN = 2.19e-3
+guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
-guess_width = 0.2e-3
-#guess_sigma = 0.2e-3
+#guess_width = 0.2e-3
+guess_sigma = 0.2e-3
 guess_amplitude = 0.3
 
 # try fitting
-guess_offset = 1.0
-guess_A_min1 = 0.9
-guess_A_plus1 = 0
-guess_A_0 = 0.1
-guess_x0 = 3.730
-guess_sigma = 0.235e-3
+#guess_offset = 1.0
+guess_A_min1 = 0.3
+guess_A_plus1 = 0.3
+guess_A_0 = 0.3
+#guess_x0 = 3.730
+#guess_sigma = 0.435e-3
 guess_Nsplit = 2.196e-3
 
 def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.8 , **kw):
@@ -93,14 +93,9 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 - A_0()*np.exp(-((x-x0())/sigma())**2) \
     
     try:
-        fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
-            fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+        # fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
+        # fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
         
-        #yy = fitfunc (x)
-        #plt.plot (x, yy, 'k')
-        #plt.plot(x,y)
-        #plt.show()
-        '''
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
@@ -108,7 +103,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 # (2, guess_splitB),
                 (3, guess_splitN),
                 do_print=True, ret=True, fixed=[])
-        '''
+        
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
         Population_left=fit_result['params'][0]/Norm
@@ -121,7 +116,6 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         print '#############################'
     except Exception:
         guess_ctr = float(raw_input('Center guess?'))
-        '''
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
@@ -129,7 +123,6 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 # (2, guess_splitB),
                 (3, guess_splitN),
                 do_print=True, ret=True, fixed=[])
-        '''
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         
 
