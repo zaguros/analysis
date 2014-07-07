@@ -8,7 +8,7 @@ reload(ramsey)
 
 def analyse_Ramsey(folder='', T2 = 3e3, Ampl = -1./3, detuning = 3e-3,hf_N = 2.17e-3, *arg):
 
-	timestamp = None
+	timestamp = kw.pop(timestamp, None)
 
 	guess_tau = T2
 	guess_a = 0.5
