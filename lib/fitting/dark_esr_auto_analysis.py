@@ -43,7 +43,7 @@ do_save=False,
     ## THT: this makes the loop go haywire if there is no ESR dip (it always finds something = bad)
 
     j=0
-    min_dip_depth = 0.9
+    min_dip_depth = 0.85
     print 'j = '+str(j)
     print folder
     print y[21]

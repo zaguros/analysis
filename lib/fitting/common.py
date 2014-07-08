@@ -22,6 +22,26 @@ def fit_cos(g_f, g_a, g_A, g_phi, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_sum_2cos(g_avg,g_A,g_f_a,g_phi_a,g_B,g_f_b,g_phi_b, *arg):
+    fitfunc_str = '(A*cos(2pi * (fa*x + phi_a/360) )+ B*cos(2pi * (f_b*x + phi_b/360)))/2 + avg'
+
+    avg = fit.Parameter(g_avg, 'avg')
+
+    A = fit.Parameter(g_A, 'A')
+    f_a = fit.Parameter(g_f_a, 'f_a')
+    phi_a = fit.Parameter(g_phi_a, 'phi_a')
+
+    B = fit.Parameter(g_B, 'B')
+    f_b = fit.Parameter(g_f_b, 'f_b')
+    phi_b = fit.Parameter(g_phi_b, 'phi_b')
+
+    p0 = [avg,A,f_a,phi_a,B,f_b,phi_b] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+    def fitfunc(x):
+        return avg() + (A()*np.cos(2*np.pi*( f_a()*x + phi_a()/360.))+ B()*np.cos(2*np.pi*( f_b()*x + phi_b()/360.)))/2.0
+
+    return p0, fitfunc, fitfunc_str
+
 
 def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + phi/360) ) + a'
