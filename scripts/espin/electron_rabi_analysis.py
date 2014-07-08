@@ -14,7 +14,7 @@ reload(rabi)
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./2000.
+guess_frq = 1./100.
 guess_amp = 0.2
 guess_of = 0.1
 # guess_slope = 0.
@@ -67,7 +67,7 @@ def fitfunc(x):
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
-        plot_data=False)
+        plot_data=True)
 
 print "pi pulse = {:.2f} ".format(1/f()/2.) + a.sweep_name
 
