@@ -227,7 +227,7 @@ def get_photon_hist(pqf, **kw):
     force_eval = kw.pop('force_eval', True)
     start = kw.pop('start', 0) 
     length = kw.pop('length', 1e6) 
-    hist_binsize= kw.pop('hist_binsize', 1) 
+    hist_binsize= kw.pop('hist_binsize', 1e3) 
     
     if not force_eval and has_analysis_data(pqf, 'photon_histogram'):
         h, h_attrs = get_analysis_data(pqf, 'photon_histogram')
