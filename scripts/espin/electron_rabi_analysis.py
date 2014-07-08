@@ -14,7 +14,7 @@ reload(rabi)
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./2000.
+guess_frq = 1./1.
 guess_amp = 0.2
 guess_of = 0.1
 # guess_slope = 0.
@@ -54,6 +54,7 @@ else:
 
 x = a.sweep_pts
 y = a.p0
+
 
 # fit_result = fit.fit1d(x, y, rabi.fit_rabi_multiple_detunings,
 #         guess_amp, guess_yof, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],

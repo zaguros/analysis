@@ -169,7 +169,7 @@ class SequenceAnalysis(m2.M2Analysis):
         ax = self.default_ax(fig)
 
         # xaxis = 
-        im = ax.imshow(sweep_CR_hist.transpose(), 
+        im = ax.imshow(self.sweep_CR_hist.transpose(), 
             origin = 'lower',
             aspect = 'auto',
             interpolation='nearest',
