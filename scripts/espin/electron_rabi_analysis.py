@@ -14,7 +14,7 @@ reload(rabi)
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./100.
+guess_frq = 1./1.
 guess_amp = 0.2
 guess_of = 0.1
 # guess_slope = 0.
@@ -55,6 +55,7 @@ else:
 x = a.sweep_pts
 y = a.p0
 
+
 # fit_result = fit.fit1d(x, y, rabi.fit_rabi_multiple_detunings,
 #         guess_amp, guess_yof, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
 #         do_print=True, ret=True)
@@ -67,7 +68,7 @@ def fitfunc(x):
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
-        plot_data=True)
+        plot_data=False)
 
 print "pi pulse = {:.2f} ".format(1/f()/2.) + a.sweep_name
 
