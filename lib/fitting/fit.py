@@ -203,7 +203,7 @@ def print_fit_result(result):
     print str_fit_params(result)
     print str_correlation_matrix(result) 
 
-def write_to_file(fitresult,folder, filename='fit_results.txt'):
+def write_to_file(fitresult,folder, filename='fit_results.txt', fitname = 'Name not specified'):
     print 'Writting to File!'
     text_file = open( os.path.join(folder, filename), 'w')  
     print 'path joined'
@@ -211,12 +211,14 @@ def write_to_file(fitresult,folder, filename='fit_results.txt'):
         text_file.write("Could not fit data") 
     else: 
         text_file.write('''
+Fit results of: %s 
+
         Converged with chi squared: %s
         Degrees of freedom, dof %s 
         RMS of residuals (i.e. sqrt(chisq/dof)) %s 
         Reduced chisq (i.e. variance of residuals) %s
 
-                ''' %(fitresult['chisq'],fitresult['dof'],sqrt(fitresult['chisq']/fitresult['dof']),fitresult['chisq']/fitresult['dof']) )
+                ''' %(fitname,fitresult['chisq'],fitresult['dof'],sqrt(fitresult['chisq']/fitresult['dof']),fitresult['chisq']/fitresult['dof']) )
     
         text_file.write(str_fit_params(fitresult))
         text_file.write(str_correlation_matrix(fitresult) )
