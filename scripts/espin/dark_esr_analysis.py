@@ -15,7 +15,7 @@ from analysis.lib.tools import plot
 timestamp =None#'20140617_110540' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.8280
+guess_x0 = 2.807
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     else:
         folder = toolbox.latest_data('DarkESR')
     print folder
-    fit_result=analyze_dark_esr(folder,center_guess = False)
+    fit_result=analyze_dark_esr(folder,center_guess = True)
 
 
 
