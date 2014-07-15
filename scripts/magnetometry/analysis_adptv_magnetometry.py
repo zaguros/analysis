@@ -67,9 +67,11 @@ class PhaseDistributionArray ():
 		plt.legend()
 		plt.show()
 		
-	def plot_scaling (self):
+	def plot_scaling (self,M=None):
 		self.statistics()
-		self.T = self.t0*(2**(self.n+1)-1)
+		if M==None:
+			M=self.M
+		self.T = M*self.t0*(2**(self.n+1)-1)
 		plt.loglog (self.T, self.var*self.T, 'ob')
 		plt.xlabel ('total estimation time')
 		plt.ylabel ('variance*T ((B/g)**2*Hz)')
@@ -718,7 +720,7 @@ def generate_M_ary_table (N=7, M = 2):
 	return table[1:]
 
 
-f = toolbox.latest_data(contains='adptv_estimation')
+f = toolbox.latest_data(contains='220832')
 s = RamseySequence_Exp (folder = f)
 s.set_exp_pars (T2=4000e-9, fid0=0.85, fid1=0.015)
 #s.M=1
@@ -726,6 +728,6 @@ s.set_exp_pars (T2=4000e-9, fid0=0.85, fid1=0.015)
 s.load_data()
 p = s.plot_avg_phase_distribution()
 #s.print_phases()
-#p = s.phase_distribution_scaling (do_plot=True)
-#p.plot_scaling()
+p = s.phase_distribution_scaling (do_plot=True)
+p.plot_scaling()
 
