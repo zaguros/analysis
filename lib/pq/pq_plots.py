@@ -73,40 +73,40 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
         return fig, (ax0, ax1)
 
 
-def plot_tail(fp, **kw):
-    ret = kw.pop('ret', 'subplots')
-    
-    (h0, b0), (h1, b1) = events.get_photon_hist(fp, **kw)
-    
-    fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
-    _plot_photon_hist(ax0, h0, b0)
-    _plot_photon_hist(ax1, h1, b1)
-    
-    ax0.set_xlim(settings.CH0_START-5, settings.CH0_START + 100)
-    ax1.set_xlim(settings.CH1_START-5, settings.CH1_START + 100)
-    ax0.set_title('tail channel 0')
-    ax1.set_title('tail channel 1')
-    
-    fitres0, fitres1 = events.fit_tail(fp)
-    
-    ax0.plot(fitres0['fit_x'], fitres0['fit_y'], lw=2)
-    ax1.plot(fitres1['fit_x'], fitres1['fit_y'], lw=2)
-    
-    ax0.text(settings.CH0_START, 1, fitres0['info'], va='bottom', ha='left', color='k', size='x-small',
-             bbox = {'facecolor' : 'white', 'alpha' : 0.5})
-    ax1.text(settings.CH1_START, 1, fitres1['info'], va='bottom', ha='left', color='k', size='x-small',
-             bbox = {'facecolor' : 'white', 'alpha' : 0.5})
-    
-    starts = stats.get_sequence_starts(fp)
-    ax0.text(settings.CH0_START+5, max(h0)/5., 
-             'tailcounts / shot: {:.2e} ({} x {} starts)'.format(fitres0['tcpsh'], starts, settings.SEQREPS))
-    ax1.text(settings.CH1_START+5, max(h1)/5., 
-             'tailcounts / shot: {:.2e} ({} x {} starts)'.format(fitres1['tcpsh'], starts, settings.SEQREPS))
-
-    fig.suptitle(files.get_msmt_header(fp) + ' -- Tail')
-
-    if ret=='subplots':
-        return fig, (ax0, ax1)
+#def plot_tail(fp, **kw):
+#    ret = kw.pop('ret', 'subplots')
+#    
+#    (h0, b0), (h1, b1) = events.get_photon_hist(fp, **kw)
+#    
+#    fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
+#    _plot_photon_hist(ax0, h0, b0)
+#    _plot_photon_hist(ax1, h1, b1)
+#    
+#    ax0.set_xlim(settings.CH0_START-5, settings.CH0_START + 100)
+#    ax1.set_xlim(settings.CH1_START-5, settings.CH1_START + 100)
+#    ax0.set_title('tail channel 0')
+#    ax1.set_title('tail channel 1')
+#    
+#    fitres0, fitres1 = events.fit_tail(fp)
+#    
+#    ax0.plot(fitres0['fit_x'], fitres0['fit_y'], lw=2)
+#    ax1.plot(fitres1['fit_x'], fitres1['fit_y'], lw=2)
+#    
+#    ax0.text(settings.CH0_START, 1, fitres0['info'], va='bottom', ha='left', color='k', size='x-small',
+#             bbox = {'facecolor' : 'white', 'alpha' : 0.5})
+#    ax1.text(settings.CH1_START, 1, fitres1['info'], va='bottom', ha='left', color='k', size='x-small',
+#             bbox = {'facecolor' : 'white', 'alpha' : 0.5})
+#    
+#    starts = stats.get_sequence_starts(fp)
+#    ax0.text(settings.CH0_START+5, max(h0)/5., 
+#             'tailcounts / shot: {:.2e} ({} x {} starts)'.format(fitres0['tcpsh'], starts, settings.SEQREPS))
+#    ax1.text(settings.CH1_START+5, max(h1)/5., 
+#             'tailcounts / shot: {:.2e} ({} x {} starts)'.format(fitres1['tcpsh'], starts, settings.SEQREPS))
+#
+#    fig.suptitle(files.get_msmt_header(fp) + ' -- Tail')
+#
+#    if ret=='subplots':
+#        return fig, (ax0, ax1)
 
 def plot_PLU_filter(pqf,chan = 2):
 
