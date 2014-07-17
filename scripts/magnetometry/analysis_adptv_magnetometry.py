@@ -67,24 +67,54 @@ class PhaseDistributionArray ():
 		plt.legend()
 		plt.show()
 		
-	def plot_scaling (self,M=None):
+	def plot_scaling (self,M=None,save_folder=None):
 		self.statistics()
 		if M==None:
 			M=self.M
 		self.T = M*self.t0*(2**(self.n+1)-1)
-		plt.loglog (self.T, self.var*self.T, 'ob')
-		plt.xlabel ('total estimation time')
-		plt.ylabel ('variance*T ((B/g)**2*Hz)')
-		plt.show()
 		
-		plt.loglog (self.T, self.holevo_var*self.T, 'ob')
-		plt.xlabel ('total estimation time')
-		plt.ylabel ('holevo_variance*T ((B/g [rad])**2*Hz)')
-		plt.show()
-		
+		fig=plt.figure()
+		fig.clf()
+		ax = fig.add_subplot(111)
+		ax.loglog (self.T, self.var*self.T, 'ob')
+		ax.set_xlabel ('T total phase estimation time [s]', fontsize=14)
+		ax.set_ylabel ('Variance * T [(B/g)**2*Hz]',fontsize = 14)
+		ax.tick_params(axis='both', which='both', labelsize=14)
+
+		#plt.show()
+		if save_folder!= None:
+			plt.savefig(os.path.join(save_folder,'variance_scaling.png'))
+
+		'''
+		# I do not understand Holevo var yet, printed Hvar (supposedly converted to MHz) is always larger than normal var.
+		fig=plt.figure()
+		fig.clf()
+		ax = fig.add_subplot(111)
+		ax.loglog (self.T, self.holevo_var*self.T, 'ob')
+		ax.set_xlabel ('total phase estimation time')
+		ax.set_ylabel ('holevo_variance*T ((B/g [rad])**2*Hz)')
+		'''
+
+		# find sensitivity in nT/sqrt(Hz)  (MHz->G g_factor = 2.8e6, G->T factor = 1e4, T->nT factor =1e9)
+		self.sens=1e9*sqrt(self.var*self.T)/2.8e6/1e4
+		fig=plt.figure()
+		fig.clf()
+		ax = fig.add_subplot(111)
+		ax.loglog (self.T, self.sens, 'ob')
+		#ax.xaxis.set_major_locator(MaxNLocator(6))
+		#ax.yaxis.set_major_locator(MaxNLocator(4))
+		ax.set_xlabel ('T total phase estimation time [s]',fontsize=14)
+		ax.set_ylabel ('Sensitivity [nT/sqrt(Hz)]',fontsize=14)
+		ax.tick_params(axis='both', which='both', labelsize=14)
+
+		if save_folder!= None:
+			plt.savefig(os.path.join(save_folder,'sensitivity_scaling.png'))
+		pdata_path=os.path.join(save_folder,'processed_data')
+		if not os.path.exists(pdata_path): os.makedirs(pdata_path)
+		self.save(os.path.join(pdata_path,'scaling_data'))
 	def save(self, name):
 		np.savez (name, n_points= self.n_points, B_max = self.B_max, N_max = self.N_max, data = self.data,
-				beta = self.beta, tau0 = self.t0, n = self.n, mean = self.mean, var = self.var, holevo_var = self.holevo_var)
+				beta = self.beta, tau0 = self.t0, n = self.n, mean = self.mean, var = self.var, holevo_var = self.holevo_var,sens=self.sens)
 
 	
 		
@@ -252,10 +282,19 @@ class RamseySequence():
 				prob_avg = prob
 			else:
 				prob_avg = prob_avg + prob
-				
-		plt.plot (beta*1e-6, prob_avg)
-		plt.xlabel ('magnetic field [MHz]')
-		plt.show()	
+		prob_avg = prob_avg/np.sum(np.abs(prob_avg))	
+		fig = plt.figure()
+		fig.clf()
+		ax = fig.add_subplot(111)
+		ax.plot (beta*1e-6, prob_avg,color='#262626')
+		ax.fill_between(beta*1e-6,prob_avg,color='grey',alpha=0.5)
+		ax.set_xlabel ('Magnetic field [MHz]',fontsize=14)
+		ax.set_ylabel('Probability',fontsize=14)
+		ax.tick_params(axis='both', which='both', labelsize=14)
+		ax.yaxis.set_major_locator(MaxNLocator(4))
+
+		fig.savefig(os.path.join(self.folder,'P_distr_final.png'))
+			
 		return prob_avg
 		
 
@@ -266,10 +305,14 @@ class RamseySequence():
 		
 		if (max_rep == None):
 			max_rep = self.reps
-		
+		Pdistr_dict={}
 		phase_distr = PhaseDistributionArray (N_max = self.N, n_points = self.n_points, B_max = self.B_max, t0=self.t0)
-
-		for n in np.arange(self.N-1)+2:
+		if do_plot:
+			fig = plt.figure()
+			fig.clf()
+			ax = fig.add_subplot(111)
+		offset=0
+		for n in np.arange(self.N)+1:
 			print '############', n
 			for j in np.arange(max_rep):
 				beta, prob = self.analysis_M (corrected = False, N_max = n, repetition = j)
@@ -285,13 +328,30 @@ class RamseySequence():
 			print 'std: ', (variance**0.5)*1e-6, 'MHz'
 			phi = 2*np.pi*beta*self.t0
 			vH = (np.abs(np.sum(p_avg*np.exp(1j*phi))))**(-2)-1
-			print np.abs(np.sum(p_avg*np.exp(1j*phi)))
-			print 'holevo std: ', (vH/(2*np.pi*self.t0**2))**0.5
+			#print np.abs(np.sum(p_avg*np.exp(1j*phi)))
+			#print 'holevo std: ', (vH/(2*np.pi*self.t0**2))**0.5
+			#print 'var:  ', variance
 			if do_plot:
-				plt.plot (beta*1e-6, p_avg)
-				plt.xlabel ('magnetic field [MHz]')
-				plt.show()
-		
+				ax.plot (beta*1e-6, p_avg+offset,color='#262626')
+				ax.fill_between(beta*1e-6,p_avg+offset,y2=offset,color='grey',alpha=0.5*float(n**4)/(self.N**4))
+			offset=offset+max(p_avg)
+			Pdistr_dict['N%d'% n]={'beta':beta*1e-6,'pdistr':p_avg}	
+		#ax.xaxis.set_major_locator(MaxNLocator(6))
+		ax.yaxis.set_major_locator(MaxNLocator(4))
+		ax.set_xlabel ('Magnetic field [MHz]',fontsize=14)
+		ax.set_ylabel ('Probability',fontsize=14)
+		ax.tick_params(axis='both', which='both', labelsize=14)
+
+		ax.set_xlim([(mean*1e-6)-20,(mean*1e-6)+20])
+		ax.set_ylim([-.1*ax.get_ylim()[1],ax.get_ylim()[1]])
+		ax.text((mean*1e-6)-18,-.1*ax.get_ylim()[1]/2.,'N=1',color='#262626',fontsize=14)
+		ax.text((mean*1e-6)-18,(offset-max(p_avg))*1.05,'N=%d'%n,color='#262626',fontsize=14)
+		fig.savefig(os.path.join(self.folder,'P_distr_scaling.png'))
+		fig.show()
+		pdata_path=os.path.join(self.folder,'processed_data')
+		if not os.path.exists(pdata_path): os.makedirs(pdata_path)
+		np.savez(os.path.join(pdata_path,'P_distributions'),data=Pdistr_dict)
+
 		return phase_distr
 		
 	def hist_phases (self):
@@ -518,10 +578,10 @@ class RamseySequence_Exp (RamseySequence):
 		b = np.ones(self.reps)
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
-		print 'Some examples: '
-		print self.msmnt_phases[0,:]*180/np.pi
-		print self.msmnt_phases[1,:]*180/np.pi
-		print self.msmnt_phases[10,:]*180/np.pi
+		#print 'Some examples: '
+		#print self.msmnt_phases[0,:]*180/np.pi
+		#print self.msmnt_phases[1,:]*180/np.pi
+		#print self.msmnt_phases[10,:]*180/np.pi
 
 		#print "Phases detuning", self.phases_detuning
 					
@@ -552,7 +612,7 @@ class RamseySequence_Exp (RamseySequence):
 			plt.plot (p0.beta*1e-6, p0.data()/max(p0.data()), linewidth = 1, label = str(N), color = ccc[ind])
 			ind = ind+1
 
-		plt.xlabel ('magnetic field [MHz]')
+		plt.xlabel ('Magnetic field [MHz]')
 		#plt.xlim([-3, 5])
 		plt.legend()
 		plt.show()
@@ -562,7 +622,7 @@ class RamseySequence_Exp (RamseySequence):
 		plt.show()
 
 		plt.loglog (total_time*1e6, self.variance*total_time, 'ob')
-		plt.xlabel ('total msmnt time [us]')
+		plt.xlabel ('Total msmnt time [us]')
 		plt.show()
 
 
@@ -719,15 +779,15 @@ def generate_M_ary_table (N=7, M = 2):
 
 	return table[1:]
 
-
-f = toolbox.latest_data(contains='220832')
+'''
+f = toolbox.latest_data(contains='203924')
 s = RamseySequence_Exp (folder = f)
 s.set_exp_pars (T2=4000e-9, fid0=0.85, fid1=0.015)
 #s.M=1
 #s.set_ideal()
 s.load_data()
-p = s.plot_avg_phase_distribution()
+#p = s.plot_avg_phase_distribution()
 #s.print_phases()
-p = s.phase_distribution_scaling (do_plot=True)
-p.plot_scaling()
-
+p = s.phase_distribution_scaling (max_rep=25,do_plot=True)
+p.plot_scaling(M=7,save_folder=s.folder)
+'''
