@@ -13,21 +13,21 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 N_HF_splt = 2.17e-3
-detuning = 3e-3
+detuning = 3.5e-3
 
-timestamp = None#20130530183305'#None #
-guess_f1 = 0.8e-3#detuning - N_HF_splt
+timestamp = None #'20140715095713' #None #
+guess_f1 = detuning - N_HF_splt
 guess_A1 = -0.15
 guess_phi1 = 0.
-guess_f2 = 3e-3 #detuning
+guess_f2 = detuning
 guess_A2 = -0.15
 guess_phi2 = 0.
-guess_f3 = 5.2e-3 #detuning + N_HF_splt
+guess_f3 = detuning + N_HF_splt
 guess_A3 = -0.15
 guess_phi3 = 0.
 
 
-guess_tau = 6000
+guess_tau = 1000
 guess_a = 0.5
 
 
@@ -50,7 +50,7 @@ ax.plot(fit_xvals_0,fitfunc_0(fit_xvals_0), 'r--', lw=1)
 
 
 fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_gaussian_decay,
-        guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1), (guess_f2,guess_A2, guess_phi2), (guess_f3,guess_A3, guess_phi3), fixed=[1,4,7,10],
+        guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1), (guess_f2,guess_A2, guess_phi2), (guess_f3,guess_A3, guess_phi3), fixed=[1], #,4,7,10],
         do_print=True, ret=True)
 #fit_result = False
 if fit_result != False :
