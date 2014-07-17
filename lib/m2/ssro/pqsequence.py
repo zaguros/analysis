@@ -46,6 +46,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
     def plot_histogram(self,channel,start=None,length=None,fltr=None,hist_binsize=1,save=True, **kw):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
+        log_plot=kw.get('log_plot',True)
         if ax == None:
             fig = self.default_fig(figsize=(6,4))
             ax = self.default_ax(fig)
@@ -71,8 +72,10 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         print 'Total clicks:', np.sum(y)
         y=y/float(self.reps)
         
-        
-        ax.semilogy(x,y)
+        if log_plot:
+            ax.semilogy(x,y)
+        else:
+            ax.plot(x,y)
         #ax.colorbar()
         ax.set_xlabel('Time [bins]')
         ax.set_ylabel('Counts per rep per bin')
