@@ -27,3 +27,7 @@ hyperfine_params['C13'] = {'par' :-32.0e3, 'perp':20e3}
 # hyperfine_params['C11'] = {'par' :10.0e3, 'perp':5e3}
 # hyperfine_params['C12'] = {'par' :30.0e3, 'perp':35e3}
 # hyperfine_params['C13'] = {'par' :32.0e3, 'perp':20e3}
+
+SamSIL5_sim_params = {}
+SamSIL5_sim_params['C1']  = {'par' : 50.0e3, 'perp':500.0e3}
+SamSIL5_sim_params['C2']  = {'par' : 9.0e6, 'perp':5.0e6}
