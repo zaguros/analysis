@@ -6,9 +6,9 @@ from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 reload(common)
+reload(plot)
 
-
-def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'], 
+def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwindata'], 
             frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], 
             fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
@@ -29,7 +29,7 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC()
         ax = a.plot_results_vs_sweepparam(ret='ax')
-        ax.set_ylim(-0.5,1.05)
+        ax.set_ylim(-0.05,1.05)
 
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
@@ -49,15 +49,15 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],
             ### Also plot the individual curves
             
             p0_0, fitfunc_0, fitfunc_str_0 = common.fit_double_decaying_cos(fit_result['params'][0], 0, phase[0], fit_result['params'][2], fit_result['params'][3], fit_result['params'][4], phase[1], fit_result['params'][5])
-            ax.plot(np.linspace(0,x[-1],201), fitfunc_0(np.linspace(0,x[-1],201)), 'b-', lw=1)
+            ax.plot(np.linspace(0,x[-1],201), fitfunc_0(np.linspace(0,x[-1],201)), 'r-', lw=1,alpha=0.5)
             p0_1, fitfunc_1, fitfunc_str_1 = common.fit_double_decaying_cos(fit_result['params'][0], fit_result['params'][1], phase[0], fit_result['params'][2], fit_result['params'][3],0, phase[1], fit_result['params'][5])
-            ax.plot(np.linspace(0,x[-1],201), fitfunc_1(np.linspace(0,x[-1],201)), 'm-', lw=1)
+            ax.plot(np.linspace(0,x[-1],201), fitfunc_1(np.linspace(0,x[-1],201)), 'm-', lw=1,alpha=0.5)
 
 
 
         ## plot fit
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False,print_info = False)
 
         fit_results.append(fit_result)
         print folder
@@ -74,3 +74,15 @@ def Carbon_control_sweep_N(timestamp=None, measurement_name = ['adwindata'],
         # print 'Pi pulse: %s pulses' %N_pi
         # print 'Pi2 pulse: %s pulses' %N_pi2
     return fit_results
+
+# Carbon_control_sweep_N(timestamp='20140429135247', measurement_name = ['adwindata'], 
+#             frequency = [0.015], amplitude = [0.5],  decay_constant = [200],phase =[0], 
+#             fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
+
+# Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwindata'], 
+#             frequency = [0.047,0.009], amplitude = [0.08,0.45],  decay_constant = [200,800],phase =[0,0], 
+#             fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
+
+Carbon_control_sweep_N(timestamp='20140507103819', measurement_name = ['adwindata'], 
+            frequency = [0.047,0.009], amplitude = [0.08,0.45],  decay_constant = [200,800],phase =[0,0], 
+            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)

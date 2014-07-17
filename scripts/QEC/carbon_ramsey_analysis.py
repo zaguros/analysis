@@ -9,19 +9,21 @@ reload(common)
 
 
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
-        frequency = 1, offset = 0.5, amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2, 
-        plot_fit = False, do_print = False, show_guess = True):
+        frequency = 1, offset = 0.5, x0 = 0,  amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2, 
+        plot_fit = False, do_print = False, fixed = [2], show_guess = True):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
+    List of parameters (order important for 'fixed') 
+    offset, amplitude, decay_constant,exponent,frequency ,phase 
     '''
 
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('CarbonRamsey')
+        folder = toolbox.latest_data('Carbon')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -43,21 +45,22 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         y = a.p0.reshape(-1)[:]
 
         ax.plot(x,y)
-        p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, decay_constant,exponent,frequency ,phase )
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
+                x0, decay_constant,exponent,frequency ,phase )
 
 
 
         #plot the initial guess
         if show_guess:
-            ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[2])
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
         print 'fitfunction: '+fitfunc_str
 
         ## plot data and fit as function of total time
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
 
         fit_results.append(fit_result)
 

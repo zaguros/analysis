@@ -46,13 +46,23 @@ def fpga_calibration_analysis (folder):
     ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
     print ssro_calib_folder
     a = sequence.SequenceAnalysis(folder)
-    a.get_magnetometry_phase_calibration(name='adwindata')
+    a.get_sweep_pts()
+    t=a.get_magnetometry_data(name='adwindata')
+    print 'a clicks', np.sum(a.clicks, axis=0)
     a.get_electron_ROC()
     y = a.p0
     uy = a.u_p0
 
     a.get_sweep_pts()
     x = a.sweep_pts
+    print 'x ',x
+    print 'y', y
+    print 'a',a
+    #print y
+    #print x
+    #print a.reps
+    #print len(a.sweep_pts)
+    #print sum(y)
     nn = a.sweep_name
     ax = a.plot_result_vs_sweepparam(ret='ax')
 
@@ -60,7 +70,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False
 
     if do_fit:
-        guess_frq = 1./30
+        guess_frq = 1./3500
         guess_amp = 0.3
         guess_of = 1
         # guess_slope = 0.
@@ -124,7 +134,6 @@ def fpga_calibration_analysis (folder):
 
         # ax.set_title(a.timestamp+'\n'+a.measurementstring)
         plt.savefig(os.path.join(folder, 'fpga_pulse_analysis_fit.png'))
-
 
 
     '''
@@ -195,7 +204,7 @@ def adaptive_1_msmnt (N = 5, beta0 = 0., theta = 0., debug = False, adaptive = F
 
 
 if __name__ == '__main__':
-    #timestamp = '145433'
+    #timestamp = '124812'
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
         if folder==None:

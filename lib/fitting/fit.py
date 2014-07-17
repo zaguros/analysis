@@ -1,4 +1,5 @@
 import numpy as np
+import os 
 from numpy import *
 from scipy import optimize
 # import pylab
@@ -29,7 +30,7 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     example: from analysis.lib.fitting import fit,common
              x=np.array([0,1,2,3,4])
              y=np.array([2,12,22,32,42])
-             fit_result=fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
+             fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
                     fixed=[0],do_print=True)
              
     
@@ -69,18 +70,20 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True)
     if not success or cov == None: # FIXME: find a better solution!!!
+        success = False
         print 'ERROR: Fit did not converge !'
-        return False
-
-    # package the result neatly
+        #return False
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
+
+    # package the result neatly
+    
     #print 'info',info
     #print 'p1',p1
     #print 'cov',cov
 
     #print 'dof',dof
-    if do_print:
+    if do_print and success:
         print_fit_result(result)
 
     if ret:
@@ -96,19 +99,22 @@ def fit1d(x, y, fitmethod, *arg, **kw):
 # put all the fit results into a dictionary, calculate some more practical 
 # numbers
 def result_dict(p1, cov, info, mesg, success, x, y, p0, fitfunc, fitfunc_str):
-    chisq = sum(info['fvec']*info['fvec'])
-    dof = len(y)-len(p0)
+    chisq = 1
+    dof = 1
     error_dict = {}
     error_list = []
     params_dict = {}
     
     # print cov, success, mesg, info
-    for i,pmin in enumerate(p1):
-        error_dict[p0[i].name] = sqrt(cov[i,i])*sqrt(chisq/dof)
-        #print chisq
-        #print dof   
-        error_list.append(sqrt(cov[i,i])*sqrt(chisq/dof))
-        params_dict[p0[i].name] = pmin
+    if success:
+        chisq = sum(info['fvec']*info['fvec'])
+        dof = len(y)-len(p0)
+        for i,pmin in enumerate(p1):
+            error_dict[p0[i].name] = sqrt(cov[i,i])*sqrt(chisq/dof)
+            #print chisq
+            #print dof   
+            error_list.append(sqrt(cov[i,i])*sqrt(chisq/dof))
+            params_dict[p0[i].name] = pmin
 
     result = {
         'success' : success,
@@ -196,4 +202,28 @@ def print_fit_result(result):
 
     print str_fit_params(result)
     print str_correlation_matrix(result) 
+
+def write_to_file(fitresult,folder, filename='fit_results.txt', fitname = 'Name not specified'):
+    print 'Writting to File!'
+    text_file = open( os.path.join(folder, filename), 'w')  
+    print 'path joined'
+    if fitresult == False:
+        text_file.write("Could not fit data") 
+    else: 
+        text_file.write('''
+Fit results of: %s 
+
+        Converged with chi squared: %s
+        Degrees of freedom, dof %s 
+        RMS of residuals (i.e. sqrt(chisq/dof)) %s 
+        Reduced chisq (i.e. variance of residuals) %s
+
+                ''' %(fitname,fitresult['chisq'],fitresult['dof'],sqrt(fitresult['chisq']/fitresult['dof']),fitresult['chisq']/fitresult['dof']) )
+    
+        text_file.write(str_fit_params(fitresult))
+        text_file.write(str_correlation_matrix(fitresult) )
+    print 'Writing fit results to file (%s) at (%s) succesfull' %(filename,folder) 
+
+
+    text_file.close() 
     
