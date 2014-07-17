@@ -12,10 +12,10 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp =None#'20140617_110540' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp =None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.8280
+guess_x0 = 2.807
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
@@ -36,7 +36,7 @@ guess_A_0 = 0.3
 #guess_sigma = 0.435e-3
 guess_Nsplit = 2.196e-3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.8 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.85 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     else:
         folder = toolbox.latest_data('DarkESR')
     print folder
-    fit_result=analyze_dark_esr(folder,center_guess = False)
+    fit_result=analyze_dark_esr(folder,center_guess = True)
 
 
 
