@@ -16,7 +16,7 @@ timestamp = None
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('')
+    folder = toolbox.latest_data('Pi')
 
 
 a = sequence.SequenceAnalysis(folder)
