@@ -39,7 +39,7 @@ ax1.errorbar(x2, y2, yerr=u_y2, fmt='o')
 ax1.set_xlabel(n)
 ax1.set_title('Difference btw. Pi/2-Pi and Pi/2')
 ax1.set_ylabel('Difference')
-
+ax2.set_title(a.timestamp)
 m = fit.Parameter((y[-1]-y[0])/(x[-1]-x[0]), 'm')
 x0 = fit.Parameter(x2.mean(), 'x0')
 p0 = [m, x0]
@@ -52,9 +52,9 @@ fit_result = fit.fit1d(x2, y2, None, p0=p0, fitfunc=ff,
     fitfunc_str=fitfunc_str, do_print=True, ret=True)    
     
 ax2.errorbar(x2, y[0::2], yerr=u_y[0::2], fmt='o',
-             label='Pi/2')
+             label='Pi/2 - Pi - Pi/4') #XXXXXXXXXXXX
 ax2.errorbar(x2, y[1::2], yerr=u_y[1::2], fmt='o',
-             label='Pi/2 - Pi')
+             label='Pi/4')
 ax2.legend(frameon=True, framealpha=0.5)
 ax2.set_ylabel('P(0)')
 ax2.set_xlabel(n)
@@ -64,7 +64,7 @@ if fit_result != False  :
         plot_data=False, print_info=True)
     if  a.sweep_pts[0] < x0() < a.sweep_pts[-1] :
         ax2.axvline(x0(), c='k', lw=2)
-        ax2.axhline(0.5, c='k', lw=2)
+        ax2.axhline((0.5), c='k', lw=2)
         ax2.set_title('X marks the spot')
 
 fig.savefig(os.path.join(folder, 'pi2_calibration.png'))

@@ -89,15 +89,14 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
     a = fit.Parameter(a_guess, 'a')
     fitfunc_str = '(1-of) + a (x-x0)**2'
 
-    info_xy=kw.pop('info_xy', (0,0))
-    
+   
     def fitfunc_parabolic(x):
         return (1.-of()) + a() * (x-x0())**2
     
     fit_result = fit.fit1d(x,y, None, p0=[of, a, x0], fitfunc=fitfunc_parabolic,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
-        plot_data=False, info_xy=info_xy)
+        plot_data=False, **kw)
         
     return fit_result
 
