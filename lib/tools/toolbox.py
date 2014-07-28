@@ -98,7 +98,6 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             except:
                 continue
             timestamp = dstamp+tstamp
-
             if contains in d:              
                 
                 if older_than != None:
