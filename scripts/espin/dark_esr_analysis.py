@@ -122,7 +122,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 # (2, guess_splitC),
                 # (2, guess_splitB),
                 (3, guess_splitN),
-                do_print=True, ret=True, fixed=[])
+                do_print=True, ret=True, fixed=[4])
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         
 
