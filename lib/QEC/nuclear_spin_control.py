@@ -218,8 +218,6 @@ def phase_gate(carbon_nr, phase, B_field=304.22,total_time = 0,return_gate = Fal
         return tau
 
 
-def xn_gate(carbon_nr, phase):
-    pass
 
 def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = [], return_for_one = False, phase = None):
     '''calculates the evolution matrices a multiqubit space,
@@ -235,30 +233,32 @@ def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = 
     U0_id={}
     U1_id={}
 
+    gate_0 = gate_0_id = rho0
+    gate_1 = gate_1_id = rho1
+
     for ii in range(len(carbon_nrs)):
         U0['C_'+str(ii)], U1['C_'+str(ii)], U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] = c13_gate(carbon_nrs[ii], number_of_pulses, tau, B_field, return_indiv = True, return_id = True,  phase = phase)
-        if ii not in gate_on_C:
-            U0_id['C_'+str(ii)] = Id
-            U1_id['C_'+str(ii)] = Id
-        # print U0_id['C_'+str(ii)][1,0]
+        
         if U0_id['C_'+str(ii)][1,0]==1j/np.sqrt(2):
             print 'Qubit '+str(ii)+' has a -/+ Ren gate, switched in simulation'
             U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] =U1_id['C_'+str(ii)], U0_id['C_'+str(ii)]
-            U0['C_'+str(ii)], U1['C_'+str(ii)] =U1['C_'+str(ii)], U0['C_'+str(ii)]
-            # print 'U0'
-            # print U0_id
-            # print 'U1'
-            # print U1_id
+            U0['C_'+str(ii)], U1['C_'+str(ii)] =U1['C_'+str(ii)], U0['C_'+str(ii)] 
 
-
-    if return_for_one == True:
-        for ii in range(len(carbon_nrs)):
-            if ii not in gate_on_C:
+        if ii not in gate_on_C:
+            U0_id['C_'+str(ii)] = Id
+            U1_id['C_'+str(ii)] = Id
+            if return_for_one == True:
                 U0['C_'+str(ii)] = Id
                 U1['C_'+str(ii)] = Id
+   
+        gate_0 = qutip.tensor(gate_0,U0['C_'+str(ii)])
+        gate_1 = qutip.tensor(gate_1,U1['C_'+str(ii)])
+        gate_0_id = qutip.tensor(gate_0_id,U0_id['C_'+str(ii)])
+        gate_1_id = qutip.tensor(gate_1_id,U1_id['C_'+str(ii)])
 
-    gate = qutip.tensor(rho0,U0['C_0'],U0['C_1'],U0['C_2'])+qutip.tensor(rho1,U1['C_0'],U1['C_1'],U1['C_2'])
-    gate_id = qutip.tensor(rho0,U0_id['C_0'],U0_id['C_1'],U0_id['C_2'])+qutip.tensor(rho1,U1_id['C_0'],U1_id['C_1'],U1_id['C_2'])
+
+    gate = gate_0+gate_1
+    gate_id = gate_0_id+gate_1_id
 
     return gate, gate_id
 
@@ -358,7 +358,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
 
     if use_el == False:       
         for oper in final_oper_list:
-            print qutip.expect(oper,rho)
+            # print qutip.expect(oper,rho)
             pauli_set.append(qutip.expect(oper,rho))
             ii_list.append(ii)
             ii = ii+1
@@ -671,7 +671,7 @@ def nuclear_init_single(carbon_nr,do_plot = False):
         fig = plt.figure()
         ax = plt.subplot(111)
 
-        for rho_n in [rho_nucl,rho_nucl_id]:
+        for rho_n in [rho_nucl_id]:
             pauli_set, ii_list, x_ticks_list = single_qubit_pauli(rho_n)
             ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5)
 
@@ -1085,12 +1085,10 @@ def error_curves():
         ax.set_ylabel('Electron probability to measure |0>')
         ax.set_title('state = (' + str(alpha_list[mm]) +' |xxx> + ' + str(beta_list[mm]) + ' |-x-x-x>)')
 
-def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),points = 9,do_plot=True,reset = True):
+def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),carbon_nrs = [4,4,4],points = 5,do_plot=True,reset = True):
 
     error_angle_list = np.linspace(0,np.pi,points)
-
-    carbon_nrs = [1,1,1]
-    
+  
     rho_enc_start, rho_enc_start_id = three_spin_encoding(carbon_nrs=carbon_nrs,alpha=alpha,beta=beta,do_plot=False)
     rho_enc = qutip.tensor(rho0,rho_enc_start)
     rho_enc_id = qutip.tensor(rho0,rho_enc_start_id)
@@ -1343,8 +1341,8 @@ def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),points = 9,do_plot=
         # seq_10 = RZ_C3
         # seq_11 = Ren_C1*Ren_C1
         if reset == True:
-            seq_10_id = qutip.tensor(Id,Id,Id,Id)
-            seq_11_id = Ren_C1_id*Ren_C1_id
+            seq_11_id = qutip.tensor(Id,Id,Id,Id)
+            seq_10_id = Ren_C1_id*Ren_C1_id
             seq_01_id = Ren_C3_id*Ren_C3_id
             seq_00_id = qutip.tensor(Id,Id,Id,Id)
         else:
