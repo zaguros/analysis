@@ -163,8 +163,8 @@ def c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22, return_indiv = Fa
 def Ren_gate(carbon_nr, B_field=304.22, phase=0):
     '''create a Ren gate for given carbon number'''
 
-    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N']
-    tau = mp['C' + str(carbon_nr) + '_Ren_tau']
+    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    tau = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
     print number_of_pulses
     print tau
     Ren = c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22)
@@ -237,13 +237,13 @@ def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = 
     gate_1 = gate_1_id = rho1
 
     for ii in range(len(carbon_nrs)):
-        
+
         U0['C_'+str(ii)], U1['C_'+str(ii)], U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] = c13_gate(carbon_nrs[ii], number_of_pulses, tau, B_field, return_indiv = True, return_id = True,  phase = phase)
-        
+
         # if U0_id['C_'+str(ii)][0,0]== -1j*U0_id['C_'+str(ii)][0,1]:
         #     print 'Qubit '+str(ii)+' has a -/+ Ren gate, switched in simulation'
         #     U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] =U1_id['C_'+str(ii)], U0_id['C_'+str(ii)]
-        #     U0['C_'+str(ii)], U1['C_'+str(ii)] =U1['C_'+str(ii)], U0['C_'+str(ii)] 
+        #     U0['C_'+str(ii)], U1['C_'+str(ii)] =U1['C_'+str(ii)], U0['C_'+str(ii)]
 
         if ii not in gate_on_C:
             U0_id['C_'+str(ii)] = Id
@@ -251,7 +251,7 @@ def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = 
             if return_for_one == True:
                 U0['C_'+str(ii)] = Id
                 U1['C_'+str(ii)] = Id
-   
+
         gate_0 = qutip.tensor(gate_0,U0['C_'+str(ii)])
         gate_1 = qutip.tensor(gate_1,U1['C_'+str(ii)])
         gate_0_id = qutip.tensor(gate_0_id,U0_id['C_'+str(ii)])
@@ -681,7 +681,7 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
 
 def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
     '''function that returns a density matrix for an initialized C13 spin note: Z-gate not yet calculated in right way
-    for method = SWAP    seq = y - Ren - x - Rz - Ren  
+    for method = SWAP    seq = y - Ren - x - Rz - Ren
     for  method = MBI    seq = y - Ren - x          nuclear spin initialized in |y> if electron was in |0>'''
 
     rho = qutip.tensor(rho0,rhom)
@@ -728,7 +728,7 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
 
         rho_nucl = 1/norm**2*rho_final.ptrace([1])
         rho_nucl_id = 1/(norm_id**2)*rho_final_id.ptrace([1])
-     
+
 
     if do_plot == True:
         fig = plt.figure()
@@ -1152,7 +1152,7 @@ def error_curves():
 def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),carbon_nrs = [4,4,4],points = 5,do_plot=True,reset = True):
 
     error_angle_list = np.linspace(0,np.pi,points)
-  
+
     rho_enc_start, rho_enc_start_id = three_spin_encoding(carbon_nrs=carbon_nrs,alpha=alpha,beta=beta,do_plot=False)
     rho_enc = qutip.tensor(rho0,rho_enc_start)
     rho_enc_id = qutip.tensor(rho0,rho_enc_start_id)
@@ -1654,14 +1654,14 @@ def test_pauli_sets():
         multi_qubit_pauli(rho_id,do_plot=True,use_el=True)
 
 def two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ' ,combination = '-X-X'):
-    ''' this function performs a parity meassurement between two C13 spins on one of the 4 combinations ( XX, X-X, -XX,-X-X) 
+    ''' this function performs a parity meassurement between two C13 spins on one of the 4 combinations ( XX, X-X, -XX,-X-X)
     on a certain initial product state (either 'ZZ' or 'XX')
     '''
     if initial_states == 'ZZ':
         method = 'SWAP'
     elif initial_states == 'XX':
         method = 'MBI'
-    
+
     # initialize Carbon spins
     rho_C1, rho_C1_id = nuclear_init_single(carbon_nrs[0],method = method)
     rho_C2, rho_C2_id = nuclear_init_single(carbon_nrs[1],method = method)
