@@ -395,11 +395,11 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
     if use_el == True:
         rho_in = qutip.tensor(rho0,rho)
 
-        xel = qutip.tensor(x,Id,Id,Id)
-        mxel = qutip.tensor(mx,Id,Id,Id)
-        Xel = qutip.tensor(X,Id,Id,Id)
-        yel = qutip.tensor(y,Id,Id,Id)
-        myel = qutip.tensor(my,Id,Id,Id)
+        xel = qutip.tensor(x,Id,Id)
+        mxel = qutip.tensor(mx,Id,Id)
+        Xel = qutip.tensor(X,Id,Id)
+        yel = qutip.tensor(y,Id,Id)
+        myel = qutip.tensor(my,Id,Id)
 
         tau_Ren_C1 = mp['C' + str(carbon_nrs[0]) + '_Ren_tau'][0]
         number_of_pulses_Ren_C1 = mp['C' + str(carbon_nrs[0]) + '_Ren_N'][0]
@@ -427,6 +427,12 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
         Rmz_C2, Rmz_C2_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C2, 304.22, gate_on_C = [1], return_for_one = True, phase = -np.pi/2)
 
         if no_qubits == 3:
+            xel = qutip.tensor(xel,Id)
+            mxel = qutip.tensor(mxel,Id)
+            Xel = qutip.tensor(Xel,Id)
+            yel = qutip.tensor(yel,Id)
+            myel = qutip.tensor(myel,Id)
+
             tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
             number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
             Ren_C3, Ren_C3_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C3, tau_Ren_C3, 304.22, gate_on_C = [2], return_for_one = True)
