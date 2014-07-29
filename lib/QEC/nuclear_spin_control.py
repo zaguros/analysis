@@ -699,6 +699,7 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
     Ren_id = qutip.tensor(rho0,U0id)+qutip.tensor(rho1,U1id)
 
     Rz = qutip.tensor(Id,z)
+    print_matrix(Rz)
     if method == 'SWAP':
 
         seq = Ren*Rz*xel*Ren*yel
@@ -708,8 +709,8 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
         rho_final_id = seq_id*rho*seq_id.dag()
 
         rho_nucl = rho_final.ptrace(1)
-
         rho_nucl_id = rho_final_id.ptrace(1)
+
     elif method == 'MBI':
         seq = xel*Ren*yel
         seq_id = xel*Ren_id*yel
@@ -743,6 +744,8 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
         ax.set_ylim(-1,1)
         print 'Fidelity to ideal state:'
         print qutip.fidelity(rho_nucl,rho_nucl_id)
+        plt.show()
+
 
     return rho_nucl,rho_nucl_id
 
@@ -971,6 +974,8 @@ def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
         tick.label.set_rotation('vertical')
     plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
     ax.set_xticklabels(x_ticks_list)
+    plt.show()
+
 
 #######################
 ### Error detection ###
