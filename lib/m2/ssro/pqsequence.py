@@ -6,7 +6,6 @@ import logging
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro, sequence
-from analysis.lib.math import error
 from analysis.lib.m2 import m2
 from analysis.lib.pq import pq_tools
 from analysis.lib.tools import toolbox
@@ -47,6 +46,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
     def plot_histogram(self,channel,start=None,length=None,fltr=None,hist_binsize=1,save=True, **kw):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
+        log_plot=kw.get('log_plot',True)
         if ax == None:
             fig = self.default_fig(figsize=(6,4))
             ax = self.default_ax(fig)
@@ -72,8 +72,10 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         print 'Total clicks:', np.sum(y)
         y=y/float(self.reps)
         
-        
-        ax.semilogy(x,y)
+        if log_plot:
+            ax.semilogy(x,y)
+        else:
+            ax.plot(x,y)
         #ax.colorbar()
         ax.set_xlabel('Time [bins]')
         ax.set_ylabel('Counts per rep per bin')
@@ -431,21 +433,40 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         f0=np.zeros(plot_points)
         f1=np.zeros(plot_points)
         mf=np.zeros(plot_points)
-
+        u_f0=np.zeros(plot_points)
+        u_f1=np.zeros(plot_points)
+        u_mf=np.zeros(plot_points)
+        #np.sqrt(pzero*(1-pzero)/reps)
         for i,l in enumerate(np.linspace(0,len0,plot_points)):
             x[i]=l
             f0[i],_tmp = self._get_fidelity_and_mean_cpsh(0,sweep_index, start0, l)
             f1[i],_tmp = self._get_fidelity_and_mean_cpsh(1,sweep_index, start1, l)
+            u_f0[i] = np.sqrt(f0[i]*(1-f0[i])/self.reps_per_sweep)
+            u_f1[i] = np.sqrt(f1[i]*(1-f1[i])/self.reps_per_sweep)
             mf[i] = (f0[i]+f1[i])/2.
-        ax.plot(x,f0, 'b-')
-        ax.plot(x,f1, 'g-')
-        ax.plot(x,mf, 'r-')
+            u_mf[i] = np.sqrt( (0.5*u_f0[i])**2 + (0.5*u_f1[i])**2 )
+
+        ax.errorbar(x,f0, fmt='b-', yerr=u_f0)
+        ax.errorbar(x,f1, fmt='g-', yerr=u_f1)
+        ax.errorbar(x,mf, fmt='r-', yerr=u_mf)
         #ax.colorbar()
         ax.set_ylim(0.5,1.01)
         ax.set_xlabel('Time after RO start [ns]')
         ax.set_ylabel('Fidelity')
 
-        print 'Fidelity at RO time = {}: ms0 {:.2f}, ms1 {:.2f}, mean {:.2f}'.format(len0,f0[-1]*100.,f1[-1]*100.,mf[-1]*100.)
+        ax.text(len0,0.7,'Fidelity at RO time = {}: \n ms1 {:.2f} $\pm$ {:.2f} \n \
+                    ms0 {:.2f} $\pm$ {:.2f} \n mean {:.2f} $\pm$ {:.2f} '.format(len0,
+                                                                                 f1[-1]*100.,u_f1[-1]*100.,
+                                                                                 f0[-1]*100.,u_f0[-1]*100.,
+                                                                                 mf[-1]*100.,u_mf[-1]*100.),
+                        horizontalalignment='right',verticalalignment='top')
+        ii = np.argmax(mf)
+        print 'Max mean fidelity at RO time = {:.1f}: ms0 {:.2f} $\pm$ {:.2f}, \
+                                                      ms1 {:.2f} $\pm$ {:.2f}, \
+                                                      mean {:.2f} $\pm$ {:.2f}'.format(x[ii],
+                                                                                       f0[ii]*100.,u_f0[ii]*100.,
+                                                                                       f1[ii]*100.,u_f1[ii]*100.,
+                                                                                       mf[ii]*100.,u_mf[ii]*100.)
 
         if save:
             self.save_fig_incremental_filename(fig,'mean fidelity_'+name)
@@ -470,6 +491,9 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         f0=np.zeros(self.sweep_length/2)
         f1=np.zeros(self.sweep_length/2)
         mf=np.zeros(self.sweep_length/2)
+        u_f0=np.zeros(self.sweep_length/2)
+        u_f1=np.zeros(self.sweep_length/2)
+        u_mf=np.zeros(self.sweep_length/2)
         mcpsh0 = np.zeros(self.sweep_length/2)
         mcpsh1 = np.zeros(self.sweep_length/2)
         for i in range(self.sweep_length/2):
@@ -480,14 +504,26 @@ class FastSSROAnalysis(PQSequenceAnalysis):
                 length=ro_length
             f0[i],mcpsh0[i] = self._get_fidelity_and_mean_cpsh(0,i, start0, length)
             f1[i],mcpsh1[i] = self._get_fidelity_and_mean_cpsh(1,i, start1, length)
+            u_f0[i] = np.sqrt(f0[i]*(1-f0[i])/self.reps_per_sweep)
+            u_f1[i] = np.sqrt(f1[i]*(1-f1[i])/self.reps_per_sweep)
             mf[i] = (f0[i]+f1[i])/2.
+            u_mf[i] = np.sqrt( (0.5*u_f0[i])**2 + (0.5*u_f1[i])**2 )
             #etc
         x=self.sweep_pts[::2]
         print len(x), len(f0)
-        #print x, f0
-        ax.plot(x,f0, 'bo')
-        ax.plot(x,f1, 'go')
-        ax.plot(x,mf, 'ro')
+        #print x, f0 ax.errorbar(time, fid0, fmt='.', yerr=fid0_err, label='ms=0')
+        ax.errorbar(x,f0, fmt='bo', yerr=u_f0)
+        ax.errorbar(x,f1, fmt='go', yerr = u_f1)
+        ax.errorbar(x,mf, fmt='ro',yerr = u_mf)
+        ii = np.argmax(mf)
+        ax.text(x[-1], 0.5, 'Max fid. at sweep pt. = {:.1f}: \n \
+                                    ms1 {:.2f} $\pm$ {:.2f},\n \
+                                    ms0 {:.2f} $\pm$ {:.2f},\n \
+                                    mean {:.2f} $\pm$ {:.2f}'.format(x[ii],
+                                                                     f1[ii]*100.,u_f1[ii]*100.,
+                                                                     f0[ii]*100.,u_f0[ii]*100.,
+                                                                     mf[ii]*100.,u_mf[ii]*100.),
+                horizontalalignment='right',verticalalignment='top')
         ax2=ax.twinx()
         ax2.plot(x, mcpsh0, 'b-')
         ax2.plot(x, mcpsh1, 'g-')
@@ -525,94 +561,6 @@ class FastSSROAnalysisIntegrated(FastSSROAnalysis):
         length = np.floor(length / self.hist_binsize_ns)
         cpsh=np.sum(self.hist[start:start+length,2*sweep_index+ms])
         #fidelity not possible!
-
-class RandomPulseAnalysis(PQSequenceAnalysis):
-
-    def get_ro_vs_random_result(self,pq_binsize_ns,save=True, **kw):
-        ret = kw.get('ret', None)
-        ax = kw.get('ax', None)
-        if ax == None:
-            fig = self.default_fig(figsize=(4,4))
-            ax = self.default_ax(fig)
-        else:
-            save = False
-
-        sync_nrs=self.pqf['/PQ_sync_number-1'].value 
-        
-        is_marker_1_event=pq_tools.get_markers(self.pqf,1)
-        is_marker_2_event=pq_tools.get_markers(self.pqf,2)
-        print 'bias toward 0 : {:.2f} % '.format(50-float(len(np.where(is_marker_1_event)[0]))/(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100),', error : {:.2f} %'.format(1/np.sqrt(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100)
-        print 'noof syncs:', sync_nrs[-1]
-        print 'Detected marker events : ', len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0])
-        
-        is_photon_0, is_rnd_clk=pq_tools.get_photons(self.pqf)
-        sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
-
-        noof_reps_wo_rnd_clk=len(np.unique(sync_nrs[is_rnd_clk]))
-        print 'syncs without a random click: {} / {} = {:.2f} %'.format(self.reps-noof_reps_wo_rnd_clk, self.reps, float(self.reps-noof_reps_wo_rnd_clk)/self.reps*100.)
-        is_last_random_click=np.append(np.diff(np.asarray(is_rnd_clk, dtype='int'))==-1,is_rnd_clk[-1])
-        self.plot_histogram(1,start=190,length=450,fltr=is_last_random_click)
-
-        start=kw.pop('start_ns',(200e-9*3+50e-9+700e-9+100e-9)*1e9)
-        length =self.g.attrs['SSRO_duration']*1e3
-
-        st_fltr = (start  <= sync_time_ns) &  (sync_time_ns< (start + length))
-
-        is_photon_0_in_ro_window = st_fltr & is_photon_0
-
-        photon_in_0_ro_window_sync_numbers = sync_nrs[np.where(is_photon_0_in_ro_window)]
-        marker_1_sync_numbers= sync_nrs[np.where(is_marker_1_event)]
-        marker_2_sync_numbers= sync_nrs[np.where(is_marker_2_event)]
-
-        noof_marker_1_ro_ms0_events=len(np.where(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers))[0])
-        noof_marker_2_ro_ms0_events=len(np.where(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers))[0])
-        noof_marker_1_ro_ms1_events=len(np.where(np.invert(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)))[0])
-        noof_marker_2_ro_ms1_events=len(np.where(np.invert(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)))[0])
-
-        print 'MA1 & RO0: {}, MA1 & RO1: {}, MA2 & RO0: {}, MA2 & RO1: {}'.format(noof_marker_1_ro_ms0_events, noof_marker_1_ro_ms1_events,noof_marker_2_ro_ms0_events, noof_marker_2_ro_ms1_events)
-
-        ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('SSROCalibration'))
-
-        ma_1_p0=(float(noof_marker_1_ro_ms0_events)/(noof_marker_1_ro_ms1_events+noof_marker_1_ro_ms0_events))
-        ma_1_u_p0 = np.sqrt(ma_1_p0*(1-ma_1_p0)/(noof_marker_1_ro_ms1_events+noof_marker_1_ro_ms0_events))
-        ma_2_p0=(float(noof_marker_2_ro_ms0_events)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))
-        ma_2_u_p0 = np.sqrt(ma_2_p0*(1-ma_2_p0)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))        
-       
-        ro_duration = self.g.attrs['SSRO_duration']
-        roc = error.SingleQubitROC()
-        roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-            ssro.get_SSRO_calibration(ssro_calib_folder, 
-                    ro_duration)
-
-        p0, u_p0 = roc.num_eval(np.array([ma_1_p0,ma_2_p0]),np.array([ma_1_u_p0,ma_2_u_p0]))
-
-        ax.bar( range(2),p0, 
-            #color=[settings.COLORS[0], settings.COLORS[1]],
-            align='center', yerr=u_p0, 
-            ecolor='k', width=0.8)
-
-        ax.text(0, -.15, 'Rnd_no = 0',ha='center', va='bottom')
-        ax.text(1, -.15, 'Rnd_no = 1',ha='center', va='bottom')
-        ax.set_xticks([0,1])
-        #ax.text(1, 1.05, '{:.0f}+/-{:.0f} %'.format(p0*100., u_p0*100.),
-        #    ha='center', va='bottom', color=settings.COLORS[1])  
-
-        ax.text(0, 1.02,'F0: {:.2f} %'.format(p0[0]*100),ha='center', va='bottom')
-        ax.text(1, 1.02,'F0: {:.2f} %'.format(p0[1]*100),ha='center', va='bottom')
-        ax.set_ylabel('Fidelity ms0')
-        ax.set_ylim(0,1.1)
-        if save:
-            self.save_fig_incremental_filename(fig,'random_mw_correlation_corrected')
-        
-        if ret == 'ax':
-            return ax
-        if ret == 'fig':
-            return fig
-        print p0, u_p0
-
-
-
-
 
 def analyze_tail(folder, name='ssro', cr=False, roc=True):
     a = TailAnalysis(folder)

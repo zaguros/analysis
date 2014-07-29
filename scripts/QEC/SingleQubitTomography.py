@@ -46,7 +46,7 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
         
         print '*'*60 
         print order_of_bases[i] + ' Tomography'
-        print 'folder %s' %folder  
+        print 'folder %s' %folder 
 
 
         for k in range(0,len(measurement_name)):
@@ -70,7 +70,7 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
                 if plot_fit == True:
                     plot.plot_fit1d(fit_result[i], np.linspace(x[i][0],x[i][-1],201), ax=ax, 
                             plot_data=False,print_info = False)
-                fit.write_to_file(fit_result[i],folder) 
+                fit.write_to_file(fit_result[i],folder,fitname = str(order_of_bases[i])+'-tomography') 
             except: 
                 pass 
             if show_guess:
