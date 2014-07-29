@@ -705,6 +705,7 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
     Ren_id = qutip.tensor(rho0,U0id)+qutip.tensor(rho1,U1id)
 
     Rz = qutip.tensor(Id,z)
+    print_matrix(Rz)
     if method == 'SWAP':
 
         seq = Ren*Rz*xel*Ren*yel
@@ -714,8 +715,8 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
         rho_final_id = seq_id*rho*seq_id.dag()
 
         rho_nucl = rho_final.ptrace(1)
-
         rho_nucl_id = rho_final_id.ptrace(1)
+
     elif method == 'MBI':
         seq = xel*Ren*yel
         seq_id = xel*Ren_id*yel
@@ -749,6 +750,8 @@ def nuclear_init_single(carbon_nr,do_plot = False, method = 'SWAP'):
         ax.set_ylim(-1,1)
         print 'Fidelity to ideal state:'
         print qutip.fidelity(rho_nucl,rho_nucl_id)
+        plt.show()
+
 
     return rho_nucl,rho_nucl_id
 
@@ -977,6 +980,8 @@ def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
         tick.label.set_rotation('vertical')
     plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
     ax.set_xticklabels(x_ticks_list)
+    plt.show()
+
 
 #######################
 ### Error detection ###
@@ -1765,17 +1770,27 @@ def calc_operator_rotation_axis_and_angle(operator):
 
     return np.array([X_axis_projection, Y_axis_projection, Z_axis_projection]), np.abs(angle)
 
-def characterize_c13_DD_unit(carbon_nr, B_field=304.22, tau_list = np.linspace(10,5000,500)):
+def characterize_c13_DD_unit(carbon_nrs, B_field=304.22, tau_list = np.linspace(10,5000,500)):
+    '''
+    carbon_nrs is a list of carbons to calcuate for
+    '''
+    A_par = []
+    A_perp = []
 
-    A_par = 2*np.pi*hf['C' + str(carbon_nr)]['par']
-    A_perp = 2*np.pi*hf['C' + str(carbon_nr)]['perp']
+    for kk, carbon_nr in enumerate(carbon_nrs):
+        par     = 2*np.pi*hf['C' + str(carbon_nr)]['par']
+        perp    = 2*np.pi*hf['C' + str(carbon_nr)]['perp']
 
-    print A_par/2./np.pi
-    print A_perp/2./np.pi
+        A_par.append(par)
+        A_perp.append(perp)
+
+        print 'Carbon_nr = ' + str(carbon_nr)
+        print 'Parallel hyperfine = '       + str(par/2./np.pi)
+        print 'Perpendicular hyperfine = '  + str(perp/2./np.pi)
 
     characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
 
-def characterize_DD_unit(A_par = 2*np.pi*100e3, A_perp = 2*np.pi*30e3, B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
+def characterize_DD_unit(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
     '''gives a full characterization of the rotation matrix
     for a single DD unit tau - X - 2tau - X - tau'''
 
@@ -1787,65 +1802,95 @@ def characterize_DD_unit(A_par = 2*np.pi*100e3, A_perp = 2*np.pi*30e3, B_field =
     print B_field
     omega_Larmor = 2 * np.pi * B_field * 1.07e3
 
-    for i in range(len(tau_list)):
-        tau = tau_list[i]*1e-9
-        if i%10 == 0:
-            print str(tau_list[i]) + ' out of ' + str(max(tau_list))
-        V0, V1 = nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp)
-        axes0, angle0[i] = calc_operator_rotation_axis_and_angle(V0)
-        axes1, angle1[i] = calc_operator_rotation_axis_and_angle(V1)
+    X_proj_0_all = numpy.zeros((len(A_par),len(tau_list))); Y_proj_0_all = numpy.zeros((len(A_par),len(tau_list))); Z_proj_0_all = numpy.zeros((len(A_par),len(tau_list)))
+    X_proj_1_all = numpy.zeros((len(A_par),len(tau_list))); Y_proj_1_all = numpy.zeros((len(A_par),len(tau_list))); Z_proj_1_all = numpy.zeros((len(A_par),len(tau_list)))
 
-        X_proj_0[i] = axes0[0]
-        Y_proj_0[i] = axes0[1]
-        Z_proj_0[i] = axes0[2]
-        X_proj_1[i] = axes1[0]
-        Y_proj_1[i] = axes1[1]
-        Z_proj_1[i] = axes1[2]
+    innerprod_all       =   numpy.zeros((len(A_par),len(tau_list)))
+    pulses_for_pi2_all  =   numpy.zeros((len(A_par),len(tau_list)))
+    signal_all          =   numpy.zeros((len(A_par),len(tau_list)))
 
-        innerprod[i]    = X_proj_0[i]*X_proj_1[i] + Y_proj_0[i]*Y_proj_1[i] + Z_proj_0[i]*Z_proj_1[i]
-        pulses_for_pi2[i]  = (np.pi/2./(np.pi-abs(np.pi-angle0[i].real))).real
-        signal[i] = ( V0**(N/2) * (V1**(N/2)).dag() ).tr().real/4+1./2
+    angle0_all          =   numpy.zeros((len(A_par),len(tau_list)))
+
+    for kk in range(len(A_par)):
+
+        for i in range(len(tau_list)):
+            tau = tau_list[i]*1e-9
+            if i%10 == 0:
+                print str(tau_list[i]) + ' out of ' + str(max(tau_list))
+            V0, V1 = nuclear_rotation_matrix(tau, omega_Larmor, A_par[kk], A_perp[kk])
+            axes0, angle0[i] = calc_operator_rotation_axis_and_angle(V0)
+            axes1, angle1[i] = calc_operator_rotation_axis_and_angle(V1)
+
+            X_proj_0[i] = axes0[0]
+            Y_proj_0[i] = axes0[1]
+            Z_proj_0[i] = axes0[2]
+            X_proj_1[i] = axes1[0]
+            Y_proj_1[i] = axes1[1]
+            Z_proj_1[i] = axes1[2]
+
+            innerprod[i]    = X_proj_0[i]*X_proj_1[i] + Y_proj_0[i]*Y_proj_1[i] + Z_proj_0[i]*Z_proj_1[i]
+            pulses_for_pi2[i]  = (np.pi/2./(np.pi-abs(np.pi-angle0[i].real))).real
+            signal[i] = ( V0**(N/2) * (V1**(N/2)).dag() ).tr().real/4+1./2
+
+        X_proj_0_all[kk] =  X_proj_0
+        Y_proj_0_all[kk] =  Y_proj_0
+        Z_proj_0_all[kk] =  Z_proj_0
+        X_proj_1_all[kk] =  X_proj_1
+        Y_proj_1_all[kk] =  Y_proj_1
+        Z_proj_1_all[kk] =  Z_proj_1
+
+        innerprod_all[kk]       =   innerprod
+        pulses_for_pi2_all[kk]  =   pulses_for_pi2
+        signal_all[kk]          =   signal
+        angle0_all[kk]          =   angle0
+
 
     #plots
     plt.close('all')
 
     f, ax = plt.subplots(3,3)
-    ax[0,0].plot(tau_list/1e3,X_proj_0, '-', lw=1,label = 'data')
-    ax[0,0].set_title('X projection ms=0'); ax[0,0].set_xlabel('tau (us)')
 
-    ax[1,0].plot(tau_list/1e3,X_proj_1, '-', lw=1,label = 'data')
-    ax[1,0].set_title('X projection ms=1'); ax[1,0].set_xlabel('tau (us)')
+    for kk in range(len(A_par)):
 
-    ax[2,0].plot(tau_list/1e3,(X_proj_0-X_proj_1), '-', lw=1,label = 'data')
-    ax[2,0].set_title('X projection ms=0 - X projection ms=1'); ax[2,0].set_xlabel('tau (us)')
+        ax[0,0].plot(tau_list/1e3,X_proj_0_all[kk], '-', lw=1,label = 'data')
+        ax[0,0].set_title('X projection ms=0'); ax[0,0].set_xlabel('tau (us)')
 
-    ax[0,1].plot(tau_list/1e3,Y_proj_0, '-', lw=1,label = 'data')
-    ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
+        ax[1,0].plot(tau_list/1e3,X_proj_1_all[kk], '-', lw=1,label = 'data')
+        ax[1,0].set_title('X projection ms=1'); ax[1,0].set_xlabel('tau (us)')
 
-    ax[1,1].plot(tau_list/1e3,Y_proj_1, '-', lw=1,label = 'data')
-    ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
+        ax[2,0].plot(tau_list/1e3,(X_proj_0_all[kk]-X_proj_1_all[kk]), '-', lw=1,label = 'data')
+        ax[2,0].set_title('X projection ms=0 - X projection ms=1'); ax[2,0].set_xlabel('tau (us)')
 
-    ax[2,1].plot(tau_list/1e3,(Y_proj_0-Y_proj_1), '-', lw=1,label = 'data')
-    ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
+        ax[0,1].plot(tau_list/1e3,Y_proj_0_all[kk], '-', lw=1,label = 'data')
+        ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
 
-    ax[0,2].plot(tau_list/1e3,Z_proj_0, '-', lw=1,label = 'data')
-    ax[0,2].set_title('Z projection ms=0'); ax[0,2].set_xlabel('tau (us)')
+        ax[1,1].plot(tau_list/1e3,Y_proj_1_all[kk], '-', lw=1,label = 'data')
+        ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
 
-    ax[1,2].plot(tau_list/1e3,Z_proj_1, '-', lw=1,label = 'data')
-    ax[1,2].set_title('Z projection ms=1'); ax[1,2].set_xlabel('tau (us)')
+        ax[2,1].plot(tau_list/1e3,(Y_proj_0_all[kk]-Y_proj_1_all[kk]), '-', lw=1,label = 'data')
+        ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
 
-    ax[2,2].plot(tau_list/1e3,(Z_proj_0-Z_proj_1), '-', lw=1,label = 'data')
-    ax[2,2].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,2].set_xlabel('tau (us)')
+        ax[0,2].plot(tau_list/1e3,Z_proj_0_all[kk], '-', lw=1,label = 'data')
+        ax[0,2].set_title('Z projection ms=0'); ax[0,2].set_xlabel('tau (us)')
+
+        ax[1,2].plot(tau_list/1e3,Z_proj_1_all[kk], '-', lw=1,label = 'data')
+        ax[1,2].set_title('Z projection ms=1'); ax[1,2].set_xlabel('tau (us)')
+
+        ax[2,2].plot(tau_list/1e3,(Z_proj_0_all[kk]-Z_proj_1_all[kk]), '-', lw=1,label = 'data')
+        ax[2,2].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,2].set_xlabel('tau (us)')
 
     f2, ax2 = plt.subplots(4,1)
-    ax2[0].plot(tau_list/1e3,innerprod, '-', lw=1,label = 'data')
-    ax2[0].set_title('axis innerporduct'); ax2[0].set_xlabel('tau (us)')
-    ax2[1].plot(tau_list/1e3,angle0/np.pi, '-', lw=1,label = 'data')
-    ax2[1].set_title('rotation_angle'); ax2[1].set_xlabel('tau (us)'); ax2[1].set_ylim(0,2)
-    ax2[2].plot(tau_list/1e3,pulses_for_pi2, '-', lw=1,label = 'data')
-    ax2[2].set_title('nr of pulses'); ax2[2].set_xlabel('tau (us)')
-    ax2[3].plot(tau_list/1e3,signal, '-', lw=1,label = 'data')
-    ax2[3].set_title('signal'); ax2[3].set_xlabel('tau (us)')
+
+    for kk in range(len(A_par)):
+
+        ax2[0].plot(tau_list/1e3,innerprod_all[kk], '-', lw=1,label = 'data')
+        ax2[0].set_title('axis innerporduct'); ax2[0].set_xlabel('tau (us)')
+        ax2[1].plot(tau_list/1e3,angle0_all[kk]/np.pi, '-', lw=1,label = 'data')
+        ax2[1].set_title('rotation_angle'); ax2[1].set_xlabel('tau (us)'); ax2[1].set_ylim(0,2)
+        ax2[2].plot(tau_list/1e3,pulses_for_pi2_all[kk], '-', lw=1,label = 'data')
+        ax2[2].set_title('nr of pulses'); ax2[2].set_xlabel('tau (us)')
+        ax2[3].plot(tau_list/1e3,signal_all[kk], '-', lw=1,label = 'data')
+        ax2[3].set_title('signal'); ax2[3].set_xlabel('tau (us)')
 
     plt.show()
 
