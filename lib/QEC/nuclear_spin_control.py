@@ -217,8 +217,6 @@ def phase_gate(carbon_nr, phase, B_field=304.22,total_time = 0,return_gate = Fal
     if return_tau == True:
         return tau
 
-
-
 def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = [], return_for_one = False, phase = None):
     '''calculates the evolution matrices a multiqubit space,
     the electron is always qubit 1
