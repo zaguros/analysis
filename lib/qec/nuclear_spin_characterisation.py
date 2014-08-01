@@ -53,7 +53,8 @@ def calc_tau_from_HF(HF_par,k,B_field):
 
 def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
     '''
-    Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght and an array of times and returns the signal at those times for that specific spin.
+    Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght 
+    and an array of times and returns the signal at those times for that specific spin.
     ------
     inputs
     ------

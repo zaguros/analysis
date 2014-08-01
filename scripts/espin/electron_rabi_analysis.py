@@ -10,11 +10,12 @@ from analysis.lib.m2.ssro import  sequence, mbi #sequence_ssro,
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 reload(rabi)
+reload(sequence)
 
 from analysis.lib.tools import plot
 
-timestamp = None#'20140408125318'
-guess_frq = 1/200.
+timestamp = None #'20140408125318'
+guess_frq = 1/60.
 guess_amp = 0.2
 guess_of = 1
 # guess_slope = 0.
@@ -41,7 +42,6 @@ if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('adwindata')
-    #a.get_readout_results('adwindata')
     a.get_electron_ROC()
     ax = a.plot_results_vs_sweepparam(ret='ax', name = 'adwindata')
 
