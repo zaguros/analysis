@@ -50,15 +50,21 @@ def basic_spin_states():
     brax = 1/np.sqrt(2)*(qutip.basis(2,0).dag()+qutip.basis(2,1).dag())
     ketmx = 1/np.sqrt(2)*(qutip.basis(2,0)-qutip.basis(2,1))
     bramx = 1/np.sqrt(2)*(qutip.basis(2,0).dag()-qutip.basis(2,1).dag())
+    kety = 1/np.sqrt(2)*(qutip.basis(2,0)+1j*qutip.basis(2,1))
+    bray = kety.dag()
+    ketmy = 1/np.sqrt(2)*(qutip.basis(2,0)-1j*qutip.basis(2,1))
+    bramy = ketmy.dag()
     rhox =ketx*brax
     rhomx = ketmx*bramx
-    return ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx
+    rhoy =kety*bray
+    rhomy = ketmy*bramy
+    return ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy
 
 ### create a set of usefull simple states and gates
 Id, sx, sy, sz = pauli()                                # Electron spin operators
 Id, Ix, Iy, Iz = pauli()                                # Nuclear spin operators
 X,Y,Z,x,y,z,mX,mY,mZ,mx,my,mz = basic_spin_rotations()  # Basic gates
-ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx = basic_spin_states() # Basic states
+ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy = basic_spin_states() # Basic states
 
 def any_pure_state(alpha,beta,return_psi = False,return_rho = True):
     '''gives out your psi and if wanted your rho for a state alpha 0 + beta 1 '''
@@ -328,7 +334,7 @@ def single_qubit_pauli(rho, do_plot = False, use_el = False,carbon_nr = 1 ):
             tick.label.set_rotation('vertical')
     return pauli_set, ii_list, xticks_list
 
-def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, alpha=None, beta=None,use_el=False,title = None):
+def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alpha=None, beta=None,use_el=False,title = None):
     ''' This function works to perform two and three-qubit tomography
     it either just takes the expectation values of the given density matrix (when use_el = False)
     or performs a measurement of the expectation values using the electron spin (close to the experiment)
@@ -1775,7 +1781,7 @@ def two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ',states 
 
     ### plot Carbon input state ###
     multi_qubit_pauli(rho_enc_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=True,title = 'input state (no parity msmt)')
-    multi_qubit_pauli(rho_enc_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'input state (no parity msmt)')
+    # multi_qubit_pauli(rho_enc_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'input state (no parity msmt)')
 
     if do_parity == True:
         #define gates
@@ -1850,8 +1856,8 @@ def two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ',states 
 
         multi_qubit_pauli(rho_final_0_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=True, title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 0')
         multi_qubit_pauli(rho_final_1_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=True,title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 1')
-        multi_qubit_pauli(rho_final_0_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False, title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 0')
-        multi_qubit_pauli(rho_final_1_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 1')
+        # multi_qubit_pauli(rho_final_0_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False, title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 0')
+        # multi_qubit_pauli(rho_final_1_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 1')
 
 def test_2qb_parity():
     for combination in ['XX','X-X','-XX','-X-X']:
