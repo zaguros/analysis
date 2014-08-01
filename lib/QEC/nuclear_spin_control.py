@@ -6,6 +6,9 @@ import qutip
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
 
+### import a module with analytical equations for the electron coherence due to the nucear spins (fingerprints)
+import analysis.lib.QEC.nuclear_spin_characterisation as SC
+
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
@@ -304,7 +307,7 @@ def single_qubit_pauli(rho, do_plot = False, use_el = False,carbon_nr = 1 ):
             Rmz_C1, Rmz_C1_id = c13_gate_multiqubit([carbon_nr], 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = -np.pi/2)
 
             pauli_set.append(1)
-      
+
             ii_list.append(ii)
             for ev in xticks_list[1:]:
                 ii = ii+1
@@ -315,7 +318,7 @@ def single_qubit_pauli(rho, do_plot = False, use_el = False,carbon_nr = 1 ):
                     seq_elm = xel*Rz_C1_id*Ren_C1_id*Rmz_C1_id*yel*Ren_C1_id
                 elif 'Y' in ev:
                     seq_elm = xel*Rz_C1_id*Ren_C1_id*Rmz_C1_id*yel
-                         
+
                 rho_el = (seq_elm*rho_in*seq_elm.dag()).ptrace(0)
 
                 expect_value = qutip.expect(2*sz,rho_el)
@@ -509,7 +512,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
                         seq_elm = xel*Rz_gates[C_nr]*Ren_gates[C_nr]*Rmz_gates[C_nr]*yel*Ren_gates[C_nr]
                     elif 'Y' in ev:
                         seq_elm = xel*Rz_gates[C_nr]*Ren_gates[C_nr]*Rmz_gates[C_nr]*yel
-                     
+
                     # two-qubit-ev
                 elif 'I'not in ev:
                     # print ev
@@ -760,13 +763,13 @@ def nuclear_init_single(carbon_nr,state = 'up',do_plot = False, method = 'SWAP',
     tau_Ren = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
     number_of_pulses_Ren = mp['C' + str(carbon_nr) + '_Ren_N'][0]
     Ren, Ren_id = c13_gate_multiqubit([carbon_nr], number_of_pulses_Ren, tau_Ren, 304.22, gate_on_C = [0], return_for_one = True)
-    
+
 
     if state == 'up':
         phase = np.pi/2
     elif state == 'down':
         phase = -np.pi/2
-    
+
     tau_z = phase_gate(carbon_nr, phase, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
     Rz, Rz_id = c13_gate_multiqubit([carbon_nr], 2, tau_z, 304.22, gate_on_C = [0], return_for_one = True, phase = phase)
 
@@ -775,7 +778,7 @@ def nuclear_init_single(carbon_nr,state = 'up',do_plot = False, method = 'SWAP',
 
     tau_Z = phase_gate(carbon_nr, np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
     RZ, RZ_id = c13_gate_multiqubit([carbon_nr], 2, tau_z, 304.22, gate_on_C = [0], return_for_one = True, phase = np.pi)
-    
+
 
     if method == 'SWAP':
         seq = Ren*Rz*xel*Ren*yel
@@ -1770,7 +1773,7 @@ def two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ',states 
             if initial_states[jj] == 'Y':
                 print 'Y'
                 phase_state[jj] = True
-                
+
     # initialize Carbon spins
     rho_C1, rho_C1_id = nuclear_init_single(carbon_nrs[0],state = states[0],method = method[0], phase_state = phase_state[0])
     rho_C2, rho_C2_id = nuclear_init_single(carbon_nrs[1],state = states[1],method = method[1], phase_state = phase_state[1])
@@ -1802,7 +1805,7 @@ def two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ',states 
 
         tau_z_C2 = phase_gate(carbon_nrs[0], np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
         RZ_C2, RZ_C2_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C2, 304.22, gate_on_C = [1], return_for_one = True, phase = np.pi)
-      
+
         tau_z_C1 = phase_gate(carbon_nrs[0], -np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
         RmZ_C1, RmZ_C1_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = -np.pi)
 
