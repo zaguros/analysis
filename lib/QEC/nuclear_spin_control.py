@@ -6,9 +6,6 @@ import qutip
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
 
-### import a module with analytical equations for the electron coherence due to the nucear spins (fingerprints)
-import analysis.lib.QEC.nuclear_spin_characterisation as SC
-
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
@@ -1889,26 +1886,6 @@ def calc_operator_rotation_axis_and_angle(operator):
 
     return np.array([X_axis_projection, Y_axis_projection, Z_axis_projection]), np.abs(angle)
 
-def characterize_c13_DD_unit(carbon_nrs, B_field=304.22, tau_list = np.linspace(10,5000,500)):
-    '''
-    carbon_nrs is a list of carbons to calcuate for
-    '''
-    A_par = []
-    A_perp = []
-
-    for kk, carbon_nr in enumerate(carbon_nrs):
-        par     = 2*np.pi*hf['C' + str(carbon_nr)]['par']
-        perp    = 2*np.pi*hf['C' + str(carbon_nr)]['perp']
-
-        A_par.append(par)
-        A_perp.append(perp)
-
-        print 'Carbon_nr = ' + str(carbon_nr)
-        print 'Parallel hyperfine = '       + str(par/2./np.pi)
-        print 'Perpendicular hyperfine = '  + str(perp/2./np.pi)
-
-    characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
-
 def characterize_DD_unit(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
     '''gives a full characterization of the rotation matrix
     for a single DD unit tau - X - 2tau - X - tau'''
@@ -2013,4 +1990,119 @@ def characterize_DD_unit(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_fie
 
     plt.show()
 
-print 'succes'
+def characterize_c13_DD_unit(carbon_nrs, B_field=304.22, tau_list = np.linspace(10,5000,500)):
+    '''
+    carbon_nrs is a list of carbons to calcuate for
+    '''
+    A_par = []
+    A_perp = []
+
+    for kk, carbon_nr in enumerate(carbon_nrs):
+        par     = 2*np.pi*hf['C' + str(carbon_nr)]['par']
+        perp    = 2*np.pi*hf['C' + str(carbon_nr)]['perp']
+
+        A_par.append(par)
+        A_perp.append(perp)
+
+        print 'Carbon_nr = ' + str(carbon_nr)
+        print 'Parallel hyperfine = '       + str(par/2./np.pi)
+        print 'Perpendicular hyperfine = '  + str(perp/2./np.pi)
+
+    characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
+
+
+############################
+### Analytical equations ###
+############################
+
+# def DD_electron_coherence(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
+    '''
+    Analytically calculates the electron coherence signal due to a single nulcear spin
+
+    analytical_toolbox.dyn_dec_signal()
+    '''
+
+def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = False):
+    '''
+    inputs
+    ------
+    HFs_par:        list of parallel hyperfine components in Hz
+    HFs_orth:       list of orthogonal hyperfine components in Hz
+    B_field:        Magnetic field in Gauss
+    N:              number of pulses
+    tau:            time in s
+    -------
+    returns
+    -------
+    M:       list of signals of individual simulated spins
+    measured signal is M.prod(axis=0)
+    '''
+    gamma_c = 1.071e3                           ### g-factor for C13 in Hz/G
+    omega_larmor = 2*np.pi*gamma_c*B_field      ### Radial frequency
+    tau_larmor = 2*np.pi/omega_larmor           ### Larmor period in seconds
+
+    if len(A_par_list) != len(A_per_list):
+        print 'Error: Hyperfine lists lengths not equal'
+        return
+
+    M=np.zeros([len(A_par_list),len(tau)])
+
+    for kk,HF_par in enumerate(A_par_list):
+
+        HF_par  = HF_par*2*np.pi        ### Convert to radial frequency
+        HF_orth = A_per_list[kk]*2*np.pi   ### Convert to radial frequency
+
+        ### equations based on Taminiau PRL 2012
+        omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
+        alpha       = omega_tilde*tau
+        beta        = omega_larmor*tau
+
+        mx          = HF_orth/omega_tilde
+        mz          = (HF_par+omega_larmor)/omega_tilde
+        vec_term    = mx**2 *((1-np.cos(alpha))*(1-np.cos(beta)))/(1+np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))
+        angle_term  = np.sin(N*np.arccos(np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))/2)**2
+
+        print
+
+        M[kk,:]= 1-(vec_term*angle_term)
+
+    ### get final results by multiplying the individual results
+    Signal      = M.prod(axis=0)
+    Fidelity    = ((Signal+1)/2)
+
+    ### optional plots
+    if show_plot == True:
+
+        ax = plt.figure(1)
+        plt.plot(tau*1e6, Signal, '-', lw=1)
+        plt.title('Signal'); plt.xlabel('Tau')
+        plt.show()
+
+    return Fidelity, M
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
