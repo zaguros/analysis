@@ -5,6 +5,8 @@ import numpy as np
 import qutip
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
+
 
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
@@ -82,7 +84,6 @@ def any_mixed_state(alpha,beta):
     rho = alpha *rho0+beta*rho1
     return rho
 
-
 ###########################
 ### Auxilairy functions ###
 ###########################
@@ -91,6 +92,27 @@ def print_matrix(Qobject):
     print np.round(Qobject.full()*100)/100
     print type(np.round(Qobject.full()*100)/100)
 
+def get_C13_hyperfine_params(carbon_nrs, ms = '+1'):
+    '''
+    load hyperfine paramters for a given list of carbon_nrs
+    ms = '+1' or '-1' indicates which electron transition is used
+    (we alter the  sign of the parallel component of the hypefine interaction
+     for the ms=-1 transition)
+    '''
+    A_par   = []
+    A_perp  = []
+
+    for kk, carbon_nr in enumerate(carbon_nrs):
+        perp    =  2*np.pi*hf['C' + str(carbon_nr)]['perp']
+        if ms == '+1':
+            par     = 2*np.pi*hf['C' + str(carbon_nr)]['par']
+        elif ms == '-1':
+            par     = -2*np.pi*hf['C' + str(carbon_nr)]['par']
+
+        A_par.append(par)
+        A_perp.append(perp)
+
+    return A_par, A_perp
 
 ###################################
 ### Nuclear evolution and gates ###
@@ -109,7 +131,6 @@ def nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp):
 
     return V0, V1
 
-
 def nuclear_Ren_matrix(carbon_nr,B_field=304.22):
     ''' difference to Ren_gate is that this gives two matrices, can combine'''
 
@@ -123,7 +144,6 @@ def nuclear_Ren_matrix(carbon_nr,B_field=304.22):
     U0, U1 = nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp)
 
     return U0, U1
-
 
 def nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp):
     '''Gives the evolution matrix for number_of_pulses pulses'''
@@ -603,9 +623,9 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
     else:
         return pauli_set, ii_list, final_x_tick_list
 
-#####################################
-### Experiments no initialization ###
-#####################################
+##########################################
+### Experiments without initialization ###
+##########################################
 
 def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.225):
     '''nuclear Rabi experiment without init
@@ -736,7 +756,6 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
     ax.set_title('P(ms=0)'); ax.set_xlabel('Evolution_time (us)')
     plt.show()
     return S[i]
-
 
 ######################
 ### Initialization ###
@@ -1990,44 +2009,27 @@ def characterize_DD_unit(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_fie
 
     plt.show()
 
-def characterize_c13_DD_unit(carbon_nrs, B_field=304.22, tau_list = np.linspace(10,5000,500)):
+def characterize_c13_DD_unit(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10,5000,500)):
     '''
     carbon_nrs is a list of carbons to calcuate for
     '''
     A_par = []
     A_perp = []
 
-    for kk, carbon_nr in enumerate(carbon_nrs):
-        par     = 2*np.pi*hf['C' + str(carbon_nr)]['par']
-        perp    = 2*np.pi*hf['C' + str(carbon_nr)]['perp']
-
-        A_par.append(par)
-        A_perp.append(perp)
-
-        print 'Carbon_nr = ' + str(carbon_nr)
-        print 'Parallel hyperfine = '       + str(par/2./np.pi)
-        print 'Perpendicular hyperfine = '  + str(perp/2./np.pi)
-
+    A_par, A_perp = get_C13_hyperfine_params(carbon_nrs, ms = ms)
     characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
 
 
-############################
-### Analytical equations ###
-############################
-
-# def DD_electron_coherence(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
-    '''
-    Analytically calculates the electron coherence signal due to a single nulcear spin
-
-    analytical_toolbox.dyn_dec_signal()
-    '''
+###################################################
+### Analytical equation for DD and fingerprints ###
+###################################################
 
 def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = False):
     '''
     inputs
     ------
-    HFs_par:        list of parallel hyperfine components in Hz
-    HFs_orth:       list of orthogonal hyperfine components in Hz
+    HFs_par:        list of parallel hyperfine components in RadHz
+    HFs_orth:       list of orthogonal hyperfine components in RadHz
     B_field:        Magnetic field in Gauss
     N:              number of pulses
     tau:            time in s
@@ -2048,9 +2050,7 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
     M=np.zeros([len(A_par_list),len(tau)])
 
     for kk,HF_par in enumerate(A_par_list):
-
-        HF_par  = HF_par*2*np.pi        ### Convert to radial frequency
-        HF_orth = A_per_list[kk]*2*np.pi   ### Convert to radial frequency
+        HF_orth = A_per_list[kk]
 
         ### equations based on Taminiau PRL 2012
         omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
@@ -2062,23 +2062,42 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
         vec_term    = mx**2 *((1-np.cos(alpha))*(1-np.cos(beta)))/(1+np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))
         angle_term  = np.sin(N*np.arccos(np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))/2)**2
 
-        print
-
         M[kk,:]= 1-(vec_term*angle_term)
 
     ### get final results by multiplying the individual results
     Signal      = M.prod(axis=0)
     Fidelity    = ((Signal+1)/2)
 
-    ### optional plots
+    ### plotting
     if show_plot == True:
 
-        ax = plt.figure(1)
+        plt.figure(1)
+        colors = cm.rainbow(np.linspace(0, 1, len(M[:,1])))
+        for kk in range(len(M[:,1])):
+            plt.plot(tau*1e6, M[kk][:], '-', lw=1, label = 'spin' + str(kk+1), color = colors[kk])
+
+        plt.title('Signal'); plt.xlabel('Tau')
+        plt.legend(loc = 4)
+        plt.ylim(-1,1)
+
+
+
+        plt.figure(2)
         plt.plot(tau*1e6, Signal, '-', lw=1)
         plt.title('Signal'); plt.xlabel('Tau')
+        plt.ylim(-1,1)
+
+
+
         plt.show()
 
     return Fidelity, M
+
+def C13_fingerprint(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10e-9,5e-6,500), N=16, show_plot = True):
+
+    A_par_list, A_perp_list = get_C13_hyperfine_params(carbon_nrs, ms = ms)
+    print A_par_list
+    DD_electron_coherence(A_par_list, A_perp_list, B_field = B_field, tau = tau_list, N = N, show_plot = show_plot)
 
 
 
