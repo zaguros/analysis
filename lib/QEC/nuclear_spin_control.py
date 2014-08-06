@@ -5,6 +5,8 @@ import numpy as np
 import qutip
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
+
 
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
@@ -50,15 +52,21 @@ def basic_spin_states():
     brax = 1/np.sqrt(2)*(qutip.basis(2,0).dag()+qutip.basis(2,1).dag())
     ketmx = 1/np.sqrt(2)*(qutip.basis(2,0)-qutip.basis(2,1))
     bramx = 1/np.sqrt(2)*(qutip.basis(2,0).dag()-qutip.basis(2,1).dag())
+    kety = 1/np.sqrt(2)*(qutip.basis(2,0)+1j*qutip.basis(2,1))
+    bray = kety.dag()
+    ketmy = 1/np.sqrt(2)*(qutip.basis(2,0)-1j*qutip.basis(2,1))
+    bramy = ketmy.dag()
     rhox =ketx*brax
     rhomx = ketmx*bramx
-    return ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx
+    rhoy =kety*bray
+    rhomy = ketmy*bramy
+    return ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy
 
 ### create a set of usefull simple states and gates
 Id, sx, sy, sz = pauli()                                # Electron spin operators
 Id, Ix, Iy, Iz = pauli()                                # Nuclear spin operators
 X,Y,Z,x,y,z,mX,mY,mZ,mx,my,mz = basic_spin_rotations()  # Basic gates
-ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx = basic_spin_states() # Basic states
+ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy = basic_spin_states() # Basic states
 
 def any_pure_state(alpha,beta,return_psi = False,return_rho = True):
     '''gives out your psi and if wanted your rho for a state alpha 0 + beta 1 '''
@@ -76,7 +84,6 @@ def any_mixed_state(alpha,beta):
     rho = alpha *rho0+beta*rho1
     return rho
 
-
 ###########################
 ### Auxilairy functions ###
 ###########################
@@ -84,11 +91,28 @@ def any_mixed_state(alpha,beta):
 def print_matrix(Qobject):
     print np.round(Qobject.full()*100)/100
     print type(np.round(Qobject.full()*100)/100)
-def find_phase_gate(total_time, carbon_nr, axis_phase):
-    '''function to determine the parameters of the preceding DD phase
-    gate to set the phase, NOTE, implementation pending on the experimental implementation'''
-    pass
 
+def get_C13_hyperfine_params(carbon_nrs, ms = '+1'):
+    '''
+    load hyperfine paramters for a given list of carbon_nrs
+    ms = '+1' or '-1' indicates which electron transition is used
+    (we alter the  sign of the parallel component of the hypefine interaction
+     for the ms=-1 transition)
+    '''
+    A_par   = []
+    A_perp  = []
+
+    for kk, carbon_nr in enumerate(carbon_nrs):
+        perp    =  2*np.pi*hf['C' + str(carbon_nr)]['perp']
+        if ms == '+1':
+            par     = 2*np.pi*hf['C' + str(carbon_nr)]['par']
+        elif ms == '-1':
+            par     = -2*np.pi*hf['C' + str(carbon_nr)]['par']
+
+        A_par.append(par)
+        A_perp.append(perp)
+
+    return A_par, A_perp
 
 ###################################
 ### Nuclear evolution and gates ###
@@ -107,7 +131,6 @@ def nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp):
 
     return V0, V1
 
-
 def nuclear_Ren_matrix(carbon_nr,B_field=304.22):
     ''' difference to Ren_gate is that this gives two matrices, can combine'''
 
@@ -122,7 +145,6 @@ def nuclear_Ren_matrix(carbon_nr,B_field=304.22):
 
     return U0, U1
 
-
 def nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp):
     '''Gives the evolution matrix for number_of_pulses pulses'''
 
@@ -133,9 +155,13 @@ def nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp):
 
     return U0, U1
 
-def c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22, return_indiv = False, return_id = False, phase = None):
-    '''calculates the evolution matrices for a single
-    Carbon spin, electron is always qubit 1'''
+def c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22, return_indiv = False, return_id = False, phase = None, phase_y = True):
+    '''calculates the evolution matrices for a single Carbon spin
+    For an Ren gate the ideal gate is rounded tot 1/sqrt(2)
+    For a phase gate (set phase from None to the required phase) the ideal gate is just calculated using the rotation matrix
+    When phase_y is true, the phase gets the opposite sign, this is to simulate what we really do in the experiment - should be improved (JULIA)
+    Note: this is now standard on 'True' as this is the only phase gate we used up to now!
+    '''
 
     omega_Larmor = 2 * np.pi * B_field * 1.07e3
     A_par = 2 * np.pi * hf['C' + str(carbon_nr)]['par']
@@ -152,6 +178,8 @@ def c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22, return_indiv = Fa
         U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
         U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
         if phase != None:
+            if phase_y == True:
+                phase = -1* phase
             # print 'phase'+str(phase/np.pi)
             U0id = (-1j*sz*phase).expm()
             U1id = (-1j*sz*phase).expm()
@@ -163,8 +191,8 @@ def c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22, return_indiv = Fa
 def Ren_gate(carbon_nr, B_field=304.22, phase=0):
     '''create a Ren gate for given carbon number'''
 
-    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N']
-    tau = mp['C' + str(carbon_nr) + '_Ren_tau']
+    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    tau = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
     print number_of_pulses
     print tau
     Ren = c13_gate(carbon_nr, number_of_pulses, tau, B_field=304.22)
@@ -217,10 +245,6 @@ def phase_gate(carbon_nr, phase, B_field=304.22,total_time = 0,return_gate = Fal
     if return_tau == True:
         return tau
 
-
-def xn_gate(carbon_nr, phase):
-    pass
-
 def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = [], return_for_one = False, phase = None):
     '''calculates the evolution matrices a multiqubit space,
     the electron is always qubit 1
@@ -235,56 +259,87 @@ def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = 
     U0_id={}
     U1_id={}
 
+    gate_0 = gate_0_id = rho0
+    gate_1 = gate_1_id = rho1
+
     for ii in range(len(carbon_nrs)):
+
         U0['C_'+str(ii)], U1['C_'+str(ii)], U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] = c13_gate(carbon_nrs[ii], number_of_pulses, tau, B_field, return_indiv = True, return_id = True,  phase = phase)
+        # if U0_id['C_'+str(ii)][0,0]== -1j*U0_id['C_'+str(ii)][0,1]:
+        #     print 'Qubit '+str(ii)+' has a -/+ Ren gate, switched in simulation'
+        #     U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] =U1_id['C_'+str(ii)], U0_id['C_'+str(ii)]
+        #     U0['C_'+str(ii)], U1['C_'+str(ii)] =U1['C_'+str(ii)], U0['C_'+str(ii)]
+
         if ii not in gate_on_C:
             U0_id['C_'+str(ii)] = Id
             U1_id['C_'+str(ii)] = Id
-        # print U0_id['C_'+str(ii)][1,0]
-        if U0_id['C_'+str(ii)][1,0]==1j/np.sqrt(2):
-            print 'Qubit '+str(ii)+' has a -/+ Ren gate, switched in simulation'
-            U0_id['C_'+str(ii)], U1_id['C_'+str(ii)] =U1_id['C_'+str(ii)], U0_id['C_'+str(ii)]
-            U0['C_'+str(ii)], U1['C_'+str(ii)] =U1['C_'+str(ii)], U0['C_'+str(ii)]
-            # print 'U0'
-            # print U0_id
-            # print 'U1'
-            # print U1_id
-
-
-    if return_for_one == True:
-        for ii in range(len(carbon_nrs)):
-            if ii not in gate_on_C:
+            if return_for_one == True:
                 U0['C_'+str(ii)] = Id
                 U1['C_'+str(ii)] = Id
 
-    gate = qutip.tensor(rho0,U0['C_0'],U0['C_1'],U0['C_2'])+qutip.tensor(rho1,U1['C_0'],U1['C_1'],U1['C_2'])
-    gate_id = qutip.tensor(rho0,U0_id['C_0'],U0_id['C_1'],U0_id['C_2'])+qutip.tensor(rho1,U1_id['C_0'],U1_id['C_1'],U1_id['C_2'])
+        gate_0 = qutip.tensor(gate_0,U0['C_'+str(ii)])
+        gate_1 = qutip.tensor(gate_1,U1['C_'+str(ii)])
+        gate_0_id = qutip.tensor(gate_0_id,U0_id['C_'+str(ii)])
+        gate_1_id = qutip.tensor(gate_1_id,U1_id['C_'+str(ii)])
+
+
+    gate = gate_0+gate_1
+    gate_id = gate_0_id+gate_1_id
 
     return gate, gate_id
-
-def check_phase_gate():
-    for phase in [np.pi]:#[0, np.pi/2, np.pi, np.pi*3/2, np.pi*2]:
-        tau = phase_gate(1, phase, B_field=304.22,total_time = 0,return_gate = False, return_tau = True)
-        U0, U1, U0id, U1id = c13_gate(1, 2, tau, 304.22, return_indiv = True, return_id = True)
-        print phase
-        print U0, U1, U0id, U1id
 
 ###################
 ### Pauli Sets ###
 ###################
 
-def single_qubit_pauli(rho, do_plot = False):
+def single_qubit_pauli(rho, do_plot = False, use_el = False,carbon_nr = 1 ):
     ii=-0.5
     pauli_set = []
     ii_list = []
     xticks_list = ['I','X','Y','Z']
+    if use_el ==False:
+        for oper in [Id, 2*sx,2*sy,2*sz]:
 
-    for oper in [Id, 2*sx,2*sy,2*sz]:
+            pauli_set.append(qutip.expect(oper,rho))
+            ii_list.append(ii)
+            ii = ii+1
 
-        pauli_set.append(qutip.expect(oper,rho))
-        ii_list.append(ii)
-        ii = ii+1
+    elif use_el == True:
+            rho_in = qutip.tensor(rho0,rho)
 
+            xel = qutip.tensor(x,Id)
+            mxel = qutip.tensor(mx,Id)
+            Xel = qutip.tensor(X,Id)
+            yel = qutip.tensor(y,Id)
+            myel = qutip.tensor(my,Id)
+
+            tau_Ren_C1 = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
+            number_of_pulses_Ren_C1 = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+            Ren_C1, Ren_C1_id = c13_gate_multiqubit([carbon_nr], number_of_pulses_Ren_C1, tau_Ren_C1, 304.22, gate_on_C = [0], return_for_one = True)
+
+            tau_z_C1 = phase_gate(carbon_nr, np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+            Rz_C1, Rz_C1_id = c13_gate_multiqubit([carbon_nr], 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = np.pi/2)
+
+            tau_z_C1 = phase_gate(carbon_nr, -np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+            Rmz_C1, Rmz_C1_id = c13_gate_multiqubit([carbon_nr], 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = -np.pi/2)
+
+            pauli_set.append(1)
+
+            ii_list.append(ii)
+            for ev in xticks_list[1:]:
+                ii = ii+1
+                ii_list.append(ii)
+
+                seq_elm =xel* Ren_C1_id*yel
+                if 'Z' in ev:
+                    seq_elm = xel*Rz_C1_id*Ren_C1_id*Rmz_C1_id*yel*Ren_C1_id
+                elif 'Y' in ev:
+                    seq_elm = xel*Rz_C1_id*Ren_C1_id*Rmz_C1_id*yel
+
+                rho_el = (seq_elm*rho_in*seq_elm.dag()).ptrace(0)
+
+                expect_value = qutip.expect(2*sz,rho_el)
+                pauli_set.append(expect_value)
 
     if do_plot ==True:
         fig = plt.figure()
@@ -299,9 +354,12 @@ def single_qubit_pauli(rho, do_plot = False):
             tick.label.set_rotation('vertical')
     return pauli_set, ii_list, xticks_list
 
-def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, alpha=None, beta=None,use_el=False,log_phase_corr=False):
-
-    no_qubits = 3
+def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alpha=None, beta=None,use_el=False,title = None):
+    ''' This function works to perform two and three-qubit tomography
+    it either just takes the expectation values of the given density matrix (when use_el = False)
+    or performs a measurement of the expectation values using the electron spin (close to the experiment)
+    '''
+    no_qubits = len(carbon_nrs)
     ii=-0.5
     pauli_set = []
     ii_list = []
@@ -309,6 +367,30 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
     final_x_tick_list = []
     oper_list = [2*sx,2*sy,2*sz]
     final_oper_list =[]
+
+    if no_qubits ==2:
+        for ff in xticks_list:
+            final_x_tick_list.append(ff+'I')
+        for ff in xticks_list:
+            final_x_tick_list.append('I'+ff)
+
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(ff,Id))
+        for ff in oper_list:
+            final_oper_list.append(qutip.tensor(Id,ff))
+
+        for jj in oper_list:
+            for kk in oper_list:
+                final_oper_list.append(qutip.tensor(jj,kk))
+
+        for jj in xticks_list:
+            for kk in xticks_list:
+                final_x_tick_list.append(jj+kk)
+
+        for jj in oper_list:
+            for kk in oper_list:
+                final_oper_list.append(qutip.tensor(jj,kk))
+
 
     if no_qubits ==3:
         for ff in xticks_list:
@@ -358,7 +440,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
 
     if use_el == False:
         for oper in final_oper_list:
-            print qutip.expect(oper,rho)
+            # print qutip.expect(oper,rho)
             pauli_set.append(qutip.expect(oper,rho))
             ii_list.append(ii)
             ii = ii+1
@@ -367,11 +449,11 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
     if use_el == True:
         rho_in = qutip.tensor(rho0,rho)
 
-        xel = qutip.tensor(x,Id,Id,Id)
-        mxel = qutip.tensor(mx,Id,Id,Id)
-        Xel = qutip.tensor(X,Id,Id,Id)
-        yel = qutip.tensor(y,Id,Id,Id)
-        myel = qutip.tensor(my,Id,Id,Id)
+        xel = qutip.tensor(x,Id,Id)
+        mxel = qutip.tensor(mx,Id,Id)
+        Xel = qutip.tensor(X,Id,Id)
+        yel = qutip.tensor(y,Id,Id)
+        myel = qutip.tensor(my,Id,Id)
 
         tau_Ren_C1 = mp['C' + str(carbon_nrs[0]) + '_Ren_tau'][0]
         number_of_pulses_Ren_C1 = mp['C' + str(carbon_nrs[0]) + '_Ren_N'][0]
@@ -379,99 +461,129 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
 
         tau_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_tau'][0]
         number_of_pulses_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_N'][0]
-        Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C1, 304.22, gate_on_C = [1], return_for_one = True)
+        Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C2, 304.22, gate_on_C = [1], return_for_one = True)
 
-        tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
-        number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
-        Ren_C3, Ren_C3_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C3, tau_Ren_C3, 304.22, gate_on_C = [2], return_for_one = True)
 
         tau_z_C1 = phase_gate(carbon_nrs[0], np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
         Rz_C1, Rz_C1_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = np.pi/2)
-        total_time = 2*tau_Ren_C3*number_of_pulses_Ren_C3+ 2*tau_z_C1*2
 
 
         tau_z_C2 = phase_gate(carbon_nrs[0], np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
         Rz_C2, Rz_C2_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C2, 304.22, gate_on_C = [1], return_for_one = True, phase = np.pi/2)
 
 
-        tau_z_C3 = phase_gate(carbon_nrs[2], np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False, return_tau = True)
-        Rz_C3, Rz_C3_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C3, 304.22, gate_on_C = [2], return_for_one = True, phase = np.pi/2)
-
         tau_z_C1 = phase_gate(carbon_nrs[0], -np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
         Rmz_C1, Rmz_C1_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = -np.pi/2)
-        total_time = 2*tau_Ren_C3*number_of_pulses_Ren_C3+ 2*tau_z_C1*2
 
 
         tau_z_C2 = phase_gate(carbon_nrs[0], -np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
         Rmz_C2, Rmz_C2_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C2, 304.22, gate_on_C = [1], return_for_one = True, phase = -np.pi/2)
 
+        if no_qubits == 3:
+            xel = qutip.tensor(xel,Id)
+            mxel = qutip.tensor(mxel,Id)
+            Xel = qutip.tensor(Xel,Id)
+            yel = qutip.tensor(yel,Id)
+            myel = qutip.tensor(myel,Id)
 
-        tau_z_C3 = phase_gate(carbon_nrs[2], -np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False, return_tau = True)
-        Rmz_C3, Rmz_C3_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C3, 304.22, gate_on_C = [2], return_for_one = True, phase = -np.pi/2)
+            tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
+            number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
+            Ren_C3, Ren_C3_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C3, tau_Ren_C3, 304.22, gate_on_C = [2], return_for_one = True)
+
+            tau_z_C3 = phase_gate(carbon_nrs[2], np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False, return_tau = True)
+            Rz_C3, Rz_C3_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C3, 304.22, gate_on_C = [2], return_for_one = True, phase = np.pi/2)
+
+            tau_z_C3 = phase_gate(carbon_nrs[2], -np.pi/2, B_field=304.22,total_time = 0 ,return_gate = False, return_tau = True)
+            Rmz_C3, Rmz_C3_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C3, 304.22, gate_on_C = [2], return_for_one = True, phase = -np.pi/2)
 
 
         Ren_gates = {}
         Ren_gates['C1']= Ren_C1_id
         Ren_gates['C2']= Ren_C2_id
-        Ren_gates['C3']= Ren_C3_id
+        if no_qubits == 3:
+            Ren_gates['C3']= Ren_C3_id
 
         Rz_gates = {}
         Rz_gates['C1']= Rz_C1_id
         Rz_gates['C2']= Rz_C2_id
-        Rz_gates['C3']= Rz_C3_id
+        if no_qubits == 3:
+            Rz_gates['C3']= Rz_C3_id
 
         Rmz_gates = {}
         Rmz_gates['C1']= Rmz_C1_id
         Rmz_gates['C2']= Rmz_C2_id
-        Rmz_gates['C3']= Rmz_C3_id
-    # print Ren_gates['C1']
+        if no_qubits == 3:
+            Rmz_gates['C3']= Rmz_C3_id
+
 
         for ev in final_x_tick_list:
             ii_list.append(ii)
             ii = ii+1
-                # single-qubit-ev
-            if ev.count('I') == 2:
-                if ev[0]!='I': C_nr = 'C1'
-                elif ev[1]!='I': C_nr = 'C2'
-                elif ev[2]!='I': C_nr = 'C3'
-                seq_elm =myel* Ren_gates[C_nr]*xel
-                if 'Z' in ev:
-                    seq_elm = myel*Ren_gates[C_nr]*xel*Rz_gates[C_nr]*Ren_gates[C_nr]
-                elif 'Y' in ev:
-                    seq_elm = myel*Ren_gates[C_nr]*xel*Rz_gates[C_nr]
-                    print 'Y'
-            # two-qubit-ev
-            elif ev.count('I') ==1:
-                # print '2'
-                if ev[0]=='I':
-                    C_nr1 = 'C2'
-                    C_nr2 = 'C3'
-                elif ev[1]=='I':
-                    C_nr1 = 'C1'
-                    C_nr2 = 'C3'
-                elif ev[2]=='I':
-                    C_nr1 = 'C1'
-                    C_nr2 = 'C2'
+            if no_qubits == 2:
+                    # single-qubit-ev
+                if ev.count('I') == 1:
+                    if ev[0]!='I': C_nr = 'C1'
+                    elif ev[1]!='I': C_nr = 'C2'
+                    seq_elm =xel* Ren_gates[C_nr]*yel
+                    if 'Z' in ev:
+                        seq_elm = xel*Rz_gates[C_nr]*Ren_gates[C_nr]*Rmz_gates[C_nr]*yel*Ren_gates[C_nr]
+                    elif 'Y' in ev:
+                        seq_elm = xel*Rz_gates[C_nr]*Ren_gates[C_nr]*Rmz_gates[C_nr]*yel
 
-                seq_elm = xel*Ren_gates[C_nr1]*Ren_gates[C_nr2]*xel
-                for i in range(3):
-                    if ev[i] == 'Z':
-                        seq_elm =seq_elm *Rz_gates['C'+str(i+1)] *Ren_gates['C'+str(i+1)]
-                    elif ev[i] == 'Y':
-                        seq_elm = seq_elm*Rz_gates['C'+str(i+1)]
-            # three-qubit-ev
-            elif 'I'not in ev:
-                # print '3'
-                seq_elm = yel*Ren_gates['C1']*Ren_gates['C2']*Ren_gates['C3']*xel
-                for i in range(3):
-                    if ev[i] == 'Z':
-                        if log_phase_corr == True:
-                            seq_elm = yel*Ren_gates['C1']*Ren_gates['C2']*Ren_gates['C3']*mxel
-                        seq_elm =seq_elm*Rz_gates['C'+str(i+1)]* Ren_gates['C'+str(i+1)]
-                    elif ev[i] == 'Y':
-                        if log_phase_corr == True:
-                            seq_elm = yel*Ren_gates['C1']*Ren_gates['C2']*Ren_gates['C3']*mxel
-                        seq_elm =seq_elm*Rmz_gates['C'+str(i+1)]
+                    # two-qubit-ev
+                elif 'I'not in ev:
+                    # print ev
+                    seq_elm = Ren_gates['C2']*Ren_gates['C1']
+                    for i in range(2):
+                        if ev[i] == 'Y' or ev[i] =='Z':
+                            seq_elm =Rz_gates['C'+str(i+1)]*seq_elm*Rmz_gates['C'+str(i+1)]
+                            # print ' Y or Z'
+                    seq_elm = yel*seq_elm*yel
+                    for i in range(2):
+                        if ev[i] == 'Z':
+                            # print 'Z'
+                            seq_elm =seq_elm*Ren_gates['C'+str(i+1)]
+
+            if no_qubits == 3:
+                    # single-qubit-ev
+                if ev.count('I') == 2:
+                    if ev[0]!='I': C_nr = 'C1'
+                    elif ev[1]!='I': C_nr = 'C2'
+                    elif ev[2]!='I': C_nr = 'C3'
+                    seq_elm =myel* Ren_gates[C_nr]*xel
+                    if 'Z' in ev:
+                        seq_elm = myel*Ren_gates[C_nr]*xel*Rz_gates[C_nr]*Ren_gates[C_nr]
+                    elif 'Y' in ev:
+                        seq_elm = myel*Ren_gates[C_nr]*xel*Rz_gates[C_nr]
+                        print 'Y'
+                # two-qubit-ev
+                elif ev.count('I') ==1:
+                    # print '2'
+                    if ev[0]=='I':
+                        C_nr1 = 'C2'
+                        C_nr2 = 'C3'
+                    elif ev[1]=='I':
+                        C_nr1 = 'C1'
+                        C_nr2 = 'C3'
+                    elif ev[2]=='I':
+                        C_nr1 = 'C1'
+                        C_nr2 = 'C2'
+
+                    seq_elm = xel*Ren_gates[C_nr1]*Ren_gates[C_nr2]*xel
+                    for i in range(3):
+                        if ev[i] == 'Z':
+                            seq_elm =seq_elm *Rz_gates['C'+str(i+1)] *Ren_gates['C'+str(i+1)]
+                        elif ev[i] == 'Y':
+                            seq_elm = seq_elm*Rz_gates['C'+str(i+1)]
+                # three-qubit-ev
+                elif 'I'not in ev:
+                    # print '3'
+                    seq_elm = yel*Ren_gates['C1']*Ren_gates['C2']*Ren_gates['C3']*xel
+                    for i in range(3):
+                        if ev[i] == 'Z':
+                            seq_elm =seq_elm*Rz_gates['C'+str(i+1)]* Ren_gates['C'+str(i+1)]
+                        elif ev[i] == 'Y':
+                            seq_elm =seq_elm*Rmz_gates['C'+str(i+1)]
 
             rho_el = (seq_elm*rho_in*seq_elm.dag()).ptrace(0)
 
@@ -479,20 +591,28 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
             pauli_set.append(expect_value)
 
     if do_plot == True:
-        fig = plt.figure(figsize=(24,3.5))
+        if no_qubits == 3:
+            figsize =(24,3.5)
+        elif no_qubits == 2:
+            figsize =(8,3.5)
+        if use_el == True:
+            color = 'blue'
+        else:
+            color = 'red'
+        fig = plt.figure(figsize=figsize)
         ax = plt.subplot(111)
-        ax.bar(ii_list, pauli_set, width=1)
+        ax.bar(ii_list, pauli_set, width=1, color = color)
         plt.xticks(np.arange(0, len(final_oper_list)-1, 1.0))
         ax.set_xticklabels(final_x_tick_list)
         ax.set_xlim(-0.5,len(final_x_tick_list)-0.5)
         # ax.set_ylim(-1,1)
-        # ax.set_ylim(-1,1)
+        ax.set_ylim(-1,1)
         for tick in ax.xaxis.get_major_ticks():
             tick.label.set_fontsize(10)
             tick.label.set_rotation('vertical')
+        if title != None:
+            ax.set_title(title)
         plt.show()
-        print 'yes'
-
 
 
     if give_fid == True:
@@ -503,9 +623,9 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1,1],do_plot=False, give_fid = False, al
     else:
         return pauli_set, ii_list, final_x_tick_list
 
-###################
-### Experiments ###
-###################
+##########################################
+### Experiments without initialization ###
+##########################################
 
 def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.225):
     '''nuclear Rabi experiment without init
@@ -637,14 +757,17 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
     plt.show()
     return S[i]
 
-
 ######################
-### Initialization ### NOTE: FOR MULTIPLE C13 SPINS THE PHASE GATES SHOULD BE ADDED!!
+### Initialization ###
 ######################
 
-def nuclear_init_single(carbon_nr,do_plot = False):
-    '''function that returns a gate sequence for a single nuclear spin initialization
-    seq = y - Ren - x - Rz - Ren  note: Z-gate not yet calculated in right way'''
+def nuclear_init_single(carbon_nr,state = 'up',do_plot = False, method = 'SWAP', phase_state = False):
+    '''function that returns a density matrix for an initialized C13 spin note: Z-gate not yet calculated in right way
+    for method = SWAP    seq = y - Ren - x - Rz - Ren
+    for  method = MBI    seq = y - Ren - x          nuclear spin initialized in |x> if electron was in |0>
+    state can be up (either |0> or |x>) or down (either |1> or |-x>)
+    if phase_state = True for method MBI, we can initialize in |Y> or |-Y>
+    '''
 
     rho = qutip.tensor(rho0,rhom)
 
@@ -652,40 +775,93 @@ def nuclear_init_single(carbon_nr,do_plot = False):
     xel = qutip.tensor(x,Id)
 
     U0, U1 = nuclear_Ren_matrix(carbon_nr,B_field=304.22)
-    U0id = np.round(U0.full()*np.sqrt(2))/np.sqrt(2)
-    U1id = np.round(U1.full()*np.sqrt(2))/np.sqrt(2)
-    U0id = qutip.Qobj(U0id)
-    U1id = qutip.Qobj(U1id)
-    Ren = qutip.tensor(rho0,U0)+qutip.tensor(rho1,U1)
-    Ren_id = qutip.tensor(rho0,U0id)+qutip.tensor(rho1,U1id)
 
-    Rz = qutip.tensor(Id,z)
+    tau_Ren = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
+    number_of_pulses_Ren = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    Ren, Ren_id = c13_gate_multiqubit([carbon_nr], number_of_pulses_Ren, tau_Ren, 304.22, gate_on_C = [0], return_for_one = True)
 
-    seq = Ren*Rz*xel*Ren*yel
-    seq_id = Ren_id*Rz*xel*Ren_id*yel
 
-    rho_final = seq*rho*seq.dag()
-    rho_final_id = seq_id*rho*seq_id.dag()
+    if state == 'up':
+        phase = np.pi/2
+    elif state == 'down':
+        phase = -np.pi/2
 
-    rho_nucl = rho_final.ptrace(1)
+    tau_z = phase_gate(carbon_nr, phase, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+    Rz, Rz_id = c13_gate_multiqubit([carbon_nr], 2, tau_z, 304.22, gate_on_C = [0], return_for_one = True, phase = phase)
 
-    rho_nucl_id = rho_final_id.ptrace(1)
+    tau_mz = phase_gate(carbon_nr, -1*phase, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+    Rmz, Rmz_id = c13_gate_multiqubit([carbon_nr], 2, tau_z, 304.22, gate_on_C = [0], return_for_one = True, phase = -1*phase)
+
+    tau_Z = phase_gate(carbon_nr, np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+    RZ, RZ_id = c13_gate_multiqubit([carbon_nr], 2, tau_z, 304.22, gate_on_C = [0], return_for_one = True, phase = np.pi)
+
+
+    if method == 'SWAP':
+        seq = Ren*Rz*xel*Ren*yel
+        seq_id = Rz_id*Ren_id*Rmz_id*xel*Ren_id*yel
+
+        rho_final = seq*rho*seq.dag()
+        rho_final_id = seq_id*rho*seq_id.dag()
+
+        rho_nucl = rho_final.ptrace(1)
+        rho_nucl_id = rho_final_id.ptrace(1)
+
+
+    elif method == 'MBI':
+        seq = xel*Ren*yel
+        seq_id = xel*Ren_id*yel
+        if state == 'down':
+            seq = xel*Ren*RZ*yel
+            seq_id = xel*RZ_id*Ren_id*yel
+
+        if phase_state == True: # to make Y state
+            seq = xel*Rz*Ren*Rmz*yel
+            seq_id = xel*Rz_id*Ren_id*Rmz_id*yel
+
+        rho_final = seq*rho*seq.dag()
+        rho_final_id = seq_id*rho*seq_id.dag()
+
+
+        # measure electron to be in 0 and renormalize
+        el0 = qutip.tensor(rho0,Id)
+        rho_final_id = el0*rho_final_id*el0.dag()
+        rho_final = el0*rho_final*el0.dag()
+
+        # renormalize
+        norm_id = qutip.fidelity(rho0,rho_final_id.ptrace([0]))
+        norm = qutip.fidelity(rho0,rho_final.ptrace([0]))
+
+        rho_nucl = 1/norm**2*rho_final.ptrace([1])
+        rho_nucl_id = 1/(norm_id**2)*rho_final_id.ptrace([1])
+
 
     if do_plot == True:
         fig = plt.figure()
         ax = plt.subplot(111)
 
-        for rho_n in [rho_nucl,rho_nucl_id]:
-            pauli_set, ii_list, x_ticks_list = single_qubit_pauli(rho_n)
-            ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5)
-
+        for use_el in [True,False]:
+            pauli_set, ii_list, x_ticks_list = single_qubit_pauli(rho_nucl_id,use_el =use_el, carbon_nr = carbon_nr)
+            if use_el == True:
+                color = 'blue'
+            else: color = 'red'
+            ax.bar(ii_list, np.real(pauli_set), width=1,alpha = 0.5, color = color)
+        ax.set_title('Initialized Carbon: ' +str(carbon_nr)+', RO with and without using the electron'  '\n method: '+ method +'  phase state: '+str(phase_state)+ ' state: '+ state )
         plt.xticks(np.arange(0, 4, 1.0))
         ax.set_xticklabels(x_ticks_list)
+        ax.set_ylim(-1,1)
+        # print 'Fidelity to ideal state:'
+        # print qutip.fidelity(rho_nucl,rho_nucl_id)
+        plt.show()
 
-        print 'Fidelity to ideal state:'
-        print qutip.fidelity(rho_nucl,rho_nucl_id)
+
     return rho_nucl,rho_nucl_id
 
+def test_initialization():
+    for carbon_nr in [1,4]:
+        for state in ['up','down']:
+            for method in ['MBI','SWAP']:
+                for phase_state in [False,True]:
+                    nuclear_init_single(carbon_nr,state = state ,do_plot = True, method = method, phase_state = phase_state)
 
 def three_spin_encoding(carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2),do_plot=True):
     ''' encodes your three chosen C13 spins in the state alpha(xxx)+beta(-x-x-x)
@@ -716,7 +892,7 @@ def three_spin_encoding(carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2
 
     tau_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_N'][0]
-    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C1, 304.22, gate_on_C = [1], return_for_one = True)
+    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C2, 304.22, gate_on_C = [1], return_for_one = True)
 
     tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
@@ -911,6 +1087,8 @@ def two_spin_encoding(carbon_nrs = [1,1],alpha=1/np.sqrt(2),beta=1/np.sqrt(2)):
         tick.label.set_rotation('vertical')
     plt.xticks(np.arange(0, len(x_ticks_list), 1.0))
     ax.set_xticklabels(x_ticks_list)
+    plt.show()
+
 
 #######################
 ### Error detection ###
@@ -935,7 +1113,7 @@ def parity_msmt(qubits=[0,1],carbon_nrs = [1,1,1],alpha=1/np.sqrt(2),beta=1/np.s
 
     tau_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_N'][0]
-    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C1, 304.22, gate_on_C = [1], return_for_one = True)
+    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C2, 304.22, gate_on_C = [1], return_for_one = True)
 
     tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
@@ -1089,11 +1267,9 @@ def error_curves():
         ax.set_ylabel('Electron probability to measure |0>')
         ax.set_title('state = (' + str(alpha_list[mm]) +' |xxx> + ' + str(beta_list[mm]) + ' |-x-x-x>)')
 
-def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),points = 9,do_plot=True,reset = True):
+def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),carbon_nrs = [4,4,4],points = 5,do_plot=True,reset = True):
 
     error_angle_list = np.linspace(0,np.pi,points)
-
-    carbon_nrs = [1,1,1]
 
     rho_enc_start, rho_enc_start_id = three_spin_encoding(carbon_nrs=carbon_nrs,alpha=alpha,beta=beta,do_plot=False)
     rho_enc = qutip.tensor(rho0,rho_enc_start)
@@ -1112,7 +1288,7 @@ def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),points = 9,do_plot=
 
     tau_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_N'][0]
-    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C1, 304.22, gate_on_C = [1], return_for_one = True)
+    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C2, 304.22, gate_on_C = [1], return_for_one = True)
 
     tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
@@ -1347,8 +1523,8 @@ def full_QEC_experiment(alpha=1/np.sqrt(2),beta=1/np.sqrt(2),points = 9,do_plot=
         # seq_10 = RZ_C3
         # seq_11 = Ren_C1*Ren_C1
         if reset == True:
-            seq_10_id = qutip.tensor(Id,Id,Id,Id)
-            seq_11_id = Ren_C1_id*Ren_C1_id
+            seq_11_id = qutip.tensor(Id,Id,Id,Id)
+            seq_10_id = Ren_C1_id*Ren_C1_id
             seq_01_id = Ren_C3_id*Ren_C3_id
             seq_00_id = qutip.tensor(Id,Id,Id,Id)
         else:
@@ -1488,7 +1664,7 @@ def three_qubit_ev_via_el(rho,carbon_nrs = [1,1,1],ev = 'ZZZ'):
 
     tau_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_N'][0]
-    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C1, 304.22, gate_on_C = [1], return_for_one = True)
+    Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C2, 304.22, gate_on_C = [1], return_for_one = True)
 
     tau_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_tau'][0]
     number_of_pulses_Ren_C3 = mp['C' + str(carbon_nrs[2]) + '_Ren_N'][0]
@@ -1595,6 +1771,123 @@ def test_pauli_sets():
         multi_qubit_pauli(rho_id,do_plot=True,use_el=False)
         multi_qubit_pauli(rho_id,do_plot=True,use_el=True)
 
+##############################
+### Two-qubit entanglement ###
+##############################
+
+def two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ',states = ['up','up'] , do_parity = True, combination = '-X-X'):
+    ''' this function performs a parity meassurement between two C13 spins on one of the 4 combinations ( XX, X-X, -XX,-X-X)
+    on a certain initial product state (either 'ZZ' or 'XX')
+    '''
+    phase_state = [False, False]
+    method = ['','']
+    for jj in range(len(initial_states)):
+        if initial_states[jj] == 'Z':
+            method[jj] = 'SWAP'
+        elif initial_states[jj] == 'X' or 'Y':
+            method[jj] = 'MBI'
+            if initial_states[jj] == 'Y':
+                print 'Y'
+                phase_state[jj] = True
+
+    # initialize Carbon spins
+    rho_C1, rho_C1_id = nuclear_init_single(carbon_nrs[0],state = states[0],method = method[0], phase_state = phase_state[0])
+    rho_C2, rho_C2_id = nuclear_init_single(carbon_nrs[1],state = states[1],method = method[1], phase_state = phase_state[1])
+
+    rho_enc = qutip.tensor(rho0,rho_C1,rho_C2)
+    rho_enc_id = qutip.tensor(rho0,rho_C1_id,rho_C2_id)
+
+
+    ### plot Carbon input state ###
+    multi_qubit_pauli(rho_enc_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=True,title = 'input state (no parity msmt)')
+    # multi_qubit_pauli(rho_enc_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'input state (no parity msmt)')
+
+    if do_parity == True:
+        #define gates
+        xel = qutip.tensor(x,Id,Id)
+        Xel = qutip.tensor(X,Id,Id)
+        yel = qutip.tensor(y,Id,Id)
+
+        tau_Ren_C1 = mp['C' + str(carbon_nrs[0]) + '_Ren_tau'][0]
+        number_of_pulses_Ren_C1 = mp['C' + str(carbon_nrs[0]) + '_Ren_N'][0]
+        Ren_C1, Ren_C1_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C1, tau_Ren_C1, 304.22, gate_on_C = [0], return_for_one = True)
+        tau_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_tau'][0]
+        number_of_pulses_Ren_C2 = mp['C' + str(carbon_nrs[1]) + '_Ren_N'][0]
+
+        Ren_C2, Ren_C2_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren_C2, tau_Ren_C2, 304.22, gate_on_C = [1], return_for_one = True)
+
+        tau_z_C1 = phase_gate(carbon_nrs[0], np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+        RZ_C1, RZ_C1_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = np.pi)
+
+        tau_z_C2 = phase_gate(carbon_nrs[0], np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+        RZ_C2, RZ_C2_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C2, 304.22, gate_on_C = [1], return_for_one = True, phase = np.pi)
+
+        tau_z_C1 = phase_gate(carbon_nrs[0], -np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+        RmZ_C1, RmZ_C1_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C1, 304.22, gate_on_C = [0], return_for_one = True, phase = -np.pi)
+
+        tau_z_C2 = phase_gate(carbon_nrs[0], -np.pi, B_field=304.22,total_time = 0 ,return_gate = False,return_tau = True)
+        RmZ_C2, RmZ_C2_id = c13_gate_multiqubit(carbon_nrs, 2, tau_z_C2, 304.22, gate_on_C = [1], return_for_one = True, phase = -np.pi)
+
+        # perform parity measurement
+        if combination == 'XX':
+            # seq = yel*Ren_C2*Ren_C1*yel
+            seq_id = yel*Ren_C2_id*Ren_C1_id*yel
+        elif combination == '-XX':
+            # seq = yel*Ren_C2*Ren_C1*yel
+            seq_id = yel*RZ_C1_id*Ren_C2_id*Ren_C1_id*RmZ_C1_id*yel
+        elif combination == 'X-X':
+            # seq = yel*Ren_C2*Ren_C1*yel
+            seq_id = yel*RZ_C2_id*Ren_C2_id*RmZ_C2_id*Ren_C1_id*yel
+        elif combination == '-X-X':
+            # seq = yel*Ren_C2*Ren_C1*yel
+            seq_id = yel*RZ_C1_id*RZ_C2_id*Ren_C2_id*Ren_C1_id*RmZ_C2_id*RmZ_C1_id*yel
+
+        # rho_after =seq*rho_enc*seq.dag()
+        rho_after_id =seq_id*rho_enc_id*seq_id.dag()
+
+        # measure electron in 0 and renormalize
+        el0 = qutip.tensor(rho0,Id,Id)
+        rho_final_0_id = el0*rho_after_id*el0.dag()
+        # rho_final_0 = el0*rho_after*el0.dag()
+
+        norm_id = qutip.fidelity(rho0,rho_final_0_id.ptrace([0]))
+        # norm = qutip.fidelity(rho0,rho_final_0.ptrace([0]))
+
+        # rho_final_0 = 1/norm**2*rho_final_0.ptrace([1,2])
+        rho_final_0_id = 1/(norm_id**2)*rho_final_0_id.ptrace([1,2])
+
+
+
+        # measure electron in 1 and renormalize
+        el1 = qutip.tensor(rho1,Id,Id)
+        rho_final_1_id = el1*rho_after_id*el1.dag()
+        # rho_final_1 = el1*rho_after*el1.dag()
+
+        norm_id = qutip.fidelity(rho1,rho_final_1_id.ptrace([0]))
+        # norm = qutip.fidelity(rho1,rho_final_1.ptrace([0]))
+
+        # rho_final_1 = 1/norm**2*rho_final_1.ptrace([1,2])
+        rho_final_1_id = 1/(norm_id**2)*rho_final_1_id.ptrace([1,2])
+
+
+        # multi_qubit_pauli(rho_enc_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,
+        # multi_qubit_pauli(rho_after_id.ptrace([1,2]),carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,
+
+        multi_qubit_pauli(rho_final_0_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=True, title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 0')
+        multi_qubit_pauli(rho_final_1_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=True,title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 1')
+        # multi_qubit_pauli(rho_final_0_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False, title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 0')
+        # multi_qubit_pauli(rho_final_1_id,carbon_nrs=carbon_nrs,do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'Carbon nrs '+str(carbon_nrs)+ ', initial state '+initial_states+ ', parity msmt '+combination +', electron in 1')
+
+def test_2qb_parity():
+    for combination in ['XX','X-X','-XX','-X-X']:
+        two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = 'ZZ' ,combination = combination)
+
+def test_2qb_states():
+    for initial_states in ['XX','YY','ZZ']:
+        for state_1 in ['up','down']:
+            for state_2 in ['up','down']:
+                two_qb_entanglement_parity(carbon_nrs = [1,4], initial_states = initial_states,states = [state_1,state_2] , do_parity = False)
+
 ##########################################
 ### Nuclear evolution characterization ###
 ##########################################
@@ -1612,17 +1905,7 @@ def calc_operator_rotation_axis_and_angle(operator):
 
     return np.array([X_axis_projection, Y_axis_projection, Z_axis_projection]), np.abs(angle)
 
-def characterize_c13_DD_unit(carbon_nr, B_field=304.22, tau_list = np.linspace(10,5000,500)):
-
-    A_par = 2*np.pi*hf['C' + str(carbon_nr)]['par']
-    A_perp = 2*np.pi*hf['C' + str(carbon_nr)]['perp']
-
-    print A_par/2./np.pi
-    print A_perp/2./np.pi
-
-    characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
-
-def characterize_DD_unit(A_par = 2*np.pi*100e3, A_perp = 2*np.pi*30e3, B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
+def characterize_DD_unit(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_field = 304.22, tau_list = np.linspace(10,5000,500), N=32):
     '''gives a full characterization of the rotation matrix
     for a single DD unit tau - X - 2tau - X - tau'''
 
@@ -1634,66 +1917,213 @@ def characterize_DD_unit(A_par = 2*np.pi*100e3, A_perp = 2*np.pi*30e3, B_field =
     print B_field
     omega_Larmor = 2 * np.pi * B_field * 1.07e3
 
-    for i in range(len(tau_list)):
-        tau = tau_list[i]*1e-9
-        if i%10 == 0:
-            print str(tau_list[i]) + ' out of ' + str(max(tau_list))
-        V0, V1 = nuclear_rotation_matrix(tau, omega_Larmor, A_par, A_perp)
-        axes0, angle0[i] = calc_operator_rotation_axis_and_angle(V0)
-        axes1, angle1[i] = calc_operator_rotation_axis_and_angle(V1)
+    X_proj_0_all = numpy.zeros((len(A_par),len(tau_list))); Y_proj_0_all = numpy.zeros((len(A_par),len(tau_list))); Z_proj_0_all = numpy.zeros((len(A_par),len(tau_list)))
+    X_proj_1_all = numpy.zeros((len(A_par),len(tau_list))); Y_proj_1_all = numpy.zeros((len(A_par),len(tau_list))); Z_proj_1_all = numpy.zeros((len(A_par),len(tau_list)))
 
-        X_proj_0[i] = axes0[0]
-        Y_proj_0[i] = axes0[1]
-        Z_proj_0[i] = axes0[2]
-        X_proj_1[i] = axes1[0]
-        Y_proj_1[i] = axes1[1]
-        Z_proj_1[i] = axes1[2]
+    innerprod_all       =   numpy.zeros((len(A_par),len(tau_list)))
+    pulses_for_pi2_all  =   numpy.zeros((len(A_par),len(tau_list)))
+    signal_all          =   numpy.zeros((len(A_par),len(tau_list)))
 
-        innerprod[i]    = X_proj_0[i]*X_proj_1[i] + Y_proj_0[i]*Y_proj_1[i] + Z_proj_0[i]*Z_proj_1[i]
-        pulses_for_pi2[i]  = (np.pi/2./(np.pi-abs(np.pi-angle0[i].real))).real
-        signal[i] = ( V0**(N/2) * (V1**(N/2)).dag() ).tr().real/4+1./2
+    angle0_all          =   numpy.zeros((len(A_par),len(tau_list)))
+
+    for kk in range(len(A_par)):
+
+        for i in range(len(tau_list)):
+            tau = tau_list[i]*1e-9
+            if i%10 == 0:
+                print str(tau_list[i]) + ' out of ' + str(max(tau_list))
+            V0, V1 = nuclear_rotation_matrix(tau, omega_Larmor, A_par[kk], A_perp[kk])
+            axes0, angle0[i] = calc_operator_rotation_axis_and_angle(V0)
+            axes1, angle1[i] = calc_operator_rotation_axis_and_angle(V1)
+
+            X_proj_0[i] = axes0[0]
+            Y_proj_0[i] = axes0[1]
+            Z_proj_0[i] = axes0[2]
+            X_proj_1[i] = axes1[0]
+            Y_proj_1[i] = axes1[1]
+            Z_proj_1[i] = axes1[2]
+
+            innerprod[i]    = X_proj_0[i]*X_proj_1[i] + Y_proj_0[i]*Y_proj_1[i] + Z_proj_0[i]*Z_proj_1[i]
+            pulses_for_pi2[i]  = (np.pi/2./(np.pi-abs(np.pi-angle0[i].real))).real
+            signal[i] = ( V0**(N/2) * (V1**(N/2)).dag() ).tr().real/4+1./2
+
+        X_proj_0_all[kk] =  X_proj_0
+        Y_proj_0_all[kk] =  Y_proj_0
+        Z_proj_0_all[kk] =  Z_proj_0
+        X_proj_1_all[kk] =  X_proj_1
+        Y_proj_1_all[kk] =  Y_proj_1
+        Z_proj_1_all[kk] =  Z_proj_1
+
+        innerprod_all[kk]       =   innerprod
+        pulses_for_pi2_all[kk]  =   pulses_for_pi2
+        signal_all[kk]          =   signal
+        angle0_all[kk]          =   angle0
+
 
     #plots
     plt.close('all')
 
-    f, ax = plt.subplots(3,3)
-    ax[0,0].plot(tau_list/1e3,X_proj_0, '-', lw=1,label = 'data')
-    ax[0,0].set_title('X projection ms=0'); ax[0,0].set_xlabel('tau (us)')
+    f, ax = plt.subplots(3,2)
 
-    ax[1,0].plot(tau_list/1e3,X_proj_1, '-', lw=1,label = 'data')
-    ax[1,0].set_title('X projection ms=1'); ax[1,0].set_xlabel('tau (us)')
+    for kk in range(len(A_par)):
 
-    ax[2,0].plot(tau_list/1e3,(X_proj_0-X_proj_1), '-', lw=1,label = 'data')
-    ax[2,0].set_title('X projection ms=0 - X projection ms=1'); ax[2,0].set_xlabel('tau (us)')
+        ax[0,0].plot(tau_list/1e3,X_proj_0_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        ax[0,0].set_title('X projection ms=0'); ax[0,0].set_xlabel('tau (us)')
 
-    ax[0,1].plot(tau_list/1e3,Y_proj_0, '-', lw=1,label = 'data')
-    ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
+        ax[1,0].plot(tau_list/1e3,X_proj_1_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        ax[1,0].set_title('X projection ms=1'); ax[1,0].set_xlabel('tau (us)')
 
-    ax[1,1].plot(tau_list/1e3,Y_proj_1, '-', lw=1,label = 'data')
-    ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
+        ax[2,0].plot(tau_list/1e3,(X_proj_0_all[kk]-X_proj_1_all[kk]), '-', lw=1,label = 'data' + str(kk+1))
+        ax[2,0].set_title('X projection ms=0 - X projection ms=1'); ax[2,0].set_xlabel('tau (us)')
 
-    ax[2,1].plot(tau_list/1e3,(Y_proj_0-Y_proj_1), '-', lw=1,label = 'data')
-    ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
+        # ax[0,1].plot(tau_list/1e3,Y_proj_0_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        # ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
 
-    ax[0,2].plot(tau_list/1e3,Z_proj_0, '-', lw=1,label = 'data')
-    ax[0,2].set_title('Z projection ms=0'); ax[0,2].set_xlabel('tau (us)')
+        # ax[1,1].plot(tau_list/1e3,Y_proj_1_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        # ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
 
-    ax[1,2].plot(tau_list/1e3,Z_proj_1, '-', lw=1,label = 'data')
-    ax[1,2].set_title('Z projection ms=1'); ax[1,2].set_xlabel('tau (us)')
+        # ax[2,1].plot(tau_list/1e3,(Y_proj_0_all[kk]-Y_proj_1_all[kk]), '-', lw=1,label = 'data' + str(kk+1))
+        # ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
 
-    ax[2,2].plot(tau_list/1e3,(Z_proj_0-Z_proj_1), '-', lw=1,label = 'data')
-    ax[2,2].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,2].set_xlabel('tau (us)')
+        ax[0,1].plot(tau_list/1e3,Z_proj_0_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        ax[0,1].set_title('Z projection ms=0'); ax[0,1].set_xlabel('tau (us)')
+
+        ax[1,1].plot(tau_list/1e3,Z_proj_1_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        ax[1,1].set_title('Z projection ms=1'); ax[1,1].set_xlabel('tau (us)')
+
+        ax[2,1].plot(tau_list/1e3,(Z_proj_0_all[kk]-Z_proj_1_all[kk]), '-', lw=1,label = 'data' + str(kk+1))
+        ax[2,1].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,1].set_xlabel('tau (us)')
+
+        plt.legend(loc = 4)
 
     f2, ax2 = plt.subplots(4,1)
-    ax2[0].plot(tau_list/1e3,innerprod, '-', lw=1,label = 'data')
-    ax2[0].set_title('axis innerporduct'); ax2[0].set_xlabel('tau (us)')
-    ax2[1].plot(tau_list/1e3,angle0/np.pi, '-', lw=1,label = 'data')
-    ax2[1].set_title('rotation_angle'); ax2[1].set_xlabel('tau (us)'); ax2[1].set_ylim(0,2)
-    ax2[2].plot(tau_list/1e3,pulses_for_pi2, '-', lw=1,label = 'data')
-    ax2[2].set_title('nr of pulses'); ax2[2].set_xlabel('tau (us)')
-    ax2[3].plot(tau_list/1e3,signal, '-', lw=1,label = 'data')
-    ax2[3].set_title('signal'); ax2[3].set_xlabel('tau (us)')
+
+    for kk in range(len(A_par)):
+
+        ax2[0].plot(tau_list/1e3,innerprod_all[kk], '-', lw=1,label = 'data')
+        ax2[0].set_title('axis innerporduct'); ax2[0].set_xlabel('tau (us)')
+        ax2[1].plot(tau_list/1e3,angle0_all[kk]/np.pi, '-', lw=1,label = 'data')
+        ax2[1].set_title('rotation_angle'); ax2[1].set_xlabel('tau (us)'); ax2[1].set_ylim(0,2)
+        ax2[2].plot(tau_list/1e3,pulses_for_pi2_all[kk], '-', lw=1,label = 'data')
+        ax2[2].set_title('nr of pulses'); ax2[2].set_xlabel('tau (us)')
+        ax2[3].plot(tau_list/1e3,signal_all[kk], '-', lw=1,label = 'data')
+        ax2[3].set_title('signal'); ax2[3].set_xlabel('tau (us)')
 
     plt.show()
 
-print 'succes'
+def characterize_c13_DD_unit(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10,5000,500)):
+    '''
+    carbon_nrs is a list of carbons to calcuate for
+    '''
+    A_par = []
+    A_perp = []
+
+    A_par, A_perp = get_C13_hyperfine_params(carbon_nrs, ms = ms)
+    characterize_DD_unit(A_par,A_perp,B_field=B_field,tau_list=tau_list)
+
+
+###################################################
+### Analytical equation for DD and fingerprints ###
+###################################################
+
+def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = False):
+    '''
+    inputs
+    ------
+    HFs_par:        list of parallel hyperfine components in RadHz
+    HFs_orth:       list of orthogonal hyperfine components in RadHz
+    B_field:        Magnetic field in Gauss
+    N:              number of pulses
+    tau:            time in s
+    -------
+    returns
+    -------
+    M:       list of signals of individual simulated spins
+    measured signal is M.prod(axis=0)
+    '''
+    gamma_c = 1.071e3                           ### g-factor for C13 in Hz/G
+    omega_larmor = 2*np.pi*gamma_c*B_field      ### Radial frequency
+    tau_larmor = 2*np.pi/omega_larmor           ### Larmor period in seconds
+
+    if len(A_par_list) != len(A_per_list):
+        print 'Error: Hyperfine lists lengths not equal'
+        return
+
+    M=np.zeros([len(A_par_list),len(tau)])
+
+    for kk,HF_par in enumerate(A_par_list):
+        HF_orth = A_per_list[kk]
+
+        ### equations based on Taminiau PRL 2012
+        omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
+        alpha       = omega_tilde*tau
+        beta        = omega_larmor*tau
+
+        mx          = HF_orth/omega_tilde
+        mz          = (HF_par+omega_larmor)/omega_tilde
+        vec_term    = mx**2 *((1-np.cos(alpha))*(1-np.cos(beta)))/(1+np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))
+        angle_term  = np.sin(N*np.arccos(np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))/2)**2
+
+        M[kk,:]= 1-(vec_term*angle_term)
+
+    ### get final results by multiplying the individual results
+    Signal      = M.prod(axis=0)
+    Fidelity    = ((Signal+1)/2)
+
+    ### plotting
+    if show_plot == True:
+
+        plt.figure(1)
+        colors = cm.rainbow(np.linspace(0, 1, len(M[:,1])))
+        for kk in range(len(M[:,1])):
+            plt.plot(tau*1e6, M[kk][:], '-', lw=1, label = 'spin' + str(kk+1), color = colors[kk])
+
+        plt.title('Signal'); plt.xlabel('Tau')
+        plt.legend(loc = 4)
+        plt.ylim(-1,1)
+
+
+
+        plt.figure(2)
+        plt.plot(tau*1e6, Signal, '-', lw=1)
+        plt.title('Signal'); plt.xlabel('Tau')
+        plt.ylim(-1,1)
+
+
+
+        plt.show()
+
+    return Fidelity, M
+
+def C13_fingerprint(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10e-9,5e-6,500), N=16, show_plot = True):
+
+    A_par_list, A_perp_list = get_C13_hyperfine_params(carbon_nrs, ms = ms)
+    print A_par_list
+    DD_electron_coherence(A_par_list, A_perp_list, B_field = B_field, tau = tau_list, N = N, show_plot = show_plot)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

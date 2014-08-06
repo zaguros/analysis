@@ -153,7 +153,7 @@ if __name__ == '__main__':
     else:
         folder = toolbox.latest_data('DarkESR')
     print folder
-    fit_result=analyze_dark_esr(folder,center_guess = True)
+    fit_result=analyze_dark_esr(folder,center_guess = False)
 
 
 
