@@ -219,7 +219,7 @@ class SequenceAnalysis(m2.M2Analysis):
     def plot_result_vs_sweepparam(self, name='', save=True, **kw):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
-
+       
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(len(self.ssro_results)) + 1
             self.sweep_name = 'sweep parameter'
@@ -238,14 +238,14 @@ class SequenceAnalysis(m2.M2Analysis):
                 yerr=self.u_p0)
     
         ax.set_xlabel(self.sweep_name)
+
         if not self.result_corrected:
             ax.set_ylabel('avg (uncorrected) outcome')
         else:
             ax.set_ylabel(r'$F(|0\rangle)$')
 
-        if self.result_corrected:
-            ax.set_ylim(-0.05, 1.05)
-
+        #if self.result_corrected:
+        ax.set_ylim(-0.05, 1.05)
         if save:
             fig.savefig(
                 os.path.join(self.folder, 'ssro_result_vs_sweepparam.png'),
