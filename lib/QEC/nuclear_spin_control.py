@@ -84,6 +84,7 @@ def any_mixed_state(alpha,beta):
 def print_matrix(Qobject):
     print np.round(Qobject.full()*100)/100
     print type(np.round(Qobject.full()*100)/100)
+
 def find_phase_gate(total_time, carbon_nr, axis_phase):
     '''function to determine the parameters of the preceding DD phase
     gate to set the phase, NOTE, implementation pending on the experimental implementation'''
@@ -216,8 +217,6 @@ def phase_gate(carbon_nr, phase, B_field=304.22,total_time = 0,return_gate = Fal
         return U0, U1
     if return_tau == True:
         return tau
-
-
 
 def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = [], return_for_one = False, phase = None):
     '''calculates the evolution matrices a multiqubit space,
