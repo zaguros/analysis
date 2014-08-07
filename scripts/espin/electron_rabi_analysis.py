@@ -18,6 +18,10 @@ timestamp = None #'20140408125318'
 guess_frq = 1/60.
 guess_amp = 0.2
 guess_of = 1
+timestamp = None#'20140408125318'
+guess_frq = 1./0.1
+guess_amp = 0.2
+guess_of = 0.1
 # guess_slope = 0.
 guess_phi = 0.
 guess_k = 0.
@@ -70,7 +74,7 @@ fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)
 
-print "pi pulse = {:.2f} ".format(1/f()/2.) + a.sweep_name
+print "pi pulse = {:.3f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 plt.savefig(os.path.join(folder, 'electronrabi_analysis_fit.png'))
