@@ -2185,36 +2185,38 @@ def characterize_DD_unit(A_par = [2*np.pi*100e3], A_perp = [2*np.pi*30e3], B_fie
     #plots
     plt.close('all')
 
-    f, ax = plt.subplots(3,3)
+    f, ax = plt.subplots(3,2)
 
     for kk in range(len(A_par)):
 
-        ax[0,0].plot(tau_list/1e3,X_proj_0_all[kk], '-', lw=1,label = 'data')
+        ax[0,0].plot(tau_list/1e3,X_proj_0_all[kk], '-', lw=1,label = 'data' + str(kk+1))
         ax[0,0].set_title('X projection ms=0'); ax[0,0].set_xlabel('tau (us)')
 
-        ax[1,0].plot(tau_list/1e3,X_proj_1_all[kk], '-', lw=1,label = 'data')
+        ax[1,0].plot(tau_list/1e3,X_proj_1_all[kk], '-', lw=1,label = 'data' + str(kk+1))
         ax[1,0].set_title('X projection ms=1'); ax[1,0].set_xlabel('tau (us)')
 
-        ax[2,0].plot(tau_list/1e3,(X_proj_0_all[kk]-X_proj_1_all[kk]), '-', lw=1,label = 'data')
+        ax[2,0].plot(tau_list/1e3,(X_proj_0_all[kk]-X_proj_1_all[kk]), '-', lw=1,label = 'data' + str(kk+1))
         ax[2,0].set_title('X projection ms=0 - X projection ms=1'); ax[2,0].set_xlabel('tau (us)')
 
-        ax[0,1].plot(tau_list/1e3,Y_proj_0_all[kk], '-', lw=1,label = 'data')
-        ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
+        # ax[0,1].plot(tau_list/1e3,Y_proj_0_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        # ax[0,1].set_title('Y projection ms=0'); ax[0,1].set_xlabel('tau (us)')
 
-        ax[1,1].plot(tau_list/1e3,Y_proj_1_all[kk], '-', lw=1,label = 'data')
-        ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
+        # ax[1,1].plot(tau_list/1e3,Y_proj_1_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        # ax[1,1].set_title('Y projection ms=1'); ax[1,1].set_xlabel('tau (us)')
 
-        ax[2,1].plot(tau_list/1e3,(Y_proj_0_all[kk]-Y_proj_1_all[kk]), '-', lw=1,label = 'data')
-        ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
+        # ax[2,1].plot(tau_list/1e3,(Y_proj_0_all[kk]-Y_proj_1_all[kk]), '-', lw=1,label = 'data' + str(kk+1))
+        # ax[2,1].set_title('Y projection ms=0 - Y projection ms=1'); ax[2,1].set_xlabel('tau (us)')
 
-        ax[0,2].plot(tau_list/1e3,Z_proj_0_all[kk], '-', lw=1,label = 'data')
-        ax[0,2].set_title('Z projection ms=0'); ax[0,2].set_xlabel('tau (us)')
+        ax[0,1].plot(tau_list/1e3,Z_proj_0_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        ax[0,1].set_title('Z projection ms=0'); ax[0,1].set_xlabel('tau (us)')
 
-        ax[1,2].plot(tau_list/1e3,Z_proj_1_all[kk], '-', lw=1,label = 'data')
-        ax[1,2].set_title('Z projection ms=1'); ax[1,2].set_xlabel('tau (us)')
+        ax[1,1].plot(tau_list/1e3,Z_proj_1_all[kk], '-', lw=1,label = 'data' + str(kk+1))
+        ax[1,1].set_title('Z projection ms=1'); ax[1,1].set_xlabel('tau (us)')
 
-        ax[2,2].plot(tau_list/1e3,(Z_proj_0_all[kk]-Z_proj_1_all[kk]), '-', lw=1,label = 'data')
-        ax[2,2].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,2].set_xlabel('tau (us)')
+        ax[2,1].plot(tau_list/1e3,(Z_proj_0_all[kk]-Z_proj_1_all[kk]), '-', lw=1,label = 'data' + str(kk+1))
+        ax[2,1].set_title('Z projection ms=0 - Z projection ms=1'); ax[2,1].set_xlabel('tau (us)')
+
+        plt.legend(loc = 4)
 
     f2, ax2 = plt.subplots(4,1)
 
