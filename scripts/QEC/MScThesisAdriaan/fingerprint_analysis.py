@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 import fingerprint_funcs_MAR as fp_funcs; reload(fp_funcs)
 
-def fingerprint(disp_sim_spin = True, N = 16, xlims = [2,10],B_Field =304.12 ):
+def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [2,10],B_Field =304.12,disp_total_sig=False,figsize= (25,5),fontsize = 10,showlegend = True,title ='Fingerprint of Hans Sil 01 at 304.12G for N =32 pulses'):
 
     ###################
     ## Data location ##
@@ -37,53 +37,57 @@ def fingerprint(disp_sim_spin = True, N = 16, xlims = [2,10],B_Field =304.12 ):
         return
 
 
-
-
     #######################
     # Add simulated spins #
     #######################
 
-    if disp_sim_spin == True:
-
-            HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'plus')
-            tau_lst = np.linspace(0, 72e-6, 10000)
-            Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,N,tau_lst)
-            FP_signal16 = ((Mt16+1)/2)
+    HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'plus')
+    tau_lst = np.linspace(0, 72e-6, 10000)
+    Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,N,tau_lst)
+    FP_signal16 = ((Mt16+1)/2)
 
     ###############
     ## Plotting ###
     ###############
 
-    fig = a.default_fig(figsize=(35,5))
+    fig = a.default_fig(figsize=figsize)
     ax = a.default_ax(fig)
+    plt.xlabel ='testlabel'
     ax.set_xlim(xlims)
     start, end = ax.get_xlim()
     ax.xaxis.set_ticks(np.arange(start, end, 0.5))
-
-
     ax.set_ylim(-0.05,1.05)
+    ax.plot(a.sweep_pts, a.p0, 'k', lw=0.4,label = 'data') #N = 16
 
-    ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
 
     if disp_sim_spin == True:
-      colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
-      for tt in range(len(HF_par)):
-        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
-    if False:
+      # colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
+      if n_spins_to_disp =='all':
+        n_spins_to_disp = len(HF_par)
+      for tt in range(n_spins_to_disp):
+        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.2,label = 'spin' + str(tt+1))#, color = colors[tt])
+    if disp_total_sig==True:
         tot_signal = np.ones(len(tau_lst))
         for tt in range(len(HF_par)):
           tot_signal = tot_signal * Mt16[tt,:]
         fin_signal = (tot_signal+1)/2.0
-        ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
+        ax.plot(tau_lst*1e6, fin_signal,':b',lw=.8,label = 'tot')
+
+    ax.set_title(title)
+    ax.set_xlabel(r'$\tau$ ($\mu$s) ',fontsize =fontsize)
+    ax.set_ylabel(r'$F$',fontsize =fontsize) #Maybe I want to have contrast instead <X> from -1 to +1
+
+    if showlegend == True:
+        plt.legend(loc=4)
 
 
-    plt.legend(loc=4)
 
-    print folder
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf'),
-        format='pdf')
+
+    print 'Figures saved in: %s' %folder
+    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf',),
+        format='pdf',bbox_inches='tight')
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
-        format='png')
+        format='png',bbox_inches='tight')
 
 
 
