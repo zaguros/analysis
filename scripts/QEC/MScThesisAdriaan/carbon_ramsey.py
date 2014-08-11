@@ -12,8 +12,8 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
         frequency = [1,1], offset =0.5, amplitude =[ 0.5,0.5],  phase =[0,0],
         fixed = [],
         plot_fit = False, do_print = False, show_guess = True, print_info = True,
-        figsize = (3,2),
-        title ='' ,savename ='Cosine_sum'):
+        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,
+        title ='' ,savename ='Cosine_sum2'):
     '''
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -39,9 +39,34 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
 
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
+
     a.get_readout_results(name='adwindata')
     a.get_electron_ROC(ssro_calib_folder)
-    ax = a.plot_results_vs_sweepparam(ret='ax',figsize=figsize)
+
+
+
+
+    # ax = a.plot_results_vs_sweepparam(ret='ax',figsize=figsize,markersize=0.1)
+    fig = a.default_fig(figsize=figsize)
+    ax = a.default_ax(fig)
+    # ax.set_xlim(xlims)
+
+
+    for i in range(a.readouts):
+        ax.errorbar(a.sweep_pts, a.p0[:,i], fmt='o',
+            yerr=a.u_p0[:,i],markersize=markersize)
+    start, end = ax.get_xlim()
+    print start
+    print end
+    # ax.xaxis.set_ticks(np.arange(start, end, .25))
+    ax.xaxis.set_ticks( np.arange(start, end+1e-6, 15e-6))
+    ax.set_ylim(-0.05,1.05)
+    ax.yaxis.set_ticks( [0,0.5,1])
+
+
+
+
+    #ax.set_markersize = 0.1
     x = a.sweep_pts.reshape(-1)[:]
     y= a.p0.reshape(-1)[:]
 
@@ -52,7 +77,9 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
     if plot_fit == True:
         plot.plot_fit1d(fit_result, np.linspace(0e-6,x[-1],201), ax=ax,
-                plot_data=False,print_info = print_info)
+                plot_data=False,print_info = print_info, lw = linewidth)
+
+
     fit.write_to_file(fit_result,folder,fitname = 'Sum of cosine fit')
 
 
@@ -65,16 +92,16 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     plt.xticks(locs,labels)
 
     ax.set_title(title)
-    ax.set_xlabel(r'Free evolution time ($\mu$s)')
-    ax.set_ylabel(r'$F$ $\left( |0\rangle \right)$')
+    ax.set_xlabel(r'Free evolution time ($\mu$s)',fontsize =fontsize)
+    ax.set_ylabel(r'$F$ $\left( |0\rangle \right)$', fontsize = fontsize)
 
 
 
     plt.savefig(os.path.join(folder, savename+'.pdf'),
-    format='pdf')
+    format='pdf',bbox_inches='tight')
     plt.savefig(os.path.join(folder, savename+'png'),
-    format='png')
-    return fitfunc
+    format='png',bbox_inches='tight')
+    return fig
 
 
 

@@ -11,7 +11,9 @@ from matplotlib import pyplot as plt
 
 import fingerprint_funcs_MAR as fp_funcs; reload(fp_funcs)
 
-def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [2,10],B_Field =304.12,disp_total_sig=False,figsize= (25,5),fontsize = 10,showlegend = True,title ='Fingerprint of Hans Sil 01 at 304.12G for N =32 pulses'):
+def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [2,10],B_Field =304.12,disp_total_sig=False,
+        figsize= (25,5), fontsize = 10, showlegend = True,
+        title ='Fingerprint of Hans Sil 01 at 304.12G for N =32 pulses'):
 
     ###################
     ## Data location ##
@@ -54,7 +56,7 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
     ax = a.default_ax(fig)
     ax.set_xlim(xlims)
     start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start, end, 0.5))
+    ax.xaxis.set_ticks(np.arange(start, end, 1))
     ax.set_ylim(-0.05,1.05)
     ax.plot(a.sweep_pts, a.p0, 'k', lw=0.4,label = 'data') #N = 16
 
@@ -89,7 +91,7 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
         format='png',bbox_inches='tight')
 
 
-return a
+
 
 
 

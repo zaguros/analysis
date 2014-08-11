@@ -9,7 +9,7 @@ from analysis.lib.fitting import fit
 
 
 # TODO implement formatting options
-def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
+def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2, **kw):
     '''
     function to plot a fitresult as returned by analysis.lib.fitting.fit.fit1d().
     '''
@@ -18,11 +18,11 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
     print_info = kw.pop('print_info', True)
     info_xy = kw.pop('info_xy', 'auto')
     plot_data = kw.pop('plot_data', True)
-    
+
     if res == None or res == False:
         print 'plot_fit1d: No fit result.'
         return False
-    
+
     if ax == None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -30,15 +30,15 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
     if plot_data:
         if 'yerr' in res.keys():
             ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'])
-        else:    
+        else:
             ax.plot(res['x'], res['y'], 'o')
     if fit_xvals == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-', lw=2)
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-', lw=lw )
 
     if print_info and res['success']:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)
-        
+
         if info_xy == 'auto':
             info_x = ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])*0.02
             info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02
@@ -47,9 +47,9 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, **kw):
             info_y = info_xy[1]
 
         ax.text(info_x, info_y, params_str, size='x-small',
-                color='k', ha='left', va='bottom', 
+                color='k', ha='left', va='bottom',
                 bbox=dict(facecolor='white', alpha=0.5))
-    
+
     if ret == None:
         return
     if ret == 'ax':
@@ -77,9 +77,9 @@ def dm(dm, **kw):
     xticks = [(r'$| %d \rangle$' % i) for i in range(lx)]
     yticks = [(r'$\langle %d |$' % i) for i in range(ly)]
 
-    matrix(dmr, axr, title=r'$\Re$'+dmlabel, 
+    matrix(dmr, axr, title=r'$\Re$'+dmlabel,
             xticks=xticks, yticks=yticks, **kw)
-    matrix(dmi, axi, title=r'$\Im$'+dmlabel, 
+    matrix(dmi, axi, title=r'$\Im$'+dmlabel,
             xticks=xticks, yticks=yticks, **kw)
 
 def matrix(mat, ax=None, **kw):
@@ -97,7 +97,7 @@ def matrix(mat, ax=None, **kw):
     if ax==None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-    
+
     lx= len(mat[0])            # Work out matrix dimensions
     ly= len(mat[:,0])
     xpos = np.arange(0,lx,1)    # Set up a mesh of positions
@@ -112,14 +112,14 @@ def matrix(mat, ax=None, **kw):
     dy = dx.copy()
     dz = mat.flatten()
 
-    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, alpha=0.5, color='RoyalBlue', 
+    ax.bar3d(xpos, ypos, zpos, dx, dy, dz, alpha=0.5, color='RoyalBlue',
             zsort='average')
 
     if xticks == []:
         xticks = [str(i) for i in np.arange(lx)]
     if yticks == []:
         yticks = [str(i) for i in np.arange(ly)]
-    
+
     ax.w_xaxis.set_ticks(np.arange(lx) + 0.675)
     ax.w_yaxis.set_ticks(np.arange(ly) + 0.675)
     ax.w_xaxis.set_ticklabels(xticks)
@@ -158,7 +158,7 @@ def msmnt_outcomes(outcomes, u_outcomes=None,
     fc = kw.pop('fc', 'RoyalBlue')
     xticks = kw.pop('xticks', None)
     reference = kw.pop('reference', None)
-    
+
     if ax==None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -185,7 +185,7 @@ def msmnt_outcomes(outcomes, u_outcomes=None,
 
     if reference != None:
         ax.bar(pos, ref, w, color='w')
-    
+
     kw = {}
     if u_outcomes != None:
         kw['yerr'] = yerr
@@ -217,6 +217,6 @@ def msmnt_outcomes(outcomes, u_outcomes=None,
 
 
 
-    
+
 
 
