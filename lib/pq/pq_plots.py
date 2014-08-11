@@ -33,8 +33,8 @@ def plot_photon_hist(pqf, **kw):
     (h0, b0), (h1, b1) = pq_tools.get_photon_hist(pqf, **kw)
    
     fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
-    _plot_photon_hist(ax0, h0, b0)
-    _plot_photon_hist(ax1, h1, b1)
+    _plot_photon_hist(ax0, h0, b0, **kw)
+    _plot_photon_hist(ax1, h1, b1, **kw)
 
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
