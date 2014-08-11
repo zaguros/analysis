@@ -17,7 +17,7 @@ hf = module_hyperfine_params.hyperfine_params
 import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
 
-def fingerprint(disp_sim_spin = True):
+def fingerprint(disp_sim_spin = True,xrange = [0,20],n_sim_spins= 13):
 
 
     ###################
@@ -38,7 +38,11 @@ def fingerprint(disp_sim_spin = True):
 
     ## Data location ##
     timestamps =['20140418_185913', '20140419_233953']
-    ssro_calib_folders = ['d:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1',
+    if os.name =='posix':
+        ssro_calib_folders = ['//Users//Adriaan//Documents//teamdiamond//data//20140419//111949_AdwinSSRO_SSROCalibration_Hans_sil1',
+                            '//Users//Adriaan//Documents//teamdiamond//data//20140419//123556_AdwinSSRO_SSROCalibration_Hans_sil1']
+    else:
+        ssro_calib_folders = ['d:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1',
                         'd:\\measuring\\data\\20140419\\123556_AdwinSSRO_SSROCalibration_Hans_sil1']
     a, folder = load_mult_dat(timestamps = timestamps, number_of_msmts = [90,90], ssro_calib_folders =ssro_calib_folders)
 
@@ -48,26 +52,27 @@ def fingerprint(disp_sim_spin = True):
 
     fig = a.default_fig(figsize=(35,5))
     ax = a.default_ax(fig)
-    # ax.set_xlim(15.0,15.5)
+
     ax.set_xlim(0,20)
     start, end = ax.get_xlim()
     ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
+    ax.set_xlim(xrange)
     ax.set_ylim(-0.05,1.05)
-   
+
     ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
-    
+
     if disp_sim_spin == True:
-      colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
-      for tt in range(len(HF_par)):
-        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
+      colors = cm.rainbow(np.linspace(0, 1, n_sim_spins))
+      for tt in range(n_sim_spins):
+        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1))#, color = colors[tt])
     if False:
         tot_signal = np.ones(len(tau_lst))
-        for tt in range(len(HF_par)):
+        for tt in range(n_sim_spins):
           tot_signal = tot_signal * Mt16[tt,:]
-        fin_signal = (tot_signal+1)/2.0   
+        fin_signal = (tot_signal+1)/2.0
         ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
-    
+
 
     plt.legend(loc=4)
 
@@ -85,9 +90,9 @@ def fingerprint(disp_sim_spin = True):
     # ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
     # ax.set_ylim(-0.05,1.05)
-   
+
     # ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
-    
+
     # if disp_sim_spin == True:
     #   colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
     #   for tt in range(len(HF_par)):
@@ -96,9 +101,9 @@ def fingerprint(disp_sim_spin = True):
     #     tot_signal = np.ones(len(tau_lst))
     #     for tt in range(len(HF_par)):
     #       tot_signal = tot_signal * Mt16[tt,:]
-    #     fin_signal = (tot_signal+1)/2.0   
+    #     fin_signal = (tot_signal+1)/2.0
     #     ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
-    
+
 
     # # plt.legend(loc=4)
 
@@ -116,9 +121,9 @@ def fingerprint(disp_sim_spin = True):
     # ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
     # ax.set_ylim(-0.05,1.05)
-   
+
     # ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
-    
+
     # if disp_sim_spin == True:
     #   colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
     #   for tt in range(len(HF_par)):
@@ -127,9 +132,9 @@ def fingerprint(disp_sim_spin = True):
     #     tot_signal = np.ones(len(tau_lst))
     #     for tt in range(len(HF_par)):
     #       tot_signal = tot_signal * Mt16[tt,:]
-    #     fin_signal = (tot_signal+1)/2.0   
+    #     fin_signal = (tot_signal+1)/2.0
     #     ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
-    
+
 
     # plt.legend(loc=2)
 
