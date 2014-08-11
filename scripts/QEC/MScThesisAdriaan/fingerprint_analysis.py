@@ -52,7 +52,6 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
 
     fig = a.default_fig(figsize=figsize)
     ax = a.default_ax(fig)
-    plt.xlabel ='testlabel'
     ax.set_xlim(xlims)
     start, end = ax.get_xlim()
     ax.xaxis.set_ticks(np.arange(start, end, 0.5))
@@ -89,6 +88,8 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
         format='png',bbox_inches='tight')
 
+
+return a
 
 
 
