@@ -36,8 +36,11 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
 
 
             #Step 0 extract data from hdf5 file
-            self.parity_result = adwingrp['parity_result'].value #Creates a list of 0 and 1 's for when the parity measurement was success
+            # self.parity_result = adwingrp['parity_result'].value #Creates a list of 0 and 1 's for when the parity measurement was success
+
             self.ssro_results = adwingrp['ssro_results'].value #Extracts all the SSRO data
+            self.parity_result = np.random.randint(2, size= len(self.ssro_results))
+
 
             #Step 1 Multiply results with post selection parameter
             # ssro_results_0= [(1-a)*b for a,b in zip(self.parity_result,self.ssro_results)]

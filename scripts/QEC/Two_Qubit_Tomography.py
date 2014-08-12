@@ -53,6 +53,9 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
             try:
                 fig.savefig(
                     os.path.join(folder,'tomo.png'))
+                fig.savefig(os.path.join(folder, title+'.pdf'),
+                        format='pdf',bbox_inches='tight')
+
             except:
                 print 'Figure has not been saved.'
     else: #if post_select == True:
@@ -66,9 +69,9 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
             ax_0.bar(x,c0_0,yerr=u_c0_0,align ='center',ecolor = 'k' )
             ax_0.set_xticks(x)
             if title == '':
-                ax_0.set_title(str(folder)+'/'+str(timestamp))
+                ax_0.set_title(str(folder)+'/'+str(timestamp)+'0')
             else:
-                ax_0.set_title(title)
+                ax_0.set_title(str(title)+'0')
 
             ax_0.set_xticklabels(x_labels.tolist())
             ax_0.set_ylim(-1,1)
@@ -78,12 +81,23 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
             ax_1.bar(x,c0_1,yerr=u_c0_1,align ='center',ecolor = 'k' )
             ax_1.set_xticks(x)
             if title == '':
-                ax_1.set_title(str(folder)+'/'+str(timestamp))
+                ax_1.set_title(str(folder)+'/'+str(timestamp)+'1')
             else:
-                ax_1.set_title(title)
+                ax_1.set_title(str(title)+'1')
             ax_1.set_xticklabels(x_labels.tolist())
             ax_1.set_ylim(-1,1)
             ax_1.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+
+            if save and ax_1 != None and ax_0!=None:
+                try:
+                    fig_0.savefig(os.path.join(folder, title_0+'.pdf'),
+                            format='pdf',bbox_inches='tight')
+
+                    fig_1.savefig(os.path.join(folder, title_1+'.pdf'),
+                            format='pdf',bbox_inches='tight')
+
+                except:
+                    print 'Figure has not been saved.'
 
 
 
