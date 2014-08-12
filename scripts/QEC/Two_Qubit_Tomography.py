@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
         post_select = False,
         ssro_calib_timestamp =None, save = True,
-        plot_fit = True, title ='' ) :
+        plot_fit = True, title =None ) :
     '''
     Function that makes a bar plot with errorbars of MBI type data
     '''
@@ -40,7 +40,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
             fig,ax = plt.subplots()
             ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
             ax.set_xticks(x)
-            if title == '':
+            if title == None:
                 ax.set_title(str(folder)+'/'+str(timestamp))
             else:
                 ax.set_title(title)
@@ -62,38 +62,39 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
         c0_0,u_c0_0 =  a.convert_fidelity_to_contrast(a.p0_0,a.u_p0_0)
         c0_1,u_c0_1 =  a.convert_fidelity_to_contrast(a.p0_1,a.u_p0_1)
 
-        x = range(len(c_0))
+        x = range(len(c0_0))
 
         if plot_fit == True:
-            fig_0,ax_0 = plt.subplots
+            fig_0,ax_0 = plt.subplots()
             ax_0.bar(x,c0_0,yerr=u_c0_0,align ='center',ecolor = 'k' )
+            # ax_0.bar(x,a.p0_0,yerr = u_c0_0,align = 'center',ecolor = 'k')
             ax_0.set_xticks(x)
-            if title == '':
+            if title == None:
                 ax_0.set_title(str(folder)+'/'+str(timestamp)+'0')
             else:
                 ax_0.set_title(str(title)+'0')
 
             ax_0.set_xticklabels(x_labels.tolist())
-            ax_0.set_ylim(-1,1)
+            # ax_0.set_ylim(-1,1)
             ax_0.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
-            fig_1,ax_1 = plt.subplots
+            fig_1,ax_1 = plt.subplots()
             ax_1.bar(x,c0_1,yerr=u_c0_1,align ='center',ecolor = 'k' )
             ax_1.set_xticks(x)
-            if title == '':
+            if title == None:
                 ax_1.set_title(str(folder)+'/'+str(timestamp)+'1')
             else:
                 ax_1.set_title(str(title)+'1')
             ax_1.set_xticklabels(x_labels.tolist())
-            ax_1.set_ylim(-1,1)
+            # ax_1.set_ylim(-1,1)
             ax_1.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
             if save and ax_1 != None and ax_0!=None:
                 try:
-                    fig_0.savefig(os.path.join(folder, title_0+'.pdf'),
+                    fig_0.savefig(os.path.join(folder, str(title)+'0.pdf'),
                             format='pdf',bbox_inches='tight')
 
-                    fig_1.savefig(os.path.join(folder, title_1+'.pdf'),
+                    fig_1.savefig(os.path.join(folder, str(title)+'1.pdf'),
                             format='pdf',bbox_inches='tight')
 
                 except:
