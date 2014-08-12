@@ -6,7 +6,7 @@ from analysis.lib.m2.ssro import mbi
 
 #NOTE: Function could be moved to analysis.lib.m2.ssro folder when complete and checked for errors.
 
-class ConditionalParity(mbi.MBIAnalysis):
+class ConditionalParityAnalysis(mbi.MBIAnalysis):
     '''
     Class used for extracting data from conditional C13 experiments.
     Child-class of MBI analysis (as conditional C13 experiments are based on the MBI architecture).
@@ -70,7 +70,7 @@ class ConditionalParity(mbi.MBIAnalysis):
 
 
         else:
-            mbi.get_readout_results(name)
+            mbi.MBIAnalysis.get_readout_results(self,name) #NOTE: super cannot be used as this is an "old style class"
             self.post_select = False
 
     def get_electron_ROC(self, ssro_calib_folder=''):
@@ -89,8 +89,6 @@ class ConditionalParity(mbi.MBIAnalysis):
 
             roc = error.SingleQubitROC()
 
-            ## TODO_MAR: need to check if I can blindly apply this to the different functions
-
             for i in range(len(self.normalized_ssro_0[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
                     ssro.get_SSRO_calibration(ssro_calib_folder,
@@ -108,7 +106,14 @@ class ConditionalParity(mbi.MBIAnalysis):
             self.result_corrected = True
 
         else:
-            mbi.get_electron_ROC(ssro_calib_folder)
+            mbi.MBIAnalysis.get_electron_ROC(self,ssro_calib_folder)  #NOTE: super cannot be used as this is an "old style class"
 
+    def convert_fidelity_to_contrast(self,p0,u_p0):
+        '''
+        takes data and corresponding uncertainty and converts it to contrast
+        '''
+        c0= ((p0.reshape(-1))-0.5)*2
+        u_c0 = 2*u_p0.reshape(-1)
+        return c0, u_c0
 
 
