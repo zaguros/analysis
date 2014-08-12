@@ -22,6 +22,7 @@ class ConditionalParity(mbi.MBIAnalysis):
         if Post selection is false, use the get_readout results from the MBI class
         if post selection is true, select on the true or false condition
         '''
+
         if post_select == True:
             self.post_select = True
             self.result_corrected = False
@@ -34,31 +35,40 @@ class ConditionalParity(mbi.MBIAnalysis):
             self.readouts= adwingrp.attrs['nr_of_ROsequences']
 
 
-            self.parity_success = adwingrp['parity_success'].value #Creates a list of 0 and 1 's for when the parity measurement was success
+            #Step 0 extract data from hdf5 file
+            self.parity_result = adwingrp['parity_result'].value #Creates a list of 0 and 1 's for when the parity measurement was success
             self.ssro_results = adwingrp['ssro_results'].value #Extracts all the SSRO data
 
             #Step 1 Multiply results with post selection parameter
-            ssro_results_0= [(1-a)*b for a,b in zip(parity_success,ssro_results)]
-            ssro_results_1= [a*b for a,b in zip(parity_success,ssro_results)]
+            # ssro_results_0= [(1-a)*b for a,b in zip(self.parity_result,self.ssro_results)]
+            # ssro_results_1= [a*b for a,b in zip(self.parity_result,self.ssro_results)]
+
+            ssro_results_0 = (1-self.parity_result)*self.ssro_results
+            ssro_results_1 = self.parity_result*self.ssro_results
 
 
             # Step 2 reshape
-            self.parity_success = self.parity_success.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            self.parity_result = self.parity_result.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.ssro_results_0 = self.ssro_results_0.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.ssro_results_1 = self.ssro_results_1.reshape((-1,self.pts,self.readouts)).sum(axis=0)
 
             print 'Debugging print  of lib.QEC.ConditionalParity.py'
-            print 'Successful repetitions: %s' %self.parity_success
-            print 'Failed repetitions: %s' %(self.reps-self.parity_success)
+            print 'Successful repetitions: %s' %self.parity_result
+            print 'Failed repetitions: %s' %(self.reps-self.parity_result)
             print 'Sum should be equal to total number of repetitions'
 
             #Step 3 normalization and uncertainty, different per column
-            self.normalized_ssro_0 = [a/(self.reps-b) for a,b in zip(self.ssro_results_0,self.parity_success)]
-            self.u_normalized_ssro_0 =[(a*(1-a)/(self.reps-b))**0.5 for a,b in zip(self.normalized_ssro_0,self.parity_succes)]
-            #Formula for uncertainty is copied from line 44-45 of lib.m2.ssro.mbi.py
+            # self.normalized_ssro_0 = [a/(self.reps-b) for a,b in zip(self.ssro_results_0,self.parity_result)]
+            # self.u_normalized_ssro_0 =[(a*(1-a)/(self.reps-b))**0.5 for a,b in zip(self.normalized_ssro_0,self.parity_succes)]
+            # self.normalized_ssro_1 = [a/b for a,b in zip(self.ssro_results_1,self.parity_result)]
+            # self.u_normalized_ssro_1 =[(a*(1-a)/b)**0.5 for a,b in zip(self.normalized_ssro_1,self.parity_succes)]
 
-            self.normalized_ssro_1 = [a/b for a,b in zip(self.ssro_results_0,self.parity_success)]
-            self.u_normalized_ssro_1 =[(a*(1-a)/b)**0.5 for a,b in zip(self.normalized_ssro_0,self.parity_succes)]
+            self.normalized_ssro_0 = self.ssro_results_0/(self.reps-self.parity_result )
+            self.u_normalized_ssro_0 = (self.normalized_ssro_0*(1-self.normalized_ssro_0))**0.5
+            self.normalized_ssro_1 = self.ssro_results_1/self.parity_result
+            self.u_normalized_ssro_0 = (self.normalized_ssro_1*(1-self.normalized_ssro_1))**0.5
+
+
         else:
             mbi.get_readout_results(name)
             self.post_select = False
