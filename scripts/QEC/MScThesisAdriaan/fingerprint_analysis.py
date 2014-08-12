@@ -58,6 +58,7 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
     start, end = ax.get_xlim()
     ax.xaxis.set_ticks(np.arange(start, end, 1))
     ax.set_ylim(-0.05,1.05)
+    ax.yaxis.set_ticks( [0,0.5,1])
     ax.plot(a.sweep_pts, a.p0, 'k', lw=0.4,label = 'data') #N = 16
 
 
