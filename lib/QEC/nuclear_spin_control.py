@@ -16,6 +16,9 @@ hf = hf_params.hyperfine_params
 import measurement.scripts.lt2_scripts.setup.msmt_params as msmt_params; reload(msmt_params)
 mp = msmt_params.cfg['samples']['Hans_sil1']
 
+### import the theoretically tuned values for tau and N ###
+
+
 
 #######################
 ### Basic functions ###
@@ -380,10 +383,6 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
         for ff in oper_list:
             final_oper_list.append(qutip.tensor(Id,ff))
 
-        for jj in oper_list:
-            for kk in oper_list:
-                final_oper_list.append(qutip.tensor(jj,kk))
-
         for jj in xticks_list:
             for kk in xticks_list:
                 final_x_tick_list.append(jj+kk)
@@ -628,7 +627,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
 ### Experiments without initialization ###
 ##########################################
 
-def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.225):
+def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.22):
     '''nuclear Rabi experiment without init
     scheme: x - Ren(N) - x - RO'''
 
@@ -659,7 +658,6 @@ def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76
 
         ## Cumulative signal ##
         S_tot = S_tot*S
-
 
     ## plot ##
     f, ax = plt.subplots(1)

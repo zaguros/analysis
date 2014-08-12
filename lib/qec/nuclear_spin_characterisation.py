@@ -92,4 +92,4 @@ M    ------
 
     # Signal = M.prod(axis=0)
     # F = ((M+1)/2)
-    return
+    return M
