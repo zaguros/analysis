@@ -66,7 +66,7 @@ class ConditionalParity(mbi.MBIAnalysis):
             self.normalized_ssro_0 = self.ssro_results_0/(self.reps-self.parity_result )
             self.u_normalized_ssro_0 = (self.normalized_ssro_0*(1-self.normalized_ssro_0))**0.5
             self.normalized_ssro_1 = self.ssro_results_1/self.parity_result
-            self.u_normalized_ssro_0 = (self.normalized_ssro_1*(1-self.normalized_ssro_1))**0.5
+            self.u_normalized_ssro_1 = (self.normalized_ssro_1*(1-self.normalized_ssro_1))**0.5
 
 
         else:
@@ -97,13 +97,15 @@ class ConditionalParity(mbi.MBIAnalysis):
                             ro_durations[i])
                 p0_0, u_p0_0 = roc.num_eval(self.normalized_ssro_0[:,i],
                         self.u_normalized_ssro_0[:,i])
+                p0_1, u_p0_1 = roc.num_eval(self.normalized_ssro_1[:,i],
+                        self.u_normalized_ssro_1[:,i])
 
                 self.p0_0[:,i] = p0_0
                 self.u_p0_0[:,i] = u_p0_0
+                self.p0_1[:,i] = p0_1
+                self.u_p0_1[:,i] = u_p0_1
 
             self.result_corrected = True
-
-
 
         else:
             mbi.get_electron_ROC(ssro_calib_folder)
