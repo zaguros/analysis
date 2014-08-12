@@ -1310,6 +1310,243 @@ def ZZ_ent():
     print 'ZZ expectation'
     print (qutip.fidelity(rho0,el_state)**2*2-1)
 
+######################
+##### Add other spins#
+######################
+
+def Ren_gate_multispin(carbon_nr, carbon_nrs):
+    tau_Ren = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
+    number_of_pulses_Ren = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    Ren, Ren_id = c13_gate_multiqubit(carbon_nrs, number_of_pulses_Ren, tau_Ren, B_field, gate_on_C = [], return_for_one = False)    
+
+    return Ren
+
+def C_phase_gate_multispin(tau,N,carbon_nrs):
+    Ren, Ren_id = c13_gate_multiqubit(carbon_nrs, N, tau, B_field, gate_on_C = [], return_for_one = False)    
+    return Ren
+
+def RO_trigger_multispin(time,carbon_nrs,ms=0):
+    '''calculates the evolution matrices for a single
+    Carbon spin, electron is in state ms'''
+
+    omega_Larmor = 2 * np.pi * B_field * 1.07e3
+    H0 = omega_Larmor * Iz
+    expH0 = (-1j*H0*time).expm()
+
+    # A_par1 = 2 * np.pi * hf['C' + str(1)]['par']
+    # A_perp1 = 2 * np.pi *hf['C' + str(1)]['perp']
+    # A_par4 = 2 * np.pi * hf['C' + str(4)]['par']
+    # A_perp4 = 2 * np.pi *hf['C' + str(4)]['perp']
+
+    # H1_1 = (A_par1+omega_Larmor)*Iz + A_perp1*Ix
+    # H1_4 = (A_par4+omega_Larmor)*Iz + A_perp4*Ix
+
+    # expH1_1 = (-1j*H1_1*time).expm()
+    # expH1_4 = (-1j*H1_4*time).expm()
+
+    Utot = qutip.tensor(rho0)
+
+    for j in range(len(carbon_nrs)):
+        Utot = qutip.tensor(Utot,expH0)
+    # if ms == 1:
+    #     Utot = qutip.tensor(rho0,expH1_4,expH1_1)
+    return Utot
+
+def initialize_simple_multispin(rho, carbon,carbon_nrs):
+
+    yel = qutip.tensor(y)
+    xel = qutip.tensor(x)
+    el0 = qutip.tensor(rho0)
+    rho_start = rho0
+
+    for j in range(len(carbon_nrs)):
+        rho_start = qutip.tensor(rho_start,rhom)
+        yel = qutip.tensor(yel,Id)
+        xel = qutip.tensor(xel,Id)
+        el0 = qutip.tensor(el0,Id)
+
+    if carbon == 4 :
+        Cz = C_phase_gate_multispin(224e-9,8,carbon_nrs)
+        Ren = Ren_gate_multispin(4,carbon_nrs)
+    if carbon == 1 :
+        Cz = C_phase_gate_multispin(227e-9,8,carbon_nrs)
+        Ren =Ren_gate_multispin(1,carbon_nrs)
+
+    seq = Ren*Cz*xel*Ren*yel
+
+    rho_init = seq*rho*seq.dag() #check?
+
+    ## measure electron
+
+    rho_init = el0*rho_init*el0.dag()
+
+    # renormalize
+    norm = qutip.fidelity(rho0,rho_init.ptrace([0]))
+    rho_init = 1/norm**2*rho_init
+
+    ### waittime
+    W = RO_trigger_multispin(116e-6,carbon_nrs)
+
+    rho_init = W*rho_init*W.dag()
+
+    return rho_init
+
+def ZZ_multispin(carbon_nrs=[1,4]):
+
+    ### initial state
+    rho_start = qutip.tensor(rho0)
+    yel = qutip.tensor(y)
+    xel = qutip.tensor(x)
+    for j in range(len(carbon_nrs)):
+        rho_start = qutip.tensor(rho_start,rhom)
+        yel = qutip.tensor(yel,Id)
+        xel = qutip.tensor(xel,Id)
+
+    ### initialization
+    rho_init4 = initialize_simple_multispin(rho_start,4,carbon_nrs)
+    rho_init = initialize_simple_multispin(rho_init4,1,carbon_nrs)
+
+    print qutip.fidelity(qutip.tensor(rho0,rho0,rho0),rho_init.ptrace([0,1,2]))**2
+
+    multi_qubit_pauli(rho_init.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons initialized')
+
+
+    ## TOMOGRAPHY
+
+    ## ZI
+    Cz_a  = C_phase_gate_multispin(267e-9,8,carbon_nrs)
+    Ren = Ren_gate_multispin(4,carbon_nrs)
+    Cz_b  = C_phase_gate_multispin(224e-9,8,carbon_nrs)
+
+    seq = xel*Ren*Cz_b*yel*Ren*Cz_a
+
+    rho_final = seq*rho_init*seq.dag()
+
+    el_state = rho_final.ptrace(0)
+    print 'ZI expectation'
+    print (qutip.fidelity(rho0,el_state)**2*2-1)
+    
+    ## IZ
+    Cz_a  = C_phase_gate_multispin(347e-9,4,carbon_nrs)
+    Ren = Ren_gate_multispin(1,carbon_nrs)
+    Cz_b  = C_phase_gate_multispin(227e-9,8,carbon_nrs)
+
+    seq = xel*Ren*Cz_b*yel*Ren*Cz_a
+
+    rho_final = seq*rho_init*seq.dag()
+
+    el_state = rho_final.ptrace(0)
+    print 'IZ expectation'
+    print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+    ## ZZ
+    Cz_a4  = C_phase_gate_multispin(267e-9,8,carbon_nrs)
+    Cz_a1  = C_phase_gate_multispin(270e-9,8,carbon_nrs)
+    
+    Cz_b4  = C_phase_gate_multispin(193e-9,4,carbon_nrs)
+    Cz_b1  = C_phase_gate_multispin(260e-9,4,carbon_nrs)
+
+    Ren4 = Ren_gate_multispin(4,carbon_nrs)
+    Ren1 = Ren_gate_multispin(1,carbon_nrs)
+
+    seq = yel*Ren1*Cz_b1*Ren4*Cz_b4*yel*Ren1*Cz_a1*Ren4*Cz_a4
+
+    rho_final = seq*rho_init*seq.dag()
+
+    el_state = rho_final.ptrace(0)
+    print 'ZZ expectation'
+    print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+def ZZ_ent_multispin(carbon_nrs=[1,4]):
+
+    yel = qutip.tensor(y)
+    xel = qutip.tensor(x)
+    el0 = qutip.tensor(rho0)
+    rho_start = rho0
+
+    for j in range(len(carbon_nrs)):
+        rho_start = qutip.tensor(rho_start,rhom)
+        yel = qutip.tensor(yel,Id)
+        xel = qutip.tensor(xel,Id)
+        el0 = qutip.tensor(el0,Id)
+
+    ### initialization
+    rho_init4 = initialize_simple_multispin(rho_start,4,carbon_nrs)
+    rho_init = initialize_simple_multispin(rho_init4,1,carbon_nrs)
+
+    print qutip.fidelity(qutip.tensor(rho0,rho0,rho0),rho_init.ptrace([0,1,2]))**2
+
+    multi_qubit_pauli(rho_init.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons initialized')
+
+    Ren4 = Ren_gate_multispin(4,carbon_nrs)
+    Ren1 = Ren_gate_multispin(1,carbon_nrs)
+    ### parity msmt
+    
+    Cz4  = C_phase_gate_multispin(266e-9,8,carbon_nrs)
+    Cz1  = C_phase_gate_multispin(270e-9,8,carbon_nrs)
+
+
+
+    seq = yel*Ren1*Cz1*Ren4*Cz4*yel
+
+    rho_parity = seq*rho_init*seq.dag()    
+
+    ## measure electron
+    rho_parity = el0*rho_parity*el0.dag()
+
+    ## renormalize
+    norm = qutip.fidelity(rho0,rho_parity.ptrace([0]))
+    rho_parity = 1/norm**2*rho_parity
+
+    ### waittime
+    W = RO_trigger_multispin(116e-6,carbon_nrs)
+
+    rho_parity = W*rho_parity*W.dag()   
+    
+    multi_qubit_pauli(rho_parity.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons after parity msmst')
+
+    ### TOMOGRAPHY
+
+    ## XX
+   
+    Cz_b4  = C_phase_gate_multispin(303e-9,4,carbon_nrs)
+    Cz_b1  = C_phase_gate_multispin(261e-9,4,carbon_nrs)
+
+    seq = yel*Ren1*Cz_b1*Ren4*Cz_b4*yel
+
+    rho_final = seq*rho_parity*seq.dag()
+
+    el_state = rho_final.ptrace(0)
+    print 'XX expectation'
+    print (qutip.fidelity(rho0,el_state)**2*2-1)
+ 
+    ## YY
+   
+    Cz_b4  = C_phase_gate_multispin(393e-9,4,carbon_nrs)
+    Cz_b1  = C_phase_gate_multispin(262e-9,4,carbon_nrs)
+
+    seq = yel*Ren1*Cz_b1*Ren4*Cz_b4*yel
+
+    rho_final = seq*rho_parity*seq.dag()
+
+    el_state = rho_final.ptrace(0)
+    print 'YY expectation'
+    print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+    ## ZZ
+
+    Cz_a1  = C_phase_gate_multispin(219e-9,8,carbon_nrs)
+
+    Cz_b4  = C_phase_gate_multispin(294e-9,4,carbon_nrs)
+    Cz_b1  = C_phase_gate_multispin(261e-9,8,carbon_nrs)
+
+    seq = yel*Ren1*Cz_b1*Ren4*Cz_b4*yel*Ren1*Cz_a1*Ren4
+
+    rho_final = seq*rho_parity*seq.dag()
+
+    el_state = rho_final.ptrace(0)
+    print 'ZZ expectation'
+    print (qutip.fidelity(rho0,el_state)**2*2-1)
 
 
 #######################
