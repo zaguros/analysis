@@ -9,10 +9,11 @@ from matplotlib import pyplot as plt
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
         post_select = False,
         ssro_calib_timestamp =None, save = True,
-        plot_fit = True, title =None ) :
+        plot_fit = True, title =None ,fontsize = 16) :
     '''
     Function that makes a bar plot with errorbars of MBI type data
     '''
+    plt.rc('font', size=fontsize)
     if timestamp == None:
         timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
     else:

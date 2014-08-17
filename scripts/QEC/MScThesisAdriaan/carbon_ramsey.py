@@ -22,6 +22,7 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     List of parameters (order important for 'fixed')
     [freq, offset, Amplitude, phase]
     '''
+    plt.rc('font', size=fontsize)
 
 
     if timestamp == None:
