@@ -4,6 +4,7 @@ import h5py
 import logging
 
 from matplotlib import pyplot as plt
+from matplotlib import ticker as tick
 
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import sequence, mbi
@@ -44,11 +45,7 @@ def analyze_2_desr(timestamps=[None,None], measurement_name = ['DarkESR'], ssro_
     ssro_calib_folder = [None,None]
     a =[None,None]
     fit_result = [None,None]
-    x = np.arange(5)
-    y = x*x
 
-    # ax1.plot(x,y)
-    # ax2.errorbar(x,x*y,yerr=x)
 
     for i in range(len(timestamps)): #Get data folders
 
@@ -157,21 +154,38 @@ def analyze_2_desr(timestamps=[None,None], measurement_name = ['DarkESR'], ssro_
         #Both ax =1 and 2
 
 
-    a[0].plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax1)
-        # ax1.errorbar(a[i].sweep_pts, a[i].p0, fmt='o',
-        #         yerr=a[i].u_p0,markersize=markersize)
+    # a[0].plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax1)
+    ax1.errorbar(a[0].sweep_pts, a[0].p0, fmt='o',
+            yerr=a[0].u_p0,markersize=markersize)
 
-    plot.plot_fit1d(fit_result[0], np.linspace(min(x), max(x), 1000), ax=ax1, plot_data=False, print_info = print_info,**kw)
+    plot.plot_fit1d(fit_result[0], np.linspace(min(x), max(x), 1000), ax=ax1, plot_data=False, print_info = print_info,lw = linewidth,**kw)
 
-    a[1].plot_results_vs_sweepparam(ret=ret, name='adwindata', ax=ax2)
-        # ax2.errorbar(a[i].sweep_pts, a[i].p0, fmt='o',
-        #         yerr=a[i].u_p0,markersize=markersize)
+    # a[1].plot_results_vs_sweepparam(ret=ret, name='adwindata', ax=ax2)
+    # print a[1].p0
+    ax2.errorbar(a[1].sweep_pts, a[1].p0[:,0], fmt='o',
+            yerr=a[1].u_p0[:,0],markersize=markersize)
 
-    plot.plot_fit1d(fit_result[1], np.linspace(min(x), max(x), 1000), ax=ax2, plot_data=False, print_info = print_info,**kw)
+    plot.plot_fit1d(fit_result[1], np.linspace(min(x), max(x), 1000), ax=ax2, plot_data=False, print_info = print_info,lw = linewidth,**kw)
 
 
     ax2.set_xlabel('Microwave frequency (GHz)',fontsize = fontsize)
     ax2.set_ylabel(r'$F$ $\left( |0\rangle \right)$', fontsize = fontsize)
+    ax1.set_ylabel(r'$F$ $\left( |0\rangle \right)$', fontsize = fontsize)
+
+    ax1.set_xlim(3.726,3.734)
+    ax2.set_xlim(3.726,3.734)
+
+    start, end = ax2.get_xlim()
+    ax2.xaxis.set_ticks( np.arange(start, end+1e-6, .002))
+    ax1.yaxis.set_ticks( np.arange(0, 1+1e-6, .5))
+    ax2.yaxis.set_ticks( np.arange(0, 1+1e-6, .5))
+
+    ax1.set_ylim(-0.1,1.1)
+    ax2.set_ylim(-0.1,1.1)
+
+    x_formatter = tick.ScalarFormatter(useOffset=False)
+    ax2.xaxis.set_major_formatter(x_formatter)
+
     if title ==None:
         ax2.set_title(a[0].timestamp+'\n'+a[0].measurementstring)
     else:
