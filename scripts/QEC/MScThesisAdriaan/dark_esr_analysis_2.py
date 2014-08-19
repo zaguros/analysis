@@ -102,7 +102,7 @@ def analyze_2_desr(timestamps=[None,None], measurement_name = ['DarkESR'], ssro_
                 print 'guess_ctr= '+str(guess_ctr)
 
         ### fitfunction
-        if MBI ==True:
+        if MBI[i] ==True:
             ### fitfunction
             A_min1 = fit.Parameter(guess_A_min1, 'A_min1')
             A_plus1 = fit.Parameter(guess_A_plus1, 'A_plus1')
