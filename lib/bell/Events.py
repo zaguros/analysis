@@ -19,7 +19,7 @@ def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval
             print 'Found {} saved valid entanglement events.'.format(int(len(tev)))
             print '===================================='
             print
-        return tev, _a , False
+        return tev, _a 
 
     # Opens beamsplitter data 
     f = h5py.File(fp_BS, 'r')
@@ -187,4 +187,4 @@ Amount_of_ph_LT3, CR_check_before_LT3, CR_check_after_LT3, psiminus, abs_time"
         print '===================================='
         print
     
-    return entanglement_events, _a, True      
+    return entanglement_events, _a

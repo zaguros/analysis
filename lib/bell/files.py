@@ -20,7 +20,7 @@ def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     filepaths = sorted(filepaths)
 
     return filepaths
-    print
+
 
 def get_msmt_name(fp):
     """
@@ -65,22 +65,27 @@ def delete_analysis_data(fp, name, subgroup=None):
         f.close()
         raise
 
-def clear_analysis_data(fp):
+def clear_analysis_data(fp,):
     try:
         f = h5py.File(fp, 'r+')
+        print " This works 1"
     except:
         print "Cannot open file", fp
         raise
 
     if Settings.ANALYSISGRP in f.keys():
+        print "This works 2"
         try:
             del f[Settings.ANALYSISGRP]
+            print "This works 3"
             f.flush()
             f.close()
         except:
+            print "This doesn't work"
             f.close()
             raise
     else:
+        print "This doesn't work 2"
         f.close()
 
 def set_analysis_data(fp, name, data, subgroup=None, **kw):
@@ -135,10 +140,14 @@ def has_analysis_data(fp, name, subgroup=None):
         print "Cannot open file", fp
         raise
     
-    agrp = f.require_group(Settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
-    if name in agrp.keys():
-        f.close()
-        return True
+    if Settings.ANALYSISGRP in f.keys():
+        agrp = f.require_group(Settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        if name in agrp.keys():
+            f.close()
+            return True
+        else:
+            f.close()
+            return False
     else:
         f.close()
         return False

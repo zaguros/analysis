@@ -59,18 +59,15 @@ def filter_marker(fp, chan):
     
     return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
     
-def sync_num_with_markers(fp, chan):
+def sync_num_with_markers(fp, chan, Force_eval = True):
     """
     Returns a list of the unique sync numbers with markers
     """
-    
-    force_eval = Settings.Force_eval
-    
-    if files.has_analysis_data(fp, 'Entanglement_events') and not force_eval:
-        tev, _a = files.get_analysis_data(fp, 'Entanglement_events')
-        unique_sync_num = tev[:,0]        
 
-        return unique_sync_num
+    if files.has_analysis_data(fp, 'Entanglement_events') and not Force_eval:
+        tev, _a  = files.get_analysis_data(fp, 'Entanglement_events')
+        unique_sync_num_with_markers = tev[:,0]
+        return unique_sync_num_with_markers
     
     f = h5py.File(fp, 'r')
     sync_numbers = f['/PQ_sync_number-1'].value

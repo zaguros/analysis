@@ -98,7 +98,6 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             except:
                 continue
             timestamp = dstamp+tstamp
-
             if contains in d:              
                 
                 if older_than != None:
@@ -222,6 +221,8 @@ def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
         for f in files:
             if len(f) > suffixlen and f[-suffixlen:] == suffix and pattern in f:
                 filepaths.append(os.path.join(root, f))
+                
+    filepaths = sorted(filepaths)
     
     return filepaths
 

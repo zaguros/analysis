@@ -27,5 +27,6 @@ ch0_stop = ch0_start + WINDOW_LENGTH
 ch1_stop = ch1_start + WINDOW_LENGTH
 dif_win1_win2 = 600
 
+CNTR_PEAK_RANGE = 0
 
 dif_ch0_ch_1 = 10

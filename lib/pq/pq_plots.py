@@ -56,11 +56,11 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     (h0f, b0f), (h1f, b1f) = pq_tools.get_photon_hist(pqf, fltr=fltr, **kw)
     
     fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
-    _plot_photon_hist(ax0, h0, b0, label='unfiltered')
-    _plot_photon_hist(ax0, h0f, b0f, label='filtered')
+    _plot_photon_hist(ax0, h0, b0, label='unfiltered', **kw)
+    _plot_photon_hist(ax0, h0f, b0f, label='filtered', **kw)
 
-    _plot_photon_hist(ax1, h1, b1, label='unfiltered')
-    _plot_photon_hist(ax1, h1f, b1f, label='filtered')
+    _plot_photon_hist(ax1, h1, b1, label='unfiltered', **kw)
+    _plot_photon_hist(ax1, h1f, b1f, label='filtered', **kw)
     
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')

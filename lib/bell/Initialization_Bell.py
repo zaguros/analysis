@@ -30,11 +30,12 @@ reload(pq_tools)
 reload(pq_plots)
 
 # Import Bell specific packages
-from analysis.lib.bell import files, Filter, Settings, Events, Analysis
+from analysis.lib.bell import files, Filter, Settings, Events, Analysis, TPQI
 reload(files)
 reload(Settings)
 reload(Filter)
 reload(Events)
 reload(Analysis)
+reload(TPQI)
 
 from analysis.lib.lde import sscorr
