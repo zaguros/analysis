@@ -31,7 +31,6 @@ hyperfine_params['C12'] = {'par' :-30.0e3, 'perp':35e3}
 hyperfine_params['C13'] = {'par' :-32.0e3, 'perp':20e3}
 
 ###TEST FOR BUGFINDGING in theory
-hyperfine_params = {}
 hyperfine_params['C1']  = {'par' : 29.3e3, 'perp':80.0e3}
 hyperfine_params['C2']  = {'par' : 27.0e3, 'perp':28.5e3}
 hyperfine_params['C3']  = {'par' :-51.0e3, 'perp':105.0e3}
