@@ -5,13 +5,15 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
+
+reload(mbi)
 reload(common)
 
 
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
         frequency = 1, offset = 0.5, x0 = 0,  amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2,
         plot_fit = False, do_print = False, fixed = [2], show_guess = True, print_info = True,
-        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,
+        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,xticks = None,capsize =2,
         title ='' ,savename ='Gen_exp_fit'):
     '''
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
@@ -42,7 +44,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC(ssro_calib_folder)
-        ax = a.plot_results_vs_sweepparam(ret='ax')
+        ax = a.plot_results_vs_sweepparam(ret='ax',figsize =figsize,markersize=markersize,capsize=capsize)
 
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
@@ -65,10 +67,16 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False, print_info =print_info, lw = linewidth)
 
         ### Beautify plot
+        for i in range(a.readouts):
+            ax.errorbar(a.sweep_pts, a.p0[:,i], fmt='o',
+                yerr=a.u_p0[:,i],markersize=markersize,color = 'b',capsize=capsize)
+
         ax.set_xlim(0.0,x[-1])
-        ax.set_ylim(-0.05,1.05)
+        ax.set_ylim(0,1)
         ax.yaxis.set_ticks( [0,0.25,0.5,0.75,1])
 
+        if xticks != None:
+            ax.set_xticks(xticks)
         locs,labels = plt.xticks()
         labels = []
         for l in locs :

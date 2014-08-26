@@ -240,6 +240,8 @@ class MBIAnalysis(m2.M2Analysis):
         ax = kw.get('ax', None)
         fmt = kw.get('fmt', 'o')
         figsize=kw.get('figsize',(6,4))
+        markersize = kw.get('markersize',6)
+        capsize = kw.get('capsize',3)
 
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
@@ -261,10 +263,10 @@ class MBIAnalysis(m2.M2Analysis):
             for i in range(self.readouts):
                 if not self.result_corrected:
                     ax.errorbar(self.sweep_pts, self.normalized_ssro[:,i], fmt='o-',
-                        yerr=self.u_normalized_ssro[:,i], label=labels[i])
+                        yerr=self.u_normalized_ssro[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                 else:
                     ax.errorbar(self.sweep_pts, self.p0[:,i], fmt=fmt,
-                        yerr=self.u_p0[:,i], label=labels[i])
+                        yerr=self.u_p0[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                     ax.axhspan(0,1,fill=False,ls='dotted')
 
             if not self.result_corrected:
@@ -276,11 +278,11 @@ class MBIAnalysis(m2.M2Analysis):
             for i in range(len(self.correlation_names)):
                 if not self.result_correlation_corrected:
                     ax.errorbar(self.sweep_pts, self.normalized_correlations[:,i],
-                        fmt=fmt, yerr=self.u_normalized_correlations[:,i],
+                        fmt=fmt, yerr=self.u_normalized_correlations[:,i],markersize=markersize,capsize=capsize,
                         label=labels[i])
                 else:
                     ax.errorbar(self.sweep_pts, self.p_correlations[:,i], fmt=fmt,
-                        yerr=self.u_p_correlations[:,i], label=labels[i])
+                        yerr=self.u_p_correlations[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                     ax.axhspan(0,1,fill=False,ls='dotted')
 
             if not self.result_correlation_corrected:
