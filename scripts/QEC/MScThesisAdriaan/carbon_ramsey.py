@@ -64,9 +64,6 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     ax.set_ylim(-0.05,1.05)
     ax.yaxis.set_ticks( [0,0.5,1])
 
-
-
-
     #ax.set_markersize = 0.1
     x = a.sweep_pts.reshape(-1)[:]
     y= a.p0.reshape(-1)[:]
@@ -103,21 +100,3 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     plt.savefig(os.path.join(folder, savename+'png'),
     format='png',bbox_inches='tight')
     return fig
-
-
-
-#CR.Carbon_Ramsey(timestamp='20140521164658', measurement_name = ['adwindata'],
-#            frequency = [338e-3,14e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
-
-#CR.Carbon_Ramsey(timestamp='20140521165249', measurement_name = ['adwindata'],
-#            frequency = [305e-3,16e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
-
-#CR.Carbon_Ramsey(timestamp='20140521170735', measurement_name = ['adwindata'],
-#            frequency = [350e-3,27e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
-
-#CR.Carbon_Ramsey(timestamp='20140521162939', measurement_name = ['adwindata'],
-#            frequency = [344e-3,19e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)

@@ -13,6 +13,8 @@ import fingerprint_funcs_MAR as fp_funcs; reload(fp_funcs)
 
 def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [2,10],B_Field =304.12,disp_total_sig=False,
         figsize= (25,5), fontsize = 10, showlegend = True, plot_contrast = False,
+        sim_linewidth = 0.4,
+        signal_linewidth = 0.8,
         title ='Fingerprint',ms = 0.1, tau_larmor_axis = False):
     plt.rc('font', size=fontsize)
 
@@ -97,13 +99,13 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
       if n_spins_to_disp =='all':
         n_spins_to_disp = len(HF_par)
       for tt in range(n_spins_to_disp):
-        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.2,label = 'spin' + str(tt+1))#, color = colors[tt])
+        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=sim_linewidth,label = 'spin' + str(tt+1))#, color = colors[tt])
     if disp_total_sig==True:
         tot_signal = np.ones(len(tau_lst))
         for tt in range(len(HF_par)):
           tot_signal = tot_signal * Mt16[tt,:]
         fin_signal = (tot_signal+1)/2.0
-        ax.plot(tau_lst*1e6, fin_signal,':b',lw=.8,label = 'tot')
+        ax.plot(tau_lst*1e6, fin_signal,':b',lw=signal_linewidth,label = 'tot')
 
     ax.set_title(title)
 
