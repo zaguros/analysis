@@ -12,8 +12,8 @@ reload(common)
 
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
         frequency = 1, offset = 0.5, x0 = 0,  amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2,
-        plot_fit = False, do_print = False, fixed = [2], show_guess = True, print_info = True,
-        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,xticks = None,capsize =2,
+        plot_fit = False, do_print = False, fixed = [2], show_guess = True, print_info = True, scale_x_axis = 1e3,
+        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,xticks = None,capsize =2,x_units ='ms',
         title ='' ,savename ='Gen_exp_fit'):
     '''
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
@@ -49,10 +49,11 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
 
+
         p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude,
                 x0, decay_constant,exponent,frequency ,phase )
 
-
+        print 'a'
 
         #plot the initial guess
         if show_guess:
@@ -66,10 +67,12 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         if plot_fit == True:
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False, print_info =print_info, lw = linewidth)
 
+        print 'b'
         ### Beautify plot
         for i in range(a.readouts):
             ax.errorbar(a.sweep_pts, a.p0[:,i], fmt='o',
                 yerr=a.u_p0[:,i],markersize=markersize,color = 'b',capsize=capsize)
+        print 'c'
 
         ax.set_xlim(0.0,x[-1])
         ax.set_ylim(0,1)
@@ -80,11 +83,12 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         locs,labels = plt.xticks()
         labels = []
         for l in locs :
-            labels.append(str(l*1e3))
+            labels.append(str(l*scale_x_axis))
         plt.xticks(locs,labels)
 
         ax.set_title(title)
-        ax.set_xlabel(r'Free evolution time (ms)',fontsize =fontsize)
+
+        ax.set_xlabel(r'Free evolution time ('+str(x_units)+ ')',fontsize =fontsize)
         ax.set_ylabel(r'$F$ $\left( |0\rangle \right)$', fontsize = fontsize)
 
 
@@ -92,7 +96,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         fit_results.append(fit_result)
 
         plt.savefig(os.path.join(folder, savename+'.pdf'),
-        format='pdf',bbox_inches='tight')
+                format='pdf',bbox_inches='tight')
 
 
     return fit_results
