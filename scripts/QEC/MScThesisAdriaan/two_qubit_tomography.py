@@ -8,34 +8,52 @@ from matplotlib import pyplot as plt
 
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
         post_select = False,
-        ssro_calib_timestamp =None, save = True,
-        plot_fit = True, title =None ,fontsize = 16) :
+        ssro_calib_timestamp =None, save = True, plot_fit = True,
+        guess = None,
+        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,xticks = None,barwidth = .8,
+        title =None ,savename ='Tomo'):
+
     '''
     Function that makes a bar plot with errorbars of MBI type data
     '''
     plt.rc('font', size=fontsize)
     if timestamp == None:
         timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
+        print 'Data folder found: %s' %(timestamp)
     else:
         folder = toolbox.data_from_time(timestamp)
 
     if ssro_calib_timestamp == None:
-        ssro_calib_folder = toolbox.latest_data('SSRO')
+        ssro_timestamp, ssro_calib_folder = toolbox.latest_data('SSRO', older_than = timestamp, return_timestamp = True)
+        print 'SSRO folder found: %s' %(ssro_timestamp)
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
 
     a = CP.ConditionalParityAnalysis(folder)
     a.get_sweep_pts()
-    a.get_readout_results(name='adwindata',post_select = post_select)
+    a.get_readout_results(name='adwindata', post_select = post_select)
+
     a.get_electron_ROC(ssro_calib_folder)
 
     x_labels = a.sweep_pts.reshape(-1)
 
     if post_select == False:
-
         y,y_err = a.convert_fidelity_to_contrast(a.p0,a.u_p0)
+
+        print 'Y as calculated by function'
+        print y
         x = range(len(y))
+
+        y_a= ((a.p0.reshape(-1)[:])-0.5)*2
+        print 'Y as calculated by hand'
+        print y_a
+        print 'difference'
+        print y-y_a
+
+        y_err_a = 2*a.u_p0.reshape(-1)[:]
+
+
 
         if plot_fit ==True:
             fig,ax = plt.subplots()
@@ -52,9 +70,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 
         if save and ax != None:
             try:
-                fig.savefig(
-                    os.path.join(folder,'tomo.png'))
-                fig.savefig(os.path.join(folder, title+'.pdf'),
+                fig.savefig(os.path.join(folder, savename+'.pdf'),
                         format='pdf',bbox_inches='tight')
 
             except:
@@ -101,29 +117,26 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
                 except:
                     print 'Figure has not been saved.'
 
-
-
-
 def BarPlotTomoContrast(timestamps=None, measurement_name = ['adwindata'],folder_name ='Tomo',
         ssro_calib_timestamp =None, save = True,
-        plot_fit = True) :
+        plot_fit = True, guess = None, mirror_data_points = None,
+        figsize = (3,2), linewidth = .4, markersize = 2, fontsize =10, barwidth = 0.8,
+        title =None ,savename ='Tomo_pos_neg'):
     '''
     Function that makes a bar plot with errorbars of MBI type data that has been measured with a positive
     and negative RO.
 
-
-    !!!! PROBABLY DEPRECIATED, Remove if no longer used
-
     '''
-
+    plt.rc('font', size=fontsize)
     ### SSRO calibration
     if ssro_calib_timestamp == None:
-        ssro_calib_folder = toolbox.latest_data('SSRO')
+        ssro_calib_folder = toolbox.latest_data('SSRO', older_than =timestamps[0])
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
 
     ### Obtain and analyze data
+
     folder_a = toolbox.data_from_time(timestamps[0])
     a = mbi.MBIAnalysis(folder_a)
     a.get_sweep_pts()
@@ -131,23 +144,26 @@ def BarPlotTomoContrast(timestamps=None, measurement_name = ['adwindata'],folder
     a.get_electron_ROC(ssro_calib_folder)
     y_a= ((a.p0.reshape(-1)[:])-0.5)*2
     y_err_a = 2*a.u_p0.reshape(-1)[:]
+    if np.size(timestamps) != 1:
 
-
-    folder_b = toolbox.data_from_time(timestamps[1])
-    b = mbi.MBIAnalysis(folder_b)
-    b.get_sweep_pts()
-    b.get_readout_results(name='adwindata')
-    b.get_electron_ROC(ssro_calib_folder)
-    y_b= ((b.p0.reshape(-1)[:])-0.5)*2
-    y_err_b = 2*b.u_p0.reshape(-1)[:]
+        folder_b = toolbox.data_from_time(timestamps[1])
+        b = mbi.MBIAnalysis(folder_b)
+        b.get_sweep_pts()
+        b.get_readout_results(name='adwindata')
+        b.get_electron_ROC(ssro_calib_folder)
+        y_b= ((b.p0.reshape(-1)[:])-0.5)*2
+        y_err_b = 2*b.u_p0.reshape(-1)[:]
+        ### Combine data
+        y = (y_a - y_b)/2.
+        y_err =  1./2*(y_err_a**2 + y_err_b**2)**0.5
+        # print y
+    else:
+        y = y_a
+        y_err = y_err_a
 
     x_labels = a.sweep_pts.reshape(-1)[:]
     x = range(len(y_a))
 
-    ### Combine data
-    y = (y_a - y_b)/2.
-    y_err =  1./2*(y_err_a**2 + y_err_b**2)**0.5
-    print y
 
     ### Fidelities
     # F_ZZ  = (1 + y[2] + y[5] + y[14])/4
@@ -159,19 +175,39 @@ def BarPlotTomoContrast(timestamps=None, measurement_name = ['adwindata'],folder
     print 'Fidelity with ent = ' + str(F_ent)
 
 
+    fig,ax = plt.subplots(figsize=figsize)
+    if guess != None:
+        x_g =guess[0]
+        y_g = guess[1]
+        ax.bar(x_g,y_g, color = '0.75' , align = 'center' ,width = (barwidth*1.1),linewidth = 0)
+
+    if mirror_data_points != None:
+        print y
+        for x_repl in mirror_data_points:
+            print 'x_repl %s, y %s' %(x_repl,y[x_repl])
+            y[x_repl] = -y[x_repl]
+        print y
 
     if plot_fit ==True:
-        fig,ax = plt.subplots()
-        ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+        ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' ,width = barwidth,linewidth = linewidth)
         ax.set_xticks(x)
-        ax.set_xticklabels(x_labels.tolist())
-        ax.set_ylim(-1.1,1.1)
-        ax.set_title(str(folder_a)+'/'+str(timestamps[0]))
-        ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+        ax.set_xticklabels(x_labels.tolist(),fontsize = (fontsize-2),rotation = 60)
+        ax.set_xlabel(r'Bases', fontsize = fontsize)
+
+        ax.set_ylim(-1.05,1.05)
+        ax.yaxis.set_ticks( [-1,-0.5,0,0.5,1])
+        ax.set_ylabel(r'Contrast', fontsize = fontsize)
+        if title == None:
+            title = str(folder_a)
+        ax.set_title(title)
+        ax.hlines([0],x[0]-0.75,x[-1]+0.75,linewidth = linewidth+0.1) #,linestyles='dotted'
+
 
     if save and ax != None:
+        print folder_a
         try:
-            fig.savefig(
-                os.path.join(folder_a,'tomo.png'))
+            fig.savefig(os.path.join(folder_a, savename+'.pdf'),
+                format='pdf',bbox_inches='tight')
+            print' Figure saved in %s' %folder_a
         except:
             print 'Figure has not been saved.'
