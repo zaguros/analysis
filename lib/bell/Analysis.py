@@ -1,0 +1,430 @@
+import numpy as np
+import h5py
+import Settings, files, Filter
+from analysis.lib.lde import sscorr
+from analysis.lib.pq import pq_tools, pq_plots
+
+## Analysis of raw_data ##
+
+def analyze_raw_data(Total_entanglement_events):
+    # Makes boolean filters which determine if an event is psiminus or psiplus (see Filter.for_loop_sync_num for definition of both)
+    is_psiminus = Total_entanglement_events[:,12] == 1
+    is_psiplus = Total_entanglement_events[:,12] == 0
+    
+    if Settings.VERBOSE:
+        print 'Number of psiminus events:', sum(is_psiminus)
+        print 'Number of psiplus event:', sum(is_psiplus)
+
+    # Makes boolean filters which determine if the SSRO correspond with the up (photons are emitted) or down (no photons are emitted) state
+    is_up_LT1 = Total_entanglement_events[:,6] > 0
+    is_down_LT1 = Total_entanglement_events[:,6] == 0
+    is_up_LT3 = Total_entanglement_events[:,7] > 0
+    is_down_LT3 = Total_entanglement_events[:,7] == 0
+
+    # Makes boolean filters for up, up; up, down; down, up; down, down events
+    is_upLT1_upLT3 = is_up_LT1 & is_up_LT3
+    is_upLT1_downLT3 = is_up_LT1 & is_down_LT3
+    is_downLT1_upLT3 = is_down_LT1 & is_up_LT3
+    is_downLT1_downLT3 = is_down_LT1 & is_down_LT3
+
+    # Makes boolean filters for psiplus state
+    is_psiplus_up_up = is_upLT1_upLT3 & is_psiplus
+    is_psiplus_up_down = is_upLT1_downLT3 & is_psiplus
+    is_psiplus_down_up = is_downLT1_upLT3 & is_psiplus
+    is_psiplus_down_down = is_downLT1_downLT3 & is_psiplus
+
+    # Makes boolean filters for psiminus state
+    is_psiminus_up_up = is_upLT1_upLT3 & is_psiminus
+    is_psiminus_up_down = is_upLT1_downLT3 & is_psiminus
+    is_psiminus_down_up = is_downLT1_upLT3 & is_psiminus
+    is_psiminus_down_down = is_downLT1_downLT3 & is_psiminus
+
+    # Determines the amount of up, up; up, down; down, up and down, down events for the psiplus state
+    psiplus_up_up = sum(is_psiplus_up_up)
+    psiplus_up_down = sum(is_psiplus_up_down)
+    psiplus_down_up = sum(is_psiplus_down_up)
+    psiplus_down_down = sum(is_psiplus_down_down)
+
+    psiplus_bars = np.array([psiplus_up_up, psiplus_up_down, psiplus_down_up, psiplus_down_down])
+    psiplus_bars_norm = psiplus_bars/float(sum(psiplus_bars))
+
+
+    # Determines the amount of up, up; up, down; down, up and down, down events for the psiminus state
+    psiminus_up_up = sum(is_psiminus_up_up)
+    psiminus_up_down = sum(is_psiminus_up_down)
+    psiminus_down_up = sum(is_psiminus_down_up)
+    psiminus_down_down = sum(is_psiminus_down_down)
+
+    psiminus_bars = np.array([psiminus_up_up, psiminus_up_down, psiminus_down_up, psiminus_down_down])
+    psiminus_bars_norm = psiminus_bars/float(sum(psiminus_bars))
+    
+    return psiplus_bars, psiplus_bars_norm, psiminus_bars, psiminus_bars_norm
+    
+## Analysis of filtered data ##
+
+
+def Ent_fid_vs_dt_max(Total_entanglement_events, pts, Start_dt, Last_dt, F1a, F1b, F0a, F0b):
+    # Defines range for dt
+    x=np.linspace(Start_dt,Last_dt,pts)
+
+    # Initializes Psiplus and Psiminus fidelity and errors
+    Psiplus_Fid = np.zeros(pts)
+    Psiminus_Fid = np.zeros(pts)
+    err_Psiplus_Fid = np.zeros(pts)
+    err_Psiminus_Fid = np.zeros(pts)
+
+    # Initializes Corrected Psiplus and Psiminus fidelities and errors
+    Psiplus_Fid_corr = np.zeros(pts)
+    Psiminus_Fid_corr = np.zeros(pts)
+    err_Psiplus_Fid_corr = np.zeros(pts)
+    err_Psiminus_Fid_corr = np.zeros(pts)
+
+    # Initializes numbers of Psiplus and Psiminus events
+    psiplus_events= np.zeros(pts)
+    psiminus_events = np.zeros(pts)
+    
+
+    for i,a in enumerate(x):
+
+        # Filter on photons with dt = a
+        Total_entanglement_events_dt_filter = Filter.DT_filter_max(Total_entanglement_events, a)
+    
+        # Filters on photons with sync times within the tail
+        psiplus_filt_bars, psiplus_filt_bars_norm, psiminus_filt_bars, psiminus_filt_bars_norm = \
+                        Filter.get_events_in_correct_range(Total_entanglement_events_dt_filter, VERBOSE = False)
+   
+        # Determines total number of Psiplus and Psiminus events
+        psiplus_events[i] = sum(psiplus_filt_bars)
+        psiminus_events[i] = sum(psiminus_filt_bars)
+    
+        # Sets Readout Fidelities and calculates errors
+        Psiplus_Fid[i] = (psiplus_filt_bars_norm[1]+psiplus_filt_bars_norm[2])
+        Psiminus_Fid[i] = (psiminus_filt_bars_norm[0]+psiminus_filt_bars_norm[3])
+        err_Psiplus_Fid[i] = Psiplus_Fid[i]/np.sqrt(psiplus_events[i])
+        err_Psiminus_Fid[i] = Psiminus_Fid[i]/np.sqrt(psiminus_events[i])
+
+        # Sets readout fidelities, note that these are crude estimations Bas took from another file because I haven't saved 
+        # Readout fidelities in the total entanglement table. I will do this
+        F1a=0.8954; F1b=0.9434; F0a=0.9934; F0b=0.9908
+    
+        # Caclculates Corrected Readout Fidelities
+        psiplus_filt_bars_norm_temp = psiplus_filt_bars_norm[::-1]
+        psiminus_filt_bars_norm_temp = psiminus_filt_bars_norm[::-1]    
+    
+        psiplus_filt_bars_norm_corr_temp = sscorr.ssro_correct_twoqubit_state_photon_numbers(psiplus_filt_bars_norm_temp, F0a, F0b, F1a, F1b,
+            return_error_bars=False, dF0a=0.01, dF0b=0.01, dF1a=0.01, dF1b=0.01, 
+            verbose = False)
+        psiminus_filt_bars_norm_corr_temp = sscorr.ssro_correct_twoqubit_state_photon_numbers(psiminus_filt_bars_norm_temp, F0a, F0b, F1a, F1b,
+            return_error_bars=False, dF0a=0.01, dF0b=0.01, dF1a=0.01, dF1b=0.01, 
+            verbose = False)
+    
+        psiplus_filt_bars_norm_corr = psiplus_filt_bars_norm_corr_temp[::-1]
+        psiminus_filt_bars_norm_corr = psiminus_filt_bars_norm_corr_temp[::-1]
+    
+        # Sets corrected Readout Fidelities and errors
+        Psiplus_Fid_corr[i] = (psiplus_filt_bars_norm_corr[1]+psiplus_filt_bars_norm_corr[2])
+        Psiminus_Fid_corr[i] = (psiminus_filt_bars_norm_corr[0]+psiminus_filt_bars_norm_corr[3])
+        err_Psiplus_Fid_corr[i] = Psiplus_Fid_corr[i]/np.sqrt(psiplus_events[i])
+        err_Psiminus_Fid_corr[i] = Psiminus_Fid_corr[i]/np.sqrt(psiminus_events[i])
+        
+    return x, Psiplus_Fid, Psiminus_Fid, err_Psiplus_Fid, err_Psiminus_Fid, Psiplus_Fid_corr, Psiminus_Fid_corr, err_Psiplus_Fid_corr, err_Psiminus_Fid_corr, psiplus_events, psiminus_events
+    
+def Ent_fid_vs_dt_interval(pts, Interval_length, dt_start, Total_entanglement_events, F1a, F1b, F0a, F0b, Verbose = True):
+    # Set x-axis
+    x= np.zeros(pts)
+
+    for i in np.arange(pts):
+        x[i] = 0.5 + 3*i
+
+    # Initializes Psiplus and Psiminus fidelity and errors
+    Psiplus_Fid = np.zeros(pts)
+    Psiminus_Fid = np.zeros(pts)
+    err_Psiplus_Fid = np.zeros(pts)
+    err_Psiminus_Fid = np.zeros(pts)
+
+    # Initializes Corrected Psiplus and Psiminus fidelities and errors
+    Psiplus_Fid_corr = np.zeros(pts)
+    Psiminus_Fid_corr = np.zeros(pts)
+    err_Psiplus_Fid_corr = np.zeros(pts)
+    err_Psiminus_Fid_corr = np.zeros(pts)
+
+    # Initializes numbers of Psiplus and Psiminus events
+    psiplus_events= np.zeros(pts)
+    psiminus_events = np.zeros(pts)
+
+
+    for i in np.arange(pts):
+   
+        Start_dt = dt_start + i * Interval_length
+        Stop_dt = Start_dt + Interval_length
+
+        # Filter on photons with dt = a
+        Total_entanglement_events_dt_filter = Filter.DT_filter_interval(Total_entanglement_events, Start_dt, Stop_dt)
+    
+        # Filters on photons with sync times within the tail
+        psiplus_filt_bars, psiplus_filt_bars_norm, psiminus_filt_bars, psiminus_filt_bars_norm = \
+                        Filter.get_events_in_correct_range(Total_entanglement_events_dt_filter, VERBOSE = False)
+   
+        # Determines total number of Psiplus and Psiminus events
+        psiplus_events[i] = sum(psiplus_filt_bars)
+        psiminus_events[i] = sum(psiminus_filt_bars)
+        
+        if Verbose:
+            print  "Interval: ", i+1   
+            if psiplus_events[i] == 0:
+                print " Window is set too small no psiplus events found"
+                Psiplus_Fid[i] = 0
+            if psiminus_events[i] == 0:
+                print " Window is set too small no psiminus events found"
+                Psiminus_Fid[i] = 0
+    
+    
+        # Sets Readout Fidelities and calculates errors
+        Psiplus_Fid[i] = (psiplus_filt_bars_norm[1]+psiplus_filt_bars_norm[2])
+        Psiminus_Fid[i] = (psiminus_filt_bars_norm[0]+psiminus_filt_bars_norm[3])
+        err_Psiplus_Fid[i] = Psiplus_Fid[i]/np.sqrt(psiplus_events[i])
+        err_Psiminus_Fid[i] = Psiminus_Fid[i]/np.sqrt(psiminus_events[i])
+
+    
+        # Caclculates Corrected Readout Fidelities
+        psiplus_filt_bars_norm_temp = psiplus_filt_bars_norm[::-1]
+        psiminus_filt_bars_norm_temp = psiminus_filt_bars_norm[::-1]    
+    
+        psiplus_filt_bars_norm_corr_temp = sscorr.ssro_correct_twoqubit_state_photon_numbers(psiplus_filt_bars_norm_temp, F0a, F0b, F1a, F1b,
+            return_error_bars=False, dF0a=0.01, dF0b=0.01, dF1a=0.01, dF1b=0.01, 
+            verbose = False)
+        psiminus_filt_bars_norm_corr_temp = sscorr.ssro_correct_twoqubit_state_photon_numbers(psiminus_filt_bars_norm_temp, F0a, F0b, F1a, F1b,
+            return_error_bars=False, dF0a=0.01, dF0b=0.01, dF1a=0.01, dF1b=0.01, 
+            verbose = False)
+    
+        psiplus_filt_bars_norm_corr = psiplus_filt_bars_norm_corr_temp[::-1]
+        psiminus_filt_bars_norm_corr = psiminus_filt_bars_norm_corr_temp[::-1]
+    
+        # Sets corrected Readout Fidelities and errors
+        Psiplus_Fid_corr[i] = (psiplus_filt_bars_norm_corr[1]+psiplus_filt_bars_norm_corr[2])
+        Psiminus_Fid_corr[i] = (psiminus_filt_bars_norm_corr[0]+psiminus_filt_bars_norm_corr[3])
+        err_Psiplus_Fid_corr[i] = Psiplus_Fid_corr[i]/np.sqrt(psiplus_events[i])
+        err_Psiminus_Fid_corr[i] = Psiminus_Fid_corr[i]/np.sqrt(psiminus_events[i])
+        
+    return x, Psiplus_Fid, Psiminus_Fid, err_Psiplus_Fid, err_Psiminus_Fid, Psiplus_Fid_corr, Psiminus_Fid_corr, err_Psiplus_Fid_corr, err_Psiminus_Fid_corr, psiplus_events, psiminus_events
+  
+## Tail Analysis ##
+    
+def ZPL_tail_analysis_per_run(b, fp, fp_LT1, ch0_start, ch1_start, ch0_stop, ch1_stop, dif_win1_win2,Verbose = True):
+
+    # Initalizes file in which data is saved
+    Tail_analysis = np.empty([5,b])
+
+    for i in np.arange(b):
+    
+        # Opens file to retrieve BS sync times, numbers and filters for photons in channel 0 or 1
+        f = h5py.File(fp[i], 'r')
+        sync_numbers = f['/PQ_sync_number-1'].value
+        sync_times = f['/PQ_sync_time-1'].value
+        is_ph0, is_ph1 = pq_tools.get_photons(f)
+        f.close()
+
+        # Opens file to retrieve number of repetitions
+        g = h5py.File(fp_LT1[i],'r')
+        for k in g.keys():
+            if type(g[k])==h5py.Group and not 'analysis' in k:
+                Completed_reps = g[('/'+ str(k) + '/ssro/completed_reps')].value
+        g.close()
+
+        # Calculates the total repetitions
+        Total_reps =  Completed_reps * 250
+    
+        # Makes a filter for events that are photons
+        is_photon = is_ph0 | is_ph1
+    
+        # Makes a list of sync times for photons in channel 0 and 1
+        sync_times_ph0 = sync_times[is_ph0]
+        sync_times_ph1 = sync_times[is_ph1]
+    
+        """
+        Note that all filters below can only be applied on sync_times_ph0 or sync_times_ph1 arrays with the same length
+        """
+    
+        # Filters events in channel 0 on being in the first window or the second window, windows are set above
+        is_event_first_window_ph0 = (sync_times_ph0 > ch0_start * 1e3) & \
+                         (sync_times_ph0 <= ch0_stop * 1e3)
+        is_event_second_window_ph0 = (sync_times_ph0 > ch0_start * 1e3 + dif_win1_win2 * 1e3) & \
+                          (sync_times_ph0 <= ch0_stop * 1e3 + dif_win1_win2 * 1e3)
+        print sum(is_event_first_window_ph0), sum(is_event_second_window_ph0)
+        # Filters events in channel 1 on being in the first window or the second window, windows are set above
+        is_event_first_window_ph1 = (sync_times_ph1 > ch1_start * 1e3) & \
+                         (sync_times_ph1 <= ch1_stop * 1e3)
+        is_event_second_window_ph1 = (sync_times_ph1 > ch1_start *1e3 + dif_win1_win2 * 1e3) & \
+                          (sync_times_ph1 <= ch1_stop * 1e3 + dif_win1_win2 * 1e3)
+        print sum(is_event_first_window_ph1), sum(is_event_second_window_ph1)
+        
+        # Calculates the amount of photons in the first or second window for both channel
+        photons_first_window_ph0 = sum(is_event_first_window_ph0)
+        photons_second_window_ph0 = sum(is_event_second_window_ph0)
+        photons_first_window_ph1 = sum(is_event_first_window_ph1)
+        photons_second_window_ph1 = sum(is_event_second_window_ph1)
+
+        # Combines the photons from both channels
+        photons_first_window = photons_first_window_ph0 + photons_first_window_ph1
+        photons_second_window = photons_second_window_ph0 + photons_second_window_ph1
+        Total_number_of_photons = sum(is_photon)
+
+        # Normalize the amount of photons with respect to the total amount of repetitions
+        photons_first_window_per_rep = photons_first_window / float(Total_reps)
+        photons_second_window_per_rep = photons_second_window / float(Total_reps)
+    
+        # Saves calculated data
+        Tail_analysis[:,i] = [Total_number_of_photons, photons_first_window, photons_second_window,\
+                          photons_first_window_per_rep, photons_second_window_per_rep]
+
+        if Verbose:
+            print "Run: ", i+1
+            print "Total number of photons: ", Total_number_of_photons
+            print "Number of photons in first window", photons_first_window
+            print "Number of photons in second window", photons_second_window
+            print "Number of photons in first window per repetetion", photons_first_window_per_rep
+            print "Number of photons in second window per repetetion", photons_second_window_per_rep
+            print
+    
+    return Tail_analysis 
+    
+def PSB_tail_analysis_per_run(fp, first_window_start, first_window_stop, second_window_start, second_window_stop, Verbose = True):
+    
+    Tail_analysis = np.empty([5,len(fp)])
+    
+    for i in np.arange(len(fp)):
+   
+        if files.has_data(fp[i], 'PQ_sync_time-1'):
+
+            # Opens file to retrieve number of repetitions
+            g = h5py.File(fp[i],'r')
+            sync_numbers = g['/PQ_sync_number-1'].value
+            sync_times = g['/PQ_sync_time-1'].value
+            is_ph0, is_ph1 = pq_tools.get_photons(g) #Note that there are only photons in channel 0
+            for k in g.keys():
+                if type(g[k])==h5py.Group:
+                    Completed_reps = g[('/'+ str(k) + '/ssro/completed_reps')].value
+            g.close()
+
+            # Calculates the total repetitions
+            Total_reps =  Completed_reps * 250
+    
+            # Makes a list of sync times for photons 
+            sync_times_ph0 = sync_times[is_ph0]
+
+            """
+            Note that all filters below can only be applied on sync_times_ph0 or sync_times_ph1 arrays with the same length
+            """
+    
+            # Filters events in channel 0 on being in the first window or the second window, windows are set above
+            is_event_first_window_ph0 = (sync_times_ph0 > first_window_start) & \
+                             (sync_times_ph0 <= first_window_stop)
+            is_event_second_window_ph0 = (sync_times_ph0 > second_window_start) & \
+                              (sync_times_ph0 <= second_window_stop)
+
+
+            # Calculates the amount of photons in the first or second window for both channel
+            photons_first_window = sum(is_event_first_window_ph0)
+            photons_second_window = sum(is_event_second_window_ph0)
+            Total_number_of_photons = sum(is_ph0)
+
+            # Normalize the amount of photons with respect to the total amount of repetitions
+            photons_first_window_per_rep = photons_first_window / float(Total_reps)
+            photons_second_window_per_rep = photons_second_window / float(Total_reps)
+    
+            # Saves calculated data
+            Tail_analysis[:,i] = [Total_number_of_photons, photons_first_window, photons_second_window,\
+                          photons_first_window_per_rep, photons_second_window_per_rep]
+
+            if Settings.VERBOSE:
+                print "Run: ", i+1
+                print "Total number of photons: ", Total_number_of_photons
+                print "Number of photons in first window", photons_first_window
+                print "Number of photons in second window", photons_second_window
+                print "Number of photons in first window per repetition", photons_first_window_per_rep
+                print "Number of photons in second window per repetition", photons_second_window_per_rep
+                print
+            
+        else:
+            #Tail_analysis_LT1[:,i] = [0,0,0,0,0]
+            if Settings.VERBOSE:
+                print "Run: ", i+1
+                print "There is no data for this run in LT1"
+                Tail_analysis[:,i] = np.array([0,0,0,0,0])
+                print
+                
+    return Tail_analysis
+    
+## Check if  HH entanglement events correspond with PLU Markers
+   
+def HH_event_PLU_Marker_Check(b, fp_BS, fp_LT1, fp_LT3, window_settings):
+    
+    # Set big windows to check if a photon is the first or the second photon
+    first_win_min  = window_settings[0]
+    first_win_max = window_settings[1]
+    second_win_min = window_settings[2]
+    second_win_max = window_settings[3]
+
+    for i in np.arange(b):
+    
+        # Checks if there is enough data for the analysis
+        if files.has_data(fp_LT1[i], 'PQ_sync_time-1') and files.has_data(fp_LT3[i], 'PQ_sync_time-1'):
+            print "Run: ", str(i+1)
+            
+            # Opens LT1 data  
+            g = h5py.File(fp_LT1[i],'r')
+            for k in g.keys():
+                if type(g[k])==h5py.Group:
+                    ad1_reps = g[('/'+ str(k) + '/ssro/entanglement_events')].value
+            g.close()
+    
+            # Opens LT3 data    
+            h = h5py.File(fp_LT3[i],'r')
+            for k in h.keys():
+                if type(h[k])==h5py.Group:
+                    ad3_reps = h[('/'+ str(k) + '/ssro/entanglement_events')].value
+            h.close()  
+            
+            # Open BS data
+            pqf = h5py.File(fp_BS[i], 'r')
+            sync_numbers = pqf['/PQ_sync_number-1'].value
+
+            # Defines two filters for photons arriving in channel 0 and 1
+            is_ph0, is_ph1 = pq_tools.get_photons(pqf)
+            
+            # Defines filters for if photons in channel 0 and 1 are arriving in the first or scond window         
+            is_valid_ph0_w1 = is_ph0 & pq_tools.filter_synctimes(pqf,first_win_min ,first_win_max)
+            is_valid_ph0_w2 = is_ph0 & pq_tools.filter_synctimes(pqf,second_win_min ,second_win_max)
+            is_valid_ph1_w1 = is_ph1 & pq_tools.filter_synctimes(pqf,first_win_min ,first_win_max)
+            is_valid_ph1_w2 = is_ph1 & pq_tools.filter_synctimes(pqf,second_win_min ,second_win_max)
+            pqf.close()
+    
+    
+            # Applies filters above to get a list of sync numbers
+            valid_ph0_w1_sn = sync_numbers[is_valid_ph0_w1]
+            valid_ph0_w2_sn = sync_numbers[is_valid_ph0_w2]
+            valid_ph1_w1_sn = sync_numbers[is_valid_ph1_w1]
+            valid_ph1_w2_sn = sync_numbers[is_valid_ph1_w2]   
+    
+            # Defines type of events by checking if sync numbers are in two lists
+            is_00_sn = np.in1d(valid_ph0_w1_sn,valid_ph0_w2_sn)
+            w0w0_sn = valid_ph0_w1_sn[is_00_sn]
+            is_01_sn = np.in1d(valid_ph0_w1_sn,valid_ph1_w2_sn)
+            w0w1_sn = valid_ph0_w1_sn[is_01_sn]
+            is_10_sn = np.in1d(valid_ph1_w1_sn,valid_ph0_w2_sn)
+            w1w0_sn = valid_ph1_w1_sn[is_10_sn]
+            is_11_sn = np.in1d(valid_ph1_w1_sn,valid_ph1_w2_sn)
+            w1w1_sn = valid_ph1_w1_sn[is_11_sn]
+    
+            # Defines a list with psiplus and psiminus events
+            psi_plus_sn = np.unique(np.append(w0w0_sn,w1w1_sn))
+            psi_minus_sn = np.unique(np.append(w0w1_sn,w1w0_sn))
+    
+            if Settings.VERBOSE == True:
+                print "Number of Hydraharp psi_plus events: ", len(psi_plus_sn)
+                print "Number of Hydraharp psi_minus events: ", len(psi_minus_sn)
+                print "Number of PLU Markers LT1: ", ad1_reps
+                print "Number of PLU Markers LT3: ", ad3_reps
+                print
+        else:
+            print "There is no analysis data for run", i+1

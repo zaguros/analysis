@@ -12,7 +12,7 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
         frequency = [1,1], offset =0.5, amplitude =[ 0.5,0.5],  phase =[0,0],
         fixed = [],
         plot_fit = False, do_print = False, show_guess = True, print_info = True,
-        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,
+        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,capsize =2,
         title ='' ,savename ='Cosine_sum2'):
     '''
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
@@ -55,17 +55,15 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
 
     for i in range(a.readouts):
         ax.errorbar(a.sweep_pts, a.p0[:,i], fmt='o',
-            yerr=a.u_p0[:,i],markersize=markersize)
+            yerr=a.u_p0[:,i],markersize=markersize,capsize=capsize)
     start, end = ax.get_xlim()
     print start
     print end
     # ax.xaxis.set_ticks(np.arange(start, end, .25))
     ax.xaxis.set_ticks( np.arange(start, end+1e-6, 15e-6))
-    ax.set_ylim(-0.05,1.05)
-    ax.yaxis.set_ticks( [0,0.5,1])
-
-
-
+    # ax.set_ylim(-0.05,1.05)
+    ax.set_ylim(0,1)
+    ax.yaxis.set_ticks( [0,0.25,0.5,0.75,1])
 
     #ax.set_markersize = 0.1
     x = a.sweep_pts.reshape(-1)[:]
@@ -83,7 +81,9 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
 
     fit.write_to_file(fit_result,folder,fitname = 'Sum of cosine fit')
 
-
+    for i in range(a.readouts):
+        ax.errorbar(a.sweep_pts, a.p0[:,i], fmt='o',
+            yerr=a.u_p0[:,i],markersize=markersize,color = 'b',capsize=capsize)
 
     ## plot data and fit as function of total time
     locs,labels = plt.xticks()
@@ -103,21 +103,3 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     plt.savefig(os.path.join(folder, savename+'png'),
     format='png',bbox_inches='tight')
     return fig
-
-
-
-#CR.Carbon_Ramsey(timestamp='20140521164658', measurement_name = ['adwindata'],
-#            frequency = [338e-3,14e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
-
-#CR.Carbon_Ramsey(timestamp='20140521165249', measurement_name = ['adwindata'],
-#            frequency = [305e-3,16e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
-
-#CR.Carbon_Ramsey(timestamp='20140521170735', measurement_name = ['adwindata'],
-#            frequency = [350e-3,27e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
-
-#CR.Carbon_Ramsey(timestamp='20140521162939', measurement_name = ['adwindata'],
-#            frequency = [344e-3,19e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0],
-#            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
