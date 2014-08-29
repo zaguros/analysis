@@ -165,28 +165,19 @@ def BarPlotTomoContrast(timestamps=None, measurement_name = ['adwindata'],folder
     x = range(len(y_a))
 
 
-    ### Fidelities
-    # F_ZZ  = (1 + y[2] + y[5] + y[14])/4
-    # F_ZmZ     = (1 + y[2] - y[5] - y[14])/4
-    # F_ent     = (1 + y[0] -y[4] -y[8])/4
-    F_ent   = (1 + y[0] +y[1] +y[2])/4
-    # print 'Fidelity with ZZ  = ' + str(F_ZZ)
-    # print 'Fidelity with ZmZ  = ' + str(F_ZmZ)
-    print 'Fidelity with ent = ' + str(F_ent)
-
+    if mirror_data_points != None:
+        for x_repl in mirror_data_points:
+            y[x_repl] = -y[x_repl]
 
     fig,ax = plt.subplots(figsize=figsize)
     if guess != None:
         x_g =guess[0]
         y_g = guess[1]
         ax.bar(x_g,y_g, color = '0.75' , align = 'center' ,width = (barwidth*1.1),linewidth = 0)
+        F_ent   = (1 + y[x_g[0]]*y_g[0] +y[x_g[1]]*y_g[1] +y[x_g[2]]*y_g[2])/4
+        u_F_ent = ( y_err[x_g[0]]**2 + y_err[x_g[1]]**2+ y_err[x_g[2]]**2)**.5/4
+        print 'Fidelity to guess = %s +/- %s' %(F_ent,u_F_ent)
 
-    if mirror_data_points != None:
-        print y
-        for x_repl in mirror_data_points:
-            print 'x_repl %s, y %s' %(x_repl,y[x_repl])
-            y[x_repl] = -y[x_repl]
-        print y
 
     if plot_fit ==True:
         ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' ,width = barwidth,linewidth = linewidth)
@@ -201,6 +192,7 @@ def BarPlotTomoContrast(timestamps=None, measurement_name = ['adwindata'],folder
             title = str(folder_a)
         ax.set_title(title)
         ax.hlines([0],x[0]-0.75,x[-1]+0.75,linewidth = linewidth+0.1) #,linestyles='dotted'
+
 
 
     if save and ax != None:
