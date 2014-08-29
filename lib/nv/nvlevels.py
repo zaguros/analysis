@@ -197,7 +197,7 @@ def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show
     A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
                                         E_ES[1]-E_GS[1]])   # 4 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
