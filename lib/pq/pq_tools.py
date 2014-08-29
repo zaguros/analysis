@@ -49,9 +49,7 @@ def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation =
 
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
-        return c  
-    
-
+        return c    
 
     sync_time = pqf['/PQ_sync_time-1'].value
     total_time = pqf['/PQ_time-1'].value
@@ -104,15 +102,22 @@ def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation =
 
 def get_coincidences_from_folder(folder):
 
-    filepaths = tb.get_all_msmt_filepaths(folder)
+    filepaths = tb.get_all_msmt_filepaths(folder) 
+    co = np.ones([1,4])
 
     for i,f in enumerate(filepaths):
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
-            co = get_coincidences(pqf)
+            if 'PQ_sync_number-1' in pqf.keys():
+                co = get_coincidences(pqf)           
         else:
             pqf = pqf_from_fp(f, rights = 'r+')
-            co = np.vstack((co, get_coincidences(pqf)))
+            if 'PQ_sync_number-1' in pqf.keys():
+                if co[0,3] == 1:
+                    co = get_coincidences(pqf)
+                else:
+                    co = np.vstack((co, get_coincidences(pqf)))
+                    
     return co
 
 

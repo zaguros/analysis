@@ -12,12 +12,17 @@ from matplotlib import pyplot as plt
 import fingerprint_funcs_MAR as fp_funcs; reload(fp_funcs)
 
 def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [2,10],B_Field =304.12,disp_total_sig=False,
-        figsize= (25,5), fontsize = 10, showlegend = True,
-        title ='Fingerprint of Hans Sil 01 at 304.12G for N =32 pulses'):
+        figsize= (25,5), fontsize = 10, showlegend = True, plot_contrast = False,
+        sim_linewidth = 0.4,
+        signal_linewidth = 0.8,
+        title ='Fingerprint',ms = 0.1, tau_larmor_axis = False):
+    plt.rc('font', size=fontsize)
 
     ###################
     ## Data location ##
     ###################
+    gamma_C = 1.0705e3
+    tau_larmor = 1/(gamma_C*B_Field)
 
     if N == 16:
         timestamp ='20140419_005744' # for the -x msmt
@@ -52,14 +57,41 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
     ## Plotting ###
     ###############
 
+
+
+
     fig = a.default_fig(figsize=figsize)
     ax = a.default_ax(fig)
     ax.set_xlim(xlims)
     start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start, end, 1))
-    ax.set_ylim(-0.05,1.05)
-    ax.yaxis.set_ticks( [0,0.5,1])
-    ax.plot(a.sweep_pts, a.p0, 'k', lw=0.4,label = 'data') #N = 16
+    if tau_larmor_axis == False:
+        ax.xaxis.set_ticks(np.arange(start, end+1e-6, 1))
+        print np.arange(start, end+1e-6, 1)
+        ax.set_xlabel(r'$\tau$ ($\mu$s) ',fontsize =fontsize)
+    else:
+
+        xticks = np.arange((tau_larmor*1e6),3*(tau_larmor*1e6)+1e-6,tau_larmor*1e6*.5)
+        ax.xaxis.set_ticks(xticks)
+        xticklabels = [1,1.5,2,2.5,3]
+        print plt.gca()
+        ax.set_xlabel(r'$\tau /\tau _L$ ',fontsize =fontsize)
+        ax.set_xticklabels(xticklabels)
+        print xticks
+
+    if plot_contrast == True:
+        a.p0= ((a.p0.reshape(-1))-0.5)*2
+        for tt in range(n_spins_to_disp):
+            FP_signal16[tt,:] = ((FP_signal16[tt,:].reshape(-1))-0.5)*2
+        ax.set_ylim(-1.05,1.05)
+        ax.yaxis.set_ticks( [-1,-0.5,0,0.5,1])
+        ax.set_ylabel(r'$\langle X \rangle $',fontsize =fontsize)
+    else:
+        ax.set_ylim(-0.05,1.05)
+        ax.yaxis.set_ticks( [0,0.5,1])
+        ax.set_ylabel(r'$F$',fontsize =fontsize)
+
+
+    ax.plot(a.sweep_pts, a.p0, 'k.-',ms = ms, lw=0.4,label = 'data') #N = 16
 
 
     if disp_sim_spin == True:
@@ -67,17 +99,15 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
       if n_spins_to_disp =='all':
         n_spins_to_disp = len(HF_par)
       for tt in range(n_spins_to_disp):
-        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.2,label = 'spin' + str(tt+1))#, color = colors[tt])
+        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=sim_linewidth,label = 'spin' + str(tt+1))#, color = colors[tt])
     if disp_total_sig==True:
         tot_signal = np.ones(len(tau_lst))
         for tt in range(len(HF_par)):
           tot_signal = tot_signal * Mt16[tt,:]
         fin_signal = (tot_signal+1)/2.0
-        ax.plot(tau_lst*1e6, fin_signal,':b',lw=.8,label = 'tot')
+        ax.plot(tau_lst*1e6, fin_signal,':b',lw=signal_linewidth,label = 'tot')
 
     ax.set_title(title)
-    ax.set_xlabel(r'$\tau$ ($\mu$s) ',fontsize =fontsize)
-    ax.set_ylabel(r'$F$',fontsize =fontsize) #Maybe I want to have contrast instead <X> from -1 to +1
 
     if showlegend == True:
         plt.legend(loc=4)
@@ -86,10 +116,9 @@ def fingerprint(disp_sim_spin = True, n_spins_to_disp = 'all' ,N = 16, xlims = [
 
 
     print 'Figures saved in: %s' %folder
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf',),
+    plt.savefig(os.path.join(folder, 'fingerprint'+str(N)+'.pdf',),
         format='pdf',bbox_inches='tight')
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
-        format='png',bbox_inches='tight')
+
 
 
 
