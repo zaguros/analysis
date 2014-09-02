@@ -111,7 +111,7 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
     ax.set_title(title)
 
     ax.set_xlabel(r'Phase($^{\circ}$)',fontsize =fontsize)
-    ax.set_ylabel(r'$F$ $\left( |0\rangle \right)$', fontsize = fontsize)
+    ax.set_ylabel(r'$F$ $\left( |0\rangle_e \right)$', fontsize = fontsize)
 
 
     fit_results.append(fit_result[i])
