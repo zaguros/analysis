@@ -22,7 +22,7 @@ guess_splitN = 2.18e-3
 guess_width = 0.2e-3
 guess_splitB = 30.
 guess_splitN = 2.18e-3
-# guess_splitC = .8e-3 #12.78
+guess_splitC = .5e-3 #12.78
 #guess_width = 0.2e-3
 guess_sigma = 0.2e-3
 guess_amplitude = 0.3
@@ -99,7 +99,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
-                # (2, guess_splitC),
+                (2, guess_splitC),
                 # (2, guess_splitB),
                 (3, guess_splitN),
                 do_print=True, ret=True, fixed=[])
@@ -119,7 +119,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
-                # (2, guess_splitC),
+                (2, guess_splitC),
                 # (2, guess_splitB),
                 (3, guess_splitN),
                 do_print=True, ret=True, fixed=[4])
