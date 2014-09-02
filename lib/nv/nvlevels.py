@@ -97,6 +97,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     """
     # [1]: Doherty, M. W. et al. Physics Reports 528, 1-45 (2013)
     # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
+    # [3]: Bassett, L. C. et al. Science 1255541 (2014). doi:10.1126/science.1255541
     # see also:
     # Doherty, M. W., Manson, N. B., Delaney, P. and Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
     # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
@@ -111,16 +112,17 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     Bz = mu_B*B_field[2]*1e-4 #GHz
     
     #Bfield
-    lambdaA2=.1                  #observed, [1]   
-    g_es_par = 2.                #RT value, likely to be different at LT! [1]
-    g_es_ort = 2.                #RT value, likely to be different at LT! [1]              
+    lambdaA2=.1                  #observed, [1], however some discussion in supplementary material of [3] 
+                                 #also, it might miss a factor 0.5! ie lambdaA2=0.05 
+    g_es_par = 2.15              #observed, [3], also 2.00 RT value, likely to be different at LT! [1]
+    g_es_ort = 2.                 #RT value, likely to be different at LT! [1]              
 
     lambda_par=5.3               #observed, [1] 
     #lambda_ort_2=1.5*lambda_par #unknown, calculated by [2]
-    D1A1=2.88/3                  #observed, [1]
+    D1A1=2.878/3                 #observed, [1][3]
     D2A1=1.42/3                  #observed, [1]
-    D2E1=1.55/2                  #observed, [1]
-    D2E2=.2/np.sqrt(2)           #observed, [1] AKA lambda_es_ort
+    D2E1=1.54/2                  #observed, [1][3]
+    D2E2=0.150/np.sqrt(2)        #observed, [1][3] AKA lambda_es_ort
 
     w2=np.sqrt(2)
     
@@ -197,7 +199,7 @@ def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show
     A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
                                         E_ES[1]-E_GS[1]])   # 4 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],

@@ -25,6 +25,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
         '''
 
         if post_select == True:
+            print 'Post select = True'
             self.post_select = True
             self.result_corrected = False
 
@@ -62,6 +63,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.u_normalized_ssro_1 = (self.normalized_ssro_1*(1-self.normalized_ssro_1)/(self.parity_result))**0.5
 
         else:
+            print 'Post select = False'
             mbi.MBIAnalysis.get_readout_results(self,name) #NOTE: super cannot be used as this is an "old style class"
             self.post_select = False
 
@@ -72,6 +74,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
         if self.post_select == True:
             if ssro_calib_folder == '':
                 ssro_calib_folder = toolbox.latest_data('SSRO')
+                print 'ssro_calib_folder found by conditional parity class: %s' %ssro_calib_folder
 
             self.p0_0 = np.zeros(self.normalized_ssro_0.shape)
             self.u_p0_0 = np.zeros(self.normalized_ssro_0.shape)
@@ -98,14 +101,19 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.result_corrected = True
 
         else:
+            print 'Post select = False ROC'
             mbi.MBIAnalysis.get_electron_ROC(self,ssro_calib_folder)  #NOTE: super cannot be used as this is an "old style class"
 
     def convert_fidelity_to_contrast(self,p0,u_p0):
         '''
         takes data and corresponding uncertainty and converts it to contrast
         '''
-        c0= ((p0.reshape(-1))-0.5)*2
-        u_c0 = 2*u_p0.reshape(-1)
+        print 'Converting fidelity to contrast'
+        c0= ((self.p0.reshape(-1)[:])-0.5)*2
+        u_c0 = 2*self.u_p0.reshape(-1)[:]
+        # y_a= ((self.p0.reshape(-1)[:])-0.5)*2
+        # y_err_a = 2*a.u_p0.reshape(-1)[:]
+
         return c0, u_c0
 
 

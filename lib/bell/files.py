@@ -1,19 +1,26 @@
 import h5py
 import os
 
-import settings
+import Settings
 
 ### data finding and identification
 def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     filepaths = []
     suffixlen = len(suffix)
     
+    #Roots = list()
+    #Dirs = list()
+    #Files = list()
+
     for root,dirs,files in os.walk(folder):
         for f in files:
             if len(f) > suffixlen and f[-suffixlen:] == suffix and pattern in f:
                 filepaths.append(os.path.join(root, f))
-    
+
+    filepaths = sorted(filepaths)
+
     return filepaths
+
 
 def get_msmt_name(fp):
     """
@@ -21,7 +28,7 @@ def get_msmt_name(fp):
     """
     _root, fn = os.path.split(fp)
     f = h5py.File(fp, 'r')
-    for k in f.keys(): ## Ask Bas ##
+    for k in f.keys():
         if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
             f.close()
             return k
@@ -49,7 +56,7 @@ def delete_analysis_data(fp, name, subgroup=None):
         raise
 
     try:
-        agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        agrp = f.require_group(Settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
         if name in agrp.keys():
             del agrp[name]
         f.flush()
@@ -58,22 +65,27 @@ def delete_analysis_data(fp, name, subgroup=None):
         f.close()
         raise
 
-def clear_analysis_data(fp):
+def clear_analysis_data(fp,):
     try:
         f = h5py.File(fp, 'r+')
+        print " This works 1"
     except:
         print "Cannot open file", fp
         raise
 
-    if settings.ANALYSISGRP in f.keys():
+    if Settings.ANALYSISGRP in f.keys():
+        print "This works 2"
         try:
-            del f[settings.ANALYSISGRP]
+            del f[Settings.ANALYSISGRP]
+            print "This works 3"
             f.flush()
             f.close()
         except:
+            print "This doesn't work"
             f.close()
             raise
     else:
+        print "This doesn't work 2"
         f.close()
 
 def set_analysis_data(fp, name, data, subgroup=None, **kw):
@@ -84,7 +96,9 @@ def set_analysis_data(fp, name, data, subgroup=None, **kw):
         raise
     
     try:
-        agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        agrp = f.require_group(Settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+
+        
         if name in agrp.keys():
             del agrp[name]
         agrp[name] = data
@@ -92,36 +106,60 @@ def set_analysis_data(fp, name, data, subgroup=None, **kw):
         
         for k in kw:
             agrp[name].attrs[k] = kw[k]
+            #print agrp[name].attrs[k]
+        #    agrp[name].attrs[k] = kw[k]
         
         f.flush()
         f.close()        
     except:
         f.close()
         raise
+
+def has_data(fp, name, subgroup=None):
+    """
+    Checks if data with a specific name is in the keys of the main folder
+    give filepath and name
+    """
+    try:
+        f = h5py.File(fp, 'r')
+    except:
+        return False
+
+    
+    if name in f.keys():
+        f.close()
+        return True
+    else:
+        f.close()
+        return False
         
 def has_analysis_data(fp, name, subgroup=None):
     try:
-        f = h5py.File(fp, 'r+')
+        f = h5py.File(fp, 'r')
     except:
         print "Cannot open file", fp
         raise
     
-    agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
-    if name in agrp.keys():
-        f.close()
-        return True
+    if Settings.ANALYSISGRP in f.keys():
+        agrp = f.require_group(Settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        if name in agrp.keys():
+            f.close()
+            return True
+        else:
+            f.close()
+            return False
     else:
         f.close()
         return False
     
 def get_analysis_data(fp, name, subgroup=None):
     try:
-        f = h5py.File(fp, 'r+')
+        f = h5py.File(fp, 'r')
     except:
         print "Cannot open file", fp
         raise
         
-    agrp = f.require_group(settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+    agrp = f.require_group(Settings.ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
 
     if name not in agrp.keys():
         return None

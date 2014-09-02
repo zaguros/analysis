@@ -11,8 +11,12 @@ reload(fit)
 
 def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
         frequency = [1,1,1], offset =[ 0.5,0.5,0.5], amplitude =[ 0.5,0.5,0.5],  phase =[0.5,0.5,0.5],
-        fixed = [],
-        plot_fit = False, do_print = False, show_guess = True):
+        fixed = [],plot_fit = False, do_print = False, show_guess = True,
+        figsize = (3,2), linewidth = 2, markersize = 2, fontsize =10,xticks = None,capsize =2,x_units ='ms',
+        show_legend = True,
+        title ='' , savename = 'SingleTomo'):
+
+
     '''
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -55,10 +59,12 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
             a.get_readout_results(name='adwindata')
             a.get_electron_ROC(ssro_calib_folder)
             if i ==0:
-                ax = a.plot_results_vs_sweepparam(ret='ax',labels = order_of_bases[i])
-                # a.plot_results_vs_sweepparam(ax=ax)
+                ax = a.plot_results_vs_sweepparam(ret='ax',labels = order_of_bases[i],figsize =figsize,markersize=markersize,capsize=capsize)
             else:
-                a.plot_results_vs_sweepparam(ax=ax,labels = order_of_bases[i])
+                a.plot_results_vs_sweepparam(ax=ax,labels = order_of_bases[i],markersize=markersize,capsize=capsize)
+                # a.plot_results_vs_sweepparam(ax=ax)
+            # else:
+            #     a.plot_results_vs_sweepparam(ax=ax,labels = order_of_bases[i],markersize=markersize,capsize=capsize)
             x[i] = a.sweep_pts.reshape(-1)[:]
             y[i]= a.p0.reshape(-1)[:]
 
@@ -69,27 +75,47 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
                 fit_result[i] = fit.fit1d(x[i],y[i], None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
                 if plot_fit == True:
                     plot.plot_fit1d(fit_result[i], np.linspace(x[i][0],x[i][-1],201), ax=ax,
-                            plot_data=False,print_info = False)
+                            plot_data=False,print_info = False,lw = linewidth)
                 fit.write_to_file(fit_result[i],folder,fitname = str(order_of_bases[i])+'-tomography')
             except:
                 pass
             if show_guess:
-                ax.plot(np.linspace(x[i][0],x[i][-1],201), fitfunc(np.linspace(x[i][0],x[i][-1],201)), ':', lw=2)
+                ax.plot(np.linspace(x[i][0],x[i][-1],201), fitfunc(np.linspace(x[i][0],x[i][-1],201)), ':', lw=linewidth)
+
+
 
 
     print 'fitfunction: '+fitfunc_str
-    if plot_fit ==True:
+    if plot_fit ==True and show_legend ==True:
         ax.legend(('X data','X-fit','Y data','Y-fit','Z data','Z-fit'),fontsize='x-small')
-    elif plot_fit == False:
+    elif plot_fit == False and show_legend ==True:
         ax.legend(('X data','Y data','Z data'),fontsize='small')
+    colors = ['r','g','b']
+    for i,folder in enumerate(folders):
+        for j in range(a.readouts):
+            ax.errorbar(a.sweep_pts, a.p0[:,j], fmt='o',
+                yerr=a.u_p0[:,j],markersize=markersize,color = colors[j],capsize=capsize)
 
     ## plot data and fit as function of total time
+    ax.set_xlim(0.0,x[i][-1])
+    ax.set_ylim(0,1)
+    ax.yaxis.set_ticks( [0,0.25,0.5,0.75,1])
+    if xticks != None:
+        ax.set_xticks(xticks)
+    locs,labels = plt.xticks()
+    labels = []
+    for l in locs :
+        labels.append(str(l))
+    plt.xticks(locs,labels)
+
+    ax.set_title(title)
+
+    ax.set_xlabel(r'Phase($^{\circ}$)',fontsize =fontsize)
+    ax.set_ylabel(r'$F$ $\left( |0\rangle_e \right)$', fontsize = fontsize)
+
 
     fit_results.append(fit_result[i])
 
-    plt.savefig(os.path.join(folder, 'analyzed_tomography_result.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(folder, 'analyzed_tomography_result.png'),
-    format='png')
-
+    plt.savefig(os.path.join(folder, savename+'.pdf'),
+            format='pdf',bbox_inches='tight')
     return fit_results
