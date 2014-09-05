@@ -49,7 +49,7 @@ plt.ylabel(r'Avg. No. Address. C-13' )
 plt.xlabel('Magnetic field (G)')
 for idfn, filename in enumerate(filenames):
     labstr = r'$\mu$ = ' +str(mu_ls[idfn]) + r'% , '+r' $T_{Max}$ = '+str(T_Max_lab[idfn])+'ms , ' +r'$F_{Min}$= ' +str(F_Min_lab)
-    plt.errorbar(B_Fields[idfn],Navg_B[idfn],yerr = Navg_B_Err[idfn],label =(labstr) )
+    plt.plot(B_Fields[idfn],Navg_B[idfn],label =(labstr),marker= 'o' ,markersize=2.5)
 plt.xlim([B_Fields[0][0]-100,B_Fields[0][-1]+100])
 # plt.legend(loc= 'lower right')
 

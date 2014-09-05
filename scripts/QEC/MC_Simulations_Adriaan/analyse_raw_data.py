@@ -13,9 +13,9 @@ t_start = time.time()
 try:
     Raw_Data
 except NameError:
-    filename = 'simulation_data_3month_report/NV_C13_0.011_Raw_Data_20140130_1543'
-    #filename = 'simulation_data_3month_report/NV_C13_0.003_Raw_Data_20140130_2353'
-    #filename = 'simulation_data_3month_report/NV_C13_0.0011_Raw_Data_20140201_1409'
+    # filename = 'simulation_data_3month_report/NV_C13_0.011_Raw_Data_20140130_1543'
+    # filename = 'simulation_data_3month_report/NV_C13_0.003_Raw_Data_20140130_2353'
+    filename = 'simulation_data_3month_report/NV_C13_0.0011_Raw_Data_20140201_1409'
     print 'loading data from file: ' +str(filename)
     file = open(filename,'rb')
     B_Fields = pickle.load(file)
@@ -131,9 +131,11 @@ plt.bar(bin_edges[:-1],hist_data[6])  #hist_data[nB] selects the B_field
 # props = dict(boxstyle='round',facecolor = 'wheat', alpha=0)
 # ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,verticalalignment='top', bbox=props)
 ax.set_xlabel(r'No. Address. C-13' )
-ax.set_ylabel('Probability')
+ax.set_ylabel('Norm. Occurrences')
 
 ax.set_xlim(-0.5,12.5)
+
+print hist_data[6]
 #plt.title(r'Addressable $C^{13}$ in weakly coupled NV centres' )
 
 # # ## Cumulative Histogram
