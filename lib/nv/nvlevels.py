@@ -322,3 +322,26 @@ def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     #    aa=aa+np.abs(vs[i,2])**2
     #print aa
     return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
+
+def get_ms0_fraction_incl_B(strain_splitting, Bz, transition_index, theta_x=90):
+    """
+    returns the fraction of ms=0 character of a given ES eigenstate, 
+    selected by the transition number, counting from the lowest frequency. 
+    At low strain these would be
+    transition_index = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
+    """
+    w,v = get_ES(B_field = [0,0,Bz],E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
+    ws,vs=np.sort(w),np.transpose(v)[np.argsort(w)]
+
+    #aa=0
+    #for i in range(6):
+    #    aa=aa+np.abs(vs[i,2])**2
+    #print aa
+    return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
+
+def mixing_probability(T):
+    c1 = 9.2e-7
+    jtmix=1./(2.+1./(c1*T**5))
+    return jtmix
+
+    # 1/(2+1/(c1*T(i)^5))
