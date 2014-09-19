@@ -46,12 +46,6 @@ sigma = fit.Parameter(guess_sigma, 'sigma')
 Nsplit = fit.Parameter(guess_Nsplit, 'Nsplit')
 
 def fitfunc(x):
-    # return o() - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
-    #         - A_min1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
-    #         - A_plus1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
-    #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
-    #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-    #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2)
     return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
             - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
             - A_0()*np.exp(-((x-x0())/sigma())**2) \

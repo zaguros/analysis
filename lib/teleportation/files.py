@@ -21,7 +21,7 @@ def get_msmt_name(fp):
     """
     _root, fn = os.path.split(fp)
     f = h5py.File(fp, 'r')
-    for k in f.keys():
+    for k in f.keys(): ## Ask Bas ##
         if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
             f.close()
             return k

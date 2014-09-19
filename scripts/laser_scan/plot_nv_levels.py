@@ -40,7 +40,8 @@ def plot_GS_b_dependence(strain_splitting=2.):
 def plot_ES_e_dependence(Bz=20.):
 	e_range=np.linspace(0,10,100) #gauss
 	spectrum=np.zeros((6,))
-	plt.close()
+	# plt.close()
+	plt.figure()
 	for Ex in e_range:
 		spectrum=np.vstack((spectrum,np.sort(nvlevels.get_ES(
 															E_field=[Ex,0.,0.], 
@@ -53,26 +54,38 @@ def plot_ES_e_dependence(Bz=20.):
 
 	for i in range(6):
 		plt.plot(e_range,spectrum[:,i])
+		plt.title('Excited state levels E dependence, Bz = '+str(Bz))
+		plt.xlabel('Strain E (GHz)')
+		plt.ylabel('relative energy (GHz)')
 		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/ES_E_dependence_Bz_'+str(Bz)+'.png')
 
 def plot_transitions_b_dependence(strain_splitting=2.5):
-	b_range=np.linspace(0,500,100) #gauss
+	b_range=np.linspace(300,600,50) #gauss
 	Ex=strain_splitting/2. #Ex is approx strain_splitting divided by 2
 	no_transitions=18
 	spectrum=np.zeros((no_transitions,))
-	plt.close()
+	# plt.close()
+	plt.figure()
 	for Bz in b_range:
-		spectrum=np.vstack((spectrum,nvlevels.get_optical_transitions(
+		spectrum=np.vstack((spectrum,nvlevels.get_optical_transitions(show_E_transitions=True,
+																show_A_transitions=True,
+																show_FB_E_transitions=True, 
+                            									show_FB_A_transitions=True, 
+                            									show_E_prime_flip_transitions=True,
 															E_field=[Ex,0.,0.], 
 															B_field=[0,0.,Bz],
 															Ee0=-1.94,
-															show_FB_E_transitions=True
 															)))
 	spectrum=spectrum[1:]
 
 	for i in range(no_transitions):
-
-		plt.plot(b_range,spectrum[:,i])
+		plt.title('Transitions B dependence, Ex = '+str(Ex))
+		plt.xlabel('Magnetic field Bz (G)')
+		plt.ylabel('relative energy difference (GHz)')
+		if i < 4:
+			style = 2
+		else: style =0.5
+		plt.plot(b_range,spectrum[:,i],linewidth = style)
 		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/Transitions_B_dependence_Ex_'+str(Ex)+'.png')
 
 def plot_transitions_bx_dependence(Bz=300,strain_splitting=2.5):
@@ -97,30 +110,154 @@ def plot_transitions_bx_dependence(Bz=300,strain_splitting=2.5):
 
 def plot_transitions_E_dependence(Bz=300.):
 	e_range=np.linspace(0,10,100) #gauss
-	no_transitions=8
+	no_transitions=18
 
 	spectrum=np.zeros((no_transitions,))
-
+	plt.figure()
 	for Ex in e_range:
 		spectrum=np.vstack((spectrum,nvlevels.get_optical_transitions(
+															show_E_transitions=True,
+															show_A_transitions=True,
+															show_FB_E_transitions=True, 
+                        									show_FB_A_transitions=True, 
+                        									show_E_prime_flip_transitions=True,
 															E_field=[Ex,0.,0.], 
 															B_field=[0,0.,Bz],
 															Ee0=-1.94,
-															show_FB_E_transitions=False
 															)))
 	spectrum=spectrum[1:]
-
+	# print spectrum
+	# print len(spectrum)
 	for i in range(no_transitions):
-		plt.close()
-		plt.plot(e_range,spectrum[:,i])
+		if i < 4:
+			style = 2
+		else: style =0.5
+		plt.plot(e_range,spectrum[:,i],linewidth = style)
+		plt.title('Transitions E dependence, Bz = '+str(Bz))
+		plt.xlabel('Strain E (GHz)')
+		plt.ylabel('relative energy difference (GHz)')
 		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/Transitions_E_dependence_Bz_'+str(Bz)+'.png')
 
 def plot_transitions_in_laserscan_Ex_Ey(Ex,Ey,height=1,B_field = [0.,0.,300.]):
 	x2,y2 = nvlevels.get_transitions_ExEy_plottable(Ex,Ey,height,B_field=B_field)
 	plt.plot(x2,y2)
 
+def plot_p_ms0_vs_E(Bz = 0):
+	e_range=np.linspace(0,20,100) #GHz
+	p_Ex_ms0 = []
+	p_Ey_ms0 = []
+	p_Eprimexy_ms0 = []
+	for Ex in e_range:
+		p_Ex_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  3))
+		if nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  2) > nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  1)+nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  0):
+			p_Ey_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  2))
+			p_Eprimexy_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  1)+nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  0))
+		else:
+			p_Eprimexy_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  2))
+			p_Ey_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  1)+nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  0))
+	fig=plt.figure()
+	ax1 = fig.add_subplot(111)
+	lns1 = ax1.plot(e_range,p_Ex_ms0,color = 'red',label = 'Ex')
+	ax2 = ax1.twinx()
+	lns2 = ax2.plot(e_range,p_Ey_ms0,color='blue',label = 'Ey')
+	plt.title('ms=0 probability')#, Bz = '+str(Bz))
+	plt.xlabel('Strain E (GHz)')
+	ax1.set_ylabel('p(ms=0) for Ex', color='r')
+	ax2.set_ylabel('p(ms=0) for Ey', color='b')
+	lns = lns1+lns2
+	labs = [l.get_label() for l in lns]
+	ax1.legend(lns, labs, loc=3)
+	# ax1.axis([min(e_range),max(e_range),0.99,1])
+	for tl in ax2.get_yticklabels():
+	    tl.set_color('b')
+	for tl in ax1.get_yticklabels():
+	    tl.set_color('r')
 
-if __name__=='__main__':
-	plot_ES_e_dependence()
-	figure()
-	plot_transitions_b_dependence()
+
+def plot_p_ms0_vs_E_incl_mixing(Bz = 400):
+	e_range=np.linspace(0,20,100) #GHz
+	color_Ex = [(1,0,0),(0.8,0,0),(0.6,0,0),(0.4,0,0),(0.2,0,0)]
+	color_Ey = [(0,0,1),(0,0,0.8),(0,0,0.6),(0,0,0.4),(0,0,0.2)]
+	T_list = [2,3,4,5,6]
+	fig=plt.figure()
+	ax1 = fig.add_subplot(111)	
+	ax2 = ax1.twinx()
+	labs = []
+	for i,T in enumerate(T_list):	
+		p_Ex_ms0 = []
+		p_Ey_ms0 = []
+		p_Eprimexy_ms0 = []
+		p_ExMix = []
+		p_EyMix = []
+		for Ex in e_range:
+			p_Ex_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  3))
+			if nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  2) > nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  1)+nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  0):
+				p_Ey_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  2))
+				p_Eprimexy_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  1)+nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  0))
+			else:
+				p_Eprimexy_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  2))
+				p_Ey_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  1)+nvlevels.get_ms0_fraction_incl_B(2*Ex,Bz,  0))
+		
+
+		pmix = nvlevels.mixing_probability(T)
+		for ii in range(len(p_Ex_ms0)):
+			p_ExMix.append(p_Ex_ms0[ii]*(1-pmix)+p_Ey_ms0[ii]*pmix)
+			p_EyMix.append(p_Ey_ms0[ii]*(1-pmix)+p_Ex_ms0[ii]*pmix)
+
+
+	# fig=plt.figure()
+	# ax1 = fig.add_subplot(111)
+		lns1 = ax1.plot(e_range,p_ExMix,color = color_Ex[i],label = 'Ex')
+		lns2 = ax2.plot(e_range,p_EyMix,color=color_Ey[i],label = 'Ey')
+	plt.title('ms=0 probability')#, Bz = '+str(Bz))
+	plt.xlabel('Strain E (GHz)')
+	ax1.set_ylabel('p(ms=0) for Ex', color='r')
+	ax2.set_ylabel('p(ms=0) for Ey', color='b')
+		# lns = lns1+lns2
+		# labs = [l.get_label() for l in lns]
+		# ax1.legend(lns, labs, loc=3)
+		# ax1.axis([min(e_range),max(e_range),0.99,1])
+	for tl in ax2.get_yticklabels():
+	    tl.set_color('b')
+	for tl in ax1.get_yticklabels():
+	    tl.set_color('r')
+
+
+def plot_p_ms0_vs_E_vs_B():
+	e_range=np.linspace(0,10,100) #GHz
+	b_list = [0,300,400,500,600]
+	color_Ex = [(1,0,0),(0.8,0,0),(0.6,0,0),(0.4,0,0),(0.2,0,0)]
+	color_Ey = [(0,0,1),(0,0,0.8),(0,0,0.6),(0,0,0.4),(0,0,0.2)]
+	fig=plt.figure()
+	ax1 = fig.add_subplot(111)	
+	ax2 = ax1.twinx()
+	labs = []
+	for i,Bz in enumerate(b_list):
+		p_Ex_ms0 = []
+		p_Ey_ms0 = []
+		p_Eprimexy_ms0 = []
+		for Ex in e_range:
+			p_Ex_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 3))
+			if nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 2) > nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 1)+nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 0):
+				p_Ey_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 2))
+				p_Eprimexy_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 1)+nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 0))
+			else:
+				p_Eprimexy_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 2))
+				p_Ey_ms0.append(nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 1)+nvlevels.get_ms0_fraction_incl_B(2*Ex, Bz, 0))
+
+		lns1 = ax1.plot(e_range,p_Ex_ms0,color = color_Ex[i],label = 'Ex')
+		lns2 = ax2.plot(e_range,p_Ey_ms0,color=color_Ey[i],label = 'Ey')
+	plt.title('ms=0 probability')#, Bz = '+str(Bz))
+	plt.xlabel('Strain E (GHz)')
+	ax1.set_ylabel('p(ms=0) for Ex', color='r')
+	ax2.set_ylabel('p(ms=0) for Ey', color='b')
+	# 	lns = lns1+lns2
+	# 	labs.append = [l.get_label() for l in lns]
+	# ax1.legend(lns, labs, loc=3)
+	ax1.axis([min(e_range),max(e_range),0.99,1])
+	for tl in ax2.get_yticklabels():
+	    tl.set_color('b')
+	for tl in ax1.get_yticklabels():
+	    tl.set_color('r')
+	# color_Ex = [(1,0,0),(1,0.1,0),(1,0.2,0),(1,0.3,0),(1,0.4,0)]
+	# color_Ey = [(0,0,1),(0,0.1,1),(0,0.2,1),(0,0.3,1),(0,0.4,1)]

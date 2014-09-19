@@ -2,11 +2,7 @@
 import numpy as np
 
 #Physical constants needed in  module
-gamma_c = 1.071e3 #g-factor for C13 in Hz/G
-
-
-def fingerprint():
-    pass
+gamma_c = 1.0705e3 #g-factor for C13 in Hz/G
 
 def calc_hyperfine_from_tau(tau_k,k,B_field):
     '''
@@ -51,10 +47,11 @@ def calc_tau_from_HF(HF_par,k,B_field):
     tau_k = (2*k-1)*np.pi/(2*omega_L+HF_par)
     return tau_k
 
-def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
+def dyn_dec_signal(HFs_par, HFs_orth, B_field, N ,tau):
     '''
-    Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght and an array of times and returns the signal at those times for that specific spin.
-    ------
+    Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght
+    and an array of times and returns the signal at those times for that specific spin.
+M    ------
     inputs
     ------
     HFs_par:        list of parallel component of HF strength in Hz
