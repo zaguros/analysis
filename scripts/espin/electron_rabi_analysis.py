@@ -16,7 +16,7 @@ from analysis.lib.tools import plot
 
 
 timestamp = None#'20140408125318'
-guess_frq = 1./1.8
+guess_frq = 1./90
 guess_amp = 0.2
 guess_of = 0.1
 # guess_slope = 0.

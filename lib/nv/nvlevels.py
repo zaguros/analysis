@@ -151,7 +151,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
    
    
     if kw.pop('transitions', False):
-        print 'transitions kw deprecated, use function get_transitions instead'
+        #print 'transitions kw deprecated, use function get_transitions instead'
         VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0])
     else:
         VGSoffset = 0.
@@ -307,6 +307,9 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
         if abs(f2-levels[i2])<precision:
             return levels[2]+str_split, levels[2]
 
+    print 'could not find ex,ey within given precision'
+    return (0,0)
+
 def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     """
     returns the fraction of ms=0 character of a given ES eigenstate, 
@@ -322,3 +325,18 @@ def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     #    aa=aa+np.abs(vs[i,2])**2
     #print aa
     return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
+
+
+def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2):
+
+    delta_strain_splitting = (2.*(F_Y - F_Y_0 + a*(F_Ey_0 - F_Ey)))/(a + b)
+    #delta_strain_offset = (F_Y - F_Y_0 - b*F_Ey_0 + b*F_Ey)/(a + b)
+    new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    return get_ES_ExEy(F_Ey, F_Ey+new_strain_splitting)
+
+def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2):
+
+    delta_strain_splitting = (2.*(-F_Y + F_Y_0 + a*(-F_Ex_0 + F_Ex)))/(a - b)
+
+    new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    return get_ES_ExEy(F_Ex-new_strain_splitting, F_Ex)

@@ -15,17 +15,17 @@ from analysis.lib.tools import plot
 timestamp =None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.807
-guess_splitB = 30.
+guess_x0 = 2.809
+#guess_splitB = 30.
 guess_splitN = 2.18e-3
-# guess_splitC = .8e-3 #12.78
-guess_width = 0.2e-3
-guess_splitB = 30.
+guess_splitC = .87e-3 #12.78
+guess_width = 0.15e-3
+#guess_splitB = 30.
 guess_splitN = 2.18e-3
-guess_splitC = .5e-3 #12.78
+#guess_splitC = 0.5e-3 #12.78
 #guess_width = 0.2e-3
-guess_sigma = 0.2e-3
-guess_amplitude = 0.3
+guess_sigma = 0.1e-3
+guess_amplitude = 0.15
 
 # try fitting
 #guess_offset = 1.0
@@ -40,7 +40,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
+    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration') 
     print ssro_calib_folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
@@ -53,6 +53,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     #ax.set_ylim(0.1,1.05)
 
+    center_guess = True
     
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
@@ -103,7 +104,9 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 # (2, guess_splitB),
                 (3, guess_splitN),
                 do_print=True, ret=True, fixed=[])
-        
+
+
+
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
         Population_left=fit_result['params'][0]/Norm
