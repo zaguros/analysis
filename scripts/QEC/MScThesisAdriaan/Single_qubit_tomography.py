@@ -87,7 +87,7 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
 
     print 'fitfunction: '+fitfunc_str
     if plot_fit ==True and show_legend ==True:
-        ax.legend(('X data','X-fit','Y data','Y-fit','Z data','Z-fit'),fontsize='x-small')
+        ax.legend(('X data','X-fit','Y data','Y-fit','Z data','Z-fit'),fontsize=6)
     elif plot_fit == False and show_legend ==True:
         ax.legend(('X data','Y data','Z data'),fontsize='small')
     colors = ['r','g','b']
@@ -110,7 +110,7 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
 
     ax.set_title(title)
 
-    ax.set_xlabel(r'Phase($^{\circ}$)',fontsize =fontsize)
+    ax.set_xlabel(r'Phase(degrees)',fontsize =fontsize)
     ax.set_ylabel(r'$F$ $\left( |0\rangle_e \right)$', fontsize = fontsize)
 
 

@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-from measurement.lib.tools import toolbox
 from analysis.lib.nv import nvlevels
 
 
@@ -56,20 +55,10 @@ from analysis.lib.nv import nvlevels
 #E_x =    [53.2,	53.5,	53.9]
 
 
-#gate_V = np.array(
-#		 [-45,-36,-27,-18,-9,0,9,18, -54, -63])
-#E_y =  	 [52.61,52.28,51.32,50.36,49.40,48.13,47.66,47.18,52.58,52.08]
-#E_x =    [53.56,53.58,53.50,53.71,54.23,54.21,55.09,56.16,54.23,55.47]
-
 gate_V = np.array(
-		 [0,9,27,36,54,31.5,27,27,31.5, 22.5, 27, 54,27])
-E_y =  	 [52.4,52.67,52.91,54.28,52.07,54.89,55.13, 53.3,52.92,54.16, 53.47,51.89,55.19]
-E_x =    [53.57,53.52,56.17,58.55,60.47,57.96,57.36,56.35,56.94,55.87,56.41,59.84,57.35]
-
-target_pt = [20,45]
-target_Ey = [56.0,57.3] 
-target_Ex = [57.9,59.2] 
-
+		 [-0,-9.0,-18.0,-27.0,-36.0])
+E_y =  	 [68.7,68.92,68.17,67.1,65.9]
+E_x =    [76.77,76.37,75.72,74.78,73.82]
 #gate_V = np.array([ -12,	-9,	-6,	0,	0,	0,	5,	9,	18])
 #E_y =  	 [74.37, 74.59, 74.41, 74.35, 74.51, 74.45, 74.51, 74.71, 75.06]
 #E_x =    [77.19, 77.10,  -1, -1 ,-1 , -1 , 76.5, 76.85, 77.93]
@@ -79,18 +68,17 @@ target_Ex = [57.9,59.2]
 #Yellow_tuning_on_Ex = [27.82, 28.06, -1,-1,-1,-1, 26.98,28.04, 30.80 ]
 
 
-title= 'Pippin Sil3 tuning stripline, gate D1 @-36 V & D3 grounded during CR checks'
+title= 'the111no2 Sil1 MW during SSRO, gates grounded'
 fig = plt.figure()
 ax = fig.add_subplot(111)
-#ax.set_ylim([73,8])
+#ax.set_xlim([-19,1])
 
 ax.plot(gate_V, E_x, 'bo', ms = 8, label = '$E_x$')
 ax.plot(gate_V, E_y, 'ro', ms = 8, label = '$E_y$')
-ax.plot(target_pt, target_Ey, 'mo', ms = 10, label = '$target$')
-ax.plot(target_pt, target_Ex, 'go', ms = 10, label = '$target$')
+#ax.plot(gate_V, E_p, 'go', ms = 8, label = '$E\'$')
 
 
-ax.set_xlabel('gate voltage [V]')
+ax.set_xlabel('gate voltage [uW]')
 ax.set_ylabel('frequency [GHz]')
 ax.set_title(title)
 

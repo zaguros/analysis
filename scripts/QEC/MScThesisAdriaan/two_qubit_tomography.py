@@ -187,7 +187,7 @@ def BarPlotTomoContrast(timestamps=None, measurement_name = ['adwindata'],folder
 
         ax.set_ylim(-1.05,1.05)
         ax.yaxis.set_ticks( [-1,-0.5,0,0.5,1])
-        ax.set_ylabel(r'Contrast', fontsize = fontsize)
+        ax.set_ylabel(r'Expectation value', fontsize = fontsize)
         if title == None:
             title = str(folder_a)
         ax.set_title(title)
