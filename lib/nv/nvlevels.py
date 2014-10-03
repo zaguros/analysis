@@ -347,17 +347,21 @@ def mixing_probability(T):
     return jtmix
 
     # 1/(2+1/(c1*T(i)^5))
-def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2):
+def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, verbose=False):
 
     delta_strain_splitting = (2.*(F_Y - F_Y_0 + a*(F_Ey_0 - F_Ey)))/(a + b)
     #delta_strain_offset = (F_Y - F_Y_0 - b*F_Ey_0 + b*F_Ey)/(a + b)
     new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    if verbose:
+        print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
     return get_ES_ExEy(F_Ey, F_Ey+new_strain_splitting)
 
-def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2):
+def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, verbose=False):
 
     delta_strain_splitting = (2.*(-F_Y + F_Y_0 + a*(-F_Ex_0 + F_Ex)))/(a - b)
 
     new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    if verbose:
+        print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
     return get_ES_ExEy(F_Ex-new_strain_splitting, F_Ex)
 
