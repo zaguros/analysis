@@ -56,10 +56,17 @@ class SequenceAnalysis(m2.M2Analysis):
         self.sweep_pts = self.g.attrs['sweep_pts']
         self.ramsey_time = self.g.attrs['ramsey_time']    
         self.phases_detuning = self.g.attrs['phases_detuning'] 
+        self.set_detuning = self.g.attrs['set_detuning_value']
         self.M = self.g.attrs['M']  
+        self.t0 = self.g.attrs['tau0']
         n_points = len(self.sweep_pts)
-        self.clicks = np.squeeze(np.reshape(RO_clicks, (self.reps/len(self.sweep_pts), len(self.sweep_pts))))
-        self.set_phase = np.squeeze(np.reshape(set_phase, (self.reps/len(self.sweep_pts), len(self.sweep_pts))))
+        rows = int(self.reps/float(len(self.sweep_pts)))
+        cols = len(self.sweep_pts)
+        RO_clicks = RO_clicks[:rows*cols]
+        set_phase = set_phase[:rows*cols]
+
+        self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
+        self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
             self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  
