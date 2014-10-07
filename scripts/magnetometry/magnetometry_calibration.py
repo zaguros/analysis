@@ -16,30 +16,6 @@ reload(sequence)
 ### settings
 timestamp = None#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
-def adaptive_analysis (folder):
-
-    #if ax == None:
-    #    fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
-    print ssro_calib_folder
-    a = sequence.SequenceAnalysis(folder)
-  
-    RO_data, phase = a.get_magnetometry_results(name='adwindata')
-    print RO_data
-    print phase
-    phase_values = np.unique(phase)
-    ssro_results = np.zeros(len(phase_values))
-    ind = 0
-    for j in phase_values:
-        multiplicity = len(np.where(phase==j)[0])
-        ssro_results [ind] = np.sum(RO_data[np.where(phase==j)])/(multiplicity+0.)
-        ind = ind+1
-        print 'phase value ', j, ' is present ', multiplicity, ' times'
-
-
-    plt.plot(phase_values, ssro_results)
-    plt.show()    
-    return ssro_results
 
 def fpga_calibration_analysis (folder):
 
