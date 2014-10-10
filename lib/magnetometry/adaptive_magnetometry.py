@@ -30,14 +30,15 @@ class RamseySequence():
 		self.msmnt_results = None
 		self.msmnt_phases = None
 		self.msmnt_times = None
+		self.set_detuning = None
 		self.T2 = 96e-6
 		self.fid0 = 0.9
 		self.fid1 = 0.015
 		self.theta = 0*np.pi/180.
 		self.t0 = tau0
 		self.B_max = 1./(2*tau0)
-		self.curr_rep = 0
 		self.n_points = 2**(self.N+3)
+		self.curr_rep = 0
 		self.curr_msmnt = 1
 		self.reps = reps
 		self.N_total = self.N
@@ -46,9 +47,13 @@ class RamseySequence():
 		self.verbose = True
 		self.use_ROfid_in_update = False
 		self.renorm_ssro = False
+		#parameters for majority vote
 		self.maj_reps = None
 		self.maj_thr = None
-		self.set_detuning = None
+		#parameters for variable-M protocols
+		self.G = 0
+		self.K = 0
+		self.F = 0
 		
 	def set_ideal (self):
 		self.T2 = 1000.
@@ -406,10 +411,102 @@ class RamseySequence_Simulation (RamseySequence):
 			self.msmnt_results [r, :] = np.copy(msmnt_results)
 			self.msmnt_phases [r, :] = np.copy(phase)
 			self.inc_rep()
+
+	def sim_cappellaro_variable_M (self):
+		
+		if self.verbose:				
+			print '-------------------------------------------'
+			print 'Simulating Cappellaro protocol (variable M)'
+			print '-------------------------------------------'
+			print '- N = '+str(self.N)+ ', M = '+str(self.M)
+
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.msmnt_phases = np.zeros((self.reps,self.N))
+			self.msmnt_times = np.zeros(self.N)
+			self.msmnt_results = np.zeros((self.reps,self.N))
+		
+			nn = np.arange(self.N)+1
+			tau = 2**(self.N-nn)
+			self.msmnt_times = tau
+			self.reset_rep_counter()
+			
+			for r in np.arange(self.reps):
+
+				msmnt_results = np.zeros (self.N)
+				t = np.zeros (self.N)
+				phase = np.zeros(self.N)
+				self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+				self.p_k [self.points] = 1/(2.*np.pi)
+		
+				for n in np.arange(self.N)+1:
+
+					t[n-1] = int(2**(self.N-n))
+					ttt = -2**(self.N-n+1)
+					phase[n-1] = 0.5*np.angle (self.p_k[ttt+self.points])
+
+					m_total = 0
+					for m in np.arange(self.M):
+						m_res = self.majority_vote_msmnt (theta_n = phase[n-1], t_n = t[n-1])				
+						self.bayesian_update (m_n = m_res, phase_n = phase[n-1], t_n = 2**(self.N-n))
+						m_total = m_total + m_res
+					msmnt_results[n-1] =m_total
+					
+				self.msmnt_results [r, :] = np.copy(msmnt_results)
+				self.msmnt_phases [r, :] = np.copy(phase)
+				self.inc_rep()
+
+
+	def sim_nonadaptive_variable_M (self):
+		
+		if self.verbose:				
+			print '---------------------------------------------'
+			print 'Simulating non-adaptive protocol (variable M)'
+			print '---------------------------------------------'
+
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+			self.msmnt_phases = np.zeros((self.reps,self.total_nr_msmnts))
+			self.msmnt_times = np.zeros(self.total_nr_msmnts)
+			self.msmnt_results = np.zeros((self.reps,self.total_nr_msmnts))
+		
+			k_array = self.K-np.arange(self.K+1)
+			tau = 2**(k_array)
+			self.msmnt_times = tau
+			self.reset_rep_counter()
+			
+			for r in np.arange(self.reps):
+
+				msmnt_results = np.zeros (self.total_nr_msmnts)
+				t = np.zeros (self.total_nr_msmsnts)
+				phase = np.zeros(self.total_nr_msmnts)
+				n = 0
+				for k in k_array:
+					t[n] = 2**(k_array)
+					if (n>0):
+						phase[n] = phase[n-1] + np.pi/2
+					else:
+						phase[n] = 0
+
+					MK = self.G+self.F*(self.K-k)
+					for m in np.arange(MK):
+						m_res = self.ramsey (theta=phase[n], t = t[n]*self.t0)
+						self.bayesian_update (m_n = m_res, phase_n = phase[n], t_n = t[n])
+					msmnt_results[n] = m_res
+					
+				self.msmnt_results [r, :] = np.copy(msmnt_results)
+				self.msmnt_phases [r, :] = np.copy(phase)
+				self.inc_rep()
+
+
+
 			
 	def load_table (self, N, M):
 		
-		self.table_folder = 'D:/measuring/measurement/scripts/Magnetometry/adaptive_tables_lt1/'
+		self.table_folder = 'D:/measuring/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0=1ns/'
 		name = 'adptv_table_cappellaro_N='+str(self.N)+'_M='+str(self.M)+'.npz'
 		a = np.load(self.table_folder+name)
 		self.table = a['table']
@@ -454,7 +551,7 @@ class RamseySequence_Simulation (RamseySequence):
 				pp1 = 0
 				for j in np.arange(n-1):
 					pp1 = pp1 + msmnt_results[j]*((self.M+1)**j)
-				pos = pp0 + pp1
+				pos = pp0 + pp1-1
 				phase[n-1] = self.table[pos-1]*np.pi/180.
 				phase[0]=0
 
