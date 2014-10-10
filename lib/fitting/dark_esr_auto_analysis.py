@@ -14,7 +14,7 @@ def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-min_dip_depth = 0.8, 
+min_dip_depth = 0.85, 
 timestamp = None,
 add_folder = None,
 ret='f0',
@@ -48,6 +48,7 @@ do_save=False,
     print folder
     print y[21]
     k = len(y)
+    print 'min_dip_depth = ' + str(min_dip_depth)
     while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
         k = j
         j += 1

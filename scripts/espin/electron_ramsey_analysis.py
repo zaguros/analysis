@@ -13,7 +13,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 N_HF_splt = 2.17e-3
-detuning = 3.5e-3
+detuning = 3.0e-3
 
 timestamp = None #'20140715095713' #None #
 guess_f1 = detuning - N_HF_splt
@@ -28,7 +28,7 @@ guess_phi3 = 0.
 
 
 guess_tau = 1000
-guess_a = 0.5
+guess_a = 0.8
 
 
 ### script

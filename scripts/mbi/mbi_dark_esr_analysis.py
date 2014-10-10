@@ -46,12 +46,6 @@ sigma = fit.Parameter(guess_sigma, 'sigma')
 Nsplit = fit.Parameter(guess_Nsplit, 'Nsplit')
 
 def fitfunc(x):
-    # return o() - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
-    #         - A_min1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
-    #         - A_plus1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
-    #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
-    #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-    #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2)
     return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
             - A_0()*np.exp(-((x-x0())/sigma())**2) \
 
@@ -126,3 +120,27 @@ if (not(wrong_population)==None):
     print 'Non-initialized population: ', wrong_population
     print 'Electron initialization:  ', off
 
+<<<<<<< HEAD
+=======
+ax.set_ylim(-0.05,1.05)
+
+plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
+        format='pdf')
+plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.png'),
+        format='png')
+
+'''
+pol = error.Formula()
+a0, am1, ap1 = sympy.symbols('a0, am1, ap1')
+pol.formula = am1 / (a0 + ap1 + am1)
+pol.values[a0] = A_0()
+pol.values[am1] = A_min1()
+pol.values[ap1] = A_plus1()
+pol.uncertainties[a0] = fit_result['error_dict']['A_0']
+pol.uncertainties[am1] = fit_result['error_dict']['A_min1']
+pol.uncertainties[ap1] = fit_result['error_dict']['A_plus1']
+
+print 'Spin polarization = %.3f +/- %.3f' \
+        % (float(pol.value()), float(pol.uncertainty()))
+'''
+>>>>>>> 9e86b3fc08c009b842554ca27b7b46bc7f840fcf
