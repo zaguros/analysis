@@ -89,8 +89,8 @@ plt.show()
 '''
 
 
-f = toolbox.latest_data(contains='adptv_estimation_det')
-#f = toolbox.latest_data(contains='170527')
+#f = toolbox.latest_data(contains='adptv_estimation_det')
+f = toolbox.latest_data(contains='170527')
 s = magnetometry.RamseySequence_Exp (folder = f)
 s.set_exp_pars (T2=96e-6, fid0=0.85, fid1=0.015)
 print f
