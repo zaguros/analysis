@@ -10,14 +10,14 @@ import logging, time
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence
-from analysis.lib.tools import toolbox
-from analysis.lib.fitting import fit,esr
-from analysis.lib.tools import plot
+#from analysis.lib.m2.ssro import sequence
+#from analysis.lib.tools import toolbox
+#from analysis.lib.fitting import fit,esr
+#from analysis.lib.tools import plot
 from analysis.lib.tools import compare_functions as compare
 from matplotlib import rc, cm
 
-reload(sequence)
+#reload(sequence)
 
 	
 class RamseySequence():
@@ -30,6 +30,7 @@ class RamseySequence():
 		self.msmnt_results = None
 		self.msmnt_phases = None
 		self.msmnt_times = None
+		self.table_elements = None #Only used by table-based protocols
 		self.set_detuning = None
 		self.T2 = 96e-6
 		self.fid0 = 0.9
@@ -121,6 +122,7 @@ class RamseySequence():
 		self.msmnt_dict = {}
 		self.msmnt_multiplicity = {}
 		self.phases_dict = {}
+		self.table_el_dict = {}
 		
 		ind = 0		
 		for j in np.arange(self.reps):
@@ -137,6 +139,8 @@ class RamseySequence():
 				self.msmnt_dict[ind] = curr_msmnt
 				self.phases_dict[ind] = curr_phases
 				self.msmnt_multiplicity[ind] = 1
+				if not(self.table_elements == None):
+					self.table_el_dict [ind] = self.table_elements[ind]
 				ind = ind+1
 
 	def analysis (self, corrected=True, N_max = None, repetition = None):
@@ -261,6 +265,19 @@ class RamseySequence():
 		print '--------------------------------------------'
 
 
+	def print_table_positions (self):
+
+		print '---    Measurement results  - SUMMARY    ---'
+		print '--------------------------------------------'
+		
+		for k in self.msmnt_dict:
+			curr_phase = self.phases_dict[k]
+			curr_msmnt = self.msmnt_dict[k]
+			mult = self.msmnt_multiplicity[k]
+			print curr_msmnt, ' - X', mult, '- phases: ', np.round(curr_phase*180/(np.pi)), ' - pos: ', np.rint(self.table_el_dict[k])
+		print '--------------------------------------------'
+
+
 	def hist_phases (self):
 
 		for i in np.arange (self.N_total):
@@ -279,9 +296,13 @@ class RamseySequence():
 
 class RamseySequence_Simulation (RamseySequence):
 
-	def setup_simulation(self, magnetic_field_hz = 0., M = 1):
+	def setup_simulation(self, magnetic_field_hz = 0., M = 1, lab_pc=True):
 		self.beta_sim = magnetic_field_hz
 		self.M = M
+		if lab_pc:
+			self.root_folder = 'D:/measuring/'
+		else:
+			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
@@ -505,8 +526,8 @@ class RamseySequence_Simulation (RamseySequence):
 
 			
 	def load_table (self, N, M):
-		
-		self.table_folder = 'D:/measuring/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0=1ns/'
+
+		self.table_folder = self.root_folder+'/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0=1ns/'		
 		name = 'adptv_table_cappellaro_N='+str(self.N)+'_M='+str(self.M)+'.npz'
 		a = np.load(self.table_folder+name)
 		self.table = a['table']
@@ -529,6 +550,7 @@ class RamseySequence_Simulation (RamseySequence):
 		self.msmnt_phases = np.zeros((self.reps,self.N))
 		self.msmnt_times = np.zeros(self.N)
 		self.msmnt_results = np.zeros((self.reps,self.N))
+		self.table_elements = np.zeros((self.reps,self.N))
 		
 		nn = np.arange(self.N)+1
 		tau = 2**(self.N-nn)
@@ -541,6 +563,7 @@ class RamseySequence_Simulation (RamseySequence):
 			msmnt_results = np.zeros (self.N)
 			t = np.zeros (self.N)
 			phase = np.zeros(self.N)
+			array_el = np.zeros (self.N)
 	
 			for n in np.arange(self.N)+1:
 						
@@ -551,8 +574,9 @@ class RamseySequence_Simulation (RamseySequence):
 				pp1 = 0
 				for j in np.arange(n-1):
 					pp1 = pp1 + msmnt_results[j]*((self.M+1)**j)
-				pos = pp0 + pp1-1
+				pos = pp0 + pp1
 				phase[n-1] = self.table[pos-1]*np.pi/180.
+				array_el[n-1] = int(pos)
 				phase[0]=0
 
 				m_total = 0
@@ -564,6 +588,7 @@ class RamseySequence_Simulation (RamseySequence):
 				
 			self.msmnt_results [r, :] = np.copy(msmnt_results)
 			self.msmnt_phases [r, :] = np.copy(phase)
+			self.table_elements[r,:] = np.copy(array_el)
 			self.inc_rep()
 
 
@@ -670,7 +695,7 @@ class AdaptiveTable ():
 		return msmnt_results[1:]
 
 	
-	def generate (self):
+	def generate_old (self):
 	
 		total_length = int(((self.M+1)**(self.N)-1)/self.M)+1
 
@@ -685,7 +710,7 @@ class AdaptiveTable ():
 		
 			self.curr_j = j
 			
-			seq = RamseySequence_Simulation (N_msmnts = self.N, reps=1, tau0=1e-9)
+			seq = RamseySequence_Simulation (N_msmnts = self.N, reps=1, tau0=self.t0)
 			seq.M = self.M
 			msmnt_results = self.M_conv (element=j)
 	
@@ -730,6 +755,89 @@ class AdaptiveTable ():
 		self.table = self.table[1:]
 		self.test_pp0 = self.test_pp0[1:]
 		self.test_pp1 = self.test_pp1[1:]
+
+	def generate (self):
+	
+		total_length = int(((self.M+1)**(self.N)-1)/self.M)+1
+
+		self.table = np.zeros(total_length)
+		self.test_pp1 = np.zeros(total_length)
+		self.test_pp0 = np.zeros(total_length)
+		self.max_element = (self.M+1)**(self.N-1)
+		print 'Total length array: ', total_length
+				
+		for j in np.arange (self.max_element):
+		
+			self.curr_j = j
+			msmnt_results = self.M_conv (element=j)
+			opt_phase, pos = self.msmnt_to_position (msmnt_results = msmnt_results)
+
+			for i in np.arange(len(opt_phase)):
+				self.table[pos[i]] = opt_phase[i]
+				
+			if self.verbose:
+				print '   ----- Analyzing round ' +str(j)
+				print '      msmnt results: ', msmnt_results
+				print '      optimal phases: ', opt_phase
+				print '      stored in positions: pp0 = ', pos
+				
+				
+		#adwin basic counts arrays elements starting from 1:			
+		self.table = self.table[1:]
+
+
+
+	def msmnt_to_position (self, msmnt_results = []):
+	
+		seq = RamseySequence_Simulation (N_msmnts = self.N, reps=1, tau0=self.t0)
+		seq.M = self.M
+
+		phase = np.zeros(self.N)
+		seq.p_k = np.zeros (seq.discr_steps)+1j*np.zeros (seq.discr_steps)
+		seq.p_k [seq.points] = 1/(2.*np.pi)
+
+		#n is the msmnt currently being performed
+		opt_phase = 0.
+		optimal_phases = []
+		summary_pp0 = []
+		summary_pp1 = []
+		
+		for n in np.arange(self.N)+1:
+			ttt = -2**(self.N-n+1)
+			opt_phase = 0.5*np.angle (seq.p_k[ttt+seq.points])
+			optimal_phases.append(np.round(opt_phase*180/np.pi))
+
+			pp0 = 1+((((self.M+1)**(n-1))-1)/self.M)
+			pp1 = 0
+			for i in np.arange(n-1):
+				pp1 = pp1+msmnt_results[i]*(self.M+1)**(i)			
+			position = pp0+pp1
+			summary_pp0.append(pp0)
+			summary_pp1.append(pp1)	
+			pos_array = n-1	
+			#if self.verbose:			
+			#	print 'optimal phase: ', opt_phase, ' in position: ', position
+			#	print ' -- msmsnt result: ', 	msmnt_results[pos_array], ' - time:', 2**(self.N-n)
+
+			if n<self.N:		
+				for m in np.arange(msmnt_results[pos_array]):
+					seq.bayesian_update (m_n = 1, phase_n = opt_phase, t_n = 2**(self.N-n))
+				for m in np.arange(seq.M - msmnt_results[pos_array]):
+					seq.bayesian_update (m_n = 0, phase_n = opt_phase, t_n = 2**(self.N-n))
+				
+		#if self.verbose:
+		#	print '      msmnt results: ', msmnt_results
+		#	print '      optimal phases: ', optimal_phases
+		#	print '      stored in positions: pp0 = ', summary_pp0
+		#	print '                           pp1 = ', summary_pp1
+		#	print '                           pos = ', np.array(summary_pp1)+np.array(summary_pp0)
+			
+		return np.array(optimal_phases), np.array(summary_pp1)+np.array(summary_pp0)
+				
+				
+				
+
+
 
 	def save_table(self, label=''):
 		if (self.save_folder==None):
