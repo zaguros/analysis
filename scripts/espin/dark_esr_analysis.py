@@ -15,9 +15,9 @@ from analysis.lib.tools import plot
 timestamp =None#'215430'#None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.845
+guess_x0 = 2.84542
 guess_splitB = 30.
-guess_splitN = 0*2.18e-3
+guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 guess_width = 0.01e-3
 
@@ -32,6 +32,7 @@ guess_amplitude = 0.3
 guess_A_min1 = 0
 guess_A_plus1 = 0
 guess_A_0 = 0.3
+
 #guess_x0 = 3.730
 #guess_sigma = 0.435e-3
 guess_Nsplit = guess_splitN
@@ -55,9 +56,10 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_dept
     y_max=1.05
     ax.set_ylim([y_min,y_max])
 
-    
+    guess_ctr=guess_x0
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
+    '''
     else:
         j=0
         print min_dip_depth
@@ -74,7 +76,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_dept
             print len(y)
             guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
             print 'guess_ctr= '+str(guess_ctr)
-
+    '''
     ### fitfunction
     A_min1 = fit.Parameter(guess_A_min1, 'A_min1')
     A_plus1 = fit.Parameter(guess_A_plus1, 'A_plus1')
@@ -123,7 +125,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_dept
                 # (2, guess_splitC),
                 # (2, guess_splitB),
                 #(3, guess_splitN),
-                do_print=True, ret=True, fixed=[0,1,2,3,4])
+                do_print=True, ret=True, fixed=[])
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
        
 

@@ -279,7 +279,33 @@ class RamseySequence():
 				f1.savefig(savepath)
 			plt.show()
 
-		return beta, avg_prob, msqe
+		return beta, avg_prob, msqe, mean_fB, sigma_fB
+
+	def compare_to_simulations(self):
+
+		beta_exp, p_exp, err_exp, mB, sB = self.mean_square_error(set_value=self.set_detuning, do_plot=False)
+
+		s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
+		s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M, lab_pc = True)
+		s.T2 = self.T2
+		s.fid0 = self.fid0
+		s.fid1 = self.fid1
+		s.maj_reps = self.maj_reps
+		s.maj_thr = self.maj_thr
+
+		s.table_based_simulation()
+		s.convert_to_dict()
+		s.print_table_positions()		
+		beta_sim, p_sim, err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False)
+
+		plt.plot (beta_exp*1e-6, p_exp, 'b', label = 'exp')
+		plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')\
+		#plt.title('(B_exp = '+'{0:.2f}'.format(mB)+' +- '+str(sB) + ') MHz')
+		plt.xlabel ('magnetic field detuning [MHz]')
+		plt.ylabel ('probability distribution')
+		plt.legend()
+		plt.show()
+
 
 	def print_results (self):
 
@@ -681,6 +707,8 @@ class RamseySequence_Exp (RamseySequence):
 		self.B_max = 1./(2*self.t0)
 		self.msmnt_times = np.zeros(len(a.ramsey_time))
 		self.set_detuning = a.set_detuning
+		self.maj_reps = a.maj_reps
+		self.maj_thr = a.maj_thr
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
 		self.msmnt_phases = 2*np.pi*a.set_phase/255.
@@ -876,14 +904,17 @@ class AdaptiveTable ():
 
 class AdaptiveMagnetometry ():
 
-	def __init__(self, N, t0, reps):
+	def __init__(self, N, tau0):
 		self.N = N
-		self.t0 = t0
-		self.reps = reps
+		self.t0 = tau0
+		self.reps = None
 		self.B_max = 1./(2*t0)
 		self.n_points = 2**(self.N+3)
 		self.nr_B_points = 2**(self.N+2)/2
-		self.results = np.zeros((self.N, self.nr_B_points))
+		self.results_dict = {}
+
+		self.nr_periods = None
+		self.nr_points_per_period = None
 		
 		self.msmnt_results = None
 		self.msmnt_phases = None
@@ -901,8 +932,9 @@ class AdaptiveMagnetometry ():
 		self.renorm_ssro = renorm_ssro
 		self.maj_reps = maj_reps
 		self.maj_thr = maj_thr
+
 		
-	def sweep_field_fixedN (self, N = None, do_simulate = True):
+	def sweep_field_fixedN_simulation (self, N = None):
 	
 		if (N==None):
 			N = self.N
@@ -910,43 +942,51 @@ class AdaptiveMagnetometry ():
 		self.B_values = np.linspace(0, self.B_max/2., self.nr_B_points)
 		ind = 0
 		print 'Processing: N = '+str(N), ' (M='+str(self.M)+')'
-		for b in self.B_values:
-		
-			if do_simulate: 
-				s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
-				s.setup_simulation (magnetic_field_hz = b, M=self.M)
-				s.B_max = 500e6
-				s.verbose = False
-				s.T2 = self.T2
-				s.fid0 = self.fid0
-				s.fid1 = self.fid1
-				s.renorm_ssro = self.renorm_ssro
-				s.maj_reps = self.maj_reps
-				s.maj_thr = self.maj_thr
-				s.table_based_simulation ()
-			else:
-				label = 'N='+str(N)+'_M='+str(self.M)+'_B='+str(b)
-				f = toolbox.latest_data(contains=label)
-				s = RamseySequence_Exp (folder = f)
-				s.set_exp_pars (T2=96e-6, fid0=0.9, fid1=0.015)
-				s.load_data()
+		for b in self.B_values:		
+			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
+			s.setup_simulation (magnetic_field_hz = b, M=self.M)
+			#s.B_max = 500e6
+			s.verbose = False
+			s.T2 = self.T2
+			s.fid0 = self.fid0
+			s.fid1 = self.fid1
+			s.renorm_ssro = self.renorm_ssro
+			s.maj_reps = self.maj_reps
+			s.maj_thr = self.maj_thr
+			s.table_based_simulation ()
 			s.convert_to_dict()
 			beta, p, err = s.mean_square_error(set_value=b)
 			self.results[N-1, ind] = err**0.5
 			ind =ind+1
+
+	def load_sweep_field_data (self, N=None):
+
+		if (N==None):
+			N = self.N
+
+		for per in np.arange(self.nr_periods):
+			for pt in np.arange (self.nr_points_per_period):
+				label = '_N'+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr'+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
+				f = toolbox.latest_data(contains=label)
+				s = RamseySequence_Exp (folder = f)
+				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
+				s.load_exp_data()
+				s.convert_to_dict()
+				beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
+				self.results [N-1, ind] = err**0.5
 			
 	def sweep_field (self, do_simulate = True):
 	
 		for n in np.arange(self.N)+1:
 			self.sweep_field_fixedN (N=n, do_simulate = do_simulate)
 			
-	def plot_msqe (self):
+	def plot_msqe (self, N=[]):
 		r = compare_functions()	
 		r.xlabel = 'field [MHz]'
 		r.ylabel = 'mean square error'
 		r.title = 'N = '+str(self.N)+', M = '+str(self.M)+', sweep magnetic field'
-		for n in np.arange(self.N):
-			r.add (x=self.B_values/1e6, y=self.results[n, :], legend = str(n+1))
+		for n in []:
+			r.add (x=self.B_values[n-1,:]/1e6, y=self.results[n-1, :], legend = str(n))
 		r.plot()
 
 

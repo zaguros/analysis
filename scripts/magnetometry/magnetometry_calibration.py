@@ -46,7 +46,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False 
 
     if do_fit:
-        guess_frq = 1/360.
+        guess_frq = 1/33.
         guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.
@@ -68,7 +68,7 @@ def fpga_calibration_analysis (folder):
         def fitfunc(x):
             return (o()-np.abs(A())) + np.abs(A()) * np.exp(-(x/Tdec())**2) * np.cos(2*np.pi*(f()*x - phi()/360.))
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[0,3,4],
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[3,4],
                 do_print=True, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
                 plot_data=False)

@@ -54,11 +54,14 @@ class SequenceAnalysis(m2.M2Analysis):
         RO_clicks = np.array(adwingrp['RO_data'].value)
         set_phase = adwingrp['set_phase'].value
         self.sweep_pts = self.g.attrs['sweep_pts']
-        self.ramsey_time = self.g.attrs['ramsey_time']    
-        self.phases_detuning = self.g.attrs['phases_detuning'] 
-        self.set_detuning = self.g.attrs['set_detuning_value']
-        self.M = self.g.attrs['M']  
-        self.t0 = self.g.attrs['tau0']
+        self.ramsey_time = self.g.attrs['ramsey_time'] 
+        if self.g.attrs['do_phase_calibr']==0:   
+            self.phases_detuning = self.g.attrs['phases_detuning'] 
+            self.set_detuning = self.g.attrs['set_detuning_value']
+            self.M = self.g.attrs['M']  
+            self.t0 = self.g.attrs['tau0']
+            self.maj_reps = self.g.attrs['reps_majority_vote']
+            self.maj_thr = self.g.attrs['threshold_majority_vote']
         n_points = len(self.sweep_pts)
         rows = int(self.reps/float(len(self.sweep_pts)))
         cols = len(self.sweep_pts)

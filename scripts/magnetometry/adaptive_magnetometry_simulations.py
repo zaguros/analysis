@@ -21,15 +21,15 @@ reload(magnetometry)
 
 def simulate_cappellaro ():
 	maj_reps = 5
-	M = 7
+	M = 5
 
-	set_magnetic_field = 5.e6
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=50, tau0=20e-9)
+	set_magnetic_field = -10.6770e6
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=200, tau0=20e-9)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M, lab_pc = True)
 	s.T2 = 96e-6
-	s.fid0 = 0.88
-	s.fid1 = 0.05
+	s.fid0 = 0.84
+	s.fid1 = 0.07
 	s.renorm_ssro = True
 	s.maj_reps = maj_reps
 	s.maj_thr = 1
