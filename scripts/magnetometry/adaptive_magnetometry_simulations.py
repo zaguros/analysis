@@ -20,18 +20,19 @@ from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
 reload(magnetometry)
 
 def simulate_cappellaro ():
-	maj_reps = 1
-	M = 3
-	set_magnetic_field = 156.25e6 
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=100, tau0=1e-9)
+	maj_reps = 5
+	M = 7
 
-	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M, lab_pc = False)
+	set_magnetic_field = 5.e6
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=50, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M, lab_pc = True)
 	s.T2 = 96e-6
 	s.fid0 = 0.88
-	s.fid1 = 0.02
+	s.fid1 = 0.05
 	s.renorm_ssro = True
 	s.maj_reps = maj_reps
-	s.maj_thr = 0
+	s.maj_thr = 1
 
 	s.table_based_simulation()
 	#s.sim_cappellaro_majority()

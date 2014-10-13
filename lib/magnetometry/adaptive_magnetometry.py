@@ -10,14 +10,14 @@ import logging, time
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-#from analysis.lib.m2.ssro import sequence
-#from analysis.lib.tools import toolbox
-#from analysis.lib.fitting import fit,esr
-#from analysis.lib.tools import plot
+from analysis.lib.m2.ssro import sequence
+from analysis.lib.tools import toolbox
+from analysis.lib.fitting import fit,esr
+from analysis.lib.tools import plot
 from analysis.lib.tools import compare_functions as compare
 from matplotlib import rc, cm
 
-#reload(sequence)
+reload(sequence)
 
 	
 class RamseySequence():
@@ -197,6 +197,34 @@ class RamseySequence():
 		prob = prob/np.sum(np.abs(prob))
 		return beta, prob
 
+
+	def analyse_ramsey (self):
+
+		if not(np.all(self.msmnt_phases)):
+			print 'Attentions! Phases are not all equal'
+
+		total_reps = 0
+		for k in self.msmnt_dict:
+			curr_phase = np.rint(self.phases_dict[k])
+			curr_msmnt = np.squeeze(np.array(np.rint(self.msmnt_dict[k])))
+			mult = np.rint(self.msmnt_multiplicity[k])
+
+			if (total_reps==0):
+				msmnt_counts = mult*curr_msmnt
+			else:
+				msmnt_counts = msmnt_counts + mult*curr_msmnt
+			total_reps = total_reps + mult
+
+		ramsey = msmnt_counts/float(total_reps*self.M)
+		plt.plot (self.msmnt_times*self.t0*1e9, ramsey, 'ob')
+		plt.ylim([0,1])
+		plt.title ('Ramsey')
+		plt.xlabel ('[ns]')
+		plt.show()
+
+
+
+
 	def plot_phase_distribution (self, repetition = 0):
 		beta, prob = self.analysis (corrected=False, repetition = repetition)
 		plt.plot (beta*1e-6, prob)
@@ -212,12 +240,11 @@ class RamseySequence():
 			set_value = self.set_detuning
 		
 		for k in self.msmnt_dict:
-			curr_phase = self.phases_dict[k]
-			curr_msmnt = self.msmnt_dict[k]
-			mult = self.msmnt_multiplicity[k]
+			curr_phase = np.rint(self.phases_dict[k])
+			curr_msmnt = np.rint(self.msmnt_dict[k])
+			mult = np.rint(self.msmnt_multiplicity[k])
+			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 
-			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = self.msmnt_times)
-			
 			fase = np.exp(1j*2*np.pi*beta*self.t0)
 			phi_m = np.sum(fase*prob)
 
@@ -229,17 +256,20 @@ class RamseySequence():
 			phi_set = np.exp(1j*2*np.pi*set_value*self.t0)
 			msqe = msqe + mult*(phi_m/phi_set)
 			total_reps = total_reps + mult
-		
 		avg_prob = avg_prob/np.sum(avg_prob)
 		msqe = msqe/float(total_reps)
 		msqe = np.abs(msqe)**(-2)-1
+		msqe_fB = msqe/((2*np.pi*self.t0)**2)
+		sigma_fB = 1e-6*msqe_fB**0.5
+		mean_fB = 1e-6*np.sum(avg_prob*beta)
+
 
 		if do_plot:
 			f1 = plt.figure()
 			plt.plot (beta/1e6, avg_prob)
 			plt.xlabel ('magnetic field detuning [MHz]')
 			plt.ylabel ('prob distrib')
-			plt.title('msqe = '+str(msqe))
+			plt.title('(B = '+str(mean_fB)+' +- '+str(sigma_fB) + ') MHz')
 			if not(xlim==None):
 				plt.xlim(xlim)
 
@@ -269,7 +299,7 @@ class RamseySequence():
 
 		print '---    Measurement results  - SUMMARY    ---'
 		print '--------------------------------------------'
-		
+		np.set_printoptions(suppress=True)
 		for k in self.msmnt_dict:
 			curr_phase = self.phases_dict[k]
 			curr_msmnt = self.msmnt_dict[k]
@@ -526,8 +556,8 @@ class RamseySequence_Simulation (RamseySequence):
 
 			
 	def load_table (self, N, M):
-
-		self.table_folder = self.root_folder+'/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0=1ns/'		
+		ttt = int(np.round(self.t0*1e9))
+		self.table_folder = self.root_folder+'/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0='+str(ttt)+'ns/'		
 		name = 'adptv_table_cappellaro_N='+str(self.N)+'_M='+str(self.M)+'.npz'
 		a = np.load(self.table_folder+name)
 		self.table = a['table']
@@ -631,8 +661,8 @@ class RamseySequence_Exp (RamseySequence):
 		self.folder = folder
 		self.sub_string = sub_string
 		self.t0 = 1e-9
-		self.n_points = 50000
 		self.B_max = 1./(2*self.t0)
+		self.table_elements=None
 		
 	def set_exp_pars(self, T2, fid0, fid1):
 		self.T2=T2
@@ -646,19 +676,16 @@ class RamseySequence_Exp (RamseySequence):
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 		self.msmnt_results = a.clicks
 		self.reps, self.N = np.shape (a.clicks)
+		self.n_points =  2**(self.N+3)
 		self.t0 = a.t0
+		self.B_max = 1./(2*self.t0)
 		self.msmnt_times = np.zeros(len(a.ramsey_time))
 		self.set_detuning = a.set_detuning
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
 		self.msmnt_phases = 2*np.pi*a.set_phase/255.
 		self.M=a.M
-		#print ' ---- phases_detuning' 
-		#print a.phases_detuning	
-		#print ' ---- Set phases -----'
-		#print np.unique (self.msmnt_phases*180/np.pi)
-		#print ''
-		
+	
 		phases_detuning = 2*np.pi*a.phases_detuning/360.
 		b = np.ones(self.reps)
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
@@ -825,12 +852,12 @@ class AdaptiveTable ():
 				for m in np.arange(seq.M - msmnt_results[pos_array]):
 					seq.bayesian_update (m_n = 0, phase_n = opt_phase, t_n = 2**(self.N-n))
 				
-		#if self.verbose:
-		#	print '      msmnt results: ', msmnt_results
-		#	print '      optimal phases: ', optimal_phases
-		#	print '      stored in positions: pp0 = ', summary_pp0
-		#	print '                           pp1 = ', summary_pp1
-		#	print '                           pos = ', np.array(summary_pp1)+np.array(summary_pp0)
+		if self.verbose:
+			print '      msmnt results: ', msmnt_results
+			print '      optimal phases: ', optimal_phases
+			print '      stored in positions: pp0 = ', summary_pp0
+			print '                           pp1 = ', summary_pp1
+			print '                           pos = ', np.array(summary_pp1)+np.array(summary_pp0)
 			
 		return np.array(optimal_phases), np.array(summary_pp1)+np.array(summary_pp0)
 				

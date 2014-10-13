@@ -12,35 +12,35 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp =None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp =None#'215430'#None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.809
-#guess_splitB = 30.
-guess_splitN = 2.18e-3
-guess_splitC = .87e-3 #12.78
-guess_width = 0.15e-3
-#guess_splitB = 30.
-guess_splitN = 2.18e-3
-#guess_splitC = 0.5e-3 #12.78
+guess_x0 = 2.845
+guess_splitB = 30.
+guess_splitN = 0*2.18e-3
+# guess_splitC = .8e-3 #12.78
+guess_width = 0.01e-3
+
+
+guess_splitC = 0.01e-3 #12.78
 #guess_width = 0.2e-3
-guess_sigma = 0.1e-3
-guess_amplitude = 0.15
+guess_sigma = 0.021e-3
+guess_amplitude = 0.3
 
 # try fitting
 #guess_offset = 1.0
-guess_A_min1 = 0.3
-guess_A_plus1 = 0.3
+guess_A_min1 = 0
+guess_A_plus1 = 0
 guess_A_0 = 0.3
 #guess_x0 = 3.730
 #guess_sigma = 0.435e-3
-guess_Nsplit = 2.196e-3
+guess_Nsplit = guess_splitN
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.85 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.85 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration') 
+    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
     print ssro_calib_folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
@@ -51,16 +51,17 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     y = a.p0.reshape(-1)[:]
     # ax.plot(x,y)
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    #ax.set_ylim(0.1,1.05)
+    y_min=0.6
+    y_max=1.05
+    ax.set_ylim([y_min,y_max])
 
-    center_guess = True
     
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
     else:
         j=0
         print min_dip_depth
-        print y[21]
+        #print y[21]
         while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
             k = j
             j += 1
@@ -100,13 +101,10 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
-                (2, guess_splitC),
+                # (2, guess_splitC),
                 # (2, guess_splitB),
-                (3, guess_splitN),
-                do_print=True, ret=True, fixed=[])
-
-
-
+                #(3, guess_splitN),
+                do_print=True, ret=True, fixed=[])       #print fit_result
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
         Population_left=fit_result['params'][0]/Norm
@@ -118,16 +116,16 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         print 'Population right ' , Population_right
         print '#############################'
     except Exception:
-        guess_ctr = float(raw_input('Center guess?'))
+        #guess_ctr = float(raw_input('Center guess?'))
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
-                (2, guess_splitC),
+                # (2, guess_splitC),
                 # (2, guess_splitB),
-                (3, guess_splitN),
-                do_print=True, ret=True, fixed=[4])
+                #(3, guess_splitN),
+                do_print=True, ret=True, fixed=[0,1,2,3,4])
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
-        
+       
 
 
 
@@ -142,7 +140,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         f0 = fit_result['params_dict']['x0']
         u_f0 = fit_result['error_dict']['x0']
 
-        ax.text(f0, 0.8, '$f_0$ = ({:.3f} +/- {:.3f})'.format(
+        ax.text(f0, (y_min+y_max)/2., '$f_0$ = ({:.3f} +/- {:.3f})'.format(
             (f0-2.8)*1e3, u_f0*1e3), ha='center')
 
         return (f0-2.8)*1e3, u_f0*1e3

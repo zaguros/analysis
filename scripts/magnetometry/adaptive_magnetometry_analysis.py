@@ -89,22 +89,19 @@ plt.show()
 '''
 
 
-#f = toolbox.latest_data(contains='adptv_estimation_det')
-f = toolbox.latest_data(contains='170527')
+f = toolbox.latest_data(contains='adptv_estimation_det')
+#f = toolbox.latest_data(contains='152727')
 s = magnetometry.RamseySequence_Exp (folder = f)
 s.set_exp_pars (T2=96e-6, fid0=0.85, fid1=0.015)
 print f
 s.load_exp_data()
-#print np.mod(s.msmnt_phases, 2*np.pi)*360./(2*np.pi)
-#s.msmnt_phases = np.zeros(np.shape(s.msmnt_phases))
 s.convert_to_dict()
 s.print_results()
-#s.plot_phase_distribution(repetition = 0)
 beta, prob, err = s.mean_square_error(do_plot=True, save_plot=True)
+s.analyse_ramsey()
 
-#b, p = s.analysis_dict (phase = [0,0,0,0,0,0,0,0], msmnt_results =[0,0,0,0,0,0,0,0], times = s.msmnt_times)
-#plt.plot (b, p)
-#plt.show()
+
+
 
 
 
