@@ -234,7 +234,7 @@ class RamseySequence():
 		plt.xlim([-20,20])
 		plt.show()
 		
-	def mean_square_error (self, set_value = None, do_plot=False, save_plot=False, xlim = None):
+	def mean_square_error (self, set_value = None, do_plot=False, save_plot=False, show_plot = False, xlim = None):
 		
 		msqe = 0
 		total_reps = 0
@@ -268,8 +268,12 @@ class RamseySequence():
 		phi_m = np.sum(fase*avg_prob)
 		mean_fB = 1e-6*np.angle(phi_m)/(2*np.pi*self.t0)
 
-
 		if do_plot:
+
+			if show_plot:
+				plt.ion()
+			else:
+				plt.ioff()
 			f1 = plt.figure()
 			plt.plot (beta/1e6, avg_prob)
 			plt.xlabel ('magnetic field detuning [MHz]')
@@ -279,21 +283,30 @@ class RamseySequence():
 				plt.xlim(xlim)
 
 			if save_plot:
-				f_name = 'prob_distr.png'
+				f_name = 'probability_distribution.png'
 				savepath = os.path.join(self.folder, f_name)
 				f1.savefig(savepath)
-			plt.show()
+			if show_plot:
+				plt.show()
+			plt.ion()
 
 		return beta, avg_prob, msqe, mean_fB, sigma_fB
 
-	def compare_to_simulations(self):
+	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True):
 
-		beta_exp, p_exp, err_exp, mB, sB = self.mean_square_error(set_value=self.set_detuning, do_plot=False)
+		if show_plot:
+			plt.ion()
+		else:
+			plt.ioff()
+
+		f1 = plt.figure()
+		beta_exp, p_exp, err_exp, mB, sB = self.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
 		plt.plot (beta_exp*1e-6, p_exp, 'b', label = 'exp')
 
 		try:
 			s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
-			s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M, lab_pc = False)
+			s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M)
+			s.verbose=verbose
 			s.T2 = self.T2
 			s.fid0 = self.fid0
 			s.fid1 = self.fid1
@@ -302,17 +315,26 @@ class RamseySequence():
 
 			s.table_based_simulation()
 			s.convert_to_dict()
-			s.print_table_positions()		
-			beta_sim, p_sim, err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False)
+			if s.verbose:
+				s.print_table_positions()		
+			beta_sim, p_sim, err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
 
 			plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')
 		except:
 			print 'Error in simulation!'
-		#plt.title('(B_exp = '+'{0:.2f}'.format(mB)+' +- '+str(sB) + ') MHz')
+		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz')
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
 		plt.legend()
-		plt.show()
+		if do_save:
+			f_name = 'probability_distribution.png'
+			savepath = os.path.join(self.folder, f_name)
+			f1.savefig(savepath)
+		if show_plot:
+			plt.show()
+		plt.ion()
+		return beta_exp, p_exp, err_exp, mB, sB
+
 
 
 	def print_results (self):
@@ -360,13 +382,13 @@ class RamseySequence():
 
 class RamseySequence_Simulation (RamseySequence):
 
-	def setup_simulation(self, magnetic_field_hz = 0., M = 1, lab_pc=True):
+	def setup_simulation(self, magnetic_field_hz = 0., M = 1):
 		self.beta_sim = magnetic_field_hz
 		self.M = M
-		if lab_pc:
-			self.root_folder = 'D:/measuring/'
-		else:
+		if (os.name=='posix'):
 			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
+		else:
+			self.root_folder = 'D:/measuring/'
 
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
@@ -862,7 +884,8 @@ class AdaptiveMagnetometry ():
 
 		self.simulated_data = None
 
-		self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
+		if (os.name=='posix'):
+			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 
 		
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
@@ -882,17 +905,34 @@ class AdaptiveMagnetometry ():
 		self.nr_periods = nr_periods
 		self.nr_points_per_period = nr_points_per_period
 
+	def sample_B_space(self, N):
+
+		delta_f = 1./(self.t0*(2**N))
+		nr_available_periods = 2**N
+
+		if (self.nr_periods>nr_available_periods):
+		    self.nr_periods = nr_available_periods
+
+		periods = np.unique(np.random.randint(0, nr_available_periods, size=self.nr_periods)-nr_available_periods/2)
+		print periods
+		B_values = np.array(0)
+		for per in periods:
+		    B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
+		    B_values = np.hstack((B_values, B))
+		return B_values
+
 		
-	def sweep_field_fixedN_simulation (self, N = None):
-	
-		if (N==None):
-			N = self.N
+	def sweep_field_simulation (self, N):
 
 		self.simulated_data = True			
-		self.B_values = np.linspace(0, self.B_max/2., self.nr_B_points)
+		self.B_values = self.sample_B_space(N=N)
+		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
+		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
+
 		ind = 0
-		print 'Processing: N = '+str(N), ' (M='+str(self.M)+')'
-		for b in self.B_values:		
+		print "Simulating "+str(len(self.B_values))+" instances of magnetic field"
+		for b in self.B_values:	
+			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
 			s.setup_simulation (magnetic_field_hz = b, M=self.M)
 			s.verbose = False
@@ -902,13 +942,16 @@ class AdaptiveMagnetometry ():
 			s.renorm_ssro = self.renorm_ssro
 			s.maj_reps = self.maj_reps
 			s.maj_thr = self.maj_thr
-			s.table_based_simulation ()
+			s.table_based_simulation()
 			s.convert_to_dict()
-			beta, p, err = s.mean_square_error(set_value=b)
-			self.results[N-1, ind] = err**0.5
+			beta, p, err, mB, sB = s.mean_square_error(set_value=b, do_plot=False)
+			self.prob_density_dict[ind] = prob
+			msqe [ind] = err
+			B_field [ind] = s.set_detuning
+			self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
 			ind =ind+1
 
-	def load_sweep_field_data (self, N):
+	def load_sweep_field_data (self, N, compare_to_simulations=False):
 
 		self.simulated_data = False
 		self.analyzed_N.append(N)
@@ -920,7 +963,7 @@ class AdaptiveMagnetometry ():
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
 				label = 'N='+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr='+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
-				#print label
+				print 'Processing...', label
 				f = toolbox.latest_data(contains=label)
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
@@ -928,11 +971,13 @@ class AdaptiveMagnetometry ():
 				check_params = [(s.t0 == self.t0), (s.M == self.M), (s.maj_reps==self.maj_reps), (s.maj_thr==self.maj_thr)]
 				if np.all(check_params):
 					s.convert_to_dict()
-					beta, prob, err, mB, sB = s.mean_square_error(do_plot=False, save_plot=True)
+					if compare_to_simulations:
+						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
+					else:
+						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, do_save=True, do_plot=True)
 					self.prob_density_dict[label] = prob
-					#print s.set_detuning, mB
 					msqe [ind] = err
-					B_field [ind] = mB
+					B_field [ind] = s.set_detuning
 				else:
 					msg = []
 					for i in np.arange (4):
@@ -986,7 +1031,10 @@ class AdaptiveMagnetometry ():
 		if (folder==None):
 			folder = self.folder 
 
-		fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
+		if simulated_data:
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
+		else:
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
 
 		if not os.path.exists(os.path.join(folder, fName+'.hdf5')):
 			mode = 'w'
