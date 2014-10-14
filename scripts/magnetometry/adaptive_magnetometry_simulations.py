@@ -26,7 +26,7 @@ def simulate_cappellaro ():
 	set_magnetic_field =-22.1875e6
 	s = magnetometry.RamseySequence_Simulation (N_msmnts = 7, reps=200, tau0=20e-9)
 
-	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M, lab_pc = True)
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
 	s.T2 = 96e-6
 	s.fid0 = 0.868
 	s.fid1 = 1-0.978
@@ -67,5 +67,27 @@ def simulate_nonadaptive ():
 	beta, p, err = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-simulate_cappellaro()
+def simulate_sweep_field(M, maj_reps, maj_thr):
+	print '############### Simulate #####################'
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+	mgnt_exp.set_protocol (M=M, maj_reps = maj_reps, maj_thr = maj_thr)
+	mgnt_exp.set_sweep_params (reps =100, nr_periods = 5, nr_points_per_period=11)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = 0.87, fid1 = 0.02)
+	mgnt_exp.sweep_field_simulation (N=2)
+	mgnt_exp.sweep_field_simulation (N=3)
+	mgnt_exp.sweep_field_simulation (N=4)	
+	mgnt_exp.sweep_field_simulation (N=5)
+	mgnt_exp.sweep_field_simulation (N=6)	
+	#mgnt_exp.sweep_field_simulation (N=7)
 
+	mgnt_exp.plot_msqe_dictionary()
+	mgnt_exp.plot_scaling()
+	mgnt_exp.save()
+
+
+
+simulate_sweep_field(M=7, maj_reps=5, maj_thr =1)
+simulate_sweep_field(M=7, maj_reps=1, maj_thr =0)
+simulate_sweep_field(M=5, maj_reps=5, maj_thr =1)
+simulate_sweep_field(M=3, maj_reps=5, maj_thr =1)
+simulate_sweep_field(M=1, maj_reps=5, maj_thr =1)
