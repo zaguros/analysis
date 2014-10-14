@@ -272,6 +272,8 @@ class RamseySequence():
 		if do_plot:
 			f1 = plt.figure()
 			plt.plot (beta/1e6, avg_prob)
+			plt.yscale('log')
+			plt.ylim((1e-10,1e-1))
 			plt.xlabel ('magnetic field detuning [MHz]')
 			plt.ylabel ('prob distrib')
 			plt.title('(B = '+str(mean_fB)+' +- '+str(sigma_fB) + ') MHz')

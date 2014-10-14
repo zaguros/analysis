@@ -24,34 +24,36 @@ reload(magnetometry)
 
 def analyze_single_instance():
 
-	#f = toolbox.latest_data(contains='adptv_estimation_det')
-	f = toolbox.latest_data(contains='153422')
+	f = toolbox.latest_data(contains='adptv_estimation_det')
+	#f = toolbox.latest_data(contains='165224')
 	s = magnetometry.RamseySequence_Exp (folder = f)
 	s.set_exp_pars (T2=96e-6, fid0=0.87, fid1=1-.975)
 	print f
 	s.load_exp_data()
 	s.convert_to_dict()
 	s.print_results()
-	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
+	beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
 	s.compare_to_simulations()
 	#s.analyse_ramsey()
 
 def analyze_sweep_field():
 
 
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=3, tau0=20e-9)
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=4, tau0=20e-9)
 	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
 	mgnt_exp.set_sweep_params (nr_periods = 2, nr_points_per_period=11)
 	mgnt_exp.load_sweep_field_data (N=2)
 	mgnt_exp.load_sweep_field_data (N=3)
 	mgnt_exp.load_sweep_field_data (N=5)
+	mgnt_exp.load_sweep_field_data (N=7)
 	#mgnt_exp.load_sweep_field_data (N=6)
 	mgnt_exp.plot_msqe_dictionary()
 	mgnt_exp.plot_scaling()
 	mgnt_exp.save()
 	#mgnt_exp.load_analysis(timestamp='20141014')
 
-analyze_sweep_field()
+#analyze_sweep_field()
+analyze_single_instance()
 
 
 
