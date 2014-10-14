@@ -862,8 +862,10 @@ class AdaptiveMagnetometry ():
 
 		self.simulated_data = None
 
-		self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
-
+		if (os.name =='posix'):
+			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
+		else:
+			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
 		
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
@@ -932,7 +934,7 @@ class AdaptiveMagnetometry ():
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
 					msqe [ind] = err
-					B_field [ind] = mB
+					B_field [ind] = s.set_detuning*1e-6
 				else:
 					msg = []
 					for i in np.arange (4):
@@ -966,14 +968,17 @@ class AdaptiveMagnetometry ():
 
 
 	def plot_scaling (self):
-
-		for n in self.analyzed_N:
-			msqe = self.results_dict[str(n)]['msqe']
-			self.scaling_variance [n] = np.mean(msqe)
-			self.total_time [n] = self.M*self.maj_reps*(2**(n+1)-1)
-		
-		self.plot_scaling()
+		self.scaling_variance=[]
+		self.total_time=[]
+		for i,n in enumerate(self.analyzed_N):
 			
+			msqe = self.results_dict[str(n)]['msqe']
+			self.scaling_variance.append(np.mean(msqe))
+			self.total_time.append(self.M*self.maj_reps*(2**(n+1)-1))
+		
+		#self.plot_scaling()
+		self.total_time = np.array(self.total_time)
+		self.scaling_variance=np.array(self.scaling_variance)
 		plt.figure()
 		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'b')
 		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'ob')
