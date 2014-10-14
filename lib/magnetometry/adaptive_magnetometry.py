@@ -983,6 +983,5 @@ class AdaptiveMagnetometry ():
 
 		fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+', '+str(maj_thr)+').hdf5'
 		print fName
-		#np.savez(self.folder+fName, B_field=self.B_values, results =self.results, 
-					total_time = self.total_time, scaling_variance = self.scaling_variance) 
+		#np.savez(self.folder+fName, B_field=self.B_values, results =self.results, total_time = self.total_time, scaling_variance = self.scaling_variance) 
 	
