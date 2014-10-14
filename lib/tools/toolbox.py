@@ -1,21 +1,27 @@
 # some convenience tools
 #
 
-import os
-import time
 import logging
 import numpy as np
 import h5py
+import platform
+import os
 
 try:
     import qt
     datadir = qt.config['datadir']
 except:
-    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below)
+    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
+    # Added Linux compatibility, as well
     if os.name == 'posix':
-        datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
+        if (platform.system()=='Linux'):
+            datadir = r'/home/'+os.environ.get('USER')+r'/Work/Data/'
+        else:
+            datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
+
+print datadir
 
 def nearest_idx(array, value):
     '''

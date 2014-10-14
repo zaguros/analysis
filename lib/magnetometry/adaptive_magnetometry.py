@@ -18,6 +18,7 @@ from analysis.lib.tools import compare_functions as compare
 from matplotlib import rc, cm
 
 reload(sequence)
+reload(compare)
 
 	
 class RamseySequence():
@@ -261,7 +262,9 @@ class RamseySequence():
 		msqe = np.abs(msqe)**(-2)-1
 		msqe_fB = msqe/((2*np.pi*self.t0)**2)
 		sigma_fB = 1e-6*msqe_fB**0.5
-		mean_fB = 1e-6*np.sum(avg_prob*beta)
+		fase = np.exp(1j*2*np.pi*beta*self.t0)
+		phi_m = np.sum(fase*avg_prob)
+		mean_fB = 1e-6*np.angle(phi_m)/(2*np.pi*self.t0)
 
 
 		if do_plot:
@@ -741,7 +744,6 @@ class AdaptiveTable ():
 
 	def M_conv (self, element = 1):
 	
-		#print 'conversion decimal to '+str(M+1)+'-ary'
 		msmnt_results = np.zeros(self.N)
 		a = element
 		for k in np.arange(self.N-1)+1:
@@ -750,67 +752,6 @@ class AdaptiveTable ():
 		return msmnt_results[1:]
 
 	
-	def generate_old (self):
-	
-		total_length = int(((self.M+1)**(self.N)-1)/self.M)+1
-
-		self.table = np.zeros(total_length)
-		self.test_pp1 = np.zeros(total_length)
-		self.test_pp0 = np.zeros(total_length)
-		self.max_element = (self.M+1)**(self.N-1)
-		print 'Total length array: ', total_length
-		#print 'Sweeping between 0... '+str(self.max_element-1)
-				
-		for j in np.arange (self.max_element):
-		
-			self.curr_j = j
-			
-			seq = RamseySequence_Simulation (N_msmnts = self.N, reps=1, tau0=self.t0)
-			seq.M = self.M
-			msmnt_results = self.M_conv (element=j)
-	
-			phase = np.zeros(self.N)
-			seq.p_k = np.zeros (seq.discr_steps)+1j*np.zeros (seq.discr_steps)
-			seq.p_k [seq.points] = 1/(2.*np.pi)
-	
-			#n is the msmnt currently being performed
-			opt_phase = 0.
-			optimal_phases = []
-			summary_pp0 = []
-			summary_pp1 = []
-			for n in np.arange(self.N-1)+2:
-				
-				seq.bayesian_update (m_n = msmnt_results[n-2], phase_n = opt_phase, t_n = 2**(self.N-(n-1)))
-				ttt = -2**(self.N-(n-1))
-				opt_phase = 0.5*np.angle (seq.p_k[ttt+seq.points])
-				optimal_phases.append(np.round(opt_phase*180/np.pi))
-
-				pp0 = 1+((((self.M+1)**(n-1))-1)/self.M)
-				pp1 = 0
-				for i in np.arange(n-1):
-					pp1 = pp1+msmnt_results[i]*(self.M+1)**(i)			
-				position = pp0+pp1
-				summary_pp0.append(pp0)
-				summary_pp1.append(pp1)				
-
-				self.table[position] = opt_phase*180/np.pi
-				self.test_pp0[position] = pp0
-				self.test_pp1[position] = pp1
-				
-			if self.verbose:
-				print '   ----- Analyzing round ' +str(j)
-				print '      msmnt results: ', msmnt_results
-				print '      optimal phases: ', optimal_phases
-				print '      stored in positions: pp0 = ', summary_pp0
-				print '                           pp1 = ', summary_pp1
-				print '                           pos = ', np.array(summary_pp1)+np.array(summary_pp0)
-				
-				
-		#adwin basic counts arrays elements starting from 1:			
-		self.table = self.table[1:]
-		self.test_pp0 = self.test_pp0[1:]
-		self.test_pp1 = self.test_pp1[1:]
-
 	def generate (self):
 	
 		total_length = int(((self.M+1)**(self.N)-1)/self.M)+1
@@ -870,9 +811,6 @@ class AdaptiveTable ():
 			summary_pp0.append(pp0)
 			summary_pp1.append(pp1)	
 			pos_array = n-1	
-			#if self.verbose:			
-			#	print 'optimal phase: ', opt_phase, ' in position: ', position
-			#	print ' -- msmsnt result: ', 	msmnt_results[pos_array], ' - time:', 2**(self.N-n)
 
 			if n<self.N:		
 				for m in np.arange(msmnt_results[pos_array]):
@@ -889,10 +827,6 @@ class AdaptiveTable ():
 			
 		return np.array(optimal_phases), np.array(summary_pp1)+np.array(summary_pp0)
 				
-				
-				
-
-
 
 	def save_table(self, label=''):
 		if (self.save_folder==None):
@@ -905,22 +839,26 @@ class AdaptiveTable ():
 class AdaptiveMagnetometry ():
 
 	def __init__(self, N, tau0):
-		self.N = N
+		self.N = N 				#here it corresponds to the maximum N
 		self.t0 = tau0
 		self.reps = None
-		self.B_max = 1./(2*t0)
+		self.B_max = 1./(2*self.t0)
 		self.n_points = 2**(self.N+3)
 		self.nr_B_points = 2**(self.N+2)/2
 		self.results_dict = {} 
+		self.prob_density_dict = {}
+		self.analyzed_N = []
 
 		self.nr_periods = None
 		self.nr_points_per_period = None
 		
-		self.msmnt_results = None
-		self.msmnt_phases = None
-		self.msmnt_times = None
+		self.scaling_variance = np.zeros(self.N+1)
+		self.total_time = np.zeros(self.N+1)
+
+		self.simulated_data = None
+
 		
-	def set_exp_params(self, T2 = 4452e-9, fid0 = 0.85, fid1 = 0.015):
+	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
 		self.fid0 = fid0
 		self.fid1 = fid1
@@ -933,19 +871,23 @@ class AdaptiveMagnetometry ():
 		self.maj_reps = maj_reps
 		self.maj_thr = maj_thr
 
+	def set_sweep_params (self, nr_periods = 3, nr_points_per_period=11):
+		self.nr_periods = nr_periods
+		self.nr_points_per_period = nr_points_per_period
+
 		
 	def sweep_field_fixedN_simulation (self, N = None):
 	
 		if (N==None):
 			N = self.N
-			
+
+		self.simulated_data = True			
 		self.B_values = np.linspace(0, self.B_max/2., self.nr_B_points)
 		ind = 0
 		print 'Processing: N = '+str(N), ' (M='+str(self.M)+')'
 		for b in self.B_values:		
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
 			s.setup_simulation (magnetic_field_hz = b, M=self.M)
-			#s.B_max = 500e6
 			s.verbose = False
 			s.T2 = self.T2
 			s.fid0 = self.fid0
@@ -959,23 +901,48 @@ class AdaptiveMagnetometry ():
 			self.results[N-1, ind] = err**0.5
 			ind =ind+1
 
-	def load_sweep_field_data (self, N=None):
+	def load_sweep_field_data (self, N):
 
-		if (N==None):
-			N = self.N
+		self.simulated_data = False
+		self.analyzed_N.append(N)
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
+		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
+		ind = 0
+		check_params_labels = ['tau0', 'M', 'maj_reps', 'maj_thr']
+
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
-				label = '_N'+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr'+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
+				label = 'N='+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr='+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
+				#print label
 				f = toolbox.latest_data(contains=label)
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
-				s.convert_to_dict()
-				beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
-				msqe
-				self.results [N-1, ind] = err**0.5
-			
+				check_params = [(s.t0 == self.t0), (s.M == self.M), (s.maj_reps==self.maj_reps), (s.maj_thr==self.maj_thr)]
+				if np.all(check_params):
+					s.convert_to_dict()
+					beta, prob, err, mB, sB = s.mean_square_error(do_plot=False, save_plot=True)
+					self.prob_density_dict[label] = prob
+					#print s.set_detuning, mB
+					msqe [ind] = err
+					B_field [ind] = mB
+				else:
+					msg = []
+					for i in np.arange (4):
+						if (check_params[i]==False): msg.append(check_params_labels[i])
+					print 'Non matching parameters: ', msg, ' --- ', label
+				ind +=1
+		self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
+
+	def plot_msqe_dictionary(self):
+
+		C = compare.compare_functions()
+		C.xlabel = 'magnetic field detuning [MHz]'
+		C.ylabel = 'mean square error [MHz^2]'
+		for n in self.analyzed_N:	
+			C.add (x =self.results_dict[str(n)]['B_field']*1e-6, y=self.results_dict[str(n)]['msqe'], label=str(n))
+		C.plot()
+
 	def sweep_field (self, do_simulate = True):
 	
 		for n in np.arange(self.N)+1:
@@ -991,22 +958,15 @@ class AdaptiveMagnetometry ():
 		r.plot()
 
 
-	def scaling (self):
-		self.scaling_variance = np.zeros(self.N)
-		self.total_time = np.zeros(self.N)
+	def plot_scaling (self):
 
-		for n in np.arange(self.N)+1:
-			s = self.results[n-1, :]
-			self.scaling_variance [n-1] = np.mean(s**2)
-			self.total_time [n-1] = self.M*self.maj_reps*(2**(n+1)-1)
+		for n in self.analyzed_N:
+			msqe = self.results_dict[str(n)]['msqe']
+			self.scaling_variance [n] = np.mean(msqe)
+			self.total_time [n] = self.M*self.maj_reps*(2**(n+1)-1)
 		
 		self.plot_scaling()
 			
-	def plot_scaling(self):
-		
-		if (self.scaling_variance==None):
-			self.scaling()
-
 		plt.figure()
 		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'b')
 		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'ob')
@@ -1017,11 +977,12 @@ class AdaptiveMagnetometry ():
 	def save(self, folder = None):
 		
 		if (folder==None):
-			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/simulations/adaptive_protocol/12aug/'
+			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
 			self.folder = folder
 
-		fName = 'simulation_N='+str(self.N)+'_M='+str(self.M)+'.npz'
-		np.savez(self.folder+fName, B_field=self.B_values, results =self.results, 
+		fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+', '+str(maj_thr)+').hdf5'
+		print fName
+		#np.savez(self.folder+fName, B_field=self.B_values, results =self.results, 
 					total_time = self.total_time, scaling_variance = self.scaling_variance) 
 	
