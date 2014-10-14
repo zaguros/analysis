@@ -32,18 +32,30 @@ def analyze_single_instance():
 	s.load_exp_data()
 	s.convert_to_dict()
 	s.print_results()
-	beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
-	#s.compare_to_simulations()
+	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
+	s.compare_to_simulations()
 	#s.analyse_ramsey()
 
-#def analyze_sweep_field():
+def analyze_sweep_field():
 
+<<<<<<< HEAD
 #mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
 #mgnt_exp.set_protocol (M=5, maj_reps = 5, maj_thr = 1)
 #mgnt_exp.set_sweep_params (nr_periods = 3, nr_points_per_period=11)
 #mgnt_exp.load_sweep_field_data (N=3)
 #mgnt_exp.load_sweep_field_data (N=6)
 #mgnt_exp.plot_msqe_dictionary()
+=======
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+	mgnt_exp.set_protocol (M=5, maj_reps = 5, maj_thr = 1)
+	mgnt_exp.set_sweep_params (nr_periods = 3, nr_points_per_period=11)
+	mgnt_exp.load_sweep_field_data (N=3)
+	mgnt_exp.load_sweep_field_data (N=6)
+	mgnt_exp.plot_msqe_dictionary()
+	mgnt_exp.save()
+	#mgnt_exp.load_analysis(timestamp='20141014')
+
+>>>>>>> 322b3d3e3494bbc543feb82767f4dcfb310b0aaf
 analyze_single_instance()
 
 
