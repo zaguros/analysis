@@ -25,7 +25,6 @@ class compare_functions ():
 			numbers = np.arange(self.counter)+1
 		
 		colors = cm.gist_heat(np.linspace(0., 0.8, len(numbers)))
-
 		ind = 0 
 		for i in numbers:	
 			if self.log_plot:	
@@ -37,8 +36,9 @@ class compare_functions ():
 		#x0 = self.data['x_1']
 		#y0 = self.data['y_1']
 		#y = y0[0]/(x0/x0[0])
-		
+
 		#plt.plot (x0, y, ':k')	
+
 		plt.xlabel (self.xlabel)
 		plt.ylabel (self.ylabel)
 		plt.title (self.title)

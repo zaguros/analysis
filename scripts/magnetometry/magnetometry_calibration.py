@@ -46,7 +46,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False 
 
     if do_fit:
-        guess_frq = 1/33.
+        guess_frq = 1/360.
         guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.
@@ -77,7 +77,7 @@ def fpga_calibration_analysis (folder):
         plt.savefig(os.path.join(folder, 'fpga_pulse_analysis_fit.png'))
 
     if do_fit2:
-        guess_frq = 1./13000
+        guess_frq = 1./360
         guess_amp = 0.3
         guess_of = 0.5
         guess_phi = 0.
