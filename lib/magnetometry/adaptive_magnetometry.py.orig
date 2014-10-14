@@ -389,8 +389,6 @@ class RamseySequence_Simulation (RamseySequence):
 			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 		else:
 			self.root_folder = 'D:/measuring/'
-		else:
-			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
@@ -886,10 +884,16 @@ class AdaptiveMagnetometry ():
 
 		self.simulated_data = None
 
+<<<<<<< HEAD
+		if (os.name=='posix'):
+			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
+
+=======
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
 			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+>>>>>>> f2ddc8dc9e41a9f5c352c56a90a0679b7fd08539
 		
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
@@ -979,9 +983,12 @@ class AdaptiveMagnetometry ():
 					else:
 						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, do_save=True, do_plot=True)
 					self.prob_density_dict[label] = prob
-					#print s.set_detuning, mB
 					msqe [ind] = err
+<<<<<<< HEAD
 					B_field [ind] = s.set_detuning
+=======
+					B_field [ind] = s.set_detuning*1e-6
+>>>>>>> f2ddc8dc9e41a9f5c352c56a90a0679b7fd08539
 				else:
 					msg = []
 					for i in np.arange (4):
@@ -1012,6 +1019,7 @@ class AdaptiveMagnetometry ():
 		for n in []:
 			r.add (x=self.B_values[n-1,:], y=self.results[n-1, :], legend = str(n))
 		r.plot()
+
 
 	def plot_scaling (self):
 		self.scaling_variance=[]
