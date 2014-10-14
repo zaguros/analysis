@@ -15,10 +15,12 @@ from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from analysis.lib.tools import compare_functions as compare
+from analysis.lib.m2 import m2
 from matplotlib import rc, cm
 
 reload(sequence)
 reload(compare)
+reload(toolbox)
 
 	
 class RamseySequence():
@@ -287,22 +289,25 @@ class RamseySequence():
 	def compare_to_simulations(self):
 
 		beta_exp, p_exp, err_exp, mB, sB = self.mean_square_error(set_value=self.set_detuning, do_plot=False)
-
-		s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
-		s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M, lab_pc = True)
-		s.T2 = self.T2
-		s.fid0 = self.fid0
-		s.fid1 = self.fid1
-		s.maj_reps = self.maj_reps
-		s.maj_thr = self.maj_thr
-
-		s.table_based_simulation()
-		s.convert_to_dict()
-		s.print_table_positions()		
-		beta_sim, p_sim, err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False)
-
 		plt.plot (beta_exp*1e-6, p_exp, 'b', label = 'exp')
-		plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')\
+
+		try:
+			s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
+			s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M, lab_pc = False)
+			s.T2 = self.T2
+			s.fid0 = self.fid0
+			s.fid1 = self.fid1
+			s.maj_reps = self.maj_reps
+			s.maj_thr = self.maj_thr
+
+			s.table_based_simulation()
+			s.convert_to_dict()
+			s.print_table_positions()		
+			beta_sim, p_sim, err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False)
+
+			plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')
+		except:
+			print 'Error in simulation!'
 		#plt.title('(B_exp = '+'{0:.2f}'.format(mB)+' +- '+str(sB) + ') MHz')
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
@@ -857,6 +862,8 @@ class AdaptiveMagnetometry ():
 
 		self.simulated_data = None
 
+		self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
+
 		
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
@@ -940,7 +947,7 @@ class AdaptiveMagnetometry ():
 		C.xlabel = 'magnetic field detuning [MHz]'
 		C.ylabel = 'mean square error [MHz^2]'
 		for n in self.analyzed_N:	
-			C.add (x =self.results_dict[str(n)]['B_field']*1e-6, y=self.results_dict[str(n)]['msqe'], label=str(n))
+			C.add (x =self.results_dict[str(n)]['B_field'], y=self.results_dict[str(n)]['msqe'], label=str(n))
 		C.plot()
 
 	def sweep_field (self, do_simulate = True):
@@ -954,7 +961,7 @@ class AdaptiveMagnetometry ():
 		r.ylabel = 'mean square error'
 		r.title = 'N = '+str(self.N)+', M = '+str(self.M)+', sweep magnetic field'
 		for n in []:
-			r.add (x=self.B_values[n-1,:]/1e6, y=self.results[n-1, :], legend = str(n))
+			r.add (x=self.B_values[n-1,:], y=self.results[n-1, :], legend = str(n))
 		r.plot()
 
 
@@ -977,12 +984,59 @@ class AdaptiveMagnetometry ():
 	def save(self, folder = None):
 		
 		if (folder==None):
-			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
-		else:
-			self.folder = folder
+			folder = self.folder 
 
-		fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+', '+str(maj_thr)+').hdf5'
-		print fName
-		#np.savez(self.folder+fName, B_field=self.B_values, results =self.results, 
-					total_time = self.total_time, scaling_variance = self.scaling_variance) 
-	
+		fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
+
+		if not os.path.exists(os.path.join(folder, fName+'.hdf5')):
+			mode = 'w'
+		else:
+			mode = 'r+'
+			print 'Output file already exists!'
+
+		f = h5py.File(os.path.join(folder, fName+'.hdf5'), mode)
+		f.attrs ['M'] = self.M
+		f.attrs ['maj_reps'] = self.maj_reps
+		f.attrs ['thr'] = self.maj_thr
+		f.attrs ['tau0']= self.t0
+		f.attrs['analyzed_N'] = self.analyzed_N
+		pr_grp = f.create_group('probability_densities')
+		msqe_grp = f.create_group('mean_square_error')
+
+		for i in self.prob_density_dict:
+			pr_grp.create_dataset(i, data = self.prob_density_dict[i])
+
+		for n in self.analyzed_N:
+			n_grp = msqe_grp.create_group('N = '+str(n))
+			n_grp.create_dataset ('B_field', data = self.results_dict[str(n)] ['B_field'])
+			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
+			n_grp.attrs['N'] = n
+
+		f.close()
+		print 'Data saved!'
+
+	def load_analysis (self, timestamp):
+
+		name = toolbox.file_in_folder(folder=self.folder, timestamp = timestamp)
+		f = h5py.File(os.path.join(self.folder, name),'r')
+
+		self.M = f.attrs['M']
+		self.maj_reps = f.attrs ['maj_reps']
+		self.maj_thr = f.attrs ['thr']
+		self.t0 = f.attrs ['tau0']
+		self.analyzed_N = f.attrs['analyzed_N']
+		pr_grp = f['/probability_densities']
+		msqe_grp = f['/mean_square_error']
+
+		for k in pr_grp.keys():
+			self.prob_density_dict [k] = pr_grp[k].value
+
+		for k in msqe_grp.keys():
+			if type(msqe_grp[k])==h5py.Group:
+				curr_subgrp = msqe_grp[k]
+				curr_n = curr_subgrp.attrs['N']
+				B_field = curr_subgrp['B_field'].value
+				msqe = curr_subgrp['msqe'].value
+				self.results_dict[str(curr_n)] =  {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
+		f.close()
+

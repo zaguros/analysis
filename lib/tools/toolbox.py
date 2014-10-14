@@ -21,8 +21,6 @@ except:
     else:
         datadir = r'd:\measuring\data'
 
-print datadir
-
 def nearest_idx(array, value):
     '''
     find the index of the value closest to the specified value.
@@ -64,7 +62,7 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -78,7 +76,11 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     this in: raise_exc = False, then a 'False' is returned.
     '''
 
-    daydirs = os.listdir(datadir)
+    if (folder==None):
+        search_dir = datadir
+    else:
+        search_dir = folder
+    daydirs = os.listdir(search_dir)
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
         return None
@@ -89,7 +91,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     i = len(daydirs)-1
     while len(measdirs) == 0 and i >= 0:
         daydir = daydirs[i]
-        all_measdirs = [d for d in os.listdir(os.path.join(datadir, daydir))]
+        all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
         all_measdirs.sort()
 
         measdirs = []
@@ -125,8 +127,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         measdirs.sort()
         measdir = measdirs[-1]
         if return_timestamp == False:
-            return os.path.join(datadir,daydir,measdir)
-        else: return str(daydir)+str(measdir[:6]) , os.path.join(datadir,daydir,measdir)
+            return os.path.join(search_dir,daydir,measdir)
+        else: return str(daydir)+str(measdir[:6]) , os.path.join(search_dir,daydir,measdir)
 
 # def newer_data(starttimestamp, endtimestamp=None, contains='',):
 #     '''
@@ -213,6 +215,16 @@ def get_plot_title_from_folder(folder):
     measurementstring = measurementstring[7:]
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
+
+
+def file_in_folder(folder, timestamp):
+    all_files = [f for f in os.listdir(folder) if timestamp in f]    
+    all_files.sort()
+
+    if (len(all_files)>1):
+        print 'More than one file satisfies the requirements! Import: '+all_files[0]
+
+    return all_files[0]
 
 
 
