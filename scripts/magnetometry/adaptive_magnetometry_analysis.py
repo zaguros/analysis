@@ -21,6 +21,7 @@ reload(magnetometry)
 
 
 
+
 def analyze_single_instance():
 
 	f = toolbox.latest_data(contains='adptv_estimation_det')
@@ -35,14 +36,19 @@ def analyze_single_instance():
 	#s.compare_to_simulations()
 	#s.analyse_ramsey()
 
-def analyze_sweep_field():
+#def analyze_sweep_field():
 
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+mgnt_exp.set_protocol (M=5, maj_reps = 5, maj_thr = 1)
+mgnt_exp.set_sweep_params (nr_periods = 3, nr_points_per_period=11)
+mgnt_exp.load_sweep_field_data (N=3)
+mgnt_exp.load_sweep_field_data (N=6)
+mgnt_exp.plot_msqe_dictionary()
 
 
 
 
-analyze_single_instance()
+
 
 
 

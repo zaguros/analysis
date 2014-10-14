@@ -1,5 +1,7 @@
-
+import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import rc, cm
+
 
 class compare_functions ():
 
@@ -11,11 +13,11 @@ class compare_functions ():
 		self.title = ''
 		self.log_plot = False
 		
-	def add (self, x, y, legend):
+	def add (self, x, y, label):
 		self.counter = self.counter+1
 		self.data['x_'+str(self.counter)]=x
 		self.data['y_'+str(self.counter)]=y
-		self.data['l_'+str(self.counter)]=legend
+		self.data['l_'+str(self.counter)]=label
 	
 	def plot (self, numbers = None):
 			
@@ -29,14 +31,14 @@ class compare_functions ():
 			if self.log_plot:	
 				plt.loglog (self.data['x_'+str(i)], self.data['y_'+str(i)], label = self.data['l_'+str(i)], color = colors[ind]) 
 			else:
-				plt.plot (self.data['x_'+str(i)], self.data['y_'+str(i)], label = self.data['l_'+str(i)], color = colors[ind]) 
+				plt.plot (self.data['x_'+str(i)], self.data['y_'+str(i)], '.', label = self.data['l_'+str(i)], color = colors[ind]) 
 			ind = ind + 1
 
-		x0 = self.data['x_1']
-		y0 = self.data['y_1']
-		y = y0[0]/(x0/x0[0])
+		#x0 = self.data['x_1']
+		#y0 = self.data['y_1']
+		#y = y0[0]/(x0/x0[0])
 		
-		plt.plot (x0, y, ':k')	
+		#plt.plot (x0, y, ':k')	
 		plt.xlabel (self.xlabel)
 		plt.ylabel (self.ylabel)
 		plt.title (self.title)
