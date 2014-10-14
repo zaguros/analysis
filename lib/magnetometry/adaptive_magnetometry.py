@@ -911,7 +911,7 @@ class AdaptiveMagnetometry ():
 		self.B_max = 1./(2*t0)
 		self.n_points = 2**(self.N+3)
 		self.nr_B_points = 2**(self.N+2)/2
-		self.results_dict = {}
+		self.results_dict = {} 
 
 		self.nr_periods = None
 		self.nr_points_per_period = None
@@ -963,7 +963,7 @@ class AdaptiveMagnetometry ():
 
 		if (N==None):
 			N = self.N
-
+		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
 				label = '_N'+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr'+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
@@ -973,6 +973,7 @@ class AdaptiveMagnetometry ():
 				s.load_exp_data()
 				s.convert_to_dict()
 				beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
+				msqe
 				self.results [N-1, ind] = err**0.5
 			
 	def sweep_field (self, do_simulate = True):
