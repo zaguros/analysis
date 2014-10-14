@@ -6,16 +6,18 @@ def adaptive_table(tau0=1e-9):
 
 	print '******* Generating ADAPTIVE TABLE *********'
 	print
-	for n in [3]:
-		for m in [5]:
+	for n in [3, 6]:
+		for m in [1,3, 5]:
 			
 			print '##### N = '+str(n)+' --- M = '+str(m)
 			
 			t = magnetometry.AdaptiveTable (N=n,M=m)
 			ttt = int(tau0*1e9)
 			t.set_tau0(tau0=ttt*1e-9)
-			#t.save_folder = '/home/cristian/Work/Research/teamdiamond/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0='+str(ttt)+'ns/'
-			t.save_folder = 'D:/measuring/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0='+str(ttt)+'ns/'
+			if (os.name=='posix'):
+				t.save_folder = '/home/cristian/Work/Research/teamdiamond/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0='+str(ttt)+'ns/'
+			else:
+				t.save_folder = 'D:/measuring/measurement/scripts/Magnetometry/adaptive_tables_lt1/tau0='+str(ttt)+'ns/'
 			t.verbose = False
 			t.generate()
 			t.save_table()
