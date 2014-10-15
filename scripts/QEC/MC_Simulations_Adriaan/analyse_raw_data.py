@@ -13,9 +13,9 @@ t_start = time.time()
 try:
     Raw_Data
 except NameError:
-    filename = 'simulation_data_3month_report/NV_C13_0.011_Raw_Data_20140130_1543'
-    #filename = 'simulation_data_3month_report/NV_C13_0.003_Raw_Data_20140130_2353'
-    #filename = 'simulation_data_3month_report/NV_C13_0.0011_Raw_Data_20140201_1409'
+    # filename = 'simulation_data_3month_report/NV_C13_0.011_Raw_Data_20140130_1543'
+    # filename = 'simulation_data_3month_report/NV_C13_0.003_Raw_Data_20140130_2353'
+    filename = 'simulation_data_3month_report/NV_C13_0.0011_Raw_Data_20140201_1409'
     print 'loading data from file: ' +str(filename)
     file = open(filename,'rb')
     B_Fields = pickle.load(file)
@@ -71,26 +71,28 @@ print str(N_rejected) +' of ' +str(N) +'NV centres rejected'
 Navg_B = np.mean(x,axis=0)
 Navg_B_Err = np.std(x,axis=0)/np.sqrt(np.shape(x)[0])
 
-fig,ax = plt.subplots(1)
-plt.title(r'Average number of addressable $C^{13}$ in weakly coupled NV centres' )
-plt.ylabel(r'$\bar{N}$' )
-plt.xlabel('B-Field [Gauss]')
-plt.errorbar(B_Fields,Navg_B,yerr = Navg_B_Err)
-plt.xlim([B_Fields[0]-100,B_Fields[-1]+100])
-textstr = '$\mu = 1.1\% $ \n $F_{Min}$ = 0.90  \n  $T_{max}$ = 1.4 ms'
-props = dict(boxstyle='round',facecolor = 'wheat', alpha=0)
-ax.text(0.7, 0.5, textstr, transform=ax.transAxes, fontsize=14,verticalalignment='top', bbox=props)
+# fig,ax = plt.subplots(1)
+# plt.title(r'Average number of addressable $C^{13}$ in weakly coupled NV centres' )
+# plt.ylabel(r'$\bar{N}$' )
+# plt.xlabel('B-Field [Gauss]')
+# plt.errorbar(B_Fields,Navg_B,yerr = Navg_B_Err)
+# plt.xlim([B_Fields[0]-100,B_Fields[-1]+100])
+# textstr = '$\mu = 1.1\% $ \n $F_{Min}$ = 0.90  \n  $T_{max}$ = 1.4 ms'
+# props = dict(boxstyle='round',facecolor = 'wheat', alpha=0)
+# ax.text(0.7, 0.5, textstr, transform=ax.transAxes, fontsize=14,verticalalignment='top', bbox=props)
 
 
-# # ## 3D Bar Histogram
-# nbins = 14
-# hist_data=np.zeros((np.shape(B_Fields)[0],nbins))
-# for idb, B_Field in enumerate(B_Fields):
-#     hist, bin_edges=  np.histogram(x[:,idb],bins = nbins, range = (-.5,nbins-.5),density = True)
-#     hist_data[idb] = hist
-# data =np.transpose(hist_data)#np.array([
-# column_names = B_Fields
-# row_names =np.arange(0,15,1)
+# ## 3D Bar Histogram
+nbins = 14
+hist_data=np.zeros((np.shape(B_Fields)[0],nbins))
+for idb, B_Field in enumerate(B_Fields):
+    hist, bin_edges=  np.histogram(x[:,idb],bins = nbins, range = (-.5,nbins-.5),density = True)
+    hist_data[idb] = hist
+data =np.transpose(hist_data)#np.array([
+column_names = B_Fields
+row_names =np.arange(0,15,1)
+
+
 # fig = plt.figure()
 # ax = Axes3D(fig)
 # lx= len(data[0])            # Work out matrix dimensions
@@ -115,15 +117,26 @@ ax.text(0.7, 0.5, textstr, transform=ax.transAxes, fontsize=14,verticalalignment
 # ax.set_zlabel('P $(n=N)$')
 # plt.title(r'Addressable $C^{13}$ in weakly coupled NV centres' )
 
-# ## Histogram
-# fig,ax = plt.subplots(1)
-# plt.bar(bin_edges[:-1],hist_data[6])  #hist_data[nB] selects the B_field
+
+figsize= (2.5,2)
+fontsize = 8
+linewidth = .75
+markersize =2
+plt.rc('font', size=8)
+
+## Histogram
+fig,ax = plt.subplots(figsize=figsize)
+plt.bar(bin_edges[:-1],hist_data[6])  #hist_data[nB] selects the B_field
 # textstr = '$\mu = 1.1\% $ \n $ F_{min} $= 0.90\n $B_z$ = 700 Gauss \n  $T_{max}$ = 1.4ms'
 # props = dict(boxstyle='round',facecolor = 'wheat', alpha=0)
 # ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,verticalalignment='top', bbox=props)
-# ax.set_xlabel('$n$')
-# ax.set_ylabel('P $(n = N)$')
-# #plt.title(r'Addressable $C^{13}$ in weakly coupled NV centres' )
+ax.set_xlabel(r'No. Address. C-13' )
+ax.set_ylabel('Norm. Occurrences')
+
+ax.set_xlim(-0.5,12.5)
+
+print hist_data[6]
+#plt.title(r'Addressable $C^{13}$ in weakly coupled NV centres' )
 
 # # ## Cumulative Histogram
 # fig,ax = plt.subplots(1)
@@ -140,17 +153,26 @@ ax.text(0.7, 0.5, textstr, transform=ax.transAxes, fontsize=14,verticalalignment
 #execfile('analyse_raw_data_Vary_Tmax.py')
 
 
-plotfilename = filename+ 'plot_data'
-file= open( plotfilename, 'w') #Shelving would be cleaner but so far this works fine
-pickle.dump(B_Fields,file)
-pickle.dump(Navg_B,file)
-pickle.dump(Navg_B_Err,file)
-#pickle.dump(F_Min_ls,file)
-#pickle.dump(Navg_F,file)
-#pickle.dump(Navg_F_Err,file)
-#pickle.dump(max_gate_time_ls,file)
-#pickle.dump(Navg_T,file)
+# plotfilename = filename+ 'plot_data'
+# file= open( plotfilename, 'w') #Shelving would be cleaner but so far this works fine
+# pickle.dump(B_Fields,file)
+# pickle.dump(Navg_B,file)
+# pickle.dump(Navg_B_Err,file)
+# #pickle.dump(F_Min_ls,file)
+# #pickle.dump(Navg_F,file)
+# #pickle.dump(Navg_F_Err,file)
+# #pickle.dump(max_gate_time_ls,file)
+# #pickle.dump(Navg_T,file)
 #pickle.dump(Navg_T_Err,file)
 #file.close()
 
-plt.show()
+# plt.show()
+
+
+
+folder_a = '/Users/Adriaan/Documents'
+savename = 'Simulations_Histogram_vs_Bfield'
+fig.savefig(os.path.join(folder_a, savename+'.pdf'),
+                format='pdf',bbox_inches='tight')
+print' Figure saved in %s' %folder_a
+
