@@ -294,7 +294,7 @@ class RamseySequence():
 
 		return beta, avg_prob, msqe, mean_fB, sigma_fB
 
-	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True):
+	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True,plot_log=False):
 
 		if show_plot:
 			plt.ion()
@@ -324,6 +324,9 @@ class RamseySequence():
 			plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')
 		except:
 			print 'Error in simulation!'
+		if plot_log:
+			plt.yscale('log')
+			plt.ylim((1e-10,0.5))
 		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz')
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
@@ -391,9 +394,7 @@ class RamseySequence_Simulation (RamseySequence):
 			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 		else:
 			self.root_folder = 'D:/measuring/'
-		else:
-			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
-
+		
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
 	
@@ -979,7 +980,7 @@ class AdaptiveMagnetometry ():
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
-						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, do_save=True, do_plot=True)
+						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=True)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
 					msqe [ind] = err
@@ -992,14 +993,14 @@ class AdaptiveMagnetometry ():
 				ind +=1
 		self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
 
-	def plot_msqe_dictionary(self):
+	def plot_msqe_dictionary(self,y_log=False):
 
 		C = compare.compare_functions()
 		C.xlabel = 'magnetic field detuning [MHz]'
 		C.ylabel = 'mean square error [MHz^2]'
 		for n in self.analyzed_N:	
 			C.add (x =self.results_dict[str(n)]['B_field'], y=self.results_dict[str(n)]['msqe'], label=str(n))
-		C.plot()
+		C.plot(y_log=y_log)
 
 	def sweep_field (self, do_simulate = True):
 	
@@ -1029,8 +1030,9 @@ class AdaptiveMagnetometry ():
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
 		plt.figure()
-		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'b')
-		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'ob')
+		# Why devide total time by 1000 ? t0 is in ns right?
+		plt.loglog (self.total_time*self.t0, self.scaling_variance*self.total_time, 'b')
+		plt.loglog (self.total_time*self.t0, self.scaling_variance*self.total_time, 'ob')
 		plt.xlabel ('total ramsey time')
 		plt.ylabel ('$V_H*T$')
 		plt.show()
