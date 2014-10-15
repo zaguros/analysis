@@ -36,7 +36,7 @@ guess_A_0 = 0.3
 #guess_sigma = 0.435e-3
 guess_Nsplit = 2.196e-3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.85 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.90 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -51,7 +51,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     y = a.p0.reshape(-1)[:]
     # ax.plot(x,y)
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    #ax.set_ylim(0.1,1.05)
+    ax.set_ylim(0,1.05)
 
     
     if center_guess == True:
@@ -70,8 +70,8 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         else:
             print 'k'+str(k)
             print len(y)
-            guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-            print 'guess_ctr= '+str(guess_ctr)
+            guess_x0 = x[k]+ guess_splitN #convert to GHz and go to middle dip
+            print 'guess_ctr= '+str(guess_x0)
 
     ### fitfunction
     A_min1 = fit.Parameter(guess_A_min1, 'A_min1')
@@ -92,17 +92,20 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
                 - A_0()*np.exp(-((x-x0())/sigma())**2) \
     
+    print 'test1'
+
     try:
-        # fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
-        # fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+        fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0, Nsplit],
+        fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
         
-        fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
-                guess_amplitude, guess_width, guess_ctr,
-                # (2, guess_splitN),
-                # (2, guess_splitC),
-                # (2, guess_splitB),
-                (3, guess_splitN),
-                do_print=True, ret=True, fixed=[])
+        # fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
+        #         guess_amplitude, guess_width, guess_ctr,
+        #         # (2, guess_splitN),
+        #         # (2, guess_splitC),
+        #         # (2, guess_splitB),
+        #         (3, guess_splitN),
+
+        #         do_print=True, ret=True, fixed=[])
         
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
@@ -115,6 +118,8 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         print 'Population right ' , Population_right
         print '#############################'
     except Exception:
+
+
         guess_ctr = float(raw_input('Center guess?'))
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
@@ -153,7 +158,7 @@ if __name__ == '__main__':
     else:
         folder = toolbox.latest_data('DarkESR')
     print folder
-    fit_result=analyze_dark_esr(folder,center_guess = False)
+    fit_result=analyze_dark_esr(folder)
 
 
 
