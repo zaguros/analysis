@@ -909,9 +909,10 @@ class AdaptiveMagnetometry ():
 		self.maj_reps = maj_reps
 		self.maj_thr = maj_thr
 
-	def set_sweep_params (self, nr_periods = 3, nr_points_per_period=11):
+	def set_sweep_params (self, nr_periods = 3, nr_points_per_period=11, reps=200):
 		self.nr_periods = nr_periods
 		self.nr_points_per_period = nr_points_per_period
+		self.reps = reps
 
 	def sample_B_space(self, N):
 
@@ -922,27 +923,31 @@ class AdaptiveMagnetometry ():
 		    self.nr_periods = nr_available_periods
 
 		periods = np.unique(np.random.randint(0, nr_available_periods, size=self.nr_periods)-nr_available_periods/2)
-		print periods
-		B_values = np.array(0)
+		self.nr_periods =len(periods)
+		B_values = np.array([])
+		label_array = []
 		for per in periods:
 		    B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
 		    B_values = np.hstack((B_values, B))
-		return B_values
+		    for l in np.arange(self.nr_points_per_period):
+		    	label_array.append('N='+str(N)+'_p'+str(per)+'_'+str(l))
+		return label_array, B_values
 
 		
 	def sweep_field_simulation (self, N):
 
-		self.simulated_data = True			
-		self.B_values = self.sample_B_space(N=N)
+		self.simulated_data = True		
+		self.analyzed_N.append(N)	
+		label_array, self.B_values = self.sample_B_space(N=N)
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 
 		ind = 0
-		print "Simulating "+str(len(self.B_values))+" instances of magnetic field"
-		for b in self.B_values:	
+		print "Simulating N="+str(N)+', '+str(len(self.B_values))+" instances of magnetic field"
+		for b in np.arange(self.nr_points_per_period*self.nr_periods):
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
-			s.setup_simulation (magnetic_field_hz = b, M=self.M)
+			s.setup_simulation (magnetic_field_hz = self.B_values[b], M=self.M)
 			s.verbose = False
 			s.T2 = self.T2
 			s.fid0 = self.fid0
@@ -953,9 +958,9 @@ class AdaptiveMagnetometry ():
 			s.table_based_simulation()
 			s.convert_to_dict()
 			beta, p, err, mB, sB = s.mean_square_error(set_value=b, do_plot=False)
-			self.prob_density_dict[ind] = prob
+			self.prob_density_dict[label_array[ind]] = p
 			msqe [ind] = err
-			B_field [ind] = s.set_detuning
+			B_field [ind] = self.B_values[b]
 			self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
 			ind =ind+1
 
@@ -1001,7 +1006,8 @@ class AdaptiveMagnetometry ():
 		C.xlabel = 'magnetic field detuning [MHz]'
 		C.ylabel = 'mean square error [MHz^2]'
 		for n in self.analyzed_N:	
-			C.add (x =self.results_dict[str(n)]['B_field'], y=self.results_dict[str(n)]['msqe'], label=str(n))
+			print 'plotting N=', n
+			C.add (x =self.results_dict[str(n)]['B_field']*1e-6, y=self.results_dict[str(n)]['msqe'], label=str(n))
 		C.plot()
 
 	def sweep_field (self, do_simulate = True):
@@ -1043,7 +1049,7 @@ class AdaptiveMagnetometry ():
 		if (folder==None):
 			folder = self.folder 
 
-		if simulated_data:
+		if self.simulated_data:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
