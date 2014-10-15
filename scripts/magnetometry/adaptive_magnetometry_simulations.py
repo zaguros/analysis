@@ -79,7 +79,7 @@ def simulate_sweep_field(M, maj_reps, maj_thr):
 	mgnt_exp.sweep_field_simulation (N=5)
 	mgnt_exp.sweep_field_simulation (N=6)	
 	#mgnt_exp.sweep_field_simulation (N=7)
-
+	plt.figure()
 	mgnt_exp.plot_msqe_dictionary()
 	mgnt_exp.plot_scaling()
 	mgnt_exp.save()
