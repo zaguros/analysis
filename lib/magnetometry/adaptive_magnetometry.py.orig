@@ -276,8 +276,6 @@ class RamseySequence():
 				plt.ioff()
 			f1 = plt.figure()
 			plt.plot (beta/1e6, avg_prob)
-			plt.yscale('log')
-			plt.ylim((1e-10,1e-1))
 			plt.xlabel ('magnetic field detuning [MHz]')
 			plt.ylabel ('prob distrib')
 			plt.title('(B = '+str(mean_fB)+' +- '+str(sigma_fB) + ') MHz')
@@ -294,7 +292,7 @@ class RamseySequence():
 
 		return beta, avg_prob, msqe, mean_fB, sigma_fB
 
-	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True,plot_log=False):
+	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True):
 
 		if show_plot:
 			plt.ion()
@@ -324,9 +322,6 @@ class RamseySequence():
 			plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')
 		except:
 			print 'Error in simulation!'
-		if plot_log:
-			plt.yscale('log')
-			plt.ylim((1e-10,0.5))
 		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz')
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
@@ -394,8 +389,6 @@ class RamseySequence_Simulation (RamseySequence):
 			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 		else:
 			self.root_folder = 'D:/measuring/'
-		else:
-			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
@@ -891,10 +884,16 @@ class AdaptiveMagnetometry ():
 
 		self.simulated_data = None
 
+<<<<<<< HEAD
+		if (os.name=='posix'):
+			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
+
+=======
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
 			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+>>>>>>> f2ddc8dc9e41a9f5c352c56a90a0679b7fd08539
 		
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
@@ -984,9 +983,12 @@ class AdaptiveMagnetometry ():
 					else:
 						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, do_save=True, do_plot=True)
 					self.prob_density_dict[label] = prob
-					#print s.set_detuning, mB
 					msqe [ind] = err
+<<<<<<< HEAD
 					B_field [ind] = s.set_detuning
+=======
+					B_field [ind] = s.set_detuning*1e-6
+>>>>>>> f2ddc8dc9e41a9f5c352c56a90a0679b7fd08539
 				else:
 					msg = []
 					for i in np.arange (4):
