@@ -71,7 +71,7 @@ def simulate_sweep_field(M, maj_reps, maj_thr):
 	print '############### Simulate #####################'
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
 	mgnt_exp.set_protocol (M=M, maj_reps = maj_reps, maj_thr = maj_thr)
-	mgnt_exp.set_sweep_params (reps =100, nr_periods = 5, nr_points_per_period=11)
+	mgnt_exp.set_sweep_params (reps =250, nr_periods = 5, nr_points_per_period=11)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = 0.87, fid1 = 0.02)
 	mgnt_exp.sweep_field_simulation (N=2)
 	mgnt_exp.sweep_field_simulation (N=3)
@@ -85,9 +85,12 @@ def simulate_sweep_field(M, maj_reps, maj_thr):
 	mgnt_exp.save()
 
 
+def analyze_saved_simulations (timestamp):
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+	mgnt_exp.load_analysis (timestamp=timestamp)
+	mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_sensitivity_scaling()
 
-simulate_sweep_field(M=7, maj_reps=5, maj_thr =1)
-simulate_sweep_field(M=7, maj_reps=1, maj_thr =0)
-simulate_sweep_field(M=5, maj_reps=5, maj_thr =1)
-simulate_sweep_field(M=3, maj_reps=5, maj_thr =1)
-simulate_sweep_field(M=1, maj_reps=5, maj_thr =1)
+analyze_saved_simulations (timestamp='120405')
+
+#simulate_sweep_field (M=7, maj_reps=5, maj_thr=1)
