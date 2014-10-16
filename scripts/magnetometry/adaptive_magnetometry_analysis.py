@@ -136,19 +136,19 @@ def temporal_evolution_B(label, nr):
 def analyze_sweep_field():
 
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
-	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
+	mgnt_exp.set_protocol (M=5, maj_reps = 5, maj_thr = 1)
 	mgnt_exp.set_sweep_params (nr_periods = 1, nr_points_per_period=11)
-	mgnt_exp.load_sweep_field_data (N=2)
+	#mgnt_exp.load_sweep_field_data (N=2)
 	mgnt_exp.load_sweep_field_data (N=3)
-	mgnt_exp.load_sweep_field_data (N=4)
-	mgnt_exp.load_sweep_field_data (N=5)
+	#mgnt_exp.load_sweep_field_data (N=4)
+	#mgnt_exp.load_sweep_field_data (N=5)
 	mgnt_exp.load_sweep_field_data (N=6)
-	mgnt_exp.load_sweep_field_data (N=7)
+	#mgnt_exp.load_sweep_field_data (N=7)
 	plt.figure()
 
 	mgnt_exp.plot_msqe_dictionary(y_log=True)
 
-	mgnt_exp.plot_scaling()
+	mgnt_exp.plot_sensitivity_scaling(do_fit = True)
 	mgnt_exp.save()
 	#mgnt_exp.load_analysis(timestamp='20141014')
 

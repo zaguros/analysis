@@ -88,8 +88,8 @@ def simulate_sweep_field(M, maj_reps, maj_thr):
 def analyze_saved_simulations (timestamp):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
 	mgnt_exp.load_analysis (timestamp=timestamp)
-	mgnt_exp.plot_msqe_dictionary(log_plot=True)
-	mgnt_exp.plot_scaling()
+	mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_sensitivity_scaling()
 
 analyze_saved_simulations (timestamp='120405')
 
