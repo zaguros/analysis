@@ -397,8 +397,8 @@ class RamseySequence_Simulation (RamseySequence):
 	
 	def ramsey (self, t=0., theta=0.):
 
-		n0 = 0.5*(1-np.cos(2*np.pi*self.beta_sim*t+theta))
-		n1 = 0.5*(1+np.cos(2*np.pi*self.beta_sim*t+theta))
+		n0 = 0.5*(1-np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta))
+		n1 = 0.5*(1+np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta))
 	
 		pp0 = self.fid0*n0+self.fid1
 		pp1 = n1+(1-self.fid0*n0)
@@ -995,7 +995,7 @@ class AdaptiveMagnetometry ():
 				ind +=1
 		self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
 
-	def plot_msqe_dictionary(self):
+	def plot_msqe_dictionary(self, log_plot=False):
 
 		C = compare.compare_functions()
 		C.xlabel = 'magnetic field detuning [MHz]'
@@ -1003,6 +1003,7 @@ class AdaptiveMagnetometry ():
 		for n in self.analyzed_N:	
 			print 'plotting N=', n
 			C.add (x =self.results_dict[str(n)]['B_field']*1e-6, y=self.results_dict[str(n)]['msqe'], label=str(n))
+		C.log_plot = log_plot
 		C.plot()
 
 	def sweep_field (self, do_simulate = True):
@@ -1010,13 +1011,14 @@ class AdaptiveMagnetometry ():
 		for n in np.arange(self.N)+1:
 			self.sweep_field_fixedN (N=n, do_simulate = do_simulate)
 			
-	def plot_msqe (self, N=[]):
+	def plot_msqe (self, N=[], log_plot=False):
 		r = compare_functions()	
 		r.xlabel = 'field [MHz]'
 		r.ylabel = 'mean square error'
 		r.title = 'N = '+str(self.N)+', M = '+str(self.M)+', sweep magnetic field'
 		for n in []:
 			r.add (x=self.B_values[n-1,:], y=self.results[n-1, :], legend = str(n))
+		r.log_plot=log_plot
 		r.plot()
 
 	def plot_scaling (self):
@@ -1032,9 +1034,9 @@ class AdaptiveMagnetometry ():
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
 		plt.figure()
-		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'b')
-		plt.loglog (self.total_time*self.t0/1000., self.scaling_variance*self.total_time, 'ob')
-		plt.xlabel ('total ramsey time')
+		plt.loglog (self.total_time*self.t0*1e6, self.scaling_variance*self.total_time, 'b')
+		plt.loglog (self.total_time*self.t0*1e6, self.scaling_variance*self.total_time, 'ob')
+		plt.xlabel ('total ramsey time [$\mu$s]')
 		plt.ylabel ('$V_H*T$')
 		plt.show()
 		
