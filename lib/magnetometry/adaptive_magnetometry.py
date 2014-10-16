@@ -747,11 +747,12 @@ class RamseySequence_Exp (RamseySequence):
 		self.fid0 = fid0
 		self.fid1 = fid1
 
-	def load_exp_data (self):
+	def load_exp_data (self, CR_post=False):
 
 		a = sequence.SequenceAnalysis(self.folder)
 		a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
+
 		self.msmnt_results = a.clicks
 		self.reps, self.N = np.shape (a.clicks)
 		self.n_points =  2**(self.N+3)
@@ -761,16 +762,45 @@ class RamseySequence_Exp (RamseySequence):
 		self.set_detuning = a.set_detuning
 		self.maj_reps = a.maj_reps
 		self.maj_thr = a.maj_thr
+		self.CR_after = a.CR_after
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
 		self.msmnt_phases = 2*np.pi*a.set_phase/255.
 		self.M=a.M
-	
+		self.discarded_elements = []
 		phases_detuning = 2*np.pi*a.phases_detuning/360.
 		b = np.ones(self.reps)
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
+	def CR_after_postselection(self):
 
+		print '--CR_after_postelection---'
+		#for i in np.arange(20):
+		#	print '---',i, ' ---'
+		#	print self.msmnt_results[i,:], self.CR_after[i,:]
+
+		res = np.copy(self.msmnt_results)
+		phases = np.copy(self.msmnt_phases)
+		self.discarded_elements = []
+		new_results = np.zeros((self.reps, self.N))
+		new_phases = np.zeros((self.reps, self.N))
+		rep = 0
+		for j in np.arange(self.reps):
+			if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+				new_results[rep,:] = np.copy(res[j,:])
+				new_phases[rep,:] = np.copy(phases[j,:])
+				rep = rep + 1
+			else:
+				self.discarded_elements.append(j)
+		self.reps = rep
+		self.msmnt_results =new_results[:self.reps,:]
+		self.msmnt_phases =  new_phases[:self.reps,:]
+		#print np.shape(self.msmnt_results)
+		print 'Discarded elements: ', self.discarded_elements
+		#print '#### AFTER ####'
+		#for i in np.arange(20):
+		#	print '---',i, ' ---'
+		#	print self.msmnt_results[i,:], self.CR_after[i,:]
 
 class AdaptiveTable ():
 
@@ -992,10 +1022,11 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				label = 'N='+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr='+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
-				f = toolbox.latest_data(contains=label)
+				f = toolbox.latest_data(contains=label, newer_than = '20141014_150000', older_than='20141015_113000')
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
+				s.CR_after_postselection()
 				check_params = [(s.t0 == self.t0), (s.M == self.M), (s.maj_reps==self.maj_reps), (s.maj_thr==self.maj_thr)]
 				if np.all(check_params):
 					s.convert_to_dict()

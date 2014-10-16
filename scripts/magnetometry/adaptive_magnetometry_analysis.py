@@ -28,16 +28,22 @@ def B_vs_time_single (label):
 	s.load_exp_data()
 	s.convert_to_dict()
 	B_dict, index_dict = s.B_vs_index()
-	return B_dict, index_dict
+	print 'Array before cleaning...', B_dict, index_dict
+	s.CR_after_postselection()
+	s.convert_to_dict()
+	B_dict, index_dict = s.B_vs_index()
+	print 'Array after cleaning...', B_dict, index_dict
+
+	return B_dict, index_dict, s.CR_after, s.discarded_elements
 
 def B_vs_time (nr, label):
 
 	index  = []
 	B_field = []
-	for i in np.arange(nr):
+	for i in np.arange(nr)+10:
 		try:
-			label0=label+'_%d_'%i
-			B_dict, index_dict = B_vs_time_single (label=label0)
+			label0=label+'_%d'%i
+			B_dict, index_dict, CR, disc = B_vs_time_single (label=label0)
 			last = len(index)
 			for k in B_dict:
 				for idx in index_dict[k]:
@@ -49,13 +55,13 @@ def B_vs_time (nr, label):
 	index=np.array(index)				
 	#plt.plot (index, B_field, 'r')
 	plt.plot (index, B_field, 'ob')
-	plt.xlabel('magnetic field [MHz]')
+	plt.xlabel('repetition')
 	plt.show()
 
 	error=[]
-	for i in np.arange(nr):
+	for i in np.arange(nr)+10:
 		try:
-			label0=label+'_%d_'%i
+			label0=label+'_%d'%i
 			beta_exp, p_exp, err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
 			error.append(sB)
 			print i, sB
@@ -67,6 +73,26 @@ def B_vs_time (nr, label):
 	plt.ylabel ('std [MHz]')
 	plt.xlabel ('instance nr')
 	return error
+
+def single_B_field(nr, label):
+	index = []
+	B_field = []
+	label0=label+'_%d'%nr
+	B_dict, index_dict, CR, discarded = B_vs_time_single (label=label0)
+	print B_dict, index_dict
+	for k in B_dict:
+		for idx in index_dict[k]:
+			index.append (idx)
+			B_field.append (B_dict[k])
+	for i in discarded:
+		plt.axvline (x=i, ymin=0, ymax = 2, color='k')
+	B_field = np.array(B_field)
+	index=np.array(index)				
+	#plt.plot (index, B_field, 'r')
+	plt.plot (index, B_field, 'ob')
+	plt.xlabel('repetition')
+	plt.show()
+
 
 
 
@@ -80,6 +106,7 @@ def analyze_single_instance(label='adptv_estimation_det', compare_to_simulations
 	s.load_exp_data()
 	s.convert_to_dict()
 	s.print_results()
+	s.CR_after_postselection()
 	B_dict, index_dict = s.B_vs_index()
 
 	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
@@ -125,7 +152,7 @@ def analyze_sweep_field():
 	mgnt_exp.save()
 	#mgnt_exp.load_analysis(timestamp='20141014')
 
-#analyze_sweep_field()
+analyze_sweep_field()
 #analyze_single_instance(label='CR40gr_manyreps_2', compare_to_simulations=True)
-
-error= B_vs_time(nr=40, label = 'CR40gr_pos_manyreps')
+#error= B_vs_time(nr=90, label = 'CR40b_manyreps')
+#single_B_field (nr = 69, label = 'CR40b_manyreps')

@@ -52,6 +52,7 @@ class SequenceAnalysis(m2.M2Analysis):
         adwingrp = self.adwingrp(name)        
         self.reps = adwingrp['completed_reps'].value
         RO_clicks = np.array(adwingrp['RO_data'].value)
+        CR_after = np.array(adwingrp['CR_after'].value)
         set_phase = adwingrp['set_phase'].value
         self.sweep_pts = self.g.attrs['sweep_pts']
         self.ramsey_time = self.g.attrs['ramsey_time'] 
@@ -62,14 +63,18 @@ class SequenceAnalysis(m2.M2Analysis):
             self.t0 = self.g.attrs['tau0']
             self.maj_reps = self.g.attrs['reps_majority_vote']
             self.maj_thr = self.g.attrs['threshold_majority_vote']
+        
+
         n_points = len(self.sweep_pts)
         rows = int(self.reps/float(len(self.sweep_pts)))
         cols = len(self.sweep_pts)
         RO_clicks = RO_clicks[:rows*cols]
         set_phase = set_phase[:rows*cols]
+        CR_after = CR_after[:rows*cols]
 
         self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
         self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
+        self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
             self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  

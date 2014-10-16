@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = None# '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '095949' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
@@ -32,24 +32,15 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    ax.set_ylim(0.6,1.05)
+    ax.set_ylim(0.3,1.0)
 
 
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
     else:
-        j=0
-        while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
-            k = j
-            j += 1
-        #j = len(y)-2
-        if k > len(y)-3:
-            print 'Could not find dip'
-            return
-        else:
-            guess_ctr = x[k] #convert to GHz and go to middle dip
-            print 'guess_ctr= '+str(guess_ctr)
-
+        guess_ctr = x[y.argmin()]
+        print 'guess_ctr = '+str(guess_ctr)
+    
     # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
