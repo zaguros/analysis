@@ -126,6 +126,7 @@ class RamseySequence():
 		self.msmnt_multiplicity = {}
 		self.phases_dict = {}
 		self.table_el_dict = {}
+		self.index = {}
 		
 		ind = 0		
 		for j in np.arange(self.reps):
@@ -136,12 +137,14 @@ class RamseySequence():
 			for k in self.msmnt_dict:
 				if (np.sum(np.abs(self.msmnt_dict[k]-curr_msmnt))<1e-5):
 					self.msmnt_multiplicity[k] = self.msmnt_multiplicity[k]+1
+					self.index[k].append(j)
 					found = 1
 					
 			if (found == 0):
 				self.msmnt_dict[ind] = curr_msmnt
 				self.phases_dict[ind] = curr_phases
 				self.msmnt_multiplicity[ind] = 1
+				self.index[ind]=[j]
 				if not(self.table_elements == None):
 					self.table_el_dict [ind] = self.table_elements[ind]
 				ind = ind+1
@@ -200,6 +203,19 @@ class RamseySequence():
 		prob = prob/np.sum(np.abs(prob))
 		return beta, prob
 
+
+	def B_vs_index (self):
+		B_dict = {}
+		for k in self.msmnt_dict:
+			curr_phase = np.rint(self.phases_dict[k])
+			curr_msmnt = np.rint(self.msmnt_dict[k])
+			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
+			fase = np.exp(1j*2*np.pi*beta*self.t0)
+			phi_m = np.sum(fase*prob)
+			mean_fB = 1e-6*np.angle(phi_m)/(2*np.pi*self.t0)
+			B_dict[k] = mean_fB
+		return B_dict, self.index
+						
 
 	def analyse_ramsey (self):
 
@@ -353,6 +369,7 @@ class RamseySequence():
 			mult = self.msmnt_multiplicity[k]
 
 			print '(*)', curr_msmnt, ' - ', mult, ' times --- phases: ', np.round(curr_phase*180/(np.pi)), ' deg'
+			print '     at indexes: ', self.index[k]			
 		print '--------------------------------------------'
 
 
@@ -394,8 +411,7 @@ class RamseySequence_Simulation (RamseySequence):
 			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 		else:
 			self.root_folder = 'D:/measuring/'
-		else:
-			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
+	
 
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
@@ -737,6 +753,7 @@ class RamseySequence_Exp (RamseySequence):
 		a = sequence.SequenceAnalysis(self.folder)
 		a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
+
 		self.msmnt_results = a.clicks
 		self.reps, self.N = np.shape (a.clicks)
 		self.n_points =  2**(self.N+3)
@@ -746,16 +763,45 @@ class RamseySequence_Exp (RamseySequence):
 		self.set_detuning = a.set_detuning
 		self.maj_reps = a.maj_reps
 		self.maj_thr = a.maj_thr
+		self.CR_after = a.CR_after
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
 		self.msmnt_phases = 2*np.pi*a.set_phase/255.
 		self.M=a.M
-	
+		self.discarded_elements = []
 		phases_detuning = 2*np.pi*a.phases_detuning/360.
 		b = np.ones(self.reps)
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
+	def CR_after_postselection(self):
 
+		print '--CR_after_postelection---'
+		#for i in np.arange(20):
+		#	print '---',i, ' ---'
+		#	print self.msmnt_results[i,:], self.CR_after[i,:]
+
+		res = np.copy(self.msmnt_results)
+		phases = np.copy(self.msmnt_phases)
+		self.discarded_elements = []
+		new_results = np.zeros((self.reps, self.N))
+		new_phases = np.zeros((self.reps, self.N))
+		rep = 0
+		for j in np.arange(self.reps):
+			if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+				new_results[rep,:] = np.copy(res[j,:])
+				new_phases[rep,:] = np.copy(phases[j,:])
+				rep = rep + 1
+			else:
+				self.discarded_elements.append(j)
+		self.reps = rep
+		self.msmnt_results =new_results[:self.reps,:]
+		self.msmnt_phases =  new_phases[:self.reps,:]
+		#print np.shape(self.msmnt_results)
+		print 'Discarded elements: ', self.discarded_elements
+		#print '#### AFTER ####'
+		#for i in np.arange(20):
+		#	print '---',i, ' ---'
+		#	print self.msmnt_results[i,:], self.CR_after[i,:]
 
 class AdaptiveTable ():
 
@@ -977,17 +1023,18 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				label = 'N='+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr='+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
-				f = toolbox.latest_data(contains=label)
+				f = toolbox.latest_data(contains=label, newer_than = '20141014_150000', older_than='20141015_113000')
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
+				s.CR_after_postselection()
 				check_params = [(s.t0 == self.t0), (s.M == self.M), (s.maj_reps==self.maj_reps), (s.maj_thr==self.maj_thr)]
 				if np.all(check_params):
 					s.convert_to_dict()
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
-						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, do_save=True, do_plot=True)
+						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=True)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
 					msqe [ind] = err
@@ -1000,7 +1047,7 @@ class AdaptiveMagnetometry ():
 				ind +=1
 		self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
 
-	def plot_msqe_dictionary(self, log_plot=False):
+	def plot_msqe_dictionary(self,y_log=False):
 
 		C = compare.compare_functions()
 		C.xlabel = 'magnetic field detuning [MHz]'
@@ -1008,15 +1055,14 @@ class AdaptiveMagnetometry ():
 		for n in self.analyzed_N:	
 			print 'plotting N=', n
 			C.add (x =self.results_dict[str(n)]['B_field']*1e-6, y=self.results_dict[str(n)]['msqe'], label=str(n))
-		C.log_plot = log_plot
-		C.plot()
+		C.plot(y_log=y_log)
 
 	def sweep_field (self, do_simulate = True):
 	
 		for n in np.arange(self.N)+1:
 			self.sweep_field_fixedN (N=n, do_simulate = do_simulate)
 			
-	def plot_msqe (self, N=[], log_plot=False):
+	def plot_msqe (self, N=[]):
 		r = compare_functions()	
 		r.xlabel = 'field [MHz]'
 		r.ylabel = 'mean square error'

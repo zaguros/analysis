@@ -12,14 +12,14 @@ from analysis.lib.fitting import fit,esr
 
 def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
-guess_width = 0.27e-3,
+guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-min_dip_depth = 0.80, 
+min_dip_depth = 0.90, 
 timestamp = None,
 add_folder = None,
 ret='f0',
 ssro_calib_folder='',
-do_save=True,
+do_save=False,
 sweep_direction = 'right',
 **kw):
 
@@ -50,7 +50,6 @@ sweep_direction = 'right',
     print y[21]
     k = len(y)
     print 'min_dip_depth = ' + str(min_dip_depth)
-
     
 
     ### Option to make the dip search sweep towards left or right, usefull in case of N polarization
@@ -61,6 +60,7 @@ sweep_direction = 'right',
     elif sweep_direction == 'right':
         y1 = y
         x1 = x
+
 
     while y1[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
         k = j
@@ -76,42 +76,10 @@ sweep_direction = 'right',
         print 'k'+str(k)
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
 
-    
-    ### Do the fitting ###
-
-    ### This fuction was used until 141015, but did not support differnt amplitudes, replaced by the function below - THT 141015
-    # fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
-    #         guess_amplitude, guess_width, guess_ctr,
-    #         (3, guess_splitN),
-    #         do_print=True, ret=True, fixed=[])
-
-
-    A_min1 = fit.Parameter(guess_amplitude, 'A_min1')
-    A_plus1 = fit.Parameter(guess_amplitude, 'A_plus1')
-    A_0 = fit.Parameter(guess_amplitude, 'A_0')
-    o = fit.Parameter(guess_offset, 'o')
-    x0 = fit.Parameter(guess_ctr, 'x0')
-    sigma = fit.Parameter(guess_width, 'sigma')
-    Nsplit = fit.Parameter(np.abs(guess_splitN), 'Nsplit')
-    
-
-
-    def fitfunc(x):
-        # return o() - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
-        #         - A_min1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
-        #         - A_plus1()*np.exp(-((x-(x0()-splitting+Nsplit()))/sigma())**2) \
-        #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
-        #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-        #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2)
-        return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
-                - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-                - A_0()*np.exp(-((x-x0())/sigma())**2) \
-
-    fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0, Nsplit],
-        fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
-
-
-
+    fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
+            guess_amplitude, guess_width, guess_ctr,
+            (3, guess_splitN),
+            do_print=True, ret=True, fixed=[])
     print 'fit finished'
     print do_save
     if do_save:
@@ -138,7 +106,6 @@ timestamp = None,
 add_folder = None,
 ret='f0',
 ssro_calib_folder='',
-do_save=True,
 **kw):
 
     if timestamp != None:
@@ -179,22 +146,7 @@ do_save=True,
         u_f0 = fit_result['error_dict']['x0']
         return f0, u_f0
 
-    print do_save
-    if do_save:
-        print 'saving data and fit'
-        if fit_result:
-            #print 'fit result'
-            #print fit_result
-            
-            fig, ax = plt.subplots(1,1)
-            plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
-            plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
-            format='png')
-            plt.close(fig)
-    if ret == 'f0':
-        f0 = fit_result['params_dict']['x0']
-        u_f0 = fit_result['error_dict']['x0']
-        return f0, u_f0
+
 
 
 
