@@ -15,11 +15,11 @@ from analysis.lib.tools import plot
 timestamp =None#'215430'#None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.84542
+guess_x0 = 2.84534
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
-guess_width = 0.002e-3
+guess_width = 0.02e-3
 
 
 guess_splitC = 0.01e-3 #12.78
@@ -37,7 +37,7 @@ guess_A_0 = 0.3
 #guess_sigma = 0.435e-3
 guess_Nsplit = guess_splitN
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.85 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.85 ,do_print=False,do_plot=False,guess_x0, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -106,8 +106,8 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_dept
                 # (2, guess_splitC),
                 # (2, guess_splitB),
                 #(3, guess_splitN),
-                do_print=True, ret=True, fixed=[])       #print fit_result
-        plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
+                do_print=do_print, ret=True, fixed=[])       #print fit_result
+        plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=do_plot, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
         Population_left=fit_result['params'][0]/Norm
         Population_middle=fit_result['params'][2]/Norm
@@ -117,18 +117,20 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_dept
         print 'Population middle ' , Population_middle
         print 'Population right ' , Population_right
         print '#############################'
-      
     except Exception:
         #guess_ctr = float(raw_input('Center guess?'))
+        '''
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
                 # (2, guess_splitC),
                 # (2, guess_splitB),
                 #(3, guess_splitN),
-                do_print=True, ret=True, fixed=[0,1,2,3,4])
-        plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
-       
+                do_print=do_print, ret=True, fixed=[0,1,2,3,4])
+        plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=do_plot, **kw)
+        '''
+        fit_result=(-1,-1)
+
 
 
 
