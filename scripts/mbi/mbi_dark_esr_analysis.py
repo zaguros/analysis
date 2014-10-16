@@ -28,12 +28,12 @@ guess_Nsplit = 2.196
 
 if 1:
     guess_offset = 1.0
-    guess_A_min1 = 0
-    guess_A_plus1 = 0
-    guess_A_0 = 0.8
-    guess_x0 = 2845
-    guess_sigma = 0.435
-    guess_Nsplit = 2.19
+    guess_A_min1 = 0.3
+    guess_A_plus1 = 0.3
+    guess_A_0 = 0.3
+    guess_x0 = 1746.666
+    guess_sigma = 0.250
+    guess_Nsplit = 2.182
 
 
 ### fitfunction
@@ -47,15 +47,15 @@ Nsplit = fit.Parameter(guess_Nsplit, 'Nsplit')
 
 def fitfunc(x):
     return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
+            - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
             - A_0()*np.exp(-((x-x0())/sigma())**2) \
-
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 
 else:
     #folder = toolbox.latest_data('PostInitDarkESR')
-    folder = toolbox.latest_data()
+    folder = toolbox.latest_data('DESR')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
@@ -120,27 +120,4 @@ if (not(wrong_population)==None):
     print 'Non-initialized population: ', wrong_population
     print 'Electron initialization:  ', off
 
-<<<<<<< HEAD
-=======
-ax.set_ylim(-0.05,1.05)
 
-plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
-        format='pdf')
-plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.png'),
-        format='png')
-
-'''
-pol = error.Formula()
-a0, am1, ap1 = sympy.symbols('a0, am1, ap1')
-pol.formula = am1 / (a0 + ap1 + am1)
-pol.values[a0] = A_0()
-pol.values[am1] = A_min1()
-pol.values[ap1] = A_plus1()
-pol.uncertainties[a0] = fit_result['error_dict']['A_0']
-pol.uncertainties[am1] = fit_result['error_dict']['A_min1']
-pol.uncertainties[ap1] = fit_result['error_dict']['A_plus1']
-
-print 'Spin polarization = %.3f +/- %.3f' \
-        % (float(pol.value()), float(pol.uncertainty()))
-'''
->>>>>>> 9e86b3fc08c009b842554ca27b7b46bc7f840fcf
