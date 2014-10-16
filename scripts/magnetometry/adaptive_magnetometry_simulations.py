@@ -39,12 +39,12 @@ def simulate_cappellaro ():
 	s.convert_to_dict()
 	s.print_table_positions()
 		
-	beta, p, err = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	beta, p, err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 	s.sim_cappellaro_majority()
 	s.convert_to_dict()
 	s.print_results()
-	beta, p, err = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
 
@@ -64,7 +64,7 @@ def simulate_nonadaptive ():
 	s.convert_to_dict()
 	s.print_results()
 		
-	beta, p, err = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
 def simulate_sweep_field(M, maj_reps, maj_thr):

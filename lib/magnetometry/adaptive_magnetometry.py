@@ -294,7 +294,7 @@ class RamseySequence():
 
 		return beta, avg_prob, msqe, mean_fB, sigma_fB
 
-	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True):
+	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True,plot_log=False):
 
 		if show_plot:
 			plt.ion()
@@ -324,6 +324,9 @@ class RamseySequence():
 			plt.plot (beta_sim*1e-6, p_sim, 'r', label = 'sim')
 		except:
 			print 'Error in simulation!'
+		if plot_log:
+			plt.yscale('log')
+			plt.ylim((1e-10,0.5))
 		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz')
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
@@ -391,6 +394,8 @@ class RamseySequence_Simulation (RamseySequence):
 			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 		else:
 			self.root_folder = 'D:/measuring/'
+		else:
+			self.root_folder = '/home/cristian/Work/Research/teamdiamond/'
 
 	def save_folder (self, folder = '/home/cristian/Work/Research/adaptive magnetometry/'):
 		self.save_folder = folder
@@ -1020,6 +1025,7 @@ class AdaptiveMagnetometry ():
 			r.add (x=self.B_values[n-1,:], y=self.results[n-1, :], legend = str(n))
 		r.log_plot=log_plot
 		r.plot()
+
 
 	def plot_scaling (self):
 		self.scaling_variance=[]
