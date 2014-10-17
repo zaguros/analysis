@@ -80,7 +80,9 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         search_dir = datadir
     else:
         search_dir = folder
+
     daydirs = os.listdir(search_dir)
+
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
         return None
@@ -168,18 +170,53 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
 #     return None
 
-def data_from_time(timestamp):
+def data_from_time(timestamp, folder = None):
     '''
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
+    
+    if (folder != None):
+        datadir = folder
+
     daydirs = os.listdir(datadir)
+
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')
 
     daydirs.sort()
     daystamp, tstamp = verify_timestamp(timestamp)
 
+    if not os.path.isdir(os.path.join(datadir,daystamp)):
+        logging.warning("Requested day '%s' not found" % daystamp)
+        return None
+
+    measdirs = [ d for d in os.listdir(os.path.join(datadir,daystamp)) \
+            if d[:6] == tstamp ]
+
+    if len(measdirs) == 0:
+        logging.warning("Requested data '%s'/'%s' not found" \
+                % (daystamp, tstamp))
+        return None
+    elif len(measdirs) == 1:
+        return os.path.join(datadir,daystamp,measdirs[0])
+    else:
+        logging.warning('Timestamp is not unique: ', str(measdirs))
+        return None
+
+
+def data_from_label (label, folder = None):
+    
+    if (folder != None):
+        datadir = folder
+
+    daydirs = os.listdir(datadir)
+
+    if len(daydirs) == 0:
+        raise Exception('No data in the data directory specified')
+
+    daydirs.sort()
+    
     if not os.path.isdir(os.path.join(datadir,daystamp)):
         logging.warning("Requested day '%s' not found" % daystamp)
         return None

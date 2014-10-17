@@ -454,7 +454,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         ax.set_xlabel('Time after RO start [ns]')
         ax.set_ylabel('Fidelity')
 
-        ax.text(len0,0.7,'Fidelity at {} = {:.2f}, \n \
+        ax.text(len0,0.86,'Fidelity at {} = {:.2f}, \n \
                     and RO time = {} ns: \n \
                     ms1 {:.2f} $\pm$ {:.2f} \n \
                     ms0 {:.2f} $\pm$ {:.2f} \n \
@@ -544,7 +544,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         ax.errorbar(x,mf, fmt='ro',yerr = u_mf)
         ax.set_ylim(0.5,1.01)
         ii = np.argmax(mf)
-        ax.text(x[-1], 0.7, 'Max fid. at sweep pt. = {:.1f}: \n \
+        ax.text(x[-1], 0.86, 'Max fid. at sweep pt. = {:.1f}: \n \
                                     ms1 {:.2f} $\pm$ {:.2f},\n \
                                     ms0 {:.2f} $\pm$ {:.2f},\n \
                                     mean {:.2f} $\pm$ {:.2f}'.format(x[ii],

@@ -28,7 +28,7 @@ class compare_functions ():
 		ind = 0 
 		for i in numbers:	
 			if self.log_plot:	
-				plt.loglog (self.data['x_'+str(i)], self.data['y_'+str(i)], label = self.data['l_'+str(i)], color = colors[ind]) 
+				plt.semilogy (self.data['x_'+str(i)], self.data['y_'+str(i)], label = self.data['l_'+str(i)], color = colors[ind]) 
 			else:
 				plt.plot (self.data['x_'+str(i)], self.data['y_'+str(i)], '.', label = self.data['l_'+str(i)], color = colors[ind]) 
 			ind = ind + 1
