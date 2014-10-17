@@ -6,6 +6,7 @@ import numpy as np
 import h5py
 import platform
 import os
+import time
 
 try:
     import qt
@@ -305,5 +306,164 @@ def get_msmt_header(fp):
     daystamp = os.path.split(root)[1]
     return daystamp + '/' + folder
 
+def has_analysis_data(pqf, name, analysisgrp = 'analysis', subgroup=None):
+    """
+    Returns a boolean stating if a file has analysis data or not. Enter a file or 
+    a filepath and the name corresponding to the analysis data.
+    """
+    if type(pqf) == h5py._hl.files.File:
+        if analysisgrp in pqf.keys():
+            agrp = pqf.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
+            if name in agrp.keys():
+                return True
+            else:
+                return False
+        else:
+            return False
+    elif type(pqf) == str:
+        try:
+            f = h5py.File(pqf, 'r')
+        except:
+            print "Cannot open file", pqf
+            raise
+        
+        if analysisgrp in f.keys():
+            agrp = f.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
+            if name in agrp.keys():
+                f.close()
+                return True
+            else:
+                f.close()
+                return False
+        else:
+            f.close()
+            return False
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise 
+
+def get_analysis_data(pqf, name, analysisgrp = 'analysis', subgroup=None):
+    """
+    Return the analysis data from a file (1st entry filepath or file) withing 
+    analysis with a specific name (2nd entry). Also returns the attributes of the file
+    in an dictionary. 
+    """
+    if type(pqf) == h5py._hl.files.File:   
+        agrp = pqf.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
+
+        if name not in agrp.keys():
+            return None
+        
+        dat = agrp[name].value
+        attrs = {}
+        for (an, av) in agrp[name].attrs.items():
+            attrs[an] = av
+            print attrs
+            print type(attrs)
+
+        return dat, attrs
+    elif type(pqf) == str:
+        try:
+            f = h5py.File(pqf, 'r')
+        except:
+            print "Cannot open file", pqf
+            raise
+        
+        agrp = f.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
+
+        if name not in agrp.keys():
+            return None
+    
+        dat = agrp[name].value
+        attrs = {}
+        for (an, av) in agrp[name].attrs.items():
+            attrs[an] = av
+        
+        f.close()
+        
+        return dat, attrs
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+
+def clear_analysis_data(fp, ANALYSISGRP = 'analysis'):
+    """
+    Deletes analysis group from the hdf5 file. Can be used 
+    to delete any group by changing the name put in the function.
+    """
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    if ANALYSISGRP in f.keys():
+        try:
+            del f[ANALYSISGRP]
+            f.flush()
+            f.close()
+        except:
+            f.close()
+            raise
+    else:
+        f.close()
+
+def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis'):
+    """
+    Save the data in a subgroup which is set to analysis by default and caries the name
+    put in the function. Also saves the attributes.
+    """
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    try:
+        agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+
+        
+        if name in agrp.keys():
+            del agrp[name]
+        agrp[name] = data
+        f.flush()
+        
+        for k in attributes:
+            agrp[name].attrs[k] = attributes[k]
+            #print agrp[name].attrs[k]
+        #    agrp[name].attrs[k] = kw[k]
+        
+        f.flush()
+        f.close()        
+    except:
+        f.close()
+        raise
+
+def has_data(pqf, name, subgroup=None):
+    """
+    Checks if data with a specific name is in the keys of the main folder
+    give filepath and name
+    """
+    if type(pqf) == h5py._hl.files.File:
+        if name in pqf.keys():
+            return True
+        else:
+            return False
+    elif type(pqf) == str:
+        try:
+            f = h5py.File(pqf, 'r')
+        except:
+            return False
+   
+        if name in f.keys():
+            f.close()
+            return True
+        else:
+            f.close()
+            return False
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
 
 

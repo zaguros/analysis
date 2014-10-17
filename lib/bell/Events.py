@@ -1,20 +1,28 @@
 import numpy as np
 import h5py
-import Settings, files, Filter
-  
+from analysis.lib.tools import toolbox as tb
+from analysis.lib.pq import pq_tools, pq_plots
 
-def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval=False):
+def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan, i, first_win_min, 
+        first_win_max, second_win_min, second_win_max, force_eval=False, VERBOSE = True):
     
     """
     Returns either the entanglement events already saved; the corresponding attributes
     and save = False, or returns the newly calculated entanglement events;
-    the corresponding attributes (column names) and the save = True    
+    the corresponding attributes (column names) and the save = True. Put in the file path 
+    of the BS then of LT1 then of LT3 then the marker channel and then the repitition if
+    it's looped. Also put in the windows to determine if an photon is the first photon to arrive.
+    (first_win_min,first_win_max,second_win_min, second_win_max)
     """
 
-   
-    if files.has_analysis_data(fp_BS, 'Entanglement_events') and not force_eval:
-        tev, _a = files.get_analysis_data(fp_BS, 'Entanglement_events')
-        if Settings.VERBOSE:
+    
+    if tb.has_analysis_data(fp_BS, 'Entanglement_events') and not force_eval:
+        tev, _a = tb.get_analysis_data(fp_BS, 'Entanglement_events')
+        unique_sync_num_with_markers = tev[:,0]
+        if VERBOSE:
+            print
+            string = 'The number of events with PLU markers in run ' + str(i+1) + ' is:'
+            print string, len(unique_sync_num_with_markers)
             print
             print 'Found {} saved valid entanglement events.'.format(int(len(tev)))
             print '===================================='
@@ -49,13 +57,20 @@ def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval
             ad3_CR_after = h[('/'+ str(k) + '/ssro/CR_after')].value
     h.close()    
     
-    if Settings.VERBOSE:
+
+    sync_num_with_markers = sync_numbers[pq_tools.filter_marker(fp_BS,chan)]
+    unique_sync_num_with_markers = np.unique(sync_num_with_markers)
+
+    if VERBOSE:
 
         print 
+        string = 'The number of events with PLU markers in run ' + str(i+1) + ' is:'
+        print string, len(unique_sync_num_with_markers)
+        print
         print 'Adwin LT1'
         print '---------'
         print 'Number of events:', ad1_reps,
-        if ad1_reps != len(unique_sync_num):
+        if ad1_reps != len(unique_sync_num_with_markers):
             print 'number of Adwin LT1 events does not match the PLU marker \
                     events - data set seems faulty :('
         else:
@@ -65,7 +80,7 @@ def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval
         print 'Adwin LT3'
         print '---------'
         print 'Number of events:', ad3_reps,
-        if ad3_reps != len(unique_sync_num):
+        if ad3_reps != len(unique_sync_num_with_markers):
             print 'number of Adwin LT1 events does not match the PLU marker \
                     events - data set seems faulty :('
         else:
@@ -74,8 +89,9 @@ def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval
     # Gets filters for photons with markers in the first and second window
     # from the Filter file
     is_photon_1st_window_with_markers, is_photon_2nd_window_with_markers =\
-                                    Filter.get_photons_with_markers(fp_BS,chan)
-    
+                                    pq_tools.get_photons_with_markers(fp_BS,chan,
+                                        first_win_min, first_win_max, second_win_min, second_win_max)
+
     # Retrieves sync numbers and sync times for photons both in the first
     # and 2nd window
     Sync_num_1st_window_with_markers = sync_numbers[is_photon_1st_window_with_markers]
@@ -96,7 +112,7 @@ def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval
     entanglement_events = np.empty((0,14))
 
     # Get all real entanglement events, loops over sync numbers
-    for i,s in enumerate(unique_sync_num):
+    for i,s in enumerate(unique_sync_num_with_markers):
         
         # The attempt is defined as the sync number modulo 250 
         #(250 = the repitition rate)
@@ -160,9 +176,11 @@ def get_entanglement_events(fp_BS,fp_LT1,fp_LT3,chan,unique_sync_num, force_eval
         CR Check After LT3 | psiminus | absolute time
         """
         
-        _a = "Sync_Number, Sync_Time_photon_1, Sync_Time_photon_2, Channel_photon_1,\
+        columns = "Sync_Number, Sync_Time_photon_1, Sync_Time_photon_2, Channel_photon_1,\
 Channel_photon_2, Attempts, Amount_of_ph_LT1, CR_check_before_LT1,CR_check_after_LT1,\
 Amount_of_ph_LT3, CR_check_before_LT3, CR_check_after_LT3, psiminus, abs_time"
+
+        _a = {'Columns': columns}
                 
         _event = np.array([s, 
                         stimes[0],
@@ -181,7 +199,7 @@ Amount_of_ph_LT3, CR_check_before_LT3, CR_check_after_LT3, psiminus, abs_time"
                         
         entanglement_events = np.vstack((entanglement_events, _event))
 
-    if Settings.VERBOSE:
+    if VERBOSE:
         print
         print 'Found {} valid entanglement events.'.format(int(len(entanglement_events)))
         print '===================================='
