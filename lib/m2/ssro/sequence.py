@@ -23,63 +23,7 @@ class SequenceAnalysis(m2.M2Analysis):
             (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)/len(self.sweep_pts)))**0.5  #this is quite ugly, maybe replace?
         
         return self.normalized_ssro
-    
-    def get_magnetometry_phase_calibration(self, name=''):
-
-        self.result_corrected = False
-
-        adwingrp = self.adwingrp(name)        
-        self.reps = adwingrp['completed_reps'].value-1
-        RO_clicks = adwingrp['RO_data'].value
-        phase = adwingrp['set_phase'].value
-
-        phase_values = np.unique(phase)
-        self.ssro_results = np.zeros(len(phase_values))
-        ind = 0
-        for j in phase_values:
-            self.ssro_results [ind] = np.sum(RO_clicks[np.where(phase==j)])
-            ind = ind+1
-        self.sweep_pts = phase_values
-        
-        self.normalized_ssro = self.ssro_results/(float(self.reps))
-        self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)))**0.5  #this is quite ugly, maybe replace?
-
-        return self.normalized_ssro
-
-    def get_magnetometry_data (self, name='', ssro = True):
-        self.result_corrected = False
-
-        adwingrp = self.adwingrp(name)        
-        self.reps = adwingrp['completed_reps'].value
-        RO_clicks = np.array(adwingrp['RO_data'].value)
-        CR_after = np.array(adwingrp['CR_after'].value)
-        set_phase = adwingrp['set_phase'].value
-        self.sweep_pts = self.g.attrs['sweep_pts']
-        self.ramsey_time = self.g.attrs['ramsey_time'] 
-        if self.g.attrs['do_phase_calibr']==0:   
-            self.phases_detuning = self.g.attrs['phases_detuning'] 
-            self.set_detuning = self.g.attrs['set_detuning_value']
-            self.M = self.g.attrs['M']  
-            self.t0 = self.g.attrs['tau0']
-            self.maj_reps = self.g.attrs['reps_majority_vote']
-            self.maj_thr = self.g.attrs['threshold_majority_vote']
-        
-
-        n_points = len(self.sweep_pts)
-        rows = int(self.reps/float(len(self.sweep_pts)))
-        cols = len(self.sweep_pts)
-        RO_clicks = RO_clicks[:rows*cols]
-        set_phase = set_phase[:rows*cols]
-        CR_after = CR_after[:rows*cols]
-
-        self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
-        self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
-        self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
-        if ssro:
-            self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
-            self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  
-            
-
+      
 
     def get_cr_results(self, name='', plot=True):
         adwingrp = self.adwingrp(name)   
@@ -273,6 +217,64 @@ class SequenceAnalysis(m2.M2Analysis):
 
     def finish(self):
         self.f.close()
+
+class MagnetometrySequenceAnalysis(SequenceAnalysis):
+
+    def get_magnetometry_phase_calibration(self, name=''):
+
+        self.result_corrected = False
+
+        adwingrp = self.adwingrp(name)        
+        self.reps = adwingrp['completed_reps'].value-1
+        RO_clicks = adwingrp['RO_data'].value
+        phase = adwingrp['set_phase'].value
+
+        phase_values = np.unique(phase)
+        self.ssro_results = np.zeros(len(phase_values))
+        ind = 0
+        for j in phase_values:
+            self.ssro_results [ind] = np.sum(RO_clicks[np.where(phase==j)])
+            ind = ind+1
+        self.sweep_pts = phase_values
+        
+        self.normalized_ssro = self.ssro_results/(float(self.reps))
+        self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)))**0.5  #this is quite ugly, maybe replace?
+
+        return self.normalized_ssro
+
+    def get_magnetometry_data (self, name='', ssro = True):
+        self.result_corrected = False
+
+        adwingrp = self.adwingrp(name)        
+        self.reps = adwingrp['completed_reps'].value
+        RO_clicks = np.array(adwingrp['RO_data'].value)
+        CR_after = np.array(adwingrp['CR_after'].value)
+        set_phase = adwingrp['set_phase'].value
+        self.sweep_pts = self.g.attrs['sweep_pts']
+        self.ramsey_time = self.g.attrs['ramsey_time'] 
+        if self.g.attrs['do_phase_calibr']==0:   
+            self.phases_detuning = self.g.attrs['phases_detuning'] 
+            self.set_detuning = self.g.attrs['set_detuning_value']
+            self.M = self.g.attrs['M']  
+            self.t0 = self.g.attrs['tau0']
+            self.maj_reps = self.g.attrs['reps_majority_vote']
+            self.maj_thr = self.g.attrs['threshold_majority_vote']
+        
+
+        n_points = len(self.sweep_pts)
+        rows = int(self.reps/float(len(self.sweep_pts)))
+        cols = len(self.sweep_pts)
+        RO_clicks = RO_clicks[:rows*cols]
+        set_phase = set_phase[:rows*cols]
+        CR_after = CR_after[:rows*cols]
+
+        self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
+        self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
+        self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
+        if ssro:
+            self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
+            self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  
+            
 
 
 

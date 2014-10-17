@@ -10,7 +10,7 @@ import logging, time
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence
+from analysis.lib.m2.ssro import  sequence
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr, common
 from analysis.lib.tools import plot
@@ -18,7 +18,7 @@ from analysis.lib.tools import compare_functions as compare
 from analysis.lib.m2 import m2
 from matplotlib import rc, cm
 
-reload(sequence)
+#reload(sequence)
 reload(compare)
 reload(toolbox)
 
@@ -296,7 +296,7 @@ class RamseySequence():
 			plt.ylim((1e-10,1e-1))
 			plt.xlabel ('magnetic field detuning [MHz]')
 			plt.ylabel ('prob distrib')
-			plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz')
+			plt.title('(B_exp = '+str('{0:.4f}'.format(mean_fB))+' +- '+str('{0:.4f}'.format(sigma_fB)) + ') MHz')
 			if not(xlim==None):
 				plt.xlim(xlim)
 
@@ -750,7 +750,7 @@ class RamseySequence_Exp (RamseySequence):
 
 	def load_exp_data (self):
 
-		a = sequence.SequenceAnalysis(self.folder)
+		a = sequence.MagnetometrySequenceAnalysis(self.folder)
 		a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 
@@ -1027,7 +1027,7 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				label = 'N='+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr='+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
-				f = toolbox.latest_data(contains=label)
+				f = toolbox.latest_data(contains=label)#,older_than='20141015_113000',newer_than='20141014_150000')
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
@@ -1038,7 +1038,7 @@ class AdaptiveMagnetometry ():
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
-						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=True)
+						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=False)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
 					msqe [ind] = err

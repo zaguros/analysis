@@ -16,24 +16,13 @@ from analysis.lib.math import error
 ### settings
 timestamp = None#'120943'#'171251'#None #'190948' #
 
-
-
 guess_offset = 1.0
-guess_A_min1 = 0.5
-guess_A_plus1 = 0.1
-guess_A_0 = 0.1
-guess_x0 = 2845
-guess_sigma = 0.02
-guess_Nsplit = 2.196
-
-if 1:
-    guess_offset = 1.0
-    guess_A_min1 = 0.3
-    guess_A_plus1 = 0.3
-    guess_A_0 = 0.3
-    guess_x0 = 1746.666
-    guess_sigma = 0.250
-    guess_Nsplit = 2.182
+guess_A_min1 = 0.3
+guess_A_plus1 = 0.3
+guess_A_0 = 0.3
+guess_x0 = 1746.666
+guess_sigma = 0.250
+guess_Nsplit = 2.182
 
 
 ### fitfunction
@@ -82,14 +71,14 @@ if (len(y)==5):
 else:
     # try fitting
 
-    fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
-            fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+    fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma, Nsplit],
+            fitfunc = fitfunc, do_print=True, ret=True, fixed=[6])
     plot.plot_fit1d(fit_result, linspace(min(x), max(x), 1000), plot_data=False, ax=ax)
     Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
     Population_left=fit_result['params'][0]/Norm
     Population_middle=fit_result['params'][2]/Norm
     Population_right=fit_result['params'][1]/Norm
-    ax.set_ylim(-0.05,1.05)
+    ax.set_ylim(-0.05,1.1)
 
     plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
             format='pdf')

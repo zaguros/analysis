@@ -75,10 +75,10 @@ def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
 
     return p0, fitfunc, fitfunc_str
 
-def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, *arg):
+def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, g_o ,*arg):
     ''' quite a specific function, for electron nuclear control, maybe place somewhere else '''
     fitfunc_str = '''(A1 *exp(-x/t1) cos(2pi * (f1*x + phi1/360) ) + a1)*
-                     (A2 *exp(-x/t2) cos(2pi * (f2*x + phi2/360) ) + a2)/2+1/2'''
+                     (A2 *exp(-x/t2) cos(2pi * (f2*x + phi2/360) ) + a2)/2+ o '''
 
     f1 = fit.Parameter(g_f1, 'f1')
     #a1 = fit.Parameter(g_a1, 'a1')
@@ -91,12 +91,13 @@ def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, 
     A2 = fit.Parameter(g_A2, 'A2')
     phi2 = fit.Parameter(g_phi2, 'phi2')
     t2   = fit.Parameter(g_t2, 't2')
+    o = fit.Parameter(g_o, 'o')
 
     #p0 = [f1, a1, A1, phi1, t1, f2, a2, A2, phi2, t2]
-    p0 = [f1, A1, phi1, t1, f2, A2, phi2, t2]
+    p0 = [f1, A1, phi1, t1, f2, A2, phi2, t2,o]
 
     def fitfunc(x):
-        return (1 - A1() + A1()*np.exp(-x/t1()) * np.cos(2*np.pi*( f1()*x + phi1()/360.)))*(1-A2() + A2()*np.exp(-x/t2()) * np.cos(2*np.pi*( f2()*x + phi2()/360.)))/2+0.5
+        return (1 - A1() + A1()*np.exp(-x/t1()) * np.cos(2*np.pi*( f1()*x + phi1()/360.)))*(1-A2() + A2()*np.exp(-x/t2()) * np.cos(2*np.pi*( f2()*x + phi2()/360.)))/2+o()
 
     return p0, fitfunc, fitfunc_str
 
