@@ -24,13 +24,31 @@ def get_markers(pqf, chan):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
-    channel = pqf['/PQ_channel-1'].value
-    special = pqf['/PQ_special-1'].value
     
-    is_special = special==1
-    is_channel = channel==chan
+    if type(pqf) == h5py._hl.files.File:
 
-    return (is_special & is_channel)
+        channel = pqf['/PQ_channel-1'].value
+        special = pqf['/PQ_special-1'].value
+    
+        is_special = special==1
+        is_channel = channel==chan
+
+        return (is_special & is_channel)
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf,'r')
+        channel = f['/PQ_channel-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+    
+        is_special = special==1
+        is_channel = channel==chan
+
+        return (is_special & is_channel)
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
 
 def get_multiple_photon_syncs(pqf):
     special = pqf['/PQ_special-1'].value
@@ -120,6 +138,42 @@ def get_coincidences_from_folder(folder):
                     
     return co
 
+def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_min, second_win_max):
+    """
+    Returns two filters whether events are in the first or 
+    in the second time window.
+    """
+    if type(pqf) == h5py._hl.files.File: 
+        sync_time = pqf['/PQ_sync_time-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_time = f['/PQ_sync_time-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise   
+
+    is_photon = special == 0
+    
+    is_event_first_window = (sync_time > first_win_min) & \
+                         (sync_time <= first_win_max)
+    is_event_second_window = (sync_time > second_win_min) & \
+                          (sync_time <= second_win_max)
+
+    is_photon_first_window = is_photon & is_event_first_window
+    is_photon_second_window = is_photon & is_event_second_window
+    
+    is_photon_check = is_photon_first_window | is_photon_second_window
+        
+    if sum(is_photon_check) != sum(is_photon):
+        print "Not all detected photons are in the broad windows set"
+    
+    return is_photon_first_window, is_photon_second_window
+
 
 
 
@@ -154,13 +208,49 @@ def filter_marker(pqf, chan):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
-    is_mrkr = get_markers(pqf, chan)
-
-    sync_numbers = pqf['/PQ_sync_number-1'].value
-
-    marker_sync_numbers = sync_numbers[is_mrkr]
     
-    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)    
+    if type(pqf) == h5py._hl.files.File: 
+        is_mrkr = get_markers(pqf, chan)
+
+        sync_numbers = pqf['/PQ_sync_number-1'].value
+
+        marker_sync_numbers = sync_numbers[is_mrkr]
+    
+        return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)  
+
+    elif type(pqf) == str:
+        is_mrkr = get_markers(pqf, chan)
+        
+        f = h5py.File(pqf, 'r')
+        sync_numbers = f['/PQ_sync_number-1'].value
+        f.close()
+    
+        marker_sync_numbers = sync_numbers[is_mrkr]
+    
+        return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max):
+    """
+    Return two filters whether events are first window photons or second window
+    photons with markers.
+    """
+    
+    is_photon_first_window, is_photon_second_window = get_photons_in_sync_windows(pqf,
+                            first_win_min, first_win_max, second_win_min, second_win_max)
+    is_events_with_marker = filter_marker(pqf,chan)
+    
+    is_photon_first_window_with_markers = is_photon_first_window & \
+                                            is_events_with_marker
+    is_photon_second_window_with_markers = is_photon_second_window &\
+                                            is_events_with_marker
+
+    return is_photon_first_window_with_markers, is_photon_second_window_with_markers
+
+
 
 
 ##############################################################################
