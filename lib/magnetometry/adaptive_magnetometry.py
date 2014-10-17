@@ -1138,7 +1138,7 @@ class AdaptiveMagnetometry ():
 
 		self.scaling_factor = b_fit
 		self.error_scaling_factor = b_err
-	
+
 		plt.figure()
 		if do_fit:
 			plt.loglog (x_fit, y_fit, 'r')
@@ -1147,7 +1147,6 @@ class AdaptiveMagnetometry ():
 		plt.loglog (self.total_time*1e6, self.sensitivity*1e12, 'ob')
 		plt.xlabel ('total ramsey time [$\mu$s]')
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
-		plt.title('scaling:  '+str('{0:.4f}'.format(b_fit))+' +- '+str('{0:.4f}'.format(b_err)) + '$\mu$T*HZ$^{1/2}$')
 		plt.show()
 		
 	def save(self, folder = None):
@@ -1156,7 +1155,7 @@ class AdaptiveMagnetometry ():
 			folder = self.folder 
 
 		if self.simulated_data:
-			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')_fid0='+str(self.fid0)
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'
 
@@ -1172,6 +1171,10 @@ class AdaptiveMagnetometry ():
 		f.attrs ['thr'] = self.maj_thr
 		f.attrs ['tau0']= self.t0
 		f.attrs['analyzed_N'] = self.analyzed_N
+		f.attrs ['fid0']=self.fid0
+		f.attrs ['fid1']=self.fid1
+		f.attrs ['T2']=self.T2
+
 		pr_grp = f.create_group('probability_densities')
 		msqe_grp = f.create_group('mean_square_error')
 		scaling = f.create_group('scaling')
@@ -1188,6 +1191,8 @@ class AdaptiveMagnetometry ():
 		scaling.create_dataset ('total_time', data = self.total_time)
 		scaling.create_dataset ('scaling_variance_phi', data = self.scaling_variance)
 		scaling.create_dataset ('scaling_sensitivity', data = self.sensitivity)		
+		scaling.attrs['scaling factor'] = self.scaling_factor
+		scaling.attrs['error scaling factor'] = self.error_scaling_factor
 
 		f.close()
 		print 'Data saved!'
