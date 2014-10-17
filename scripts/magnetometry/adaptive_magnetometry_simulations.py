@@ -69,11 +69,11 @@ def simulate_nonadaptive ():
 
 def simulate_sweep_field(M, maj_reps, maj_thr):
 	print '############### Simulate #####################'
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=5, tau0=20e-9)
 	mgnt_exp.set_protocol (M=M, maj_reps = maj_reps, maj_thr = maj_thr)
 	mgnt_exp.set_sweep_params (reps =250, nr_periods = 5, nr_points_per_period=11)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = 0.87, fid1 = 0.02)
-	mgnt_exp.sweep_field_simulation (N=2)
+	#mgnt_exp.sweep_field_simulation (N=2)
 	mgnt_exp.sweep_field_simulation (N=3)
 	mgnt_exp.sweep_field_simulation (N=4)	
 	mgnt_exp.sweep_field_simulation (N=5)
@@ -81,7 +81,7 @@ def simulate_sweep_field(M, maj_reps, maj_thr):
 	#mgnt_exp.sweep_field_simulation (N=7)
 	plt.figure()
 	mgnt_exp.plot_msqe_dictionary()
-	mgnt_exp.plot_scaling()
+	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 
 
