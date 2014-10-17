@@ -19,7 +19,6 @@ def get_photons(pqf):
     
     return is_photon_0, is_photon_1
 
-
 def get_markers(pqf, chan):
     """
     returns a filter (1d-array): whether events are markers on the given channel
