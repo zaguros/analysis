@@ -6,8 +6,8 @@ def adaptive_table(tau0=1e-9):
 
 	print '******* Generating ADAPTIVE TABLE *********'
 	print
-	for n in np.arange(10)+1:
-		for m in [4]:
+	for n in [1]:
+		for m in [1,2,3,4,5]:
 			
 			print '##### N = '+str(n)+' --- M = '+str(m)
 			
