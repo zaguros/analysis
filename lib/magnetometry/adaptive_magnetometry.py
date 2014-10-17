@@ -969,11 +969,18 @@ class AdaptiveMagnetometry ():
 		delta_f = 1./(self.t0*(2**N))
 		nr_available_periods = 2**N
 
-		if (self.nr_periods>nr_available_periods):
-		    self.nr_periods = nr_available_periods
+		if (self.nr_periods == None):
+			self.nr_periods = int(N^(3/2))
 
-		periods = np.sort(np.unique(np.random.randint(0, nr_available_periods, size=self.nr_periods)-nr_available_periods/2))
-		self.nr_periods =len(periods)
+		if (self.nr_periods>nr_available_periods):
+			nr_periods = nr_available_periods
+		else:
+			nr_periods = self.nr_periods
+
+		periods = (np.unique(np.random.randint(0, nr_available_periods, size=nr_periods*3)-nr_available_periods/2))
+		if (len(periods)>nr_periods):
+			periods = periods [:nr_periods]
+		periods = np.sort(periods)
 		B_values = np.array([])
 		label_array = []
 		for per in periods:
