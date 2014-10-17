@@ -10,7 +10,7 @@ import logging, time
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence
+from analysis.lib.m2.ssro import  sequence
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr, common
 from analysis.lib.tools import plot
@@ -18,7 +18,7 @@ from analysis.lib.tools import compare_functions as compare
 from analysis.lib.m2 import m2
 from matplotlib import rc, cm
 
-reload(sequence)
+#reload(sequence)
 reload(compare)
 reload(toolbox)
 
@@ -750,7 +750,7 @@ class RamseySequence_Exp (RamseySequence):
 
 	def load_exp_data (self):
 
-		a = sequence.SequenceAnalysis(self.folder)
+		a = sequence.MagnetometrySequenceAnalysis(self.folder)
 		a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 
@@ -1038,7 +1038,7 @@ class AdaptiveMagnetometry ():
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
-						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=True)
+						beta, prob, err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=False)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
 					msqe [ind] = err

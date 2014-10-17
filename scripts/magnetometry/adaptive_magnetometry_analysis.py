@@ -10,7 +10,7 @@ import logging, time
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-from analysis.lib.m2.ssro import sequence
+from analysis.lib.m2.ssro import  sequence
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
@@ -135,9 +135,9 @@ def temporal_evolution_B(label, nr):
 def analyze_sweep_field():
 
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=7, tau0=20e-9)
-	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
+	mgnt_exp.set_protocol (M=3, maj_reps = 7, maj_thr = 2)
 	mgnt_exp.set_sweep_params (nr_periods = 2, nr_points_per_period=7)
-	#mgnt_exp.load_sweep_field_data (N=2)
+	mgnt_exp.load_sweep_field_data (N=2)
 	mgnt_exp.load_sweep_field_data (N=3)
 	mgnt_exp.load_sweep_field_data (N=4)
 	mgnt_exp.load_sweep_field_data (N=5)
