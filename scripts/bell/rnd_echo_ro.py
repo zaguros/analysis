@@ -28,8 +28,9 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=9840, **kw):
     ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('FastSSRO'))
     
     roc = error.SingleQubitROC()
-    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (0.9376,0.0034,0.9920,0.0013)
-    print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    #(0.9376,0.0034,0.9920,0.0013)
+    #print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
     ##ssro.get_SSRO_calibration(ssro_calib_folder, ro_duration)
     
     fig, ax = plt.subplots(1,1, figsize=(4.5,4))
