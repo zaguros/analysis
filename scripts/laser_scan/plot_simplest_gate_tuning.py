@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-from measurement.lib.tools import toolbox
 from analysis.lib.nv import nvlevels
 
 
@@ -57,9 +56,9 @@ from analysis.lib.nv import nvlevels
 
 
 gate_V = np.array(
-		 [-18,-36,-54,-72,-90])
-E_y =  	 [67.22,68.42,69.79,71.09,71.23]
-E_x =    [73.2,72.85,72.77,73.01,74.42]
+		 [-0,-9.0,-18.0,-27.0,-36.0])
+E_y =  	 [68.7,68.92,68.17,67.1,65.9]
+E_x =    [76.77,76.37,75.72,74.78,73.82]
 #gate_V = np.array([ -12,	-9,	-6,	0,	0,	0,	5,	9,	18])
 #E_y =  	 [74.37, 74.59, 74.41, 74.35, 74.51, 74.45, 74.51, 74.71, 75.06]
 #E_x =    [77.19, 77.10,  -1, -1 ,-1 , -1 , 76.5, 76.85, 77.93]
@@ -69,10 +68,10 @@ E_x =    [73.2,72.85,72.77,73.01,74.42]
 #Yellow_tuning_on_Ex = [27.82, 28.06, -1,-1,-1,-1, 26.98,28.04, 30.80 ]
 
 
-title= 'the111no1 Sil8 gate 21 during SSRO'
+title= 'the111no2 Sil1 MW during SSRO, gates grounded'
 fig = plt.figure()
 ax = fig.add_subplot(111)
-#ax.set_ylim([73,8])
+#ax.set_xlim([-19,1])
 
 ax.plot(gate_V, E_x, 'bo', ms = 8, label = '$E_x$')
 ax.plot(gate_V, E_y, 'ro', ms = 8, label = '$E_y$')

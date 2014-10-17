@@ -61,6 +61,7 @@ def get_magnet_position(msm1_freq=current_f_msm1,msp1_freq = current_f_msp1,ms =
         print B_field
     if ms is 'plus':
         B_field = convert_f_to_Bz(freq=msp1_freq)
+    print B_field
     if solve_by == 'list':
         d = np.linspace(10.0,10.1,10**5+1) # ! this is the right domain for B around 300 G
         B_field_difference = np.zeros(len(d))

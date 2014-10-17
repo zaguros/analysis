@@ -1440,6 +1440,220 @@ def ZZ_ent_XY_parity():
     Cz_b4  = C_phase_gate(217e-9,4)
     Cz_b1  = C_phase_gate(347e-9,4)
 
+########################
+##### Ideal Experiment###
+########################
+
+B_field = 304.36
+
+def Ren_id_gate_2qb(carbon_nr):
+    tau_Ren = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
+    number_of_pulses_Ren = mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    if carbon_nr == 4:
+        gc = 1
+    else:
+        gc =0
+    Ren, Ren_id = c13_gate_multiqubit([1,4], number_of_pulses_Ren, tau_Ren, B_field, gate_on_C = [gc], return_for_one = True)    
+
+    return Ren_id
+
+def C_id_phase_gate(carbon_nr,phase):
+    if carbon_nr == 4:
+        gc = 1
+    else:
+        gc =0
+    Cp, Cp_id= c13_gate_multiqubit([1,4], 2, 1e6, B_field, gate_on_C = [gc], return_for_one = True)    
+    return Cp_id
+
+
+def initialize_simple_id(rho, carbon):
+
+    yel = qutip.tensor(y,Id,Id)
+    xel = qutip.tensor(x,Id,Id)
+
+    if carbon == 4 :
+        Cz = C_id_phase_gate(4,np.pi/2)
+        Ren = Ren_id_gate_2qb(4)
+        gc = 1
+    if carbon == 1 :
+        Cz = C_id_phase_gate(1,np.pi/2)
+        Ren =Ren_id_gate_2qb(1)
+        gc = 0
+    seq = Ren*Cz*xel*Ren*yel
+
+    rho_init = seq*rho*seq.dag() 
+
+    ## measure electron
+    el0 = qutip.tensor(rho0,Id,Id)
+    rho_init = el0*rho_init*el0.dag()
+
+    # renormalize
+    norm = qutip.fidelity(rho0,rho_init.ptrace([0]))
+    rho_init = 1/norm**2*rho_init
+
+    # multi_qubit_pauli(rho_init.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons initialized')
+    return rho_init
+
+def ZZ_id():
+
+    ### initial state
+    rho_start = qutip.tensor(rho0,rhom,rhom)
+
+    ### initialization
+    rho_init4 = initialize_simple(rho_start,4)
+    rho_init = initialize_simple(rho_init4,1)
+
+    print qutip.fidelity(qutip.tensor(rho0,rho0,rho0),rho_init)**2
+
+    multi_qubit_pauli(rho_init.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons initialized')
+
+    # yel = qutip.tensor(y,Id,Id)
+    # xel = qutip.tensor(x,Id,Id)
+
+    # ## TOMOGRAPHY
+
+    # ## ZI
+    # Cz_a  = C_phase_gate(267e-9,8)
+    # Ren = Ren_gate_2qb(4)
+    # Cz_b  = C_phase_gate(224e-9,8)
+
+    # seq = xel*Ren*Cz_b*yel*Ren*Cz_a
+
+    # rho_final = seq*rho_init*seq.dag()
+
+    # el_state = rho_final.ptrace(0)
+    # print 'ZI expectation'
+    # print (qutip.fidelity(rho0,el_state)**2*2-1)
+    
+    # ## IZ
+    # Cz_a  = C_phase_gate(347e-9,4)
+    # Ren = Ren_gate_2qb(1)
+    # Cz_b  = C_phase_gate(227e-9,8)
+
+    # seq = xel*Ren*Cz_b*yel*Ren*Cz_a
+
+    # rho_final = seq*rho_init*seq.dag()
+
+    # el_state = rho_final.ptrace(0)
+    # print 'IZ expectation'
+    # print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+    # ## ZZ
+    # Cz_a4  = C_phase_gate(267e-9,8)
+    # Cz_a1  = C_phase_gate(270e-9,8)
+    
+    # Cz_b4  = C_phase_gate(193e-9,4)
+    # Cz_b1  = C_phase_gate(260e-9,4)
+
+    # Ren4 = Ren_gate_2qb(4)
+    # Ren1 = Ren_gate_2qb(1)
+
+    # seq = yel*Ren1*Cz_b1*Ren4*Cz_b4*yel*Ren1*Cz_a1*Ren4*Cz_a4
+
+    # rho_final = seq*rho_init*seq.dag()
+
+    # el_state = rho_final.ptrace(0)
+    # print 'ZZ expectation'
+    # print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+def ZZ_ent_id():
+
+    ### initial state
+    rho_start = qutip.tensor(rho0,rhom,rhom)
+
+    ### initialization
+    rho_init4 = initialize_simple_id(rho_start,4)
+    rho_init = initialize_simple_id(rho_init4,1)
+
+    print qutip.fidelity(qutip.tensor(rho0,rho0,rho0),rho_init)**2
+    yC1 = qutip.tensor(Id,y,Id)
+    xC1 = qutip.tensor(Id,x,Id)
+
+    yC2 = qutip.tensor(Id,Id,y)
+    xC2 = qutip.tensor(Id,Id,x)
+
+    ###initialize in YY
+    
+    rho_init = xC1*xC2*rho_init*(xC1*xC2).dag()
+
+    multi_qubit_pauli(rho_init.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons initialized')
+
+    yel = qutip.tensor(y,Id,Id)
+    xel = qutip.tensor(x,Id,Id)
+
+
+
+    Ren4 = Ren_id_gate_2qb(4)
+    Ren1 = Ren_id_gate_2qb(1)
+    ### parity msmt
+    
+    Cz4  = C_id_phase_gate(4,np.pi/2)
+    Cz1  = C_id_phase_gate(1,np.pi/2)
+
+
+
+    seq = yel*Ren1*Ren4*yel
+
+    rho_parity = seq*rho_init*seq.dag()    
+
+    ## measure electron in 0
+    el0 = qutip.tensor(rho0,Id,Id)
+    rho_parity0 = el0*rho_parity*el0.dag()
+
+    ## renormalize
+    norm = qutip.fidelity(rho0,rho_parity0.ptrace([0]))
+    rho_parity0 = 1/norm**2*rho_parity0
+
+    
+    multi_qubit_pauli(rho_parity0.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons after parity  in 0')
+    
+    ## measure electron in 1
+    el1 = qutip.tensor(rho1,Id,Id)
+    rho_parity1 = el1*rho_parity*el1.dag()
+
+    ## renormalize
+    norm = qutip.fidelity(rho1,rho_parity1.ptrace([0]))
+    rho_parity1 = 1/norm**2*rho_parity1
+
+    
+    multi_qubit_pauli(rho_parity1.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons after parity msmst in 1')
+
+    ### TOMOGRAPHY
+
+    ## XX
+    ii =0
+    for rho_parity in [rho_parity0,rho_parity1]:
+        print 'electron measured in '+str(ii)
+        ii+=1
+        seq = yel*Ren1*Ren4*yel
+
+        rho_final = seq*rho_parity*seq.dag()
+
+        el_state = rho_final.ptrace(0)
+        print 'XX expectation'
+        print (qutip.fidelity(rho0,el_state)**2*2-1)
+     
+        ## YY
+
+        seq = yel*Ren1*Cz1*Ren4*Cz4*yel
+
+        rho_final = seq*rho_parity*seq.dag()
+
+        el_state = rho_final.ptrace(0)
+        print 'YY expectation'
+        print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+        ## ZZ
+
+        seq = yel*Ren1*Cz1*Ren4*Cz4*yel*Ren1*Ren4
+
+        rho_final = seq*rho_parity*seq.dag()
+
+        el_state = rho_final.ptrace(0)
+        print 'ZZ expectation'
+        print (qutip.fidelity(rho0,el_state)**2*2-1)
+
+
 ######################
 ##### Add other spins#
 ######################
