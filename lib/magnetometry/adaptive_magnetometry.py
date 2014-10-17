@@ -130,8 +130,13 @@ class RamseySequence():
 		
 		ind = 0		
 		for j in np.arange(self.reps):
-			curr_msmnt = self.msmnt_results [j, :]
-			curr_phases = self.msmnt_phases [j, :]
+
+			if (self.N>1):
+				curr_msmnt = self.msmnt_results [j, :]
+				curr_phases = self.msmnt_phases [j, :]
+			else:
+				curr_msmnt = np.array(self.msmnt_results [j])
+				curr_phases = np.array(self.msmnt_phases [j])
 			
 			found = 0
 			for k in self.msmnt_dict:
@@ -189,7 +194,12 @@ class RamseySequence():
 			
 		prob = np.ones(self.n_points)
 		beta = np.linspace (-self.B_max, self.B_max, self.n_points)
-		N_max = len(msmnt_results)
+		try:
+			N_max = len(msmnt_results)
+		except:
+			N_max=1
+			msmnt_results = np.array([msmnt_results])
+
 		for n in np.arange(N_max) +(self.N-N_max):
 			q = 2*np.pi*beta*times[n]*self.t0+phase[n]
 			dec = np.exp(-(times[n]*self.t0/self.T2)**2)
@@ -755,7 +765,12 @@ class RamseySequence_Exp (RamseySequence):
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 
 		self.msmnt_results = a.clicks
-		self.reps, self.N = np.shape (a.clicks)
+
+		if ((np.shape(np.shape(a.clicks)))[0]==1):
+			self.reps = len(a.clicks)
+			self.N = 1
+		else:
+			self.reps, self.N = np.shape (a.clicks)
 		self.n_points =  2**(self.N+3)
 		self.t0 = a.t0
 		self.B_max = 1./(2*self.t0)
@@ -775,29 +790,30 @@ class RamseySequence_Exp (RamseySequence):
 
 	def CR_after_postselection(self):
 
-		print '--CR_after_postelection---'
-		#for i in np.arange(20):
-		#	print '---',i, ' ---'
-		#	print self.msmnt_results[i,:], self.CR_after[i,:]
+		if (self.N>1):
+			print '--CR_after_postelection---'
+			#for i in np.arange(20):
+			#	print '---',i, ' ---'
+			#	print self.msmnt_results[i,:], self.CR_after[i,:]
 
-		res = np.copy(self.msmnt_results)
-		phases = np.copy(self.msmnt_phases)
-		self.discarded_elements = []
-		new_results = np.zeros((self.reps, self.N))
-		new_phases = np.zeros((self.reps, self.N))
-		rep = 0
-		for j in np.arange(self.reps):
-			if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
-				new_results[rep,:] = np.copy(res[j,:])
-				new_phases[rep,:] = np.copy(phases[j,:])
-				rep = rep + 1
-			else:
-				self.discarded_elements.append(j)
-		self.reps = rep
-		self.msmnt_results =new_results[:self.reps,:]
-		self.msmnt_phases =  new_phases[:self.reps,:]
-		#print np.shape(self.msmnt_results)
-		print 'Discarded elements: ', self.discarded_elements
+			res = np.copy(self.msmnt_results)
+			phases = np.copy(self.msmnt_phases)
+			self.discarded_elements = []
+			new_results = np.zeros((self.reps, self.N))
+			new_phases = np.zeros((self.reps, self.N))
+			rep = 0
+			for j in np.arange(self.reps):
+				if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+					new_results[rep,:] = np.copy(res[j,:])
+					new_phases[rep,:] = np.copy(phases[j,:])
+					rep = rep + 1
+				else:
+					self.discarded_elements.append(j)
+			self.reps = rep
+			self.msmnt_results =new_results[:self.reps,:]
+			self.msmnt_phases =  new_phases[:self.reps,:]
+			#print np.shape(self.msmnt_results)
+			print 'Discarded elements: ', self.discarded_elements
 		#print '#### AFTER ####'
 		#for i in np.arange(20):
 		#	print '---',i, ' ---'
@@ -1203,7 +1219,7 @@ class AdaptiveMagnetometry ():
 		f = h5py.File(os.path.join(self.folder, name),'r')
 
 		self.M = f.attrs['M']
-		self.maj_reps = f.attrs ['maj_reps']
+		self.maj_reps = f.fattrs ['maj_reps']
 		self.maj_thr = f.attrs ['thr']
 		self.t0 = f.attrs ['tau0']
 		self.analyzed_N = f.attrs['analyzed_N']
