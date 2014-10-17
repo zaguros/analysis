@@ -972,7 +972,7 @@ class AdaptiveMagnetometry ():
 		if (self.nr_periods>nr_available_periods):
 		    self.nr_periods = nr_available_periods
 
-		periods = np.unique(np.random.randint(0, nr_available_periods, size=self.nr_periods)-nr_available_periods/2)
+		periods = np.sort(np.unique(np.random.randint(0, nr_available_periods, size=self.nr_periods)-nr_available_periods/2))
 		self.nr_periods =len(periods)
 		B_values = np.array([])
 		label_array = []
@@ -1051,51 +1051,32 @@ class AdaptiveMagnetometry ():
 				ind +=1
 		self.results_dict[str(N)] = {'B_field':B_field, 'msqe':msqe, 'M':self.M, 'maj_reps':self.maj_reps, 'maj_thr':self.maj_thr}
 
-	def plot_msqe_dictionary(self,y_log=False):
+	def plot_msqe_dictionary(self,y_log=False, save_plot=False):
+
+		if self.simulated_data:
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')_fid0='+str(self.fid0)+'.png'
+		else:
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'+'_fid0='+str(self.fid0)+'.png'
 
 		C = compare.compare_functions()
 		C.xlabel = 'magnetic field detuning [MHz]'
 		C.ylabel = 'mean square error [MHz^2]'
 		for n in self.analyzed_N:	
-			print 'plotting N=', n
 			C.add (x =self.results_dict[str(n)]['B_field']*1e-6, y=self.results_dict[str(n)]['msqe'], label=str(n))
-		C.plot(y_log=y_log)
+		fig = C.plot(y_log=y_log)
+		if save_plot:
+			savepath = os.path.join(self.folder, fName)
+			fig.savefig(savepath)
+
 
 	def sweep_field (self, do_simulate = True):
 	
 		for n in np.arange(self.N)+1:
 			self.sweep_field_fixedN (N=n, do_simulate = do_simulate)
 			
-	def plot_msqe (self, N=[]):
-		r = compare_functions()	
-		r.xlabel = 'field [MHz]'
-		r.ylabel = 'mean square error'
-		r.title = 'N = '+str(self.N)+', M = '+str(self.M)+', sweep magnetic field'
-		for n in []:
-			r.add (x=self.B_values[n-1,:], y=self.results[n-1, :], legend = str(n))
-		r.log_plot=log_plot
-		r.plot()
 
-
-	def plot_scaling (self):
-		self.scaling_variance=[]
-		self.total_time=[]
-		for i,n in enumerate(self.analyzed_N):
-			
-			msqe = self.results_dict[str(n)]['msqe']
-			self.scaling_variance.append(np.mean(msqe))
-			self.total_time.append(self.M*self.maj_reps*(2**(n+1)-1))
-		
-		self.total_time = np.array(self.total_time)
-		self.scaling_variance=np.array(self.scaling_variance)
-		plt.figure()
-		plt.loglog (self.total_time*self.t0*1e6, self.scaling_variance*self.total_time, 'b')
-		plt.loglog (self.total_time*self.t0*1e6, self.scaling_variance*self.total_time, 'ob')
-		plt.xlabel ('total ramsey time [$\mu$s]')
-		plt.ylabel ('$V_H*T$')
-		plt.show()
-
-	def plot_sensitivity_scaling (self, do_fit = True):
+	def calculate_scaling (self):
+		print 'Calculating scaling ... '
 		self.scaling_variance=[]
 		self.total_time=[]
 		for i,n in enumerate(self.analyzed_N):
@@ -1106,22 +1087,52 @@ class AdaptiveMagnetometry ():
 		
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
-
 		self.sensitivity = (self.total_time*self.scaling_variance)/((2*np.pi*self.gamma_e*self.t0)**2)
 
+	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
+		if (self.scaling_variance == []):
+			self.calculate_scaling()
+
+		if self.simulated_data:
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')_fid0='+str(self.fid0)+'.png'
+		else:
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_M='+str(self.M)+'_maj=('+str(self.maj_reps)+','+str(self.maj_thr)+')'+'_fid0='+str(self.fid0)+'.png'
+
+
+		plt.figure()
+		plt.loglog (self.total_time*1e6, self.sensitivity*1e12, 'ob')
+		plt.xlabel ('total ramsey time [$\mu$s]')
+		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
+		plt.show()
+
+		x0 = np.log10(self.total_time*1e6)
+		y0 = np.log10(self.sensitivity*1e12)
+		x0 = self.total_time*1e6
+		y0 = self.sensitivity*1e12
+
+		a = raw_input('Do you want to use a sub-set of points for the fit? [y/n]')
+		if (a=='y'):
+			n0 = raw_input ('First [1-'+str(len(self.analyzed_N))+'] = ?')
+			n1 = raw_input ('Last [1-'+str(len(self.analyzed_N))+'] = ?')
+			n0 = int(n0)
+			n1 = int(n1)
+			x0 = np.log10(self.total_time[n0-1:n1-1]*1e6)
+			y0 = np.log10(self.sensitivity[n0-1:n1-1]*1e12)
+			x = self.total_time*1e6
+			y = self.sensitivity*1e12
+
 		try:
-			guess_b = 1e6*(self.sensitivity [1]-self.sensitivity[0])/(self.total_time[1]-self.total_time[0])
-			guess_a = 1
+			guess_b = (y0[1]-y0[0])/(x0[1]-x0[0])
+			guess_a = y0[0]+guess_b*x0[0]
 			a = fit.Parameter(guess_a, 'a')
 			b = fit.Parameter(guess_b, 'b')
 			p0 = [a, b]
 			fitfunc_str = ''
 
 			def fitfunc(x):
-				return (a()-b()*x)
+				return np.exp(a())*(x**(-b()))
 
-			x = np.log10(self.total_time*1e6)
-			y = np.log10(self.sensitivity*1e12)
+
 			fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
                 	do_print=False, ret=True)
 			a_fit = fit_result['params_dict']['a']
@@ -1139,14 +1150,19 @@ class AdaptiveMagnetometry ():
 		self.scaling_factor = b_fit
 		self.error_scaling_factor = b_err
 
-		plt.figure()
+		fig = plt.figure(figsize=(8,6))
+		p = fig.add_subplot(1,1,1)
+		p.tick_params(axis='both', which='major', labelsize=15)
 		if do_fit:
-			plt.loglog (x_fit, y_fit, 'r')
-			plt.title('scaling:  '+str('{0:.4f}'.format(b_fit))+' +- '+str('{0:.4f}'.format(b_err)) + '$\mu$T*HZ$^{1/2}$')
+			p.loglog (x_fit, y_fit, 'r')
+			plt.title('scaling:  '+str('{0:.2f}'.format(b_fit))+' +- '+str('{0:.2f}'.format(b_err)) + '$\mu$T*Hz$^{1/2}$', fontsize=15)
+		p.loglog (self.total_time*1e6, self.sensitivity*1e12, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
+		plt.xlabel ('total ramsey time [$\mu$s]', fontsize=15)
+		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]', fontsize=15)
+		if save_plot:
+			savepath = os.path.join(self.folder, fName)
+			fig.savefig(savepath)
 
-		plt.loglog (self.total_time*1e6, self.sensitivity*1e12, 'ob')
-		plt.xlabel ('total ramsey time [$\mu$s]')
-		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
 		plt.show()
 		
 	def save(self, folder = None):
@@ -1207,6 +1223,10 @@ class AdaptiveMagnetometry ():
 		self.maj_thr = f.attrs ['thr']
 		self.t0 = f.attrs ['tau0']
 		self.analyzed_N = f.attrs['analyzed_N']
+		self.fid0 = f.attrs ['fid0']
+		self.fid1 = f.attrs ['fid1']
+		self.T2 = f.attrs ['T2']
+
 		pr_grp = f['/probability_densities']
 		msqe_grp = f['/mean_square_error']
 
