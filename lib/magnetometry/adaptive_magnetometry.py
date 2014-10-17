@@ -296,7 +296,7 @@ class RamseySequence():
 			plt.ylim((1e-10,1e-1))
 			plt.xlabel ('magnetic field detuning [MHz]')
 			plt.ylabel ('prob distrib')
-			plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz')
+			plt.title('(B_exp = '+str('{0:.4f}'.format(mean_fB))+' +- '+str('{0:.4f}'.format(sigma_fB)) + ') MHz')
 			if not(xlim==None):
 				plt.xlim(xlim)
 
@@ -1027,7 +1027,7 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				label = 'N='+str(N)+'_M='+str(self.M)+'_majReps='+str(self.maj_reps)+'_majThr='+str(self.maj_thr)+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
-				f = toolbox.latest_data(contains=label)
+				f = toolbox.latest_data(contains=label)#,older_than='20141015_113000',newer_than='20141014_150000')
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
