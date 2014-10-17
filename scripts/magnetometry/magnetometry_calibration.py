@@ -16,30 +16,6 @@ reload(sequence)
 ### settings
 timestamp = None#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
-def adaptive_analysis (folder):
-
-    #if ax == None:
-    #    fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
-    print ssro_calib_folder
-    a = sequence.SequenceAnalysis(folder)
-  
-    RO_data, phase = a.get_magnetometry_results(name='adwindata')
-    print RO_data
-    print phase
-    phase_values = np.unique(phase)
-    ssro_results = np.zeros(len(phase_values))
-    ind = 0
-    for j in phase_values:
-        multiplicity = len(np.where(phase==j)[0])
-        ssro_results [ind] = np.sum(RO_data[np.where(phase==j)])/(multiplicity+0.)
-        ind = ind+1
-        print 'phase value ', j, ' is present ', multiplicity, ' times'
-
-
-    plt.plot(phase_values, ssro_results)
-    plt.show()    
-    return ssro_results
 
 def fpga_calibration_analysis (folder):
 
@@ -48,7 +24,7 @@ def fpga_calibration_analysis (folder):
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     t=a.get_magnetometry_data(name='adwindata')
-    print 'a clicks', np.sum(a.clicks, axis=0)
+    #print 'a clicks', np.sum(a.clicks, axis=0)
     a.get_electron_ROC()
     y = a.p0
     uy = a.u_p0
@@ -67,32 +43,32 @@ def fpga_calibration_analysis (folder):
     ax = a.plot_result_vs_sweepparam(ret='ax')
 
     do_fit = True
-    do_fit2 = False
+    do_fit2 = False 
 
     if do_fit:
-        guess_frq = 1./3500
-        guess_amp = 0.3
+        guess_frq = 1/360.
+        guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.
-        guess_phi = 0.
-        guess_k = 0.
+        guess_phi = 180
+        guess_Tdec = 96000.
 
 
         o = fit.Parameter(guess_of, 'o')
         f = fit.Parameter(guess_frq, 'f')
         A = fit.Parameter(guess_amp, 'A')
         phi = fit.Parameter(guess_phi, 'phi')
-        k = fit.Parameter(guess_k, 'k')
-        p0 = [f, A, phi, o, k]
+        Tdec = fit.Parameter(guess_Tdec, 'Tdec')
+        p0 = [f, A, phi, o, Tdec]
         fitfunc_str = ''
 
 
-        fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
+        fitfunc_str = 'o - A + A*e^(-(x/Tdec)**2)*cos(2pi (fx-phi))'
 
         def fitfunc(x):
-            return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
+            return (o()-np.abs(A())) + np.abs(A()) * np.exp(-(x/Tdec())**2) * np.cos(2*np.pi*(f()*x - phi()/360.))
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[3,4],
                 do_print=True, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
                 plot_data=False)
@@ -101,7 +77,7 @@ def fpga_calibration_analysis (folder):
         plt.savefig(os.path.join(folder, 'fpga_pulse_analysis_fit.png'))
 
     if do_fit2:
-        guess_frq = 1./80
+        guess_frq = 1./360
         guess_amp = 0.3
         guess_of = 0.5
         guess_phi = 0.
@@ -122,7 +98,7 @@ def fpga_calibration_analysis (folder):
         phi2 = fit.Parameter(guess_phi, 'phi')
         p0 = [f, A, phi, o, f2, A2, phi2]
 
-        fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
+        fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'
 
         def fitfunc(x):
             return o() + A() * np.exp(np.cos(2*np.pi*(f()*x - phi()))) + A2() * np.exp(np.cos(2*np.pi*(f2()*x - phi2()))) 
@@ -213,7 +189,7 @@ if __name__ == '__main__':
         folder = toolbox.latest_data('adptv_estimation')
     print folder
 
-    #v = load_scope_trace(fName='M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/oscilloscope_traces/003.csv')    
+    v = load_scope_trace(fName='M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/oscilloscope_traces/003.csv')    
     #plt.plot (v)
     #plt.show()
 

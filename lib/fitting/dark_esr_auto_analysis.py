@@ -14,12 +14,13 @@ def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-min_dip_depth = 0.85, 
+min_dip_depth = 0.90, 
 timestamp = None,
 add_folder = None,
 ret='f0',
 ssro_calib_folder='',
 do_save=False,
+sweep_direction = 'right',
 **kw):
 
     if timestamp != None:
@@ -49,7 +50,19 @@ do_save=False,
     print y[21]
     k = len(y)
     print 'min_dip_depth = ' + str(min_dip_depth)
-    while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
+    
+
+    ### Option to make the dip search sweep towards left or right, usefull in case of N polarization
+    if sweep_direction == 'left':
+        y1 = y[::-1]
+        x1 = x[::-1]
+        guess_splitN = -1*guess_splitN
+    elif sweep_direction == 'right':
+        y1 = y
+        x1 = x
+
+
+    while y1[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
         k = j
         j += 1
     #j = len(y)-2
@@ -57,7 +70,8 @@ do_save=False,
         print 'Could not find dip'
         return
     else:
-        guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
+        guess_ctr = x1[k]+ guess_splitN #convert to GHz and go to middle dip
+
         print 'guess_ctr= '+str(guess_ctr)
         print 'k'+str(k)
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
@@ -84,7 +98,7 @@ do_save=False,
         u_f0 = fit_result['error_dict']['x0']
         return f0, u_f0
 
-def analyze_dark_esr_single(guess_ctr, 
+def analyze_dark_esr_single( 
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,

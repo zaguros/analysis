@@ -13,7 +13,7 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,20,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
-def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
+def get_ES_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False,transitions=True):
     """
     Returns the six energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
@@ -23,7 +23,7 @@ def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
     offset=np.min([Ey,Ex])+strain
     if fast:
         return np.sort(get_ES_fast(offset,strain,transitions=transitions))
-    return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
+    return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,transitions=transitions)[0])
 
 def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
                             show_FB_A_transitions=True, show_E_prime_flip_transitions=True):
@@ -52,13 +52,13 @@ def get_ES_fast(f0,D,transitions=True):
                      f0 - ms1_off + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
                      f0 - ms1_off + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
 
-def get_ES_ExEy_plottable(Ex,Ey,height):
+def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
     """
     Returns an array plottable with qt.Plot2D of the six transition energies 
     in GHz of the ES of the NV centre, when given the Energies of the Ex and 
     Ey transitions in GHz
     """
-    x=get_ES_ExEy(Ex,Ey)
+    x=get_ES_ExEy(Ex,Ey,B_field=B_field)
     y=np.zeros(3*len(x))
     for ii in range(len(x)):
         x=np.append(x,x[ii]-0.0001)
@@ -347,17 +347,21 @@ def mixing_probability(T):
     return jtmix
 
     # 1/(2+1/(c1*T(i)^5))
-def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2):
+def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, verbose=False):
 
     delta_strain_splitting = (2.*(F_Y - F_Y_0 + a*(F_Ey_0 - F_Ey)))/(a + b)
     #delta_strain_offset = (F_Y - F_Y_0 - b*F_Ey_0 + b*F_Ey)/(a + b)
     new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    if verbose:
+        print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
     return get_ES_ExEy(F_Ey, F_Ey+new_strain_splitting)
 
-def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2):
+def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, verbose=False):
 
     delta_strain_splitting = (2.*(-F_Y + F_Y_0 + a*(-F_Ex_0 + F_Ex)))/(a - b)
 
     new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    if verbose:
+        print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
     return get_ES_ExEy(F_Ex-new_strain_splitting, F_Ex)
 
