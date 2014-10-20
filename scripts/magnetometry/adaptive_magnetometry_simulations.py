@@ -93,8 +93,22 @@ def analyze_saved_simulations (timestamp):
 
 #analyze_saved_simulations (timestamp='20141017_003446')
 
+def simulate_adwin ():
+	set_magnetic_field = (1/20e-9)/(2**5) 
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 5, reps=50, tau0=20e-9)
 
-simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=1)
+	s.T2 = 96e-6
+	s.fid0 = 1.00
+	s.fid1 = 0.00
+	s.renorm_ssro = False
+	s.adwin_algorithm()
+	s.convert_to_dict()
+	s.print_results()
+		
+	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+
+#simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
 '''
 simulate_sweep_field (N=9, M=4, maj_reps=7, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=6, maj_thr=2, fid0=0.87)
@@ -102,3 +116,4 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
+simulate_adwin()
