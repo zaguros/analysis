@@ -52,6 +52,7 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
     if plot_fit == True:
         plot.plot_fit1d(fit_result, np.linspace(0e-6,x[-1],201), ax=ax, 
                 plot_data=False,print_info = True)
+    
     fit.write_to_file(fit_result,folder,fitname = 'Sum of cosine fit') 
 
 
