@@ -23,8 +23,6 @@ class SequenceAnalysis(m2.M2Analysis):
             (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)/len(self.sweep_pts)))**0.5  #this is quite ugly, maybe replace?
         
         return self.normalized_ssro
-<<<<<<< HEAD
-=======
     
     def get_magnetometry_phase_calibration(self, name=''):
 
@@ -81,8 +79,6 @@ class SequenceAnalysis(m2.M2Analysis):
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
             self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  
             
->>>>>>> db5da1a91459c5f07b2a0772adb2df71d4aebbc5
-
 
     def get_cr_results(self, name='', plot=True):
         adwingrp = self.adwingrp(name)   

@@ -10,14 +10,13 @@ reload(plot)
 
 
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], 
-            frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], 
-            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True,fitexp = None):
+            frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], offset = 0.5, 
+            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True, fitexp = None):
     ''' 
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
     '''
-    offset = 0.5
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
@@ -53,7 +52,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[4])
         elif len(frequency) == 2:
             print 'yes'
-            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1])
+            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1], offset)
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[2,3,6,7])
@@ -69,7 +68,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],
 
         ## plot fit
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
+            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
 
         fit_results.append(fit_result)
         ax.set_xlabel('Free evolution time (us)')
@@ -89,6 +88,10 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],
         # print 'Pi2 pulse: %s pulses' %N_pi2
     return fit_results
 
+### PLEASE DO NOT DO THESE KIND OF THINGS BELOW!!!! ### THIS IS A MODULE WITH FUNCTIONS THAT ARE GENERALLY USED
+### DO NO ADD DATA HERE< BUT IMPORT THIS FUNCTION IF YOU NEED IT
+
+
 ######################### RAMSEY T2* ##############################################
 
 # Carbon_Ramsey(timestamp='20140519135216', measurement_name = ['adwindata'], 
@@ -105,21 +108,21 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'],
 
 ######################## RAMSEY 2 freq ##############################################
 
-Carbon_Ramsey(timestamp='20140521164658', measurement_name = ['adwindata'], 
-            frequency = [338e-3,14e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
-            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
+# Carbon_Ramsey(timestamp='20140521164658', measurement_name = ['adwindata'], 
+#             frequency = [338e-3,14e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
+#             fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
 
-Carbon_Ramsey(timestamp='20140521165249', measurement_name = ['adwindata'], 
-            frequency = [305e-3,16e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
-            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
+# Carbon_Ramsey(timestamp='20140521165249', measurement_name = ['adwindata'], 
+#             frequency = [305e-3,16e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
+#             fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
 
-Carbon_Ramsey(timestamp='20140521170735', measurement_name = ['adwindata'], 
-            frequency = [350e-3,27e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
-            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
+# Carbon_Ramsey(timestamp='20140521170735', measurement_name = ['adwindata'], 
+#             frequency = [350e-3,27e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
+#             fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
 
-Carbon_Ramsey(timestamp='20140521162939', measurement_name = ['adwindata'], 
-            frequency = [344e-3,19e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
-            fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
+# Carbon_Ramsey(timestamp='20140521162939', measurement_name = ['adwindata'], 
+#             frequency = [344e-3,19e-3], amplitude = [1,1],  decay_constant = [0.009e6,0.009e6],phase =[0,0], 
+#             fitfunc_type = 'single', plot_fit = True, do_print = False, show_guess = False)
 
 # ######################### RAMSEY simple ##############################################
 

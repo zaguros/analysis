@@ -9,8 +9,14 @@ reload(common)
 
 
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
-        frequency = 1, offset = 0.5, x0 = 0,  amplitude = 0.5,  decay_constant = 200,phase =0, exponent = 2, 
-        plot_fit = False, do_print = False, fixed = [2], show_guess = True):
+            frequency = 1, 
+            offset = 0.5, 
+            x0 = 0,  
+            amplitude = 0.5,  
+            decay_constant = 200, 
+            phase =0, 
+            exponent = 2, 
+            plot_fit = False, do_print = False, fixed = [2], show_guess = True):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -47,8 +53,6 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         ax.plot(x,y)
         p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
                 x0, decay_constant,exponent,frequency ,phase )
-
-
 
         #plot the initial guess
         if show_guess:
