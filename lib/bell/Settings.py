@@ -9,6 +9,7 @@ COLORS = 'RoyalBlue', 'Crimson', 'LimeGreen', 'DarkOrange', 'BlueViolet'
 
 ## setting the photon windows
 first_win_min = 0 # The minimum of the first window
+first_win_min_ch0 = 0 # The minimum of the first window
 first_win_max = 10 # The maximum of the first window, also the minimum of the second window
 second_win_min = 20
 second_win_max = 30 # The maximum of the second window
@@ -29,7 +30,7 @@ dif_win1_win2 = 600
 
 CNTR_PEAK_RANGE = 0
 
-dif_ch0_ch_1 = 10
+dif_ch0_ch1 = 10
 
 """
 Returns all entanglement events. 
