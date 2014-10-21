@@ -136,7 +136,8 @@ def analyze_sweep_field():
 
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=7, tau0=20e-9)
 	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
-	mgnt_exp.set_sweep_params (nr_periods = 2, nr_points_per_period=7)
+	mgnt_exp.set_sweep_params (nr_periods = 1
+		, nr_points_per_period=7)
 	mgnt_exp.set_exp_params (T2=96e-6, fid0=0.87, fid1=1-.975)
 	mgnt_exp.load_sweep_field_data (N=1)
 	mgnt_exp.load_sweep_field_data (N=2)

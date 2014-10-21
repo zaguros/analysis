@@ -11,6 +11,7 @@ import matplotlib.cm as cm
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
+hf = hf_params.SamSIL5_sim_params
 
 ### import the experimental values for tau and N ###
 # import measurement.scripts.lt2_scripts.setup.msmt_params as msmt_params; reload(msmt_params)

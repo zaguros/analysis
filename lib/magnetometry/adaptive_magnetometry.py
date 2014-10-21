@@ -1373,7 +1373,7 @@ class AdaptiveMagnetometry ():
 				return np.exp(a())*(x**(-b()))
 
 
-			fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
+			fit_result = fit.fit1d(x[n0-1:n1-1],y[n0-1:n1-1], None, p0=p0, fitfunc=fitfunc, fixed=[],
                 	do_print=False, ret=True)
 			a_fit = fit_result['params_dict']['a']
 			b_fit = fit_result['params_dict']['b']
@@ -1389,10 +1389,13 @@ class AdaptiveMagnetometry ():
 
 		self.scaling_factor = b_fit
 		self.error_scaling_factor = b_err
-
+		y_SQL=np.exp(a_fit)*(x_fit**(0))
+		y_heis=np.exp(a_fit)*(x_fit**(-1))
 		fig = plt.figure(figsize=(8,6))
 		p = fig.add_subplot(1,1,1)
 		p.tick_params(axis='both', which='major', labelsize=15)
+		p.loglog (x_fit, y_heis, 'Grey')
+		p.loglog (x_fit, y_SQL, 'Grey')
 		if do_fit:
 			p.loglog (x_fit, y_fit, 'r')
 			plt.title('scaling:  '+str('{0:.2f}'.format(b_fit))+' +- '+str('{0:.2f}'.format(b_err)) + '$\mu$T*Hz$^{1/2}$', fontsize=15)
