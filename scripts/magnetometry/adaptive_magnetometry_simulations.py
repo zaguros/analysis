@@ -94,15 +94,16 @@ def analyze_saved_simulations (timestamp):
 #analyze_saved_simulations (timestamp='20141017_003446')
 
 def simulate_adwin ():
-	pp = int(np.random.randint(1, 2**4))
-	set_magnetic_field = pp*(1/20e-9)/(2**5) 
+	N = 7
+	pp = int(np.random.randint(1, 2**(N-1)))
+	set_magnetic_field = pp*(1/20e-9)/(2**N) 
 	print 'B-field:', set_magnetic_field/1e6
-	s = magnetometry.RamseySequence_Adwin (N_msmnts = 7, reps=20, tau0=20e-9)
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = N, reps=20, tau0=20e-9)
 
-	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=1)
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=5)
 	s.T2 = 96e-6
-	s.fid0 = 0.85
-	s.fid1 = 0.02
+	s.fid0 = 1.00
+	s.fid1 = 0.0
 	s.renorm_ssro = False
 	s.maj_reps = 1
 	s.maj_thr = 0

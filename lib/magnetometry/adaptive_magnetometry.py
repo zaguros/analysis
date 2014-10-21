@@ -942,14 +942,14 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 				th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
 
 				for mmm in np.arange(self.M):
-					meas_res = self.ramsey (theta=th[n], t = t[n]*self.t0)
+					meas_res = self.ramsey (theta=th[n], t = 2**(self.N-n)*self.t0)
 					m[n] = m[n] + meas_res
 					cn = meas_res*np.pi+th[n]
 					p0_real = np.copy (p_real)
 					p0_imag = np.copy (p_imag)
 					k = t[n]
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [t[n-1]]) - np.sin(cn)*(p0_imag [0] - p0_imag [t[n-1]])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [t[n-1]]) + np.sin(cn)*(p0_real [0] - p0_real [t[n-1]])) 
+					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2**(self.N-n+1)]) - np.sin(cn)*(p0_imag [0] - p0_imag [2**(self.N-n+1)])) 
+					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2**(self.N-n+1)]) + np.sin(cn)*(p0_real [0] - p0_real [2**(self.N-n+1)])) 
 			self.msmnt_results [rep, :] = m[1:]
 			self.msmnt_phases [rep, :] = th[1:]
 			self.msmnt_times = t [1:]
