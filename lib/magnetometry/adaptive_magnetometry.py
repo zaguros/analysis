@@ -643,6 +643,44 @@ class RamseySequence_Simulation (RamseySequence):
 
 
 
+	def adwin_algorithm (self, debug = False):
+
+		discr_steps = 2**(self.N+2)+1
+		m = np.zeros (self.N+1)
+		t = np.zeros (self.N+1)
+		th = np.zeros(self.N+1)
+		self.msmnt_phases = np.zeros((self.reps,self.N))
+		self.msmnt_times = np.zeros(self.N)
+		self.msmnt_results = np.zeros((self.reps,self.N))
+		
+		for rep in np.arange(self.reps):
+			p_real = np.zeros (discr_steps)
+			p_imag = np.zeros (discr_steps)
+			p_real [2**(self.N+1)] = 1./(2*np.pi)
+
+			curr_phase = 0
+			for n in np.arange(self.N)+1:
+				t[n] = 2**(self.N-n)
+				k_opt = -2**(self.N-n+1)+2**(self.N+1)
+				th[n] = -0.5*np.angle(1j*p_imag[k_opt]+p_real[k_opt])
+				m[n] = self.ramsey (theta=th[n], t = t[n]*self.t0)
+
+				if debug:
+					print '### n =', n
+					print 't = ', t[n], '  theta = ', th[n]*180./np.pi, '  --- res: ', m[n] 
+				#update rule:
+				cn = m[n]*np.pi+th[n]
+				p0_real = np.copy (p_real)
+				p0_imag = np.copy (p_imag)
+
+				for k in np.arange(2**self.N, 3*2**self.N):
+					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(p0_imag [k-t[n]] - p0_imag [k+t[n]])) 
+					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [k-t[n]] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
+
+			self.msmnt_results [rep, :] = m[1:]
+			self.msmnt_phases [rep, :] = th[1:]
+			self.msmnt_times = t [1:]
+
 			
 	def load_table (self, N, M):
 		ttt = int(np.round(self.t0*1e9))
