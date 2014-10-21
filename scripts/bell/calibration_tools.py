@@ -79,23 +79,24 @@ def fit_gaussian(folder=None, ax = None, x0_guess=0., a_guess=0.5, c_guess=15):
 
     return fit_result
 
-def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.):
+def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,**kw):
     """
     fit (1-of) + a (x-x0)**2 from Sequence in folder
     """
+    do_print      = kw.pop('do_print', False)
     a, ax, x, y = plot_result(folder,ax)
     x0 = fit.Parameter(x0_guess, 'x0')
     of = fit.Parameter(of_guess, 'of')
     a = fit.Parameter(a_guess, 'a')
+
     fitfunc_str = '(1-of) + a (x-x0)**2'
-    
     def fitfunc_parabolic(x):
         return (1.-of()) + a() * (x-x0())**2
     
     fit_result = fit.fit1d(x,y, None, p0=[of, a, x0], fitfunc=fitfunc_parabolic,
-        fitfunc_str=fitfunc_str, do_print=True, ret=True)
+        fitfunc_str=fitfunc_str, do_print=do_print, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
-        plot_data=False)
+        plot_data=False, **kw)
         
     return fit_result
 

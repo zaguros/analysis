@@ -13,7 +13,7 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,20,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
-def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
+def get_ES_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False,transitions=True):
     """
     Returns the six energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
@@ -23,7 +23,7 @@ def get_ES_ExEy(Ex,Ey,fast=False,transitions=True):
     offset=np.min([Ey,Ex])+strain
     if fast:
         return np.sort(get_ES_fast(offset,strain,transitions=transitions))
-    return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
+    return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,transitions=transitions)[0])
 
 def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
                             show_FB_A_transitions=True, show_E_prime_flip_transitions=True):
@@ -52,13 +52,13 @@ def get_ES_fast(f0,D,transitions=True):
                      f0 - ms1_off + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
                      f0 - ms1_off + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
 
-def get_ES_ExEy_plottable(Ex,Ey,height):
+def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
     """
     Returns an array plottable with qt.Plot2D of the six transition energies 
     in GHz of the ES of the NV centre, when given the Energies of the Ex and 
     Ey transitions in GHz
     """
-    x=get_ES_ExEy(Ex,Ey)
+    x=get_ES_ExEy(Ex,Ey,B_field=B_field)
     y=np.zeros(3*len(x))
     for ii in range(len(x)):
         x=np.append(x,x[ii]-0.0001)
@@ -97,6 +97,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     """
     # [1]: Doherty, M. W. et al. Physics Reports 528, 1-45 (2013)
     # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
+    # [3]: Bassett, L. C. et al. Science 1255541 (2014). doi:10.1126/science.1255541
     # see also:
     # Doherty, M. W., Manson, N. B., Delaney, P. and Hollenberg, L. C. L. New J. Phys. 13, 025019 (2011).
     # K:\ns\qt\Diamond\Reports and Theses\MSc\Bas Hensen\Hensen_msc_mail 2011-10-07.pdf
@@ -111,16 +112,17 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     Bz = mu_B*B_field[2]*1e-4 #GHz
     
     #Bfield
-    lambdaA2=.1                  #observed, [1]   
-    g_es_par = 2.                #RT value, likely to be different at LT! [1]
-    g_es_ort = 2.                #RT value, likely to be different at LT! [1]              
+    lambdaA2=.1                  #observed, [1], however some discussion in supplementary material of [3] 
+                                 #also, it might miss a factor 0.5! ie lambdaA2=0.05 
+    g_es_par = 2.15              #observed, [3], also 2.00 RT value, likely to be different at LT! [1]
+    g_es_ort = 2.                 #RT value, likely to be different at LT! [1]              
 
     lambda_par=5.3               #observed, [1] 
     #lambda_ort_2=1.5*lambda_par #unknown, calculated by [2]
-    D1A1=2.88/3                  #observed, [1]
+    D1A1=2.878/3                 #observed, [1][3]
     D2A1=1.42/3                  #observed, [1]
-    D2E1=1.55/2                  #observed, [1]
-    D2E2=.2/np.sqrt(2)           #observed, [1] AKA lambda_es_ort
+    D2E1=1.54/2                  #observed, [1][3]
+    D2E2=0.150/np.sqrt(2)        #observed, [1][3] AKA lambda_es_ort
 
     w2=np.sqrt(2)
     
@@ -149,7 +151,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
    
    
     if kw.pop('transitions', False):
-        print 'transitions kw deprecated, use function get_transitions instead'
+        #print 'transitions kw deprecated, use function get_transitions instead'
         VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0])
     else:
         VGSoffset = 0.
@@ -197,7 +199,7 @@ def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show
     A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
                                         E_ES[1]-E_GS[1]])   # 4 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
@@ -305,6 +307,9 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
         if abs(f2-levels[i2])<precision:
             return levels[2]+str_split, levels[2]
 
+    print 'could not find ex,ey within given precision'
+    return (0,0)
+
 def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     """
     returns the fraction of ms=0 character of a given ES eigenstate, 
@@ -320,3 +325,43 @@ def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     #    aa=aa+np.abs(vs[i,2])**2
     #print aa
     return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
+def get_ms0_fraction_incl_B(strain_splitting, Bz, transition_index, theta_x=90):
+    """
+    returns the fraction of ms=0 character of a given ES eigenstate, 
+    selected by the transition number, counting from the lowest frequency. 
+    At low strain these would be
+    transition_index = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
+    """
+    w,v = get_ES(B_field = [0,0,Bz],E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
+    ws,vs=np.sort(w),np.transpose(v)[np.argsort(w)]
+
+    #aa=0
+    #for i in range(6):
+    #    aa=aa+np.abs(vs[i,2])**2
+    #print aa
+    return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
+
+def mixing_probability(T):
+    c1 = 9.2e-7
+    jtmix=1./(2.+1./(c1*T**5))
+    return jtmix
+
+    # 1/(2+1/(c1*T(i)^5))
+def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, verbose=False):
+
+    delta_strain_splitting = (2.*(F_Y - F_Y_0 + a*(F_Ey_0 - F_Ey)))/(a + b)
+    #delta_strain_offset = (F_Y - F_Y_0 - b*F_Ey_0 + b*F_Ey)/(a + b)
+    new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    if verbose:
+        print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
+    return get_ES_ExEy(F_Ey, F_Ey+new_strain_splitting)
+
+def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, verbose=False):
+
+    delta_strain_splitting = (2.*(-F_Y + F_Y_0 + a*(-F_Ex_0 + F_Ex)))/(a - b)
+
+    new_strain_splitting = strain_splitting_0 + delta_strain_splitting
+    if verbose:
+        print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
+    return get_ES_ExEy(F_Ex-new_strain_splitting, F_Ex)
+

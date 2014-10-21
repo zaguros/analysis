@@ -14,12 +14,13 @@ def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-min_dip_depth = 0.8, 
+min_dip_depth = 0.90, 
 timestamp = None,
 add_folder = None,
 ret='f0',
 ssro_calib_folder='',
-do_save=False,
+do_save=True,
+sweep_direction = 'right',
 **kw):
 
     if timestamp != None:
@@ -39,16 +40,24 @@ do_save=False,
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
 
-    # Find the most left esr resonance
-    ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
-    ## THT: this makes the loop go haywire if there is no ESR dip (it always finds something = bad)
-
+    # Find the esr resonance
     j=0
     print 'j = '+str(j)
     print folder
     print y[21]
     k = len(y)
-    while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
+    print 'min_dip_depth = ' + str(min_dip_depth)
+    
+    ### Option to make the dip search sweep towards left or right, usefull in case of N polarization
+    if sweep_direction == 'left':
+        y1 = y[::-1]
+        x1 = x[::-1]
+        guess_splitN = -1*guess_splitN
+    elif sweep_direction == 'right':
+        y1 = y
+        x1 = x
+
+    while y1[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
         k = j
         j += 1
     #j = len(y)-2
@@ -56,7 +65,8 @@ do_save=False,
         print 'Could not find dip'
         return
     else:
-        guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
+        guess_ctr = x1[k]+ guess_splitN #convert to GHz and go to middle dip
+
         print 'guess_ctr= '+str(guess_ctr)
         print 'k'+str(k)
     ## I added this to be more robust for SSRO calibration.Please monitor if this is better - Machiel may-2014
@@ -66,13 +76,10 @@ do_save=False,
             (3, guess_splitN),
             do_print=True, ret=True, fixed=[])
     print 'fit finished'
-    print do_save
     if do_save:
         print 'saving data and fit'
         if fit_result:
-            #print 'fit result'
-            #print fit_result
-            
+           
             fig, ax = plt.subplots(1,1)
             plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
             plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
@@ -83,7 +90,7 @@ do_save=False,
         u_f0 = fit_result['error_dict']['x0']
         return f0, u_f0
 
-def analyze_dark_esr_single(guess_ctr, 
+def analyze_dark_esr_single( 
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,

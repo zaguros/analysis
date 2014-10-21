@@ -10,13 +10,15 @@ from analysis.lib.m2.ssro import  sequence, mbi #sequence_ssro,
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 reload(rabi)
+reload(sequence)
 
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./0.6
-guess_amp = 0.2
-guess_of = 0.1
+guess_frq = 1./280
+
+guess_amp = 1
+guess_of = 1
 # guess_slope = 0.
 guess_phi = 0.
 guess_k = 0.
@@ -41,7 +43,6 @@ if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('adwindata')
-    #a.get_readout_results('adwindata')
     a.get_electron_ROC()
     ax = a.plot_results_vs_sweepparam(ret='ax', name = 'adwindata')
 
@@ -60,17 +61,17 @@ y = a.p0
 #         guess_amp, guess_yof, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
 #         do_print=True, ret=True)
 
-fitfunc_str = 'o - A + A*e^(-kx)*cos(2pi (fx-phi))'
+fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'
 
 def fitfunc(x):
-    return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
+    return (o()-A()) + A() * np.exp(-(k()*x)**2) * np.cos(2*np.pi*(f()*x - phi()))
 
-fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2],
+fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2,4],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)
 
-print "pi pulse = {:.2f} ".format(1/f()/2.) + a.sweep_name
+print "pi pulse = {:.3f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 plt.savefig(os.path.join(folder, 'electronrabi_analysis_fit.png'))

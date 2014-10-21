@@ -7,12 +7,25 @@ def get_photons(pqf):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
     """
-    channel = pqf['/PQ_channel-1'].value
-    special = pqf['/PQ_special-1'].value
-    
-    is_not_special = special==0
-    is_channel_0 = channel==0
-    is_channel_1 = channel==1
+    if type(pqf) == h5py._hl.files.File:
+
+        channel = pqf['/PQ_channel-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf,'r')
+        channel = f['/PQ_channel-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise    
+        
+    is_not_special = special == 0
+    is_channel_0 = channel == 0
+    is_channel_1 = channel == 1
     
     is_photon_0 = np.logical_and(is_not_special, is_channel_0)
     is_photon_1 = np.logical_and(is_not_special, is_channel_1)
@@ -20,15 +33,30 @@ def get_photons(pqf):
     return is_photon_0, is_photon_1
 
 
+
 def get_markers(pqf, chan):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
-    channel = pqf['/PQ_channel-1'].value
-    special = pqf['/PQ_special-1'].value
     
-    is_special = special==1
-    is_channel = channel==chan
+    if type(pqf) == h5py._hl.files.File:
+
+        channel = pqf['/PQ_channel-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf,'r')
+        channel = f['/PQ_channel-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    is_special = special == 1
+    is_channel = channel == chan
 
     return (is_special & is_channel)
 
@@ -49,9 +77,7 @@ def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation =
 
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
-        return c  
-    
-
+        return c    
 
     sync_time = pqf['/PQ_sync_time-1'].value
     total_time = pqf['/PQ_time-1'].value
@@ -104,17 +130,150 @@ def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation =
 
 def get_coincidences_from_folder(folder):
 
-    filepaths = tb.get_all_msmt_filepaths(folder)
+    filepaths = tb.get_all_msmt_filepaths(folder) 
+    co = np.ones([1,4])
 
     for i,f in enumerate(filepaths):
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
-            co = get_coincidences(pqf)
+            if 'PQ_sync_number-1' in pqf.keys():
+                co = get_coincidences(pqf)           
         else:
             pqf = pqf_from_fp(f, rights = 'r+')
-            co = np.vstack((co, get_coincidences(pqf)))
+            if 'PQ_sync_number-1' in pqf.keys():
+                if co[0,3] == 1:
+                    co = get_coincidences(pqf)
+                else:
+                    co = np.vstack((co, get_coincidences(pqf)))
+                    
     return co
 
+def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_min, second_win_max):
+    """
+    Returns two filters whether events are in the first or 
+    in the second time window.
+    """
+    if type(pqf) == h5py._hl.files.File: 
+        sync_time = pqf['/PQ_sync_time-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_time = f['/PQ_sync_time-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise   
+
+    is_photon = special == 0
+    
+    is_event_first_window = (sync_time > first_win_min) & \
+                         (sync_time <= first_win_max)
+    is_event_second_window = (sync_time > second_win_min) & \
+                          (sync_time <= second_win_max)
+
+    is_photon_first_window = is_photon & is_event_first_window
+    is_photon_second_window = is_photon & is_event_second_window
+    
+    is_photon_check = is_photon_first_window | is_photon_second_window
+        
+    if sum(is_photon_check) != sum(is_photon):
+        print "Not all detected photons are in the broad windows set"
+    
+    return is_photon_first_window, is_photon_second_window
+
+def get_tail_filtered_photons(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, VERBOSE = True):
+    """
+    Returns two filters whether events are in the first or 
+    in the second tail.
+    """
+    if type(pqf) == h5py._hl.files.File: 
+        channel = pqf['/PQ_channel-1'].value
+        sync_time = pqf['/PQ_sync_time-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        channel = f['/PQ_channel-1'].value
+        sync_time = f['/PQ_sync_time-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise   
+
+    is_photon = special == 0
+    is_ch0 = channel == 0
+    is_ch1 = channel == 1
+    
+    first_win_min = first_win_min_ch0
+    first_win_max = first_win_min + window_length
+    second_win_min = first_win_min + dif_win1_win2
+    second_win_max = first_win_max + dif_win1_win2
+
+    is_event_first_tail_ch0_filt = (sync_time > first_win_min) & \
+                         (sync_time <= first_win_max)
+    is_event_second_tail_ch0_filt = (sync_time > second_win_min) & \
+                          (sync_time <= second_win_max)
+
+    is_event_first_tail_ch1_filt = (sync_time > (first_win_min + dif_ch0_ch1)) & \
+                         (sync_time <= (first_win_max + dif_ch0_ch1))
+    is_event_second_tail_ch1_filt = (sync_time > (second_win_min + dif_ch0_ch1)) & \
+                          (sync_time <= (second_win_max + dif_ch0_ch1))
+
+
+    is_photon_ch0 = is_photon & is_ch0
+    is_photon_ch1 = is_photon & is_ch1
+
+    is_ph_first_tail = (is_photon_ch0 & is_event_first_tail_ch0_filt) | (is_photon_ch1 & is_event_first_tail_ch1_filt)
+    is_ph_second_tail = (is_photon_ch0 & is_event_second_tail_ch0_filt) | (is_photon_ch1 & is_event_second_tail_ch1_filt)
+    
+    if VERBOSE:
+        print "The total number of photons detected in the first window of the ZPL is:", sum(is_ph_first_tail)
+        print "The total number of photons detected in the second window of the ZPL is:", sum(is_ph_second_tail)
+
+    return is_ph_first_tail, is_ph_second_tail
+
+def get_tail_filtered_ph_sync_num(fp_BS, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, VERBOSE = True):
+    """
+    Returns the sync numbers of the photons in the first and second tail. The input necessary is the start of the first
+    tail of channel 0, the difference between the two tails, the difference between the two channels and the length of the tial.
+    """
+    f = h5py.File(fp_BS, 'r')
+    sync_num = f['/PQ_sync_number-1'].value
+    f.close()
+
+    is_photon_first_tail, is_photon_second_tail = get_tail_filtered_photons(fp_BS,
+                                                                       first_win_min_ch0,
+                                                                       dif_win1_win2,
+                                                                       window_length,
+                                                                       dif_ch0_ch1,
+                                                                       VERBOSE)
+
+
+
+    is_tail_photons = is_photon_first_tail | is_photon_second_tail
+    sync_num_ph_first_tail = sync_num[is_photon_first_tail]
+    sync_num_ph_second_tail = sync_num[is_photon_second_tail]
+  
+
+    overlapping_sync_num_12 = filter_on_same_sync_number(sync_num_ph_second_tail, sync_num_ph_first_tail)
+    overlapping_sync_num_21 = filter_on_same_sync_number(sync_num_ph_first_tail, sync_num_ph_second_tail)
+
+    non_overlapping_sync_num_12 = np.array([not x for x in overlapping_sync_num_12])
+    non_overlapping_sync_num_21 = np.array([not x for x in overlapping_sync_num_21])
+
+    if VERBOSE:
+        print "Rejection ratio first filter", 1. - sum(non_overlapping_sync_num_21)/float(len(non_overlapping_sync_num_21))
+        print "Rejection ratio second filter", 1. - sum(non_overlapping_sync_num_12)/float(len(non_overlapping_sync_num_12))
+
+    unique_sync_num_first_tail = np.unique(sync_num_ph_first_tail[non_overlapping_sync_num_12])
+    unique_sync_num_second_tail = np.unique(sync_num_ph_second_tail[non_overlapping_sync_num_21])
+
+    return unique_sync_num_first_tail, unique_sync_num_second_tail, is_tail_photons
 
 
 
@@ -149,13 +308,49 @@ def filter_marker(pqf, chan):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
-    is_mrkr = get_markers(pqf, chan)
-
-    sync_numbers = pqf['/PQ_sync_number-1'].value
-
-    marker_sync_numbers = sync_numbers[is_mrkr]
     
-    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)    
+    if type(pqf) == h5py._hl.files.File: 
+        is_mrkr = get_markers(pqf, chan)
+
+        sync_numbers = pqf['/PQ_sync_number-1'].value
+
+        marker_sync_numbers = sync_numbers[is_mrkr]
+    
+        return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)  
+
+    elif type(pqf) == str:
+        is_mrkr = get_markers(pqf, chan)
+        
+        f = h5py.File(pqf, 'r')
+        sync_numbers = f['/PQ_sync_number-1'].value
+        f.close()
+    
+        marker_sync_numbers = sync_numbers[is_mrkr]
+    
+        return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max):
+    """
+    Return two filters whether events are first window photons or second window
+    photons with markers.
+    """
+    
+    is_photon_first_window, is_photon_second_window = get_photons_in_sync_windows(pqf,
+                            first_win_min, first_win_max, second_win_min, second_win_max)
+    is_events_with_marker = filter_marker(pqf,chan)
+    
+    is_photon_first_window_with_markers = is_photon_first_window & \
+                                            is_events_with_marker
+    is_photon_second_window_with_markers = is_photon_second_window &\
+                                            is_events_with_marker
+
+    return is_photon_first_window_with_markers, is_photon_second_window_with_markers
+
+
 
 
 ##############################################################################

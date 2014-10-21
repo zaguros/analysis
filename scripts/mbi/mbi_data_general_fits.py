@@ -47,7 +47,7 @@ def exp_sin(timestamp=None, measurement_name = ['adwindata'],
 
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
-            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, fixed=fixed)
+            #fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, fixed=fixed)
 
         elif len(frequency) == 2:
             p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1])

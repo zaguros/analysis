@@ -30,14 +30,34 @@ F_Min_lab = 0.90
 T_Max_lab = [1.4,4.8,14]
 B_lab = [700,400,150]
 
-fig,ax = plt.subplots(1)
-plt.title(r'Average number of addressable $C^{13}$ in weakly coupled NV centres' )
-plt.ylabel(r'$\bar{N}$' )
-plt.xlabel('B-Field [Gauss]')
+
+
+
+
+
+##########
+figsize= (2.5,2)
+fontsize = 8
+linewidth = .75
+markersize =2
+plt.rc('font', size=8)
+fig,ax = plt.subplots(figsize=figsize)
+
+# fig,ax = plt.subplots(figsize=figsize)
+plt.title(' ' )
+plt.ylabel(r'Avg. No. Address. C-13' )
+plt.xlabel('Magnetic field (G)')
 for idfn, filename in enumerate(filenames):
     labstr = r'$\mu$ = ' +str(mu_ls[idfn]) + r'% , '+r' $T_{Max}$ = '+str(T_Max_lab[idfn])+'ms , ' +r'$F_{Min}$= ' +str(F_Min_lab)
-    plt.errorbar(B_Fields[idfn],Navg_B[idfn],yerr = Navg_B_Err[idfn],label =(labstr) )
+    plt.plot(B_Fields[idfn],Navg_B[idfn],label =(labstr),marker= 'o' ,markersize=2.5)
 plt.xlim([B_Fields[0][0]-100,B_Fields[0][-1]+100])
-plt.legend(loc= 'lower right')
+# plt.legend(loc= 'lower right')
 
-plt.show()
+# plt.show()
+
+
+folder_a = '/Users/Adriaan/Documents'
+savename = 'Simulations_avgN_vs_Bfield'
+fig.savefig(os.path.join(folder_a, savename+'.pdf'),
+                format='pdf',bbox_inches='tight')
+print' Figure saved in %s' %folder_a
