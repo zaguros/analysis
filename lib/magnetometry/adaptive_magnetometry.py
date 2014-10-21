@@ -742,6 +742,54 @@ class RamseySequence_Simulation (RamseySequence):
 		
 		print 'Data loaded!'		
 
+class RamseySequence_fastSimulations (RamseySequence_Simulation):
+
+	def __init__ (self, N_msmnts, reps, tau0):
+		self.N = N_msmnts
+		self.discr_steps = 2**self.N+1
+		self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+		self.msmnt_results = None
+		self.msmnt_phases = None
+		self.msmnt_times = None
+		self.table_elements = None #Only used by table-based protocols
+		self.set_detuning = None
+		self.T2 = 96e-6
+		self.fid0 = 0.9
+		self.fid1 = 0.015
+		self.theta = 0*np.pi/180.
+		self.t0 = tau0
+		self.B_max = 1./(2*tau0)
+		self.n_points = 2**(self.N+3)
+		self.curr_rep = 0
+		self.curr_msmnt = 1
+		self.reps = reps
+		self.N_total = self.N
+		self.M=1
+		self.p_k[0] = 1/(2.*np.pi)
+		self.verbose = True
+		self.use_ROfid_in_update = False
+		self.renorm_ssro = False
+		#parameters for majority vote
+		self.maj_reps = None
+		self.maj_thr = None
+		#parameters for variable-M protocols
+		self.G = 0
+		self.K = 0
+		self.F = 0
+
+	def bayesian_update (self, m_n, phase_n, t_n,repetition = None):
+			
+		if (repetition == None):
+			repetition = self.curr_rep
+
+		c = m_n*np.pi+phase_n
+		p0_real = np.copy (p_real)
+		p0_imag = np.copy (p_imag)
+		k = t_n
+		p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2*t_n]) - np.sin(cn)*(p0_imag [0] - p0_imag [2*t_n])) 
+		p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*t_n]) + np.sin(cn)*(p0_real [0] - p0_real [2*t_n])) 
+		self.pk[k] = p_real[k]+1j*p_imag[k]
+
 class RamseySequence_Adwin (RamseySequence_Simulation):
 
 
