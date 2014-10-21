@@ -94,19 +94,69 @@ def analyze_saved_simulations (timestamp):
 #analyze_saved_simulations (timestamp='20141017_003446')
 
 def simulate_adwin ():
-	set_magnetic_field = (1/20e-9)/(2**5) 
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 5, reps=50, tau0=20e-9)
+	pp = int(np.random.randint(1, 2**4))
+	set_magnetic_field = pp*(1/20e-9)/(2**5) 
+	print 'B-field:', set_magnetic_field/1e6
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = 7, reps=20, tau0=20e-9)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=1)
 	s.T2 = 96e-6
-	s.fid0 = 1.00
-	s.fid1 = 0.00
+	s.fid0 = 0.85
+	s.fid1 = 0.02
 	s.renorm_ssro = False
-	s.adwin_algorithm()
+	s.maj_reps = 1
+	s.maj_thr = 0
+	
+	s.adwin_ultrafast()
 	s.convert_to_dict()
 	s.print_results()
-		
-	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	beta, p, err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=False)
+
+	plt.figure()
+	#plt.plot (beta_adwin, p_adwin, 'b')
+	plt.plot (beta*1e-6, p, 'r')
+	plt.show()
+
+
+def benchmark_exec_speed ():
+
+	nr_N=10
+	tempo_brute = np.zeros(nr_N)
+	tempo_positive  = np.zeros(nr_N)
+	tempo_nonzero = np.zeros(nr_N)
+	tempo_ultrafast = np.zeros(nr_N)
+
+	ind = 0
+	for n in np.arange (nr_N)+2:
+		print '##### ',n
+		set_magnetic_field = 2*(1/20e-9)/(2**n) 
+		s = magnetometry.RamseySequence_Adwin (N_msmnts = n, reps=10, tau0=20e-9)
+
+		s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=1)
+		s.T2 = 96e-6
+		s.fid0 = 1.00
+		s.fid1 = 0.00
+		s.renorm_ssro = False
+		s.maj_reps = 1
+		s.maj_thr = 0
+		ex1 = s.basic_adwin_algorithm(exec_speed = True)
+		tempo_brute[ind] = ex1
+		ex2 = s.adwin_only_positive(exec_speed = True)
+		tempo_positive[ind] = ex2
+		ex3 = s.adwin_positive_nonzero(exec_speed = True)
+		tempo_nonzero[ind] = ex3
+		ex4 = s.adwin_ultrafast(exec_speed = True)
+		tempo_ultrafast[ind] = ex4
+		ind +=1
+
+	plt.semilogy (np.arange (nr_N)+2, tempo_brute, linewidth=2, label = 'brute force')
+	plt.semilogy (np.arange (nr_N)+2, tempo_positive, linewidth=2, label = 'only k>0')
+	plt.semilogy (np.arange (nr_N)+2, tempo_nonzero, linewidth=2, label = 'k>0, p[k] not 0')
+	plt.semilogy (np.arange (nr_N)+2, tempo_ultrafast, linewidth=2, label = 'ultrafast')
+	plt.xlabel ('N')
+	plt.ylabel ('execution time [s]')
+	plt.legend()
+	plt.show()
 
 #simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
 '''
@@ -117,3 +167,4 @@ simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
 simulate_adwin()
+#benchmark_exec_speed()
