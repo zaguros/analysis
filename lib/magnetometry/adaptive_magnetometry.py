@@ -831,13 +831,10 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 				for k in np.arange(t[n]+1, 2**(self.N)+1):
 					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(p0_imag [k-t[n]] - p0_imag [k+t[n]])) 
 					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [k-t[n]] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-					if (k-t[n]<0):
-						print 'Negative index!! ', k, t[n]
+		
 				for k in np.arange(0, t[n]+1):
 					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(-p0_imag [t[n]-k] - p0_imag [k+t[n]])) 
 					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(-p0_imag [t[n]-k] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-					if (t[n]-k<0):
-						print 'Negative index!! ', k, t[n]
 
 			self.msmnt_results [rep, :] = m[1:]
 			self.msmnt_phases [rep, :] = th[1:]
