@@ -67,18 +67,18 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field(N,M, maj_reps, maj_thr, fid0):
+def simulate_sweep_field(N,M, maj_reps, maj_thr, fid0,fid1=0.02,table_based=False):
 
 	#try:
 	print '############### Simulate #####################'
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (M=M, maj_reps = maj_reps, maj_thr = maj_thr)
-	mgnt_exp.set_sweep_params (reps =20, nr_periods = 5, nr_points_per_period=25)
-	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = 0.02)
-	#for n in np.arange(N-1)+2:
-	mgnt_exp.sweep_field_simulation (N=1)
-	plt.figure()
-	mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.set_sweep_params (reps =51, nr_periods = 1, nr_points_per_period=2)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	for n in np.arange(N-1)+2:
+		mgnt_exp.sweep_field_simulation (N=n,table_based=table_based)
+		plt.figure()
+		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 	#except:
@@ -90,7 +90,7 @@ def analyze_saved_simulations (timestamp):
 	mgnt_exp.load_analysis (timestamp=timestamp)
 	mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=True)
 	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
-
+	return mgnt_exp
 #analyze_saved_simulations (timestamp='20141017_003446')
 
 def simulate_adwin ():
@@ -109,11 +109,14 @@ def simulate_adwin ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 #simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
-'''
-simulate_sweep_field (N=9, M=4, maj_reps=7, maj_thr=2, fid0=0.87)
-simulate_sweep_field (N=10, M=3, maj_reps=6, maj_thr=2, fid0=0.87)
-simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
-simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
-simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
-'''
-simulate_adwin()
+
+#simulate_sweep_field (N=1, M=7, maj_reps=5, maj_thr=1, fid0=0.87)
+#simulate_sweep_field (N=10, M=3, maj_reps=6, maj_thr=2, fid0=0.87)
+#simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
+#simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
+#simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
+
+#simulate_adwin()
+simulate_sweep_field (N=2, M=7, maj_reps=5, maj_thr=1, fid0=0.87,fid1=0.02)
+#simulate_sweep_field (N=4, M=7, maj_reps=1, maj_thr=0, fid0=1.,fid1=0.0)
+#mgnt_exp=analyze_saved_simulations ('20141021_145246')
