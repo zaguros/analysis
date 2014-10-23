@@ -782,7 +782,7 @@ class RamseySequence_fastSimulations (RamseySequence_Simulation):
 		if (repetition == None):
 			repetition = self.curr_rep
 
-		c = m_n*np.pi+phase_n
+		cn = m_n*np.pi+phase_n
 		p0_real = np.copy (p_real)
 		p0_imag = np.copy (p_imag)
 		k = t_n
@@ -1002,6 +1002,54 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 			stop = time.clock()
 			exec_time = stop-start
 		return exec_time
+
+
+	def adwin_ultrafast_print_steps (self, msmnt_results = []):
+
+		if (len(msmnt_results) != self.N):
+			print 'Incorrect input!'
+		else:
+			discr_steps = 2**(self.N)+1
+			m = np.zeros (self.N+1)
+			m[1:] = msmnt_results
+			t = np.zeros (self.N+1)
+			th = np.zeros(self.N+1)
+
+			p_real = np.zeros (discr_steps)
+			p_imag = np.zeros (discr_steps)
+			p_real [0] = 1./(2*np.pi)
+			t[0] = 2**self.N
+
+			print '###############################################'
+			print 'Measurement result sequence: ', msmnt_results
+			for n in np.arange(self.N)+1:
+				t[n] = int(2**(self.N-n))
+				k_opt = int(2**(self.N-n+1))
+				th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
+				k = t[n]
+
+				print ' * n = ', n, ' ----> tn = ', t[n],  ' - k_opt + 1 = ', k_opt+1, ' - th_opt = ', int(th[n]*180/(np.pi))
+				print '  		p[k_opt+1] = ', -1j*p_imag[k_opt]+p_real[k_opt], '  -  div = ', p_imag[k_opt]/p_real[k_opt]
+				print '			angle = ', int(np.angle(-1j*p_imag[k_opt]+p_real[k_opt])*180/np.pi)
+				print '			Important coefficients: '
+				print '				p[0+1] = ', p_real[0]+1j*p_imag[0]
+				print '				p[tn+1] = ', p_real[t[n]]+1j*p_imag[t[n]]
+				print '				p[2*tn+1] = ', p_real[2*t[n]]+1j*p_imag[2*t[n]]
+
+				nr_ones = m[n]
+				nr_zeros = self.M - nr_ones
+				for i in np.arange(nr_ones):
+					cn = 1*np.pi+th[n]
+					p0_real = np.copy (p_real)
+					p0_imag = np.copy (p_imag)
+					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2*k]) - np.sin(cn)*(p0_imag [0] - p0_imag [2*k])) 
+					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*k]) + np.sin(cn)*(p0_real [0] - p0_real [2*k])) 
+				for i in np.arange(nr_zeros):
+					cn = 0*np.pi+th[n]
+					p0_real = np.copy (p_real)
+					p0_imag = np.copy (p_imag)
+					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2*k]) - np.sin(cn)*(p0_imag [0] - p0_imag [2*k])) 
+					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*k]) + np.sin(cn)*(p0_real [0] - p0_real [2*k])) 
 
 
 

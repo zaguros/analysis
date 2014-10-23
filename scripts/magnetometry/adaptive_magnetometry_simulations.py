@@ -119,6 +119,18 @@ def simulate_adwin ():
 	plt.show()
 
 
+def check_adwin_code (N,M, msmnt_results):
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
+	s.setup_simulation (magnetic_field_hz = 0, M=M)
+	s.T2 = 96e-6
+	s.fid0 = 1.00
+	s.fid1 = 0.0
+	s.renorm_ssro = False
+	s.maj_reps = 1
+	s.maj_thr = 0	
+	s.adwin_ultrafast_print_steps (msmnt_results = msmnt_results)
+
+
 def benchmark_exec_speed ():
 
 	nr_N=10
@@ -159,6 +171,26 @@ def benchmark_exec_speed ():
 	plt.legend()
 	plt.show()
 
+def adwin_phase_angle (real_part, imag_part):
+
+		c_nr = real_part+1j*imag_part
+
+		if (real_part>0):
+			if (imag_part>0):
+				th = (180/np.pi)*np.arctan (imag_part/real_part)
+			else:
+				th = (180/np.pi)*np.arctan (imag_part/real_part)+360
+		else:
+			if (imag_part>0):
+				th = 180-(180/np.pi)*np.arctan (-imag_part/real_part)
+			else:
+				th = 180+(180/np.pi)*np.arctan (imag_part/real_part)
+
+		print 'Number :', c_nr
+		print 'Using python angle: ', np.mod((180/np.pi)*np.angle(c_nr), 360)
+		print 'Using arctan: ', th
+
+
 #simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
 '''
 simulate_sweep_field (N=9, M=4, maj_reps=7, maj_thr=2, fid0=0.87)
@@ -167,5 +199,7 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
-simulate_adwin()
+check_adwin_code(N=4, M=1, msmnt_results = [1,1,1,1])
 #benchmark_exec_speed()
+
+#adwin_phase_angle (real_part=-0.5, imag_part=-1)
