@@ -23,14 +23,17 @@ class compare_functions ():
 			
 		if (numbers==None):
 			numbers = np.arange(self.counter)+1
-		
-		colors = cm.gist_heat(np.linspace(0., 0.8, len(numbers)))
+		fig = plt.figure(figsize=(12,8))
+		p = fig.add_subplot(1,1,1)
+
+		colors = cm.jet(np.linspace(0., 0.9, len(numbers)))
 		ind = 0 
 		for i in numbers:	
 			if self.log_plot:	
 				plt.semilogy (self.data['x_'+str(i)], self.data['y_'+str(i)], label = self.data['l_'+str(i)], color = colors[ind]) 
 			else:
-				plt.plot (self.data['x_'+str(i)], self.data['y_'+str(i)], '.', label = self.data['l_'+str(i)], color = colors[ind]) 
+				plt.plot (self.data['x_'+str(i)], self.data['y_'+str(i)], ':', color = colors[ind]) 
+				p.plot (self.data['x_'+str(i)], self.data['y_'+str(i)], 'o', color = colors[ind], label = self.data['l_'+str(i)]) 
 			ind = ind + 1
 		if y_log:
 			plt.yscale('log')
@@ -39,10 +42,11 @@ class compare_functions ():
 		#y = y0[0]/(x0/x0[0])
 
 		#plt.plot (x0, y, ':k')	
-
-		plt.xlabel (self.xlabel)
-		plt.ylabel (self.ylabel)
+		p.tick_params(axis='both', which='major', labelsize=15)
+		plt.xlabel (self.xlabel, fontsize = 20)
+		plt.ylabel (self.ylabel, fontsize = 20)
 		plt.title (self.title)
 		plt.legend()
 		plt.show()
+		return fig
 

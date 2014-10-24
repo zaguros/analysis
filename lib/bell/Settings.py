@@ -9,6 +9,7 @@ COLORS = 'RoyalBlue', 'Crimson', 'LimeGreen', 'DarkOrange', 'BlueViolet'
 
 ## setting the photon windows
 first_win_min = 0 # The minimum of the first window
+first_win_min_ch0 = 0 # The minimum of the first window
 first_win_max = 10 # The maximum of the first window, also the minimum of the second window
 second_win_min = 20
 second_win_max = 30 # The maximum of the second window
@@ -29,4 +30,28 @@ dif_win1_win2 = 600
 
 CNTR_PEAK_RANGE = 0
 
-dif_ch0_ch_1 = 10
+dif_ch0_ch1 = 10
+
+"""
+Returns all entanglement events. 
+Colums are:
+Sync Number | Sync Time Photon 1 | Sync Time photon 2 | Photon 1 Channel | Photon 2 Channel | Attempts
+| Amount of Photons LT1 | Amount of Photons LT 3 | CR Check Before LT1 | CR Check After LT1 | CR Check Before LT3 
+| CR Check After LT3 | psiminus | absolute time
+"""
+
+Sync_num = 0
+Sync_time_ph_win_1 = 1
+Sync_time_ph_win_2 = 2
+Chan_ph_win_1 = 3
+Chan_ph_win_2 = 4
+Attempts = 5
+Noof_ph_LT1 = 6
+Noof_ph_LT2 = 7
+CR_check_bef_LT1 = 8
+CR_check_aft_LT1 = 9
+CR_check_bef_LT3 = 10
+CR_check_aft_LT3 = 11
+Psiminus_event = 12
+Abs_Time = 13
+

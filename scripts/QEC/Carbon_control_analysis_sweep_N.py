@@ -9,14 +9,14 @@ reload(common)
 reload(plot)
 
 def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwindata'], 
-            frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], 
+            frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], offset = 0.5,
             fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
     measurement_name: list of measurement names
     '''
-    offset = 0.5
+    # offset = 0.5
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
@@ -41,17 +41,17 @@ def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwi
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3])
         elif len(frequency) == 2:
-            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1])
+            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1],offset)
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[2,6])
            
             ### Also plot the individual curves
             
-            p0_0, fitfunc_0, fitfunc_str_0 = common.fit_double_decaying_cos(fit_result['params'][0], 0, phase[0], fit_result['params'][2], fit_result['params'][3], fit_result['params'][4], phase[1], fit_result['params'][5])
-            ax.plot(np.linspace(0,x[-1],201), fitfunc_0(np.linspace(0,x[-1],201)), 'r-', lw=1,alpha=0.5)
-            p0_1, fitfunc_1, fitfunc_str_1 = common.fit_double_decaying_cos(fit_result['params'][0], fit_result['params'][1], phase[0], fit_result['params'][2], fit_result['params'][3],0, phase[1], fit_result['params'][5])
-            ax.plot(np.linspace(0,x[-1],201), fitfunc_1(np.linspace(0,x[-1],201)), 'm-', lw=1,alpha=0.5)
+            # p0_0, fitfunc_0, fitfunc_str_0 = common.fit_double_decaying_cos(fit_result['params'][0], 0, phase[0], fit_result['params'][2], fit_result['params'][3], fit_result['params'][4], phase[1], fit_result['params'][5], fit_result['params'][6])
+            # ax.plot(np.linspace(0,x[-1],201), fitfunc_0(np.linspace(0,x[-1],201)), 'r-', lw=1,alpha=0.5)
+            # p0_1, fitfunc_1, fitfunc_str_1 = common.fit_double_decaying_cos(fit_result['params'][0], fit_result['params'][1], phase[0], fit_result['params'][2], fit_result['params'][3],0, phase[1], fit_result['params'][5], fit_result['params'][6])
+            # ax.plot(np.linspace(0,x[-1],201), fitfunc_1(np.linspace(0,x[-1],201)), 'm-', lw=1,alpha=0.5)
 
         ## plot fit
         if plot_fit == True:
