@@ -136,8 +136,7 @@ def analyze_sweep_field():
 
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=7, tau0=20e-9)
 	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
-	mgnt_exp.set_sweep_params (nr_periods = 1
-		, nr_points_per_period=7)
+	mgnt_exp.set_sweep_params (nr_periods = 1, nr_points_per_period=7)
 	mgnt_exp.set_exp_params (T2=96e-6, fid0=0.87, fid1=1-.975)
 	mgnt_exp.load_sweep_field_data (N=1)
 	mgnt_exp.load_sweep_field_data (N=2)
@@ -158,3 +157,30 @@ def analyze_sweep_field():
 analyze_single_instance(label='det=-12.5MHz_N=1', compare_to_simulations=True)
 #error= B_vs_time(nr=90, label = 'CR40b_manyreps')
 #single_B_field (nr = 69, label = 'CR40b_manyreps')
+
+def check_adwin_realtime(label):
+
+	dir0, daydir, m_dirs = toolbox.all_data (contains = label)
+
+	for i in m_dirs:
+		f = os.path.join(dir0, daydir, i)
+		print '################## -cuurent folder: ', i
+		exp = magnetometry.RamseySequence_Exp (folder = f)
+		exp.load_exp_data()
+		exp.check_realtime_phases()
+
+
+	'''
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = exp.N, reps=1, tau0=20e-9)
+	s.setup_simulation (magnetic_field_hz = 0, M=exp.M)
+	s.T2 = 96e-6
+	s.fid0 = 1.00
+	s.fid1 = 0.0
+	s.renorm_ssro = False
+	s.maj_reps = 1
+	s.maj_thr = 0	
+	s.adwin_ultrafast_print_steps (msmnt_results = exp.msmnt_results[0,:])
+	'''
+
+
+check_adwin_realtime(label = '_N=9_M=3_rtAdwin')

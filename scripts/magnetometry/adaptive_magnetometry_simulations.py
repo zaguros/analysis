@@ -199,7 +199,7 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
-check_adwin_code(N=4, M=1, msmnt_results = [1,1,1,1])
+check_adwin_code(N=9, M=1, msmnt_results = [1,1,0,1,0,0,0,0,1])
 #benchmark_exec_speed()
 
 #adwin_phase_angle (real_part=-0.5, imag_part=-1)
