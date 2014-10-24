@@ -1029,12 +1029,12 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 				k = t[n]
 
 				print ' * n = ', n, ' ----> tn = ', t[n],  ' - k_opt + 1 = ', k_opt+1, ' - th_opt = ', int(th[n]*180/(np.pi))
-				print '  		p[k_opt+1] = ', -1j*p_imag[k_opt]+p_real[k_opt], '  -  div = ', p_imag[k_opt]/p_real[k_opt]
+				print '  		p[k_opt+1] = ' +str('{0:.4f}'.format(-1j*p_imag[k_opt]+p_real[k_opt]))
 				print '			angle = ', int(np.angle(-1j*p_imag[k_opt]+p_real[k_opt])*180/np.pi)
 				print '			Important coefficients: '
-				print '				p[0+1] = ', p_real[0]+1j*p_imag[0]
-				print '				p[tn+1] = ', p_real[t[n]]+1j*p_imag[t[n]]
-				print '				p[2*tn+1] = ', p_real[2*t[n]]+1j*p_imag[2*t[n]]
+				print '				p[0+1] = '+ str('{0:.4f}'.format(p_real[0]+1j*p_imag[0]))
+				print '				p[tn+1] = '+str('{0:.4f}'.format(p_real[t[n]]+1j*p_imag[t[n]]))
+				print '				p[2*tn+1] = '+str('{0:.4f}'.format(p_real[2*t[n]]+1j*p_imag[2*t[n]]))
 
 				nr_ones = m[n]
 				nr_zeros = self.M - nr_ones
@@ -1089,6 +1089,11 @@ class RamseySequence_Exp (RamseySequence):
 		self.maj_reps = a.maj_reps
 		self.maj_thr = a.maj_thr
 		self.CR_after = a.CR_after
+
+		if (a.debug_pk):
+			self.p_tn = a.p_tn
+			self.p_2tn = a.p_2tn
+
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
 		self.msmnt_phases = 2*np.pi*a.set_phase/255.
@@ -1098,14 +1103,21 @@ class RamseySequence_Exp (RamseySequence):
 		b = np.ones(self.reps)
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
+		self.msmnt_type = a.msmnt_type
+
+		if (a.msmnt_type=='realtime'):
+			self.test_adwin = a.test_adwin
+			self.G = a.G
+			self.F = a.F
+			self.renorm_ssro = a.renorm_ssro
+			self.exp_fid0 = a.exp_fid0
+			self.exp_fid1 = a.exp_fid1
+			self.opt_phase = a.theta_opt #to be removed, only for testing yesterday's data!!! (should load a.theta_opt)
+
+
 	def CR_after_postselection(self):
 
 		if (self.N>1):
-			print '--CR_after_postelection---'
-			#for i in np.arange(20):
-			#	print '---',i, ' ---'
-			#	print self.msmnt_results[i,:], self.CR_after[i,:]
-
 			res = np.copy(self.msmnt_results)
 			phases = np.copy(self.msmnt_phases)
 			self.discarded_elements = []
@@ -1122,12 +1134,30 @@ class RamseySequence_Exp (RamseySequence):
 			self.reps = rep
 			self.msmnt_results =new_results[:self.reps,:]
 			self.msmnt_phases =  new_phases[:self.reps,:]
-			#print np.shape(self.msmnt_results)
-			print 'Discarded elements: ', self.discarded_elements
-		#print '#### AFTER ####'
-		#for i in np.arange(20):
-		#	print '---',i, ' ---'
-		#	print self.msmnt_results[i,:], self.CR_after[i,:]
+			if len(self.discarded_elements)>0:
+				print 'CR post-selection, discard elements: ', self.discarded_elements
+
+
+	def check_realtime_phases(self):
+		adwin_phase = self.opt_phase[:self.N]
+		adwin_results = self.msmnt_results[0,:]
+		sys.stdout.write ('Msmnt type: '+self.msmnt_type+ '   --- N = '+str(self.N)+ ', M = '+str(self.M))
+		if self.renorm_ssro:
+			print '	- ssro renorm: = ',self.exp_fid0, ', fid1 = ', self.exp_fid1,')'
+		else:
+			print '	- no ssro renorm'
+
+		print 'Adwin: results = ', adwin_results, ' - phases: ', adwin_phase
+
+		t = AdaptiveTable (N=self.N,M=self.M)
+		t.set_tau0(tau0=self.t0)
+		t.verbose = False
+		sim_ph, pos = t.msmnt_to_position (msmnt_results = adwin_results)
+		print 'Python simulated phases: ', sim_ph
+
+		diff = np.sum(np.abs(adwin_phase-sim_ph))/self.N
+		print 'MEAN ERROR: ', diff, ' deg'
+
 
 class AdaptiveTable ():
 
