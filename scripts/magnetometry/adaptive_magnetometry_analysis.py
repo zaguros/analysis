@@ -154,7 +154,7 @@ def analyze_sweep_field():
 	#mgnt_exp.load_analysis(timestamp='20141014')
 
 #analyze_sweep_field()
-#analyze_single_instance(label='N=1', compare_to_simulations=True)
+analyze_single_instance(label='det=-12.5MHz_N=1', compare_to_simulations=True)
 #error= B_vs_time(nr=90, label = 'CR40b_manyreps')
 #single_B_field (nr = 69, label = 'CR40b_manyreps')
 
