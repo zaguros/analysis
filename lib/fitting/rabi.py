@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import *
-from scipy import optimize
+import scipy 
 import pylab
 
 # our own modules

@@ -35,15 +35,12 @@ a.get_electron_ROC()
 ax = a.plot_results_vs_sweepparam(ret='ax',name='adwindata')
 x = a.sweep_pts
 y = a.p0.reshape(-1)
+y_u = a.u_p0.reshape(-1)
 
+average 	= np.average(y) 
+average_u 	= np.sqrt(np.sum(y_u**2))/np.size(y_u) 
 
-
-# try fitting
-# fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0],
-#         fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
-average = np.average(y) 
-print 'Average = %s ' %average 
-# Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
+print 'Average = %s +/- %s' %(average,  average_u)
 
 ax.set_ylim(-0.05,1.05)
 

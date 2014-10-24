@@ -16,7 +16,7 @@ timestamp = None
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('')
+    folder = toolbox.latest_data('Pi2')
 
 
 a = sequence.SequenceAnalysis(folder)
@@ -37,7 +37,7 @@ u_y2 = np.sqrt(  u_y[1::2]**2 + u_y[::2]**2 )
 fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,4), sharex=True)
 ax1.errorbar(x2, y2, yerr=u_y2, fmt='o')
 ax1.set_xlabel(n)
-ax1.set_title('Difference btw. Pi/2-Pi and Pi/2')
+ax1.set_title(a.timestamp+'\nDifference btw. Pi/2-Pi and Pi/2')
 ax1.set_ylabel('Difference')
 ax2.set_title(a.timestamp)
 m = fit.Parameter((y[-1]-y[0])/(x[-1]-x[0]), 'm')

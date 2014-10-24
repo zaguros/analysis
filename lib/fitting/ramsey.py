@@ -125,7 +125,7 @@ def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
     #phi2 = fit.Parameter(g_phi2, 'phi2')
     #phi3 = fit.Parameter(g_phi3, 'phi3')
     p0 = [tau, A, a,det,hf_N]
-    fitfunc_str = 'a+A*exp(-(x/tau)**2)*(cos(2*pi*det)+cos(2*pi*(det+hf_N)+cos(2*pi*(det-hf_N))'
+    fitfunc_str = 'a+A*exp(-(x/tau)**2)*(cos(2*pi*det)+cos(2*pi*(det+hf_N))+cos(2*pi*(det-hf_N))'
 
 
     hf_C = []

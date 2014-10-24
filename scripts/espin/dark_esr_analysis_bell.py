@@ -3,6 +3,7 @@ import numpy as np
 import h5py
 import logging
 
+
 from matplotlib import pyplot as plt
 
 from analysis.lib import fitting
@@ -18,7 +19,7 @@ guess_offset = 1
 guess_x0 = 2.807
 #guess_splitB = 30.
 guess_splitN = 2.18e-3
-# guess_splitC = .8e-3 #12.78
+guess_splitC = .8e-3 
 guess_width = 0.2e-3
 guess_amplitude = 0.3
 
@@ -37,11 +38,12 @@ def analyze_dark_esr(folder, ax=None, **kw):
     a.plot_result_vs_sweepparam(ret=None, name='ssro', ax=ax)
 
     guess_ctr = x[np.floor(len(x)/2.)]
-           
+
+
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             # (2, guess_splitN),
-            # (2, guess_splitC),
+             (2, guess_splitC),
             # (2, guess_splitB),
             (3, guess_splitN),
             do_print=True, ret=True, fixed=[])
