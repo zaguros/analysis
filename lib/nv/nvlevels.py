@@ -199,7 +199,7 @@ def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show
     A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
                                         E_ES[1]-E_GS[1]])   # 4 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
@@ -323,14 +323,14 @@ def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     #print aa
     return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
 
-def get_ms0_fraction_incl_B(strain_splitting, Bz, transition_index, theta_x=90):
+def get_ms0_fraction_incl_B(strain_splitting, Bz, transition_index, Bx=0,theta_x=90):
     """
     returns the fraction of ms=0 character of a given ES eigenstate, 
     selected by the transition number, counting from the lowest frequency. 
     At low strain these would be
     transition_index = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
     """
-    w,v = get_ES(B_field = [0,0,Bz],E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
+    w,v = get_ES(B_field = [Bx,0,Bz],E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
     ws,vs=np.sort(w),np.transpose(v)[np.argsort(w)]
 
     #aa=0
