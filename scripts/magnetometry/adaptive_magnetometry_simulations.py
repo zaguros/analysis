@@ -10,9 +10,9 @@ import logging, time
 
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
-#from analysis.lib.m2.ssro import sequence
-#from analysis.lib.tools import toolbox
-##from analysis.lib.fitting import fit,esr
+from analysis.lib.m2.ssro import sequence
+from analysis.lib.tools import toolbox
+from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
@@ -20,31 +20,66 @@ from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
 reload(magnetometry)
 
 def simulate_cappellaro ():
-	maj_reps = 5
+	maj_reps = 1
 	M = 5
 
-	set_magnetic_field =-22.1875e6
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 7, reps=200, tau0=20e-9)
+	set_magnetic_field =2/(20e-9*2**4)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 4, reps=1, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
+	s.T2 = 96e-6
+	s.fid0 = 1#0.868
+	s.fid1 = 0#1-0.978
+	s.renorm_ssro = True
+	s.maj_reps = maj_reps
+	s.maj_thr = 0
+
+	#s.table_based_simulation()
+	s.sim_cappellaro_majority()
+	s.convert_to_dict()
+	s.print_results()
+	#s.print_table_positions()
+		
+	beta, p, err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=False)
+	plt.plot (beta, p)
+	plt.show()
+	#s.sim_cappellaro_majority()
+	#s.convert_to_dict()
+	#s.print_results()
+	#beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+
+
+def simulate_cappellaro_debug_adwin ():
+	maj_reps = 1
+	M = 12
+
+	set_magnetic_field =2/(20e-9*2**4)
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = 4, reps=200, tau0=20e-9)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
 	s.T2 = 96e-6
 	s.fid0 = 0.868
-	s.fid1 = 1-0.978
+	s.fid1 = 0.02
 	s.renorm_ssro = True
 	s.maj_reps = maj_reps
-	s.maj_thr = 1
+	s.maj_thr = 0
 
-	s.table_based_simulation()
-	#s.sim_cappellaro_majority()
+	#s.table_based_simulation()
+	#s.sim_cappellaro_majority_with_plots(N_sim = [1,2, 3,4])
+	s.adwin_ultrafast_M(nr_coeff=21)
 	s.convert_to_dict()
-	s.print_table_positions()
+	s.print_results()
+	#s.print_table_positions()
 		
 	beta, p, err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	#plt.plot (beta, p)
+	#plt.show()
 
 	s.sim_cappellaro_majority()
 	s.convert_to_dict()
 	s.print_results()
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+
 
 
 
@@ -199,7 +234,6 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
-check_adwin_code(N=9, M=1, msmnt_results = [1,1,0,1,0,0,0,0,1])
-#benchmark_exec_speed()
+#check_adwin_code(N=9, M=1, msmnt_results = [1,1,0,1,0,0,0,0,1])
 
-#adwin_phase_angle (real_part=-0.5, imag_part=-1)
+simulate_cappellaro_debug_adwin()

@@ -63,64 +63,9 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def all_data (contains = '', older_than=None, newer_than=None, folder=None):
-
-    if (folder==None):
-        search_dir = datadir
-    else:
-        search_dir = folder
-
-    daydirs = os.listdir(search_dir)
-
-    if len(daydirs) == 0:
-        logging.warning('No data found in datadir')
-        return None
-
-    daydirs.sort()
-
-    measdirs = []
-    i = len(daydirs)-1
-    while len(measdirs) == 0 and i >= 0:
-        daydir = daydirs[i]
-        all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
-        all_measdirs.sort()
-
-        measdirs = []
-
-        for d in all_measdirs:
-
-            # this routine verifies that any output directory is a 'valid' directory
-            # (i.e, obeys the regular naming convention)
-            _timestamp = daydir + d[:6]
-            try:
-                dstamp,tstamp = verify_timestamp(_timestamp)
-            except:
-                continue
-            timestamp = dstamp+tstamp
-            if contains in d:              
-                
-                if older_than != None:
-                    if not is_older(timestamp, older_than):
-                        continue
-                if newer_than != None:
-                    if not is_older(newer_than,timestamp):
-                        continue
-                measdirs.append(d)
-
-        i -= 1
-    if len(measdirs) == 0:
-        if raise_exc == True:
-            raise Exception('No fitting data found.')
-        else:
-            return False
-    else:
-        measdirs.sort()
-    return search_dir,daydir,measdirs
 
 
-
-
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -132,6 +77,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     If no fitting data is found, an exception is raised. Except when you specifically ask not to to
     this in: raise_exc = False, then a 'False' is returned.
+
+    return_all = True: returns all the folders that satisfy the requirements (Cristian)
     '''
 
     if (folder==None):
@@ -185,6 +132,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             return False
     else:
         measdirs.sort()
+        if return_all:
+            return search_dir,daydir,measdirs
         measdir = measdirs[-1]
         if return_timestamp == False:
             return os.path.join(search_dir,daydir,measdir)
