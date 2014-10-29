@@ -13,16 +13,18 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,20,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
-def get_ES_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False,transitions=True):
+def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.],transitions=True):
     """
     Returns the six energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
     """
-    
+
     strain=abs(Ex-Ey)/2.0
     offset=np.min([Ey,Ex])+strain
     if fast:
         return np.sort(get_ES_fast(offset,strain,transitions=transitions))
+    #return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
+    #XXXXXXXXXXXXXXXXXXX
     return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,transitions=transitions)[0])
 
 def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
