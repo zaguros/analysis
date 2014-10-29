@@ -32,18 +32,37 @@ def get_markers(pqf, chan):
 
     return (is_special & is_channel)
 
-def get_multiple_photon_syncs(pqf):
+def get_multiple_photon_syncs(pqf, chan = None):
     special = pqf['/PQ_special-1'].value
     sync_numbers = pqf['/PQ_sync_number-1'].value
-
     is_photon = special == 0
+ 
+
     photon_sync_numbers = sync_numbers[is_photon]
-    
+  
+
     # this works nicely on sorted arrays
     is_multiple_photon_sync = photon_sync_numbers[1:] == photon_sync_numbers[:-1]
     #multiple_photon_sync_numbers = photon_sync_numbers[is_multiple_photon_sync]
 
     return is_multiple_photon_sync
+
+def get_multiple_photon_syncs_numbers(pqf, chan = None):
+    special = pqf['/PQ_special-1'].value
+    sync_numbers = pqf['/PQ_sync_number-1'].value
+    if chan != None:
+        is_photon = get_photons(pqf)[chan]
+    else: 
+        is_photon = special == 0
+
+    photon_sync_numbers = sync_numbers[is_photon]
+
+
+    # this works nicely on sorted arrays
+    is_multiple_photon_sync = photon_sync_numbers[1:] == photon_sync_numbers[:-1]
+    multiple_photon_sync_numbers = photon_sync_numbers[is_multiple_photon_sync]
+
+    return multiple_photon_sync_numbers
 
 def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True):
 
@@ -102,17 +121,17 @@ def get_coincidences(pqf, fltr0=None, fltr1=None, force_coincidence_evaluation =
                        
     return coincidences
 
-def get_coincidences_from_folder(folder):
+def get_coincidences_from_folder(folder, **kw):
 
     filepaths = tb.get_all_msmt_filepaths(folder)
 
     for i,f in enumerate(filepaths):
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
-            co = get_coincidences(pqf)
+            co = get_coincidences(pqf, **kw)
         else:
             pqf = pqf_from_fp(f, rights = 'r+')
-            co = np.vstack((co, get_coincidences(pqf)))
+            co = np.vstack((co, get_coincidences(pqf, **kw)))
     return co
 
 
@@ -170,7 +189,23 @@ def pqf_from_fp(fp , rights = 'r'):
     pqf = h5py.File(fp, rights)
     return pqf   
 
+def split_pqf_by_syncs(pqf,ret_array,syncs_per_sweep,sweep_length):
+    channel = pqf['/PQ_channel-1'].value
+    special = pqf['/PQ_special-1'].value
+    sync_number = pqf['/PQ_sync_number-1'].value
+    sync_time = pqf['/PQ_sync_time-1'].value
+    time = pqf['/PQ_time-1'].value
 
+    sweep_idxs=np.mod(np.floor((sync_number-1)/syncs_per_sweep),sweep_length)
+
+    for i in range(sweep_length):
+        ret_array[i].create_dataset('PQ_channel-1', data=channel[sweep_idxs==i])
+        ret_array[i].create_dataset('/PQ_special-1', data=special[sweep_idxs==i])
+        ret_array[i].create_dataset('/PQ_sync_number-1', data= sync_number[sweep_idxs==i])
+        ret_array[i].create_dataset('/PQ_sync_time-1', data= sync_time[sweep_idxs==i])
+        ret_array[i].create_dataset('/PQ_time-1', data= time[sweep_idxs==i])
+    return ret_array
+    
 def set_analysis_data(pqf, name, data, analysisgrp = 'analysis', subgroup=None, **kw):
 
     agrp = pqf.require_group(analysisgrp + ('/' + subgroup if subgroup!=None else ''))
