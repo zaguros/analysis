@@ -180,7 +180,7 @@ def check_adwin_realtime(label, newer_than=False, print_details=True):
 		s.maj_reps = 1
 		s.maj_thr = 0	
 		phases_th, p_tn_th, p_2tn_th = s.sim_cappellaro_track_coefficients (msmnt_result = exp.msmnt_results[0,:])
-		print phases_th*180/np.pi
+		print np.round(phases_th*180/np.pi)
 
 		if print_details:
 			for n in np.arange (exp.N)+1:
@@ -188,6 +188,7 @@ def check_adwin_realtime(label, newer_than=False, print_details=True):
 				print '		p[tn] = ',p_tn_th[n-1], ' (th)  ----- ', p_tn_exp[n-1],' (exp)'
 				print '		p[2tn] = ',p_2tn_th[n-1], ' (th)  ----- ', p_2tn_exp[n-1],' (exp)'
 
+		s.adwin_algorithm (outcomes = exp.msmnt_results[0,:])
 
 def check_adwin_realtime_record_pk(label, newer_than=False):
 
@@ -212,7 +213,8 @@ def check_adwin_realtime_record_pk(label, newer_than=False):
 	plt.legend()
 	plt.show()
 
-result = '1011'
-check_adwin_realtime (label = result+'_test_pk_n=1', newer_than = '143800')
-check_adwin_realtime_record_pk(label = result, newer_than = '143800')
-#check_adwin_realtime (label = 'M=1_rtAdwin', newer_than = '141400', print_details=True)
+#result = '1011'
+#check_adwin_realtime (label = result+'_test_pk_n=1', newer_than = '143800')
+#check_adwin_realtime_record_pk(label = result, newer_than = '143800')
+
+check_adwin_realtime (label = 'N=8_M=3_rtAdwin', newer_than = '180000', print_details=True)

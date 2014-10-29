@@ -810,7 +810,7 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 			p1 = 0.25*(np.exp(1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = -t_n)) 
 			p2 = 0.25*(np.exp(-1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = +t_n)) 
 		p = p0+p1+p2
-		p = (p/np.sum(np.abs(p)**2)**0.5)
+		#p = (p/np.sum(np.abs(p)**2)**0.5)
 		self.p_k = np.copy (p)
 
 
@@ -966,6 +966,89 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 			stop = time.clock()
 			exec_time = stop-start
 		return exec_time
+
+
+	def adwin_algorithm (self, outcomes=[], do_plot=False, do_print=True):
+
+		discr_steps = 2**(self.N+1)+1
+		m = np.zeros (self.N+1)
+		t = np.zeros (self.N+1)
+		th = np.zeros(self.N+1)
+		self.msmnt_phases = np.zeros((self.reps,self.N))
+		self.msmnt_times = np.zeros(self.N)
+		self.msmnt_results = np.zeros((self.reps,self.N))
+		p_tn = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+		p_2tn = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+
+
+		for rep in np.arange(self.reps):
+			p_real = np.zeros (discr_steps+1)
+			p_imag = np.zeros (discr_steps+1)
+			p_real [1] = 1.
+
+			curr_phase = 0
+
+			if do_plot:
+				f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
+				x = np.arange(2**self.N+1)
+			for n in np.arange(self.N)+1:
+				t[n] = 2**(self.N-n)
+				k_opt = 2*t[n]
+				th[n] = -0.5*np.angle(-1j*p_imag[1+k_opt]+p_real[1+k_opt])
+				nr_ones = outcomes[n-1]
+				nr_zeros = self.M-nr_ones
+
+				if do_plot:
+					axarr[0].plot (p_real[1:], ':k')
+					axarr[1].plot (p_imag[1:], ':k')
+					axarr[0].plot (p_real[1:], 'o', label=str(n))
+					axarr[1].plot (p_imag[1:], 'o', label=str(n))
+
+				p_tn [n] = p_real[1+t[n]]+1j*p_imag[1+t[n]]
+				p_2tn [n] = p_real[1+2*t[n]]+1j*p_imag[1+2*t[n]]
+
+				for mmm in np.arange(nr_ones):
+					p0_real = np.copy (p_real)
+					p0_imag = np.copy (p_imag)
+					cn = np.pi - th[n]
+					for k in np.arange(0, 2**self.N+1):
+						if (k<t[n]):
+							p_im_min = -p0_imag[1+np.abs(k-t[n])]
+						else:
+							p_im_min = p0_imag[1+np.abs(k-t[n])]
+						p_real [1+k] = p0_real[1+k] + 0.5*(np.cos(cn)*(p0_real [1+np.abs(k-t[n])] + p0_real [1+k+t[n]]) - np.sin(cn)*(p_im_min - p0_imag [1+k+t[n]])) 
+						p_imag [1+k] = p0_imag[1+k] + 0.5*(np.cos(cn)*(p_im_min + p0_imag [1+k+t[n]]) + np.sin(cn)*(p0_real [1+np.abs(k-t[n])] - p0_real [1+k+t[n]])) 
+
+				for mmm in np.arange(nr_zeros):
+					p0_real = np.copy (p_real)
+					p0_imag = np.copy (p_imag)
+					cn = 0*np.pi - th[n]
+					for k in np.arange(0, 2**self.N+1):
+						if (k<t[n]):
+							p_im_min = -p0_imag[1+np.abs(k-t[n])]
+						else:
+							p_im_min = p0_imag[1+np.abs(k-t[n])]
+						p_real [1+k] = p0_real[1+k] + 0.5*(np.cos(cn)*(p0_real [1+np.abs(k-t[n])] + p0_real [1+k+t[n]]) - np.sin(cn)*(p_im_min - p0_imag [1+k+t[n]])) 
+						p_imag [1+k] = p0_imag[1+k] + 0.5*(np.cos(cn)*(p_im_min + p0_imag [1+k+t[n]]) + np.sin(cn)*(p0_real [1+np.abs(k-t[n])] - p0_real [1+k+t[n]])) 
+			if do_plot:
+				axarr[0].set_title('real part')
+				axarr[1].set_title('imaginary part')
+				axarr[0].set_xlim([0, 2**self.N+1])
+				axarr[1].set_xlim([0, 2**self.N+1])
+				plt.legend()
+				plt.show()
+			self.msmnt_results [rep, :] = np.array(outcomes)
+			self.msmnt_phases [rep, :] = th[1:]
+			self.msmnt_times = t [1:]
+
+			if do_print:
+				print 'Measurement outcomes: ', outcomes
+				print 'Optimal phases: ', np.round(th[1:]*180/np.pi)
+
+				for n in np.arange(self.N)+1:
+					print '*step-'+str(n)+' p[tn] = ', p_tn[n], '   p[2tn] = ', p_2tn[n]
+
+
 
 
 	def adwin_only_positive (self, debug = False, exec_speed = False):

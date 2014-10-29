@@ -173,7 +173,7 @@ def check_simulated_adwin_phases ():
 
 
 
-def check_adwin_code (N,M, msmnt_results):
+def check_adwin_code (N,M, outcomes):
 	s = magnetometry.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
 	s.setup_simulation (magnetic_field_hz = 0, M=M)
 	s.T2 = 96e-6
@@ -182,7 +182,7 @@ def check_adwin_code (N,M, msmnt_results):
 	s.renorm_ssro = False
 	s.maj_reps = 1
 	s.maj_thr = 0
-	s.adwin_ultrafast_print_steps (msmnt_results = msmnt_results)
+	s.adwin_algorithm (outcomes = outcomes)
 
 
 def benchmark_exec_speed ():
@@ -253,7 +253,7 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
-check_adwin_code(N=4, M=1, msmnt_results = [1,0,0,0])
+check_adwin_code(N=4, M=5, outcomes = [5,3,0,4])
 
 #simulate_cappellaro_debug_adwin()
 #check_simulated_adwin_phases ()
