@@ -159,16 +159,19 @@ def analyze_sweep_field():
 #error= B_vs_time(nr=90, label = 'CR40b_manyreps')
 #single_B_field (nr = 69, label = 'CR40b_manyreps')
 
-def check_adwin_realtime(label, newer_than=False):
+def check_adwin_realtime(label, newer_than=False, print_details=True):
 
 	dir0, daydir, m_dirs = toolbox.latest_data (contains = label, return_all=True, newer_than = newer_than)
 
 	for i in m_dirs:
 		f = os.path.join(dir0, daydir, i)
-		print '################## -current folder: ', i
+		print '################## - current folder: ', i
 		exp = magnetometry.RamseySequence_Exp (folder = f)
 		exp.load_exp_data()
+		print 'Timer: '+str('{0:.2f}'.format(exp.timer))+' ms'
 		exp.check_realtime_phases()
+		p_tn_exp = exp.p_tn
+		p_2tn_exp = exp.p_2tn
 
 		s = magnetometry.RamseySequence_Adwin (N_msmnts = exp.N, reps=1, tau0=20e-9)
 		s.M = exp.M
@@ -176,7 +179,40 @@ def check_adwin_realtime(label, newer_than=False):
 		s.verbose = False
 		s.maj_reps = 1
 		s.maj_thr = 0	
-		phases_adwin_py = s.adwin_ultrafast_print_steps (msmnt_results = exp.msmnt_results[0,:])
-		print 'Python-based adwin simulations. Phases: ', phases_adwin_py
+		phases_th, p_tn_th, p_2tn_th = s.sim_cappellaro_track_coefficients (msmnt_result = exp.msmnt_results[0,:])
+		print phases_th*180/np.pi
 
-check_adwin_realtime(label = '_N=9_M=6_rtAdwin', newer_than = '165000')
+		if print_details:
+			for n in np.arange (exp.N)+1:
+				print ' ---- N = ', n, '  ---  t_n = ', 2**(exp.N-n), '  ---- opt_phase = '+str('{0:.1f}'.format(phases_th[n-1]*180/np.pi))
+				print '		p[tn] = ',p_tn_th[n-1], ' (th)  ----- ', p_tn_exp[n-1],' (exp)'
+				print '		p[2tn] = ',p_2tn_th[n-1], ' (th)  ----- ', p_2tn_exp[n-1],' (exp)'
+
+
+def check_adwin_realtime_record_pk(label, newer_than=False):
+
+
+	f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
+	for n in [1,2,3,4]:
+		dir0, daydir, m_dirs = toolbox.latest_data (contains = label+'_test_pk_n='+str(n), return_all=True, newer_than = newer_than)
+
+		for i in m_dirs:
+			f = os.path.join(dir0, daydir, i)
+			exp = magnetometry.RamseySequence_Exp (folder = f)
+			exp.load_exp_data()
+			#exp.check_realtime_phases()
+			x = np.arange(2**exp.N+1)
+			axarr[0].plot (exp.real_pk_adwin, ':k')
+			axarr[1].plot (exp.imag_pk_adwin, ':k')
+			axarr[0].plot (exp.real_pk_adwin, 'o', label=str(n))
+			axarr[1].plot (exp.imag_pk_adwin, 'o', label=str(n))
+
+	axarr[0].set_title('real part')
+	axarr[1].set_title('imaginary part')
+	plt.legend()
+	plt.show()
+
+result = '1011'
+check_adwin_realtime (label = result+'_test_pk_n=1', newer_than = '143800')
+check_adwin_realtime_record_pk(label = result, newer_than = '143800')
+#check_adwin_realtime (label = 'M=1_rtAdwin', newer_than = '141400', print_details=True)

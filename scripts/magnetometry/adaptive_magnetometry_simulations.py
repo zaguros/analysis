@@ -51,14 +51,14 @@ def simulate_cappellaro ():
 
 def simulate_cappellaro_debug_adwin ():
 	maj_reps = 1
-	M = 12
+	M = 10
 
-	set_magnetic_field =2/(20e-9*2**4)
-	s = magnetometry.RamseySequence_Adwin (N_msmnts = 4, reps=200, tau0=20e-9)
+	set_magnetic_field =25/(20e-9*2**8)
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = 8, reps=100, tau0=20e-9)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
 	s.T2 = 96e-6
-	s.fid0 = 0.868
+	s.fid0 = 0.9
 	s.fid1 = 0.02
 	s.renorm_ssro = True
 	s.maj_reps = maj_reps
@@ -66,7 +66,7 @@ def simulate_cappellaro_debug_adwin ():
 
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority_with_plots(N_sim = [1,2, 3,4])
-	s.adwin_ultrafast_M(nr_coeff=21)
+	s.adwin_ultrafast_M(nr_coeff=51)
 	s.convert_to_dict()
 	s.print_results()
 	#s.print_table_positions()
@@ -154,6 +154,25 @@ def simulate_adwin ():
 	plt.show()
 
 
+def check_simulated_adwin_phases ():
+	N = 7
+	pp = int(np.random.randint(1, 2**(N-1)))
+	set_magnetic_field = pp*(1/20e-9)/(2**N) 
+	print 'B-field:', set_magnetic_field/1e6
+
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = N, reps=20, tau0=20e-9)
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=5)
+	s.T2 = 96e-6
+	s.fid0 = 1.00
+	s.fid1 = 0.0
+	s.renorm_ssro = False
+	s.maj_reps = 1
+	s.maj_thr = 0
+	
+	s.check_adwin_phases(nr_coeff = 101)
+
+
+
 def check_adwin_code (N,M, msmnt_results):
 	s = magnetometry.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
 	s.setup_simulation (magnetic_field_hz = 0, M=M)
@@ -162,7 +181,7 @@ def check_adwin_code (N,M, msmnt_results):
 	s.fid1 = 0.0
 	s.renorm_ssro = False
 	s.maj_reps = 1
-	s.maj_thr = 0	
+	s.maj_thr = 0
 	s.adwin_ultrafast_print_steps (msmnt_results = msmnt_results)
 
 
@@ -234,6 +253,7 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
-#check_adwin_code(N=9, M=1, msmnt_results = [1,1,0,1,0,0,0,0,1])
+check_adwin_code(N=4, M=1, msmnt_results = [1,0,0,0])
 
-simulate_cappellaro_debug_adwin()
+#simulate_cappellaro_debug_adwin()
+#check_simulated_adwin_phases ()

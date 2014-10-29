@@ -873,13 +873,8 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 		self.inc_rep()
 
 
-	def sim_cappellaro_clip_coefficients (self, N_sim = []):
+	def sim_cappellaro_track_coefficients (self, msmnt_result = []):
 		
-		if self.verbose:				
-			print '-----------------------------------------'
-			print 'Simulating Cappellaro protocol (maj vote)'
-			print '-----------------------------------------'
-			print '- N = '+str(self.N)+ ', M = '+str(self.M)
 
 		self.msmnt_phases = np.zeros((self.reps,self.N))
 		self.msmnt_times = np.zeros(self.N)
@@ -901,36 +896,30 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 		self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
 		self.p_k [self.points] = 1/(2.*np.pi)
 
-		x_axis = np.arange(self.discr_steps)-self.points
+		pi_tn = np.zeros(self.N)+1j*np.zeros(self.N)
+		pi_2tn = np.zeros(self.N)+1j*np.zeros(self.N)
 
-		for n in N_sim:
+		for n in np.arange(self.N)+1:
 
 			t[n-1] = int(2**(self.N-n))
 			ttt = -2**(self.N-n+1)
 			phase[n-1] = 0.5*np.angle (self.p_k[ttt+self.points])
+			pi_tn[n-1] = self.p_k[t[n-1]+self.points]
+			pi_2tn[n-1] = self.p_k[-ttt+self.points]
 
 			m_total = 0
-			print '### N  = ', n
-			for m in np.arange(self.M):
-				m_res = self.majority_vote_msmnt (theta_n = phase[n-1], t_n = t[n-1])				
-				self.bayesian_update (m_n = m_res, phase_n = phase[n-1], t_n = 2**(self.N-n))
-				plt.semilogy (x_axis, np.real(self.p_k), 'o', label = 'M = '+str(m+1))
-				m_total = m_total + m_res
-				print '--- m = ', m, '. Non-zero elements:'
-				print ' Re[p_k], k = ', np.nonzero(np.real(self.p_k))-(self.points)*np.ones(len(np.nonzero(np.real(self.p_k))))
-
-			msmnt_results[n-1] =m_total
-			plt.title ('N = '+str(self.N)+', n = '+str(n), fontsize=15)
-			plt.legend()
-			plt.show()
-				
+			nr_ones = msmnt_result[n-1]
+			nr_zeros = self.M-nr_ones
+			for m in np.arange(nr_ones):
+				self.bayesian_update (m_n = 1, phase_n = phase[n-1], t_n = 2**(self.N-n))
+			for m in np.arange(nr_zeros):
+				self.bayesian_update (m_n = 0, phase_n = phase[n-1], t_n = 2**(self.N-n))
+			
 		self.points = actual_points
 		self.discr_steps = 2*self.points+1
 		self.msmnt_results [0, :] = np.copy(msmnt_results)
 		self.msmnt_phases [0, :] = np.copy(phase)
-		self.inc_rep()
-
-
+		return phase, pi_tn, pi_2tn
 
 	def basic_adwin_algorithm (self, debug = False, exec_speed=False):
 
@@ -1200,6 +1189,8 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 		cn = meas_res*np.pi+phase
 		p0_real = np.copy (p_real)
 		p0_imag = np.copy (p_imag)
+
+
 		
 		try:
 			if (k>=tn):	
@@ -1212,9 +1203,12 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 			pass
 		return p_real, p_imag
 
+
+
 	def adwin_ultrafast_M (self, debug=False, nr_coeff = 1, exec_speed=False):
 
-		discr_steps = 2**(self.N+1)+1
+		self.max_k = 2**self.N
+		discr_steps = 2*self.max_k+1
 		self.msmnt_phases = np.zeros((self.reps,self.N))
 		self.msmnt_times = np.zeros(self.N)
 		self.msmnt_results = np.zeros((self.reps,self.N))
@@ -1258,7 +1252,60 @@ class RamseySequence_Adwin (RamseySequence_Simulation):
 			exec_time = stop-start
 		return exec_time
 
+	def adwin_ultrafast_M_set_input (self, msmnt_result = [],  nr_coeff = 1):
 
+		self.max_k = 2**self.N
+		discr_steps = 2*self.max_k+1
+		self.msmnt_phases = np.zeros((self.reps,self.N))
+		self.msmnt_times = np.zeros(self.N)
+		self.msmnt_results = np.zeros((self.reps,self.N))
+
+		m = np.zeros (self.N+1)
+		t = np.zeros (self.N+1)
+		th = np.zeros(self.N+1)
+
+		p_real = np.zeros (discr_steps)
+		p_imag = np.zeros (discr_steps)
+		p_real [0] = 1./(2*np.pi)
+		t[0] = 2**self.N
+
+		for n in np.arange(self.N)+1:
+			t[n] = int(2**(self.N-n))
+			k_opt = int(2**(self.N-n+1))
+			th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
+
+			nr_ones = msmnt_result [n-1]
+			nr_zeros = self.M - nr_ones
+
+			for mmm in np.arange(nr_ones):
+				for j in np.arange(nr_coeff)-nr_coeff/2:
+					if (k_opt+j*t[n]>=0):
+						p_real, p_imag = self.adwin_update (p_real = p_real, p_imag = p_imag, meas_res = 1, phase = th[n], tn = t[n], k=k_opt+j*t[n])
+			for mmm in np.arange(nr_zeros):
+				for j in np.arange(nr_coeff)-nr_coeff/2:
+					if (k_opt+j*t[n]>=0):
+						p_real, p_imag = self.adwin_update (p_real = p_real, p_imag = p_imag, meas_res = 0, phase = th[n], tn = t[n], k=k_opt+j*t[n])
+
+		return th[1:]
+
+
+
+	def check_adwin_phases(self, nr_coeff):
+
+		sim_result = np.random.randint(self.M+1, size=self.N)
+		print "Simulated outcome: ", sim_result
+
+		th_adwin = np.round(self.adwin_ultrafast_M_set_input (nr_coeff=nr_coeff, msmnt_result = sim_result)*180/np.pi)
+		print 'Adwin simualted phases: ', th_adwin
+
+		t = AdaptiveTable (N=self.N,M=self.M)
+		t.set_tau0(tau0=self.t0)
+		t.verbose = False
+		sim_ph, pos = t.msmnt_to_position (msmnt_results = sim_result)
+		print 'Python simulated phases: ', sim_ph
+
+		diff = np.sum(np.abs(th_adwin-sim_ph))/self.N
+		print 'MEAN ERROR: ', diff, ' deg'
 
 
 
@@ -1298,9 +1345,9 @@ class RamseySequence_Exp (RamseySequence):
 		self.maj_thr = a.maj_thr
 		self.CR_after = a.CR_after
 
-		if (a.debug_pk):
-			self.p_tn = a.p_tn
-			self.p_2tn = a.p_2tn
+		#if (a.debug_pk):
+		self.p_tn = a.p_tn
+		self.p_2tn = a.p_2tn
 
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
@@ -1312,6 +1359,7 @@ class RamseySequence_Exp (RamseySequence):
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
 		self.msmnt_type = a.msmnt_type
+		self.timer = a.timer
 
 		if (a.msmnt_type=='realtime'):
 			self.test_adwin = a.test_adwin
@@ -1321,6 +1369,11 @@ class RamseySequence_Exp (RamseySequence):
 			self.exp_fid0 = a.exp_fid0
 			self.exp_fid1 = a.exp_fid1
 			self.opt_phase = a.theta_opt #to be removed, only for testing yesterday's data!!! (should load a.theta_opt)
+
+		self.save_p_k = a.save_p_k
+		self.real_pk_adwin = a.real_pk_adwin
+		self.imag_pk_adwin = a.imag_pk_adwin
+
 
 
 	def CR_after_postselection(self):
