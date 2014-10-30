@@ -16,8 +16,10 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
+from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
 
 reload(magnetometry)
+reload(adwin_mgnt)
 
 def B_vs_time_single (label):
 
@@ -173,7 +175,7 @@ def check_adwin_realtime(label, newer_than=False, print_details=True):
 		p_tn_exp = exp.p_tn
 		p_2tn_exp = exp.p_2tn
 
-		s = magnetometry.RamseySequence_Adwin (N_msmnts = exp.N, reps=1, tau0=20e-9)
+		s = adwin_mgnt.RamseySequence_Adwin (N_msmnts = exp.N, reps=1, tau0=20e-9)
 		s.M = exp.M
 		s.renorm_ssro = False
 		s.verbose = False
@@ -217,4 +219,4 @@ def check_adwin_realtime_record_pk(label, newer_than=False):
 #check_adwin_realtime (label = result+'_test_pk_n=1', newer_than = '143800')
 #check_adwin_realtime_record_pk(label = result, newer_than = '143800')
 
-check_adwin_realtime (label = 'N=8_M=3_rtAdwin', newer_than = '180000', print_details=True)
+check_adwin_realtime (label = 'N=8_M=10_rtAdwin_86697880', newer_than = '100000', print_details=True)
