@@ -29,25 +29,17 @@ reload(adptv_mgnt)
 
 class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
-	def bayesian_update(self, m_n, phase_n, t_n,repetition = None):
 
-		if (repetition == None):
-			repetition = self.curr_rep
+	def f_pr (self, value):
 
-		p_old = np.copy(self.p_k)
-		
-		if self.use_ROfid_in_update:
-			p0 = (0.5*self.fid0 + m_n-m_n*self.fid0)*p_old 
-			p1 = 0.25*self.fid0*(np.exp(1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = -t_n)) 
-			p2 = 0.25*self.fid0*(np.exp(-1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = +t_n)) 		
+		if (np.real(value)==0):
+			return '{0:.5f}'.format(value)
 		else:
-			p0 = 0.5*p_old 
-			p1 = 0.25*(np.exp(1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = -t_n)) 
-			p2 = 0.25*(np.exp(-1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = +t_n)) 
-		p = p0+p1+p2
-		norm = p[self.points]*2*np.pi
-		p = p/norm
-		self.p_k = np.copy (p)
+			if (float(np.imag(value))>0):
+				s = '+'
+			else:
+				s = '-'
+			return '{0:.5f}'.format(float(np.real(value)))+s+'{0:.5f}'.format(abs(float(np.imag(value))))+'j'
 
 
 
@@ -291,9 +283,162 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 				print 'Optimal phases: ', np.round(th[1:]*180/np.pi)
 
 				for n in np.arange(self.N)+1:
-					print '*step-'+str(n)+' p[tn] = ', p_tn[n], '   p[2tn] = ', p_2tn[n]
+					print '*step-'+str(n)+' p[tn] = ', self.f_pr(p_tn[n]), '   p[2tn] = ', self.f_pr(p_2tn[n])
 
 
+	def bayesian_update(self, m_n, phase_n, t_n,repetition = None):
+
+		if (repetition == None):
+			repetition = self.curr_rep
+
+		p_old = np.copy(self.p_k)
+		
+		if self.use_ROfid_in_update:
+			p0 = (0.5*self.fid0 + m_n-m_n*self.fid0)*p_old 
+			p1 = 0.25*self.fid0*(np.exp(1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = -t_n)) 
+			p2 = 0.25*self.fid0*(np.exp(-1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = +t_n)) 		
+		else:
+			p0 = 0.5*p_old 
+			p1 = 0.25*(np.exp(1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = -t_n)) 
+			p2 = 0.25*(np.exp(-1j*(m_n*np.pi+phase_n))*np.roll(p_old, shift = +t_n)) 
+		p = p0+p1+p2
+		norm = p[self.points]*2*np.pi
+		p = p/norm
+		self.p_k = np.copy (p)
+
+
+
+
+	def compare_algorithms (self, outcomes = [], do_plot=True):
+		
+		self.points = 2**(self.N+6)+1
+		self.discr_steps = 2*self.points+1
+
+		
+		self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+		self.p_k [self.points] = 1/(2.*np.pi)
+		p_real = np.zeros (self.points+1)
+		p_imag = np.zeros (self.points+1)
+		p_real [1] = 1/(2*np.pi)
+
+		pi_tn = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+		pi_2tn = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+		t = np.zeros(self.N+1)
+		phase_python = np.zeros(self.N+1)
+		phase_adwin = np.zeros(self.N+1)
+		range_k_sweep = 2**(self.N+4)+1
+		p_2tn_adwin = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+		p_2tn_python = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+
+		diff = None
+		for n in np.arange(self.N)+1:
+
+			t[n] = int(2**(self.N-n))
+			k_opt = -2*t[n]
+			phase_python[n] = 0.5*np.angle (self.p_k[k_opt+self.points])
+			phase_adwin[n] = 0.5*np.angle(-1j*p_imag[1+2*t[n]]+p_real[1+2*t[n]])
+			p_2tn_adwin[n] = p_real[1+2*t[n]]+1j*p_imag[1+2*t[n]]
+			p_2tn_python[n] = self.p_k[2*t[n]+self.points]
+
+
+			#print '--- p[2*tn]:  adwin = ', self.f_pr(p_2tn_adwin[n]), '    python = ', self.f_pr(p_2tn_python[n])
+
+
+			nr_ones = outcomes[n-1]
+			nr_zeros = self.M-nr_ones
+
+			max_k = int(t[n])*(self.M**2+10)
+			if (max_k>range_k_sweep):
+				nr_k  = int(range_k_sweep)/int(t[n])
+				max_k = int(t[n])*nr_k
+			k_space = np.arange(0, max_k, int(t[n]))
+			#print 'k_space: ', k_space
+
+			for m in np.arange(nr_ones):
+				self.bayesian_update (m_n = 1, phase_n = phase_python[n], t_n = int(t[n]))
+
+				p0_real = np.copy (p_real)
+				p0_imag = np.copy (p_imag)
+				cn = np.pi + phase_adwin[n]
+
+	
+
+				for k in k_space:
+					if (k+t[n]>range_k_sweep):
+						p0r_pl = 0
+						p0i_pl = 0
+					else:
+						p0r_pl = p0_real [1+k+t[n]]
+						p0i_pl = p0_imag [1+k+t[n]]
+					if (k<t[n]):
+						p_im_min = -p0_imag[1+np.abs(k-t[n])]
+					else:
+						p_im_min = p0_imag[1+np.abs(k-t[n])]
+					p_real [1+k] = 0.5*p0_real[1+k] + 0.25*(np.cos(cn)*(p0_real [1+np.abs(k-t[n])] + p0r_pl) + np.sin(cn)*(p_im_min - p0i_pl)) 
+					p_imag [1+k] = 0.5*p0_imag[1+k] + 0.25*(np.cos(cn)*(p_im_min + p0i_pl) - np.sin(cn)*(p0_real [1+np.abs(k-t[n])] - p0r_pl)) 
+
+				norm = p_real[1]*2*np.pi
+				p_real = p_real/norm
+				p_imag = p_imag/norm
+
+			for m in np.arange(nr_zeros):
+				self.bayesian_update (m_n = 0, phase_n = phase_python[n], t_n = int(t[n]))
+
+				p0_real = np.copy (p_real)
+				p0_imag = np.copy (p_imag)
+				cn = 0*np.pi + phase_adwin[n]
+				for k in k_space:
+					if (k+t[n]>range_k_sweep):
+						p0r_pl = 0
+						p0i_pl = 0
+					else:
+						p0r_pl = p0_real [1+k+t[n]]
+						p0i_pl = p0_imag [1+k+t[n]]
+					if (k<t[n]):
+						p_im_min = -p0_imag[1+np.abs(k-t[n])]
+					else:
+						p_im_min = p0_imag[1+np.abs(k-t[n])]
+					p_real [1+k] = 0.5*p0_real[1+k] + 0.25*(np.cos(cn)*(p0_real [1+np.abs(k-t[n])] + p0r_pl) + np.sin(cn)*(p_im_min - p0i_pl)) 
+					p_imag [1+k] = 0.5*p0_imag[1+k] + 0.25*(np.cos(cn)*(p_im_min + p0i_pl) - np.sin(cn)*(p0_real [1+np.abs(k-t[n])] - p0r_pl)) 
+
+				norm = p_real[1]*2*np.pi
+				p_real = p_real/norm
+				p_imag = p_imag/norm
+
+			if do_plot:
+				len_array = len(p_real)
+				th_adw = int(round(phase_adwin[n]*180/np.pi))
+				th_pyt = int(round(phase_python[n]*180/np.pi))
+
+				print '######  n = ', n
+				print '   th_adw = ', th_adw, '  --- th_pyth = ', th_pyt
+				print '	  msmnt outcome: ', nr_ones
+				diff = (((p_real[1:]-np.real(self.p_k[self.points:self.points+len_array-1])))**2+((p_imag[1:]-np.imag(self.p_k[self.points:self.points+len_array-1])))**2)**0.5
+				avg_diff = np.sum(diff)/len(diff)
+				f, axarr = plt.subplots(3, sharex=True, figsize=(10,10))
+				x = np.arange(2**self.N+1)
+				axarr[0].plot (p_real[1:], ':k')
+				axarr[0].plot (np.real(self.p_k[self.points:]), ':b')
+				axarr[1].plot (p_imag[1:], ':k')
+				axarr[1].plot (np.imag(self.p_k[self.points:]), ':b')
+				axarr[0].plot (p_real[1:], 'o', label='adw_'+str(n))
+				axarr[1].plot (p_imag[1:], 'o', label='adw_'+str(n))
+				axarr[0].plot (np.real(self.p_k[self.points:]), 'o', label='pyth_'+str(n))
+				axarr[1].plot (np.imag(self.p_k[self.points:]), 'o', label='pyth_'+str(n))
+				axarr[2].semilogy (diff, ':k')
+				axarr[2].semilogy (diff, 'ok')
+				axarr[0].set_title('real part, n = '+str(n))
+				axarr[1].set_title('imaginary part, n = '+str(n))
+				axarr[2].set_title('difference, n = '+str(n)+', --- avg_diff = '+str(avg_diff)			)
+				axarr[0].set_xlim([0, 2**self.N+1])
+				axarr[1].set_xlim([0, 2**self.N+1])
+				axarr[2].set_xlim([0, 2**self.N+1])
+				axarr[0].legend()
+				axarr[1].legend()
+				axarr[2].legend()
+				plt.show()
+		
+		return phase_adwin, phase_python, diff, p_2tn_adwin, p_2tn_python
 
 
 	def adwin_only_positive (self, debug = False, exec_speed = False):
