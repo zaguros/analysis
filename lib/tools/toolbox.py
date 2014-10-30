@@ -65,7 +65,9 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None):
+
+
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -77,6 +79,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     If no fitting data is found, an exception is raised. Except when you specifically ask not to to
     this in: raise_exc = False, then a 'False' is returned.
+
+    return_all = True: returns all the folders that satisfy the requirements (Cristian)
     '''
 
     if (folder==None):
@@ -130,6 +134,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             return False
     else:
         measdirs.sort()
+        if return_all:
+            return search_dir,daydir,measdirs
         measdir = measdirs[-1]
         if return_timestamp == False:
             return os.path.join(search_dir,daydir,measdir)
@@ -285,18 +291,37 @@ def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     
     return filepaths
 
-def get_msmt_name(fp):
+def get_msmt_name(pqf):
     """
     This assumes that there is only one group, whose name is the msmt name.
     """
-    _root, fn = os.path.split(fp)
-    f = h5py.File(fp, 'r')
-    for k in f.keys():
-        if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
-            f.close()
-            return k
+
+    if type(pqf) == h5py._hl.files.File: 
+        for k in pqf.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
+                f.close()
+                return k
+
+        raise Exception('Cannot find the name of the measurement.')
+
+
+    elif type(pqf) == str:
+        _root, fn = os.path.split(pqf)
+
+        f = h5py.File(pqf, 'r')
+
+        for k in f.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
+                f.close()
+                return k
     
-    raise Exception('Cannot find the name of the measurement.')
+        raise Exception('Cannot find the name of the measurement.')
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+
 
 def get_msmt_fp(folder, ext='hdf5'):
     dirname = os.path.split(folder)[1]

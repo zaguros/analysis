@@ -7,17 +7,32 @@ def get_photons(pqf):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
     """
-    channel = pqf['/PQ_channel-1'].value
-    special = pqf['/PQ_special-1'].value
-    
-    is_not_special = special==0
-    is_channel_0 = channel==0
-    is_channel_1 = channel==1
+    if type(pqf) == h5py._hl.files.File:
+
+        channel = pqf['/PQ_channel-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf,'r')
+        channel = f['/PQ_channel-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise    
+        
+    is_not_special = special == 0
+    is_channel_0 = channel == 0
+    is_channel_1 = channel == 1
     
     is_photon_0 = np.logical_and(is_not_special, is_channel_0)
     is_photon_1 = np.logical_and(is_not_special, is_channel_1)
     
     return is_photon_0, is_photon_1
+
+
 
 def get_markers(pqf, chan):
     """
@@ -28,11 +43,6 @@ def get_markers(pqf, chan):
 
         channel = pqf['/PQ_channel-1'].value
         special = pqf['/PQ_special-1'].value
-    
-        is_special = special==1
-        is_channel = channel==chan
-
-        return (is_special & is_channel)
 
     elif type(pqf) == str:
 
@@ -41,13 +51,14 @@ def get_markers(pqf, chan):
         special = f['/PQ_special-1'].value
         f.close()
     
-        is_special = special==1
-        is_channel = channel==chan
-
-        return (is_special & is_channel)
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
+
+    is_special = special == 1
+    is_channel = channel == chan
+
+    return (is_special & is_channel)
 
 def get_multiple_photon_syncs(pqf):
     special = pqf['/PQ_special-1'].value
@@ -173,6 +184,181 @@ def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_mi
     
     return is_photon_first_window, is_photon_second_window
 
+def get_tail_filtered_photons(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, VERBOSE = True):
+    """
+    Returns two filters whether events are in the first or 
+    in the second tail.
+    """
+    if type(pqf) == h5py._hl.files.File: 
+        channel = pqf['/PQ_channel-1'].value
+        sync_time = pqf['/PQ_sync_time-1'].value
+        special = pqf['/PQ_special-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        channel = f['/PQ_channel-1'].value
+        sync_time = f['/PQ_sync_time-1'].value
+        special = f['/PQ_special-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise   
+
+    is_photon = special == 0
+    is_ch0 = channel == 0
+    is_ch1 = channel == 1
+    
+    first_win_min = first_win_min_ch0
+    first_win_max = first_win_min + window_length
+    second_win_min = first_win_min + dif_win1_win2
+    second_win_max = first_win_max + dif_win1_win2
+
+    is_event_first_tail_ch0_filt = (sync_time > first_win_min) & \
+                         (sync_time <= first_win_max)
+    is_event_second_tail_ch0_filt = (sync_time > second_win_min) & \
+                          (sync_time <= second_win_max)
+
+    is_event_first_tail_ch1_filt = (sync_time > (first_win_min + dif_ch0_ch1)) & \
+                         (sync_time <= (first_win_max + dif_ch0_ch1))
+    is_event_second_tail_ch1_filt = (sync_time > (second_win_min + dif_ch0_ch1)) & \
+                          (sync_time <= (second_win_max + dif_ch0_ch1))
+
+
+    is_photon_ch0 = is_photon & is_ch0
+    is_photon_ch1 = is_photon & is_ch1
+
+    is_ph_first_tail = (is_photon_ch0 & is_event_first_tail_ch0_filt) | (is_photon_ch1 & is_event_first_tail_ch1_filt)
+    is_ph_second_tail = (is_photon_ch0 & is_event_second_tail_ch0_filt) | (is_photon_ch1 & is_event_second_tail_ch1_filt)
+    
+    if VERBOSE:
+        print "The total number of photons detected in the first window of the ZPL is:", sum(is_ph_first_tail)
+        print "The total number of photons detected in the second window of the ZPL is:", sum(is_ph_second_tail)
+
+    return is_ph_first_tail, is_ph_second_tail
+
+def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, VERBOSE = True):
+    """
+    Returns a list with the unique sync numbers with a marker on a specific marker channel.
+    """
+    if type(pqf) == h5py._hl.files.File: 
+        sync_numbers = pqf['/PQ_sync_number-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_numbers = f['/PQ_sync_number-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise 
+
+
+    if sync_time_lim > 0:
+        sync_num_with_markers = sync_numbers[filter_marker_time_lim(pqf,marker_chan, sync_time_lim)]
+    else:
+        sync_num_with_markers = sync_numbers[filter_marker(pqf,marker_chan)]
+
+    unique_sync_num_with_markers = np.unique(sync_num_with_markers)
+
+    if VERBOSE:
+        print "The number of non-unique sync numbers with markers is:", len(sync_num_with_markers)
+        print "The number of unique sync numbers with markers is:", len(unique_sync_num_with_markers)
+
+    return unique_sync_num_with_markers
+
+
+
+def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_win_min, second_win_max, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, VERBOSE = True):
+    """
+    Retuns the total number of shots, total number of photons per shot, and the tailcounts per shot for the different tails which are filtered using
+    the arguments of the function. Finally it returns the total tailcounts per shot
+    """
+
+    if type(pqf) == h5py._hl.files.File: 
+        sync_num = pqf['/PQ_sync_number-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_num = f['/PQ_sync_number-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    Total_shots = sync_num[len(sync_num)-1]
+
+    is_photon_first_window, is_photon_second_window = get_photons_in_sync_windows(pqf,
+                                                                                    first_win_min,
+                                                                                    first_win_max,
+                                                                                    second_win_min,
+                                                                                    second_win_max)
+
+    if VERBOSE:
+        print "Total number of photons in the first window", sum(is_photon_first_window)
+        print "Total number of photons in the second window", sum(is_photon_second_window)
+
+    Tot_ph_per_shot = ((sum(is_photon_first_window)+ sum(is_photon_second_window))/float(Total_shots))
+
+    is_photon_first_tail, is_photon_second_tail = get_tail_filtered_photons(pqf, 
+                                                                                 first_win_min_ch0, 
+                                                                                 dif_win1_win2,
+                                                                                 window_length,
+                                                                                 dif_ch0_ch1)
+
+    TC_p_shot_first_tail = ((sum(is_photon_first_tail))/float(Total_shots))
+    TC_p_shot_second_tail = ((sum(is_photon_second_tail))/float(Total_shots))
+    TC_p_shot = TC_p_shot_first_tail + TC_p_shot_second_tail
+
+    return Total_shots, Tot_ph_per_shot, TC_p_shot_first_tail, TC_p_shot_second_tail, TC_p_shot
+    
+
+def get_tail_filtered_ph_sync_num(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, VERBOSE = True):
+    """
+    Returns the sync numbers of the photons in the first and second tail. The input necessary is the start of the first
+    tail of channel 0, the difference between the two tails, the difference between the two channels and the length of the tial.
+    """
+    if type(pqf) == h5py._hl.files.File: 
+        sync_num = pqf['/PQ_sync_number-1'].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_num = f['/PQ_sync_number-1'].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    is_photon_first_tail, is_photon_second_tail = get_tail_filtered_photons(pqf,
+                                                                       first_win_min_ch0,
+                                                                       dif_win1_win2,
+                                                                       window_length,
+                                                                       dif_ch0_ch1,
+                                                                       VERBOSE)
+
+
+
+    is_tail_photons = is_photon_first_tail | is_photon_second_tail
+    sync_num_ph_first_tail = sync_num[is_photon_first_tail]
+    sync_num_ph_second_tail = sync_num[is_photon_second_tail]
+  
+
+    overlapping_sync_num_12 = filter_on_same_sync_number(sync_num_ph_second_tail, sync_num_ph_first_tail)
+    overlapping_sync_num_21 = filter_on_same_sync_number(sync_num_ph_first_tail, sync_num_ph_second_tail)
+
+    non_overlapping_sync_num_12 = np.array([not x for x in overlapping_sync_num_12])
+    non_overlapping_sync_num_21 = np.array([not x for x in overlapping_sync_num_21])
+
+    if VERBOSE:
+        print "Rejection ratio first filter", 1. - sum(non_overlapping_sync_num_21)/float(len(non_overlapping_sync_num_21))
+        print "Rejection ratio second filter", 1. - sum(non_overlapping_sync_num_12)/float(len(non_overlapping_sync_num_12))
+
+    unique_sync_num_first_tail = np.unique(sync_num_ph_first_tail[non_overlapping_sync_num_12])
+    unique_sync_num_second_tail = np.unique(sync_num_ph_second_tail[non_overlapping_sync_num_21])
+
+    return unique_sync_num_first_tail, unique_sync_num_second_tail, is_tail_photons
 
 
 
@@ -209,28 +395,50 @@ def filter_marker(pqf, chan):
     """
     
     if type(pqf) == h5py._hl.files.File: 
-        is_mrkr = get_markers(pqf, chan)
-
         sync_numbers = pqf['/PQ_sync_number-1'].value
-
-        marker_sync_numbers = sync_numbers[is_mrkr]
-    
-        return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)  
-
-    elif type(pqf) == str:
-        is_mrkr = get_markers(pqf, chan)
-        
+    elif type(pqf) == str:        
         f = h5py.File(pqf, 'r')
         sync_numbers = f['/PQ_sync_number-1'].value
         f.close()
-    
-        marker_sync_numbers = sync_numbers[is_mrkr]
-    
-        return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
-
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
+
+    is_mrkr = get_markers(pqf, chan)
+    marker_sync_numbers = sync_numbers[is_mrkr]
+
+    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
+
+def filter_marker_time_lim(pqf, chan, sync_time_lim):
+    """
+    Note: at the moment this filter includes the marker events on which we filter.
+    """
+    
+    if type(pqf) == h5py._hl.files.File: 
+        sync_numbers = pqf['/PQ_sync_number-1'].value
+        sync_times = pqf['/PQ_sync_time-1'].value
+    elif type(pqf) == str:        
+        f = h5py.File(pqf, 'r')
+        sync_numbers = f['/PQ_sync_number-1'].value
+        sync_times = f['/PQ_sync_time-1'].value
+        f.close()
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    is_small_sync_time = sync_times <= sync_time_lim
+    is_large_sync_time = sync_times > sync_time_lim
+    is_mrkr = get_markers(pqf, chan)
+
+
+    marker_sync_num_small = sync_numbers[(is_mrkr & is_small_sync_time)] - 1
+    marker_sync_num_large = sync_numbers[(is_mrkr & is_large_sync_time)]
+    if len(marker_sync_num_large) > 0:
+        marker_sync_numbers = np.concatenate((marker_sync_num_small,marker_sync_num_large))
+    else:
+        marker_sync_numbers = marker_sync_num_small
+
+    return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
 
 def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max):
     """
