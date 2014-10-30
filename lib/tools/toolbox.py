@@ -282,18 +282,37 @@ def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     
     return filepaths
 
-def get_msmt_name(fp):
+def get_msmt_name(pqf):
     """
     This assumes that there is only one group, whose name is the msmt name.
     """
-    _root, fn = os.path.split(fp)
-    f = h5py.File(fp, 'r')
-    for k in f.keys():
-        if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
-            f.close()
-            return k
+
+    if type(pqf) == h5py._hl.files.File: 
+        for k in pqf.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
+                f.close()
+                return k
+
+        raise Exception('Cannot find the name of the measurement.')
+
+
+    elif type(pqf) == str:
+        _root, fn = os.path.split(pqf)
+
+        f = h5py.File(pqf, 'r')
+
+        for k in f.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
+                f.close()
+                return k
     
-    raise Exception('Cannot find the name of the measurement.')
+        raise Exception('Cannot find the name of the measurement.')
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+
 
 def get_msmt_fp(folder, ext='hdf5'):
     dirname = os.path.split(folder)[1]
