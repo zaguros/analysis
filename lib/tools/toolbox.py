@@ -11,6 +11,7 @@ import time
 try:
     import qt
     datadir = qt.config['datadir']
+    print datadir
 except:
     # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
@@ -21,6 +22,7 @@ except:
             datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
+    print datadir
 
 def nearest_idx(array, value):
     '''
@@ -176,11 +178,12 @@ def data_from_time(timestamp, folder = None):
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
-    
     if (folder != None):
         datadir = folder
 
-    daydirs = os.listdir(datadir)
+    datadir = r'd:\measuring\data'
+
+    daydirs = os.listdir(r'd:\measuring\data')
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')

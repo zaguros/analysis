@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = '141640' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '131321' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
