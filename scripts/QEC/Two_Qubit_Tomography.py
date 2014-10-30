@@ -28,13 +28,12 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 
 	x_labels = a.sweep_pts.reshape(-1)
 	y= ((a.p0.reshape(-1))-0.5)*2
-	print y 
 	x = range(len(y)) 
 	y_err = 2*a.u_p0.reshape(-1)
 
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
-		ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
 		ax.set_xticks(x)
 		# ax.title = timestamp
 		print x_labels
@@ -44,6 +43,15 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		# ax.grid()
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
+
+			# print values on bar plot
+	def autolabel(rects):
+	    for ii,rect in enumerate(rects):
+	        height = rect.get_height()
+	        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+	            ha='center', va='bottom')
+	autolabel(rects)
+
 	if save and ax != None:
 		try:
 		    fig.savefig(
@@ -51,7 +59,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		except:
 		    print 'Figure has not been saved.'
 
-def BarPlotTomoContrast(timestamps, measurement_name = ['adwindata'],folder_name ='Tomo',
+def BarPlotTomoContrast(timestamps = [None,None], measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
 		plot_fit = True) :
 	'''
@@ -67,7 +75,12 @@ def BarPlotTomoContrast(timestamps, measurement_name = ['adwindata'],folder_name
 	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
 
 	### Obtain and analyze data
-	folder_a = toolbox.data_from_time(timestamps[0])      
+		### postive RO data
+	if timestamps[0] == None: 
+		folder_a = toolbox.latest_data(contains='positive')
+	else:		
+		folder_a = toolbox.data_from_time(timestamps[0])      
+	
 	a = mbi.MBIAnalysis(folder_a)
 	a.get_sweep_pts()
 	a.get_readout_results(name='adwindata')
@@ -75,8 +88,12 @@ def BarPlotTomoContrast(timestamps, measurement_name = ['adwindata'],folder_name
 	y_a= ((a.p0.reshape(-1)[:])-0.5)*2
 	y_err_a = 2*a.u_p0.reshape(-1)[:] 
 
-
-	folder_b = toolbox.data_from_time(timestamps[1])      
+		### negative RO data
+	if timestamps[1] == None: 
+		folder_b = toolbox.latest_data(contains='negative')
+	else:	
+		folder_b = toolbox.data_from_time(timestamps[1])      
+ 	
 	b = mbi.MBIAnalysis(folder_b)
 	b.get_sweep_pts()
 	b.get_readout_results(name='adwindata')
@@ -86,31 +103,48 @@ def BarPlotTomoContrast(timestamps, measurement_name = ['adwindata'],folder_name
 
 	x_labels = a.sweep_pts.reshape(-1)[:]
 	x = range(len(y_a)) 
+
+
 	
 	### Combine data
 	y = (y_a - y_b)/2.
 	y_err =  1./2*(y_err_a**2 + y_err_b**2)**0.5 
+	
+
+	print folder_a
+	print folder_b
+
+	print y_a
+	print y_b
 	print y
 
 	### Fidelities
 	# F_ZZ 	= (1 + y[2] + y[5] + y[14])/4
 	# F_ZmZ 	= (1 + y[2] - y[5] - y[14])/4
 	# F_ent 	= (1 + y[0] -y[4] -y[8])/4
-	F_ent 	= (1 + y[0] +y[1] +y[2])/4
+	# F_ent 	= (1 + y[0] +y[1] +y[2])/4
 	# print 'Fidelity with ZZ  = ' + str(F_ZZ)
 	# print 'Fidelity with ZmZ  = ' + str(F_ZmZ)
-	print 'Fidelity with ent = ' + str(F_ent)
+	# print 'Fidelity with ent = ' + str(F_ent)
 
 
 
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
-		ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
 		ax.set_xticks(x)
 		ax.set_xticklabels(x_labels.tolist())
 		ax.set_ylim(-1.1,1.1)
 		ax.set_title(str(folder_a)+'/'+str(timestamps[0]))
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+
+		# print values on bar plot
+	def autolabel(rects):
+	    for ii,rect in enumerate(rects):
+	        height = rect.get_height()
+	        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+	            ha='center', va='bottom')
+	autolabel(rects)
 
 	if save and ax != None:
 		try:

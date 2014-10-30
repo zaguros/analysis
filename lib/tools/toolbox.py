@@ -11,6 +11,7 @@ import time
 try:
     import qt
     datadir = qt.config['datadir']
+    print datadir
 except:
     # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
@@ -21,6 +22,7 @@ except:
             datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
+    print datadir
 
 def nearest_idx(array, value):
     '''
@@ -182,11 +184,12 @@ def data_from_time(timestamp, folder = None):
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
-    
     if (folder != None):
         datadir = folder
 
-    daydirs = os.listdir(datadir)
+    datadir = r'd:\measuring\data'
+
+    daydirs = os.listdir(r'd:\measuring\data')
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')
@@ -288,18 +291,37 @@ def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     
     return filepaths
 
-def get_msmt_name(fp):
+def get_msmt_name(pqf):
     """
     This assumes that there is only one group, whose name is the msmt name.
     """
-    _root, fn = os.path.split(fp)
-    f = h5py.File(fp, 'r')
-    for k in f.keys():
-        if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
-            f.close()
-            return k
+
+    if type(pqf) == h5py._hl.files.File: 
+        for k in pqf.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
+                f.close()
+                return k
+
+        raise Exception('Cannot find the name of the measurement.')
+
+
+    elif type(pqf) == str:
+        _root, fn = os.path.split(pqf)
+
+        f = h5py.File(pqf, 'r')
+
+        for k in f.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
+                f.close()
+                return k
     
-    raise Exception('Cannot find the name of the measurement.')
+        raise Exception('Cannot find the name of the measurement.')
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+
 
 def get_msmt_fp(folder, ext='hdf5'):
     dirname = os.path.split(folder)[1]
