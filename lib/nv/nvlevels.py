@@ -13,16 +13,18 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,20,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
-def get_ES_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False,transitions=True):
+def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.],transitions=True):
     """
     Returns the six energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
     """
-    
+
     strain=abs(Ex-Ey)/2.0
     offset=np.min([Ey,Ex])+strain
     if fast:
         return np.sort(get_ES_fast(offset,strain,transitions=transitions))
+    #return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
+    #XXXXXXXXXXXXXXXXXXX
     return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,transitions=transitions)[0])
 
 def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
@@ -199,7 +201,7 @@ def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show
     A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
                                         E_ES[1]-E_GS[1]])   # 4 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
@@ -325,14 +327,15 @@ def get_ms0_fraction(strain_splitting, transition_index, theta_x=90):
     #    aa=aa+np.abs(vs[i,2])**2
     #print aa
     return np.abs(vs[transition_index,2])**2+np.abs(vs[transition_index,3])**2
-def get_ms0_fraction_incl_B(strain_splitting, Bz, transition_index, theta_x=90):
+
+def get_ms0_fraction_incl_B(strain_splitting, Bz, transition_index, Bx=0,theta_x=90):
     """
     returns the fraction of ms=0 character of a given ES eigenstate, 
     selected by the transition number, counting from the lowest frequency. 
     At low strain these would be
     transition_index = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
     """
-    w,v = get_ES(B_field = [0,0,Bz],E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
+    w,v = get_ES(B_field = [Bx,0,Bz],E_field=[strain_splitting/2*np.cos(theta_x/180.*np.pi),strain_splitting/2*np.sin(theta_x/180.*np.pi),0],Ee0=0-1.94,transitions=False)
     ws,vs=np.sort(w),np.transpose(v)[np.argsort(w)]
 
     #aa=0
@@ -346,6 +349,7 @@ def mixing_probability(T):
     jtmix=1./(2.+1./(c1*T**5))
     return jtmix
 
+    # 1/(2+1/(c1*T(i)^5))
     # 1/(2+1/(c1*T(i)^5))
 def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, verbose=False):
 
