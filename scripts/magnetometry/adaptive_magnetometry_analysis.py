@@ -219,4 +219,4 @@ def check_adwin_realtime_record_pk(label, newer_than=False):
 #check_adwin_realtime (label = result+'_test_pk_n=1', newer_than = '143800')
 #check_adwin_realtime_record_pk(label = result, newer_than = '143800')
 
-check_adwin_realtime (label = 'N=8_M=10_rtAdwin_86697880', newer_than = '100000', print_details=True)
+check_adwin_realtime (label = 'rtAdwin', newer_than = '155000', print_details=True)

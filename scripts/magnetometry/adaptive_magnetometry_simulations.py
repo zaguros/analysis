@@ -247,7 +247,7 @@ def adwin_phase_angle (real_part, imag_part):
 		print 'Using arctan: ', th
 
 
-def test_adwin_sims(N, M, outcomes = [], do_plot = False):
+def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 
 	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
 	a.renorm_ssro = False
@@ -255,7 +255,7 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False):
 	a.maj_reps = 1
 	a.maj_thr = 0	
 	a.M = M
-	phase_adwin, phase_python, diff, p_2tn_adwin, p_2tn_python = a.compare_algorithms(outcomes=outcomes, do_plot = do_plot)
+	phase_adwin, phase_python, diff, p_2tn_adwin, p_2tn_python = a.compare_algorithms(outcomes=outcomes, do_plot = do_plot, do_print=do_print)
 
 	diff_real = np.abs(np.real(p_2tn_adwin)-np.real(p_2tn_python))
 	diff_imag = np.abs(np.imag(p_2tn_adwin)-np.imag(p_2tn_python))
@@ -278,6 +278,27 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False):
 	return avg_phase_error
 
 
+def simulate_adwin (N,M):
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=30, tau0=20e-9)
+	field = 10/(a.t0*2**N)
+	a.renorm_ssro = False
+	a.verbose = False
+	a.maj_reps = 1
+	a.maj_thr = 0	
+	a.setup_simulation (magnetic_field_hz = field, M=M)
+
+	a.T2 = 96e-6
+	a.fid0 = 0.85
+	a.fid1 = 0.02
+	a.adwin_optimal()
+
+	a.convert_to_dict()
+	a.print_results()
+		
+	beta, p, err,a, b = a.mean_square_error(set_value=field, do_plot=True)
+	plt.show()
+
+
 
 
 
@@ -295,9 +316,9 @@ simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 #check_simulated_adwin_phases ()
 
 
-
+'''
 mean_error = []
-m_list = [15, 19, 21, 23, 25, 27, 30]
+m_list = np.arange(30)+1
 for m in m_list:
 	rep = 30
 	err = []
@@ -311,6 +332,8 @@ plt.ylabel ('avg phase error [deg]')
 plt.xlabel('M')
 plt.legend()
 plt.show()
+'''
 
-#test_adwin_sims(N=7, M=5, outcomes=[5,3,0,2,0,5,2], do_plot=True)
+#simulate_adwin(N=6, M= 15)
+test_adwin_sims(N=4, M=1, outcomes=[1,0,1,1], do_plot=False, do_print = True)
 
