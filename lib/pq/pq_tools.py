@@ -148,7 +148,7 @@ def get_coincidences_from_folder(folder):
                     
     return co
 
-def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_min, second_win_max):
+def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = True):
     """
     Returns two filters whether events are in the first or 
     in the second time window.
@@ -179,8 +179,9 @@ def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_mi
     
     is_photon_check = is_photon_first_window | is_photon_second_window
         
-    if sum(is_photon_check) != sum(is_photon):
-        print "Not all detected photons are in the broad windows set"
+    if VERBOSE:
+        if sum(is_photon_check) != sum(is_photon):
+            print "Not all detected photons are in the broad windows set"
     
     return is_photon_first_window, is_photon_second_window
 
@@ -232,8 +233,8 @@ def get_tail_filtered_photons(pqf, first_win_min_ch0, dif_win1_win2, window_leng
     is_ph_second_tail = (is_photon_ch0 & is_event_second_tail_ch0_filt) | (is_photon_ch1 & is_event_second_tail_ch1_filt)
     
     if VERBOSE:
-        print "The total number of photons detected in the first window of the ZPL is:", sum(is_ph_first_tail)
-        print "The total number of photons detected in the second window of the ZPL is:", sum(is_ph_second_tail)
+        print "The total number of photons detected in the first tail is:", sum(is_ph_first_tail)
+        print "The total number of photons detected in the second tail is:", sum(is_ph_second_tail)
 
     return is_ph_first_tail, is_ph_second_tail
 
@@ -262,8 +263,8 @@ def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, VERBOSE = 
     unique_sync_num_with_markers = np.unique(sync_num_with_markers)
 
     if VERBOSE:
-        print "The number of non-unique sync numbers with markers is:", len(sync_num_with_markers)
-        print "The number of unique sync numbers with markers is:", len(unique_sync_num_with_markers)
+        print "The number of events with a sync numbers that has a marker is:", len(sync_num_with_markers)
+        print "The number of unique sync numbers that have a marker is:", len(unique_sync_num_with_markers)
 
     return unique_sync_num_with_markers
 
@@ -293,7 +294,8 @@ def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_
                                                                                     first_win_min,
                                                                                     first_win_max,
                                                                                     second_win_min,
-                                                                                    second_win_max)
+                                                                                    second_win_max, 
+                                                                                    VERBOSE = VERBOSE)
 
     if VERBOSE:
         print "Total number of photons in the first window", sum(is_photon_first_window)
@@ -305,7 +307,8 @@ def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_
                                                                                  first_win_min_ch0, 
                                                                                  dif_win1_win2,
                                                                                  window_length,
-                                                                                 dif_ch0_ch1)
+                                                                                 dif_ch0_ch1, 
+                                                                                 VERBOSE = VERBOSE)
 
     TC_p_shot_first_tail = ((sum(is_photon_first_tail))/float(Total_shots))
     TC_p_shot_second_tail = ((sum(is_photon_second_tail))/float(Total_shots))
@@ -336,7 +339,7 @@ def get_tail_filtered_ph_sync_num(pqf, first_win_min_ch0, dif_win1_win2, window_
                                                                        dif_win1_win2,
                                                                        window_length,
                                                                        dif_ch0_ch1,
-                                                                       VERBOSE)
+                                                                       VERBOSE = VERBOSE)
 
 
 
@@ -352,8 +355,8 @@ def get_tail_filtered_ph_sync_num(pqf, first_win_min_ch0, dif_win1_win2, window_
     non_overlapping_sync_num_21 = np.array([not x for x in overlapping_sync_num_21])
 
     if VERBOSE:
-        print "Rejection ratio first filter", 1. - sum(non_overlapping_sync_num_21)/float(len(non_overlapping_sync_num_21))
-        print "Rejection ratio second filter", 1. - sum(non_overlapping_sync_num_12)/float(len(non_overlapping_sync_num_12))
+        print "The ratio of photons that occur in the first tail and also in the second tail is:", 1. - sum(non_overlapping_sync_num_21)/float(len(non_overlapping_sync_num_21))
+        print "The ratio of photons that occur in the second tail and also in the first tail is:", 1. - sum(non_overlapping_sync_num_12)/float(len(non_overlapping_sync_num_12))
 
     unique_sync_num_first_tail = np.unique(sync_num_ph_first_tail[non_overlapping_sync_num_12])
     unique_sync_num_second_tail = np.unique(sync_num_ph_second_tail[non_overlapping_sync_num_21])
@@ -389,7 +392,7 @@ def filter_on_same_sync_number(source_sync_numbers, target_sync_numbers):
     """
     return np.in1d(target_sync_numbers, source_sync_numbers)
 
-def filter_marker(pqf, chan):
+def filter_marker(pqf, chan, VERBOSE = True):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
@@ -406,10 +409,12 @@ def filter_marker(pqf, chan):
 
     is_mrkr = get_markers(pqf, chan)
     marker_sync_numbers = sync_numbers[is_mrkr]
+    if VERBOSE:
+        print "The number of markers is:", len(marker_sync_numbers)
 
     return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
 
-def filter_marker_time_lim(pqf, chan, sync_time_lim):
+def filter_marker_time_lim(pqf, chan, sync_time_lim, VERBOSE = True):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
@@ -429,7 +434,8 @@ def filter_marker_time_lim(pqf, chan, sync_time_lim):
     is_small_sync_time = sync_times <= sync_time_lim
     is_large_sync_time = sync_times > sync_time_lim
     is_mrkr = get_markers(pqf, chan)
-
+    if VERBOSE:
+        print "The number of markers is:", len(sync_numbers[is_mrkr])
 
     marker_sync_num_small = sync_numbers[(is_mrkr & is_small_sync_time)] - 1
     marker_sync_num_large = sync_numbers[(is_mrkr & is_large_sync_time)]
