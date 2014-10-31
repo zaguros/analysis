@@ -483,7 +483,7 @@ def has_data(pqf, name, subgroup=None):
             f = h5py.File(pqf, 'r')
         except:
             return False
-   
+
         if name in f.keys():
             f.close()
             return True
@@ -494,4 +494,40 @@ def has_data(pqf, name, subgroup=None):
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
 
+def get_num_blocks(pqf):
+    """
+    Returns the number of blocks in a file (the number of the time a PQ_channel-xx block is created)
+    It return the number xx
+    """
 
+    list_of_block_numbers = []
+
+    if type(pqf) == h5py._hl.files.File: 
+        for k in pqf.keys():
+            if 'PQ_channel-' in k:
+                Block_name =  str(k)
+                Block_number = int(Block_name.strip('PQ_channel-'))
+                list_of_block_numbers.append(Block_number)
+
+        num_blocks = max(list_of_block_numbers)
+        return num_blocks
+
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf, 'r')
+
+        for k in f.keys():
+            if 'PQ_channel-' in k:
+                Block_name =  str(k)
+                Block_number = int(Block_name.strip('PQ_channel-'))
+                list_of_block_numbers.append(Block_number)
+
+        f.close()
+
+        num_blocks = max(list_of_block_numbers)
+        return num_blocks
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
