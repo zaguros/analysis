@@ -34,15 +34,15 @@ def get_photons(pqf):
 
 
 
-def get_markers(pqf, chan):
+def get_markers(pqf, chan, idx = 1):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
     
     if type(pqf) == h5py._hl.files.File:
+        channel = pqf['/PQ_channel-'+str(idx)].value
+        special = pqf['/PQ_special-'+str(idx)].value
 
-        channel = pqf['/PQ_channel-1'].value
-        special = pqf['/PQ_special-1'].value
 
     elif type(pqf) == str:
 
