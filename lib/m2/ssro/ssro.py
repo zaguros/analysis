@@ -437,14 +437,18 @@ def awgssro_prjprob(folder, pop0=1./6):
 def sync_num_fast_SSRO_ph_events(fp_LT, RO_start, VERBOSE = True):
     """
     Returns a list with the sync numbers of events that have at least one photon in the time from the readout start 
-    til the readout end. The length of the readout is taken from the data.
+    til the readout end. The length of the readout is taken from the data. The function als return the RO counts per shot.
     """
 
     f = h5py.File(fp_LT, 'r')
     sync_num_RO = f['/PQ_sync_number-1'].value
     special_RO = f['/PQ_special-1'].value
     sync_time_RO = f['/PQ_sync_time-1'].value
-    RO_length = f['/SPCORR_Pippip_sil3/joint_params'].attrs['LDE_RO_duration']  * 1e9
+
+    # Get name of the group to find read out length
+    group = toolbox.get_msmt_name(fp_LT)
+    total_string_name = '/' + group + '/joint_params'
+    RO_length = f[total_string_name].attrs['LDE_RO_duration']  * 1e9
     f.close()
 
     is_ph_RO = special_RO == 0   
@@ -459,5 +463,6 @@ def sync_num_fast_SSRO_ph_events(fp_LT, RO_start, VERBOSE = True):
         print "The total number of photons that are readout for these events:", sum(is_ph_RO_in_ro_window)
         print "The average amount of photons detected for each sync number is:", float(sum(is_ph_RO_in_ro_window))\
                                                                                         /len(sync_num_ph_events)
+
 
     return sync_num_ph_events, is_ph_RO_in_ro_window, sync_num_RO

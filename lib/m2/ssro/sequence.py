@@ -255,8 +255,8 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
 
         try:
             self.theta_opt = np.array(adwingrp['theta'].value)
-            self.p_tn = np.array(adwingrp['real_p_tn'].value) +1j*np.array(adwin_grp['imag_p_tn'].value)
-            self.p_2tn = np.array(adwingrp['real_p_2tn'].value) +1j*np.array(adwin_grp['imag_p_2tn'].value)
+            self.p_tn = np.array(adwingrp['real_p_tn'].value) +1j*np.array(adwingrp['imag_p_tn'].value)
+            self.p_2tn = np.array(adwingrp['real_p_2tn'].value) +1j*np.array(adwingrp['imag_p_2tn'].value)
         except:
             self.p_tn  = None
             self.p_2tn = None
@@ -285,6 +285,21 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         except:
             self.msmnt_type = 'table_based'
 
+        try:
+            timer_data = np.array(adwingrp['timer'].value)
+
+            timer_data = timer_data[timer_data != 0]
+            self.timer = np.mean (timer_data)*3.33333*1e-9*1000
+        except:
+            self.timer = None
+
+        self.save_p_k = self.g.attrs['save_p_k']
+        if self.save_p_k>0:
+            self.real_pk_adwin = np.array(adwingrp['real_p_k'].value)
+            self.imag_pk_adwin = np.array(adwingrp['imag_p_k'].value)
+        else:
+            self.real_pk_adwin = None
+            self.imag_pk_adwin = None
 
         n_points = len(self.sweep_pts)
         rows = int(self.reps/float(len(self.sweep_pts)))
