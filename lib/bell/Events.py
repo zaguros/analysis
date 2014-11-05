@@ -211,16 +211,65 @@ Amount_of_ph_LT4, CR_check_before_LT4, CR_check_after_LT4, psiminus, abs_time"
 
 #######################  SSRO events #################################
 
-def get_SSRO_events_quick(pqf, unique_sync_num_with_markers,RO_start):
+def get_total_SSRO_events(pqf, RO_start, marker_chan, sync_time_lim, VERBOSE = True):
+    """
+    Returns all entanglement events. 
+    Colums are:
+    Sync Nymber | number of photons | Sync Times photon 1-24 |
+    """
+    
+    columns = "Sync_Number, Number of photons, Sync_Time_photon_1, Sync_Time_photon_2, Sync_Time_photon_3,\
+    Sync_Time_photon_4, Sync_Time_photon_5, Sync_Time_photon_6, Sync_Time_photon_7, Sync_Time_photon_8,\
+    Sync_Time_photon_9, Sync_Time_photon_10, Sync_Time_photon_11, Sync_Time_photon_12, Sync_Time_photon_13\
+    Sync_Time_photon_14, Sync_Time_photon_15, Sync_Time_photon_16, Sync_Time_photon_17, Sync_Time_photon_18\
+    Sync_Time_photon_19, Sync_Time_photon_20, Sync_Time_photon_21,Sync_Time_photon_22, Sync_Time_photon_23,\
+    Sync_Time_photon_24"
+
+    _a = {'Columns': columns}
+
+    num_blocks = tb.get_num_blocks(pqf)
+
+    total_SSRO_events = np.empty((0,26))
+
+    for i in range(num_blocks):
+        unique_sync_num_with_markers = pq_tools.get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
+        _events = get_SSRO_events(pqf, unique_sync_num_with_markers, RO_start, index = i+1)
+                    
+        total_SSRO_events = np.vstack((total_SSRO_events, _events))
+
+        if VERBOSE:
+            print
+            print 'Found {} valid marked SSRO events in block'.format(int(len(_events))), i+1
+            print '===================================='
+            print
+
+    if VERBOSE:
+        print
+        print 'Found {} valid marked SSRO events in all blocks'.format(int(len(total_SSRO_events)))
+        print '===================================='
+        print       
+
+    return total_SSRO_events, _a
+
+
+
+
+
+
+def get_SSRO_events(pqf, unique_sync_num_with_markers,RO_start, index = 1):
     """
     Returns an array with sync numbers in the first row, the number of photons in the readout window
     in the second column and the sync time of the first photon(the lowest sync time) in the third column.
     """
 
+    sync_time_name = '/PQ_sync_time-' + str(index)
+    sync_num_name = '/PQ_sync_number-' + str(index)
+    spec_name = '/PQ_special-' + str(index)
+
     if type(pqf) == h5py._hl.files.File: 
-        sync_numbers = pqf['/PQ_sync_number-1'].value
-        special_RO =pqf['/PQ_special-1'].value
-        sync_time_RO =pqf['/PQ_sync_time-1'].value
+        sync_numbers = pqf[sync_num_name].value
+        special_RO =pqf[spec_name].value
+        sync_time_RO =pqf[sync_time_name].value
 
         # Get name of the group to find read out length
         group = tb.get_msmt_name(pqf)
@@ -229,9 +278,71 @@ def get_SSRO_events_quick(pqf, unique_sync_num_with_markers,RO_start):
 
     elif type(pqf) == str:
         f = h5py.File(pqf, 'r')
-        sync_num_RO = f['/PQ_sync_number-1'].value
-        special_RO = f['/PQ_special-1'].value
-        sync_time_RO = f['/PQ_sync_time-1'].value
+        sync_num_RO = f[sync_num_name].value
+        special_RO = f[spec_name].value
+        sync_time_RO = f[sync_time_name].value
+
+        # Get name of the group to find read out length
+        group = tb.get_msmt_name(pqf)
+        total_string_name = '/' + group + '/joint_params'
+        RO_length = f[total_string_name].attrs['LDE_RO_duration']  * 1e9
+        f.close()
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise 
+
+    SSRO_events = np.empty((0,26))
+    is_ph_RO = special_RO == 0   
+    is_in_window = (RO_start  <= sync_time_RO) & (sync_time_RO < (RO_start + RO_length))
+    is_ph_RO_in_ro_window = is_in_window & is_ph_RO
+
+
+    for i,s in enumerate(unique_sync_num_with_markers):
+        is_sync_num_s = sync_num_RO == s
+        is_photons_RO = is_sync_num_s & is_ph_RO_in_ro_window
+        sync_time_RO_photons = sync_time_RO[is_photons_RO]
+
+        num_phot = len(sync_time_RO_photons)
+        if (len(sync_time_RO_photons) > 0) & (len(sync_time_RO_photons) == 24):
+            arr_times = sync_time_RO_photons
+        elif (len(sync_time_RO_photons) > 0) & (len(sync_time_RO_photons) < 24):
+            zero_addition = np.zeros(24-len(sync_time_RO_photons))
+            arr_times = np.concatenate((sync_time_RO_photons,zero_addition))
+        else:
+            arr_times = np.zeros(24)
+
+        _event = np.concatenate((np.array([s, num_phot]) , arr_times))
+        SSRO_events = np.vstack((SSRO_events, _event))
+
+    return SSRO_events
+
+
+
+def get_SSRO_events_quick(pqf, unique_sync_num_with_markers,RO_start, index = 1):
+    """
+    Returns an array with sync numbers in the first row, the number of photons in the readout window
+    in the second column and the sync time of the first photon(the lowest sync time) in the third column.
+    """
+
+    sync_time_name = '/PQ_sync_time-' + str(index)
+    sync_num_name = '/PQ_sync_number-' + str(index)
+    spec_name = '/PQ_special-' + str(index)
+
+    if type(pqf) == h5py._hl.files.File: 
+        sync_numbers = pqf[sync_num_name].value
+        special_RO =pqf[spec_name].value
+        sync_time_RO =pqf[sync_time_name].value
+
+        # Get name of the group to find read out length
+        group = tb.get_msmt_name(pqf)
+        total_string_name = '/' + group + '/joint_params'
+        RO_length =pqf[total_string_name].attrs['LDE_RO_duration']  * 1e9
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_num_RO = f[sync_num_name].value
+        special_RO = f[spec_name].value
+        sync_time_RO = f[sync_time_name].value
 
         # Get name of the group to find read out length
         group = tb.get_msmt_name(pqf)
