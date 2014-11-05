@@ -257,6 +257,10 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 	a.M = M
 	phase_adwin, phase_python, diff, p_2tn_adwin, p_2tn_python = a.compare_algorithms(outcomes=outcomes, do_plot = do_plot, do_print=do_print)
 
+	print '-----Phases:'
+	print '** adwin: ', np.round(phase_adwin*180/np.pi)
+	print '** python: ', np.round(phase_python*180/np.pi)
+
 	diff_real = np.abs(np.real(p_2tn_adwin)-np.real(p_2tn_python))
 	diff_imag = np.abs(np.imag(p_2tn_adwin)-np.imag(p_2tn_python))
 	avg_phase_error = np.sum(np.abs(phase_adwin-phase_python)*180/np.pi)/float(a.N)
@@ -279,8 +283,8 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 
 
 def simulate_adwin (N,M):
-	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=30, tau0=20e-9)
-	field = 10/(a.t0*2**N)
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=2000, tau0=20e-9)
+	field = 100/(a.t0*2**N)
 	a.renorm_ssro = False
 	a.verbose = False
 	a.maj_reps = 1
@@ -288,9 +292,9 @@ def simulate_adwin (N,M):
 	a.setup_simulation (magnetic_field_hz = field, M=M)
 
 	a.T2 = 96e-6
-	a.fid0 = 0.85
+	a.fid0 = 0.88
 	a.fid1 = 0.02
-	a.adwin_optimal()
+	a.adwin_optimal(use_fid_bayesian_update=True)
 
 	a.convert_to_dict()
 	a.print_results()
@@ -334,6 +338,6 @@ plt.legend()
 plt.show()
 '''
 
-#simulate_adwin(N=6, M= 15)
-test_adwin_sims(N=4, M=1, outcomes=[1,0,1,1], do_plot=False, do_print = True)
+simulate_adwin(N=8, M= 20)
+#test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 

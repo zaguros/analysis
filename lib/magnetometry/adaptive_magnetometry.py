@@ -218,7 +218,7 @@ class RamseySequence():
 	def B_vs_index (self):
 		B_dict = {}
 		for k in self.msmnt_dict:
-			curr_phase = np.rint(self.phases_dict[k])
+			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 			fase = np.exp(1j*2*np.pi*beta*self.t0)
@@ -235,7 +235,7 @@ class RamseySequence():
 
 		total_reps = 0
 		for k in self.msmnt_dict:
-			curr_phase = np.rint(self.phases_dict[k])
+			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.squeeze(np.array(np.rint(self.msmnt_dict[k])))
 			mult = np.rint(self.msmnt_multiplicity[k])
 
@@ -270,7 +270,7 @@ class RamseySequence():
 			set_value = self.set_detuning
 		
 		for k in self.msmnt_dict:
-			curr_phase = np.rint(self.phases_dict[k])
+			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			mult = np.rint(self.msmnt_multiplicity[k])
 			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
@@ -380,7 +380,7 @@ class RamseySequence():
 			curr_msmnt = self.msmnt_dict[k]
 			mult = self.msmnt_multiplicity[k]
 
-			print '(*)', curr_msmnt, ' - ', mult, ' times --- phases: '#, np.round(curr_phase*180/(np.pi)), ' deg'
+			print '(*)', curr_msmnt, ' - ', mult, ' times --- phases: ', np.round(curr_phase*180/(np.pi)), ' deg'
 			print '     at indexes: ', self.index[k]			
 		print '--------------------------------------------'
 
@@ -430,16 +430,34 @@ class RamseySequence_Simulation (RamseySequence):
 	
 	def ramsey (self, t=0., theta=0.):
 
-		n0 = 0.5*(1-np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta))
-		n1 = 0.5*(1+np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta))
+		A = 0.5*(self.fid0 + self.fid1)
+		B = 0.5*(self.fid1 - self.fid0)		
 
-		pp0 = self.fid0*n0+self.fid1
-		pp1 = n1+(1-self.fid0*n0)
-		p0 = pp0/(pp0+pp1)
-		p1 = pp1/(pp0+pp1)
+		p0 = (1-A)-B*np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta)
+		p1 = A+B*np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta)
+
 		np.random.seed()
-		result = 1-np.random.choice (2, 1, p=[p0, p1])
+		result = np.random.choice (2, 1, p=[p0, p1])
 		return result[0]		
+
+
+	def plot_ramsey(self, nr_datapoints=20, max_tau = None, theta=0):
+
+		if (max_tau == None):
+			max_tau = 2*self.T2
+		t = np.linspace (0, max_tau, nr_datapoints)
+		r = np.zeros(nr_datapoints)
+		for i in np.arange(nr_datapoints):
+			for j in np.arange(self.reps):
+				r[i] = r[i] + self.ramsey(t=t[i], theta = theta)
+
+		r = r/(float(self.reps))
+		plt.plot (t*1e6, r, 'ob')
+		plt.xlabel ('free evol time [us]')
+		plt.ylabel ('ramsey')
+		plt.ylim([0,1])
+		plt.show()
+
 		
 	def majority_vote_msmnt (self, theta_n, t_n):
 	
@@ -810,10 +828,11 @@ class RamseySequence_Exp (RamseySequence):
 	def load_exp_data (self):
 
 		a = sequence.MagnetometrySequenceAnalysis(self.folder)
-		a.get_sweep_pts()
+		#a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 
 		self.msmnt_results = a.clicks
+		print 'msmnt_results (load_exp_data): ', self.msmnt_results
 
 		if ((np.shape(np.shape(a.clicks)))[0]==1):
 			self.reps = len(a.clicks)
@@ -854,7 +873,8 @@ class RamseySequence_Exp (RamseySequence):
 			self.exp_fid1 = a.exp_fid1
 			self.opt_phase = a.theta_opt #to be removed, only for testing yesterday's data!!! (should load a.theta_opt)
 
-		self.save_p_k = a.save_p_k
+		self.save_pk_n = a.save_pk_n
+		self.save_pk_m = a.save_pk_m
 		self.real_pk_adwin = a.real_pk_adwin
 		self.imag_pk_adwin = a.imag_pk_adwin
 
