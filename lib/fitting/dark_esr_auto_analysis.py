@@ -14,7 +14,7 @@ def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-min_dip_depth = 0.90, 
+min_dip_depth = 0.86, 
 timestamp = None,
 add_folder = None,
 ret='f0',
@@ -30,7 +30,7 @@ sweep_direction = 'right',
 
     if add_folder !=None:
         folder = add_folder
-
+    print 'analysis script!'
     print folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
