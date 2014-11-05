@@ -21,11 +21,11 @@ reload(toolbox)
 reload(amt)
 reload(fit)
 
-ZFS                 = 2.877480e9
+ZFS                 = 2.877623e9
 g_factor            = 2.8025e6
 
 def fit_B_msmt_loop(older_than = None, newer_than = None):
-    ZFS = 2.877480e9
+    ZFS = 2.877623e9
     f0mc = []; u_f0mc = []; f0pc = [] ;u_f0pc = []
     f0mf = []; u_f0mf = []; f0pf = [] ;u_f0pf = []
     Bx_field_measured = []
@@ -34,6 +34,8 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
     f_centref_list = []; f_centre_errorf_list= [];f_difff_list=[];f_difff_error_list = []
     timestamp_list = []
     it_list = []
+    f0p_temp = 1.746666
+    f0m_temp = 4.008589
     
     
     #msm
@@ -49,7 +51,7 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
     #     contains_name_m = 'magnet_msm1_fine'
     #     contains_name_p = 'magnet_msp1_fine'
 
-    while toolbox.latest_data(contains='magnet_msm1_coarse', older_than=older_than, newer_than=newer_than,raise_exc = False)!=False:
+    while toolbox.latest_data(contains='magnet_Y_axismsm1_coarse', older_than=older_than, newer_than=newer_than,raise_exc = False)!=False:
         print 'iteration'+str(iteration)
 
 
@@ -58,47 +60,52 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration', older_than=older_than_SSRO)
         
         #msm1 coarse
-        timestamp1,folder = toolbox.latest_data(contains='magnet_msm1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
+        timestamp1,folder = toolbox.latest_data(contains='magnet_Y_axismsm1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
         print 'm folder '+folder
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0mc_temp,u_f0mc_temp = dark_esr_auto_analysis.analyze_dark_esr(None,2.18e-3, add_folder = folder,ssro_calib_folder=ssro_calib_folder)
+        f0mc_temp,u_f0mc_temp = dark_esr_auto_analysis.analyze_dark_esr(f0m_temp, 
+                2.182e-3,do_save=True, sweep_direction ='right', add_folder = folder,ssro_calib_folder=ssro_calib_folder)
         print f0mc_temp,u_f0mc_temp
         #msm1 fine
-        timestamp,folder = toolbox.latest_data(contains='magnet_msm1_fine', older_than=older_than, newer_than=newer_than,return_timestamp = True)
+        timestamp,folder = toolbox.latest_data(contains='magnet_Y_axismsm1', older_than=timestamp1, newer_than=newer_than,return_timestamp = True)
         print 'm folder '+folder
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0mf_temp,u_f0mf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(2.02, add_folder = folder,ssro_calib_folder=ssro_calib_folder)     
+        f0mf_temp,u_f0mf_temp = dark_esr_auto_analysis.analyze_dark_esr_single()    
         print f0mf_temp,u_f0mf_temp
+        
         #msp
-        #msm1 coarse
-        timestamp,folder = toolbox.latest_data(contains='magnet_msp1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
+        #msp1 coarse
+        timestamp,folder = toolbox.latest_data(contains='magnet_Y_axismsp1_coarse', older_than=older_than, newer_than=newer_than,return_timestamp = True)
         print 'p folder '+folder
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0pc_temp,u_f0pc_temp = dark_esr_auto_analysis.analyze_dark_esr(None, 2.18e-3, add_folder = folder,ssro_calib_folder=ssro_calib_folder)
+        f0pc_temp,u_f0pc_temp = dark_esr_auto_analysis.analyze_dark_esr(f0p_temp, 
+                2.182e-3,do_save=True, sweep_direction ='left', add_folder = folder,ssro_calib_folder=ssro_calib_folder)
         print f0pc_temp,u_f0pc_temp
         #msm1 fine
-        timestamp,folder = toolbox.latest_data(contains='magnet_msp1_fine', older_than=older_than, newer_than=newer_than,return_timestamp = True)
+        timestamp,folder = toolbox.latest_data(contains='magnet_Y_axismsp1', older_than=timestamp, newer_than=newer_than,return_timestamp = True)
         print 'p folder '+folder
         a = sequence.SequenceAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results('ssro')
         a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
-        f0pf_temp,u_f0pf_temp = dark_esr_auto_analysis.analyze_dark_esr_single(3.73, add_folder = folder,ssro_calib_folder=ssro_calib_folder) 
+        f0pf_temp,u_f0pf_temp = dark_esr_auto_analysis.analyze_dark_esr_single() 
         print f0pf_temp,u_f0pf_temp
         print 'fitted values:'+ str(f0pc_temp)+' ; '+str(f0mc_temp)+' ; '+ str(f0pc_temp)+' ; '+str(f0mc_temp)
+
+
         if f0pc_temp >0 and f0mc_temp >0:
             Bz_measured, Bx_measured = amt.get_B_field(msm1_freq=f0mf_temp*1e9, msp1_freq=f0pf_temp*1e9, u_msm1_freq =u_f0mf_temp ,u_msp1_freq=u_f0pf_temp)
             f_centrec = (f0mc_temp+f0pc_temp)/2
@@ -137,7 +144,7 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
         print iteration
 
     
-    it_list = linspace(0,len(it_list)-1,len(it_list))
+    it_list = np.linspace(0,len(it_list)-1,len(it_list))
     
     np.savez('test_B_field_drift',
             f0mc=f0mc,
@@ -176,9 +183,9 @@ def plot_meas_B_loop():
 
 
     Bz_diff_list = [j-304.21 for j in Bz_field_measured]
-    Bz_error = 0.0007*ones(len(Bz_diff_list))#[1/(4.*ZFS*g_factor*Bz_field_measured[j])*
+    Bz_error = 0.0007*np.ones(len(Bz_diff_list))#[1/(4.*ZFS*g_factor*Bz_field_measured[j])*
             #((f0pf[j]*1e9)**2*(u_f0pf[j]*1e9)**2+(f0mf[j]*1e9)**2*(u_f0mf[j]*1e9)**2)**(1/2.) for j in range(len(Bz_field_measured))]
-    Bx_error = 0.3*ones(len(Bz_diff_list))#[1/Bx_field_measured[j]*((f0mf[j]*1e9)**2*(u_f0mf[j]*1e9)**2/g_factor**2
+    Bx_error = 0.3*np.ones(len(Bz_diff_list))#[1/Bx_field_measured[j]*((f0mf[j]*1e9)**2*(u_f0mf[j]*1e9)**2/g_factor**2
             # +(ZFS-g_factor*Bz_field_measured[j])**2*Bz_error[j]**2)**(1/2.) for j in range(len(Bx_field_measured))]
 
     # print len(Bz_field_measured)
@@ -199,10 +206,10 @@ def plot_meas_B_loop():
     # print np.mean(total_B)
     # print np.std(total_B)
     # print mean[f_centref_error_list]
-    print sum(u_f0mf)/float(len(u_f0mf))
-    print sum(f_centref_error_list)/float(len(f_centref_error_list))
-    print sum(Bz_error)/float(len(Bz_error))
-    print sum(Bx_error)/float(len(Bx_error))
+    # print sum(u_f0mf)/float(len(u_f0mf))
+    # print sum(f_centref_error_list)/float(len(f_centref_error_list))
+    # print sum(Bz_error)/float(len(Bz_error))
+    # print sum(Bx_error)/float(len(Bx_error))
 
 
 
@@ -232,7 +239,7 @@ def plot_meas_B_loop():
     # plt.savefig('Bz_vs_time_fine',format='png')
 
 
-    figure(5)
+    fig, ax = plt.subplots(1,1)
     n, bins, patches = plt.hist(f_diffc_list,50,normed = 1)
     bincenters = 0.5*(bins[1:]+bins[:-1])
     y = mlab.normpdf( bincenters, mean_f_centrec, stdev_f_centrec)
@@ -241,7 +248,7 @@ def plot_meas_B_loop():
     plt.title('Mean '+str(mean_f_centrec)+' kHz, stdev '+str(stdev_f_centrec)+' kHz')
     # plt.savefig('binned_freq_c',format='png')
 
-    figure(6)
+    fig, ax = plt.subplots(1,1)
     n, bins, patches = plt.hist(f_difff_list,50,normed = 1)
     bincenters = 0.5*(bins[1:]+bins[:-1])
     y = mlab.normpdf( bincenters, mean_f_centref, stdev_f_centref)
@@ -273,8 +280,8 @@ def plot_meas_B_loop():
 
 
 
-fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
 # fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
-# fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
+# # fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
+# # fit_B_msmt_loop(older_than = '20140505090835', newer_than = '20140503215120')
 
-plot_meas_B_loop()
+# plot_meas_B_loop()

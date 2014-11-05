@@ -39,3 +39,4 @@ reload(Analysis)
 reload(TPQI)
 
 from analysis.lib.lde import sscorr
+from analysis.lib.lde import spcorr

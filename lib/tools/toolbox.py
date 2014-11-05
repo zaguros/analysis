@@ -11,6 +11,7 @@ import time
 try:
     import qt
     datadir = qt.config['datadir']
+    print datadir
 except:
     # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
@@ -21,6 +22,7 @@ except:
             datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
+    print datadir
 
 def nearest_idx(array, value):
     '''
@@ -63,7 +65,9 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None):
+
+
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -75,6 +79,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     If no fitting data is found, an exception is raised. Except when you specifically ask not to to
     this in: raise_exc = False, then a 'False' is returned.
+
+    return_all = True: returns all the folders that satisfy the requirements (Cristian)
     '''
 
     if (folder==None):
@@ -128,6 +134,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             return False
     else:
         measdirs.sort()
+        if return_all:
+            return search_dir,daydir,measdirs
         measdir = measdirs[-1]
         if return_timestamp == False:
             return os.path.join(search_dir,daydir,measdir)
@@ -176,11 +184,12 @@ def data_from_time(timestamp, folder = None):
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
-    
     if (folder != None):
         datadir = folder
 
-    daydirs = os.listdir(datadir)
+    datadir = r'd:\measuring\data'
+
+    daydirs = os.listdir(r'd:\measuring\data')
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')
@@ -282,18 +291,37 @@ def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     
     return filepaths
 
-def get_msmt_name(fp):
+def get_msmt_name(pqf):
     """
     This assumes that there is only one group, whose name is the msmt name.
     """
-    _root, fn = os.path.split(fp)
-    f = h5py.File(fp, 'r')
-    for k in f.keys():
-        if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
-            f.close()
-            return k
+
+    if type(pqf) == h5py._hl.files.File: 
+        for k in pqf.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
+                f.close()
+                return k
+
+        raise Exception('Cannot find the name of the measurement.')
+
+
+    elif type(pqf) == str:
+        _root, fn = os.path.split(pqf)
+
+        f = h5py.File(pqf, 'r')
+
+        for k in f.keys():
+            if f.get(k, getclass=True) == h5py._hl.group.Group and k in fn:
+                f.close()
+                return k
     
-    raise Exception('Cannot find the name of the measurement.')
+        raise Exception('Cannot find the name of the measurement.')
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+
 
 def get_msmt_fp(folder, ext='hdf5'):
     dirname = os.path.split(folder)[1]
@@ -455,7 +483,7 @@ def has_data(pqf, name, subgroup=None):
             f = h5py.File(pqf, 'r')
         except:
             return False
-   
+
         if name in f.keys():
             f.close()
             return True
@@ -466,4 +494,40 @@ def has_data(pqf, name, subgroup=None):
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
 
+def get_num_blocks(pqf):
+    """
+    Returns the number of blocks in a file (the number of the time a PQ_channel-xx block is created)
+    It return the number xx
+    """
 
+    list_of_block_numbers = []
+
+    if type(pqf) == h5py._hl.files.File: 
+        for k in pqf.keys():
+            if 'PQ_channel-' in k:
+                Block_name =  str(k)
+                Block_number = int(Block_name.strip('PQ_channel-'))
+                list_of_block_numbers.append(Block_number)
+
+        num_blocks = max(list_of_block_numbers)
+        return num_blocks
+
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf, 'r')
+
+        for k in f.keys():
+            if 'PQ_channel-' in k:
+                Block_name =  str(k)
+                Block_number = int(Block_name.strip('PQ_channel-'))
+                list_of_block_numbers.append(Block_number)
+
+        f.close()
+
+        num_blocks = max(list_of_block_numbers)
+        return num_blocks
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
