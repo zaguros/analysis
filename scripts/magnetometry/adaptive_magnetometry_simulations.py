@@ -16,8 +16,10 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
+from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
 
 reload(magnetometry)
+reload(adwin_mgnt)
 
 def simulate_cappellaro ():
 	maj_reps = 1
@@ -245,6 +247,61 @@ def adwin_phase_angle (real_part, imag_part):
 		print 'Using arctan: ', th
 
 
+def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
+
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
+	a.renorm_ssro = False
+	a.verbose = False
+	a.maj_reps = 1
+	a.maj_thr = 0	
+	a.M = M
+	phase_adwin, phase_python, diff, p_2tn_adwin, p_2tn_python = a.compare_algorithms(outcomes=outcomes, do_plot = do_plot, do_print=do_print)
+
+	diff_real = np.abs(np.real(p_2tn_adwin)-np.real(p_2tn_python))
+	diff_imag = np.abs(np.imag(p_2tn_adwin)-np.imag(p_2tn_python))
+	avg_phase_error = np.sum(np.abs(phase_adwin-phase_python)*180/np.pi)/float(a.N)
+
+	if do_plot:
+		f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
+		axarr[0].plot (np.abs(phase_adwin-phase_python)*180/np.pi, ':g')
+		axarr[0].plot (np.abs(phase_adwin-phase_python)*180/np.pi, 'og')
+		axarr[1].plot (diff_real, 'ob', label = 'real_part')
+		axarr[1].plot (diff_imag, 'or', label = 'imag_part')
+		
+		axarr[0].set_title('difference in set phases')
+		axarr[1].set_title('dipperences in p[2*tn]')
+		axarr[0].legend()
+		axarr[1].legend()
+		plt.show()
+
+	print 'Test adwin. Msmsnt outcome: ', outcomes,' --- avg_phase_err = ', avg_phase_error, ' deg'
+	return avg_phase_error
+
+
+def simulate_adwin (N,M):
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=30, tau0=20e-9)
+	field = 10/(a.t0*2**N)
+	a.renorm_ssro = False
+	a.verbose = False
+	a.maj_reps = 1
+	a.maj_thr = 0	
+	a.setup_simulation (magnetic_field_hz = field, M=M)
+
+	a.T2 = 96e-6
+	a.fid0 = 0.85
+	a.fid1 = 0.02
+	a.adwin_optimal()
+
+	a.convert_to_dict()
+	a.print_results()
+		
+	beta, p, err,a, b = a.mean_square_error(set_value=field, do_plot=True)
+	plt.show()
+
+
+
+
+
 #simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
 '''
 simulate_sweep_field (N=9, M=4, maj_reps=7, maj_thr=2, fid0=0.87)
@@ -253,7 +310,30 @@ simulate_sweep_field (N=9, M=4, maj_reps=6, maj_thr=2, fid0=0.87)
 simulate_sweep_field (N=10, M=3, maj_reps=5, maj_thr=1, fid0=0.87)
 simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 '''
-check_adwin_code(N=4, M=5, outcomes = [5,3,0,4])
+#check_adwin_code(N=4, M=5, outcomes = [5,3,0,4])
 
 #simulate_cappellaro_debug_adwin()
 #check_simulated_adwin_phases ()
+
+
+'''
+mean_error = []
+m_list = np.arange(30)+1
+for m in m_list:
+	rep = 30
+	err = []
+	for i in np.arange(rep):
+		a = np.array(np.random.randint(m+1, size=6))
+		err.append(1e-18+test_adwin_sims(N=6, M=m, outcomes=a, do_plot=False))
+	mean_error.append(np.mean(np.array(err)))
+plt.plot (m_list, np.array(mean_error), ':k')
+plt.plot (m_list, np.array(mean_error), 'o')
+plt.ylabel ('avg phase error [deg]')
+plt.xlabel('M')
+plt.legend()
+plt.show()
+'''
+
+#simulate_adwin(N=6, M= 15)
+test_adwin_sims(N=4, M=1, outcomes=[1,0,1,1], do_plot=False, do_print = True)
+
