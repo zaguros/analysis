@@ -11,7 +11,7 @@ import matplotlib.cm as cm
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
-hf = hf_params.SamSIL5_sim_params
+# hf = hf_params.SamSIL5_sim_params
 
 ### import the experimental values for tau and N ###
 # import measurement.scripts.lt2_scripts.setup.msmt_params as msmt_params; reload(msmt_params)
@@ -634,7 +634,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
 ### Experiments  ###
 ####################
 
-def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.22, ms='+1'):
+def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=403.554, ms='-1'):
     '''nuclear Rabi experiment without init
     scheme: x - Ren(N) - x - RO'''
 
@@ -764,7 +764,7 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
     return S[i]
 
 def nuclear_evolution_during_DD(carbon_nr, electron_state = 'ms0', carbon_init_state='x',
-            tau=9.420e-6, N_list=np.linspace(0,80,41), B_field=304.74, ms='+1'):
+            tau=9.420e-6, N_list=np.linspace(0,300,151), B_field=403.554, ms='-1'):
 
     if carbon_init_state == '0':
         rho_init_nuclear = rho0
@@ -2909,7 +2909,7 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
 
     return Fidelity, M
 
-def C13_fingerprint(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10e-9,5e-6,500), N=16, show_plot = True):
+def C13_fingerprint(carbon_nrs, ms='-1', B_field=403.553, tau_list = np.linspace(8.8e-6,9e-6,500), N=32, show_plot = True):
 
     A_par_list, A_perp_list = get_C13_hyperfine_params(carbon_nrs, ms = ms)
     print A_par_list

@@ -16,7 +16,12 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             decay_constant = 200, 
             phase =0, 
             exponent = 2, 
-            plot_fit = False, do_print = False, fixed = [2], show_guess = True):
+            plot_fit = False, do_print = False, fixed = [2], show_guess = True,
+            return_phase = False,
+            return_freq = False,
+            return_results = True,
+            close_plot = False,
+            title = None):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -67,10 +72,24 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
 
         fit_results.append(fit_result)
-
-        plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+        if title == None:
+            title = 'analyzed_result'
+        plt.savefig(os.path.join(folder, title + '.pdf'),
         format='pdf')
-        plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+        plt.savefig(os.path.join(folder, title + '.png'),
         format='png')
+        if close_plot == True:
+            plt.close()
 
-    return fit_results
+        if return_freq == True:
+            f0 = fit_result['params_dict']['f']
+            u_f0 = fit_result['error_dict']['f']
+            return f0, u_f0
+
+        if return_phase == True:
+            phi0 = fit_result['params_dict']['phi']
+            u_phi0 = fit_result['error_dict']['phi']
+            return phi0, u_phi0
+
+    if return_results == True:
+        return fit_results

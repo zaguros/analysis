@@ -81,7 +81,7 @@ class RamseySequence():
 		plt.show()
 
 	def bayesian_update(self, m_n, phase_n, t_n,repetition = None):
-			
+
 		if (repetition == None):
 			repetition = self.curr_rep
 
@@ -205,7 +205,7 @@ class RamseySequence():
 	def B_vs_index (self):
 		B_dict = {}
 		for k in self.msmnt_dict:
-			curr_phase = np.rint(self.phases_dict[k])
+			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 			fase = np.exp(1j*2*np.pi*beta*self.t0)
@@ -222,7 +222,7 @@ class RamseySequence():
 
 		total_reps = 0
 		for k in self.msmnt_dict:
-			curr_phase = np.rint(self.phases_dict[k])
+			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.squeeze(np.array(np.rint(self.msmnt_dict[k])))
 			mult = np.rint(self.msmnt_multiplicity[k])
 
@@ -257,7 +257,7 @@ class RamseySequence():
 			set_value = self.set_detuning
 		
 		for k in self.msmnt_dict:
-			curr_phase = np.rint(self.phases_dict[k])
+			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			mult = np.rint(self.msmnt_multiplicity[k])
 			#print 'curr_phase = ',curr_phase, 'curr_msmnt = ', curr_msmnt, 'msmnt_times', self.msmnt_times
@@ -274,7 +274,6 @@ class RamseySequence():
 			phi_set = np.exp(1j*2*np.pi*set_value*self.t0)
 			ave_exp = ave_exp + mult*(phi_m/phi_set)
 			total_reps = total_reps + mult
-			
 		avg_prob = avg_prob/np.sum(avg_prob)
 		ave_exp = ave_exp/float(total_reps)
 		H = np.abs(ave_exp)**(-2)-1
@@ -370,7 +369,7 @@ class RamseySequence():
 			curr_msmnt = self.msmnt_dict[k]
 			mult = self.msmnt_multiplicity[k]
 
-			print '(*)', curr_msmnt, ' - ', mult, ' times --- phases: '#, np.round(curr_phase*180/(np.pi)), ' deg'
+			print '(*)', curr_msmnt, ' - ', mult, ' times --- phases: ', np.round(curr_phase*180/(np.pi)), ' deg'
 			print '     at indexes: ', self.index[k]			
 		print '--------------------------------------------'
 
@@ -421,15 +420,38 @@ class RamseySequence_Simulation (RamseySequence):
 		self.save_folder = folder
 	
 	def ramsey (self, t=0., theta=0.):
-		
-		# p1=probability to get 1 click (ms=0), p0 = probability to get 0 clicks (ms=+-1)
-		p1 = 0.5*((self.fid0+self.fid1)-(self.fid0-self.fid1)*np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta))
-		p0 = 1-p1
+
+		A = 0.5*(self.fid0 + self.fid1)
+		B = 0.5*(self.fid1 - self.fid0)		
+
+		p0 = (1-A)-B*np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta)
+		p1 = A+B*np.exp(-(t/self.T2)**2)*np.cos(2*np.pi*self.beta_sim*t+theta)
+
 		np.random.seed()
+		result = np.random.choice (2, 1, p=[p0, p1])
+		return result[0]		
+	def plot_ramsey(self, nr_datapoints=20, max_tau = None, theta=0):
+
+		if (max_tau == None):
+			max_tau = 2*self.T2
+		t = np.linspace (0, max_tau, nr_datapoints)
+		r = np.zeros(nr_datapoints)
+		for i in np.arange(nr_datapoints):
+			for j in np.arange(self.reps):
+				r[i] = r[i] + self.ramsey(t=t[i], theta = theta)
+
+		r = r/(float(self.reps))
+		plt.plot (t*1e6, r, 'ob')
+		plt.xlabel ('free evol time [us]')
+		plt.ylabel ('ramsey')
+		plt.ylim([0,1])
+		plt.show()
+
 
 		result = np.random.choice (2, 1, p=[p0, p1])
 		
 		return result[0]		
+
 
 	def sim_cappellaro_variable_M (self):
 		
@@ -687,268 +709,6 @@ class RamseySequence_fastSimulations (RamseySequence_Simulation):
 #Note: not sure what to do with this class
 class RamseySequence_Adwin (RamseySequence_Simulation):
 
-
-	def basic_adwin_algorithm (self, debug = False, exec_speed=False):
-
-		discr_steps = 2**(self.N+2)+1
-		m = np.zeros (self.N+1)
-		t = np.zeros (self.N+1)
-		th = np.zeros(self.N+1)
-		self.msmnt_phases = np.zeros((self.reps,self.N))
-		self.msmnt_times = np.zeros(self.N)
-		self.msmnt_results = np.zeros((self.reps,self.N))
-		exec_time = None
-		
-		if exec_speed:
-			start = time.clock()
-
-		for rep in np.arange(self.reps):
-			p_real = np.zeros (discr_steps)
-			p_imag = np.zeros (discr_steps)
-			p_real [2**(self.N+1)] = 1./(2*np.pi)
-
-			curr_phase = 0
-			for n in np.arange(self.N)+1:
-				t[n] = 2**(self.N-n)
-				k_opt = -2**(self.N-n+1)+2**(self.N+1)
-				th[n] = -0.5*np.angle(1j*p_imag[k_opt]+p_real[k_opt])
-				m[n] = self.ramsey (theta=th[n], t = t[n]*self.t0)
-
-				if debug:
-					print '### n =', n
-					print 't = ', t[n], '  theta = ', th[n]*180./np.pi, '  --- res: ', m[n] 
-				#update rule:
-				cn = m[n]*np.pi+th[n]
-				p0_real = np.copy (p_real)
-				p0_imag = np.copy (p_imag)
-
-				for k in np.arange(2**self.N, 3*2**self.N):
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(p0_imag [k-t[n]] - p0_imag [k+t[n]])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [k-t[n]] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-
-			self.msmnt_results [rep, :] = m[1:]
-			self.msmnt_phases [rep, :] = th[1:]
-			self.msmnt_times = t [1:]
-		if exec_speed:
-			stop = time.clock()
-			exec_time = stop-start
-		return exec_time
-
-
-	def adwin_only_positive (self, debug = False, exec_speed = False):
-
-		#use only {p[k], k>=0}, since p[-k]=p*[k] for real probability distribution
-
-		discr_steps = 2**(self.N+1)+1
-		m = np.zeros (self.N+1)
-		t = np.zeros (self.N+1)
-		th = np.zeros(self.N+1)
-		self.msmnt_phases = np.zeros((self.reps,self.N))
-		self.msmnt_times = np.zeros(self.N)
-		self.msmnt_results = np.zeros((self.reps,self.N))
-		exec_time = None
-		
-		if exec_speed:
-			start = time.clock()
-		for rep in np.arange(self.reps):
-			p_real = np.zeros (discr_steps)
-			p_imag = np.zeros (discr_steps)
-			p_real [0] = 1./(2*np.pi)
-
-			curr_phase = 0
-			for n in np.arange(self.N)+1:
-				t[n] = 2**(self.N-n)
-				k_opt = 2**(self.N-n+1)
-				#print k_opt, p_real[k_opt]-1j*p_imag[k_opt]
-				th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
-				m[n] = self.ramsey (theta=th[n], t = t[n]*self.t0)
-
-				if debug:
-					print '### n =', n
-					print 't = ', t[n], '  theta = ', th[n]*180./np.pi, '  --- res: ', m[n] 
-				#update rule:
-				cn = m[n]*np.pi+th[n]
-				p0_real = np.copy (p_real)
-				p0_imag = np.copy (p_imag)
-
-				for k in np.arange(t[n]+1, 2**(self.N)+1):
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(p0_imag [k-t[n]] - p0_imag [k+t[n]])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [k-t[n]] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-		
-				for k in np.arange(0, t[n]+1):
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(-p0_imag [t[n]-k] - p0_imag [k+t[n]])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(-p0_imag [t[n]-k] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-
-			self.msmnt_results [rep, :] = m[1:]
-			self.msmnt_phases [rep, :] = th[1:]
-			self.msmnt_times = t [1:]
-		if exec_speed:
-			stop = time.clock()
-			exec_time = stop-start
-		return exec_time
-
-	def adwin_positive_nonzero (self, debug = False, exec_speed=False):
-
-		#use only {p[k], k>=0}, since p[-k]=p*[k] for real probability distribution
-
-		discr_steps = 2**(self.N+1)+1
-		m = np.zeros (self.N+1)
-		t = np.zeros (self.N+1)
-		th = np.zeros(self.N+1)
-		self.msmnt_phases = np.zeros((self.reps,self.N))
-		self.msmnt_times = np.zeros(self.N)
-		self.msmnt_results = np.zeros((self.reps,self.N))
-		exec_time = None
-		
-		#print 'Create \'relevant-elements\' sequence: '
-		elems1 = [0]
-		elems2 = [2**(self.N-1)]
-		for i in np.arange(self.N-1)+2:
-			tn = 2**(self.N-i)
-			arr = np.ndarray.tolist(np.array(elems1)+tn)
-			elems1 = elems1+arr
-			arr = np.ndarray.tolist(np.array(elems2)+tn)
-			elems2 = elems2+arr
-		elems1 = np.squeeze(np.array(elems1))
-		elems2 = np.squeeze(np.array(elems2))
-		#print elems1
-		#print elems2
-
-		if exec_speed:
-			start = time.clock()
-
-		for rep in np.arange(self.reps):
-			p_real = np.zeros (discr_steps)
-			p_imag = np.zeros (discr_steps)
-			p_real [0] = 1./(2*np.pi)
-
-			curr_phase = 0
-			for n in np.arange(self.N)+1:
-				t[n] = 2**(self.N-n)
-				k_opt = 2**(self.N-n+1)
-				th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
-				m[n] = self.ramsey (theta=th[n], t = t[n]*self.t0)
-
-				if debug:
-					print '### n =', n
-					print 't = ', t[n], '  theta = ', th[n]*180./np.pi, '  --- res: ', m[n] 
-				#update rule:
-				cn = m[n]*np.pi+th[n]
-				p0_real = np.copy (p_real)
-				p0_imag = np.copy (p_imag)
-
-				tt2 = elems2[:2**(n-1)]
-				for k in tt2:
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(p0_imag [k-t[n]] - p0_imag [k+t[n]])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [k-t[n]] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-
-				tt1 = elems1[:2**(n-1)]
-				for k in tt1:
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [k-t[n]] + p0_real [k+t[n]]) - np.sin(cn)*(p0_imag [k-t[n]] - p0_imag [k+t[n]])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [k-t[n]] + p0_imag [k+t[n]]) + np.sin(cn)*(p0_real [k-t[n]] - p0_real [k+t[n]])) 
-
-			self.msmnt_results [rep, :] = m[1:]
-			self.msmnt_phases [rep, :] = th[1:]
-			self.msmnt_times = t [1:]
-		if exec_speed:
-			stop = time.clock()
-			exec_time = stop-start
-		return exec_time
-
-	def adwin_ultrafast (self, debug=False, exec_speed = False):
-
-		discr_steps = 2**(self.N)+1
-		self.msmnt_phases = np.zeros((self.reps,self.N))
-		self.msmnt_times = np.zeros(self.N)
-		self.msmnt_results = np.zeros((self.reps,self.N))
-		exec_time = None
-
-		if exec_speed:
-			start = time.clock()
-
-		for rep in np.arange(self.reps):
-			m = np.zeros (self.N+1)
-			t = np.zeros (self.N+1)
-			th = np.zeros(self.N+1)
-
-			p_real = np.zeros (discr_steps)
-			p_imag = np.zeros (discr_steps)
-			p_real [0] = 1./(2*np.pi)
-			t[0] = 2**self.N
-
-			for n in np.arange(self.N)+1:
-				t[n] = int(2**(self.N-n))
-				k_opt = int(2**(self.N-n+1))
-				th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
-
-				for mmm in np.arange(self.M):
-					meas_res = self.ramsey (theta=th[n], t = 2**(self.N-n)*self.t0)
-					m[n] = m[n] + meas_res
-					cn = meas_res*np.pi+th[n]
-					p0_real = np.copy (p_real)
-					p0_imag = np.copy (p_imag)
-					k = t[n]
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2**(self.N-n+1)]) - np.sin(cn)*(p0_imag [0] - p0_imag [2**(self.N-n+1)])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2**(self.N-n+1)]) + np.sin(cn)*(p0_real [0] - p0_real [2**(self.N-n+1)])) 
-			self.msmnt_results [rep, :] = m[1:]
-			self.msmnt_phases [rep, :] = th[1:]
-			self.msmnt_times = t [1:]
-		if exec_speed:
-			stop = time.clock()
-			exec_time = stop-start
-		return exec_time
-
-
-	def adwin_ultrafast_print_steps (self, msmnt_results = []):
-
-		if (len(msmnt_results) != self.N):
-			print 'Incorrect input!'
-		else:
-			discr_steps = 2**(self.N)+1
-			m = np.zeros (self.N+1)
-			m[1:] = msmnt_results
-			t = np.zeros (self.N+1)
-			th = np.zeros(self.N+1)
-
-			p_real = np.zeros (discr_steps)
-			p_imag = np.zeros (discr_steps)
-			p_real [0] = 1./(2*np.pi)
-			t[0] = 2**self.N
-
-			print '###############################################'
-			print 'Measurement result sequence: ', msmnt_results
-			for n in np.arange(self.N)+1:
-				t[n] = int(2**(self.N-n))
-				k_opt = int(2**(self.N-n+1))
-				th[n] = -0.5*np.angle(-1j*p_imag[k_opt]+p_real[k_opt])
-				k = t[n]
-
-				print ' * n = ', n, ' ----> tn = ', t[n],  ' - k_opt + 1 = ', k_opt+1, ' - th_opt = ', int(th[n]*180/(np.pi))
-				print '  		p[k_opt+1] = ', -1j*p_imag[k_opt]+p_real[k_opt], '  -  div = ', p_imag[k_opt]/p_real[k_opt]
-				print '			angle = ', int(np.angle(-1j*p_imag[k_opt]+p_real[k_opt])*180/np.pi)
-				print '			Important coefficients: '
-				print '				p[0+1] = ', p_real[0]+1j*p_imag[0]
-				print '				p[tn+1] = ', p_real[t[n]]+1j*p_imag[t[n]]
-				print '				p[2*tn+1] = ', p_real[2*t[n]]+1j*p_imag[2*t[n]]
-
-				nr_ones = m[n]
-				nr_zeros = self.M - nr_ones
-				for i in np.arange(nr_ones):
-					cn = 1*np.pi+th[n]
-					p0_real = np.copy (p_real)
-					p0_imag = np.copy (p_imag)
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2*k]) - np.sin(cn)*(p0_imag [0] - p0_imag [2*k])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*k]) + np.sin(cn)*(p0_real [0] - p0_real [2*k])) 
-				for i in np.arange(nr_zeros):
-					cn = 0*np.pi+th[n]
-					p0_real = np.copy (p_real)
-					p0_imag = np.copy (p_imag)
-					p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2*k]) - np.sin(cn)*(p0_imag [0] - p0_imag [2*k])) 
-					p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*k]) + np.sin(cn)*(p0_real [0] - p0_real [2*k])) 
-
-
-
-
 class RamseySequence_Exp (RamseySequence):
 
 	def __init__ (self, folder = '', sub_string = ''):
@@ -966,10 +726,11 @@ class RamseySequence_Exp (RamseySequence):
 	def load_exp_data (self):
 
 		a = sequence.MagnetometrySequenceAnalysis(self.folder)
-		a.get_sweep_pts()
+		#a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 
 		self.msmnt_results = a.clicks
+		print 'msmnt_results (load_exp_data): ', self.msmnt_results
 
 		if ((np.shape(np.shape(a.clicks)))[0]==1):
 			self.reps = len(a.clicks)
@@ -982,6 +743,11 @@ class RamseySequence_Exp (RamseySequence):
 		self.msmnt_times = np.zeros(len(a.ramsey_time))
 		self.set_detuning = a.set_detuning
 		self.CR_after = a.CR_after
+
+		#if (a.debug_pk):
+		self.p_tn = a.p_tn
+		self.p_2tn = a.p_2tn
+
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
 		self.msmnt_phases = 2*np.pi*a.set_phase/255.
@@ -994,14 +760,28 @@ class RamseySequence_Exp (RamseySequence):
 		b = np.ones(self.reps)
 		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
+		self.msmnt_type = a.msmnt_type
+		self.timer = a.timer
+
+		if (a.msmnt_type=='realtime'):
+			self.test_adwin = a.test_adwin
+			self.G = a.G
+			self.F = a.F
+			self.renorm_ssro = a.renorm_ssro
+			self.exp_fid0 = a.exp_fid0
+			self.exp_fid1 = a.exp_fid1
+			self.opt_phase = a.theta_opt #to be removed, only for testing yesterday's data!!! (should load a.theta_opt)
+
+		self.save_pk_n = a.save_pk_n
+		self.save_pk_m = a.save_pk_m
+		self.real_pk_adwin = a.real_pk_adwin
+		self.imag_pk_adwin = a.imag_pk_adwin
+
+
+
 	def CR_after_postselection(self):
 
 		if (self.N>1):
-			print '--CR_after_postelection---'
-			#for i in np.arange(20):
-			#	print '---',i, ' ---'
-			#	print self.msmnt_results[i,:], self.CR_after[i,:]
-
 			res = np.copy(self.msmnt_results)
 			phases = np.copy(self.msmnt_phases)
 			self.discarded_elements = []
@@ -1018,15 +798,31 @@ class RamseySequence_Exp (RamseySequence):
 			self.reps = rep
 			self.msmnt_results =new_results[:self.reps,:]
 			self.msmnt_phases =  new_phases[:self.reps,:]
-			#print np.shape(self.msmnt_results)
-			print 'Discarded elements: ', self.discarded_elements
-		#print '#### AFTER ####'
-		#for i in np.arange(20):
-		#	print '---',i, ' ---'
-		#	print self.msmnt_results[i,:], self.CR_after[i,:]
+			if len(self.discarded_elements)>0:
+				print 'CR post-selection, discard elements: ', self.discarded_elements
 
 
-# Probably can remove this class?
+	def check_realtime_phases(self):
+		adwin_phase = self.opt_phase[:self.N]
+		adwin_results = self.msmnt_results[0,:]
+		sys.stdout.write ('Msmnt type: '+self.msmnt_type+ '   --- N = '+str(self.N)+ ', M = '+str(self.M))
+		if self.renorm_ssro:
+			print '	- ssro renorm: = ',self.exp_fid0, ', fid1 = ', self.exp_fid1,')'
+		else:
+			print '	- no ssro renorm'
+
+		print 'Adwin: results = ', adwin_results, ' - phases: ', adwin_phase
+
+		t = AdaptiveTable (N=self.N,M=self.M)
+		t.set_tau0(tau0=self.t0)
+		t.verbose = False
+		sim_ph, pos = t.msmnt_to_position (msmnt_results = adwin_results)
+		print 'Python simulated phases: ', sim_ph
+
+		diff = np.sum(np.abs(adwin_phase-sim_ph))/self.N
+		print 'MEAN ERROR: ', diff, ' deg'
+
+
 class AdaptiveTable ():
 
 	def __init__(self, N, M):
