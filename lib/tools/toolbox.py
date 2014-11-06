@@ -437,6 +437,42 @@ def clear_analysis_data(fp, ANALYSISGRP = 'analysis'):
     else:
         f.close()
 
+def clear_raw_data(fp, name):
+    """
+    Deletes the raw data in the main folder. 
+    """
+
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    if name in f.keys():
+        try:
+            del f[name]
+            f.flush()
+            f.close()
+        except:
+            f.close()
+            raise
+    else:
+        f.close()
+
+def set_raw_data(fp, name, data):
+    """
+    Save the data in the main folder. Does not save any attributes
+    """
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    f[name] = data
+    f.flush()
+    f.close()        
+    
 def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
