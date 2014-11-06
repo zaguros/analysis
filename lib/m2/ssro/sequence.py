@@ -293,8 +293,10 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         except:
             self.timer = None
 
-        self.save_p_k = self.g.attrs['save_p_k']
-        if self.save_p_k>0:
+        self.save_pk_n = self.g.attrs['save_pk_n']
+        self.save_pk_m = self.g.attrs['save_pk_m']
+
+        if self.save_pk_n>0:
             self.real_pk_adwin = np.array(adwingrp['real_p_k'].value)
             self.imag_pk_adwin = np.array(adwingrp['imag_p_k'].value)
         else:
