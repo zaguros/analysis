@@ -245,6 +245,4 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #check_adwin_realtime_record_pk(label = result, newer_than = '102000')
 
 check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=True)
-
-
 #check_adwin_realtime_plots (N=4, M=5, outcomes = [5,0,2,1,5,5,0,2], newer_than='145500', do_plot=True)
