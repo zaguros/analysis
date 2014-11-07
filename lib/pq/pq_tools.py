@@ -66,6 +66,39 @@ def get_markers(pqf, chan, index = 1):
 
     return (is_special & is_channel)
 
+def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, index = 1):
+    """
+    returns a filter (1d-array): whether events are markers on the given channel
+    """
+
+    chan_name = '/PQ_channel-' + str(index)
+    spec_name = '/PQ_special-' + str(index)
+    
+    if type(pqf) == h5py._hl.files.File:
+
+        channel = pqf[chan_name].value
+        special = pqf[spec_name].value
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf,'r')
+        channel = f[chan_name].value
+        special = f[spec_name].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    is_special = special == 1
+    is_channel_rnd_0 = channel == chan_rnd_0
+    is_channel_rnd_1 = channel == chan_rnd_1
+
+    is_rnd_0 = is_special & is_channel_rnd_0
+    is_rnd_1 = is_special & is_channel_rnd_1
+
+    return is_rnd_0, is_rnd_1
+
 def get_multiple_photon_syncs(pqf, index = 1):
 
     spec_name = '/PQ_special-' + str(index)
@@ -290,7 +323,7 @@ def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1,
     unique_sync_num_with_markers = np.unique(sync_num_with_markers)
 
     if VERBOSE:
-        print "The number of events with a sync numbers that has a marker is:", len(sync_num_with_markers)
+        print "The number of events with a sync number that has a marker is:", len(sync_num_with_markers)
         print "The number of unique sync numbers that have a marker is:", len(unique_sync_num_with_markers)
 
     return unique_sync_num_with_markers
@@ -479,6 +512,7 @@ def filter_marker_time_lim(pqf, chan, sync_time_lim, index = 1, VERBOSE = True):
     is_mrkr = get_markers(pqf, chan, index = index)
     if VERBOSE:
         print "The number of markers is:", len(sync_numbers[is_mrkr])
+
 
     marker_sync_num_small = sync_numbers[(is_mrkr & is_small_sync_time)] - 1
     marker_sync_num_large = sync_numbers[(is_mrkr & is_large_sync_time)]
