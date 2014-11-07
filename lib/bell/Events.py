@@ -224,7 +224,7 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
     Sync_Time_photon_12, Sync_Time_photon_13, Sync_Time_photon_14, Sync_Time_photon_15, Sync_Time_photon_16,\
     Sync_Time_photon_17, Sync_Time_photon_18, Sync_Time_photon_19, Sync_Time_photon_20, Sync_Time_photon_21, \
     Sync_Time_photon_22, Sync_Time_photon_23, Sync_Time_photon_24"
-     _a = {'Columns': columns}
+    _a = {'Columns': columns}
 
     # Gets the number of blocks in the data
     num_blocks = tb.get_num_blocks(pqf)
@@ -241,7 +241,7 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
 
     # Initializes an array to save the SSRO data
     total_SSRO_events = np.empty((0,29))
-
+Tail length filter test
     # Loops over every block
     for i in range(num_blocks):
 
