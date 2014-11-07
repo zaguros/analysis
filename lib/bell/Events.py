@@ -241,7 +241,7 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
 
     # Initializes an array to save the SSRO data
     total_SSRO_events = np.empty((0,29))
-Tail length filter test
+
     # Loops over every block
     for i in range(num_blocks):
 
@@ -391,6 +391,51 @@ def get_SSRO_events(pqf, unique_sync_num_with_markers,RO_start, chan_rnd_0, chan
     # Gets filters for if an event is a random number in the first channel or in the second channel
     # Channels are inputs for the function
     is_rnd_0, is_rnd_1 = pq_tools.get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, index = index)
+
+    first_sync_num_with_marker = unique_sync_num_with_markers[0]
+    first_sync_num_with_marker_2 = unique_sync_num_with_markers[0] -1
+    irst_sync_num_with_marker = unique_sync_num_with_markers[0]
+    last_sync_num_with_marker = unique_sync_num_with_markers[len(unique_sync_num_with_markers)-1]
+    last_sync_num_with_marker_2 = unique_sync_num_with_markers[len(unique_sync_num_with_markers)-1] + 1
+    first_sync_num_block = sync_num_RO[0]
+    last_sync_num_block = sync_num_RO[len(sync_num_RO)-1]
+
+    if first_sync_num_with_marker == first_sync_num_block:
+        print 
+        print
+        print
+        print "Something goes wrong with the first number, think of a way to fix this!"
+        print 
+        print
+        print
+
+    if first_sync_num_with_marker_2 == first_sync_num_block:
+        print 
+        print
+        print
+        print "Something goes wrong with the first number, think of a way to fix this!"
+        print 
+        print
+        print
+        
+
+    if last_sync_num_with_marker == last_sync_num_block:
+        print 
+        print
+        print
+        print "Something goes wrong with the last number, think of a way to fix this!"
+        print 
+        print
+        print
+        
+    if last_sync_num_with_marker_2 == last_sync_num_block:
+        print 
+        print
+        print
+        print "Something goes wrong with the last number, think of a way to fix this!"
+        print 
+        print
+        print
 
     # Loop over all sync numbers with markers
     for i,s in enumerate(unique_sync_num_with_markers):
