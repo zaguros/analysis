@@ -25,7 +25,6 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
         '''
 
         if post_select == True:
-            print 'Post select = True'
             self.post_select = True
             self.result_corrected = False
 
@@ -38,7 +37,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
 
 
             #Step 0 extract data from hdf5 file
-            self.parity_result = adwingrp['parity_result'].value #Creates a list of 0 and 1 's for when the parity measurement was success
+            self.parity_result = adwingrp['parity_RO_results'].value #Creates a list of 0 and 1 's for when the parity measurement was success
             self.ssro_results = adwingrp['ssro_results'].value #Extracts all the SSRO data
 
             # #Test cases, condition on self, condition on random successes, only zeros
@@ -48,8 +47,8 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
 
 
             #Step 1 Multiply results with post selection parameter
-            ssro_results_0 = (1-self.parity_result)*self.ssro_results
-            ssro_results_1 = self.parity_result*self.ssro_results
+            ssro_results_0 = self.parity_result*self.ssro_results
+            ssro_results_1 = (1-self.parity_result)*self.ssro_results
 
             # Step 2 reshape
             self.parity_result = self.parity_result.reshape((-1,self.pts,self.readouts)).sum(axis=0)
@@ -57,13 +56,17 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.ssro_results_1 = ssro_results_1.reshape((-1,self.pts,self.readouts)).sum(axis=0)
 
             #Step 3 normalization and uncertainty, different per column
-            self.normalized_ssro_0 = self.ssro_results_0/(self.reps-self.parity_result ).astype('float')
-            self.u_normalized_ssro_0 = (self.normalized_ssro_0*(1-self.normalized_ssro_0)/(self.reps-self.parity_result))**0.5
-            self.normalized_ssro_1 = self.ssro_results_1/self.parity_result.astype('float')
-            self.u_normalized_ssro_1 = (self.normalized_ssro_1*(1-self.normalized_ssro_1)/(self.parity_result))**0.5
+            self.normalized_ssro_0 = self.ssro_results_0/(self.parity_result ).astype('float')
+            self.u_normalized_ssro_0 = (self.normalized_ssro_0*(1-self.normalized_ssro_0)/(self.parity_result))**0.5
+            self.normalized_ssro_1 = self.ssro_results_1/(self.reps-self.parity_result).astype('float')
+            self.u_normalized_ssro_1 = (self.normalized_ssro_1*(1-self.normalized_ssro_1)/(self.reps-self.parity_result))**0.5
+
+
+            print 'Probabilities ms=0 and ms=-1'
+            print np.average(self.parity_result/self.reps.astype('float'))
+            print np.average((self.reps-self.parity_result)/self.reps.astype('float'))
 
         else:
-            print 'Post select = False'
             mbi.MBIAnalysis.get_readout_results(self,name) #NOTE: super cannot be used as this is an "old style class"
             self.post_select = False
 
@@ -74,7 +77,6 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
         if self.post_select == True:
             if ssro_calib_folder == '':
                 ssro_calib_folder = toolbox.latest_data('SSRO')
-                print 'ssro_calib_folder found by conditional parity class: %s' %ssro_calib_folder
 
             self.p0_0 = np.zeros(self.normalized_ssro_0.shape)
             self.u_p0_0 = np.zeros(self.normalized_ssro_0.shape)
@@ -101,16 +103,14 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.result_corrected = True
 
         else:
-            print 'Post select = False ROC'
             mbi.MBIAnalysis.get_electron_ROC(self,ssro_calib_folder)  #NOTE: super cannot be used as this is an "old style class"
 
     def convert_fidelity_to_contrast(self,p0,u_p0):
         '''
         takes data and corresponding uncertainty and converts it to contrast
         '''
-        print 'Converting fidelity to contrast'
-        c0= ((self.p0.reshape(-1)[:])-0.5)*2
-        u_c0 = 2*self.u_p0.reshape(-1)[:]
+        c0= ((p0.reshape(-1)[:])-0.5)*2
+        u_c0 = 2*u_p0.reshape(-1)[:]
         # y_a= ((self.p0.reshape(-1)[:])-0.5)*2
         # y_err_a = 2*a.u_p0.reshape(-1)[:]
 

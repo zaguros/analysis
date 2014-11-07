@@ -16,8 +16,10 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
+from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
 
 reload(magnetometry)
+reload(adwin_mgnt)
 
 def B_vs_time_single (label):
 
@@ -159,24 +161,90 @@ def analyze_sweep_field():
 #error= B_vs_time(nr=90, label = 'CR40b_manyreps')
 #single_B_field (nr = 69, label = 'CR40b_manyreps')
 
-def check_adwin_realtime(label, newer_than=False):
+def check_adwin_realtime(label, newer_than=False, print_details=True):
 
 	dir0, daydir, m_dirs = toolbox.latest_data (contains = label, return_all=True, newer_than = newer_than)
 
 	for i in m_dirs:
 		f = os.path.join(dir0, daydir, i)
-		print '################## -current folder: ', i
+		print '################## - current folder: ', i
 		exp = magnetometry.RamseySequence_Exp (folder = f)
 		exp.load_exp_data()
+		#print 'Timer: '+str('{0:.2f}'.format(exp.timer))+' ms'
 		exp.check_realtime_phases()
+		p_tn_exp = exp.p_tn
+		p_2tn_exp = exp.p_2tn
 
-		s = magnetometry.RamseySequence_Adwin (N_msmnts = exp.N, reps=1, tau0=20e-9)
+		s = adwin_mgnt.RamseySequence_Adwin (N_msmnts = exp.N, reps=1, tau0=20e-9)
 		s.M = exp.M
 		s.renorm_ssro = False
 		s.verbose = False
 		s.maj_reps = 1
 		s.maj_thr = 0	
-		phases_adwin_py = s.adwin_ultrafast_print_steps (msmnt_results = exp.msmnt_results[0,:])
-		print 'Python-based adwin simulations. Phases: ', phases_adwin_py
+		phases_th, p_tn_th, p_2tn_th = s.sim_cappellaro_track_coefficients (msmnt_result = exp.msmnt_results[0,:])
+		#print np.round(phases_th*180/np.pi)
 
-check_adwin_realtime(label = '_N=9_M=6_rtAdwin', newer_than = '165000')
+
+		if print_details:
+			for n in np.arange (exp.N)+1:
+				err_real = abs((np.real(p_2tn_th[n-1]) - np.real(p_2tn_exp[n-1])))
+				err_imag = abs((np.imag(p_2tn_th[n-1]) - np.imag(p_2tn_exp[n-1])))
+				abs_value = (np.real(p_2tn_th[n-1])**2+np.imag(p_2tn_th[n-1])**2)**0.5
+				error = 100*(err_real + err_imag)/abs_value
+
+				print ' ---- N = ', n, '  ---  t_n = ', 2**(exp.N-n), '  ---- opt_phase = '+str('{0:.1f}'.format(phases_th[n-1]*180/np.pi))
+				#print '		p[tn] = ',p_tn_th[n-1], ' (th)  ----- ', p_tn_exp[n-1],' (exp)'
+				print '		p[2tn] = ',p_2tn_th[n-1], ' (th)  ----- ', p_2tn_exp[n-1],' (exp)'
+				print '     err: real part = ', error, '%'
+		s.adwin_optimal (ext_outcomes = exp.msmnt_results[0,:])
+
+def check_adwin_realtime_record_pk(label, newer_than=False):
+
+
+	f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
+	for n in [1]:
+		for m in [1,2,3,4]:
+			dir0, daydir, m_dirs = toolbox.latest_data (contains = label+'_test_pk_(n='+str(n)+'_m='+str(m)+')', return_all=True, newer_than = newer_than)
+
+			for i in m_dirs:
+				f = os.path.join(dir0, daydir, i)
+				exp = magnetometry.RamseySequence_Exp (folder = f)
+				exp.load_exp_data()
+				#exp.check_realtime_phases()
+				x = np.arange(2**exp.N+1)
+				axarr[0].plot (exp.real_pk_adwin, ':k')
+				axarr[1].plot (exp.imag_pk_adwin, ':k')
+				axarr[0].plot (exp.real_pk_adwin, 'o', label=str(n)+'_'+str(m))
+				axarr[1].plot (exp.imag_pk_adwin, 'o', label=str(n)+'_'+str(m))
+
+	axarr[0].set_title('real part')
+	axarr[1].set_title('imaginary part')
+	plt.xlim ([0, 17])
+	plt.legend()
+	plt.show()
+
+
+def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = False, do_plot_adwin = True, newer_than = None):
+
+	s = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
+	s.M = M
+	s.renorm_ssro = False
+	s.verbose = False
+	s.maj_reps = 1
+	s.maj_thr = 0	
+	s.fid0=1
+	s.fid1=0
+	s.T2= 96e-6
+	print 'Outcomes: ', outcomes
+	s.outcomes = outcomes
+	s.compare_adwin_python (do_plot=do_plot, newer_than = newer_than, use_fid_bayesian_update = True)
+
+
+#result = '4021'
+#check_adwin_realtime (label = result+'_test_pk_(n=4_m=1)', newer_than = '102000')
+#check_adwin_realtime_record_pk(label = result, newer_than = '102000')
+
+check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=True)
+
+
+#check_adwin_realtime_plots (N=4, M=5, outcomes = [5,0,2,1,5,5,0,2], newer_than='145500', do_plot=True)

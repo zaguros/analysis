@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from analysis.lib.tools import toolbox
+reload(toolbox)
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
@@ -21,7 +22,13 @@ def OneQubitTomo(timestamp=None, measurement_name = ['adwindata'], ssro_calib_ti
     List of parameters (order important for 'fixed')
     [freq, offset, Amplitude, phase]
     '''
-
+    # timestampZ = '20141023_174418'
+    # folderZ = toolbox.data_from_time(timestampZ)
+    # timestampX = '20141023_173547'
+    # folderX = toolbox.data_from_time(timestampX)
+    # timestampY = '20141023_173918'
+    # folderY = toolbox.data_from_time(timestampY)
+    
     if timestamp != None:
         timestampZ = timestamp
         folderZ = toolbox.data_from_time(timestamp)
