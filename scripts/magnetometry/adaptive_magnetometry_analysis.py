@@ -64,7 +64,7 @@ def B_vs_time (nr, label):
 	for i in np.arange(nr)+10:
 		try:
 			label0=label+'_%d'%i
-			beta_exp, p_exp, err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
+			beta_exp, p_exp, ave_exp,err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
 			error.append(sB)
 			print i, sB
 		except:
@@ -113,12 +113,12 @@ def analyze_single_instance(label='adptv_estimation_det', compare_to_simulations
 
 	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
 	if compare_to_simulations:
-		beta_exp, p_exp, err_exp, mB, sB=s.compare_to_simulations(show_plot = False, do_save=True,plot_log=True)
+		beta_sim, p_sim, ave_sim,err_sim, a, b=s.compare_to_simulations(show_plot = True, do_save=True,plot_log=True)
 	else:
-		beta_exp, p_exp, err_exp, mB, sB=s.mean_square_error(show_plot = False, save_plot=True, do_plot=False)
+		beta_sim, p_sim, ave_exp,err_sim, a, b=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
 
 	#s.analyse_ramsey()
-	return beta_exp, p_exp, err_exp, mB, sB
+	return beta_sim, p_sim, ave_sim,err_sim, a, b
 
 '''
 def temporal_evolution_B(label, nr):
@@ -243,6 +243,6 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #result = '4021'
 #check_adwin_realtime (label = result+'_test_pk_(n=4_m=1)', newer_than = '102000')
 #check_adwin_realtime_record_pk(label = result, newer_than = '102000')
-
-check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=True)
+analyze_single_instance(compare_to_simulations=False)
+#check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=False)
 #check_adwin_realtime_plots (N=4, M=5, outcomes = [5,0,2,1,5,5,0,2], newer_than='145500', do_plot=True)

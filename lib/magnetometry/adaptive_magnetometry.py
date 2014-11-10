@@ -321,11 +321,11 @@ class RamseySequence():
 		f1 = plt.figure()
 		
 		beta_exp, p_exp, ave_exp,err_exp, mB, sB = self.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
-		plt.plot (beta_exp*1e-6, p_exp, 'ob', label = 'exp')
+		plt.plot (beta_exp*1e-6, p_exp, color='RoyalBlue', label = 'exp')
 
 		try:
 			s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
-			s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M)
+			s.setup_simulation (magnetic_field_hz = self.set_detuning, G=self.G,F=self.F,K=self.N-1)
 			s.verbose=verbose
 			s.T2 = self.T2
 			s.fid0 = self.fid0
@@ -337,14 +337,16 @@ class RamseySequence():
 				s.print_table_positions()		
 			beta_sim, p_sim, ave_exp,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
 
-			plt.plot (beta_sim*1e-6, p_sim, 'or', label = 'sim')
+			plt.plot (beta_sim*1e-6, p_sim, color='Crimson',label = 'sim')
+			B_sim_string='\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim))
 		except:
+			B_sim_string='error in simulation'
 			print 'Error in simulation!'
 		if plot_log:
 			plt.yscale('log')
 			plt.ylim((1e-10,0.5))
 		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_exp)) \
-             + '\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim)))		
+             + B_sim_string)		
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
 		plt.legend()
@@ -355,7 +357,7 @@ class RamseySequence():
 		if show_plot:
 			plt.show()
 		plt.ion()
-		return beta_exp, p_exp, err_exp, mB, sB
+		return beta_exp, p_exp, ave_exp,err_exp, mB, sB
 
 
 
@@ -706,8 +708,6 @@ class RamseySequence_fastSimulations (RamseySequence_Simulation):
 		p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*t_n]) + np.sin(cn)*(p0_real [0] - p0_real [2*t_n])) 
 		self.pk[k] = p_real[k]+1j*p_imag[k]
 
-#Note: not sure what to do with this class
-class RamseySequence_Adwin (RamseySequence_Simulation):
 
 class RamseySequence_Exp (RamseySequence):
 
@@ -750,15 +750,17 @@ class RamseySequence_Exp (RamseySequence):
 
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
-		self.msmnt_phases = 2*np.pi*a.set_phase/255.
+		self.msmnt_phases = 2*np.pi*a.theta/360.
+		print a.theta
 		self.N=a.N
+		self.M = a.M
 		self.F=a.F
 		self.G=a.G
 		self.K=a.K
 		self.discarded_elements = []
 		phases_detuning = 2*np.pi*a.phases_detuning/360.
 		b = np.ones(self.reps)
-		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
+		#self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
 		self.msmnt_type = a.msmnt_type
 		self.timer = a.timer
