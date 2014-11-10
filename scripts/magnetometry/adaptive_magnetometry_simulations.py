@@ -272,24 +272,25 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 	return avg_phase_error
 
 
-def simulate_adwin (N,M):
-	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=2000, tau0=20e-9)
-	field = 100/(a.t0*2**N)
+def simulate_adwin (N,M, do_plot=False, reps=1):
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
+	field = 10/(a.t0*2**N)
 	a.renorm_ssro = False
 	a.verbose = False
 	a.maj_reps = 1
 	a.maj_thr = 0	
-	a.setup_simulation (magnetic_field_hz = field, M=M)
+	a.setup_simulation (magnetic_field_hz = field, F=0,G=M,K=N)
 
 	a.T2 = 96e-6
-	a.fid0 = 0.88
+	a.fid0 = 0.85
 	a.fid1 = 0.02
-	a.adwin_optimal(use_fid_bayesian_update=True)
+	a.adwin_optimal_looping_storage(do_plot=do_plot)
 
 	a.convert_to_dict()
 	a.print_results()
 		
-	beta, p, err,a, b = a.mean_square_error(set_value=field, do_plot=True)
+	beta, p, err,h, a, b = a.mean_square_error(set_value=field, do_plot=True, y_log=True)
+	print 'holevo variance: ', h
 	plt.show()
 
 
@@ -310,7 +311,7 @@ simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 #check_simulated_adwin_phases ()
 
 
-'''
+
 mean_error = []
 m_list = np.arange(30)+1
 for m in m_list:
@@ -328,11 +329,11 @@ plt.legend()
 plt.show()
 '''
 
-simulate_adwin(N=8, M= 20)
+simulate_adwin(N=5, M= 20, do_plot=False, reps=100)
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
-fid0=1.-0.112
-fid1=0.007
-reps=21
-simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+#fid0=1.-0.112
+#fid1=0.007
+#reps=21
+#simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)

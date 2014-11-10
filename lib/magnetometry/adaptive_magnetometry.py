@@ -706,9 +706,6 @@ class RamseySequence_fastSimulations (RamseySequence_Simulation):
 		p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*t_n]) + np.sin(cn)*(p0_real [0] - p0_real [2*t_n])) 
 		self.pk[k] = p_real[k]+1j*p_imag[k]
 
-#Note: not sure what to do with this class
-class RamseySequence_Adwin (RamseySequence_Simulation):
-
 class RamseySequence_Exp (RamseySequence):
 
 	def __init__ (self, folder = '', sub_string = ''):
