@@ -1,7 +1,10 @@
 import numpy as np
 import h5py
+import time
+from datetime import datetime
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.pq import pq_tools, pq_plots
+
 
 def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min, 
         first_win_max, second_win_min, second_win_max, force_eval=False, VERBOSE = True):
@@ -215,10 +218,10 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
     """
     Returns SSRO data for all marked events. 
     Colums are:
-    Sync Nymber | number of photons | RND number indicator | RND number | Sync Times photon 1-24 |
+    Sync Nymber | number of photons | RND number indicator | RND number | Sync Time RND number | Sync Times photon 1-24 |
     """
     
-    columns = "Sync_Number, Number of photons, Random Number Indicator, Random Number, Sync_Time_photon_1, \
+    columns = "Sync_Number, Number of photons, Random Number Indicator, Random Number, Sync_Time Random Number, Sync_Time_photon_1, \
     Sync_Time_photon_2, Sync_Time_photon_3, Sync_Time_photon_4, Sync_Time_photon_5, Sync_Time_photon_6, \
     Sync_Time_photon_7, Sync_Time_photon_8, Sync_Time_photon_9, Sync_Time_photon_10, Sync_Time_photon_11, \
     Sync_Time_photon_12, Sync_Time_photon_13, Sync_Time_photon_14, Sync_Time_photon_15, Sync_Time_photon_16,\
@@ -235,16 +238,18 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
     # Initializes arrays to save the PQ-data
     PQ_sync_number = np.empty((0,), dtype = int) 
     PQ_special = np.empty((0,), dtype = int)         
-    PQ_sync_time = np.empty((0,), dtype = int)
-    PQ_time = np.empty((0,), dtype = int)      
+    PQ_sync_time = np.empty((0,), dtype = long)
+    PQ_time = np.empty((0,), dtype = long)      
     PQ_channel = np.empty((0,), dtype = int)
 
     # Initializes an array to save the SSRO data
     total_SSRO_events = np.empty((0,29))
 
+
     # Loops over every block
     for i in range(num_blocks):
 
+        print "Main Loop", datetime.now()
         # Get a list of sync numbers which correspond to events for which a marker has arrived. 
         unique_sync_num_with_markers = \
             pq_tools.get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
@@ -333,6 +338,8 @@ def get_SSRO_events(pqf, unique_sync_num_with_markers,RO_start, chan_rnd_0, chan
     and the sync times of the 1st to the 24th photon.
     """
 
+    print "Before opening the files", datetime.now()
+
     # Define all block names
     sync_time_name = '/PQ_sync_time-' + str(index)
     sync_num_name = '/PQ_sync_number-' + str(index)
@@ -369,14 +376,16 @@ def get_SSRO_events(pqf, unique_sync_num_with_markers,RO_start, chan_rnd_0, chan
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
 
+    print "Files opened", datetime.now()
+
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,29))
 
     # Initializes arrays to save all PQ data
     PQ_sync_number = np.empty((0,), dtype = int) 
     PQ_special = np.empty((0,), dtype = int)         
-    PQ_sync_time = np.empty((0,), dtype = int)
-    PQ_time = np.empty((0,), dtype = int)      
+    PQ_sync_time = np.empty((0,), dtype = long)
+    PQ_time = np.empty((0,), dtype = long)      
     PQ_channel = np.empty((0,), dtype = int)
 
     # Create a filter which is True for all photons
@@ -391,6 +400,8 @@ def get_SSRO_events(pqf, unique_sync_num_with_markers,RO_start, chan_rnd_0, chan
     # Gets filters for if an event is a random number in the first channel or in the second channel
     # Channels are inputs for the function
     is_rnd_0, is_rnd_1 = pq_tools.get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, index = index)
+
+    print "Check if something goes wrong with makers", datetime.now()
 
     if len(unique_sync_num_with_markers) > 0:
         first_sync_num_with_marker = unique_sync_num_with_markers[0]
@@ -438,8 +449,12 @@ def get_SSRO_events(pqf, unique_sync_num_with_markers,RO_start, chan_rnd_0, chan
             print
             print
 
+    print "Check finished", datetime.now()
+
+
     # Loop over all sync numbers with markers
     for i,s in enumerate(unique_sync_num_with_markers):
+        print "Loop over marked events", datetime.now()
 
         # Create a filter which filters on a specific sync number
         is_sync_num_s = sync_num_RO == s
