@@ -19,18 +19,9 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
     """
 
     
-    if tb.has_analysis_data(fp_BS, 'Entanglement_events') and not force_eval:
-        tev, _a = tb.get_analysis_data(fp_BS, 'Entanglement_events')
-        unique_sync_num_with_markers = tev[:,0]
-        if VERBOSE:
-            print
-            string = 'The number of events with PLU markers in run ' + str(i+1) + ' is:'
-            print string, len(unique_sync_num_with_markers)
-            print
-            print 'Found {} saved valid entanglement events.'.format(int(len(tev)))
-            print '===================================='
-            print
-        return tev, _a 
+    if tb.has_analysis_data(fp_LT3, 'Entanglement_events') and not force_eval:
+        Total_SSRO_events_LT3, _a = tb.get_analysis_data(fp_LT3, 'Entanglement_events')
+
 
     # Opens beamsplitter data 
     f = h5py.File(fp_BS, 'r')
