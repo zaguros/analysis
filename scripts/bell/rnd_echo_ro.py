@@ -15,7 +15,7 @@ from analysis.lib.tools import plot
 #timestamp='20140521172533'
 #folder=tb.data_from_time(timestamp)
 
-def analyse_rnd_ro_bell(folder, save = True,RO_start=9840, **kw):
+def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     a = pqsequence.PQSequenceAnalysis(folder)
     a.reps=a.g.attrs['repetitions']*a.g['joint_params'].attrs['LDE_attempts_before_CR']
     
@@ -24,9 +24,9 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=9840, **kw):
     RO_length = a.g['joint_params'].attrs['LDE_RO_duration']*1e9
     
     a.plot_histogram(0,start=RO_start, length=100, hist_binsize=1, save=False, log_plot=False)
-    
     ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('FastSSRO'))
     
+
     roc = error.SingleQubitROC()
     roc.F0, roc.u_F0, roc.F1, roc.u_F1 = pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
     #(0.9376,0.0034,0.9920,0.0013)
@@ -59,6 +59,7 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=9840, **kw):
     
     
     noof_reps_wo_rnd_clk=len(np.unique(sync_nrs[is_rnd_clk]))
+    print 'number of reps with a random clk', noof_reps_wo_rnd_clk
     print 'syncs without a random click: {} / {} = {:.2f} %'.format(a.reps-noof_reps_wo_rnd_clk, a.reps, float(a.reps-noof_reps_wo_rnd_clk)/a.reps*100.)
     
     is_last_random_click=np.append(np.diff(np.asarray(is_rnd_clk, dtype='int'))==-1,is_rnd_clk[-1])

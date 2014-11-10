@@ -272,24 +272,27 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 	return avg_phase_error
 
 
-def simulate_adwin (N,M):
-	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=2000, tau0=20e-9)
-	field = 100/(a.t0*2**N)
+def simulate_adwin (N,F,G, do_plot=False, reps=1, ext_outcomes = []):
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
+	field = 10/(a.t0*2**N)
 	a.renorm_ssro = False
 	a.verbose = False
 	a.maj_reps = 1
 	a.maj_thr = 0	
-	a.setup_simulation (magnetic_field_hz = field, M=M)
+	a.setup_simulation (magnetic_field_hz = field, F=F, G=G,K=N)
 
 	a.T2 = 96e-6
-	a.fid0 = 0.88
-	a.fid1 = 0.02
-	a.adwin_optimal(use_fid_bayesian_update=True)
+	a.fid0 = 1
+	a.fid1 = 0
+	a.G = G
+	a.F = F
+	a.compare_adwin_python_optimal_looping_storage(do_plot=do_plot, ext_outcomes = ext_outcomes)
 
 	a.convert_to_dict()
 	a.print_results()
 		
-	beta, p, err,a, b = a.mean_square_error(set_value=field, do_plot=True)
+	beta, p, err,h, a, b = a.mean_square_error(set_value=field, do_plot=True, y_log=True)
+	print 'holevo variance: ', h
 	plt.show()
 
 
@@ -329,7 +332,7 @@ plt.show()
 
 '''
 
-simulate_adwin(N=8, M= 20)
+simulate_adwin(N=5, G=5, F=0,do_plot=True, reps=1, ext_outcomes = np.array([5,0,5,5,5]))
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
 '''
