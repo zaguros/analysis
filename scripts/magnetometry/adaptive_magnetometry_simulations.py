@@ -272,19 +272,21 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 	return avg_phase_error
 
 
-def simulate_adwin (N,M, do_plot=False, reps=1):
+def simulate_adwin (N,F,G, do_plot=False, reps=1, ext_outcomes = []):
 	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
 	field = 10/(a.t0*2**N)
 	a.renorm_ssro = False
 	a.verbose = False
 	a.maj_reps = 1
 	a.maj_thr = 0	
-	a.setup_simulation (magnetic_field_hz = field, F=0,G=M,K=N)
+	a.setup_simulation (magnetic_field_hz = field, F=F, G=G,K=N)
 
 	a.T2 = 96e-6
-	a.fid0 = 0.85
-	a.fid1 = 0.02
-	a.adwin_optimal_looping_storage(do_plot=do_plot)
+	a.fid0 = 1
+	a.fid1 = 0
+	a.G = G
+	a.F = F
+	a.compare_adwin_python_optimal_looping_storage(do_plot=do_plot, ext_outcomes = ext_outcomes)
 
 	a.convert_to_dict()
 	a.print_results()
@@ -327,13 +329,16 @@ plt.ylabel ('avg phase error [deg]')
 plt.xlabel('M')
 plt.legend()
 plt.show()
+
 '''
 
-simulate_adwin(N=5, M= 20, do_plot=False, reps=100)
+simulate_adwin(N=5, G=5, F=0,do_plot=True, reps=1, ext_outcomes = np.array([5,0,5,5,5]))
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
-#fid0=1.-0.112
-#fid1=0.007
-#reps=21
-#simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+'''
+fid0=1.-0.112
+fid1=0.007
+reps=21
+simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+'''
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
