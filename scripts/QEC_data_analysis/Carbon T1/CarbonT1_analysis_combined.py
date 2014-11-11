@@ -50,8 +50,13 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         timestamp_pos=['20141104_194723','20141104_200359','20141104_215235']
         timestamp_neg=['20141104_195541','20141104_205814','20141104_231030']
     elif Addressed_carbon == 5:
-        timestamp_pos=['20141105_002824','20141105_004556','20141105_023521']
-        timestamp_neg=['20141105_003711','20141105_014037','20141105_035322']
+        timestamp_pos=['20141105_192118','20141105_193818','20141105_212709']
+        timestamp_neg=['20141105_192948','20141105_203243','20141105_231521']
+        #timestamp_pos=['20141105_002824','20141105_004556','20141105_023521']
+        #timestamp_neg=['20141105_003711','20141105_014037','20141105_035322']
+    elif Addressed_carbon == 2:
+        timestamp_pos=['20141106_010336','20141106_012019','20141106_030844']
+        timestamp_neg=['20141106_011155','20141106_021431','20141106_045651']
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -145,11 +150,11 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
     fit_results.append(fit_result)
 
-    filename= 'C13_T1_analysis_up_positive_C'+str(Addressed_carbon)
+    filename= 'C13_T1_analysis_up_C'+str(Addressed_carbon)
     print 'plots are saved in ' + folder_pos
 
     #configure the plot
-    plt.title('Sample_111_No1_C13_T1_up_positive_C'+str(Addressed_carbon)+'el_state_0')
+    plt.title('Sample_111_No1_C13_T1_up_C'+str(Addressed_carbon)+'el_state_0')
     plt.xlabel('Free evolution time (s)')
     plt.ylabel('Fidelity')
     plt.axis([a.sweep_pts[0],a.sweep_pts[a.pts-1],0.4,1.])
@@ -170,8 +175,13 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         timestamp_pos=['20141104_195135','20141104_203107','20141104_223132']
         timestamp_neg=['20141104_195949','20141104_212524','20141104_234927']
     elif Addressed_carbon == 5:
-        timestamp_pos=['20141105_003250','20141105_011316','20141105_031420']
-        timestamp_neg=['20141105_004136','20141105_020802','20141105_043221']
+        timestamp_pos=['20141105_192534','20141105_200530','20141105_222113']
+        timestamp_neg=['20141105_193405','20141105_205957','20141106_000928']
+        #timestamp_pos=['20141105_003250','20141105_011316','20141105_031420']
+        #timestamp_neg=['20141105_004136','20141105_020802','20141105_043221']
+    elif Addressed_carbon == 2:
+        timestamp_pos=['20141106_010748','20141106_014724','20141106_040245']
+        timestamp_neg=['20141106_011609','20141106_024138','20141106_055052']
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -261,11 +271,11 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
     fit_results.append(fit_result)
 
-    filename= 'C13_T1_analysis_up_positive_C'+str(Addressed_carbon)
+    filename= 'C13_T1_analysis_up_C'+str(Addressed_carbon)
     print 'plots are saved in ' + folder_pos
 
     #configure the plot
-    plt.title('Sample_111_No1_C13_T1_up_positive_C'+str(Addressed_carbon)+'el_state_1')
+    plt.title('Sample_111_No1_C13_T1_up_C'+str(Addressed_carbon)+'el_state_1')
     plt.xlabel('Free evolution time (s)')
     plt.ylabel('Fidelity')
     plt.axis([a.sweep_pts[0],a.sweep_pts[a.pts-1],ylim[0],ylim[1]])
@@ -278,10 +288,10 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
 
-Carbon_T1_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',           
-            offset = 0.5, 
-            amplitude = 0.4)
-Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141104_191406',
-           offset = 0.45, 
+# Carbon_T1_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',            
+#             amplitude = 0.4)
+Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141105_114313', 
            amplitude = 0.4)
 
+# Carbon_T1_analysis(Addressed_carbon=2, ssro_calib_timestamp ='20141105_114313', 
+#            amplitude = 0.4)
