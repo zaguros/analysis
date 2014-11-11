@@ -1,6 +1,7 @@
 import numpy as np
 import h5py
 import time
+import gc as gc
 from datetime import datetime
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.pq import pq_tools, pq_plots
@@ -194,10 +195,10 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     # Gets the number of blocks in the data
     num_blocks = tb.get_num_blocks(pqf)
 
-   # print "Start num blocks", datetime.now()
+   # print "S
     # Gets the number of blocks in the data
     #num_blocks = tb.get_num_blocks(pqf)
-    #print "End num blocks", datetime.now()
+    #print 
 
     print 'The total number of blocks is:', num_blocks
 
@@ -215,9 +216,11 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     # Loops over every block
     for i in range(num_blocks):
         # Get the SSRO events and PQ data for these sync numbers
+        print gc.isenabled()
+        gc.collect()
         _events, _PQ_sync_number, _PQ_special, _PQ_sync_time, _PQ_time, _PQ_channel = \
                 get_SSRO_events(pqf, marker_chan, RO_start, RO_length, chan_rnd_0, chan_rnd_1, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
-                    
+
         # Concatenates all PQ data
         PQ_sync_number = np.hstack((PQ_sync_number,_PQ_sync_number)) 
         PQ_special = np.hstack((PQ_special, _PQ_special))         
@@ -303,28 +306,21 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     chan_name = '/PQ_channel-' + str(index)
     time_name = '/PQ_time-' + str(index)
 
+    
     if type(pqf) == h5py._hl.files.File: 
-        sync_num_RO = pqf[sync_num_name].value
         special_RO =pqf[spec_name].value
-        sync_time_RO =pqf[sync_time_name].value
-        time_RO = pqf[time_name].value
         channel_RO = pqf[chan_name].value
-
-        RO_length = 4000  
 
     elif type(pqf) == str:
         f = h5py.File(pqf, 'r')
-        sync_num_RO = f[sync_num_name].value
         special_RO = f[spec_name].value
-        sync_time_RO = f[sync_time_name].value
-        time_RO = f[time_name].value
         channel_RO = f[chan_name].value
 
         f.close()
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
-
+        
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,29), dtype = np.uint64)
 
@@ -334,52 +330,147 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     PQ_sync_time = np.empty((0,), dtype = np.uint64)
     PQ_time = np.empty((0,), dtype = np.uint64) 
     PQ_channel = np.empty((0,), dtype = np.uint32)
-
-
+    
     is_special = special_RO == 1
     is_channel = channel_RO == marker_chan
     is_mrkr = is_special & is_channel
+    
+    num_mrkr = len(channel_RO[is_mrkr])
+        
+    del channel_RO
+    del special_RO
+
 
     if VERBOSE:
-        print "The number of markers is:", len(sync_num_RO[is_mrkr])
+        print "The number of markers is:", num_mrkr
 
-    if len(sync_num_RO[is_mrkr]) > 0:
+    if num_mrkr > 0:  
 
-        if sync_time_lim > 0:
-            is_small_sync_time = sync_time_RO <= sync_time_lim
-            is_large_sync_time = sync_time_RO > sync_time_lim
+        indices_mrkr = np.where(is_mrkr == True)[0]
 
-            marker_sync_num_small = sync_num_RO[(is_mrkr & is_small_sync_time)] - 1
-            marker_sync_num_large = sync_num_RO[(is_mrkr & is_large_sync_time)]
-            if len(marker_sync_num_large) > 0:
-                marker_sync_numbers = np.concatenate((marker_sync_num_small,marker_sync_num_large))
+        marker_sync_numbers = np.empty((num_mrkr), dtype = np.uint32)
+
+        for i,j in enumerate(indices_mrkr): 
+ 
+            if type(pqf) == h5py._hl.files.File: 
+                sync_num_RO_data = pqf[sync_num_name]
+                sync_time_RO_data = pqf[sync_time_name]
+
+                sync_num_RO = sync_num_RO_data[j]
+                sync_time_RO = sync_time_RO_data[j]
+
+
+            elif type(pqf) == str:
+                f = h5py.File(pqf, 'r')
+                sync_num_RO_data = f[sync_num_name]
+                sync_time_RO_data = f[sync_time_name]
+
+                sync_num_RO = sync_num_RO_data[j]
+                sync_time_RO = sync_time_RO_data[j]
+
+                f.close()
+
+            if sync_time_lim > 0:
+                is_small_sync_time = sync_time_RO <= sync_time_lim
+                is_large_sync_time = sync_time_RO > sync_time_lim
+
+                if is_small_sync_time:
+                    marker_sync_numbers[i] = sync_num_RO - 1
+                elif is_large_sync_time:
+                    marker_sync_numbers[i] = sync_num_RO
             else:
-                marker_sync_numbers = marker_sync_num_small
+                marker_sync_numbers[i] = sync_num_RO
 
-            sync_num_with_markers = marker_sync_numbers
+        unique_sync_num_with_markers = np.unique(marker_sync_numbers)
+            
+        if type(pqf) == h5py._hl.files.File: 
+            sync_num_RO = pqf[sync_num_name].value
+        
+        elif type(pqf) == str:
+            f = h5py.File(pqf, 'r')
+            sync_num_RO = f[sync_num_name].value
+            f.close()
         else:
-            marker_sync_numbers = sync_num_RO[is_mrkr]
-            sync_num_with_markers = marker_sync_numbers
+            print "Neither filepath nor file enetered in function please check:", pqf
+            raise 
 
+        indices_sync_num = []
+        for i,j in enumerate(unique_sync_num_with_markers):
+            indices_sync_num_j = np.where(sync_num_RO == j)[0]
+            indices_sync_num.extend(indices_sync_num_j)
 
-        unique_sync_num_with_markers = np.unique(sync_num_with_markers)
+        del sync_num_RO
 
         if VERBOSE:
             print "The number of unique sync numbers that have a marker is:", len(unique_sync_num_with_markers)
             print "The number of events with a sync number that has a marker is:", len(sync_num_with_markers)
- 
+        
+        for i,j in enumerate(indices_sync_num):
+
+            if type(pqf) == h5py._hl.files.File: 
+                sync_num_RO_data = pqf[sync_num_name]
+                sync_time_RO_data = pqf[sync_time_name]
+                time_RO_data = pqf[time_name]
+                channel_RO_data = pqf[chan_name]
+                special_RO_data = pqf[spec_name]
+
+                sync_num_RO = sync_num_RO_data[j]
+                sync_time_RO = sync_time_RO_data[j]
+                time_RO = time_RO_data[j]
+                channel_RO = channel_RO_data[j]
+                special_RO = special_RO_data[j]
+
+                first_sync_num_block = sync_num_RO_data[0]
+                last_sync_num_block = sync_num_RO_data[len(sync_num_RO_data)-1]
+
+        
+            elif type(pqf) == str:
+                f = h5py.File(pqf, 'r')
+                sync_num_RO_data = f[sync_num_name]
+                sync_time_RO_data = f[sync_time_name]
+                time_RO_data = f[time_name]
+                channel_RO_data = f[chan_name]
+                special_RO_data = f[spec_name]
+
+                sync_num_RO = sync_num_RO_data[j]
+                sync_time_RO = sync_time_RO_data[j]
+                time_RO = time_RO_data[j]
+                channel_RO = channel_RO_data[j]
+                special_RO = special_RO_data[j]
+
+                first_sync_num_block = sync_num_RO_data[0]
+                last_sync_num_block = sync_num_RO_data[len(sync_num_RO_data)-1]
+
+                f.close()
+            else:
+                print "Neither filepath nor file enetered in function please check:", pqf
+                raise 
+
+
+            # Concatenates the PQ data for several sync numbers
+            PQ_sync_number = np.hstack((PQ_sync_number, sync_num_RO)) 
+            PQ_special = np.hstack((PQ_special, special_RO))         
+            PQ_sync_time = np.hstack((PQ_sync_time, sync_time_RO)) 
+            PQ_time = np.hstack((PQ_time, time_RO))   
+            PQ_channel = np.hstack((PQ_channel, channel_RO))
+
+
         # Create a filter which is True for all photons
-        is_ph_RO = special_RO == 0   
+        is_ph_RO = PQ_special == 0   
 
         # Filters if sync times are in the defined read out window
-        is_in_window = (RO_start  <= sync_time_RO) & (sync_time_RO < (RO_start + RO_length))
+        is_in_window = (RO_start  <= PQ_sync_time) & (PQ_sync_time < (RO_start + RO_length))
         
         # Defines a filter for photons in the readout window
         is_ph_RO_in_ro_window = is_in_window & is_ph_RO
 
-        # Gets filters for if an event is a random number in the first channel or in the second channel
-        # Channels are inputs for the function
-        is_rnd_0, is_rnd_1 = pq_tools.get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, index = index)
+        is_special = PQ_special == 1
+        is_channel_rnd_0 = PQ_channel == chan_rnd_0
+        is_channel_rnd_1 = PQ_channel == chan_rnd_1
+
+        is_rnd_0 = is_special & is_channel_rnd_0
+        is_rnd_1 = is_special & is_channel_rnd_1
+  
 
         if len(unique_sync_num_with_markers) > 0:
             first_sync_num_with_marker = unique_sync_num_with_markers[0]
@@ -387,8 +478,6 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
             irst_sync_num_with_marker = unique_sync_num_with_markers[0]
             last_sync_num_with_marker = unique_sync_num_with_markers[len(unique_sync_num_with_markers)-1]
             last_sync_num_with_marker_2 = unique_sync_num_with_markers[len(unique_sync_num_with_markers)-1] + 1
-            first_sync_num_block = sync_num_RO[0]
-            last_sync_num_block = sync_num_RO[len(sync_num_RO)-1]
 
             if first_sync_num_with_marker == first_sync_num_block:
                 print 
@@ -432,13 +521,13 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
         for i,s in enumerate(unique_sync_num_with_markers):
 
             # Create a filter which filters on a specific sync number
-            is_sync_num_s = sync_num_RO == s
+            is_sync_num_s = PQ_sync_number == s
 
             # Creates a filter which filterse if there is a photon in the readout window for a specific sync number
             is_photons_RO = is_sync_num_s & is_ph_RO_in_ro_window
 
             # Gets the sync times for photons in the readout window corresponding to a certain sync number
-            sync_time_RO_photons = sync_time_RO[is_photons_RO]
+            sync_time_RO_photons = PQ_sync_time[is_photons_RO]
 
             # Makes two boolean list for random channel 1 and 2 (named 0 & 1) and filters them on the sync number
             # One of these list should be False completely and the other one should be True once, indicating there
@@ -456,13 +545,13 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
                 # States that ther is a random number, that it is zero and gets the sync time of this number
                 rnd_gen_check = 1
                 rnd_num = 0
-                sync_time_rnd_num = sync_time_RO[is_sync_time_rnd_num_0]
+                sync_time_rnd_num = PQ_sync_time[is_sync_time_rnd_num_0]
             # Checks if it is a random number in marker channel 2
             elif (sum(rnd_1) == 1):
                 # States that ther is a random number, that it is zero and gets the sync time of this number
                 rnd_gen_check = 1
                 rnd_num = 1
-                sync_time_rnd_num = sync_time_RO[is_sync_time_rnd_num_1]
+                sync_time_rnd_num = PQ_sync_time[is_sync_time_rnd_num_1]
             # States that no random number 
             else:
                 print "There are events for which no random number is generated"
@@ -481,21 +570,6 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
                 arr_times = np.concatenate((sync_time_RO_photons,zero_addition))
             else:
                 arr_times = np.zeros((24,), dtype = np.uint64)
-
-            # Get the PQ data for a specific sync number
-            _PQ_sync_number = sync_num_RO[is_sync_num_s]
-            _PQ_special = special_RO[is_sync_num_s]
-            _PQ_sync_time = sync_time_RO[is_sync_num_s]
-            _PQ_time = time_RO[is_sync_num_s]
-            _PQ_channel = channel_RO[is_sync_num_s]
-
-
-            # Concatenates the PQ data for several sync numbers
-            PQ_sync_number = np.hstack((PQ_sync_number,_PQ_sync_number)) 
-            PQ_special = np.hstack((PQ_special, _PQ_special))         
-            PQ_sync_time = np.hstack((PQ_sync_time, _PQ_sync_time)) 
-            PQ_time = np.hstack((PQ_time, _PQ_time))   
-            PQ_channel = np.hstack((PQ_channel, _PQ_channel)) 
 
             # Stacks all SSRO events for different sync numbers
             _event = np.concatenate((np.array([s, num_phot, rnd_gen_check, rnd_num, sync_time_rnd_num], dtype = np.uint64) , arr_times))
