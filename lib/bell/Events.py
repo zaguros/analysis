@@ -192,7 +192,7 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     _a = {'Columns': columns}
 
     # Gets the number of blocks in the data
-    num_blocks = tb.get_num_blocks_2(pqf)
+    num_blocks = tb.get_num_blocks(pqf)
 
    # print "Start num blocks", datetime.now()
     # Gets the number of blocks in the data
