@@ -211,7 +211,7 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
     Colums are:
     Sync Nymber | number of photons | RND number indicator | RND number | Sync Time RND number | Sync Times photon 1-24 |
     """
-    
+    print 'here we are'
     columns = "Sync_Number, Number of photons, Random Number Indicator, Random Number, Sync_Time Random Number, Sync_Time_photon_1, \
     Sync_Time_photon_2, Sync_Time_photon_3, Sync_Time_photon_4, Sync_Time_photon_5, Sync_Time_photon_6, \
     Sync_Time_photon_7, Sync_Time_photon_8, Sync_Time_photon_9, Sync_Time_photon_10, Sync_Time_photon_11, \
