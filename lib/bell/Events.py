@@ -6,7 +6,7 @@ from analysis.lib.tools import toolbox as tb
 from analysis.lib.pq import pq_tools, pq_plots
 
 
-def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min, 
+def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min, 
         first_win_max, second_win_min, second_win_max, force_eval=False, VERBOSE = True):
     
     """
@@ -19,69 +19,47 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
     """
 
     
-    if tb.has_analysis_data(fp_LT3, 'Entanglement_events') and not force_eval:
-        Total_SSRO_events_LT3, _a = tb.get_analysis_data(fp_LT3, 'Entanglement_events')
+    if tb.has_analysis_data(fp_LT3, 'Total_SSRO_events'):
+        Total_SSRO_events_LT3, _att_LT3 = tb.get_analysis_data(fp_LT3, 'Total_SSRO_events')
+
+    if tb.has_analysis_data(fp_LT4, 'Total_SSRO_events'):
+        Total_SSRO_events_LT4, _att_LT4 = tb.get_analysis_data(fp_LT4, 'Total_SSRO_events')
 
 
     # Opens beamsplitter data 
     f = h5py.File(fp_BS, 'r')
     sync_times = f['/PQ_sync_time-1'].value * 1e-3 # we prefer ns over ps
     sync_numbers = f['/PQ_sync_number-1'].value
-    Channel = f['/PQ_channel-1'].value
+    channel = f['/PQ_channel-1'].value
     abs_times = f['/PQ_time-1'].value
     f.close()
-        
-    # Opens LT3 data  
-    g = h5py.File(fp_LT3,'r')
-    for k in g.keys():
-        if type(g[k])==h5py.Group:
-            ad3_reps = g[('/'+ str(k) + '/ssro/entanglement_events')].value
-            ad3_ssro = g[('/'+ str(k) + '/ssro/RO_data')].value
-            ad3_CR_before = g[('/'+ str(k) + '/ssro/CR_before')].value
-            ad3_CR_after = g[('/'+ str(k) + '/ssro/CR_after')].value
-    g.close()
-    
-    # Opens LT4data    
-    h = h5py.File(fp_LT4,'r')
-    for k in h.keys():
-        if type(h[k])==h5py.Group:
-            ad4_reps = h[('/'+ str(k) + '/ssro/entanglement_events')].value
-            ad4_ssro = h[('/'+ str(k) + '/ssro/RO_data')].value
-            ad4_CR_before = h[('/'+ str(k) + '/ssro/CR_before')].value
-            ad4_CR_after = h[('/'+ str(k) + '/ssro/CR_after')].value
-    h.close()    
-    
 
-    sync_num_with_markers = sync_numbers[pq_tools.filter_marker(fp_BS,chan)]
-    print sync_num_with_markers
+    sync_num_with_markers = sync_numbers[pq_tools.filter_marker(fp_BS,BS_marker_chan)]
     unique_sync_num_with_markers = np.unique(sync_num_with_markers)
-    print unique_sync_num_with_markers
 
-    if VERBOSE:
-
+    if (len(Total_SSRO_events_LT3[2,:]) == len(unique_sync_num_with_markers)) & \
+                                (len(Total_SSRO_events_LT4[2,:]) == len(unique_sync_num_with_markers)):
         print 
-        string = 'The number of events with PLU markers in run ' + str(i+1) + ' is:'
-        print string, len(unique_sync_num_with_markers)
+        print 
+        print "Filepath:", fp_BS
+        print "The number of markers matches and is:", len(unique_sync_num_with_markers)
+        print "======================================================================="
         print
-        print 'Adwin LT3'
-        print '---------'
-        print 'Number of events:', ad3_reps,
-        if ad3_reps != len(unique_sync_num_with_markers):
-            print 'number of Adwin LT3 events does not match the PLU marker \
-                    events - data set seems faulty :('
-        else:
-            print 'OK :)'
-            
+        print
+
+    else:
         print 
-        print 'Adwin LT4'
-        print '---------'
-        print 'Number of events:', ad4_reps
-        if ad4_reps != len(unique_sync_num_with_markers):
-            print 'number of Adwin LT3 events does not match the PLU marker \
-                    events - data set seems faulty :('
-        else:
-            print 'OK :)'
-    
+        print 
+        print "Filepath:", fp_BS
+        print "The number of markers does not match!!!!"
+        print "The number of BS markers is:", len(unique_sync_num_with_markers)
+        print "The number of LT3 markers is:", len(Total_SSRO_events_LT3[2,:])
+        print "The number of LT4 markers is:", len(Total_SSRO_events_LT4[2,:])
+        print "======================================================================="
+        print
+        print
+
+
     # Gets filters for photons with markers in the first and second window
     # from the Filter file
     is_photon_1st_window_with_markers, is_photon_2nd_window_with_markers =\
@@ -91,10 +69,10 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
     # Retrieves sync numbers and sync times for photons both in the first
     # and 2nd window
     Sync_num_1st_window_with_markers = sync_numbers[is_photon_1st_window_with_markers]
-    Channel_1st_window_with_markers = Channel[is_photon_1st_window_with_markers]#XXXXXXXXXXXXXXX
+    channel_1st_window_with_markers = channel[is_photon_1st_window_with_markers]
     Sync_times_1st_window_with_markers = sync_times[is_photon_1st_window_with_markers]
     Sync_num_2nd_window_with_markers = sync_numbers[is_photon_2nd_window_with_markers]
-    Channel_2nd_window_with_markers =  Channel[is_photon_2nd_window_with_markers]
+    channel_2nd_window_with_markers =  channel[is_photon_2nd_window_with_markers]
     Sync_times_2nd_window_with_markers = sync_times[is_photon_2nd_window_with_markers]
    
    
@@ -105,14 +83,13 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
     PLU_mrkr_abs_times = abs_times[is_all_markers]
     
     #Initializes the final array of entanglement events
-    entanglement_events = np.empty((0,14))
+    entanglement_events = np.empty((0,7), np.uint64)
 
     # Get all real entanglement events, loops over sync numbers
     for i,s in enumerate(unique_sync_num_with_markers):
         
         # The attempt is defined as the sync number modulo 250 
         #(250 = the repitition rate)
-        attempt = np.mod(s,250)
         
         # Return filters for specific sync number s
         is_ph_1st_win_sync_num_s = Sync_num_1st_window_with_markers == s
@@ -167,14 +144,11 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
         Returns all entanglement events. 
         Colums are:
         Sync Nymber | Sync Time Photon 1 | Sync Time photon 2 | Photon 1 Channel | 
-        Photon 2 Channel | Attempts | Amout of Photons LT3 | Amount of Photons LT 3 | 
-        CR Check Before LT3 | CR Check After LT3 | CR Check Before LT4 | 
-        CR Check After LT4 | psiminus | absolute time
+        Photon 2 Channel | absolute time
         """
         
         columns = "Sync_Number, Sync_Time_photon_1, Sync_Time_photon_2, Channel_photon_1,\
-        Channel_photon_2, Attempts, Amount_of_ph_LT3, CR_check_before_LT3,CR_check_after_LT3,\
-        Amount_of_ph_LT4, CR_check_before_LT4, CR_check_after_LT4, psiminus, abs_time"
+        Channel_photon_2, psiminus, abs_time"
 
         _a = {'Columns': columns}
                 
@@ -183,15 +157,8 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
                         stimes[1], 
                         chans[0], 
                         chans[1], 
-                        attempt, 
-                        ad3_ssro[i],
-                        ad4_ssro[i],
-                        ad3_CR_before[i],
-                        ad3_CR_after[i],
-                        ad4_CR_before[i],
-                        ad4_CR_after[i], 
                         psiminus, 
-                        PLU_mrkr_abs_times[i]])
+                        PLU_mrkr_abs_times[i]], dtype = np.uint64)
                         
         entanglement_events = np.vstack((entanglement_events, _event))
 
@@ -200,12 +167,16 @@ def get_entanglement_events(fp_BS,fp_LT3,fp_LT4,chan, i, first_win_min,
         print 'Found {} valid entanglement events.'.format(int(len(entanglement_events)))
         print '===================================='
         print
-    
-    return entanglement_events, _a
+
+    BS_LT3_data = np.hstack((entanglement_events, Total_SSRO_events_LT3))
+    All_combined_data = np.hstack((BS_LT3_data,Total_SSRO_events_LT4))
+    Combined_attributes = _a + _att_LT3 + _att_LT4
+
+    return All_combined_data, Combined_attributes
 
 #######################  SSRO events #################################
 
-def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sync_time_lim, VERBOSE = True):
+def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, chan_rnd_1, sync_time_lim, VERBOSE = True):
     """
     Returns SSRO data for all marked events. 
     Colums are:
@@ -221,7 +192,12 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
     _a = {'Columns': columns}
 
     # Gets the number of blocks in the data
-    num_blocks = tb.get_num_blocks(pqf)
+    num_blocks = tb.get_num_blocks_2(pqf)
+
+   # print "Start num blocks", datetime.now()
+    # Gets the number of blocks in the data
+    #num_blocks = tb.get_num_blocks(pqf)
+    #print "End num blocks", datetime.now()
 
     print 'The total number of blocks is:', num_blocks
 
@@ -240,7 +216,7 @@ def get_total_SSRO_events(pqf, RO_start, marker_chan, chan_rnd_0, chan_rnd_1, sy
     for i in range(num_blocks):
         # Get the SSRO events and PQ data for these sync numbers
         _events, _PQ_sync_number, _PQ_special, _PQ_sync_time, _PQ_time, _PQ_channel = \
-                get_SSRO_events(pqf, marker_chan, RO_start, chan_rnd_0, chan_rnd_1, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
+                get_SSRO_events(pqf, marker_chan, RO_start, RO_length, chan_rnd_0, chan_rnd_1, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
                     
         # Concatenates all PQ data
         PQ_sync_number = np.hstack((PQ_sync_number,_PQ_sync_number)) 
@@ -312,7 +288,7 @@ def get_total_SSRO_events_quick(pqf, RO_start, RO_length, marker_chan, sync_time
     return total_SSRO_events, _a
 
 
-def get_SSRO_events(pqf, marker_chan ,RO_start, chan_rnd_0, chan_rnd_1, sync_time_lim = 0, index = 1, VERBOSE = True):
+def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_1, sync_time_lim = 0, index = 1, VERBOSE = True):
     """
     Returns an array with sync numbers in the first column, the number of photons in the readout window
     in the second column, a random number generation check in the third colum (1 if one is generated 0 if not),
@@ -334,10 +310,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, chan_rnd_0, chan_rnd_1, sync_tim
         time_RO = pqf[time_name].value
         channel_RO = pqf[chan_name].value
 
-        # Get name of the group to find read out length
-        group = tb.get_msmt_name(pqf)
-        total_string_name = '/' + group + '/joint_params'
-        RO_length =pqf[total_string_name].attrs['LDE_RO_duration']  * 1e9
+        RO_length = 4000  
 
     elif type(pqf) == str:
         f = h5py.File(pqf, 'r')
@@ -347,44 +320,10 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, chan_rnd_0, chan_rnd_1, sync_tim
         time_RO = f[time_name].value
         channel_RO = f[chan_name].value
 
-        # Get name of the group to find read out length
-        group = tb.get_msmt_name(pqf)
-        total_string_name = '/' + group + '/joint_params'
-        RO_length = f[total_string_name].attrs['LDE_RO_duration']  * 1e9
         f.close()
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
-
-
-    is_special = special_RO == 1
-    is_channel = channel_RO == marker_chan
-    is_mrkr = is_special & is_channel
-    if VERBOSE:
-        print "The number of markers is:", len(sync_num_RO[is_mrkr])
-
-    if sync_time_lim > 0:
-        is_small_sync_time = sync_time_RO <= sync_time_lim
-        is_large_sync_time = sync_time_RO > sync_time_lim
-
-        marker_sync_num_small = sync_num_RO[(is_mrkr & is_small_sync_time)] - 1
-        marker_sync_num_large = sync_num_RO[(is_mrkr & is_large_sync_time)]
-        if len(marker_sync_num_large) > 0:
-            marker_sync_numbers = np.concatenate((marker_sync_num_small,marker_sync_num_large))
-        else:
-            marker_sync_numbers = marker_sync_num_small
-
-        sync_num_with_markers = marker_sync_numbers
-    else:
-        marker_sync_numbers = sync_num_RO[is_mrkr]
-        sync_num_with_markers = marker_sync_numbers
-
-
-    unique_sync_num_with_markers = np.unique(sync_num_with_markers)
-
-    if VERBOSE:
-        print "The number of unique sync numbers that have a marker is:", len(unique_sync_num_with_markers)
-        print "The number of events with a sync number that has a marker is:", len(sync_num_with_markers)
 
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,29), dtype = np.uint64)
@@ -396,7 +335,38 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, chan_rnd_0, chan_rnd_1, sync_tim
     PQ_time = np.empty((0,), dtype = np.uint64) 
     PQ_channel = np.empty((0,), dtype = np.uint32)
 
-    if len(unique_sync_num_with_markers) > 0:
+
+    is_special = special_RO == 1
+    is_channel = channel_RO == marker_chan
+    is_mrkr = is_special & is_channel
+
+    if VERBOSE:
+        print "The number of markers is:", len(sync_num_RO[is_mrkr])
+
+    if len(sync_num_RO[is_mrkr]) > 0:
+
+        if sync_time_lim > 0:
+            is_small_sync_time = sync_time_RO <= sync_time_lim
+            is_large_sync_time = sync_time_RO > sync_time_lim
+
+            marker_sync_num_small = sync_num_RO[(is_mrkr & is_small_sync_time)] - 1
+            marker_sync_num_large = sync_num_RO[(is_mrkr & is_large_sync_time)]
+            if len(marker_sync_num_large) > 0:
+                marker_sync_numbers = np.concatenate((marker_sync_num_small,marker_sync_num_large))
+            else:
+                marker_sync_numbers = marker_sync_num_small
+
+            sync_num_with_markers = marker_sync_numbers
+        else:
+            marker_sync_numbers = sync_num_RO[is_mrkr]
+            sync_num_with_markers = marker_sync_numbers
+
+
+        unique_sync_num_with_markers = np.unique(sync_num_with_markers)
+
+        if VERBOSE:
+            print "The number of unique sync numbers that have a marker is:", len(unique_sync_num_with_markers)
+            print "The number of events with a sync number that has a marker is:", len(sync_num_with_markers)
  
         # Create a filter which is True for all photons
         is_ph_RO = special_RO == 0   
