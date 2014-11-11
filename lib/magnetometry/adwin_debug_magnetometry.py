@@ -817,7 +817,10 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 			print 'Outcomes: ', outcomes [1:]
 			print 'Phases: ', np.round(phase_adwin [1:]*180/np.pi)
 
-	
+
+
+
+		
 	def adwin_only_positive (self, debug = False, exec_speed = False):
 
 		#use only {p[k], k>=0}, since p[-k]=p*[k] for real probability distribution
