@@ -270,15 +270,17 @@ class RamseySequence():
 				avg_prob = mult*prob
 			else:
 				avg_prob = avg_prob + mult*prob
+			
 
 			phi_set = np.exp(1j*2*np.pi*set_value*self.t0)
+			msqe = msqe + mult*(np.sum(prob*beta)-set_value)**2
 			ave_exp = ave_exp + mult*(phi_m/phi_set)
 			total_reps = total_reps + mult
 		avg_prob = avg_prob/np.sum(avg_prob)
 		ave_exp = ave_exp/float(total_reps)
 		H = np.abs(ave_exp)**(-2)-1
-		msqe_fB = msqe/((2*np.pi*self.t0)**2)
-		sigma_fB = 1e-6*msqe_fB**0.5
+		sigma_fB = 1e-6*(msqe/float(total_reps))**0.5
+		#sigma_fB = 1e-6*msqe_fB**0.5
 		
 		fase = np.exp(1j*2*np.pi*beta*self.t0)
 		phi_m = np.sum(fase*avg_prob)
@@ -311,7 +313,7 @@ class RamseySequence():
 
 		return beta, avg_prob, ave_exp,H, mean_fB, sigma_fB
 
-	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=True,plot_log=False):
+	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=False,plot_log=False):
 
 		if show_plot:
 			plt.ion()
@@ -321,30 +323,32 @@ class RamseySequence():
 		f1 = plt.figure()
 		
 		beta_exp, p_exp, ave_exp,err_exp, mB, sB = self.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
-		plt.plot (beta_exp*1e-6, p_exp, 'ob', label = 'exp')
+		plt.plot (beta_exp*1e-6, p_exp, color='RoyalBlue', label = 'exp')
 
-		try:
-			s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
-			s.setup_simulation (magnetic_field_hz = self.set_detuning, M=self.M)
-			s.verbose=verbose
-			s.T2 = self.T2
-			s.fid0 = self.fid0
-			s.fid1 = self.fid1
+		
+		s = RamseySequence_Simulation (N_msmnts = self.N, reps=self.reps, tau0=self.t0)
+		s.setup_simulation (magnetic_field_hz = self.set_detuning, G=self.G,F=self.F,K=self.N-1)
+		s.verbose=verbose
+		s.T2 = self.T2
+		print 'T2 = ', self.T2
+		s.fid0 = self.fid0
+		s.fid1 = self.fid1
+		s.sim_cappellaro_variable_M()
+		s.convert_to_dict()
+		if s.verbose:
+			s.print_table_positions()		
+		beta_sim, p_sim, ave_exp,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
 
-			s.table_based_simulation()
-			s.convert_to_dict()
-			if s.verbose:
-				s.print_table_positions()		
-			beta_sim, p_sim, ave_exp,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
-
-			plt.plot (beta_sim*1e-6, p_sim, 'or', label = 'sim')
-		except:
-			print 'Error in simulation!'
+		plt.plot (beta_sim*1e-6, p_sim, color='Crimson',label = 'sim')
+		B_sim_string='\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim))
+		#except:
+		#	B_sim_string='error in simulation'
+		#	print 'Error in simulation!'
 		if plot_log:
 			plt.yscale('log')
 			plt.ylim((1e-10,0.5))
 		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_exp)) \
-             + '\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim)))		
+             + B_sim_string)		
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
 		plt.legend()
@@ -355,7 +359,7 @@ class RamseySequence():
 		if show_plot:
 			plt.show()
 		plt.ion()
-		return beta_exp, p_exp, err_exp, mB, sB
+		return beta_exp, p_exp, ave_exp,err_exp, mB, sB
 
 
 
@@ -706,9 +710,6 @@ class RamseySequence_fastSimulations (RamseySequence_Simulation):
 		p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*t_n]) + np.sin(cn)*(p0_real [0] - p0_real [2*t_n])) 
 		self.pk[k] = p_real[k]+1j*p_imag[k]
 
-#Note: not sure what to do with this class
-class RamseySequence_Adwin (RamseySequence_Simulation):
-
 class RamseySequence_Exp (RamseySequence):
 
 	def __init__ (self, folder = '', sub_string = ''):
@@ -730,7 +731,7 @@ class RamseySequence_Exp (RamseySequence):
 		a.get_magnetometry_data(name='adwindata', ssro = False)
 
 		self.msmnt_results = a.clicks
-		print 'msmnt_results (load_exp_data): ', self.msmnt_results
+		#print 'msmnt_results (load_exp_data): ', self.msmnt_results
 
 		if ((np.shape(np.shape(a.clicks)))[0]==1):
 			self.reps = len(a.clicks)
@@ -750,15 +751,17 @@ class RamseySequence_Exp (RamseySequence):
 
 		for j in np.arange(len(a.ramsey_time)):
 			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
-		self.msmnt_phases = 2*np.pi*a.set_phase/255.
+		self.msmnt_phases = 2*np.pi*a.theta/360.
+		#print a.theta
 		self.N=a.N
+		self.M = a.M
 		self.F=a.F
 		self.G=a.G
 		self.K=a.K
 		self.discarded_elements = []
 		phases_detuning = 2*np.pi*a.phases_detuning/360.
 		b = np.ones(self.reps)
-		self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
+		#self.msmnt_phases = np.mod(self.msmnt_phases - np.outer (b, phases_detuning), 2*np.pi)
 
 		self.msmnt_type = a.msmnt_type
 		self.timer = a.timer
@@ -790,6 +793,7 @@ class RamseySequence_Exp (RamseySequence):
 			rep = 0
 			for j in np.arange(self.reps):
 				if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+					#print 'for i = ', j , 'CR array',self.CR_after[j,:]
 					new_results[rep,:] = np.copy(res[j,:])
 					new_phases[rep,:] = np.copy(phases[j,:])
 					rep = rep + 1

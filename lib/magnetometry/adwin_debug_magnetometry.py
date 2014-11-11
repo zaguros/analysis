@@ -311,6 +311,8 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 	def compare_algorithms (self, outcomes = [], do_plot=True, do_print = False, do_plot_adwin = True):
 		
+		#compare results of "adwin"-aimed protocol to full-scale python simulations
+
 		self.points = 2**(self.N+6)+1
 		self.discr_steps = 2*self.points+1
 
@@ -473,6 +475,9 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 	def compare_adwin_python (self, do_plot=False, newer_than = None, use_fid_bayesian_update = False):
 		
+		#compares {p_k} distributions obtaind by the adwin with 
+		#the ones calculatd in python
+
 		range_k_sweep = 2**self.N*(self.M+3)
 		p_real = np.zeros (range_k_sweep*2+1)
 		p_imag = np.zeros (range_k_sweep*2+1)
@@ -610,10 +615,10 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		print 'Phase simulation: ', phase_simulation[1:]*180/np.pi
 
 
-
-
-	def adwin_optimal (self, use_fid_bayesian_update = True, ext_outcomes = []):
+	def adwin_optimal_looping (self, use_fid_bayesian_update = True, ext_outcomes = []):
 		
+		#optimal-looping code (designed for adwin)
+
 		self.msmnt_phases = np.zeros((self.reps,self.N))
 		self.msmnt_times = np.zeros(self.N)
 		self.msmnt_results = np.zeros((self.reps,self.N))
@@ -707,6 +712,258 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 			print 'Phases: ', np.round(phase_adwin [1:]*180/np.pi)
 
 
+
+	def adwin_optimal_looping_storage (self, ext_outcomes = [], do_plot = False):
+			
+		#adwin-designed code with optimized looping and optimized 
+		#storage of relevant coefficients {p[k]}
+
+		self.msmnt_phases = np.zeros((self.reps,self.N))
+		self.msmnt_times = np.zeros(self.N)
+		self.msmnt_results = np.zeros((self.reps,self.N))
+
+		self.reset_rep_counter()
+		range_k_sweep = self.G+self.F*self.N+10
+		print 'range_k_sweep: ', range_k_sweep
+
+		if (ext_outcomes != []):
+			self.reps = 1
+
+		for r in np.arange(self.reps):
+
+			if np.mod(r, 100)==0:
+				print str(r)+'/'+str(self.reps)
+			p_real = np.zeros (range_k_sweep)
+			p_imag = np.zeros (range_k_sweep)
+			p_real [1] = 1/(2*np.pi)
+			p0_real = np.copy (p_real)
+			p0_imag = np.copy (p_imag)
+
+			t = np.zeros(self.N+1)
+			outcomes = np.zeros(self.N+1)
+			phase_adwin = np.zeros(self.N+1)
+
+			for n in np.arange(self.N)+1:
+
+				t[n] = int(2**(self.N-n))
+				phase_adwin[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
+				
+				M = self.G+self.F*(self.N-n)
+				max_k = M+3
+				k_space = np.arange(max_k)
+				B = 0.5*(self.fid1-self.fid0)*np.exp(-(t[n]*self.t0/self.T2)**2)
+
+				if do_plot:
+					print '### n = ', n
+					f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
+
+				for m in np.arange(M):				
+
+					if do_plot:
+						axarr[0].plot (np.arange (range_k_sweep-1)*t[n], p_real[1:])
+						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:])
+						#axarr[0].plot (np.arange (range_k_sweep-1)*t[n], p_real[1:], 'o')
+						#axarr[1].plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], 'o')
+
+					if (ext_outcomes == []):
+						m_res = self.ramsey (t = t[n]*self.t0, theta = phase_adwin[n])
+					else:
+						ext_outcomes[n-1] = ext_outcomes[n-1] - 1
+						if (ext_outcomes[n-1]<0):
+							m_res = 0
+						else:
+							m_res = 1
+					outcomes[n] = outcomes[n] + m_res
+					cn = m_res*np.pi + phase_adwin[n]
+
+					if (int(m_res) == 0):
+						A = 1-0.5*(self.fid0+self.fid1)
+					elif (int(m_res) == 1):
+						A = 0.5*(self.fid0+self.fid1)
+
+					#update rule:
+					p_real [1] = A*p0_real[1] - B*(np.cos(cn)*p0_real [2] - np.sin(cn)*p0_imag[2]) 
+					p_imag [1] = A*p0_imag[1]
+					for k in np.arange(max_k)+1:
+						p_real [1+k] = A*p0_real[1+k] - 0.5*B*np.cos(cn)*(p0_real [k] + p0_real [k+2]) - 0.5*B*np.sin(cn)*(p0_imag [k] - p0_imag [k+2])
+						p_imag [1+k] = A*p0_imag[1+k] - 0.5*B*np.cos(cn)*(p0_imag [k] + p0_imag [k+2]) + 0.5*B*np.sin(cn)*(p0_real [k] - p0_real [k+2])
+
+					norm = p_real[1]*2*np.pi
+					p_real = p_real/norm
+					p_imag = p_imag/norm
+
+					p0_real = np.copy (p_real)
+					p0_imag = np.copy (p_imag)
+
+				#Strech k_space operation!
+				for k in np.arange(range_k_sweep/2):
+					p_real[1+2*k] = p0_real[1+k]
+					p_imag[1+2*k] = p0_imag[1+k]
+				p0_real = np.copy (p_real)
+				p0_imag = np.copy (p_imag)
+
+				if do_plot:
+					plt.show()
+
+			self.msmnt_results [r, :] = np.copy(outcomes[1:])
+			self.msmnt_phases [r, :] = np.copy(phase_adwin[1:])
+			self.msmnt_times = np.copy(t[1:])
+			self.inc_rep()
+
+		if (ext_outcomes != []):
+			print ' ------ Adwin simulation: ------'
+			print 'Outcomes: ', outcomes [1:]
+			print 'Phases: ', np.round(phase_adwin [1:]*180/np.pi)
+
+
+
+	def compare_adwin_python_optimal_looping_storage (self, do_plot=False, newer_than = None, ext_outcomes = []):
+		
+		#compares {p_k} distributions obtaind by the adwin with 
+		#the ones calculatd in python ("optimal" looping and storage)
+
+		range_k_sweep = self.G+self.F*self.N+10
+		print '## range_k_sweep: ', range_k_sweep
+		p_real = np.zeros (range_k_sweep)
+		p_imag = np.zeros (range_k_sweep)
+		p_real [1] = 1/(2*np.pi)
+		p0_real = np.copy (p_real)
+		p0_imag = np.copy (p_imag)
+
+		t = np.zeros(self.N+1)
+		outcomes = np.zeros(self.N+1)
+		phase_adwin = np.zeros(self.N+1)
+		phase_simulation = np.zeros(self.N+1)
+		outcomes = np.zeros(self.N+1)
+		#ext_outcomes = self.outcomes
+
+		label = ''
+		for i in np.arange(self.N):
+			label=label+str(ext_outcomes[i])
+		print 'Label: ', label
+
+
+		t = np.zeros(self.N+1)
+		outcomes = np.zeros(self.N+1)
+		phase_adwin = np.zeros(self.N+1)
+
+		for n in np.arange(self.N)+1:
+
+			t[n] = int(2**(self.N-n))
+			phase_adwin[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
+			
+			M = self.G+self.F*(self.N-n)
+			max_k = M+3
+			k_space = np.arange(max_k)
+			B = 0.5*(self.fid1-self.fid0)*np.exp(-(t[n]*self.t0/self.T2)**2)
+
+			if do_plot:
+				print '### n = ', n
+				f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
+
+			for m in np.arange(M)+1:				
+				exp_exists = True
+				f_name = 'N='+str(self.N)+'_M=(5, 0)_rtAdwin_'+label+'_test_pk_(n='+str(n)+'_m='+str(m)+')'
+
+				try:
+					f = toolbox.latest_data (contains = f_name, return_all=False, newer_than = newer_than)
+					exp = adptv_mgnt.RamseySequence_Exp (folder = f)
+					exp.load_exp_data()
+					phase_adwin = exp.opt_phase[:self.N]
+					print 'Phase adwin (exp): ', phase_adwin
+					self.fid0 = exp.exp_fid0
+					self.fid1 = exp.exp_fid1
+					#self.T2 = exp.T2
+					exp_exists = True
+				except:
+					exp_exists = False
+					print f_name+' does not exist!'
+
+				if (ext_outcomes == []):
+					m_res = self.ramsey (t = t[n]*self.t0, theta = phase_adwin[n])
+				else:
+					ext_outcomes[n-1] = ext_outcomes[n-1] - 1
+					if (ext_outcomes[n-1]<0):
+						m_res = 0
+					else:
+						m_res = 1
+				outcomes[n] = outcomes[n] + m_res
+				cn = m_res*np.pi + phase_adwin[n]
+
+				if (int(m_res) == 0):
+					A = 1-0.5*(self.fid0+self.fid1)
+				elif (int(m_res) == 1):
+					A = 0.5*(self.fid0+self.fid1)
+
+				#update rule:
+				p_real [1] = A*p0_real[1] - B*(np.cos(cn)*p0_real [2] - np.sin(cn)*p0_imag[2]) 
+				p_imag [1] = A*p0_imag[1]
+				for k in np.arange(max_k)+1:
+					p_real [1+k] = A*p0_real[1+k] - 0.5*B*np.cos(cn)*(p0_real [k] + p0_real [k+2]) - 0.5*B*np.sin(cn)*(p0_imag [k] - p0_imag [k+2])
+					p_imag [1+k] = A*p0_imag[1+k] - 0.5*B*np.cos(cn)*(p0_imag [k] + p0_imag [k+2]) + 0.5*B*np.sin(cn)*(p0_real [k] - p0_real [k+2])
+
+				norm = p_real[1]*2*np.pi
+				p_real = p_real/norm
+				p_imag = p_imag/norm
+
+				p0_real = np.copy (p_real)
+				p0_imag = np.copy (p_imag)
+
+				if exp_exists:
+					len_array = len(p_real)
+					th_sim = int(round(phase_simulation[n]*180/np.pi))
+					th_adw = phase_adwin[n-1]
+
+					print '######  n = ', n, ' ---- m = ', m
+					print '   phase_th = ', th_sim, '  --- phase_exp = ', th_adw
+					print 'cos(cn) = ', np.cos(cn), '    sin(cn) = ', np.sin(cn)
+
+					if do_plot:
+						#diff = (((p_real[1:2**self.N+2]-exp.real_pk_adwin[:2**self.N]))**2+((p_imag[1:2**self.N+2]-exp.imag_pk_adwin[:2**self.N]))**2)**0.5
+						#rel_diff = 100*diff/((p_real[1:2**self.N+2]**2+p_imag[1:2**self.N+2]**2)**0.5)
+						#avg_diff = np.sum(diff)/len(diff)
+						f, axarr = plt.subplots(3, sharex=True, figsize=(10,10))
+						x = np.arange(2**self.N+1)
+
+						print exp.real_pk_adwin
+						axarr[0].plot (np.arange (range_k_sweep-1)*t[n],p_real[1:], ':k')
+						axarr[0].plot (np.arange (range_k_sweep-1)*t[n], exp.real_pk_adwin[:-1], ':b')
+						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], ':k')
+						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], exp.imag_pk_adwin[:-1], ':b')
+						axarr[0].plot (np.arange (range_k_sweep-1)*t[n], p_real[1:], 'o', label='sim_'+str(n)+','+str(m))
+						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], 'o', label='sim_'+str(n)+','+str(m))
+						axarr[0].plot (np.arange (range_k_sweep-1)*t[n], exp.real_pk_adwin[:-1], 'o', label='exp_'+str(n)+','+str(m))
+						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], exp.imag_pk_adwin[:-1], 'o', label='exp_'+str(n)+','+str(m))
+						#axarr[2].plot (np.arange (range_k_sweep-1)*t[n], rel_diff, ':k')
+						#axarr[2].plot (np.arange (range_k_sweep-1)*t[n], rel_diff, 'ok')
+						axarr[0].set_title('real part, n = '+str(n)+', m = '+str(m))
+						axarr[1].set_title('imaginary part, n = '+str(n)+', m = '+ str(m))
+						axarr[2].set_title('difference, n = '+str(n)+', m = '+ str(m))
+						axarr[0].set_xlim([0, (range_k_sweep-2)*t[n]])
+						axarr[1].set_xlim([0, (range_k_sweep-2)*t[n]])
+						axarr[2].set_xlim([0, range_k_sweep*t[n]])
+						axarr[0].set_ylim([-0.2, 0.2])
+						axarr[1].set_ylim([-0.2, 0.2])
+						axarr[2].set_ylim([0, 100])					
+						axarr[2].set_ylabel('rel diff %', fontsize=15)
+						axarr[0].legend()
+						axarr[1].legend()
+						axarr[2].legend()
+						#time_label = time.strftime ('%Y%m%d_%H%M%S')
+						#fname = 'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/adwin_tests/'+time_label+'_N='+str(self.N)+'_M='+str(self.M)+'_pk_'+str(n)+'_'+str(m)+'.png'
+						#print fname
+						#f.savefig (fname)
+						plt.show()
+
+			#Strech k_space operation!
+			for k in np.arange(range_k_sweep/2):
+				p_real[1+2*k] = p0_real[1+k]
+				p_imag[1+2*k] = p0_imag[1+k]
+			p0_real = np.copy (p_real)
+			p0_imag = np.copy (p_imag)
+
+
+	
 	def adwin_only_positive (self, debug = False, exec_speed = False):
 
 		#use only {p[k], k>=0}, since p[-k]=p*[k] for real probability distribution
