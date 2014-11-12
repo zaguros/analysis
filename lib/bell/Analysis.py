@@ -551,3 +551,297 @@ def DT_filter_max(Total_entanglement_events, dt, sync_time_ph_win_1, sync_time_p
 
     
     return Total_entanglement_events[is_filtered_events]
+
+def Laser_filter(Total_Bell_events, first_win_min_ch0, window_length, dif_win1_win2, dif_ch0_ch1, \
+                                     sync_time_ph_win_1, sync_time_ph_win_2, channel_ph_win_1, channel_ph_win_2):
+
+    ch0_start = first_win_min_ch0
+    ch0_stop = ch0_start + window_length
+    ch0_start_w2 = ch0_start + dif_win1_win2
+    ch0_stop_w2 = ch0_stop + dif_win1_win2
+
+    sync_time_ph_1 = Total_Bell_events[:,sync_time_ph_win_1]
+    channel_ph_1 = Total_Bell_events[:,channel_ph_win_1]
+
+    sync_time_ph_2 = Total_Bell_events[:,sync_time_ph_win_2]
+    channel_ph_2 = Total_Bell_events[:,channel_ph_win_2]
+
+    first_window_ch0_filt = (sync_time_ph_1 > ch0_start) & (sync_time_ph_1 <= ch0_stop)
+    second_window_ch0_filt = (sync_time_ph_2 > ch0_start_w2) & (sync_time_ph_2 <= ch0_stop_w2)
+
+
+    first_window_ch1_filt = (sync_time_ph_1 > (ch0_start + dif_ch0_ch1)) & (sync_time_ph_1 <= (ch0_stop + dif_ch0_ch1))
+    second_window_ch1_filt = (sync_time_ph_2 > (ch0_start_w2 + dif_ch0_ch1)) & (sync_time_ph_2 <= (ch0_stop_w2 + dif_ch0_ch1))
+
+    is_photon_first_tail_ch0 = channel_ph_1 == 0
+    is_photon_first_tail_ch1 = channel_ph_1 == 1
+
+    is_photon_second_tail_ch0 = channel_ph_2 == 0
+    is_photon_second_tail_ch1 = channel_ph_2 == 1
+
+    is_ph_first_tail = (is_photon_first_tail_ch0 & first_window_ch0_filt) | \
+                                                                (is_photon_first_tail_ch1 & first_window_ch1_filt)
+
+
+    is_ph_second_tail = (is_photon_second_tail_ch0 & second_window_ch0_filt) | \
+                                                            (is_photon_second_tail_ch1 & second_window_ch1_filt)
+
+    is_tail_photons = is_ph_first_tail & is_ph_second_tail
+
+
+    Filtered_Bell_events = Total_Bell_events[is_tail_photons]
+
+    return Filtered_Bell_events
+
+############## Bell ################################################################
+
+def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_LT3, num_phot_LT4):
+
+    """
+    The up state is defined as ms =0 (emitting photons) the down state is defined as ms = -1 no photons
+    """
+    # Psiminus Initialization
+    N_psi_min_a_b = 0
+
+    N_psi_min_a_b_uu = 0
+    N_psi_min_a_b_ud = 0
+    N_psi_min_a_b_du = 0
+    N_psi_min_a_b_dd = 0
+
+    N_psi_min_a_pr_b = 0
+
+    N_psi_min_a_pr_b_uu = 0
+    N_psi_min_a_pr_b_ud = 0
+    N_psi_min_a_pr_b_du = 0
+    N_psi_min_a_pr_b_dd = 0
+
+    N_psi_min_a_b_pr = 0
+
+    N_psi_min_a_b_pr_uu = 0
+    N_psi_min_a_b_pr_ud = 0
+    N_psi_min_a_b_pr_du = 0
+    N_psi_min_a_b_pr_dd = 0
+
+    N_psi_min_a_pr_b_pr = 0
+
+    N_psi_min_a_pr_b_pr_uu = 0
+    N_psi_min_a_pr_b_pr_ud = 0
+    N_psi_min_a_pr_b_pr_du = 0
+    N_psi_min_a_pr_b_pr_dd = 0
+
+    # Psi plus initialization
+    N_psi_plus_a_b = 0
+
+    N_psi_plus_a_b_uu = 0
+    N_psi_plus_a_b_ud = 0
+    N_psi_plus_a_b_du = 0
+    N_psi_plus_a_b_dd = 0
+
+    N_psi_plus_a_pr_b = 0
+
+    N_psi_plus_a_pr_b_uu = 0
+    N_psi_plus_a_pr_b_ud = 0
+    N_psi_plus_a_pr_b_du = 0
+    N_psi_plus_a_pr_b_dd = 0
+
+    N_psi_plus_a_b_pr = 0
+
+    N_psi_plus_a_b_pr_uu = 0
+    N_psi_plus_a_b_pr_ud = 0
+    N_psi_plus_a_b_pr_du = 0
+    N_psi_plus_a_b_pr_dd = 0
+
+    N_psi_plus_a_pr_b_pr = 0
+
+    N_psi_plus_a_pr_b_pr_uu = 0
+    N_psi_plus_a_pr_b_pr_ud = 0
+    N_psi_plus_a_pr_b_pr_du = 0
+    N_psi_plus_a_pr_b_pr_dd = 0
+
+
+    for i in range(len(Total_Bell_events)):
+
+        if Total_Bell_events[i,psiminus] ==  1:
+        # Now we have a psiminus event
+            if (Total_Bell_events[i,rnd_num_LT3] == 0) & (Total_Bell_events[i,rnd_num_LT4] == 0):
+                # Now we have a psiminus a,b event
+                N_psi_min_a_b = N_psi_min_a_b + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_b_uu = N_psi_min_a_b_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_b_du = N_psi_min_a_b_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_b_ud = N_psi_min_a_b_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_b_dd = N_psi_min_a_b_dd + 1 
+
+            elif (Total_Bell_events[i,rnd_num_LT3] == 1) & (Total_Bell_events[i,rnd_num_LT4] == 0):
+                # Now we have a psiminus a', b event
+                N_psi_min_a_pr_b = N_psi_min_a_pr_b + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_pr_b_uu = N_psi_min_a_pr_b_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_pr_b_du = N_psi_min_a_pr_b_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_pr_b_ud = N_psi_min_a_pr_b_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_pr_b_dd = N_psi_min_a_pr_b_dd + 1 
+
+            elif (Total_Bell_events[i,rnd_num_LT3] == 0) & (Total_Bell_events[i,rnd_num_LT4] == 1):
+                # Now we have a psiminus a,b' event
+                N_psi_min_a_b_pr = N_psi_min_a_b_pr + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_b_pr_uu = N_psi_min_a_b_pr_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_b_pr_du = N_psi_min_a_b_pr_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_b_pr_ud = N_psi_min_a_b_pr_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_b_pr_dd = N_psi_min_a_b_pr_dd + 1
+
+            elif (Total_Bell_events[i,rnd_num_LT3] == 1) & (Total_Bell_events[i,rnd_num_LT4] == 1):
+                # Not we have a psiminus a',b' event
+                N_psi_min_a_pr_b_pr = N_psi_min_a_pr_b_pr + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_pr_b_pr_uu = N_psi_min_a_pr_b_pr_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_pr_b_pr_du = N_psi_min_a_pr_b_pr_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_min_a_pr_b_pr_ud = N_psi_min_a_pr_b_pr_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_min_a_pr_b_pr_dd = N_psi_min_a_pr_b_pr_dd + 1
+
+
+        elif Total_Bell_events[i,psiminus] ==  0:
+            # Now we have a psiplus event
+
+            if (Total_Bell_events[i,rnd_num_LT3] == 0) & (Total_Bell_events[i,rnd_num_LT4] == 0):
+                # Now we have a psiplus a,b event
+                N_psi_plus_a_b = N_psi_plus_a_b + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_b_uu = N_psi_plus_a_b_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_b_du = N_psi_plus_a_b_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_b_ud = N_psi_plus_a_b_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_b_dd = N_psi_plus_a_b_dd + 1 
+
+            elif (Total_Bell_events[i,rnd_num_LT3] == 1) & (Total_Bell_events[i,rnd_num_LT4] == 0):
+                # Now we have a psiplus a', b event
+                N_psi_plus_a_pr_b = N_psi_plus_a_pr_b + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_pr_b_uu = N_psi_plus_a_pr_b_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_pr_b_du = N_psi_plus_a_pr_b_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_pr_b_ud = N_psi_plus_a_pr_b_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_pr_b_dd = N_psi_plus_a_pr_b_dd + 1 
+
+            elif (Total_Bell_events[i,rnd_num_LT3] == 0) & (Total_Bell_events[i,rnd_num_LT4] == 1):
+                # Now we have a psiplus a,b' event
+                N_psi_plus_a_b_pr = N_psi_plus_a_b_pr + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_b_pr_uu = N_psi_plus_a_b_pr_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_b_pr_du = N_psi_plus_a_b_pr_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_b_pr_ud = N_psi_plus_a_b_pr_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_b_pr_dd = N_psi_plus_a_b_pr_dd + 1
+
+            elif (Total_Bell_events[i,rnd_num_LT3] == 1) & (Total_Bell_events[i,rnd_num_LT4] == 1):
+                # Not we have a psiplus a',b' event
+                N_psi_plus_a_pr_b_pr = N_psi_plus_a_pr_b_pr + 1
+
+                if (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_pr_b_pr_uu = N_psi_plus_a_pr_b_pr_uu + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] > 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_pr_b_pr_du = N_psi_plus_a_pr_b_pr_du + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] > 0):
+                    N_psi_plus_a_pr_b_pr_ud = N_psi_plus_a_pr_b_pr_ud + 1 
+
+                elif (Total_Bell_events[i,num_phot_LT3] == 0) & (Total_Bell_events[i,num_phot_LT4] == 0):
+                    N_psi_plus_a_pr_b_pr_dd = N_psi_plus_a_pr_b_pr_dd + 1
+
+    if N_psi_min_a_b != (N_psi_min_a_b_uu + N_psi_min_a_b_dd + N_psi_min_a_b_du + N_psi_min_a_b_ud):
+        print "Something weird is hapening with psi minus a,b"
+
+    if N_psi_min_a_pr_b != (N_psi_min_a_pr_b_uu + N_psi_min_a_pr_b_dd + N_psi_min_a_pr_b_du + N_psi_min_a_pr_b_ud):
+        print "Something weird is hapening with psi minus a',b"
+
+    if N_psi_min_a_b_pr != (N_psi_min_a_b_pr_uu + N_psi_min_a_b_pr_dd + N_psi_min_a_b_pr_du + N_psi_min_a_b_pr_ud):
+        print "Something weird is hapening with psi minus a,b'"
+
+    if N_psi_min_a_pr_b_pr != (N_psi_min_a_pr_b_pr_uu + N_psi_min_a_pr_b_pr_dd + 
+                                                N_psi_min_a_pr_b_pr_du + N_psi_min_a_pr_b_pr_ud):
+        print "Something weird is hapening with psi minus a',b'"
+
+    if N_psi_plus_a_b != (N_psi_plus_a_b_uu + N_psi_plus_a_b_dd + N_psi_plus_a_b_du + N_psi_plus_a_b_ud):
+        print "Something weird is hapening with psi plus a,b"
+
+    if N_psi_plus_a_pr_b != (N_psi_plus_a_pr_b_uu + N_psi_plus_a_pr_b_dd + N_psi_plus_a_pr_b_du + N_psi_plus_a_pr_b_ud):
+        print "Something weird is hapening with psi plus a',b"
+
+    if N_psi_plus_a_b_pr != (N_psi_plus_a_b_pr_uu + N_psi_plus_a_b_pr_dd + N_psi_plus_a_b_pr_du + N_psi_plus_a_b_pr_ud):
+        print "Something weird is hapening with psi plus a,b'"
+
+    if N_psi_plus_a_pr_b_pr != (N_psi_plus_a_pr_b_pr_uu + N_psi_plus_a_pr_b_pr_dd + 
+                                                N_psi_plus_a_pr_b_pr_du + N_psi_plus_a_pr_b_pr_ud):
+        print "Something weird is hapening with psi plus a',b'"
+
+    print N_psi_min_a_b, N_psi_min_a_pr_b_pr, N_psi_min_a_pr_b, N_psi_min_a_b_pr
+    print N_psi_plus_a_b, N_psi_plus_a_pr_b_pr, N_psi_plus_a_pr_b, N_psi_plus_a_b_pr
+
+    E_a_b_min = (N_psi_min_a_b_uu - N_psi_min_a_b_du - N_psi_min_a_b_ud + N_psi_min_a_b_dd)/float(N_psi_min_a_b)
+    E_a_pr_b_min = (N_psi_min_a_pr_b_uu - N_psi_min_a_pr_b_du - 
+                                                N_psi_min_a_pr_b_ud + N_psi_min_a_pr_b_dd)/float(N_psi_min_a_pr_b)
+    E_a_b_pr_min = (N_psi_min_a_b_pr_uu - N_psi_min_a_b_pr_du - 
+                                                N_psi_min_a_b_pr_ud + N_psi_min_a_b_pr_dd)/float(N_psi_min_a_b_pr)
+    E_a_pr_b_pr_min = (N_psi_min_a_pr_b_pr_uu - N_psi_min_a_pr_b_pr_du - 
+                                            N_psi_min_a_pr_b_pr_ud + N_psi_min_a_pr_b_pr_dd)/float(N_psi_min_a_pr_b_pr)
+
+    E_a_b_plus = (N_psi_plus_a_b_uu - N_psi_plus_a_b_du - N_psi_plus_a_b_ud + N_psi_plus_a_b_dd)/float(N_psi_plus_a_b)
+    E_a_pr_b_plus = (N_psi_plus_a_pr_b_uu - N_psi_plus_a_pr_b_du - 
+                                                N_psi_plus_a_pr_b_ud + N_psi_plus_a_pr_b_dd)/float(N_psi_plus_a_pr_b)
+    E_a_b_pr_plus = (N_psi_plus_a_b_pr_uu - N_psi_plus_a_b_pr_du - 
+                                                N_psi_plus_a_b_pr_ud + N_psi_plus_a_b_pr_dd)/float(N_psi_plus_a_b_pr)
+    E_a_pr_b_pr_plus = (N_psi_plus_a_pr_b_pr_uu - N_psi_plus_a_pr_b_pr_du - 
+                                        N_psi_plus_a_pr_b_pr_ud + N_psi_plus_a_pr_b_pr_dd)/float(N_psi_plus_a_pr_b_pr)
+
+    CHSH_psimin = E_a_b_min - E_a_pr_b_min + E_a_b_pr_min + E_a_pr_b_pr_min
+    CHSH_psiplus = E_a_b_plus - E_a_pr_b_plus + E_a_b_pr_plus + E_a_pr_b_pr_plus
+
+    return CHSH_psimin, CHSH_psiplus, E_a_b_min, E_a_pr_b_min, E_a_b_pr_min, E_a_pr_b_pr_min, E_a_b_plus, E_a_pr_b_plus, E_a_b_pr_plus, E_a_pr_b_pr_plus
+

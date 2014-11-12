@@ -7,6 +7,7 @@ def get_photons(pqf, index = 1):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
     """
+
     chan_name = '/PQ_channel-' + str(index)
     spec_name = '/PQ_special-' + str(index)
 
@@ -25,7 +26,8 @@ def get_photons(pqf, index = 1):
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise    
-        
+
+
     is_not_special = special == 0
     is_channel_0 = channel == 0
     is_channel_1 = channel == 1
@@ -116,11 +118,12 @@ def get_multiple_photon_syncs(pqf, index = 1):
 
     return is_multiple_photon_sync
 
-def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True):
+def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = True, save = True):
 
     sync_time_name = '/PQ_sync_time-' + str(index)
     tot_time_name =  '/PQ_time-' + str(index)
     sync_num_name = '/PQ_sync_number-' + str(index)
+
 
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
@@ -146,6 +149,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     st0 = sync_time[fltr0]
     t0  = total_time[fltr0]
     sn0 = sync_number[fltr0]
+    
     st1 = sync_time[fltr1]
     t1 = total_time[fltr1]
     sn1 = sync_number[fltr1]
@@ -177,7 +181,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
 
 def get_coincidences_from_folder(folder, index = 1):
 
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name = 'PQ_sync_number-' + str(index)
 
     filepaths = tb.get_all_msmt_filepaths(folder) 
     co = np.ones([1,4])
