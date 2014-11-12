@@ -13,7 +13,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
     Child-class of MBI analysis (as conditional C13 experiments are based on the MBI architecture).
     '''
 
-    def get_readout_results(self, name='',post_select = False):
+    def get_readout_results(self, name='',post_select = False,post_select_QEC = False):
         '''
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -66,15 +66,110 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             print np.average(self.parity_result/self.reps.astype('float'))
             print np.average((self.reps-self.parity_result)/self.reps.astype('float'))
 
+        elif post_select_QEC == True:
+            self.post_select = True
+            self.result_corrected = False
+
+            adwingrp = self.adwingrp(name)
+            self.adgrp = adwingrp
+
+            self.pts = adwingrp.attrs['sweep_length']
+            self.reps = adwingrp.attrs['reps_per_ROsequence']
+            self.readouts= adwingrp.attrs['nr_of_ROsequences']
+
+            #Step 0 extract data from hdf5 file
+            self.parity_result = adwingrp['parity_RO_results'].value #Creates a list of 0 and 1 's for when the parity measurement was success
+            self.ssro_results = adwingrp['ssro_results'].value #Extracts all the SSRO data
+
+            parity_a_result = self.parity_result[0::2]
+            parity_b_result = self.parity_result[1::2]
+
+
+            #Step 1 Multiply results with post selection parameter
+            ssro_results_00 = parity_a_result*parity_b_result*self.ssro_results
+            ssro_results_01 = parity_a_result*(1-parity_b_result)*self.ssro_results
+            ssro_results_10 = (1-parity_a_result)*parity_b_result*self.ssro_results
+            ssro_results_11 = (1-parity_a_result)*(1-parity_b_result)*self.ssro_results
+
+            # Step 2 reshape
+            parity_result_00 = (parity_a_result*parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_01 = (parity_a_result*(1-parity_b_result)).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_10 = ((1-parity_a_result)*parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_11 = ((1-parity_a_result)*(1-parity_b_result)).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+
+            self.ssro_results_00 = ssro_results_00.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            self.ssro_results_01 = ssro_results_01.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            self.ssro_results_10 = ssro_results_10.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            self.ssro_results_11 = ssro_results_11.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+
+            #Step 3 normalization and uncertainty, different per column
+            self.normalized_ssro_00 = self.ssro_results_00/(parity_result_00).astype('float')
+            self.u_normalized_ssro_00 = (self.normalized_ssro_00*(1-self.normalized_ssro_00)/(parity_result_00))**0.5
+            self.normalized_ssro_01 = self.ssro_results_01/(parity_result_01).astype('float')
+            self.u_normalized_ssro_01 = (self.normalized_ssro_01*(1-self.normalized_ssro_01)/(parity_result_01))**0.5
+            self.normalized_ssro_10 = self.ssro_results_10/(parity_result_10 ).astype('float')
+            self.u_normalized_ssro_10 = (self.normalized_ssro_10*(1-self.normalized_ssro_10)/(parity_result_10))**0.5
+            self.normalized_ssro_11 = self.ssro_results_11/(parity_result_11).astype('float')
+            self.u_normalized_ssro_11 = (self.normalized_ssro_11*(1-self.normalized_ssro_11)/(parity_result_11))**0.5
+
+
+            print 'Probabilities 00, 01, 10, 11'
+            print np.average(parity_result_00/self.reps.astype('float'))
+            print np.average((parity_result_01)/self.reps.astype('float'))
+            print np.average(parity_result_10/self.reps.astype('float'))
+            print np.average((parity_result_11)/self.reps.astype('float'))
+
+
         else:
             mbi.MBIAnalysis.get_readout_results(self,name) #NOTE: super cannot be used as this is an "old style class"
             self.post_select = False
 
-    def get_electron_ROC(self, ssro_calib_folder=''):
+    def get_electron_ROC(self, ssro_calib_folder='',post_select_QEC = False):
         '''
         Performs Readout Correction, needs to be updated to correct for post selected results and apply error-bars correctly.
         '''
-        if self.post_select == True:
+        
+        if post_select_QEC == True and self.post_select == True:
+            if ssro_calib_folder == '':
+                ssro_calib_folder = toolbox.latest_data('SSRO')
+
+            self.p0_00 = np.zeros(self.normalized_ssro_00.shape)
+            self.u_p0_00 = np.zeros(self.normalized_ssro_00.shape)
+            self.p0_01 = np.zeros(self.normalized_ssro_01.shape)
+            self.u_p0_01 = np.zeros(self.normalized_ssro_01.shape)
+            self.p0_10 = np.zeros(self.normalized_ssro_10.shape)
+            self.u_p0_10 = np.zeros(self.normalized_ssro_10.shape)
+            self.p0_11 = np.zeros(self.normalized_ssro_11.shape)
+            self.u_p0_11 = np.zeros(self.normalized_ssro_11.shape)
+            
+            ro_durations = self.g.attrs['E_RO_durations']
+
+            roc = error.SingleQubitROC()
+
+            for i in range(len(self.normalized_ssro_00[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                    ssro.get_SSRO_calibration(ssro_calib_folder,
+                            ro_durations[i])
+                p0_00, u_p0_00 = roc.num_eval(self.normalized_ssro_00[:,i],
+                        self.u_normalized_ssro_00[:,i])
+                p0_01, u_p0_01 = roc.num_eval(self.normalized_ssro_01[:,i],
+                        self.u_normalized_ssro_01[:,i])
+                p0_10, u_p0_10 = roc.num_eval(self.normalized_ssro_10[:,i],
+                        self.u_normalized_ssro_10[:,i])
+                p0_11, u_p0_11 = roc.num_eval(self.normalized_ssro_11[:,i],
+                        self.u_normalized_ssro_11[:,i])
+
+                self.p0_00[:,i] = p0_00
+                self.u_p0_00[:,i] = u_p0_00
+                self.p0_01[:,i] = p0_01
+                self.u_p0_01[:,i] = u_p0_01
+                self.p0_10[:,i] = p0_10
+                self.u_p0_10[:,i] = u_p0_10
+                self.p0_11[:,i] = p0_11
+                self.u_p0_11[:,i] = u_p0_11
+
+
+        elif self.post_select == True:
             if ssro_calib_folder == '':
                 ssro_calib_folder = toolbox.latest_data('SSRO')
 
@@ -101,7 +196,10 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
                 self.u_p0_1[:,i] = u_p0_1
 
             self.result_corrected = True
+        
 
+
+            self.result_corrected = True
         else:
             mbi.MBIAnalysis.get_electron_ROC(self,ssro_calib_folder)  #NOTE: super cannot be used as this is an "old style class"
 

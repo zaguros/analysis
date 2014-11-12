@@ -20,6 +20,7 @@ class M2Analysis:
         self.h5filepath = toolbox.measurement_filename(self.folder)
         h5mode=kw.pop('hdf5_mode', 'r')
         self.f = h5py.File(self.h5filepath,h5mode)
+
         for k in self.f.keys():
             if type(self.f[k])==h5py.Group:
                 self.name = k
