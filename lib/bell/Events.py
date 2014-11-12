@@ -29,17 +29,17 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
 
     # Opens beamsplitter data 
     f = h5py.File(fp_BS, 'r')
-    sync_times = f['/PQ_sync_time-1'].value * 1e-3 # we prefer ns over ps
+    sync_times = f['/PQ_sync_time-1'].value 
     sync_numbers = f['/PQ_sync_number-1'].value
     channel = f['/PQ_channel-1'].value
-    abs_times = f['/PQ_time-1'].value
+    abs_times = f['/PQ_time-1'].value 
     f.close()
 
     sync_num_with_markers = sync_numbers[pq_tools.filter_marker(fp_BS,BS_marker_chan)]
     unique_sync_num_with_markers = np.unique(sync_num_with_markers)
 
-    if (len(Total_SSRO_events_LT3[2,:]) == len(unique_sync_num_with_markers)) & \
-                                (len(Total_SSRO_events_LT4[2,:]) == len(unique_sync_num_with_markers)):
+    if (len(Total_SSRO_events_LT3[:,2]) == len(unique_sync_num_with_markers)) & \
+                                (len(Total_SSRO_events_LT4[:,2]) == len(unique_sync_num_with_markers)):
         print 
         print 
         print "Filepath:", fp_BS
@@ -59,12 +59,13 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
         print "======================================================================="
         print
         print
+        raise
 
 
     # Gets filters for photons with markers in the first and second window
     # from the Filter file
     is_photon_1st_window_with_markers, is_photon_2nd_window_with_markers =\
-                                    pq_tools.get_photons_with_markers(fp_BS,chan,
+                                    pq_tools.get_photons_with_markers(fp_BS, BS_marker_chan,
                                         first_win_min, first_win_max, second_win_min, second_win_max)
 
     # Retrieves sync numbers and sync times for photons both in the first
@@ -72,6 +73,7 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
     Sync_num_1st_window_with_markers = sync_numbers[is_photon_1st_window_with_markers]
     channel_1st_window_with_markers = channel[is_photon_1st_window_with_markers]
     Sync_times_1st_window_with_markers = sync_times[is_photon_1st_window_with_markers]
+
     Sync_num_2nd_window_with_markers = sync_numbers[is_photon_2nd_window_with_markers]
     channel_2nd_window_with_markers =  channel[is_photon_2nd_window_with_markers]
     Sync_times_2nd_window_with_markers = sync_times[is_photon_2nd_window_with_markers]
@@ -79,6 +81,13 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
    
     # Defines a filter for all events with markers
     is_all_markers = is_photon_1st_window_with_markers | is_photon_2nd_window_with_markers
+    print
+    print 
+    print
+    print 
+    print 
+    print "SOMETHING GOES WRONG HERE!!!!"
+    print "Check if all markers are still there", sum(is_all_markers)
     
     # Gets the absolute times for all events with makers
     PLU_mrkr_abs_times = abs_times[is_all_markers]
@@ -103,8 +112,8 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
             # Saves sync times an channels of both photons
             stimes = np.array([ Sync_times_1st_window_with_markers[is_ph_1st_win_sync_num_s],\
                 Sync_times_2nd_window_with_markers[is_ph_2nd_win_sync_num_s]]).reshape(-1)
-            channel_1 = Channel_1st_window_with_markers[is_ph_1st_win_sync_num_s]
-            channel_2 = Channel_2nd_window_with_markers[is_ph_2nd_win_sync_num_s]
+            channel_1 = channel_1st_window_with_markers[is_ph_1st_win_sync_num_s]
+            channel_2 = channel_2nd_window_with_markers[is_ph_2nd_win_sync_num_s]
             chans = np.array([channel_1,channel_2])            
 
             # Determines if event is psiplus or psiminus
@@ -171,9 +180,11 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
 
     BS_LT3_data = np.hstack((entanglement_events, Total_SSRO_events_LT3))
     All_combined_data = np.hstack((BS_LT3_data,Total_SSRO_events_LT4))
-    Combined_attributes = _a + _att_LT3 + _att_LT4
 
-    return All_combined_data, Combined_attributes
+    Combined_attributes = _a['Columns'] + _att_LT3['Columns'] + _att_LT4['Columns']
+    _combined_attributes = {'Columns': Combined_attributes}
+
+    return All_combined_data, _combined_attributes
 
 #######################  SSRO events #################################
 
@@ -200,7 +211,9 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     #num_blocks = tb.get_num_blocks(pqf)
     #print 
 
+    print "Before blocks", datetime.now()
     print 'The total number of blocks is:', num_blocks
+    print "After blocks", datetime.now()
 
     # Initializes arrays to save the PQ-data
     PQ_sync_number = np.empty((0,), dtype = np.uint32) 
@@ -216,7 +229,6 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     # Loops over every block
     for i in range(num_blocks):
         # Get the SSRO events and PQ data for these sync numbers
-        print gc.isenabled()
         gc.collect()
         _events, _PQ_sync_number, _PQ_special, _PQ_sync_time, _PQ_time, _PQ_channel = \
                 get_SSRO_events(pqf, marker_chan, RO_start, RO_length, chan_rnd_0, chan_rnd_1, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
@@ -265,7 +277,7 @@ def get_total_SSRO_events_quick(pqf, RO_start, RO_length, marker_chan, sync_time
 
     # Loop over all blocks
     for i in range(num_blocks):
-
+        print "Start loop", datetime.now()
         # Returns a list with the sync numbers for which a marker is observed
         unique_sync_num_with_markers = \
             pq_tools.get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
@@ -281,6 +293,7 @@ def get_total_SSRO_events_quick(pqf, RO_start, RO_length, marker_chan, sync_time
             print 'Found {} valid marked SSRO events in block'.format(int(len(_events))), i+1
             print '===================================='
             print
+        print "End Loop", datetime.now()
 
     if VERBOSE:
         print
@@ -320,7 +333,8 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
-        
+    
+
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,29), dtype = np.uint64)
 
@@ -346,8 +360,8 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
 
     if num_mrkr > 0:  
 
-        indices_mrkr = np.where(is_mrkr == True)[0]
 
+        indices_mrkr = np.where(is_mrkr == True)[0]
         marker_sync_numbers = np.empty((num_mrkr), dtype = np.uint32)
 
         for i,j in enumerate(indices_mrkr): 
@@ -383,22 +397,53 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
 
         unique_sync_num_with_markers = np.unique(marker_sync_numbers)
             
+
         if type(pqf) == h5py._hl.files.File: 
-            sync_num_RO = pqf[sync_num_name].value
+            sync_num_RO = pqf[sync_num_name]
+            num_sync_num = len(sync_num_RO)
         
         elif type(pqf) == str:
             f = h5py.File(pqf, 'r')
-            sync_num_RO = f[sync_num_name].value
+            sync_num_RO = f[sync_num_name]
+            num_sync_num = len(sync_num_RO)
             f.close()
         else:
             print "Neither filepath nor file enetered in function please check:", pqf
             raise 
 
-        indices_sync_num = []
-        for i,j in enumerate(unique_sync_num_with_markers):
-            indices_sync_num_j = np.where(sync_num_RO == j)[0]
-            indices_sync_num.extend(indices_sync_num_j)
+        len_RO_num = num_sync_num/10
+        if len_RO_num > 20000000:
+            print "Something might go wrong with the memory"
+            print "The length of the array opened is", len_RO_num
 
+        indices_sync_num = []
+
+        print "Get sync number indices", datetime.now()
+        for i in range(10):
+            start = i * len_RO_num
+            if i != 9:
+                stop = (i+1) * len_RO_num
+            else:
+                stop = num_sync_num
+
+            if type(pqf) == h5py._hl.files.File: 
+                sync_num_RO = pqf[sync_num_name]
+                sync_num_RO_block = sync_num_RO[start:stop]
+    
+            elif type(pqf) == str:
+                f = h5py.File(pqf, 'r')
+                sync_num_RO = f[sync_num_name]
+                sync_num_RO_block = sync_num_RO[start:stop]
+                f.close()
+            else:
+                print "Neither filepath nor file enetered in function please check:", pqf
+                raise 
+
+            for i,j in enumerate(unique_sync_num_with_markers):
+                indices_sync_num_j = np.where(sync_num_RO_block == j)[0] + start
+                indices_sync_num.extend(indices_sync_num_j)
+
+        print "After get sync number indices", datetime.now()
         del sync_num_RO
 
         if VERBOSE:
