@@ -23,13 +23,13 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     
     RO_length = a.g['joint_params'].attrs['LDE_RO_duration']*1e9
     
-    a.plot_histogram(0,start=RO_start, length=10000, hist_binsize=1, save=False, log_plot=False)
+    a.plot_histogram(0,start=0, length=15000, hist_binsize=1, save=False, log_plot=False)
     ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('FastSSRO'))
     
 
     roc = error.SingleQubitROC()
-    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
-    #(0.9376,0.0034,0.9920,0.0013)
+    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (0.9398,0.0034,0.9942,0.0013)#pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    #(0.9398,0.0034,0.9942,0.0013)
     #print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
     ##ssro.get_SSRO_calibration(ssro_calib_folder, ro_duration)
     
