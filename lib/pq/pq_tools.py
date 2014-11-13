@@ -118,7 +118,7 @@ def get_multiple_photon_syncs(pqf, index = 1):
 
     return is_multiple_photon_sync
 
-def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = True, save = True):
+def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True):
 
     sync_time_name = '/PQ_sync_time-' + str(index)
     tot_time_name =  '/PQ_time-' + str(index)

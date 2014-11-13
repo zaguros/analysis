@@ -595,7 +595,7 @@ def Laser_filter(Total_Bell_events, first_win_min_ch0, window_length, dif_win1_w
 
 ############## Bell ################################################################
 
-def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_LT3, num_phot_LT4):
+def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_LT3, num_phot_LT4, VERBOSE = True):
 
     """
     The up state is defined as ms =0 (emitting photons) the down state is defined as ms = -1 no photons
@@ -821,8 +821,17 @@ def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_L
                                                 N_psi_plus_a_pr_b_pr_du + N_psi_plus_a_pr_b_pr_ud):
         print "Something weird is hapening with psi plus a',b'"
 
-    print N_psi_min_a_b, N_psi_min_a_pr_b_pr, N_psi_min_a_pr_b, N_psi_min_a_b_pr
-    print N_psi_plus_a_b, N_psi_plus_a_pr_b_pr, N_psi_plus_a_pr_b, N_psi_plus_a_b_pr
+    if VERBOSE:
+        print "Number of events used for psimin a,b:", N_psi_min_a_b
+        print "Number of events used for psimin a',b':",  N_psi_min_a_pr_b_pr
+        print "Number of events used for psimin a',b:", N_psi_min_a_pr_b
+        print "Number of events used for psimin a,b':", N_psi_min_a_b_pr
+        print
+        print 
+        print "Number of events used for psiplus a,b:", N_psi_plus_a_b
+        print "Number of events used for psiplus a',b':",  N_psi_plus_a_pr_b_pr
+        print "Number of events used for psiplus a',b:", N_psi_plus_a_pr_b
+        print "Number of events used for psiplus a,b':", N_psi_plus_a_b_pr
 
     E_a_b_min = (N_psi_min_a_b_uu - N_psi_min_a_b_du - N_psi_min_a_b_ud + N_psi_min_a_b_dd)/float(N_psi_min_a_b)
     E_a_pr_b_min = (N_psi_min_a_pr_b_uu - N_psi_min_a_pr_b_du - 
@@ -840,8 +849,8 @@ def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_L
     E_a_pr_b_pr_plus = (N_psi_plus_a_pr_b_pr_uu - N_psi_plus_a_pr_b_pr_du - 
                                         N_psi_plus_a_pr_b_pr_ud + N_psi_plus_a_pr_b_pr_dd)/float(N_psi_plus_a_pr_b_pr)
 
-    CHSH_psimin = E_a_b_min - E_a_pr_b_min + E_a_b_pr_min + E_a_pr_b_pr_min
-    CHSH_psiplus = E_a_b_plus - E_a_pr_b_plus + E_a_b_pr_plus + E_a_pr_b_pr_plus
+    CHSH_psimin = E_a_b_min + E_a_pr_b_min - E_a_b_pr_min + E_a_pr_b_pr_min
+    CHSH_psiplus = -E_a_b_plus + E_a_pr_b_plus + E_a_b_pr_plus + E_a_pr_b_pr_plus
 
     return CHSH_psimin, CHSH_psiplus, E_a_b_min, E_a_pr_b_min, E_a_b_pr_min, E_a_pr_b_pr_min, E_a_b_plus, E_a_pr_b_plus, E_a_b_pr_plus, E_a_pr_b_pr_plus
 
