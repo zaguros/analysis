@@ -210,7 +210,6 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     # Gets the number of blocks in the data
     num_blocks = tb.get_num_blocks(pqf)
 
-<<<<<<< HEAD
    # print "S
     # Gets the number of blocks in the data
     #num_blocks = tb.get_num_blocks(pqf)
@@ -219,9 +218,6 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     
     print 'The total number of blocks is:', num_blocks
     
-=======
-    print 'The total number of blocks is:', num_blocks
->>>>>>> 6fd630e65b725d15f7ba798706704e8dd45707dd
 
     # Initializes arrays to save the PQ-data
     PQ_sync_number = np.empty((0,), dtype = np.uint32) 
@@ -327,11 +323,8 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     chan_name = '/PQ_channel-' + str(index)
     time_name = '/PQ_time-' + str(index)
 
-<<<<<<< HEAD
-    print "Before opening", datetime.now()
-=======
     # Open files to determine if there are markers
->>>>>>> 6fd630e65b725d15f7ba798706704e8dd45707dd
+
     if type(pqf) == h5py._hl.files.File: 
         special_RO =pqf[spec_name].value
         channel_RO = pqf[chan_name].value
@@ -442,11 +435,8 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
         # Initializes a list with the indices of the sync numbers which have a marker
         indices_sync_num = []
 
-<<<<<<< HEAD
-=======
 
         # Loops over the subblock of sync numbers to prevent memory errors
->>>>>>> 6fd630e65b725d15f7ba798706704e8dd45707dd
         for i in range(10):
             start = i * len_RO_num
             if i != 9:

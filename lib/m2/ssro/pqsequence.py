@@ -289,7 +289,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         self.is_ph = pq_tools.get_photons(self.pqf)[channel]
         self.hist_binsize_ns = hist_binsize_ns
         self.sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
-        self.extra_time_ns = (self.g.attrs['wait_length'])*1e9 #self.g.attrs['pq_sync_length']+
+        self.extra_time_ns = (self.g.attrs['wait_length'])*1e9-100 #self.g.attrs['pq_sync_length']+
 
     def _get_relaxation(self, ms, sweep_index, start, length):
         bins = np.arange(start-self.hist_binsize_ns*.5,start+length,self.hist_binsize_ns)
