@@ -7,6 +7,7 @@ def get_photons(pqf, index = 1):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
     """
+
     chan_name = '/PQ_channel-' + str(index)
     spec_name = '/PQ_special-' + str(index)
 
@@ -25,7 +26,8 @@ def get_photons(pqf, index = 1):
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise    
-        
+
+
     is_not_special = special == 0
     is_channel_0 = channel == 0
     is_channel_1 = channel == 1
@@ -122,6 +124,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     tot_time_name =  '/PQ_time-' + str(index)
     sync_num_name = '/PQ_sync_number-' + str(index)
 
+
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
         return c    
@@ -146,6 +149,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     st0 = sync_time[fltr0]
     t0  = total_time[fltr0]
     sn0 = sync_number[fltr0]
+    
     st1 = sync_time[fltr1]
     t1 = total_time[fltr1]
     sn1 = sync_number[fltr1]
@@ -177,7 +181,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
 
 def get_coincidences_from_folder(folder, index = 1):
 
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name = 'PQ_sync_number-' + str(index)
 
     filepaths = tb.get_all_msmt_filepaths(folder) 
     co = np.ones([1,4])
@@ -339,41 +343,44 @@ def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_
     sync_num_name = '/PQ_sync_number-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
-        sync_num = pqf[sync_num_name].value
+        sync_num = pqf[sync_num_name]
+        Total_shots = sync_num[len(sync_num)-1]
 
     elif type(pqf) == str:
         f = h5py.File(pqf, 'r')
-        sync_num = f[sync_num_name].value
+        sync_num = f[sync_num_name]
+        Total_shots = sync_num[len(sync_num)-1]
         f.close()
     
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
 
-    Total_shots = sync_num[len(sync_num)-1]
 
     is_photon_first_window, is_photon_second_window = get_photons_in_sync_windows(pqf,
                                                                                     first_win_min,
                                                                                     first_win_max,
                                                                                     second_win_min,
-                                                                                    second_win_max, 
+                                                                                    second_win_max,
+                                                                                    index = index, 
                                                                                     VERBOSE = VERBOSE)
 
     if VERBOSE:
-        print "Total number of photons in the first window", sum(is_photon_first_window)
-        print "Total number of photons in the second window", sum(is_photon_second_window)
+        print "Total number of photons in the first window", np.sum(is_photon_first_window)
+        print "Total number of photons in the second window", np.sum(is_photon_second_window)
 
-    Tot_ph_per_shot = ((sum(is_photon_first_window)+ sum(is_photon_second_window))/float(Total_shots))
+    Tot_ph_per_shot = ((np.sum(is_photon_first_window)+ np.sum(is_photon_second_window))/float(Total_shots))
 
     is_photon_first_tail, is_photon_second_tail = get_tail_filtered_photons(pqf, 
                                                                                  first_win_min_ch0, 
                                                                                  dif_win1_win2,
                                                                                  window_length,
-                                                                                 dif_ch0_ch1, 
+                                                                                 dif_ch0_ch1,
+                                                                                 index = index, 
                                                                                  VERBOSE = VERBOSE)
 
-    TC_p_shot_first_tail = ((sum(is_photon_first_tail))/float(Total_shots))
-    TC_p_shot_second_tail = ((sum(is_photon_second_tail))/float(Total_shots))
+    TC_p_shot_first_tail = ((np.sum(is_photon_first_tail))/float(Total_shots))
+    TC_p_shot_second_tail = ((np.sum(is_photon_second_tail))/float(Total_shots))
     TC_p_shot = TC_p_shot_first_tail + TC_p_shot_second_tail
 
     return Total_shots, Tot_ph_per_shot, TC_p_shot_first_tail, TC_p_shot_second_tail, TC_p_shot
@@ -626,7 +633,8 @@ def get_photon_hist(pqf, index = 1, **kw):
     
     sync_time = pqf[sync_time_name].value
     
-    ph0, ph1 = get_photons(pqf)
+    ph0, ph1 = get_photons(pqf, index = index)
+
     if fltr != None:
         _fltr0 = (ph0 & fltr)
         _fltr1 = (ph1 & fltr)
