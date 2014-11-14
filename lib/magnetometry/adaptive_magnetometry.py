@@ -17,11 +17,13 @@ from analysis.lib.tools import plot
 from analysis.lib.tools import compare_functions as compare
 from analysis.lib.m2 import m2
 from matplotlib import rc, cm
+from analysis.lib.math import statistics as stat
 
 
-#reload(sequence)
+reload(sequence)
 reload(compare)
 reload(toolbox)
+reload (stat)
 
 	
 class RamseySequence():
@@ -187,7 +189,8 @@ class RamseySequence():
 		except:
 			N_max=1
 			msmnt_results = np.array([msmnt_results])
-
+			times = np.array([times])
+			phase = np.array([phase])
 		for n in np.arange(N_max) +(self.N-N_max):
 			q = 2*np.pi*beta*times[n]*self.t0+phase[n]
 			dec = np.exp(-(times[n]*self.t0/self.T2)**2)
@@ -336,7 +339,7 @@ class RamseySequence():
 		s.sim_cappellaro_variable_M()
 		s.convert_to_dict()
 		if s.verbose:
-			s.print_table_positions()		
+			s.print_results()		
 		beta_sim, p_sim, ave_exp,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
 
 		plt.plot (beta_sim*1e-6, p_sim, color='Crimson',label = 'sim')
@@ -775,6 +778,7 @@ class RamseySequence_Exp (RamseySequence):
 			self.exp_fid1 = a.exp_fid1
 			self.opt_phase = a.theta_opt #to be removed, only for testing yesterday's data!!! (should load a.theta_opt)
 
+		self.T2 = a.T2_mult_t0*self.t0
 		self.save_pk_n = a.save_pk_n
 		self.save_pk_m = a.save_pk_m
 		self.real_pk_adwin = a.real_pk_adwin
@@ -1026,7 +1030,11 @@ class AdaptiveMagnetometry ():
 		for l in np.arange(self.nr_points_per_period):
 		   	label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
 
+		
+
+
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
+		ave_exps = [0]*self.nr_points_per_period*self.nr_periods
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 
 		ind = 0
@@ -1055,11 +1063,12 @@ class AdaptiveMagnetometry ():
 			if print_results:
 				s.print_results()
 
-			beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=b, do_plot=False)
+			beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
 			self.prob_density_dict[label_array[ind]] = p
+			ave_exps[ind]=ave_exp
 			msqe [ind] = H
 			B_field [ind] = self.B_values[b]
-			self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exp,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+			self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
 			ind =ind+1
 
 	def load_sweep_field_data (self, N, compare_to_simulations=False):
@@ -1067,13 +1076,14 @@ class AdaptiveMagnetometry ():
 		self.simulated_data = False
 		self.analyzed_N.append(N)
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
+		ave_exps = [0]*self.nr_points_per_period*self.nr_periods
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 		ind = 0
 		check_params_labels = ['tau0','F','G']
 
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
-				label = 'N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(per)+'b'+str(pt)
+				label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
 				f = toolbox.latest_data(contains=label)#,older_than='20141015_113000',newer_than='20141014_150000')
 				s = RamseySequence_Exp (folder = f)
@@ -1089,6 +1099,7 @@ class AdaptiveMagnetometry ():
 						beta, prob, ave_exp,err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=False)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
+					ave_exps[ind]=ave_exp
 					msqe [ind] = err
 					B_field [ind] = s.set_detuning
 				else:
@@ -1097,7 +1108,7 @@ class AdaptiveMagnetometry ():
 						if (check_params[i]==False): msg.append(check_params_labels[i])
 					print 'Non matching parameters: ', msg, ' --- ', label
 				ind +=1
-		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exp,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
 
 	def plot_msqe_dictionary(self,y_log=False, save_plot=False):
 
@@ -1128,10 +1139,16 @@ class AdaptiveMagnetometry ():
 		print 'Calculating scaling ... '
 		self.scaling_variance=[]
 		self.total_time=[]
+		self.std_H = []
 		for i,n in enumerate(self.analyzed_N):
 			
 			msqe_phi = self.results_dict[str(n)]['ave_exp']
 			self.scaling_variance.append(np.abs(np.mean(msqe_phi))**(-2)-1)
+
+			bs = stat.BootStrap (n_boots = 1000)
+			bs.set_y (y=np.abs(msqe_phi)**(-2)-1)
+			bs.run_bootstrap()
+			self.std_H.append(bs.err_std_bootstrap)
 
 			if (self.G+self.F+self.K==0):
 				print 'Error G F and K are not set!'
@@ -1142,8 +1159,10 @@ class AdaptiveMagnetometry ():
 			print np.array(self.total_time)/self.t0
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
+		self.std_H  = np.array(self.std_H)
 		
 		self.sensitivity = (self.scaling_variance*self.total_time)#/((2*np.pi*self.gamma_e*self.t0)**2)
+		self.err_sensitivity = self.std_H*self.total_time
 
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
@@ -1160,7 +1179,12 @@ class AdaptiveMagnetometry ():
 
 		#NOTE!!!
 		plt.loglog (self.total_time, self.sensitivity, 'ob')
-
+		plt.loglog (self.total_time, self.sensitivity+self.err_sensitivity, ':r')
+		plt.loglog (self.total_time, self.sensitivity-self.err_sensitivity, ':r')		
+		print 'ERROR BARS:', self.std_H
+		#plt.errorbar (self.total_time, self.sensitivity, yerr = self.std_H, fmt='ob')
+		#plt.yscale ('log')
+		#plt.xscale('log')
 		plt.xlabel ('total ramsey time [$\mu$s]')
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
 		plt.ylabel ('$V_{H}$ T ')
@@ -1171,8 +1195,7 @@ class AdaptiveMagnetometry ():
 		#NOTE!!!!!!!!
 		x_full = np.log10(self.total_time/self.t0)
 		y_full = np.log10(self.sensitivity/self.t0)
-
-
+		err_y = self.err_sensitivity/self.sensitivity
 		#x0 = self.total_time*1e6
 		#y0 = self.sensitivity*1e12
 		a='y'
@@ -1255,11 +1278,10 @@ class AdaptiveMagnetometry ():
 			self.error_scaling_factor = 1
 		#NOTE!!!!!!!!!!
 		#p.loglog (self.total_time*1e6, self.sensitivity*1e12, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		p.plot (x_full, y_full, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		
-
+		p.errorbar (x_full, y_full, yerr= err_y, fmt='o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
 		plt.xlabel ('Log(total ramsey time$ * tau_{0}^{-1}$)', fontsize=15)
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]', fontsize=15)
+		plt.ylim ([0, max(y_full)*1.1])
 		plt.ylabel ('Log($V_{H}$ T)')
 
 		fig = plt.figure(figsize=(8,6))
@@ -1326,6 +1348,7 @@ class AdaptiveMagnetometry ():
 			n_grp = msqe_grp.create_group('N = '+str(n))
 			n_grp.create_dataset ('B_field', data = self.results_dict[str(n)] ['B_field'])
 			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
+			n_grp.create_dataset ('ave_exp', data = self.results_dict[str(n)] ['ave_exp'])
 			n_grp.attrs['N'] = n
 
 		scaling.create_dataset ('total_time', data = self.total_time)

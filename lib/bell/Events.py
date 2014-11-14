@@ -210,7 +210,14 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     # Gets the number of blocks in the data
     num_blocks = tb.get_num_blocks(pqf)
 
+   # print "S
+    # Gets the number of blocks in the data
+    #num_blocks = tb.get_num_blocks(pqf)
+    #print 
+
+    
     print 'The total number of blocks is:', num_blocks
+    
 
     # Initializes arrays to save the PQ-data
     PQ_sync_number = np.empty((0,), dtype = np.uint32) 
@@ -311,6 +318,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     time_name = '/PQ_time-' + str(index)
 
     # Open files to determine if there are markers
+
     if type(pqf) == h5py._hl.files.File: 
         special_RO =pqf[spec_name].value
         channel_RO = pqf[chan_name].value
@@ -324,6 +332,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
+    print "After opening", datetime.now()
     
 
     # Initializes an array to save all SSRO data
@@ -1014,6 +1023,4 @@ def get_Bell_events_day2_run8_20111110(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, firs
 
     Combined_attributes = _a['Columns'] + _att_LT3['Columns'] + _att_LT4['Columns']
     _combined_attributes = {'Columns': Combined_attributes}
-
-    return All_combined_data, _combined_attributes
 
