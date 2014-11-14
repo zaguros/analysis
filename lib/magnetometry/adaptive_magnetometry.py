@@ -258,6 +258,7 @@ class RamseySequence():
 		
 		for k in self.msmnt_dict:
 			curr_phase = self.phases_dict[k]
+			#print len(curr_phase)
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			mult = np.rint(self.msmnt_multiplicity[k])
 			#print 'curr_phase = ',curr_phase, 'curr_msmnt = ', curr_msmnt, 'msmnt_times', self.msmnt_times
@@ -335,7 +336,8 @@ class RamseySequence():
 			s.convert_to_dict()
 			if s.verbose:
 				s.print_table_positions()		
-			beta_sim, p_sim, ave_exp,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
+			beta_sim, p_sim, ave_exp_sim,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
+			B_sim_string='\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim))
 
 			plt.plot (beta_sim*1e-6, p_sim, 'or', label = 'sim')
 		except:
@@ -344,7 +346,7 @@ class RamseySequence():
 			plt.yscale('log')
 			plt.ylim((1e-10,0.5))
 		plt.title('(B_exp = '+str('{0:.4f}'.format(mB))+' +- '+str('{0:.4f}'.format(sB)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_exp)) \
-             + '\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim)))		
+             + B_sim_string)		
 		plt.xlabel ('magnetic field detuning [MHz]')
 		plt.ylabel ('probability distribution')
 		plt.legend()
@@ -707,7 +709,7 @@ class RamseySequence_fastSimulations (RamseySequence_Simulation):
 		self.pk[k] = p_real[k]+1j*p_imag[k]
 
 #Note: not sure what to do with this class
-class RamseySequence_Adwin (RamseySequence_Simulation):
+#class RamseySequence_Adwin (RamseySequence_Simulation):
 
 class RamseySequence_Exp (RamseySequence):
 
@@ -1010,19 +1012,24 @@ class AdaptiveMagnetometry ():
 
 		
 	def sweep_field_simulation (self, N,table_based=False,non_adaptive=False,print_results=False):
-
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
-
-		#alternative way of sampling
+		#sampling continous range
+		
 		B_values = np.array([])
 		label_array = []
-		B = np.linspace(-1*self.B_max, self.B_max, self.nr_points_per_period)
+		#B = np.linspace(-1*self.B_max, self.B_max, self.nr_points_per_period)
+		# sample per period
+		per=0
+		delta_f = 1./(self.t0*(2**N))
+		B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
 		self.B_values = np.hstack((B_values, B))
 		for l in np.arange(self.nr_points_per_period):
-		   	label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
+			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
+
 
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
+		ave_exps = [0]*self.nr_points_per_period*self.nr_periods
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 
 		ind = 0
@@ -1051,11 +1058,12 @@ class AdaptiveMagnetometry ():
 			if print_results:
 				s.print_results()
 
-			beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=b, do_plot=False)
+			beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
 			self.prob_density_dict[label_array[ind]] = p
+			ave_exps[ind]=ave_exp
 			msqe [ind] = H
 			B_field [ind] = self.B_values[b]
-			self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exp,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+			self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
 			ind =ind+1
 
 	def load_sweep_field_data (self, N, compare_to_simulations=False):
@@ -1063,6 +1071,7 @@ class AdaptiveMagnetometry ():
 		self.simulated_data = False
 		self.analyzed_N.append(N)
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
+		ave_exps = [0]*self.nr_points_per_period*self.nr_periods
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 		ind = 0
 		check_params_labels = ['tau0','F','G']
@@ -1085,6 +1094,7 @@ class AdaptiveMagnetometry ():
 						beta, prob, ave_exp,err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=False)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
+					ave_exps[ind]=ave_exp
 					msqe [ind] = err
 					B_field [ind] = s.set_detuning
 				else:
@@ -1093,7 +1103,7 @@ class AdaptiveMagnetometry ():
 						if (check_params[i]==False): msg.append(check_params_labels[i])
 					print 'Non matching parameters: ', msg, ' --- ', label
 				ind +=1
-		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exp,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
 
 	def plot_msqe_dictionary(self,y_log=False, save_plot=False):
 
@@ -1124,8 +1134,10 @@ class AdaptiveMagnetometry ():
 		print 'Calculating scaling ... '
 		self.scaling_variance=[]
 		self.total_time=[]
+		#print self.results_dict[str(2)].keys()
+		
 		for i,n in enumerate(self.analyzed_N):
-			
+			print 'scaling for N = ', n
 			msqe_phi = self.results_dict[str(n)]['ave_exp']
 			self.scaling_variance.append(np.abs(np.mean(msqe_phi))**(-2)-1)
 
@@ -1136,6 +1148,7 @@ class AdaptiveMagnetometry ():
 				self.total_time.append(self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n)))
 			
 			print np.array(self.total_time)/self.t0
+		
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
 		
@@ -1143,6 +1156,7 @@ class AdaptiveMagnetometry ():
 
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
+			print 'Calculating scaling'
 			self.calculate_scaling()
 
 		if self.simulated_data:
@@ -1322,6 +1336,7 @@ class AdaptiveMagnetometry ():
 			n_grp = msqe_grp.create_group('N = '+str(n))
 			n_grp.create_dataset ('B_field', data = self.results_dict[str(n)] ['B_field'])
 			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
+			n_grp.create_dataset ('ave_exp', data = self.results_dict[str(n)] ['ave_exp'])
 			n_grp.attrs['N'] = n
 
 		scaling.create_dataset ('total_time', data = self.total_time)
@@ -1359,6 +1374,7 @@ class AdaptiveMagnetometry ():
 				curr_n = curr_subgrp.attrs['N']
 				B_field = curr_subgrp['B_field'].value
 				msqe = curr_subgrp['msqe'].value
-				self.results_dict[str(curr_n)] =  {'B_field':B_field, 'msqe':msqe, 'F':self.F,'G':self.G}
+				ave_exp = curr_subgrp['ave_exp'].value
+				self.results_dict[str(curr_n)] =  {'B_field':B_field,'ave_exp':ave_exp, 'msqe':msqe, 'F':self.F,'G':self.G}
 		f.close()
 

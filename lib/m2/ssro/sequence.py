@@ -250,6 +250,8 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         RO_clicks = np.array(adwingrp['RO_data'].value)
         CR_after = np.array(adwingrp['CR_after'].value)
         set_phase = adwingrp['set_phase'].value
+        theta = adwingrp['theta'].value
+
         self.phase_calibration_msmnt = False
         self.debug_pk = True
 
@@ -264,6 +266,13 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
 
         self.sweep_pts = self.g.attrs['sweep_pts']
         self.ramsey_time = self.g.attrs['ramsey_time'] 
+        self.N = self.g.attrs['adptv_steps']
+
+        try:
+            self.K = self.g.attrs['adptv_steps']-1
+        except:
+            self.K = self.N-1
+
         try:
             self.phases_detuning = self.g.attrs['phases_detuning'] 
             self.set_detuning = self.g.attrs['set_detuning_value']
@@ -284,6 +293,9 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.msmnt_type = 'realtime' 
         except:
             self.msmnt_type = 'table_based'
+
+        self.T2_mult_t0 = self.g.attrs['T2']
+        print self.T2_mult_t0
 
         try:
             timer_data = np.array(adwingrp['timer'].value)
@@ -308,15 +320,19 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         cols = len(self.sweep_pts)
         RO_clicks = RO_clicks[:rows*cols]
         set_phase = set_phase[:rows*cols]
+        theta = theta[:rows*cols]
         CR_after = CR_after[:rows*cols]
 
         self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
         self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
+        self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
         self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
             self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  
             
+
+
 
 
 

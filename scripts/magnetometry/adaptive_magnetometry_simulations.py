@@ -16,10 +16,10 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
-from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
+#from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
 
 reload(magnetometry)
-reload(adwin_mgnt)
+#reload(adwin_mgnt)
 
 def simulate_cappellaro ():
 
@@ -40,6 +40,10 @@ def simulate_cappellaro ():
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority()
 	s.sim_cappellaro_variable_M()
+	s.convert_to_dict()
+	s.print_results()
+	beta, p, ave_exp,err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+
 def simulate_cappellaro_debug_adwin ():
 	maj_reps = 1
 	M = 10
@@ -90,14 +94,14 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,reps=101):
+def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,reps=2001):
 
 	#try:
 	print '############### Simulate #####################'
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=5001)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=7)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -310,7 +314,7 @@ simulate_sweep_field (N=9, M=4, maj_reps=5, maj_thr=1, fid0=0.87)
 #check_simulated_adwin_phases ()
 
 
-'''
+
 mean_error = []
 m_list = np.arange(30)+1
 for m in m_list:
@@ -328,11 +332,14 @@ plt.legend()
 plt.show()
 '''
 
-simulate_adwin(N=8, M= 20)
+#simulate_adwin(N=8, M= 20)
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
 fid0=1.-0.112
 fid1=0.007
-reps=21
-simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
-#mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
+reps=101
+#simulate_sweep_field_variable_M (G=5,K=6,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+#simulate_sweep_field_variable_M (G=2,K=9,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+#simulate_sweep_field_variable_M (G=5,K=13,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+#
+mgnt_G5F7_N14_sim=analyze_saved_simulations('20141112_182801',G=5,F=7,K=13)
