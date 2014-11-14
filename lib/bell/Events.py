@@ -274,13 +274,7 @@ def get_total_SSRO_events_quick(pqf, RO_start, RO_length, marker_chan, sync_time
 
     # Loop over all blocks
     for i in range(num_blocks):
-        print "Start loop", datetime.now()
-        # Returns a list with the sync numbers for which a marker is observed
-        unique_sync_num_with_markers = \
-            pq_tools.get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
-        
-        # Gets all events for a block
-        _events = get_SSRO_events_quick(pqf, unique_sync_num_with_markers, RO_start, RO_length, index = i+1)
+        _events = get_SSRO_events_quick(pqf, marker_chan,  RO_start, RO_length, sync_time_lim = sync_time_lim, index = i+1)
 
         # Stacks all events for several blocks
         total_SSRO_events = np.vstack((total_SSRO_events, _events))
@@ -290,7 +284,7 @@ def get_total_SSRO_events_quick(pqf, RO_start, RO_length, marker_chan, sync_time
             print 'Found {} valid marked SSRO events in block'.format(int(len(_events))), i+1
             print '===================================='
             print
-        print "End Loop", datetime.now()
+
 
     if VERBOSE:
         print
@@ -631,9 +625,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
 
     return SSRO_events, PQ_sync_number, PQ_special, PQ_sync_time, PQ_time, PQ_channel
 
-
-
-def get_SSRO_events_quick(pqf, unique_sync_num_with_markers,RO_start, RO_length, index = 1):
+def get_SSRO_events_quick(pqf, marker_chan, RO_start, RO_length, sync_time_lim = 0, index = 1):
     """
     Returns an array with sync numbers in the first row, the number of photons in the readout window
     in the second column and the sync time of the first photon(the lowest sync time) in the third column.
@@ -646,45 +638,196 @@ def get_SSRO_events_quick(pqf, unique_sync_num_with_markers,RO_start, RO_length,
     time_name = '/PQ_time-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
-        sync_numbers = pqf[sync_num_name].value
         special_RO =pqf[spec_name].value
-        sync_time_RO =pqf[sync_time_name].value
-        time_RO = pqf[time_name].value
         channel_RO = pqf[chan_name].value
-
-
-        # Get name of the group to find read out length
-        group = tb.get_msmt_name(pqf)
-        total_string_name = '/' + group + '/joint_params'
-        #RO_length =pqf[total_string_name].attrs['LDE_RO_duration']  * 1e9
 
     elif type(pqf) == str:
         f = h5py.File(pqf, 'r')
-        sync_num_RO = f[sync_num_name].value
         special_RO = f[spec_name].value
-        sync_time_RO = f[sync_time_name].value
-        time_RO = f[time_name].value
         channel_RO = f[chan_name].value
-
-        # Get name of the group to find read out length
-        group = tb.get_msmt_name(pqf)
-        total_string_name = '/' + group + '/joint_params'
-        #RO_length = f[total_string_name].attrs['LDE_RO_duration']  * 1e9
         f.close()
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
 
+    # checks if there are markers
+    is_special = special_RO == 1
+    is_channel = channel_RO == marker_chan
+    is_mrkr = is_special & is_channel
+
+    del is_special
+    del is_channel
+    
+    num_mrkr = len(channel_RO[is_mrkr])
+
+    # Get the indices of the marker events
+    indices_mrkr = np.where(is_mrkr == True)[0]
+    del is_mrkr
+    marker_sync_numbers = np.empty((num_mrkr), dtype = np.uint32)
+
+    # Get the list of sync numbers corresponding to markerrs
+    for i,j in enumerate(indices_mrkr): 
+
+        if type(pqf) == h5py._hl.files.File: 
+            sync_num_RO_data = pqf[sync_num_name]
+            sync_time_RO_data = pqf[sync_time_name]
+
+            sync_num_RO_temp = sync_num_RO_data[j]
+            sync_time_RO_temp = sync_time_RO_data[j]
+
+        elif type(pqf) == str:
+            f = h5py.File(pqf, 'r')
+            sync_num_RO_data = f[sync_num_name]
+            sync_time_RO_data = f[sync_time_name]
+
+            sync_num_RO_temp = sync_num_RO_data[j]
+            sync_time_RO_temp = sync_time_RO_data[j]
+
+            f.close()
+
+        # Substracts 1 of the sync number if the sync time is lower than the limit
+        if sync_time_lim > 0:
+            is_small_sync_time = sync_time_RO_temp <= sync_time_lim
+            is_large_sync_time = sync_time_RO_temp > sync_time_lim
+
+            if is_small_sync_time:
+                marker_sync_numbers[i] = sync_num_RO_temp - 1
+            elif is_large_sync_time:
+                marker_sync_numbers[i] = sync_num_RO_temp
+        else:
+            marker_sync_numbers[i] = sync_num_RO_temp
+
+    # Get a list with the unique sync numbers
+    unique_sync_num_with_markers = np.unique(marker_sync_numbers)\
+
+    # Initializes a list with the indices of the sync numbers which have a marker
+    indices_sync_num = []
+
+    # Loops over the subblock of sync numbers to prevent memory errors
+    if type(pqf) == h5py._hl.files.File: 
+        sync_num_RO = pqf[sync_num_name].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_num_RO = f[sync_num_name].value
+        f.close()
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise 
+
+    is_sync_num_with_mrkr = np.array(([False] * len(sync_num_RO)))
+
+    for i,j in enumerate(unique_sync_num_with_markers):
+        is_sync_num_with_mrkr = is_sync_num_with_mrkr | (sync_num_RO == j)
+        
+    indices_sync_num.extend(np.where(is_sync_num_with_mrkr == True)[0])
+
+    del sync_num_RO
+
+    # Initializes arrays to save all PQ data
+    PQ_sync_number = np.empty((0,), dtype = np.uint32) 
+    PQ_special = np.empty((0,), dtype = np.uint32)         
+    PQ_sync_time = np.empty((0,), dtype = np.uint64)
+    PQ_time = np.empty((0,), dtype = np.uint64) 
+    PQ_channel = np.empty((0,), dtype = np.uint32)
+
+
+    # Get PQ data for all marked events in this blocks
+    for i,j in enumerate(indices_sync_num):
+
+        if type(pqf) == h5py._hl.files.File: 
+            sync_num_RO_data = pqf[sync_num_name]
+            sync_time_RO_data = pqf[sync_time_name]
+            special_RO_data = pqf[spec_name]
+
+            sync_num_RO = sync_num_RO_data[j]
+            sync_time_RO = sync_time_RO_data[j]
+            special_RO = special_RO_data[j]
+
+            first_sync_num_block = sync_num_RO_data[0]
+            last_sync_num_block = sync_num_RO_data[len(sync_num_RO_data)-1]
+
+    
+        elif type(pqf) == str:
+            f = h5py.File(pqf, 'r')
+            sync_num_RO_data = f[sync_num_name]
+            sync_time_RO_data = f[sync_time_name]
+            special_RO_data = f[spec_name]
+
+            sync_num_RO = sync_num_RO_data[j]
+            sync_time_RO = sync_time_RO_data[j]
+            special_RO = special_RO_data[j]
+
+            first_sync_num_block = sync_num_RO_data[0]
+            last_sync_num_block = sync_num_RO_data[len(sync_num_RO_data)-1]
+
+            f.close()
+        else:
+            print "Neither filepath nor file enetered in function please check:", pqf
+            raise 
+
+        # Check if a marked sync number is at the beginning or end of block to determine if some additional
+        # analysis should be performed. 
+        first_sync_num_with_marker = unique_sync_num_with_markers[0]
+        first_sync_num_with_marker_2 = unique_sync_num_with_markers[0] -1
+        irst_sync_num_with_marker = unique_sync_num_with_markers[0]
+        last_sync_num_with_marker = unique_sync_num_with_markers[len(unique_sync_num_with_markers)-1]
+        last_sync_num_with_marker_2 = unique_sync_num_with_markers[len(unique_sync_num_with_markers)-1] + 1
+
+        if first_sync_num_with_marker == first_sync_num_block:
+            print 
+            print
+            print
+            print "Something goes wrong with the first number, think of a way to fix this!"
+            print 
+            print
+            print
+
+        if first_sync_num_with_marker_2 == first_sync_num_block:
+            print 
+            print
+            print
+            print "Something goes wrong with the first number, think of a way to fix this!"
+            print 
+            print
+            print
+            
+
+        if last_sync_num_with_marker == last_sync_num_block:
+            print 
+            print
+            print
+            print "Something goes wrong with the last number, think of a way to fix this!"
+            print 
+            print
+            print
+            
+        if last_sync_num_with_marker_2 == last_sync_num_block:
+            print 
+            print
+            print
+            print "Something goes wrong with the last number, think of a way to fix this!"
+            print 
+            print
+            print
+
+
+        # Concatenates the PQ data for several sync numbers
+        PQ_sync_number = np.hstack((PQ_sync_number, sync_num_RO)) 
+        PQ_special = np.hstack((PQ_special, special_RO))         
+        PQ_sync_time = np.hstack((PQ_sync_time, sync_time_RO)) 
+
     Quick_SSRO_events = np.empty((0,3))
-    is_ph_RO = special_RO == 0   
-    is_in_window = (RO_start  <= sync_time_RO) & (sync_time_RO < (RO_start + RO_length))
+    is_ph_RO = PQ_special == 0   
+    is_in_window = (RO_start  <= PQ_sync_time) & (PQ_sync_time < (RO_start + RO_length))
     is_ph_RO_in_ro_window = is_in_window & is_ph_RO
 
     for i,s in enumerate(unique_sync_num_with_markers):
 
-        is_sync_num_s = sync_num_RO == s
+        is_sync_num_s = PQ_sync_number == s
         is_photons_RO = is_sync_num_s & is_ph_RO_in_ro_window
-        sync_time_RO_photons = sync_time_RO[is_photons_RO]
+
+        sync_time_RO_photons = PQ_sync_time[is_photons_RO]
 
         num_phot = len(sync_time_RO_photons)
         if len(sync_time_RO_photons) > 0:
@@ -695,10 +838,7 @@ def get_SSRO_events_quick(pqf, unique_sync_num_with_markers,RO_start, RO_length,
         _event = np.array([s, num_phot, arr_time_first_phot])
         Quick_SSRO_events = np.vstack((Quick_SSRO_events, _event))
 
-
     return Quick_SSRO_events
-
-
 
 ################################## Bell events 215201_Bell_BS_full_BellLFBT_day2_Run8 #############################
 
@@ -876,3 +1016,4 @@ def get_Bell_events_day2_run8_20111110(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, firs
     _combined_attributes = {'Columns': Combined_attributes}
 
     return All_combined_data, _combined_attributes
+
