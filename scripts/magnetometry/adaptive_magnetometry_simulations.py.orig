@@ -41,20 +41,8 @@ def simulate_cappellaro ():
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority()
 	s.sim_cappellaro_variable_M()
-def simulate_cappellaro_debug_adwin ():
-	maj_reps = 1
-	M = 10
 
-	set_magnetic_field =25/(20e-9*2**8)
-	s = magnetometry.RamseySequence_Adwin (N_msmnts = 8, reps=100, tau0=20e-9)
 
-	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
-	s.T2 = 96e-6
-	s.fid0 = 0.9
-	s.fid1 = 0.02
-	s.renorm_ssro = True
-	s.maj_reps = maj_reps
-	s.maj_thr = 0
 
 def simulate_cappellaro_debug_adwin (verbose = False):
 	
@@ -138,7 +126,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,rep
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=31)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -374,7 +362,11 @@ plt.show()
 
 '''
 
+<<<<<<< HEAD
+#simulate_adwin(N=5, G=5, F=0,do_plot=True, reps=1, ext_outcomes = np.array([5,0,5,5,5]))
+=======
 #simulate_adwin(N=10, G=100, F=0,do_plot=True, reps=1, ext_outcomes = np.array([91,90,3,12,0,11,98,87,12,90]))
+>>>>>>> ff1a82398c293181708d4c2f1e8fe55ef7f63ef2
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro_debug_adwin(verbose=True)
 #compare_algorithms()
@@ -382,6 +374,6 @@ plt.show()
 fid0=1.-0.112
 fid1=0.007
 reps=3
-simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+simulate_sweep_field_variable_M (G=5,K=3,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)

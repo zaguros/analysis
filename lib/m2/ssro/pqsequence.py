@@ -207,6 +207,7 @@ class TailAnalysis(PQSequenceAnalysis):
         if ret == 'fig':
             return fig
 
+
     def plot_tail_hist_all(self, name='', save=True, log_plot=True, offset=0, **kw):  
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
