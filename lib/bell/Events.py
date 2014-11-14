@@ -216,7 +216,7 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     # Loops over every block
     for i in range(num_blocks):
         # Get the SSRO events and PQ data for these sync numbers
-        print gc.isenabled()
+        #print gc.isenabled()
         gc.collect()
         _events, _PQ_sync_number, _PQ_special, _PQ_sync_time, _PQ_time, _PQ_channel = \
                 get_SSRO_events(pqf, marker_chan, RO_start, RO_length, chan_rnd_0, chan_rnd_1, sync_time_lim = sync_time_lim, index = i+1, VERBOSE = VERBOSE)
@@ -487,6 +487,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
                 print 
                 print
                 print
+                raise
 
             if first_sync_num_with_marker_2 == first_sync_num_block:
                 print 
@@ -496,7 +497,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
                 print 
                 print
                 print
-                
+                raise
 
             if last_sync_num_with_marker == last_sync_num_block:
                 print 
@@ -506,7 +507,8 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
                 print 
                 print
                 print
-                
+                raise
+
             if last_sync_num_with_marker_2 == last_sync_num_block:
                 print 
                 print
@@ -515,6 +517,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
                 print 
                 print
                 print
+                raise
 
 
         # Loop over all sync numbers with markers
