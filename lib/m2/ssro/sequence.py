@@ -294,6 +294,9 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         except:
             self.msmnt_type = 'table_based'
 
+        self.T2_mult_t0 = self.g.attrs['T2']
+        print self.T2_mult_t0
+
         try:
             timer_data = np.array(adwingrp['timer'].value)
 

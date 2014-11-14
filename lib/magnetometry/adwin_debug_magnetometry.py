@@ -904,7 +904,6 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		#the ones calculatd in python ("optimal" looping and storage)
 
 		range_k_sweep = self.G+self.F*self.N+10
-		print '## range_k_sweep: ', range_k_sweep
 		p_real = np.zeros (range_k_sweep)
 		p_imag = np.zeros (range_k_sweep)
 		p_real [1] = 1/(2*np.pi)
@@ -914,7 +913,7 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		t = np.zeros(self.N+1)
 		outcomes = np.zeros(self.N+1)
 		phase_adwin = np.zeros(self.N+1)
-		phase_simulation = np.zeros(self.N+1)
+		phase_sim = np.zeros(self.N+1)
 		outcomes = np.zeros(self.N+1)
 		#ext_outcomes = self.outcomes
 
@@ -926,21 +925,18 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 		t = np.zeros(self.N+1)
 		outcomes = np.zeros(self.N+1)
-		phase_adwin = np.zeros(self.N+1)
 
 		for n in np.arange(self.N)+1:
 
+
 			t[n] = int(2**(self.N-n))
-			phase_adwin[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
+			phase_sim[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
 			
 			M = self.G+self.F*(self.N-n)
 			max_k = M+3
 			k_space = np.arange(max_k)
 			B = 0.5*(self.fid1-self.fid0)*np.exp(-(t[n]*self.t0/self.T2)**2)
 
-			if do_plot:
-				print '### n = ', n
-				f, axarr = plt.subplots(2, sharex=True, figsize=(10,10))
 
 			for m in np.arange(M)+1:				
 				exp_exists = True
@@ -954,14 +950,14 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 					print 'Phase adwin (exp): ', phase_adwin
 					self.fid0 = exp.exp_fid0
 					self.fid1 = exp.exp_fid1
-					#self.T2 = exp.T2
+					self.T2 = exp.T2
 					exp_exists = True
 				except:
 					exp_exists = False
 					print f_name+' does not exist!'
 
 				if (ext_outcomes == []):
-					m_res = self.ramsey (t = t[n]*self.t0, theta = phase_adwin[n])
+					m_res = self.ramsey (t = t[n]*self.t0, theta = phase_sim[n])
 				else:
 					ext_outcomes[n-1] = ext_outcomes[n-1] - 1
 					if (ext_outcomes[n-1]<0):
@@ -969,8 +965,9 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 					else:
 						m_res = 1
 				outcomes[n] = outcomes[n] + m_res
-				cn = m_res*np.pi + phase_adwin[n]
+				cn = m_res*np.pi + phase_sim[n]
 
+				print 'fidelities: ', self.fid0, self.fid1
 				if (int(m_res) == 0):
 					A = 1-0.5*(self.fid0+self.fid1)
 				elif (int(m_res) == 1):
@@ -992,7 +989,7 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 				if exp_exists:
 					len_array = len(p_real)
-					th_sim = int(round(phase_simulation[n]*180/np.pi))
+					th_sim = int(round(phase_sim[n]*180/np.pi))
 					th_adw = phase_adwin[n-1]
 
 					print '######  n = ', n, ' ---- m = ', m
@@ -1000,13 +997,14 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 					print 'cos(cn) = ', np.cos(cn), '    sin(cn) = ', np.sin(cn)
 
 					if do_plot:
-						#diff = (((p_real[1:2**self.N+2]-exp.real_pk_adwin[:2**self.N]))**2+((p_imag[1:2**self.N+2]-exp.imag_pk_adwin[:2**self.N]))**2)**0.5
-						#rel_diff = 100*diff/((p_real[1:2**self.N+2]**2+p_imag[1:2**self.N+2]**2)**0.5)
-						#avg_diff = np.sum(diff)/len(diff)
+
+						diff = (((p_real[1:range_k_sweep+1]-exp.real_pk_adwin[:-1]))**2+((p_imag[1:range_k_sweep+1]-exp.imag_pk_adwin[:-1]))**2)**0.5
+						rel_diff = 100*diff/((p_real[1:range_k_sweep+1]**2+p_imag[1:range_k_sweep+1]**2)**0.5)
+						avg_diff = np.sum(diff)/len(diff)
 						f, axarr = plt.subplots(3, sharex=True, figsize=(10,10))
 						x = np.arange(2**self.N+1)
 
-						print exp.real_pk_adwin
+
 						axarr[0].plot (np.arange (range_k_sweep-1)*t[n],p_real[1:], ':k')
 						axarr[0].plot (np.arange (range_k_sweep-1)*t[n], exp.real_pk_adwin[:-1], ':b')
 						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], ':k')
@@ -1015,16 +1013,16 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], 'o', label='sim_'+str(n)+','+str(m))
 						axarr[0].plot (np.arange (range_k_sweep-1)*t[n], exp.real_pk_adwin[:-1], 'o', label='exp_'+str(n)+','+str(m))
 						axarr[1].plot (np.arange (range_k_sweep-1)*t[n], exp.imag_pk_adwin[:-1], 'o', label='exp_'+str(n)+','+str(m))
-						#axarr[2].plot (np.arange (range_k_sweep-1)*t[n], rel_diff, ':k')
-						#axarr[2].plot (np.arange (range_k_sweep-1)*t[n], rel_diff, 'ok')
+						axarr[2].plot (np.arange (range_k_sweep-1)*t[n], rel_diff, ':k')
+						axarr[2].plot (np.arange (range_k_sweep-1)*t[n], rel_diff, 'ok')
 						axarr[0].set_title('real part, n = '+str(n)+', m = '+str(m))
 						axarr[1].set_title('imaginary part, n = '+str(n)+', m = '+ str(m))
 						axarr[2].set_title('difference, n = '+str(n)+', m = '+ str(m))
 						axarr[0].set_xlim([0, (range_k_sweep-2)*t[n]])
 						axarr[1].set_xlim([0, (range_k_sweep-2)*t[n]])
 						axarr[2].set_xlim([0, range_k_sweep*t[n]])
-						axarr[0].set_ylim([-0.2, 0.2])
-						axarr[1].set_ylim([-0.2, 0.2])
+						#axarr[0].set_ylim([-0.2, 0.2])
+						#axarr[1].set_ylim([-0.2, 0.2])
 						axarr[2].set_ylim([0, 100])					
 						axarr[2].set_ylabel('rel diff %', fontsize=15)
 						axarr[0].legend()

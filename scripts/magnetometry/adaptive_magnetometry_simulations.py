@@ -18,6 +18,7 @@ from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
 from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
 
+reload (sequence)
 reload(magnetometry)
 reload(adwin_mgnt)
 
@@ -40,8 +41,20 @@ def simulate_cappellaro ():
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority()
 	s.sim_cappellaro_variable_M()
+def simulate_cappellaro_debug_adwin ():
+	maj_reps = 1
+	M = 10
 
+	set_magnetic_field =25/(20e-9*2**8)
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = 8, reps=100, tau0=20e-9)
 
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
+	s.T2 = 96e-6
+	s.fid0 = 0.9
+	s.fid1 = 0.02
+	s.renorm_ssro = True
+	s.maj_reps = maj_reps
+	s.maj_thr = 0
 
 def simulate_cappellaro_debug_adwin (verbose = False):
 	
@@ -125,7 +138,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,rep
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=5001)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -309,20 +322,21 @@ def simulate_adwin (N,F,G, do_plot=False, reps=1, ext_outcomes = []):
 	a.maj_thr = 0	
 	a.setup_simulation (magnetic_field_hz = field, F=F, G=G,K=N)
 
-	a.T2 = 96e-6
-	a.fid0 = 1
-	a.fid1 = 0
+	#a.T2 = 96e-6
+	a.fid0 = 0.87
+	a.fid1 = 0.02
 	a.G = G
 	a.F = F
-	a.compare_adwin_python_optimal_looping_storage(do_plot=do_plot, ext_outcomes = ext_outcomes)
-
+	#a.compare_adwin_python_optimal_looping_storage(do_plot=do_plot, ext_outcomes = ext_outcomes)
+	a.adwin_optimal_looping_storage (do_plot=False, ext_outcomes=ext_outcomes)
+	
 	a.convert_to_dict()
 	a.print_results()
 		
 	beta, p, err,h, a, b = a.mean_square_error(set_value=field, do_plot=True, y_log=True)
 	print 'holevo variance: ', h
 	plt.show()
-
+	
 
 
 
@@ -360,7 +374,7 @@ plt.show()
 
 '''
 
-#simulate_adwin(N=5, G=5, F=0,do_plot=True, reps=1, ext_outcomes = np.array([5,0,5,5,5]))
+#simulate_adwin(N=10, G=100, F=0,do_plot=True, reps=1, ext_outcomes = np.array([91,90,3,12,0,11,98,87,12,90]))
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro_debug_adwin(verbose=True)
 #compare_algorithms()

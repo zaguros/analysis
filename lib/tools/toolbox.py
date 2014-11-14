@@ -7,6 +7,7 @@ import h5py
 import platform
 import os
 import time
+from datetime import datetime
 
 try:
     import qt
@@ -552,7 +553,6 @@ def get_num_blocks(pqf):
     elif type(pqf) == str:
 
         f = h5py.File(pqf, 'r')
-
         for k in f.keys():
             if 'PQ_channel-' in k:
                 Block_name =  str(k)
