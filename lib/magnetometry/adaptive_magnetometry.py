@@ -17,11 +17,13 @@ from analysis.lib.tools import plot
 from analysis.lib.tools import compare_functions as compare
 from analysis.lib.m2 import m2
 from matplotlib import rc, cm
+from analysis.lib.math import statistics as stat
 
 
 reload(sequence)
 reload(compare)
 reload(toolbox)
+reload (stat)
 
 	
 class RamseySequence():
@@ -1137,10 +1139,16 @@ class AdaptiveMagnetometry ():
 		print 'Calculating scaling ... '
 		self.scaling_variance=[]
 		self.total_time=[]
+		self.std_H = []
 		for i,n in enumerate(self.analyzed_N):
 			
 			msqe_phi = self.results_dict[str(n)]['ave_exp']
 			self.scaling_variance.append(np.abs(np.mean(msqe_phi))**(-2)-1)
+
+			bs = stat.BootStrap (n_boots = 1000)
+			bs.set_y (y=np.abs(msqe_phi)**(-2)-1)
+			bs.run_bootstrap()
+			self.std_H.append(bs.err_std_bootstrap)
 
 			if (self.G+self.F+self.K==0):
 				print 'Error G F and K are not set!'
@@ -1151,8 +1159,10 @@ class AdaptiveMagnetometry ():
 			print np.array(self.total_time)/self.t0
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
+		self.std_H  = np.array(self.std_H)
 		
 		self.sensitivity = (self.scaling_variance*self.total_time)#/((2*np.pi*self.gamma_e*self.t0)**2)
+		self.err_sensitivity = self.std_H*self.total_time
 
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
@@ -1169,7 +1179,12 @@ class AdaptiveMagnetometry ():
 
 		#NOTE!!!
 		plt.loglog (self.total_time, self.sensitivity, 'ob')
-
+		plt.loglog (self.total_time, self.sensitivity+self.err_sensitivity, ':r')
+		plt.loglog (self.total_time, self.sensitivity-self.err_sensitivity, ':r')		
+		print 'ERROR BARS:', self.std_H
+		#plt.errorbar (self.total_time, self.sensitivity, yerr = self.std_H, fmt='ob')
+		#plt.yscale ('log')
+		#plt.xscale('log')
 		plt.xlabel ('total ramsey time [$\mu$s]')
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
 		plt.ylabel ('$V_{H}$ T ')
@@ -1180,8 +1195,7 @@ class AdaptiveMagnetometry ():
 		#NOTE!!!!!!!!
 		x_full = np.log10(self.total_time/self.t0)
 		y_full = np.log10(self.sensitivity/self.t0)
-
-
+		err_y = self.err_sensitivity/self.sensitivity
 		#x0 = self.total_time*1e6
 		#y0 = self.sensitivity*1e12
 		a='y'
@@ -1264,11 +1278,10 @@ class AdaptiveMagnetometry ():
 			self.error_scaling_factor = 1
 		#NOTE!!!!!!!!!!
 		#p.loglog (self.total_time*1e6, self.sensitivity*1e12, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		p.plot (x_full, y_full, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		
-
+		p.errorbar (x_full, y_full, yerr= err_y, fmt='o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
 		plt.xlabel ('Log(total ramsey time$ * tau_{0}^{-1}$)', fontsize=15)
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]', fontsize=15)
+		plt.ylim ([0, max(y_full)*1.1])
 		plt.ylabel ('Log($V_{H}$ T)')
 
 		fig = plt.figure(figsize=(8,6))
