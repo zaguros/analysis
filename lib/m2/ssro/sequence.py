@@ -269,9 +269,9 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         self.N = self.g.attrs['adptv_steps']
 
         try:
-            self.K = self.g.attrs['adptv_steps']-1
+            self.K = self.g.attrs['adptv_steps']
         except:
-            self.K = self.N-1
+            self.K = self.N
 
         try:
             self.phases_detuning = self.g.attrs['phases_detuning'] 

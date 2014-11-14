@@ -11,14 +11,14 @@ def _aggregated_coincidences(Base_Folder):
     return in_coincidences
 
 def filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses,
-                         dt_index, sync_time_ch0, sync_time_ch1, sync_num_ch0 ):
+                         column_st_0, column_st_1):
 
     tail_length = WINDOW_LENGTH
     pulse_sep = dif_win1_win2
 
     
-    f_st0 = pq_tools.filter_synctimes(coincidences[:,sync_time_ch0], ch0_start, ch0_start + tail_length, noof_pulses, pulse_sep, pq_file = False)
-    f_st1 = pq_tools.filter_synctimes(coincidences[:,sync_time_ch1], ch1_start, ch1_start +  tail_length, noof_pulses, pulse_sep, pq_file = False)
+    f_st0 = pq_tools.filter_synctimes(coincidences[:,column_st_0], ch0_start, ch0_start + tail_length, noof_pulses, pulse_sep, pq_file = False)
+    f_st1 = pq_tools.filter_synctimes(coincidences[:,column_st_1], ch1_start, ch1_start +  tail_length, noof_pulses, pulse_sep, pq_file = False)
         
     return f_st0 & f_st1 # & f_dt
 
@@ -27,12 +27,12 @@ def TPQI_analysis(Base_Folder, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win
     coincidences = _aggregated_coincidences(Base_Folder)
 
     dt_index = 0
-    sync_time_ch0 = 1
-    sync_time_ch1 = 2
-    sync_num_ch0 = 3
+    column_st_0 = 1
+    column_st_1 = 2
+    column_sync_num_ch0 = 3
 
     # Defines the difference in arrival time between the coincident photons
-    dts = coincidences[:,dt_index] + abs(ch0_start - ch1_start)
+    dts = coincidences[:,dt_index] + (ch1_start - ch0_start)
     dts = dts * 10**(-3)
 
     if Verbose:
@@ -43,8 +43,7 @@ def TPQI_analysis(Base_Folder, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win
 
     #Filters the coincident photons by selecting only the photons emitted by the NV center
     is_sync_time_filter = filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
-                                                 dif_win1_win2, noof_pulses, dt_index, sync_time_ch0, sync_time_ch1,
-                                                        sync_num_ch0)
+                                                 dif_win1_win2, noof_pulses, column_st_0, column_st_1)
     filtered_dts = dts[is_sync_time_filter]
 
     if Verbose:

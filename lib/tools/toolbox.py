@@ -7,6 +7,7 @@ import h5py
 import platform
 import os
 import time
+from datetime import datetime
 
 try:
     import qt
@@ -437,6 +438,42 @@ def clear_analysis_data(fp, ANALYSISGRP = 'analysis'):
     else:
         f.close()
 
+def clear_raw_data(fp, name):
+    """
+    Deletes the raw data in the main folder. 
+    """
+
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    if name in f.keys():
+        try:
+            del f[name]
+            f.flush()
+            f.close()
+        except:
+            f.close()
+            raise
+    else:
+        f.close()
+
+def set_raw_data(fp, name, data):
+    """
+    Save the data in the main folder. Does not save any attributes
+    """
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    f[name] = data
+    f.flush()
+    f.close()        
+    
 def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
@@ -516,7 +553,6 @@ def get_num_blocks(pqf):
     elif type(pqf) == str:
 
         f = h5py.File(pqf, 'r')
-
         for k in f.keys():
             if 'PQ_channel-' in k:
                 Block_name =  str(k)
@@ -531,3 +567,43 @@ def get_num_blocks(pqf):
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
+
+def get_num_blocks_2(pqf):
+    """
+    Returns the number of blocks in a file (the number of the time a PQ_channel-xx block is created)
+    It return the number xx
+    """
+
+    list_of_block_numbers = []
+
+    if type(pqf) == h5py._hl.files.File: 
+
+        keys = pqf.keys()
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf, 'r')
+        keys = f.keys()
+        f.close()
+
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    for i in range(1000):
+        num_min = (i) * 10
+        min_pq = 'PQ_channel-' + str(num_min)
+        num_max = (i+1) * 10
+        max_pq = 'PQ_channel-' + str(num_max)
+        if (min_pq in keys) and not (max_pq in keys):
+            for j in range(10):
+                num_min_new = num_min + j
+                min_pq_new = 'PQ_channel-' + str(num_min_new)
+                num_max_new = num_min + j + 1
+                max_pq_new = 'PQ_channel-' + str(num_max_new)
+                if (min_pq_new in keys) and not (max_pq_new in keys):
+                    return num_min_new
+                else:
+                    continue
+        else:
+            continue
