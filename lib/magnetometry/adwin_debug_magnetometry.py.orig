@@ -32,7 +32,7 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 	def f_pr (self, value):
 
-		if (np.imag(value)==0):
+		if (np.real(value)==0):
 			return '{0:.5f}'.format(value)
 		else:
 			if (float(np.imag(value))>0):
@@ -320,6 +320,8 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
 		self.p_k [self.points] = 1/(2.*np.pi)
 
+		pi_tn = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+		pi_2tn = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
 		t = np.zeros(self.N+1)
 		phase_python = np.zeros(self.N+1)
 		phase_adwin = np.zeros(self.N+1)
@@ -327,6 +329,8 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		p_real = np.zeros (range_k_sweep+1)
 		p_imag = np.zeros (range_k_sweep+1)
 		p_real [1] = 1/(2*np.pi)
+		p_2tn_adwin = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
+		p_2tn_python = np.zeros(self.N+1)+1j*np.zeros(self.N+1)
 
 		diff = None
 		for n in np.arange(self.N)+1:
@@ -334,9 +338,42 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 			t[n] = int(2**(self.N-n))
 			k_opt = -2*t[n]
 			phase_python[n] = 0.5*np.angle (self.p_k[k_opt+self.points])
-			phase_adwin[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
+			phase_adwin[n] = 0.5*np.angle(-1j*p_imag[int(1+2*t[n])]+p_real[int(1+2*t[n])])
 
-			for m in np.arange(self.G):
+			'''
+			if np.abs(self.p_k[k_opt+self.points])<1e-7:
+				phase_python[n] = 0
+			
+			if np.abs(-1j*p_imag[int(1+2*t[n])]+p_real[int(1+2*t[n])])<1e-7:
+				phase_adwin[n] = 0
+			'''
+			if do_print:
+				print ' #### n = ', n
+				print 'Optimal phase els: pyth = ', k_opt+self.points, '(',k_opt,')) - adwin = ', int(1+2*t[n])
+				print 'Values : ', self.p_k[k_opt+self.points], ' --- ', -1j*p_imag[int(1+2*t[n])]+p_real[int(1+2*t[n])]
+				print 'Phases : ', phase_python[n], ' --- ', phase_adwin[n]
+
+			p_2tn_adwin[n] = p_real[1+2*t[n]]+1j*p_imag[1+2*t[n]]
+			p_2tn_python[n] = self.p_k[2*t[n]+self.points]
+
+
+			#print '--- p[2*tn]:  adwin = ', self.f_pr(p_2tn_adwin[n]), '    python = ', self.f_pr(p_2tn_python[n])
+
+
+			nr_ones = outcomes[n-1]
+			nr_zeros = self.M-nr_ones
+
+			max_k = int(t[n])*(self.M**2+10)
+			if (max_k>range_k_sweep):
+				nr_k  = int(range_k_sweep)/int(t[n])
+				max_k = int(t[n]+1)*nr_k
+			k_space = np.arange(0, max_k, int(t[n]))
+			print 'max_k: ', max_k, '     --- range_k_sweep: ', range_k_sweep
+
+
+			#print 'k_space: ', k_space
+
+			for m in np.arange(nr_ones):
 				self.bayesian_update (m_n = 1, phase_n = phase_python[n], t_n = int(t[n]))
 
 				p0_real = np.copy (p_real)
@@ -578,8 +615,6 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		print 'Phase simulation: ', phase_simulation[1:]*180/np.pi
 
 
-
-
 	def adwin_optimal_looping (self, use_fid_bayesian_update = True, ext_outcomes = []):
 		
 		#optimal-looping code (designed for adwin)
@@ -589,7 +624,6 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 		self.msmnt_results = np.zeros((self.reps,self.N))
 
 		self.reset_rep_counter()
-		self.M =self.G
 		range_k_sweep = 2**self.N*(self.M/2+1)#2**(self.N+4)+1
 		#print 'range_k_sweep: ', range_k_sweep,  ' -- ', 2**(self.N+4)+1
 		print 'range_k_sweep: ', range_k_sweep
@@ -679,26 +713,20 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 
 
-	def adwin_optimal_looping_storage (self, ext_outcomes = [], do_plot = False, debug = False):
+	def adwin_optimal_looping_storage (self, ext_outcomes = [], do_plot = False):
 			
 		#adwin-designed code with optimized looping and optimized 
 		#storage of relevant coefficients {p[k]}
-		print '--------------------------------------------------------------'
-		print 'Simulating Cappellaro protocol (optimal looping/storage ADwin)'
-		print '--------------------------------------------------------------'
-		print '- N = '+str(self.N)+ ', G = '+str(self.G)+', F = '+str(self.F)
 
 		self.msmnt_phases = np.zeros((self.reps,self.N))
 		self.msmnt_times = np.zeros(self.N)
 		self.msmnt_results = np.zeros((self.reps,self.N))
 
 		self.reset_rep_counter()
-		range_k_sweep = self.G+self.F*self.N+30
+		range_k_sweep = self.G+self.F*self.N+10
+		print 'range_k_sweep: ', range_k_sweep
 
 		if (ext_outcomes != []):
-			self.reps = 1
-
-		if debug:
 			self.reps = 1
 
 		for r in np.arange(self.reps):
@@ -711,11 +739,6 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 			p0_real = np.copy (p_real)
 			p0_imag = np.copy (p_imag)
 
-			if debug:
-				p_summary = np.zeros((self.N*self.G, range_k_sweep))+1j*np.zeros((self.N, range_k_sweep))
-			else:
-				p_summary = None
-
 			t = np.zeros(self.N+1)
 			outcomes = np.zeros(self.N+1)
 			phase_adwin = np.zeros(self.N+1)
@@ -726,7 +749,8 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 				phase_adwin[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
 				
 				M = self.G+self.F*(self.N-n)
-				max_k = M+25
+				max_k = M+3
+				k_space = np.arange(max_k)
 				B = 0.5*(self.fid1-self.fid0)*np.exp(-(t[n]*self.t0/self.T2)**2)
 
 				if do_plot:
@@ -752,9 +776,9 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 					outcomes[n] = outcomes[n] + m_res
 					cn = m_res*np.pi + phase_adwin[n]
 
-					if (int(m_res) == 1):
+					if (int(m_res) == 0):
 						A = 1-0.5*(self.fid0+self.fid1)
-					elif (int(m_res) == 0):
+					elif (int(m_res) == 1):
 						A = 0.5*(self.fid0+self.fid1)
 
 					#update rule:
@@ -793,111 +817,10 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 
 
-	def compare_algorithms_optimal_looping_storage (self, do_plot=False, ext_outcomes = []):
+<<<<<<< HEAD
+
 		
-		#compares {p_k} distributions simulated by full-scale sim_capellaro_variableM
-		# with the ones calculatd in python ("optimal" looping and storage)
-
-		range_k_sweep = self.G+self.F*self.N+10
-		print '## range_k_sweep: ', range_k_sweep
-		p_real = np.zeros (range_k_sweep)
-		p_imag = np.zeros (range_k_sweep)
-		p_real [1] = 1/(2*np.pi)
-		p0_real = np.copy (p_real)
-		p0_imag = np.copy (p_imag)
-
-		t = np.zeros(self.N+1)
-		outcomes = np.zeros(self.N+1)
-		phase_adwin = np.zeros(self.N+1)
-		phase_simulation = np.zeros(self.N+1)
-		outcomes = np.zeros(self.N+1)
-
-		self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
-		self.p_k [self.points] = 1/(2.*np.pi)
-
-		for n in np.arange(self.N)+1:
-
-			t[n] = int(2**(self.N-n))
-			phase_adwin[n] = 0.5*np.angle(-1j*p_imag[3]+p_real[3])
-			ttt = -2**(self.N-n+1)
-			phase_simulation[n] = 0.5*np.angle (self.p_k[ttt+self.points])
-			m_total = 0
-			
-			M = self.G+self.F*(self.N-n)
-			max_k = M+3
-			B = 0.5*(self.fid1-self.fid0)*np.exp(-(t[n]*self.t0/self.T2)**2)
-
-			for m in np.arange(M)+1:				
-
-				if (ext_outcomes == []):
-					m_res = self.ramsey (t = t[n]*self.t0, theta = phase_adwin[n])
-				else:
-					ext_outcomes[n-1] = ext_outcomes[n-1] - 1
-					if (ext_outcomes[n-1]<0):
-						m_res = 0
-					else:
-						m_res = 1
-				outcomes[n] = outcomes[n] + m_res
-				cn = m_res*np.pi + phase_adwin[n]
-				self.bayesian_update (m_n = m_res, phase_n = phase_simulation[n], t_n = int(t[n]))
-
-				if (int(m_res) == 0):
-					A = 1-0.5*(self.fid0+self.fid1)
-				elif (int(m_res) == 1):
-					A = 0.5*(self.fid0+self.fid1)
-
-				#update rule:
-				p_real [1] = A*p0_real[1] - B*(np.cos(cn)*p0_real [2] - np.sin(cn)*p0_imag[2]) 
-				p_imag [1] = A*p0_imag[1]
-				for k in np.arange(max_k)+1:
-					p_real [1+k] = A*p0_real[1+k] - 0.5*B*np.cos(cn)*(p0_real [k] + p0_real [k+2]) - 0.5*B*np.sin(cn)*(p0_imag [k] - p0_imag [k+2])
-					p_imag [1+k] = A*p0_imag[1+k] - 0.5*B*np.cos(cn)*(p0_imag [k] + p0_imag [k+2]) + 0.5*B*np.sin(cn)*(p0_real [k] - p0_real [k+2])
-
-				norm = p_real[1]*2*np.pi
-				p_real = p_real/norm
-				p_imag = p_imag/norm
-
-				p0_real = np.copy (p_real)
-				p0_imag = np.copy (p_imag)
-
-				if do_plot:
-					#diff = (((p_real[1:2**self.N+2]-exp.real_pk_adwin[:2**self.N]))**2+((p_imag[1:2**self.N+2]-exp.imag_pk_adwin[:2**self.N]))**2)**0.5
-					#rel_diff = 100*diff/((p_real[1:2**self.N+2]**2+p_imag[1:2**self.N+2]**2)**0.5)
-					#avg_diff = np.sum(diff)/len(diff)
-					plt.figure()
-					plt.plot (np.arange (range_k_sweep-1)*t[n],p_real[1:], 'or')
-					plt.plot (np.real(self.p_k[self.points:]), 'r')
-					plt.plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], 'ob')
-					plt.plot (np.imag(self.p_k[self.points:]), 'b')
-					plt.title('n = '+str(n)+', m = '+str(m))
-					plt.xlim([0, (range_k_sweep-2)*t[n]])
-					plt.show()
-
-			#Strech k_space operation!
-
-			if do_plot:
-				plt.figure()
-				plt.plot (np.arange (range_k_sweep-1)*t[n],p_real[1:], 'r')
-				plt.plot (np.arange (range_k_sweep-1)*t[n], p_imag[1:], 'b')
-				plt.title('k-axis rescaling')
-				plt.xlim([0, (range_k_sweep-2)*t[n]])
-
-			p_real = np.zeros (range_k_sweep)
-			p_imag = np.zeros (range_k_sweep)
-
-			for k in np.arange(range_k_sweep/2):
-				p_real[1+2*k] = p0_real[1+k]
-				p_imag[1+2*k] = p0_imag[1+k]
-
-			if do_plot:
-				plt.plot (np.arange (range_k_sweep-1)*(t[n]/2),p_real[1:], 'or')
-				plt.plot (np.arange (range_k_sweep-1)*(t[n]/2), p_imag[1:], 'ob')
-				plt.show()
-
-			p0_real = np.copy (p_real)
-			p0_imag = np.copy (p_imag)
-
-
+=======
 	def compare_adwin_python_optimal_looping_storage (self, do_plot=False, newer_than = None, ext_outcomes = []):
 		
 		#compares {p_k} distributions obtaind by the adwin with 
@@ -1045,6 +968,7 @@ class RamseySequence_Adwin (adptv_mgnt.RamseySequence_Simulation):
 
 
 	
+>>>>>>> e1d74dbc3c6181d681a6a5c611773b57b7538bde
 	def adwin_only_positive (self, debug = False, exec_speed = False):
 
 		#use only {p[k], k>=0}, since p[-k]=p*[k] for real probability distribution

@@ -40,37 +40,65 @@ def simulate_cappellaro ():
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority()
 	s.sim_cappellaro_variable_M()
-def simulate_cappellaro_debug_adwin ():
-	maj_reps = 1
-	M = 10
+
+
+
+def simulate_cappellaro_debug_adwin (verbose = False):
+	
+	F = 0
+	G = 10
+	N = 5
+	fid0 = 0.87
+	fid1 = 0.02
+	T2 = 960000e-6
+	reps = 100
 
 	set_magnetic_field =25/(20e-9*2**8)
-	s = magnetometry.RamseySequence_Adwin (N_msmnts = 8, reps=100, tau0=20e-9)
-
-	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
-	s.T2 = 96e-6
-	s.fid0 = 0.9
-	s.fid1 = 0.02
-	s.renorm_ssro = True
-	s.maj_reps = maj_reps
-	s.maj_thr = 0
-
-	#s.table_based_simulation()
-	#s.sim_cappellaro_majority_with_plots(N_sim = [1,2, 3,4])
-	s.adwin_ultrafast_M(nr_coeff=51)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = N, reps=reps, tau0=20e-9)
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, F=F, G=G, K=N-1)
+	s.T2 = T2
+	s.fid0 = fid0
+	s.fid1 = fid1
+	s.sim_cappellaro_variable_M()
 	s.convert_to_dict()
-	s.print_results()
-	#s.print_table_positions()
-		
-	beta, p, err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
-	#plt.plot (beta, p)
-	#plt.show()
+	if verbose:
+		print '---------------- Python Simulations Results ---------------------------'
+		s.print_results()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=False)
 
-	#s.sim_cappellaro_majority()
-	#s.convert_to_dict()
-	s.print_results()
-	#beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
+	a.setup_simulation (magnetic_field_hz = set_magnetic_field, F=F, G=G, K=N-1)
+	a.T2 = T2
+	a.fid0 = fid0
+	a.fid1 = fid1
+	a.adwin_optimal_looping_storage()
+	a.convert_to_dict()
+	if verbose:
+		print '--------------- ADwin Simulations Results ------------------------------'
+		a.print_results()
+	beta_ad, p_ad, av_exp_ad,H_ad, m_ad, s_ad = a.mean_square_error(set_value=set_magnetic_field, do_plot=False)
 
+
+	plt.figure(figsize=(8,7))
+	plt.plot (beta_py*1e-6, p_py, 'b', label='python')
+	plt.plot (beta_ad*1e-6, p_ad, 'r', label='adwin')
+	plt.title ('$V_H$: python = '+a.f_pr(H_py)+' adwin = '+a.f_pr(H_ad), fontsize = 12)
+	plt.yscale ('log')
+	plt.xlabel ('magnetic field [MHz]')
+	plt.legend()
+	plt.show()
+
+def compare_algorithms ():
+	N = 4
+	F = 0
+	G = 3
+	set_magnetic_field =5/(20e-9*2**N)
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
+	a.setup_simulation (magnetic_field_hz = set_magnetic_field, F=F, G=G, K=N-1)
+	a.T2 = 100
+	a.fid0 = 1
+	a.fid1 = 0
+	a.compare_algorithms_optimal_looping_storage (do_plot=True)
 
 
 def simulate_nonadaptive ():
@@ -97,7 +125,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,rep
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=5001)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -272,19 +300,21 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 	return avg_phase_error
 
 
-def simulate_adwin (N,M, do_plot=False, reps=1):
+def simulate_adwin (N,F,G, do_plot=False, reps=1, ext_outcomes = []):
 	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
 	field = 10/(a.t0*2**N)
 	a.renorm_ssro = False
 	a.verbose = False
 	a.maj_reps = 1
 	a.maj_thr = 0	
-	a.setup_simulation (magnetic_field_hz = field, F=0,G=M,K=N)
+	a.setup_simulation (magnetic_field_hz = field, F=F, G=G,K=N)
 
 	a.T2 = 96e-6
-	a.fid0 = 0.85
-	a.fid1 = 0.02
-	a.adwin_optimal_looping_storage(do_plot=do_plot)
+	a.fid0 = 1
+	a.fid1 = 0
+	a.G = G
+	a.F = F
+	a.compare_adwin_python_optimal_looping_storage(do_plot=do_plot, ext_outcomes = ext_outcomes)
 
 	a.convert_to_dict()
 	a.print_results()
@@ -327,13 +357,17 @@ plt.ylabel ('avg phase error [deg]')
 plt.xlabel('M')
 plt.legend()
 plt.show()
+
 '''
 
-simulate_adwin(N=5, M= 20, do_plot=False, reps=100)
+#simulate_adwin(N=5, G=5, F=0,do_plot=True, reps=1, ext_outcomes = np.array([5,0,5,5,5]))
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
-#simulate_cappellaro()
-#fid0=1.-0.112
-#fid1=0.007
-#reps=21
-#simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+#simulate_cappellaro_debug_adwin(verbose=True)
+#compare_algorithms()
+
+fid0=1.-0.112
+fid1=0.007
+reps=3
+simulate_sweep_field_variable_M (G=5,K=3,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
