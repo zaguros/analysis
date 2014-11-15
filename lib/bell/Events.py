@@ -332,8 +332,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise 
-    print "After opening", datetime.now()
-    
+   
 
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,29), dtype = np.uint64)
@@ -350,9 +349,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     is_channel = channel_RO == marker_chan
     is_mrkr = is_special & is_channel
     
-    print "before determining length and applying filter", datetime.now()
     num_mrkr = len(channel_RO[is_mrkr])
-    print "after determining length and applying filter", datetime.now()
 
     # Delete large arrays
     del is_special
