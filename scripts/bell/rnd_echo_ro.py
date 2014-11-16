@@ -85,6 +85,8 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10700, **kw):
     ma_2_p0=(float(noof_marker_2_ro_ms0_events)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))
     ma_2_u_p0 = np.sqrt(ma_2_p0*(1-ma_2_p0)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))        
     
+    print 'Uncorrected: RND 0: F0 {:.2f}%, RND 1: F0 {:.2f}%'.format(ma_1_p0*100, ma_2_p0*100)
+
     p0, u_p0 = roc.num_eval(np.array([ma_1_p0,ma_2_p0]),np.array([ma_1_u_p0,ma_2_u_p0]))
     
     ax.bar( range(2),p0, 
@@ -106,5 +108,5 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10700, **kw):
         a.save_fig_incremental_filename(fig,'random_mw_correlation_corrected')
 
 if __name__ == '__main__':
-    folder= toolbox.latest_data('Bell')
+    folder= toolbox.latest_data('Bell_RND')
     analyse_rnd_ro_bell(folder)
