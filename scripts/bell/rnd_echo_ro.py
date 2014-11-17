@@ -15,7 +15,7 @@ from analysis.lib.tools import plot
 #timestamp='20140521172533'
 #folder=tb.data_from_time(timestamp)
 
-def analyse_rnd_ro_bell(folder, save = True,RO_start=10700, **kw):
+def analyse_rnd_ro_bell(folder, save = True,RO_start=10730, **kw):
     a = pqsequence.PQSequenceAnalysis(folder)
     a.reps=a.g.attrs['repetitions']*a.g['joint_params'].attrs['LDE_attempts_before_CR']
     
@@ -23,7 +23,7 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10700, **kw):
     
     RO_length = a.g['joint_params'].attrs['LDE_RO_duration']*1e9
     
-    a.plot_histogram(0,start=10600, length=150, hist_binsize=1, save=False, log_plot=False)
+    a.plot_histogram(0,start=0, length=3000, hist_binsize=1, save=False, log_plot=False)
     ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('FastSSRO'))
     
 
