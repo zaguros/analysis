@@ -44,21 +44,15 @@ class BootStrap ():
 	def run_bootstrap_holevo (self):
 
 		if (self._N > 0):
-			self.bootstrap_y = np.zeros((self.n_boots, self._N))
+			self.bootstrap_y = np.zeros((self.n_boots, self._N)) + 1j*np.zeros((self.n_boots, self._N))
 			self.yB = np.zeros(self.n_boots)
 			self.hB = np.zeros(self.n_boots)
 
 			for alpha in np.arange(self.n_boots):
 				ind = np.random.randint (0, self._N, self._N)
 				self.bootstrap_y [alpha, :] = self.y[ind]
-				#self.yB [alpha] = np.mean (self.y[ind])
 				self.hB [alpha] = np.abs(np.mean(self.y[ind]))**(-2)-1
 
-			plt.plot (self.hB)
-			plt.ylabel ('holevo var bootstrap')
-			plt.show()
-
-			#self.mean_bootstrap = np.mean (self.yB)
 			self.meanH_bootstrap = np.mean(self.hB)
 			self.errH_bootstrap = np.std (self.hB)
 
