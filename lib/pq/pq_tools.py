@@ -530,15 +530,15 @@ def filter_marker_time_lim(pqf, chan, sync_time_lim, index = 1, VERBOSE = True):
 
     return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
 
-def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max):
+def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = False):
     """
     Return two filters whether events are first window photons or second window
     photons with markers.
     """
     
     is_photon_first_window, is_photon_second_window = get_photons_in_sync_windows(pqf,
-                            first_win_min, first_win_max, second_win_min, second_win_max)
-    is_events_with_marker = filter_marker(pqf,chan)
+                            first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = VERBOSE)
+    is_events_with_marker = filter_marker(pqf,chan, VERBOSE = VERBOSE)
     
     is_photon_first_window_with_markers = is_photon_first_window & \
                                             is_events_with_marker
@@ -546,8 +546,6 @@ def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win
                                             is_events_with_marker
 
     return is_photon_first_window_with_markers, is_photon_second_window_with_markers
-
-
 
 
 ##############################################################################

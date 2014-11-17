@@ -41,11 +41,24 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
     if (len(Total_SSRO_events_LT3[:,2]) == len(unique_sync_num_with_markers)) & \
                                 (len(Total_SSRO_events_LT4[:,2]) == len(unique_sync_num_with_markers)):
         print 
-        print "Filepath:", fp_BS
         print "The number of markers matches and is:", len(unique_sync_num_with_markers)
         print "======================================================================="
         print
 
+    elif '215201_Bell_BS_full_BellLFBT_day2_Run8' in fp_BS:
+        sync_times_with_marker = sync_times[pq_tools.filter_marker(fp_BS,BS_marker_chan, VERBOSE = VERBOSE)]
+        last_sync_time = sync_times_with_marker[len(sync_times_with_marker)-1]
+        print 
+        print 
+        print "Filepath:", fp_BS
+        print "The number of markers does not match!!!!"
+        print "The number of BS markers is:", len(unique_sync_num_with_markers)
+        print "We have lookend into this in the data and there is a corrupt marker in the BS data which has a sync time of", last_sync_time
+        print "The number of LT3 markers is:", len(Total_SSRO_events_LT3[:,2])
+        print "The number of LT4 markers is:", len(Total_SSRO_events_LT4[:,2])
+        print "======================================================================="
+        print
+        print
     else:
         print 
         print 
@@ -64,7 +77,7 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
     # from the Filter file
     is_photon_1st_window_with_markers, is_photon_2nd_window_with_markers =\
                                     pq_tools.get_photons_with_markers(fp_BS, BS_marker_chan,
-                                        first_win_min, first_win_max, second_win_min, second_win_max)
+                                        first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = VERBOSE)
 
     # Retrieves sync numbers and sync times for photons both in the first
     # and 2nd window
@@ -147,11 +160,6 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
         Sync Nymber BS | Sync Time Photon 1 BS | Sync Time photon 2 BS | Photon 1 Channel BS | 
         Photon 2 Channel BS | psiminus | absolute time BS
         """
-        
-        columns = "Sync_Number, Sync_Time_photon_1, Sync_Time_photon_2, Channel_photon_1,\
-        Channel_photon_2, psiminus, abs_time"
-
-        _a = {'Columns': columns}
                 
         _event = np.array([s, 
                         stimes[0],
@@ -168,6 +176,17 @@ def get_Bell_events(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, first_win_min,
         print 'Found {} valid entanglement events.'.format(int(len(entanglement_events)))
         print '===================================='
         print
+        if '215201_Bell_BS_full_BellLFBT_day2_Run8' in fp_BS:
+            print
+            print 'Found {} valid entanglement events.'.format(int(len(entanglement_events)))
+            print 'This does not correspond with the number of markers because there is one corrupt marker'
+            print '===================================='
+            print
+
+    columns = "Sync_Number, Sync_Time_photon_1, Sync_Time_photon_2, Channel_photon_1,\
+        Channel_photon_2, psiminus, abs_time"
+
+    _a = {'Columns': columns}
 
     BS_LT3_data = np.hstack((entanglement_events, Total_SSRO_events_LT3))
     All_combined_data = np.hstack((BS_LT3_data,Total_SSRO_events_LT4))
@@ -879,19 +898,16 @@ def get_Bell_events_day2_run8_20111110(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, firs
     abs_times = f['/PQ_time-1'].value 
     f.close()
 
-    sync_num_with_markers = sync_numbers[pq_tools.filter_marker(fp_BS,BS_marker_chan)]
-    sync_times_with_marker = sync_times[pq_tools.filter_marker(fp_BS,BS_marker_chan)]
+    sync_num_with_markers = sync_numbers[pq_tools.filter_marker(fp_BS,BS_marker_chan, VERBOSE = VERBOSE)]
+    sync_times_with_marker = sync_times[pq_tools.filter_marker(fp_BS,BS_marker_chan, VERBOSE = VERBOSE)]
     last_sync_time = sync_times_with_marker[len(sync_times_with_marker)-1]
     unique_sync_num_with_markers = np.unique(sync_num_with_markers)
 
     if (len(Total_SSRO_events_LT3[:,2]) == len(unique_sync_num_with_markers)) & \
                                 (len(Total_SSRO_events_LT4[:,2]) == len(unique_sync_num_with_markers)):
         print 
-        print 
-        print "Filepath:", fp_BS
         print "The number of markers matches and is:", len(unique_sync_num_with_markers)
         print "======================================================================="
-        print
         print
 
     else:
@@ -912,7 +928,7 @@ def get_Bell_events_day2_run8_20111110(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, firs
     # from the Filter file
     is_photon_1st_window_with_markers, is_photon_2nd_window_with_markers =\
                                     pq_tools.get_photons_with_markers(fp_BS, BS_marker_chan,
-                                        first_win_min, first_win_max, second_win_min, second_win_max)
+                                        first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = VERBOSE)
 
     # Retrieves sync numbers and sync times for photons both in the first
     # and 2nd window
@@ -933,6 +949,8 @@ def get_Bell_events_day2_run8_20111110(fp_BS,fp_LT3,fp_LT4, BS_marker_chan, firs
     
     #Initializes the final array of entanglement events
     entanglement_events = np.empty((0,7), np.uint64)
+
+    print unique_sync_num_with_markers
 
     # Get all real entanglement events, loops over sync numbers
     for i,s in enumerate(unique_sync_num_with_markers):
