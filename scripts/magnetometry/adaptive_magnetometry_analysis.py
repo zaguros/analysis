@@ -104,22 +104,51 @@ def analyze_single_instance(label='adptv_estimation_det', compare_to_simulations
 	f = toolbox.latest_data(contains=label)
 	s = magnetometry.RamseySequence_Exp (folder = f)
 	s.set_exp_pars (T2=96e-6, fid0=0.87, fid1=1-.975)
-	print f
+	#print f
 	s.load_exp_data()
 	s.convert_to_dict()
-	s.print_results()
+	#s.print_results()
 	s.CR_after_postselection()
 	B_dict, index_dict = s.B_vs_index()
-
+	s.verbose=False
 	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
 	if compare_to_simulations:
-		beta_exp, p_exp, err_exp, mB, sB=s.compare_to_simulations(show_plot = False, do_save=True,plot_log=True)
+		beta_exp, p_exp, ave_exp,err_exp, mB, sB=s.compare_to_simulations(verbose=False,show_plot = True, do_save=True,plot_log=True)
 	else:
-		beta_exp, p_exp, err_exp, mB, sB=s.mean_square_error(show_plot = False, save_plot=True, do_plot=False)
-
+		beta_exp, p_exp, ave_exp,err_exp, mB, sB=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
+	save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB)
 	#s.analyse_ramsey()
-	return beta_exp, p_exp, err_exp, mB, sB
+	return beta_exp, p_exp, ave_exp, err_exp, mB, sB
 
+def save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB):
+	fName = 'analysis'
+
+	if not os.path.exists(os.path.join(s.folder, fName+'.hdf5')):
+		mode = 'w'
+	else:
+		mode = 'r+'
+		print 'Output file already exists!'
+	print os.path.join(s.folder, fName+'.hdf5')	
+	f = h5py.File(os.path.join(s.folder, fName+'.hdf5'), mode)
+	f.attrs ['N'] = s.N
+	f.attrs ['K'] = s.K
+	f.attrs ['F'] = s.F
+	f.attrs ['G'] = s.G
+	f.attrs ['tau0']= s.t0
+
+	f.attrs ['fid0']=s.fid0
+	f.attrs ['fid1']=s.fid1
+	f.attrs ['T2']=s.T2
+
+	f.attrs ['beta_exp']=beta_exp
+	f.attrs ['p_exp']=p_exp
+	f.attrs ['ave_exp']=ave_exp
+	f.attrs ['err_exp']=err_exp
+	f.attrs ['mB']=mB
+	f.attrs ['sB'] = sB
+
+	f.close()
+	print 'Data saved!'
 '''
 def temporal_evolution_B(label, nr):
 
@@ -135,6 +164,16 @@ def temporal_evolution_B(label, nr):
 		s.load_exp_data()
 '''
 
+def single_repetition_evolution(label='adptv_estimation_det'):
+	f = toolbox.latest_data(contains=label)
+	s = magnetometry.RamseySequence_Exp (folder = f)
+	s.set_exp_pars (T2=96e-6, fid0=0.87, fid1=1-.975)
+	#print f
+	s.load_exp_data()
+	s.convert_to_dict()
+	s.CR_after_postselection()
+	#beta, prob = s.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
+	return s
 def analyze_sweep_field():
 
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=7, tau0=20e-9)
@@ -246,5 +285,5 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 
 #check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=True)
 
-analyze_single_instance(label='153659')
+#analyze_single_instance(label='145947')
 #check_adwin_realtime_plots (N=4, M=5, outcomes = [5,0,2,1,5,5,0,2], newer_than='145500', do_plot=True)

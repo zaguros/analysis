@@ -113,13 +113,13 @@ def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,rep
 	mgnt_exp.save()
 	#except:
 	#	print 'Simulation failed!!'
-def analyze_saved_simulations (timestamp,G=0,K=0,F=0):
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+def analyze_saved_simulations (timestamp):
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
 	mgnt_exp.load_analysis (timestamp=timestamp)
 	mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=True)
-	mgnt_exp.G=G
-	mgnt_exp.F=F
-	mgnt_exp.K=K
+	#mgnt_exp.G=G
+	#mgnt_exp.F=F
+	#mgnt_exp.K=K
 	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
 	return mgnt_exp
 #analyze_saved_simulations (timestamp='20141017_003446')
@@ -337,9 +337,13 @@ plt.show()
 #simulate_cappellaro()
 fid0=1.-0.112
 fid1=0.007
+
+fid0=1.-0.1604
+fid1=0.05
 reps=101
+
 #simulate_sweep_field_variable_M (G=5,K=6,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
-#simulate_sweep_field_variable_M (G=2,K=9,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+#simulate_sweep_field_variable_M (G=2,K=14,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
 #simulate_sweep_field_variable_M (G=5,K=13,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
 #
-mgnt_G5F7_N14_sim=analyze_saved_simulations('20141112_182801',G=5,F=7,K=13)
+#mgnt_G2F1_N14_sim_lower_RO_fid=analyze_saved_simulations('20141117_160839')
