@@ -17,11 +17,13 @@ from analysis.lib.tools import plot
 from analysis.lib.tools import compare_functions as compare
 from analysis.lib.m2 import m2
 from matplotlib import rc, cm
-
+from analysis.lib.math import statistics as stat
+from compiler.ast import flatten
 
 reload(sequence)
 reload(compare)
 reload(toolbox)
+reload (stat)
 
 	
 class RamseySequence():
@@ -51,6 +53,7 @@ class RamseySequence():
 		self.verbose = True
 		self.use_ROfid_in_update = False
 		self.renorm_ssro = False
+		self.phase_update = False
 
 		#parameters for variable-M protocols
 		self.G = 0
@@ -75,9 +78,17 @@ class RamseySequence():
 		
 	def plot_p_k (self):	
 		x = np.arange(self.discr_steps)-self.points
-		plt.plot (x, np.real (self.p_k))
-		plt.plot (x, np.imag (self.p_k))
-		plt.xlabel ('k')
+		plt.figure(figsize=(8,4))
+		plt.plot (x-0.05, 2*np.pi*np.real(self.p_k), 'ok', markersize=6, markeredgecolor='k')
+		plt.plot (x+0.05, 2*np.pi*np.imag(self.p_k), 'or', markersize=6, markeredgecolor='r')
+		for i in np.arange (len(self.p_k)):
+			plt.vlines (x=x[i]-0.05, ymin = min(0, 2*np.pi*np.real (self.p_k[i])), ymax =  max(0, 2*np.pi*np.real (self.p_k[i])), linewidth =1, color = 'k')
+			plt.vlines (x=x[i]+0.05, ymin = min(0, 2*np.pi*np.imag (self.p_k[i])), ymax = max(0, 2*np.pi*np.imag (self.p_k[i])), linewidth =1, color = 'r')
+		plt.xlabel ('k', fontsize = 15)
+		rc('xtick', labelsize=15) 
+		rc('ytick', labelsize=15)
+		plt.xlim([-20,20])
+		plt.ylim([-1,1])
 		plt.show()
 
 	def bayesian_update(self, m_n, phase_n, t_n,repetition = None):
@@ -93,6 +104,7 @@ class RamseySequence():
 		p2 = ((-1)**m_n)*(self.fid0-self.fid1)*0.25*(np.exp(-1j*(phase_n))*np.roll(p_old, shift = +t_n)) 
 		p = p0+p1+p2
 		p = (p/np.sum(np.abs(p)**2)**0.5)
+		p = p/(2*np.pi*np.real(p[self.points]))
 		self.p_k = np.copy (p)
 			
 	def inc_rep (self):
@@ -148,33 +160,47 @@ class RamseySequence():
 					self.table_el_dict [ind] = self.table_elements[ind]
 				ind = ind+1
 
-	def analysis (self, corrected=True, N_max = None, repetition = None):
-		#assumes in each adptv step, we store the number of ones, out of M msmnts (M>1, potentially)
-		if (N_max==None):
-			N_max = self.N
+	def plot_updates (self, repetition = None):
 								
 		if (repetition == None):
-			repetition = self.curr_rep
+			repetition = 0
 			
 		prob = np.ones(self.n_points)
 		beta = np.linspace (-self.B_max, self.B_max, self.n_points)
+		prob = prob/np.sum(prob)
 
-		print 'Analysis msmnt results:'
-		print self.msmnt_results[repetition, :]
+		plt.plot (beta*1e-6, prob, 'b', linewidth = 3)
+		plt.ylim([0,max(prob)+0.01])
+		plt.xlim([-25, 25])
+		plt.show()
 
-		for n in np.arange(N_max) +(self.N-N_max):
+		for n in np.arange(self.N):
 			q = 2*np.pi*beta*self.msmnt_times[n]*self.t0+self.msmnt_phases[repetition, n]
 			dec = np.exp(-(self.msmnt_times[n]*self.t0/self.T2)**2)
 			nr_ones = self.msmnt_results[repetition, n]
 			MK=self.G+self.F*n
 			nr_zeros = MK-nr_ones
+			rams_1 = ((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.
+			rams_0 = (1-((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.)
+
 			for j in np.arange(nr_ones):
-					prob = prob*((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.
+				prob = prob*rams_1
 			for j in np.arange(nr_zeros):
-					prob = prob*(1-((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.)
-			
-		prob = prob/np.sum(np.abs(prob))
+				prob=prob*rams_0
+
+			print 'result: ', nr_ones, ' --- phase: ', self.msmnt_phases[repetition, n]*180/np.pi
+			prob = prob/np.sum(np.abs(prob))
+			plt.plot (beta*1e-6, prob, 'b', linewidth = 4)
+			plt.plot (beta*1e-6, rams_0*max(prob), '--r')
+			plt.plot (beta*1e-6, rams_1*max(prob), '--k')
+
+			plt.ylim([0,max(prob)+0.01])
+			plt.xlim([-25, 25])
+			plt.show()
+
 		return beta, prob
+
+
 
 
 	def analysis_dict (self, phase=[], msmnt_results=[], times=[]):
@@ -202,6 +228,30 @@ class RamseySequence():
 		prob = prob/np.sum(np.abs(prob))
 
 		return beta, prob
+
+	def analysis_dict_phase_update (self, phase=[], msmnt_results=[], times=[]):
+			
+		prob = np.ones(self.n_points)
+		beta = np.linspace (-self.B_max, self.B_max, self.n_points)
+		try:
+			N_max = len(msmnt_results)
+		except:
+			N_max=1
+			msmnt_results = np.array([msmnt_results])
+			times = np.array([times])
+			phase = np.array([phase])
+		for n in np.arange(N_max):
+			q = 2*np.pi*beta*times[n]*self.t0+phase[n]
+			dec = np.exp(-(times[n]*self.t0/self.T2)**2)
+			if (msmnt_results[n]==1):
+				prob = prob*((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.
+			else:
+				prob = prob*(1-((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.)
+		prob = prob/np.sum(np.abs(prob))
+
+		return beta, prob
+
+
 
 	def B_vs_index (self):
 		B_dict = {}
@@ -240,16 +290,7 @@ class RamseySequence():
 		plt.xlabel ('[ns]')
 		plt.show()
 
-
-
-
-	def plot_phase_distribution (self, repetition = 0):
-		beta, prob = self.analysis (corrected=False, repetition = repetition)
-		plt.plot (beta*1e-6, prob)
-		plt.xlim([-20,20])
-		plt.show()
-		
-	def mean_square_error (self, set_value = None, do_plot=False, save_plot=False, show_plot = False, xlim = None,y_log=False):
+	def mean_square_error (self, set_value = None, do_plot=False, save_plot=False, show_plot = False, xlim = None,y_log=False, return_all_estimated_phases=False):
 		
 		msqe = 0
 		total_reps = 0
@@ -257,25 +298,32 @@ class RamseySequence():
 		if (set_value==None):
 			set_value = self.set_detuning
 		
+		list_phase_values = []
+
 		for k in self.msmnt_dict:
 			
 			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			#print len(curr_phase)
 			mult = np.rint(self.msmnt_multiplicity[k])
-			#print 'curr_phase = ',curr_phase, 'curr_msmnt = ', curr_msmnt, 'msmnt_times', self.msmnt_times
-			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
+
+			if self.phase_update:
+				beta, prob = self.analysis_dict_phase_update (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
+			else:
+				beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 			
 			fase = np.exp(1j*2*np.pi*beta*self.t0)
 			phi_m = np.sum(fase*prob)
+			phi_set = np.exp(1j*2*np.pi*set_value*self.t0)
+
+			if return_all_estimated_phases:
+				list_phase_values.append(mult*[phi_m/phi_set])
 
 			if (total_reps==0):
 				avg_prob = mult*prob
 			else:
 				avg_prob = avg_prob + mult*prob
-			
 
-			phi_set = np.exp(1j*2*np.pi*set_value*self.t0)
 			msqe = msqe + mult*(np.sum(prob*beta)-set_value)**2
 			ave_exp = ave_exp + mult*(phi_m/phi_set)
 			total_reps = total_reps + mult
@@ -283,7 +331,6 @@ class RamseySequence():
 		ave_exp = ave_exp/float(total_reps)
 		H = np.abs(ave_exp)**(-2)-1
 		sigma_fB = 1e-6*(msqe/float(total_reps))**0.5
-		#sigma_fB = 1e-6*msqe_fB**0.5
 		
 		fase = np.exp(1j*2*np.pi*beta*self.t0)
 		phi_m = np.sum(fase*avg_prob)
@@ -314,7 +361,11 @@ class RamseySequence():
 				plt.show()
 			plt.ion()
 
-		return beta, avg_prob, ave_exp,H, mean_fB, sigma_fB
+		if return_all_estimated_phases:
+			list_phase_values = flatten(list_phase_values)
+			return beta, avg_prob, ave_exp,H, mean_fB, sigma_fB, list_phase_values
+		else:
+			return beta, avg_prob, ave_exp,H, mean_fB, sigma_fB
 
 	def compare_to_simulations(self, do_save = False, show_plot = False, verbose=False,plot_log=False):
 
@@ -437,7 +488,8 @@ class RamseySequence_Simulation (RamseySequence):
 
 		np.random.seed()
 		result = np.random.choice (2, 1, p=[p0, p1])
-		return result[0]		
+		return result[0]	
+
 	def plot_ramsey(self, nr_datapoints=20, max_tau = None, theta=0):
 
 		if (max_tau == None):
@@ -509,6 +561,61 @@ class RamseySequence_Simulation (RamseySequence):
 				self.msmnt_results [r, :] = np.copy(msmnt_results)
 				self.msmnt_phases [r, :] = np.copy(phase)
 				self.inc_rep()
+
+	def sim_berry_protocol (self):
+		
+		if self.verbose:				
+			print '-------------------------------------------'
+			print 'Simulating Berry protocol '
+			print '-------------------------------------------'
+			print '- N = '+str(self.N)+ ', G = '+str(self.G)+', F = '+str(self.F)
+
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.phase_update = True
+			self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+			nr_results = int((self.K+1)*(self.G + self.F*self.K/2.))
+			self.msmnt_phases = np.zeros((self.reps, nr_results))
+			self.phase_upd_values = np.zeros((self.reps, nr_results))
+			self.msmnt_times = np.zeros(nr_results)
+			self.msmnt_results = np.zeros((self.reps,nr_results))
+		
+			k_array = self.K-np.arange(self.K+1)
+			tau = 2**(k_array)
+			self.reset_rep_counter()
+
+			for r in np.arange(self.reps):
+				msmnt_results = np.zeros (nr_results)
+				t = np.zeros (self.K+1)
+				phase = np.zeros(self.K+1)
+				self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+				self.p_k [self.points] = 1/(2.*np.pi)
+				res_idx = 0
+
+				for i,k in enumerate(k_array):
+
+					t[i] = int(2**(k))
+					ttt = -2**(k+1)
+					
+					phase[i] = 0.5*np.angle (self.p_k[ttt+self.points])
+					m_total = 0
+					MK = self.G+self.F*(self.K-k)
+					for m in np.arange(MK):
+						phase_upd = m*np.pi/float(self.G + self.F*(self.K - k))
+						m_res = self.ramsey (theta=phase[i]+phase_upd, t = t[i]*self.t0)#self.majority_vote_msmnt (theta_n = phase[i], t_n = t[i])					
+						self.bayesian_update (m_n = m_res, phase_n = phase[i]+phase_upd, t_n = 2**(k))
+						m_total = m_total + m_res
+						self.msmnt_results[r, res_idx] = m_res
+						self.msmnt_phases[r, res_idx] = (phase[i]+phase_upd)
+						self.msmnt_times[res_idx] = t[i]
+						res_idx = res_idx + 1
+				#print 'Msmsnt results: ', self.msmnt_results
+				#print 'Cappellaro phases: ', np.round(self.msmnt_phases*180/np.pi)
+				#print 'Msmnt times: ', self.msmnt_times
+				self.inc_rep()
+
+
 
 
 	def sim_nonadaptive_variable_M (self):
@@ -665,54 +772,6 @@ class RamseySequence_Simulation (RamseySequence):
 		
 		print 'Data loaded!'		
 
-
-#Note: not sure what to do with this class
-class RamseySequence_fastSimulations (RamseySequence_Simulation):
-
-	def __init__ (self, N_msmnts, reps, tau0):
-		self.N = N_msmnts
-		self.discr_steps = 2**self.N+1
-		self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
-		self.msmnt_results = None
-		self.msmnt_phases = None
-		self.msmnt_times = None
-		self.table_elements = None #Only used by table-based protocols
-		self.set_detuning = None
-		self.T2 = 96e-6
-		self.fid0 = 0.9
-		self.fid1 = 0.015
-		self.theta = 0*np.pi/180.
-		self.t0 = tau0
-		self.B_max = 1./(2*tau0)
-		self.n_points = 2**(self.N+3)
-		self.curr_rep = 0
-		self.curr_msmnt = 1
-		self.reps = reps
-		self.N_total = self.N
-		self.p_k[0] = 1/(2.*np.pi)
-		self.verbose = True
-		self.use_ROfid_in_update = False
-		self.renorm_ssro = False
-		#parameters for majority vote
-		self.maj_reps = None
-		self.maj_thr = None
-		#parameters for variable-M protocols
-		self.G = 0
-		self.K = 0
-		self.F = 0
-
-	def bayesian_update (self, m_n, phase_n, t_n,repetition = None):
-			
-		if (repetition == None):
-			repetition = self.curr_rep
-
-		cn = m_n*np.pi+phase_n
-		p0_real = np.copy (p_real)
-		p0_imag = np.copy (p_imag)
-		k = t_n
-		p_real [k] = 0.5*p0_real[k] + 0.25*(np.cos(cn)*(p0_real [0] + p0_real [2*t_n]) - np.sin(cn)*(p0_imag [0] - p0_imag [2*t_n])) 
-		p_imag [k] = 0.5*p0_imag[k] + 0.25*(np.cos(cn)*(p0_imag [0] + p0_imag [2*t_n]) + np.sin(cn)*(p0_real [0] - p0_real [2*t_n])) 
-		self.pk[k] = p_real[k]+1j*p_imag[k]
 
 class RamseySequence_Exp (RamseySequence):
 
@@ -969,6 +1028,7 @@ class AdaptiveMagnetometry ():
 		self.scaling_factor = None
 		self.error_scaling_factor = None
 		self.simulated_data = None
+		self.error_bars = False
 
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
@@ -1018,7 +1078,7 @@ class AdaptiveMagnetometry ():
 		return label_array, B_values
 
 		
-	def sweep_field_simulation (self, N,table_based=False,non_adaptive=False,print_results=False):
+	def sweep_field_simulation (self, N,table_based=False,non_adaptive=False,print_results=False, phase_update=False):
 
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
@@ -1037,7 +1097,6 @@ class AdaptiveMagnetometry ():
 
 
 
-
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
 		ave_exps = [0]*self.nr_points_per_period*self.nr_periods
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
@@ -1045,6 +1104,7 @@ class AdaptiveMagnetometry ():
 		ind = 0
 		print "Simulating N="+str(N)+', '+str(len(self.B_values))+" instances of magnetic field"
 
+		list_estim_phases = []
 		for b in np.arange(self.nr_points_per_period*self.nr_periods):
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
@@ -1061,21 +1121,27 @@ class AdaptiveMagnetometry ():
 				B = np.linspace(-1*self.B_max/2., self.B_max/2., self.nr_points_per_period)
 				self.B_values = np.hstack((B_values, B))
 				s.sim_nonadaptive()	
-			else: 
+			elif phase_update:
+				s.sim_berry_protocol()
+			else:
 				s.sim_cappellaro_variable_M()
 			s.convert_to_dict()
 
 			if print_results:
 				s.print_results()
 
-			beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
+			if self.error_bars:
+				beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=self.B_values[b], do_plot=False, return_all_estimated_phases = True)
+				list_estim_phases.append(list_phase_values)
+			else:				
+				beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
 			self.prob_density_dict[label_array[ind]] = p
 			ave_exps[ind]=ave_exp
 			msqe [ind] = H
 			B_field [ind] = self.B_values[b]
-			
 			ind =ind+1
-		self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+		list_estim_phases = flatten(list_estim_phases)
+		self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases}
 
 	def load_sweep_field_data (self, N, compare_to_simulations=False,older_than=None,newer_than=None):
 
@@ -1105,6 +1171,12 @@ class AdaptiveMagnetometry ():
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
+						if self.error_bars:
+							beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=self.B_values[b], do_plot=False, return_all_estimated_phases = True)
+							list_estim_phases.append(list_phase_values)
+						else:				
+							beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
+
 						beta, prob, ave_exp,err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=False)
 					self.prob_density_dict[label] = prob
 					#print s.set_detuning, mB
@@ -1117,7 +1189,8 @@ class AdaptiveMagnetometry ():
 						if (check_params[i]==False): msg.append(check_params_labels[i])
 					print 'Non matching parameters: ', msg, ' --- ', label
 				ind +=1
-		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+		list_estim_phases = flatten(list_estim_phases)
+		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases}
 
 	def plot_msqe_dictionary(self,y_log=False, save_plot=False):
 
@@ -1148,10 +1221,18 @@ class AdaptiveMagnetometry ():
 		print 'Calculating scaling ... '
 		self.scaling_variance=[]
 		self.total_time=[]
+		self.std_H = []
 		for i,n in enumerate(self.analyzed_N):
 			
 			msqe_phi = self.results_dict[str(n)]['ave_exp']
 			self.scaling_variance.append(np.abs(np.mean(msqe_phi))**(-2)-1)
+
+			if self.error_bars:
+				bs = stat.BootStrap (n_boots = 1000)
+				estim_phases = np.array(self.results_dict[str(n)]['estimated_phase_values'])
+				bs.set_y (y=estim_phases)
+				bs.run_bootstrap_holevo()
+				self.std_H.append(bs.errH_bootstrap)
 
 			if (self.G+self.F+self.K==0):
 				print 'Error G F and K are not set!'
@@ -1161,9 +1242,11 @@ class AdaptiveMagnetometry ():
 			
 			print np.array(self.total_time)/self.t0
 		self.total_time = np.array(self.total_time)
-		self.scaling_variance=np.array(self.scaling_variance)
-		
+		self.scaling_variance=np.array(self.scaling_variance)		
 		self.sensitivity = (self.scaling_variance*self.total_time)#/((2*np.pi*self.gamma_e*self.t0)**2)
+		if self.error_bars:
+			self.std_H  = np.array(self.std_H)
+			self.err_sensitivity = self.std_H*self.total_time
 
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
@@ -1180,7 +1263,9 @@ class AdaptiveMagnetometry ():
 
 		#NOTE!!!
 		plt.loglog (self.total_time, self.sensitivity, 'ob')
-
+		if self.error_bars:
+			plt.loglog (self.total_time, self.sensitivity+self.err_sensitivity, ':r')
+			plt.loglog (self.total_time, self.sensitivity-self.err_sensitivity, ':r')		
 		plt.xlabel ('total ramsey time [$\mu$s]')
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
 		plt.ylabel ('$V_{H}$ T ')
@@ -1191,8 +1276,7 @@ class AdaptiveMagnetometry ():
 		#NOTE!!!!!!!!
 		x_full = np.log10(self.total_time/self.t0)
 		y_full = np.log10(self.sensitivity/self.t0)
-
-
+		err_y = self.err_sensitivity/self.sensitivity
 		#x0 = self.total_time*1e6
 		#y0 = self.sensitivity*1e12
 		a='y'
@@ -1275,11 +1359,13 @@ class AdaptiveMagnetometry ():
 			self.error_scaling_factor = 1
 		#NOTE!!!!!!!!!!
 		#p.loglog (self.total_time*1e6, self.sensitivity*1e12, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		p.plot (x_full, y_full, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		
-
+		if self.error_bars:
+			p.errorbar (x_full, y_full, yerr= err_y, fmt='o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
+		else:
+			p.plot (x_full, y_full, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')			
 		plt.xlabel ('Log(total ramsey time$ * tau_{0}^{-1}$)', fontsize=15)
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]', fontsize=15)
+		plt.ylim ([min(y_full)-0.2, max(y_full)+0.2])
 		plt.ylabel ('Log($V_{H}$ T)')
 
 		fig = plt.figure(figsize=(8,6))
