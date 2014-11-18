@@ -258,8 +258,10 @@ class RamseySequence():
 			set_value = self.set_detuning
 		
 		for k in self.msmnt_dict:
+			
 			curr_phase = self.phases_dict[k]
 			curr_msmnt = np.rint(self.msmnt_dict[k])
+			#print len(curr_phase)
 			mult = np.rint(self.msmnt_multiplicity[k])
 			#print 'curr_phase = ',curr_phase, 'curr_msmnt = ', curr_msmnt, 'msmnt_times', self.msmnt_times
 			beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
@@ -338,7 +340,7 @@ class RamseySequence():
 		s.convert_to_dict()
 		if s.verbose:
 			s.print_results()		
-		beta_sim, p_sim, ave_exp,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
+		beta_sim, p_sim, ave_exp_sim,err_sim, a, b = s.mean_square_error(set_value=self.set_detuning, do_plot=False, show_plot=False, save_plot=False)
 
 		plt.plot (beta_sim*1e-6, p_sim, color='Crimson',label = 'sim')
 		B_sim_string='\n (B_sim = '+str('{0:.4f}'.format(a))+' +- '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim))
@@ -356,6 +358,7 @@ class RamseySequence():
 		if do_save:
 			f_name = 'probability_distribution.png'
 			savepath = os.path.join(self.folder, f_name)
+			print 'saving figure in ' , savepath
 			f1.savefig(savepath)
 		if show_plot:
 			plt.show()
@@ -730,7 +733,7 @@ class RamseySequence_Exp (RamseySequence):
 		a = sequence.MagnetometrySequenceAnalysis(self.folder)
 		#a.get_sweep_pts()
 		a.get_magnetometry_data(name='adwindata', ssro = False)
-
+		print 'a keys ', a.N
 		self.msmnt_results = a.clicks
 		#print 'msmnt_results (load_exp_data): ', self.msmnt_results
 
@@ -1019,16 +1022,20 @@ class AdaptiveMagnetometry ():
 
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
-
-		#alternative way of sampling
+		#sampling continous range
+		
 		B_values = np.array([])
 		label_array = []
-		B = np.linspace(-1*self.B_max, self.B_max, self.nr_points_per_period)
+		#B = np.linspace(-1*self.B_max, self.B_max, self.nr_points_per_period)
+		# sample per period
+		per=0
+		delta_f = 1./(self.t0*(2**N))
+		B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
 		self.B_values = np.hstack((B_values, B))
 		for l in np.arange(self.nr_points_per_period):
-		   	label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
+			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
 
-		
+
 
 
 		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
@@ -1066,10 +1073,11 @@ class AdaptiveMagnetometry ():
 			ave_exps[ind]=ave_exp
 			msqe [ind] = H
 			B_field [ind] = self.B_values[b]
-			self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
+			
 			ind =ind+1
+		self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F}
 
-	def load_sweep_field_data (self, N, compare_to_simulations=False):
+	def load_sweep_field_data (self, N, compare_to_simulations=False,older_than=None,newer_than=None):
 
 		self.simulated_data = False
 		self.analyzed_N.append(N)
@@ -1083,7 +1091,10 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
-				f = toolbox.latest_data(contains=label)#,older_than='20141015_113000',newer_than='20141014_150000')
+				if older_than:
+					f = toolbox.latest_data(contains=label,older_than=older_than,newer_than=newer_than)
+				else:
+					f=toolbox.latest_data(contains=label)	
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()

@@ -98,7 +98,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,rep
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=5001)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=7)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -114,9 +114,9 @@ def analyze_saved_simulations (timestamp,G=0,K=0,F=0):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
 	mgnt_exp.load_analysis (timestamp=timestamp)
 	mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=True)
-	mgnt_exp.G=G
-	mgnt_exp.F=F
-	mgnt_exp.K=K
+	#mgnt_exp.G=G
+	#mgnt_exp.F=F
+	#mgnt_exp.K=K
 	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
 	return mgnt_exp
 #analyze_saved_simulations (timestamp='20141017_003446')
@@ -332,7 +332,7 @@ plt.xlabel('M')
 plt.legend()
 plt.show()
 
-'''
+
 
 #simulate_adwin(N=10, G=100, F=0,do_plot=True, reps=1, ext_outcomes = np.array([91,90,3,12,0,11,98,87,12,90]))
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
@@ -340,7 +340,6 @@ plt.show()
 '''
 fid0=1.-0.112
 fid1=0.007
-reps=21
-simulate_sweep_field_variable_M (G=5,K=5,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
-'''
+reps=101
+simulate_sweep_field_variable_M (G=2,K=13,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
