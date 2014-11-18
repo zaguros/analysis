@@ -393,9 +393,7 @@ class RamseySequence():
 
 		plt.plot (beta_sim*1e-6, p_sim, color='Crimson',label = 'sim')
 		B_sim_string=r'\\  $(B_{sim} = '+str('{0:.4f}$'.format(a))+'$\pm$ '+str('{0:.4f}'.format(b)) + ') MHz' + ';  H = ' + str('{0:.4f}'.format(err_sim))
-		#except:
-		#	B_sim_string='error in simulation'
-		#	print 'Error in simulation!'
+
 		if plot_log:
 			plt.yscale('log')
 			plt.ylim((1e-10,0.5))
@@ -563,11 +561,15 @@ class RamseySequence_Simulation (RamseySequence):
 				self.msmnt_phases [r, :] = np.copy(phase)
 				self.inc_rep()
 
-	def sim_berry_protocol (self):
+	def sim_berry_protocol (self, do_adaptive):
 		
 		if self.verbose:				
+			if do_adaptive:
+				adptv = '(adaptive)'
+			else:
+				adptv = '(non adaptive)'
 			print '-------------------------------------------'
-			print 'Simulating Berry protocol '
+			print 'Simulating Berry protocol '+adptv
 			print '-------------------------------------------'
 			print '- N = '+str(self.N)+ ', G = '+str(self.G)+', F = '+str(self.F)
 
@@ -599,13 +601,15 @@ class RamseySequence_Simulation (RamseySequence):
 					t[i] = int(2**(k))
 					ttt = -2**(k+1)
 					
-					phase[i] = 0.5*np.angle (self.p_k[ttt+self.points])
+					if do_adaptive:
+						phase[i] = 0.5*np.angle (self.p_k[ttt+self.points])
 					m_total = 0
 					MK = self.G+self.F*(self.K-k)
 					for m in np.arange(MK):
 						phase_upd = m*np.pi/float(self.G + self.F*(self.K - k))
-						m_res = self.ramsey (theta=phase[i]+phase_upd, t = t[i]*self.t0)#self.majority_vote_msmnt (theta_n = phase[i], t_n = t[i])					
-						self.bayesian_update (m_n = m_res, phase_n = phase[i]+phase_upd, t_n = 2**(k))
+						m_res = self.ramsey (theta=phase[i]+phase_upd, t = t[i]*self.t0)					
+						if do_adaptive:
+							self.bayesian_update (m_n = m_res, phase_n = phase[i]+phase_upd, t_n = 2**(k))
 						m_total = m_total + m_res
 						self.msmnt_results[r, res_idx] = m_res
 						self.msmnt_phases[r, res_idx] = (phase[i]+phase_upd)
@@ -1078,7 +1082,7 @@ class AdaptiveMagnetometry ():
 		return label_array, B_values
 
 		
-	def sweep_field_simulation (self, N,table_based=False,non_adaptive=False,print_results=False, phase_update=False):
+	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False):
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
 		#sampling continous range
@@ -1113,16 +1117,11 @@ class AdaptiveMagnetometry ():
 			s.fid1 = self.fid1
 	
 			
-			if non_adaptive:
-				s.theta=-1*np.pi/2.
-				self.theta=-1*np.pi/2.
-				B = np.linspace(-1*self.B_max/2., self.B_max/2., self.nr_points_per_period)
-				self.B_values = np.hstack((B_values, B))
-				s.sim_nonadaptive()	
-			elif phase_update:
-				s.sim_berry_protocol()
+			if phase_update:
+				s.sim_berry_protocol(do_adaptive=do_adaptive)
 			else:
 				s.sim_cappellaro_variable_M()
+
 			s.convert_to_dict()
 
 			if print_results:

@@ -43,20 +43,20 @@ def simulate_cappellaro ():
 
 
 
-def simulate_berry ():
+def simulate_berry (do_adaptive):
 
 	F = 1
 	G = 2
 	K = 3
 	set_magnetic_field = 12.5e6/2.
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 4, reps=1, tau0=20e-9)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 4, reps=1000, tau0=20e-9)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
-	s.fid0 = 1.
-	s.fid1 = 0.0
+	s.fid0 = .87
+	s.fid1 = 0.02
 
-	s.sim_berry_protocol()
+	s.sim_berry_protocol(do_adaptive=do_adaptive)
 	s.convert_to_dict()
 	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 	plt.show()
@@ -112,7 +112,7 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = False):
 
 	#try:
 	print '############### Simulate #####################'
@@ -124,7 +124,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,rep
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
-		mgnt_exp.sweep_field_simulation (N=n,non_adaptive=False,print_results=print_results, phase_update=phase_update)
+		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update)
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
@@ -352,11 +352,13 @@ plt.show()
 #simulate_adwin(N=8, M= 20)
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
-fid0=1.-0.112
-fid1=0.007
+
+fid0=0.87
+fid1=0.02
 reps=3
-simulate_sweep_field_variable_M (G=5,K=7,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True)
+simulate_sweep_field_variable_M (G=6,K=7,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False)
+
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
-#simulate_berry()
+#simulate_berry(do_adaptive=False)
