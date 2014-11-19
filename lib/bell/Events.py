@@ -246,11 +246,12 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
                 
         # Stacks all SSRO data    
         total_SSRO_events = np.vstack((total_SSRO_events, _events))
-
-        print
-        print 'Found {} valid marked SSRO events in block'.format(int(len(_events))), i+1
-        print '===================================='
-        print
+        
+        if VERBOSE:
+            print
+            print 'Found {} valid marked SSRO events in block'.format(int(len(_events))), i+1
+            print '===================================='
+            print
 
 
     print
@@ -331,9 +332,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
         f.close()
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
-        raise 
-    print "After opening", datetime.now()
-    
+        raise     
 
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,29), dtype = np.uint64)
@@ -350,10 +349,8 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     is_channel = channel_RO == marker_chan
     is_mrkr = is_special & is_channel
     
-    print "before determining length and applying filter", datetime.now()
     num_mrkr = len(channel_RO[is_mrkr])
-    print "after determining length and applying filter", datetime.now()
-
+    
     # Delete large arrays
     del is_special
     del is_channel
