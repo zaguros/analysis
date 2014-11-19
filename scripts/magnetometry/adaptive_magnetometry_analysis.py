@@ -64,7 +64,7 @@ def B_vs_time (nr, label):
 	for i in np.arange(nr)+10:
 		try:
 			label0=label+'_%d'%i
-			beta_exp, p_exp, err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
+			beta_exp, p_exp, ave_exp,err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
 			error.append(sB)
 			print i, sB
 		except:
@@ -106,19 +106,20 @@ def analyze_single_instance(label='adptv_estimation_det', compare_to_simulations
 	s.set_exp_pars (T2=96e-6, fid0=0.87, fid1=1-.975)
 	print f
 	s.load_exp_data()
+	s.CR_after_postselection()
 	s.convert_to_dict()
 	s.print_results()
-	s.CR_after_postselection()
+	
 	B_dict, index_dict = s.B_vs_index()
 
 	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
 	if compare_to_simulations:
-		beta_exp, p_exp, err_exp, mB, sB=s.compare_to_simulations(show_plot = False, do_save=True,plot_log=True)
+		beta_sim, p_sim, ave_exp,err_sim, a, b=s.compare_to_simulations(show_plot = True, verbose=True,do_save=True,plot_log=True)
 	else:
-		beta_exp, p_exp, err_exp, mB, sB=s.mean_square_error(show_plot = False, save_plot=True, do_plot=False)
+		beta_sim, p_sim, ave_exp,err_sim, a, b=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
 
 	#s.analyse_ramsey()
-	return beta_exp, p_exp, err_exp, mB, sB
+	return beta_sim, p_sim, ave_exp,err_sim, a, b
 
 '''
 def temporal_evolution_B(label, nr):
@@ -135,19 +136,28 @@ def temporal_evolution_B(label, nr):
 		s.load_exp_data()
 '''
 
-def analyze_sweep_field():
+def analyze_sweep_field(G=1,F=2,nr_periods=1,older_than=None,newer_than=None):
 
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=7, tau0=20e-9)
-	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
-	mgnt_exp.set_sweep_params (nr_periods = 1, nr_points_per_period=7)
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
+	mgnt_exp.set_protocol (G=G,K=13,F=F)
+	mgnt_exp.set_sweep_params (nr_periods = nr_periods, nr_points_per_period=7)
 	mgnt_exp.set_exp_params (T2=96e-6, fid0=0.87, fid1=1-.975)
-	mgnt_exp.load_sweep_field_data (N=1)
-	mgnt_exp.load_sweep_field_data (N=2)
-	mgnt_exp.load_sweep_field_data (N=3)
-	mgnt_exp.load_sweep_field_data (N=4)
-	mgnt_exp.load_sweep_field_data (N=5)
-	mgnt_exp.load_sweep_field_data (N=6)
-	mgnt_exp.load_sweep_field_data (N=7)
+	#mgnt_exp.load_sweep_field_data (N=1,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=2,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=3,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=4,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=5,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=6,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=10,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=11,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=12,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=13,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=14,older_than=older_than,newer_than=newer_than)
+	
+
 	plt.figure()
 
 	mgnt_exp.plot_msqe_dictionary(y_log=True)
@@ -243,8 +253,11 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #result = '4021'
 #check_adwin_realtime (label = result+'_test_pk_(n=4_m=1)', newer_than = '102000')
 #check_adwin_realtime_record_pk(label = result, newer_than = '102000')
-
-check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=True)
-
-
+#analyze_single_instance(compare_to_simulations=True)
+#l=['N = 2','N = 3','N = 4','N = 5','N = 6','N = 7']
+analyze_sweep_field(F=1,G=2,nr_periods=1,newer_than='20141114_114505',older_than='20141115_142631')
+#for n,label in enumerate(l):
+#	print label
+#analyze_single_instance(label='153659',compare_to_simulations=True)
+#check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=False)
 #check_adwin_realtime_plots (N=4, M=5, outcomes = [5,0,2,1,5,5,0,2], newer_than='145500', do_plot=True)
