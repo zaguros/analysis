@@ -24,7 +24,7 @@ guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 #guess_width = 0.2e-3
-guess_sigma = 0.1e-3
+guess_sigma = 0.002e-3
 guess_amplitude = 0.3
 
 # try fitting
