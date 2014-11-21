@@ -796,31 +796,52 @@ class RamseySequence_Exp (RamseySequence):
 		self.msmnt_results = a.clicks
 		#print 'msmnt_results (load_exp_data): ', self.msmnt_results
 
-		if ((np.shape(np.shape(a.clicks)))[0]==1):
-			self.reps = len(a.clicks)
-			self.N = 1
-		else:
-			self.reps, self.N = np.shape (a.clicks)
-		self.n_points =  2**(self.N+3)
-		self.t0 = a.t0
-		self.B_max = 1./(2*self.t0)
-		self.msmnt_times = np.zeros(len(a.ramsey_time))
-		self.set_detuning = a.set_detuning
-		self.CR_after = a.CR_after
-
-		#if (a.debug_pk):
-		self.p_tn = a.p_tn
-		self.p_2tn = a.p_2tn
-
-		for j in np.arange(len(a.ramsey_time)):
-			self.msmnt_times[j] = a.ramsey_time[j]/self.t0
-		self.msmnt_phases = 2*np.pi*a.theta/360.
-		#print a.theta
+		#if ((np.shape(np.shape(a.clicks)))[0]==1):
+		#	self.reps = len(a.clicks)
+		#	self.N = 1
+		#else:
+		#	self.reps, self.N = np.shape (a.clicks)
 		self.N=a.N
 		self.M = a.M
 		self.F=a.F
 		self.G=a.G
 		self.K=a.K
+		self.reps=a.reps
+		self.n_points =  2**(self.N+3)
+		self.t0 = a.t0
+		self.B_max = 1./(2*self.t0)
+		self.msmnt_times_tmp = np.zeros(len(a.ramsey_time))
+		self.set_detuning = a.set_detuning
+		self.CR_after = a.CR_after
+		self.phase_update=a.phase_update
+		#if (a.debug_pk):
+		self.p_tn = a.p_tn
+		self.p_2tn = a.p_2tn
+
+		for j in np.arange(len(a.ramsey_time)):
+			self.msmnt_times_tmp[j] = a.ramsey_time[j]/self.t0
+		self.theta_rad = 2*np.pi*a.theta/360.
+		print self.phase_update
+		if self.phase_update:
+			self.msmnt_phases=self.msmnt_results*0.
+			self.msmnt_times=self.msmnt_results[1]*0.
+			for rep in np.arange(self.reps):
+				i=0
+				for n in np.arange(self.N):
+					MK=self.G+self.F*n
+					for m in np.arange(MK):
+						added_phase=m*np.pi/float(self.G+self.F*n)
+						self.msmnt_phases[rep,i]=self.theta_rad[rep,n]+added_phase
+						if rep==0:
+							#print 'added phase = ',added_phase, '; theta rad = ', self.theta_rad[rep,n]
+							#print self.msmnt_phases[0,:]
+							self.msmnt_times[i]=self.msmnt_times_tmp[n]
+						i+=1
+		else:
+			self.msmnt_phases=self.theta_rad
+			self.msmnt_times=self.msmnt_times_tmp
+		#print a.theta
+
 		self.discarded_elements = []
 		phases_detuning = 2*np.pi*a.phases_detuning/360.
 		b = np.ones(self.reps)
@@ -852,17 +873,26 @@ class RamseySequence_Exp (RamseySequence):
 			res = np.copy(self.msmnt_results)
 			phases = np.copy(self.msmnt_phases)
 			self.discarded_elements = []
-			new_results = np.zeros((self.reps, self.N))
-			new_phases = np.zeros((self.reps, self.N))
+			new_results = self.msmnt_results*0.
+			new_phases = self.msmnt_results*0.
 			rep = 0
+			CR_after_threshold = 10
 			for j in np.arange(self.reps):
-				if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
-					#print 'for i = ', j , 'CR array',self.CR_after[j,:]
+				if any(t<CR_after_threshold for t in self.CR_after[j,:]):
+					self.discarded_elements.append(j)
+				else:
+				#print 'for i = ', j , 'CR array',self.CR_after[j,:]
 					new_results[rep,:] = np.copy(res[j,:])
 					new_phases[rep,:] = np.copy(phases[j,:])
 					rep = rep + 1
-				else:
-					self.discarded_elements.append(j)
+
+				#if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+					#print 'for i = ', j , 'CR array',self.CR_after[j,:]
+				#	new_results[rep,:] = np.copy(res[j,:])
+				#	new_phases[rep,:] = np.copy(phases[j,:])
+				#	rep = rep + 1
+				#else:
+				#	self.discarded_elements.append(j)
 			self.reps = rep
 			self.msmnt_results =new_results[:self.reps,:]
 			self.msmnt_phases =  new_phases[:self.reps,:]
@@ -1152,7 +1182,7 @@ class AdaptiveMagnetometry ():
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 		ind = 0
 		check_params_labels = ['tau0','F','G']
-
+		list_estim_phases=[]
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
 				label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
@@ -1172,10 +1202,10 @@ class AdaptiveMagnetometry ():
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
 						if self.error_bars:
-							beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=self.B_values[b], do_plot=False, return_all_estimated_phases = True)
+							beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=s.set_detuning, do_plot=False, return_all_estimated_phases = True)
 							list_estim_phases.append(list_phase_values)
 						else:				
-							beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
+							beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=s.set_detuning, do_plot=False)
 
 						beta, prob, ave_exp,err, mB, sB = s.mean_square_error(show_plot=False, save_plot=True, do_plot=False)
 					self.prob_density_dict[label] = prob
