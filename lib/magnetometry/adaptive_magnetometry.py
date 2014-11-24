@@ -1412,13 +1412,13 @@ class AdaptiveMagnetometry ():
 			def fitfunc(x):
 				return a()+b()*x
 
-		if self.error_bars:
-			error_array = err_y[n0:n1]
-		else:
-			error_array = []
+			if self.error_bars:
+				error_array = err_y[n0:n1]
+			else:
+				error_array = []
 
 			fit_result = fit.fit1d(x0,y0, None, p0=p0, fitfunc=fitfunc, fixed=[],
-                	do_print=False, ret=True)
+                	do_print=False, ret=True, err_y = error_array)
 			a_fit = fit_result['params_dict']['a']
 			b_fit = fit_result['params_dict']['b']
 			b_err = fit_result['error_dict']['b']

@@ -44,6 +44,63 @@ def simulate_cappellaro ():
 
 
 
+def compare_protocols ():
+
+	F = 1
+	G = 2
+	K = 7
+	set_magnetic_field = -12.5e6/2.
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 8, reps=30, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
+	s.T2 = 96000e-6
+	s.fid0 = .87
+	s.fid1 = 0.02
+
+	s.sim_always_optimal_phase()
+	s.convert_to_dict()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	plt.show()
+
+
+def simulate_recalculate_optimal_phase ():
+
+	F = 1
+	G = 2
+	K = 12
+	set_magnetic_field = 12.5e6
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = K+1, reps=1, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
+	s.T2 = 96e-6
+	s.fid0 = .87
+	s.fid1 = 0.02
+
+	s.sim_recalculate_optimal_phase()
+	plt.plot (s.msmnt_phases[0,:]*180/np.pi)
+	plt.show()
+	#print s.msmnt_phases
+	s.convert_to_dict()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	plt.show()
+
+
+
+def simulate_cappellaro_debug_adwin ():
+	maj_reps = 1
+	M = 10
+
+	set_magnetic_field =25/(20e-9*2**8)
+	s = magnetometry.RamseySequence_Adwin (N_msmnts = 8, reps=100, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, M=M)
+	s.T2 = 96e-6
+	s.fid0 = 0.9
+	s.fid1 = 0.02
+	s.renorm_ssro = True
+	s.maj_reps = maj_reps
+	s.maj_thr = 0
+
 def simulate_cappellaro_debug_adwin (verbose = False):
 	
 	F = 0
@@ -119,25 +176,29 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0,fid1=0.02,print_results=False,reps=101):
+def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=11, phase_update=False, error_bars = False, always_recalculate_phase=False):
 
 	#try:
 	print '############### Simulate #####################'
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
+<<<<<<< HEAD
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=11)
+=======
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 11, nr_points_per_period=5)
+>>>>>>> 999af2ea2269bdc04a10771a2f02dc42b05a3bef
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
-		mgnt_exp.sweep_field_simulation (N=n,non_adaptive=False,print_results=print_results)
+		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase)
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
-	mgnt_exp.plot_sensitivity_scaling()
+	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
 	mgnt_exp.save()
-	#except:
-	#	print 'Simulation failed!!'
+
 def analyze_saved_simulations (timestamp,G=0,K=0,F=0):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
 	mgnt_exp.load_analysis (timestamp=timestamp)
@@ -147,7 +208,6 @@ def analyze_saved_simulations (timestamp,G=0,K=0,F=0):
 	mgnt_exp.K=K
 	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
 	return mgnt_exp
-#analyze_saved_simulations (timestamp='20141017_003446')
 
 def simulate_adwin ():
 	N = 7
@@ -362,18 +422,37 @@ plt.show()
 
 '''
 
-<<<<<<< HEAD
-#simulate_adwin(N=5, G=5, F=0,do_plot=True, reps=1, ext_outcomes = np.array([5,0,5,5,5]))
-=======
 #simulate_adwin(N=10, G=100, F=0,do_plot=True, reps=1, ext_outcomes = np.array([91,90,3,12,0,11,98,87,12,90]))
->>>>>>> ff1a82398c293181708d4c2f1e8fe55ef7f63ef2
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro_debug_adwin(verbose=True)
 #compare_algorithms()
 
-fid0=1.-0.112
-fid1=0.007
+fid0=0.87
+fid1=0.02
 reps=3
-simulate_sweep_field_variable_M (G=5,K=3,F=7 , fid0=fid0,fid1=fid1,print_results=False,reps=reps)
+<<<<<<< HEAD
+simulate_sweep_field_variable_M (G=2,K=7,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True)
+=======
+
+simulate_sweep_field_variable_M (G=4,K=10,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
+'''
+simulate_sweep_field_variable_M (G=4,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
+simulate_sweep_field_variable_M (G=5,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
+simulate_sweep_field_variable_M (G=5,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
+simulate_sweep_field_variable_M (G=6,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
+simulate_sweep_field_variable_M (G=6,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
+simulate_sweep_field_variable_M (G=3,K=12,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
+simulate_sweep_field_variable_M (G=3,K=12,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
+'''
+
+>>>>>>> 999af2ea2269bdc04a10771a2f02dc42b05a3bef
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
+#simulate_berry(do_adaptive=False)
+
+<<<<<<< HEAD
+#compare_protocols()
+=======
+#simulate_berry(do_adaptive=False)
+#simulate_recalculate_optimal_phase()
+>>>>>>> 999af2ea2269bdc04a10771a2f02dc42b05a3bef
