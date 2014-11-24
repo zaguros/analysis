@@ -70,8 +70,8 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10730, **kw):
     length_rnd=np.max(sync_time_ns[is_rnd_clk])-start_rnd+20
     pq_plots.plot_photon_hist_filter_comparison(a.pqf,is_last_random_click,start = start_rnd, length = length_rnd, hist_binsize = 1, save = False)
 
-    marker_1_sync_numbers= sync_nrs[np.where(is_marker_1_event)]
-    marker_2_sync_numbers= sync_nrs[np.where(is_marker_2_event)]
+    marker_1_sync_numbers= sync_nrs[is_marker_1_event]
+    marker_2_sync_numbers= sync_nrs[is_marker_2_event]
     
     marker_1_ro_ms0_events=pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)
     marker_2_ro_ms0_events=pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)

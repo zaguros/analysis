@@ -256,10 +256,15 @@ def measurement_filename(directory=os.getcwd(), ext='hdf5'):
                 os.path.join(directory,fn))
         return None
 
+def date_time_from_folder(folder):
+    d = os.path.split(os.path.split(folder)[0])[1]
+    t = measurementstring[:6]
+    return d,t
+
 def get_plot_title_from_folder(folder):
     measurementstring = os.path.split(folder)[1]
-    timestamp = os.path.split(os.path.split(folder)[0])[1] \
-            + '/' + measurementstring[:6]
+    d,t=date_time_from_folder(folder)
+    timestamp = d + '/' + t
     measurementstring = measurementstring[7:]
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
