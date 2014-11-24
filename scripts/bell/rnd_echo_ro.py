@@ -17,7 +17,7 @@ from analysis.lib.pq import pq_plots
 #timestamp='20140521172533'
 #folder=tb.data_from_time(timestamp)
 
-def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
+def analyse_rnd_ro_bell(folder, save = True,RO_start=10730, **kw):
     a = pqsequence.PQSequenceAnalysis(folder)
     a.reps=a.g.attrs['repetitions']*a.g['joint_params'].attrs['LDE_attempts_before_CR']
     
@@ -25,14 +25,14 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     
     RO_length = a.g['joint_params'].attrs['LDE_RO_duration']*1e9
     
-    a.plot_histogram(0,start=0, length=15000, hist_binsize=1, save=False, log_plot=False)
+    a.plot_histogram(0,start=0, length=3000, hist_binsize=1, save=False, log_plot=False)
     ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('FastSSRO'))
     
 
     roc = error.SingleQubitROC()
-    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (0.9398,0.0034,0.9942,0.0013)#pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    roc.F0, roc.u_F0, roc.F1, roc.u_F1 =pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
     #(0.9398,0.0034,0.9942,0.0013)
-    #print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
     ##ssro.get_SSRO_calibration(ssro_calib_folder, ro_duration)
     
     fig, ax = plt.subplots(1,1, figsize=(4.5,4))
@@ -91,6 +91,8 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     ma_2_p0=(float(noof_marker_2_ro_ms0_events)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))
     ma_2_u_p0 = np.sqrt(ma_2_p0*(1-ma_2_p0)/(noof_marker_2_ro_ms1_events+noof_marker_2_ro_ms0_events))        
     
+    print 'Uncorrected: RND 0: F0 {:.2f}%, RND 1: F0 {:.2f}%'.format(ma_1_p0*100, ma_2_p0*100)
+
     p0, u_p0 = roc.num_eval(np.array([ma_1_p0,ma_2_p0]),np.array([ma_1_u_p0,ma_2_u_p0]))
     
     ax.bar( range(2),p0, 
@@ -112,5 +114,5 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
         a.save_fig_incremental_filename(fig,'random_mw_correlation_corrected')
 
 if __name__ == '__main__':
-    folder= toolbox.latest_data('Bell')
+    folder= toolbox.latest_data('Bell_RND')
     analyse_rnd_ro_bell(folder)
