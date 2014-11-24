@@ -66,8 +66,6 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-
-
 def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
     '''
     finds the latest taken data with <contains> in its name.
@@ -256,16 +254,18 @@ def measurement_filename(directory=os.getcwd(), ext='hdf5'):
                 os.path.join(directory,fn))
         return None
 
-def date_time_from_folder(folder):
+def get_date_time_from_folder(folder):
     d = os.path.split(os.path.split(folder)[0])[1]
-    t = measurementstring[:6]
+    t = os.path.split(folder)[1][:6]
     return d,t
 
+def get_measurement_string_from_folder(fodler):
+    return os.path.split(folder)[1][7:]
+
 def get_plot_title_from_folder(folder):
-    measurementstring = os.path.split(folder)[1]
-    d,t=date_time_from_folder(folder)
+    d,t=get_date_time_from_folder(folder)
     timestamp = d + '/' + t
-    measurementstring = measurementstring[7:]
+    measurementstring = get_measurement_string_from_folder(folder)
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
 

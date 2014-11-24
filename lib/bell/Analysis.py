@@ -918,17 +918,17 @@ def Analyze_SSRO_data(PQ_sync_number, PQ_special, PQ_sync_time, PQ_time, PQ_chan
             print "Something strange is hapening with the markers or I programmed it bad"
             print s, len(sync_time_mrkr_s), sync_time_mrkr_s, sync_time_lim, sync_time_mrkr_s_plus_1
             raise
-        is_sync_num_hack_XXXX = PQ_sync_number == s-1
+        
         # Makes two boolean list for random channel 1 and 2 (named 0 & 1) and filters them on the sync number
         # One of these list should be False completely and the other one should be True once, indicating there
         # is one random number for each markers
-        rnd_0 = is_rnd_0[is_sync_num_hack_XXXX]
-        rnd_1 = is_rnd_1[is_sync_num_hack_XXXX]
-        rnd_generated = is_rnd[is_sync_num_hack_XXXX]
+        rnd_0 = is_rnd_0[is_sync_num]
+        rnd_1 = is_rnd_1[is_sync_num]
+        rnd_generated = is_rnd[is_sync_num]
 
         # Filters for the sync time are created, there should be only one True in both filters which gives
         # the sync time of the random number
-        is_sync_time_rnd = is_rnd & is_sync_num_hack_XXXX
+        is_sync_time_rnd = is_rnd & is_sync_num
 
         # Checks if it is a random number in marker channel 1
         if sum(rnd_generated) > 0:
