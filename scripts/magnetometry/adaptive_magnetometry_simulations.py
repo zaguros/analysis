@@ -44,20 +44,20 @@ def simulate_cappellaro ():
 
 
 
-def simulate_berry (do_adaptive):
+def compare_protocols ():
 
 	F = 1
 	G = 2
-	K = 3
-	set_magnetic_field = 12.5e6/2.
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 4, reps=1000, tau0=20e-9)
+	K = 7
+	set_magnetic_field = -12.5e6/2.
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 8, reps=30, tau0=20e-9)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
 	s.fid0 = .87
 	s.fid1 = 0.02
 
-	s.sim_berry_protocol(do_adaptive=do_adaptive)
+	s.sim_always_optimal_phase()
 	s.convert_to_dict()
 	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 	plt.show()
@@ -160,7 +160,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_res
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=11)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N)+1:
@@ -400,13 +400,12 @@ plt.show()
 #simulate_cappellaro_debug_adwin(verbose=True)
 #compare_algorithms()
 
-
 fid0=0.87
 fid1=0.02
 reps=3
-simulate_sweep_field_variable_M (G=6,K=7,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False)
-
+simulate_sweep_field_variable_M (G=2,K=7,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True)
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
-
 #simulate_berry(do_adaptive=False)
+
+#compare_protocols()

@@ -24,6 +24,7 @@ reload(sequence)
 reload(compare)
 reload(toolbox)
 reload (stat)
+reload (fit)
 
 	
 class RamseySequence():
@@ -620,6 +621,46 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 
+	def sim_always_optimal_phase (self):
+		
+
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.phase_update = True
+			self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+			nr_results = int((self.K+1)*(self.G + self.F*self.K/2.))
+			self.msmnt_phases = np.zeros((self.reps, nr_results))
+			self.phase_upd_values = np.zeros((self.reps, nr_results))
+			self.msmnt_times = np.zeros(nr_results)
+			self.msmnt_results = np.zeros((self.reps,nr_results))
+		
+			k_array = self.K-np.arange(self.K+1)
+			tau = 2**(k_array)
+			self.reset_rep_counter()
+
+			for r in np.arange(self.reps):
+				msmnt_results = np.zeros (nr_results)
+				t = np.zeros (self.K+1)
+				self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+				self.p_k [self.points] = 1/(2.*np.pi)
+				res_idx = 0
+
+				for i,k in enumerate(k_array):
+
+					t[i] = int(2**(k))
+					ttt = -2**(k+1)
+					MK = self.G+self.F*(self.K-k)
+					res_idx = 0
+					phase = 0.5*np.angle (self.p_k[ttt+self.points])
+					for m in np.arange(MK):
+						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
+						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
+						self.msmnt_results[r, res_idx] = m_res
+						self.msmnt_phases[r, res_idx] = phase
+						self.msmnt_times[res_idx] = t[i]
+						res_idx = res_idx + 1
+				self.inc_rep()
 
 
 	def sim_nonadaptive_variable_M (self):
@@ -1121,6 +1162,7 @@ class AdaptiveMagnetometry ():
 			
 			if phase_update:
 				s.sim_berry_protocol(do_adaptive=do_adaptive)
+				#s.sim_always_optimal_phase()
 			else:
 				s.sim_cappellaro_variable_M()
 
@@ -1302,40 +1344,44 @@ class AdaptiveMagnetometry ():
 			y = y0
 		
 
-		try:
-			guess_b = -1#np.abs((y0[1]-y0[0]))/(x0[1]-x0[0])
-			guess_a = 0*y0[-1]+1
-			print 'aguess = ',guess_a, ' guess_b = ', guess_b
-			
-			a = fit.Parameter(guess_a, 'a')
-			b = fit.Parameter(guess_b, 'b')
-			
-			p0 = [a, b]
-			fitfunc_str = ''
+		#try:
+		guess_b = -1#np.abs((y0[1]-y0[0]))/(x0[1]-x0[0])
+		guess_a = 0*y0[-1]+1
+		print 'aguess = ',guess_a, ' guess_b = ', guess_b
+		
+		a = fit.Parameter(guess_a, 'a')
+		b = fit.Parameter(guess_b, 'b')
+		
+		p0 = [a, b]
+		fitfunc_str = ''
 
-			def fitfunc(x):
-				return a()+b()*x
+		def fitfunc(x):
+			return a()+b()*x
 
+		if self.error_bars:
+			error_array = err_y[n0:n1]
+		else:
+			error_array = []
 
-			fit_result = fit.fit1d(x0,y0, None, p0=p0, fitfunc=fitfunc, fixed=[],
-                	do_print=False, ret=True)
-			a_fit = fit_result['params_dict']['a']
-			b_fit = fit_result['params_dict']['b']
-			b_err = fit_result['error_dict']['b']
-			print 'a= ',a_fit
-			print 'b=',b_fit
-			#NOTE!!!
-			#x0 = 1e6*self.total_time[0]/2.
-			#x_end = 1e6*self.total_time[-1]*2.
-			
+		fit_result = fit.fit1d(x0,y0, None, p0=p0, fitfunc=fitfunc, fixed=[],
+            	do_print=False, ret=True, err_y = error_array)
+		a_fit = fit_result['params_dict']['a']
+		b_fit = fit_result['params_dict']['b']
+		b_err = fit_result['error_dict']['b']
+		print 'a= ',a_fit
+		print 'b=',b_fit
+		#NOTE!!!
+		#x0 = 1e6*self.total_time[0]/2.
+		#x_end = 1e6*self.total_time[-1]*2.
+		
 
-			x_fit = np.linspace (x0[0], x0[-1], 100)
-			y_fit = a_fit+b_fit*x_fit
-			y_guess=guess_a+guess_b*x_fit
-			do_fit = True
-		except:
-			print 'Fit failed!'
-			do_fit = False
+		x_fit = np.linspace (x0[0], x0[-1], 100)
+		y_fit = a_fit+b_fit*x_fit
+		y_guess=guess_a+guess_b*x_fit
+		do_fit = True
+		#except:
+		#	print 'Fit failed!'
+		#	do_fit = False
 
 
 		fig = plt.figure(figsize=(8,6))

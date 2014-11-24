@@ -25,6 +25,10 @@ class Parameter:
 # - fit should actually also be a class, and we want a simple function as
 # wrapper for interactive work; then we still need sth better for fixing,
 # though; good maybe: generally identify parameters by names
+
+# added capability to fit data using weights (error bars in datapoints): 
+# errors can be passed by a list err_y - Cristian 24/11/2014
+
 def fit1d(x, y, fitmethod, *arg, **kw):
     """
     example: from analysis.lib.fitting import fit,common
@@ -39,6 +43,11 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     do_print = kw.pop('do_print', False)
     ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
+    err_y = kw.pop ('err_y', None)
+
+    if (len(err_y) != len(y)):
+    	print 'Data and error arrays have non-matching lengths!'
+    	err_y = None
 
     # use the standardized fitmethod: any arg is treated as initial guess
     if fitmethod != None:
@@ -62,7 +71,11 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         for p in p0:
             p.set(params[i])
             i += 1
-        return y - fitfunc(x)
+
+        if (err_y != None):
+        	return ((y-fitfunc(x))/(err_y))
+        else:
+        	return y - fitfunc(x)
 
     if x is None: x = arange(y.shape[0])
     p = [param() for param in p0]
