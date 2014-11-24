@@ -14,11 +14,11 @@ from analysis.lib.math import error
 
 
 timestamp = None#'211609'#None#'174154' 
-guess_f1 = 1.2e-3 #in GHz
+guess_f1 = 0.6e-3 #in GHz
 guess_A1 = 0.5
 guess_phi1 = 0.
 
-guess_f2 =0.8e-3 #in GHz
+guess_f2 =0.40e-3 #in GHz
 guess_A2 = 0.5
 guess_phi2 = 0.
 
@@ -26,7 +26,7 @@ guess_f3 = 2.188e-3 #in GHz
 guess_A3 = 0.05
 guess_phi3= 180.
 
-guess_tau = 4000
+guess_tau = 4600
 guess_a = 0.5
 
 
@@ -34,7 +34,7 @@ guess_a = 0.5
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('MBIElectronRamsey')
+    folder = toolbox.latest_data('Ramsey')
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()

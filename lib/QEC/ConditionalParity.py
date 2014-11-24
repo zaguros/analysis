@@ -51,6 +51,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             ssro_results_1 = (1-self.parity_result)*self.ssro_results
 
             # Step 2 reshape
+
             self.parity_result = self.parity_result.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.ssro_results_0 = ssro_results_0.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.ssro_results_1 = ssro_results_1.reshape((-1,self.pts,self.readouts)).sum(axis=0)
@@ -62,9 +63,9 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.u_normalized_ssro_1 = (self.normalized_ssro_1*(1-self.normalized_ssro_1)/(self.reps-self.parity_result))**0.5
 
 
-            print 'Probabilities ms=0 and ms=-1'
-            print np.average(self.parity_result/self.reps.astype('float'))
-            print np.average((self.reps-self.parity_result)/self.reps.astype('float'))
+            # print 'Probabilities ms=0 and ms=-1'
+            # print np.average(self.parity_result/self.reps.astype('float'))
+            # print np.average((self.reps-self.parity_result)/self.reps.astype('float'))
 
         elif post_select_QEC == True:
             self.post_select = True
@@ -84,7 +85,12 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             parity_a_result = self.parity_result[0::2]
             parity_b_result = self.parity_result[1::2]
 
-
+            # reshape parity a and b
+            parity_result_a0 = (parity_a_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_b0 = (parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_a1 = (1-parity_a_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_b1 = (1-parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+    
             #Step 1 Multiply results with post selection parameter
             ssro_results_00 = parity_a_result*parity_b_result*self.ssro_results
             ssro_results_01 = parity_a_result*(1-parity_b_result)*self.ssro_results
@@ -112,12 +118,15 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.normalized_ssro_11 = self.ssro_results_11/(parity_result_11).astype('float')
             self.u_normalized_ssro_11 = (self.normalized_ssro_11*(1-self.normalized_ssro_11)/(parity_result_11))**0.5
 
-
-            print 'Probabilities 00, 01, 10, 11'
-            print np.average(parity_result_00/self.reps.astype('float'))
-            print np.average((parity_result_01)/self.reps.astype('float'))
-            print np.average(parity_result_10/self.reps.astype('float'))
-            print np.average((parity_result_11)/self.reps.astype('float'))
+            # print 'Probabilities 00, 01, 10, 11'
+            self.p00 = (parity_result_00/self.reps.astype('float'))
+            # print  self.p00
+            self.p01 = ((parity_result_01)/self.reps.astype('float'))
+            # print  self.p01
+            self.p10 = (parity_result_10/self.reps.astype('float'))
+            # print  self.p10
+            self.p11 = ((parity_result_11)/self.reps.astype('float'))
+            # print  self.p11
 
 
         else:
