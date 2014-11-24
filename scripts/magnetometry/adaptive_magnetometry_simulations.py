@@ -441,14 +441,9 @@ simulate_sweep_field_variable_M (G=3,K=12,F=2 , fid0=fid0,fid1=fid1,print_result
 simulate_sweep_field_variable_M (G=3,K=12,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
 '''
 
->>>>>>> 999af2ea2269bdc04a10771a2f02dc42b05a3bef
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 #simulate_berry(do_adaptive=False)
-
-<<<<<<< HEAD
 #compare_protocols()
-=======
 #simulate_berry(do_adaptive=False)
 #simulate_recalculate_optimal_phase()
->>>>>>> 999af2ea2269bdc04a10771a2f02dc42b05a3bef
