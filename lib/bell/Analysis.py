@@ -535,20 +535,26 @@ filtering.'.format(sum(psiminus_filt_bars))
 
 ############# DT filters ########################################################
 
-def DT_filter_max(Total_entanglement_events, dt, sync_time_ph_win_1, sync_time_ph_win_2, chan_ph_win_1, chan_ph_win_2):
-      
+def DT_filter_max(Total_entanglement_events, dt, sync_time_ph_win_1, sync_time_ph_win_2, chan_ph_win_1, chan_ph_win_2, dif_win1_win2, dif_ch0_ch1):
+    
+
     Sync_time_photon1 = Total_entanglement_events[:,sync_time_ph_win_1]
     Sync_time_photon2 = Total_entanglement_events[:,sync_time_ph_win_2]
-    Delta_T = Sync_time_photon2 - Sync_time_photon1 - 600.
-    
-    for i in np.arange(len(Sync_time_photon1)):
-        if Total_entanglement_events[i,chan_ph_win_1] == 0 and Total_entanglement_events[i,chan_ph_win_2] == 1:
-            Delta_T[i] = Delta_T[i] - 1.
-        if Total_entanglement_events[i,chan_ph_win_1] == 1 and Total_entanglement_events[i,chan_ph_win_2] == 0:
-            Delta_T[i] = Delta_T[i] + 1.
-            
-    is_filtered_events = np.abs(Delta_T) <= dt
 
+    Delta_photon_2_1 = Sync_time_photon2 - Sync_time_photon1
+
+    subtract_array = np.ones(len(Sync_time_photon1))* dif_win1_win2
+    Delta_T = np.subtract(Delta_photon_2_1, subtract_array)
+
+
+    for i, j in enumerate(Sync_time_photon1):
+
+        if Total_entanglement_events[i,chan_ph_win_1] == 0 and Total_entanglement_events[i,chan_ph_win_2] == 1:
+            Delta_T[i] = Delta_T[i] - dif_ch0_ch1
+        if Total_entanglement_events[i,chan_ph_win_1] == 1 and Total_entanglement_events[i,chan_ph_win_2] == 0:
+            Delta_T[i] = Delta_T[i] + dif_ch0_ch1
+    
+    is_filtered_events = np.abs(Delta_T) <= dt
     
     return Total_entanglement_events[is_filtered_events]
 
@@ -823,15 +829,15 @@ def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_L
 
     if VERBOSE:
         print "Number of events used for psimin a,b:", N_psi_min_a_b
-        print "Number of events used for psimin a',b':",  N_psi_min_a_pr_b_pr
         print "Number of events used for psimin a',b:", N_psi_min_a_pr_b
         print "Number of events used for psimin a,b':", N_psi_min_a_b_pr
+        print "Number of events used for psimin a',b':",  N_psi_min_a_pr_b_pr
         print
         print 
         print "Number of events used for psiplus a,b:", N_psi_plus_a_b
-        print "Number of events used for psiplus a',b':",  N_psi_plus_a_pr_b_pr
         print "Number of events used for psiplus a',b:", N_psi_plus_a_pr_b
         print "Number of events used for psiplus a,b':", N_psi_plus_a_b_pr
+        print "Number of events used for psiplus a',b':",  N_psi_plus_a_pr_b_pr
 
     E_a_b_min = (N_psi_min_a_b_uu - N_psi_min_a_b_du - N_psi_min_a_b_ud + N_psi_min_a_b_dd)/float(N_psi_min_a_b)
     E_a_pr_b_min = (N_psi_min_a_pr_b_uu - N_psi_min_a_pr_b_du - 
@@ -854,3 +860,114 @@ def CHSH_value(Total_Bell_events, psiminus, rnd_num_LT3, rnd_num_LT4, num_phot_L
 
     return CHSH_psimin, CHSH_psiplus, E_a_b_min, E_a_pr_b_min, E_a_b_pr_min, E_a_pr_b_pr_min, E_a_b_plus, E_a_pr_b_plus, E_a_b_pr_plus, E_a_pr_b_pr_plus
 
+######################################## Analysis SSRO Data ##############################################################
+
+
+def Analyze_SSRO_data(PQ_sync_number, PQ_special, PQ_sync_time, PQ_time, PQ_channel, RO_start, RO_length, marker_chan, unique_sync_num_with_markers, chan_rnd_0, chan_rnd_1, sync_time_lim = 0):
+    """
+    Returns SSRO data for all marked events. 
+    Colums are:
+    Sync Nymber | number of photons | RND number indicator | RND number | Sync Time RND number | Sync Times photon 1-24 |
+    """
+    # Initializes an array to save all SSRO data
+    SSRO_events = np.empty((0,30), dtype = np.uint64)
+    
+    # Create a filter which is True for all photons
+    is_ph_RO = (PQ_special == 0)  & (PQ_channel == 0)
+
+    # Filters if sync times are in the defined read out window
+    is_in_window = (RO_start  <= PQ_sync_time) & (PQ_sync_time < (RO_start + RO_length))
+    
+    # Defines a filter for photons in the readout window
+    is_ph_RO_in_ro_window = is_in_window & is_ph_RO
+
+    is_special = PQ_special == 1
+    is_channel_rnd_0 = PQ_channel == chan_rnd_0
+    is_channel_rnd_1 = PQ_channel == chan_rnd_1
+
+    is_rnd_0 = is_special & is_channel_rnd_0
+    is_rnd_1 = is_special & is_channel_rnd_1
+    is_rnd = (PQ_special == 0 ) & (PQ_channel == 1)
+
+    is_PQ_mrkr =  (PQ_special == 1)  & (PQ_channel == marker_chan)
+
+    # Loop over all sync numbers with markers
+    for i,s in enumerate(unique_sync_num_with_markers):
+
+        # Create a filter which filters on a specific sync number
+        is_sync_num_s = PQ_sync_number == s
+        is_sync_num_s_plus_1 = PQ_sync_number == s + 1
+
+        # Creates a filter which filterse if there is a photon in the readout window for a specific sync number
+        is_photons_RO = is_sync_num_s & is_ph_RO_in_ro_window
+
+        # Gets the sync times for photons in the readout window corresponding to a certain sync number
+        sync_time_RO_photons = PQ_sync_time[is_photons_RO]
+
+        # Defines absolute time of the marker
+        sync_time_mrkr_s = PQ_sync_time[(is_sync_num_s & is_PQ_mrkr)]
+        abs_time_mrkr_s = PQ_time[(is_sync_num_s & is_PQ_mrkr)]
+        sync_time_mrkr_s_plus_1 = PQ_sync_time[(is_sync_num_s_plus_1 & is_PQ_mrkr)]
+        abs_time_mrkr_s_plus_1 = PQ_time[(is_sync_num_s_plus_1 & is_PQ_mrkr)]
+
+        if (len(sync_time_mrkr_s) > 0) & (sync_time_mrkr_s > sync_time_lim):
+            abs_time_mrkr = abs_time_mrkr_s
+        elif (sync_time_mrkr_s_plus_1 <= sync_time_lim):
+            abs_time_mrkr = abs_time_mrkr_s_plus_1 
+        else:
+            print "Something strange is hapening with the markers or I programmed it bad"
+            raise
+
+        # Makes two boolean list for random channel 1 and 2 (named 0 & 1) and filters them on the sync number
+        # One of these list should be False completely and the other one should be True once, indicating there
+        # is one random number for each markers
+        rnd_0 = is_rnd_0[is_sync_num_s]
+        rnd_1 = is_rnd_1[is_sync_num_s]
+        rnd_generated = is_rnd[is_sync_num_s]
+
+        # Filters for the sync time are created, there should be only one True in both filters which gives
+        # the sync time of the random number
+        is_sync_time_rnd = is_rnd & is_sync_num_s
+
+        # Checks if it is a random number in marker channel 1
+        if sum(rnd_generated) > 0:
+            if (sum(rnd_0) == 1):
+                # States that ther is a random number, that it is zero and gets the sync time of this number
+                rnd_gen_check = 1
+                rnd_num = 0
+                sync_time_rnd_num = PQ_sync_time[is_sync_time_rnd][-1]
+            # Checks if it is a random number in marker channel 2
+            elif (sum(rnd_1) == 1):
+                # States that ther is a random number, that it is zero and gets the sync time of this number
+                rnd_gen_check = 1
+                rnd_num = 1
+                sync_time_rnd_num = PQ_sync_time[is_sync_time_rnd][-1]
+            else:
+                print "Somehow there is now marker generated, look at the RND number generator"
+                print"========================================================================"
+                print 
+                raise
+        # States that no random number 
+        else:
+            print "There are events for which no random number is generated"
+            rnd_gen_check = 0
+            rnd_num = 2
+            sync_time_rnd_num = 0
+
+        # Define the number of readout photons
+        num_phot = len(sync_time_RO_photons)
+
+        # Makes the array for the arrival times of the photons for different numbers of photons
+        if (len(sync_time_RO_photons) > 0) & (len(sync_time_RO_photons) == 24):
+            arr_times = sync_time_RO_photons
+        elif (len(sync_time_RO_photons) > 0) & (len(sync_time_RO_photons) < 24):
+            zero_addition = np.zeros((24-len(sync_time_RO_photons),), dtype = np.uint64)
+            arr_times = np.concatenate((sync_time_RO_photons,zero_addition))
+        else:
+            arr_times = np.zeros((24,), dtype = np.uint64)
+
+        # Stacks all SSRO events for different sync numbers
+        _event = np.concatenate((np.array([s, abs_time_mrkr, num_phot, rnd_gen_check, rnd_num, sync_time_rnd_num], dtype = np.uint64) , arr_times))
+        SSRO_events = np.vstack((SSRO_events, _event))
+
+    return SSRO_events

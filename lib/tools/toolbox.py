@@ -546,10 +546,6 @@ def get_num_blocks(pqf):
                 Block_number = int(Block_name.strip('PQ_channel-'))
                 list_of_block_numbers.append(Block_number)
 
-        num_blocks = max(list_of_block_numbers)
-        return num_blocks
-
-
     elif type(pqf) == str:
 
         f = h5py.File(pqf, 'r')
@@ -561,12 +557,16 @@ def get_num_blocks(pqf):
 
         f.close()
 
-        num_blocks = max(list_of_block_numbers)
-        return num_blocks
-
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
+
+    if len(list_of_block_numbers) > 0:
+        num_blocks = max(list_of_block_numbers)
+    else: 
+        num_blocks = 0
+
+    return num_blocks
 
 def get_num_blocks_2(pqf):
     """
