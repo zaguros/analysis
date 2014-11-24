@@ -261,7 +261,7 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
                 
         # Stacks all SSRO data    
         total_SSRO_events = np.vstack((total_SSRO_events, _events))
-
+        
         if VERBOSE:
             print
             print 'Found {} valid marked SSRO events in block'.format(int(len(_events))), i+1
@@ -333,6 +333,21 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     time_name = '/PQ_time-' + str(index)
   
 
+    # Open files to determine if there are markers
+
+    if type(pqf) == h5py._hl.files.File: 
+        special_RO =pqf[spec_name].value
+        channel_RO = pqf[chan_name].value
+
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        special_RO = f[spec_name].value
+        channel_RO = f[chan_name].value
+
+        f.close()
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+
     # Initializes an array to save all SSRO data
     SSRO_events = np.empty((0,30), dtype = np.uint64)
 
@@ -344,7 +359,7 @@ def get_SSRO_events(pqf, marker_chan ,RO_start, RO_length, chan_rnd_0, chan_rnd_
     PQ_channel = np.empty((0,), dtype = np.uint32)
    
     is_mrkr, num_mrkr = pq_tools.get_markers_with_num_markers(pqf, marker_chan, index = index)
-
+    
     if VERBOSE:
         print "The number of markers is:", num_mrkr
 
