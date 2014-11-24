@@ -426,10 +426,6 @@ plt.show()
 fid0=0.87
 fid1=0.02
 reps=3
-<<<<<<< HEAD
-simulate_sweep_field_variable_M (G=2,K=7,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True)
-=======
-
 simulate_sweep_field_variable_M (G=4,K=10,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
 '''
 simulate_sweep_field_variable_M (G=4,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
