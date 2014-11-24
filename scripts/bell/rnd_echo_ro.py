@@ -9,9 +9,11 @@ from analysis.lib.m2.ssro import ssro, sequence, pqsequence
 from analysis.lib.m2 import m2
 from analysis.lib.pq import pq_tools
 from analysis.lib.tools import toolbox
+from analysis.lib.math import error
 
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
+from analysis.lib.pq import pq_plots
 #timestamp='20140521172533'
 #folder=tb.data_from_time(timestamp)
 
@@ -38,12 +40,12 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     sync_nrs=a.pqf['/PQ_sync_number-1'].value 
     is_marker_1_event=pq_tools.get_markers(a.pqf,1)
     is_marker_2_event=pq_tools.get_markers(a.pqf,2)
-    noof_rnd_0_events=len(np.where(is_marker_1_event)[0])
-    noof_rnd_1_events=len(np.where(is_marker_2_event)[0])
+    noof_rnd_0_events=np.sum(is_marker_1_event)
+    noof_rnd_1_events=np.sum(is_marker_2_event)
     print 'noof_rnd 0/1 events:',noof_rnd_0_events, '/' , noof_rnd_1_events
     print 'bias toward 0 : {:.2f} % '.format(50-float(noof_rnd_0_events)/(noof_rnd_0_events+noof_rnd_1_events)*100),', error : {:.2f} %'.format(1/np.sqrt(len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0]))*100)
     print 'noof syncs:', sync_nrs[-1]
-    print 'Detected marker events : ', len(np.where(is_marker_1_event)[0])+len(np.where(is_marker_2_event)[0])
+    print 'Detected marker events {} / {}:'.format(noof_rnd_0_events+noof_rnd_1_events, a.reps)
     
     is_photon_0, is_rnd_clk=pq_tools.get_photons(a.pqf)
     sync_time_ns = a.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
@@ -51,7 +53,8 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     
     st_fltr = (RO_start  <= sync_time_ns) &  (sync_time_ns< (RO_start + RO_length))
     is_photon_0_in_ro_window = st_fltr & is_photon_0
-    photon_in_0_ro_window_sync_numbers = sync_nrs[np.where(is_photon_0_in_ro_window)]
+    photon_in_0_ro_window_sync_numbers = sync_nrs[is_photon_0_in_ro_window]
+    no_photon_in_0_ro_window_sync_numbers = np.setdiff1d(sync_nrs,photon_in_0_ro_window_sync_numbers)
     av_p0=float(len(np.unique(photon_in_0_ro_window_sync_numbers)))/a.reps
     u_av_p0 = np.sqrt(av_p0*(1-av_p0)/a.reps)
     av_F0, u_av_F0 = roc.num_eval(np.array([av_p0]),np.array([u_av_p0]))
@@ -66,15 +69,18 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10740, **kw):
     start_rnd=np.min(sync_time_ns[is_rnd_clk])-20
     length_rnd=np.max(sync_time_ns[is_rnd_clk])-start_rnd+20
     pq_plots.plot_photon_hist_filter_comparison(a.pqf,is_last_random_click,start = start_rnd, length = length_rnd, hist_binsize = 1, save = False)
-    
-    
+
     marker_1_sync_numbers= sync_nrs[np.where(is_marker_1_event)]
     marker_2_sync_numbers= sync_nrs[np.where(is_marker_2_event)]
     
-    noof_marker_1_ro_ms0_events=len(np.where(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers))[0])
-    noof_marker_2_ro_ms0_events=len(np.where(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers))[0])
-    noof_marker_1_ro_ms1_events=len(np.where(np.invert(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)))[0])
-    noof_marker_2_ro_ms1_events=len(np.where(np.invert(pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)))[0])
+    marker_1_ro_ms0_events=pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)
+    marker_2_ro_ms0_events=pq_tools.filter_on_same_sync_number(photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)
+    marker_1_ro_ms1_events=pq_tools.filter_on_same_sync_number(no_photon_in_0_ro_window_sync_numbers,marker_1_sync_numbers)#np.invert(marker_1_ro_ms0_events) #this also works.
+    marker_2_ro_ms1_events=pq_tools.filter_on_same_sync_number(no_photon_in_0_ro_window_sync_numbers,marker_2_sync_numbers)#np.invert(marker_2_ro_ms0_events)
+    noof_marker_1_ro_ms0_events=np.sum(marker_1_ro_ms0_events)
+    noof_marker_2_ro_ms0_events=np.sum(marker_2_ro_ms0_events)
+    noof_marker_1_ro_ms1_events=np.sum(marker_1_ro_ms1_events)
+    noof_marker_2_ro_ms1_events=np.sum(marker_2_ro_ms1_events)
     
     print 'MA1 & RO0: {}, MA1 & RO1: {}, MA2 & RO0: {}, MA2 & RO1: {}'.format(noof_marker_1_ro_ms0_events, noof_marker_1_ro_ms1_events,noof_marker_2_ro_ms0_events, noof_marker_2_ro_ms1_events)
     
