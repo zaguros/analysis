@@ -1,18 +1,18 @@
 import time
-folder = r'D:\bjhensen\data\Marked Bell Data\BS'
+folder = r'D:\measuring\data\2014-11-Entanglement_XX_data\BS'
 
 filepaths = tb.get_all_msmt_filepaths(folder) 
 co = np.ones([1,4])
 sync_num_name = 'PQ_sync_number-1'
 
-st_start_ch0 = 5443000
+st_start_ch0 = 5444000
 st_len   = 100000 #50 ns
 ch0_ch1_diff = 600 #1 ns
 st_start_ch1=st_start_ch0 + ch0_ch1_diff
 p_sep = 600000 #600 ns
 
 #load all BS data and collect the coincidences
-if False:
+if True:
     for i,f in enumerate(filepaths):
         print 'Processing {}/{}'.format(i, len(filepaths))
 
@@ -33,12 +33,12 @@ if False:
 
 #plot the tpqi visibility vs something (or plot histogram for pts=1)
 if True:
-    pts=30
+    pts=1
     Xs=np.linspace(1,50,pts)
     Vs=zeros(pts)
     Tots=zeros(pts)
     for i,x in enumerate(Xs):
-        st_start_ch0 = 5444500
+        st_start_ch0 = 5440000
         st_len   = 40000 #50 ns
         ch0_ch1_diff = 600 #1 ns
         st_start_ch1=st_start_ch0 + ch0_ch1_diff
@@ -49,7 +49,7 @@ if True:
         st_fltr_1 = (((st_start_ch1<=st1)  & (st1<(st_start_ch1+st_len))) | ((st_start_ch1+p_sep<=st1) & (st1<(st_start_ch1+p_sep+st_len))) )
         cos_fltr=cos[st_fltr_0 & st_fltr_1 ,0]/1000.
         ll=len(cos_fltr)
-        dt=x
+        dt=300
         ii=np.sum((cos_fltr>-dt) & (cos_fltr<dt))
         #print ii
         oo=np.sum((cos_fltr>(-dt-600)) & (cos_fltr<(dt-600)))+np.sum((cos_fltr>(-dt+600)) & (cos_fltr<(dt+600)))

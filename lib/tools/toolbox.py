@@ -7,7 +7,7 @@ import h5py
 import platform
 import os
 import time
-from datetime import datetime
+import datetime
 
 try:
     import qt
@@ -37,6 +37,15 @@ def nearest_value(array, value):
     '''
     return array[nearest_idx(array,value)]
 
+def get_timestamp_from_now():
+    return timestamp_from_datetime(datetime.datetime.now())
+
+def timestamp_from_datetime(datetime_):
+    return datetime_.strftime('%Y%m%d%H%M%S')
+
+def datetime_from_timestamp(timestamp):
+    return datetime.datetime.strptime(timestamp,'%Y%m%d%H%M%S')
+    
 def verify_timestamp(timestamp):
     if len(timestamp) == 6:
         daystamp = time.strftime('%Y%m%d')
@@ -51,6 +60,7 @@ def verify_timestamp(timestamp):
         raise Exception("Cannot interpret timestamp '%s'" % timestamp)
 
     return daystamp, tstamp
+
 
 def is_older(ts0, ts1):
     '''
@@ -254,16 +264,26 @@ def measurement_filename(directory=os.getcwd(), ext='hdf5'):
                 os.path.join(directory,fn))
         return None
 
-def get_date_time_from_folder(folder):
-    d = os.path.split(os.path.split(folder)[0])[1]
-    t = os.path.split(folder)[1][:6]
+def get_date_time_string_from_folder(folder):
+    if not os.path.isdir(folder):
+        logging.error('Argument {} is not a folder'.format(folder))
+    head,tail=os.path.split(folder)
+    d = os.path.split(head)[1]
+    if len(tail) < 6:
+        logging.error('Argument {} is not a valid measurement folder'.format(folder))
+    t = tail[:6]
     return d,t
+
+def get_datetime_from_folder(folder):
+    d,t = get_date_time_string_from_folder(folder)
+    return datetime_from_timestamp(d+t)
+
 
 def get_measurement_string_from_folder(fodler):
     return os.path.split(folder)[1][7:]
 
 def get_plot_title_from_folder(folder):
-    d,t=get_date_time_from_folder(folder)
+    d,t=get_date_time_string_from_folder(folder)
     timestamp = d + '/' + t
     measurementstring = get_measurement_string_from_folder(folder)
     default_plot_title = timestamp+'\n'+measurementstring
@@ -479,13 +499,13 @@ def set_raw_data(fp, name, data):
     f.flush()
     f.close()        
     
-def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis'):
+def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
     put in the function. Also saves the attributes.
     """
     try:
-        f = h5py.File(fp, 'r+')
+        f = h5py.File(fp, permissions)
     except:
         print "Cannot open file", fp
         raise
