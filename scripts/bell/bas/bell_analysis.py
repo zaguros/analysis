@@ -58,12 +58,14 @@ for k,x in enumerate(X):
 	#print 'PSI PLUS check',np.sum(psi_plus_fltr), np.sum(d[:,psi_min]==0)
 	#print 'PSI other', np.sum(d[:,psi_min]>1)
 
+	total_time_filter=d[:,t]<300000000000 #5 minutes
+
 	#RND err fvilter
 	rnd_fltr= (d[:,rnd_lt3]<2) & (d[:,rnd_lt4]<2)
 
 	#filtered data
 	for psi,psi_fltr in zip(['psi_min','psi_plus'],[psi_min_fltr,psi_plus_fltr]):
-		fltr = st_fltr & psi_fltr & rnd_fltr & dt_fltr
+		fltr = st_fltr & psi_fltr & rnd_fltr & dt_fltr & total_time_filter
 		d_fltr = d[fltr]
 		print '-'*40
 		print 'FILTERED EVENTS {} \n  noof events {}\n'.format(psi,len(d_fltr))

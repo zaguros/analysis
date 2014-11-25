@@ -1,5 +1,5 @@
 import time
-folder = r'D:\measuring\data\2014-11-Entanglement_XX_data\BS'
+folder = r'D:\measuring\data\After2014-11-19analysis\BS\20141109'# r'D:\measuring\data\2014-11-Entanglement_XX_data\BS'
 
 filepaths = tb.get_all_msmt_filepaths(folder) 
 co = np.ones([1,4])
@@ -12,7 +12,7 @@ st_start_ch1=st_start_ch0 + ch0_ch1_diff
 p_sep = 600000 #600 ns
 
 #load all BS data and collect the coincidences
-if True:
+if False:
     for i,f in enumerate(filepaths):
         print 'Processing {}/{}'.format(i, len(filepaths))
 
@@ -38,7 +38,7 @@ if True:
     Vs=zeros(pts)
     Tots=zeros(pts)
     for i,x in enumerate(Xs):
-        st_start_ch0 = 5440000
+        st_start_ch0 = 5444500
         st_len   = 40000 #50 ns
         ch0_ch1_diff = 600 #1 ns
         st_start_ch1=st_start_ch0 + ch0_ch1_diff

@@ -1,4 +1,4 @@
-f=h5py.File(r'D:\measuring\data\2014-11-Entanglement_XX_data\20141125143904_total_events.hdf5','r')
+f=h5py.File(r'D:\measuring\data\2014-11-Entanglement_XX_data\20141125162505_total_events.hdf5','r')
 db=f['analysis']['total_ent_events'].value
 d3=f['analysis']['total_lt3_ssro'].value
 d4=f['analysis']['total_lt4_ssro'].value
@@ -31,13 +31,13 @@ print 'RO ms=0 LT3: {:.2f}%, RO ms=0 LT4: {:.2f}% '.format(ro_ms0_lt3*100,ro_ms0
 #print 'RND0 LT3: {:.2f}%, RND0 LT4: {:.2f}% '.format(rnd_0_lt3*100,rnd_0_lt4*100 )
 #print 'no of RND errors: {} '.format(np.sum(d[:,rnd_lt3]>1)+np.sum(d[:,rnd_lt4]>1))
 
-pts=1
+pts=15
 X=np.linspace(1000,100000,pts)
 Y=np.zeros((pts,2))
 T=np.zeros((pts,2))
 for k,x in enumerate(X):
 	#tail/laser filter
-	st_start_ch0 = 5444000
+	st_start_ch0 = 5444500
 	st_len   = 50000 #50 ns
 	ch0_ch1_diff = 600 #1 ns
 	st_start_ch1=st_start_ch0 + ch0_ch1_diff
@@ -46,7 +46,7 @@ for k,x in enumerate(X):
 			& (((st_start_ch0+p_sep<=db[:,st_2]) & (db[:,st_2]<(st_start_ch0+p_sep+st_len)) & (db[:,ch_2]==0)) | ((st_start_ch1+p_sep<=db[:,st_2]) & (db[:,st_2]<(st_start_ch1+p_sep+st_len)) & (db[:,ch_2]==1)) )  \
 
 	#dt filter
-	dt = 100000 # 10 ns
+	dt = x # 10 ns
 	dt_fltr = np.abs(np.array(db[:,st_2] - db[:,st_1], dtype='int')-p_sep) < dt 
 	#print np.abs(np.array(d[:,st_2] - d[:,st_1], dtype='int')-p_sep)
 	#psi_min_plus_filter
@@ -97,11 +97,11 @@ for k,x in enumerate(X):
 		print '    ', np.sum(corr_mat,axis=0)
 		if psi == 'psi_min':
 			CHSH  = -Es[0] + Es[1] + Es[2] + Es[3]
-			Y[k,0]= CHSH
+			Y[k,0]= Es[0]
 			T[k,0]=len(db_fltr)
 		elif psi == 'psi_plus':
 			CHSH  = Es[0] - Es[1] + Es[2] + Es[3] 
-			Y[k,1]= CHSH
+			Y[k,1]= Es[0]
 			T[k,1]=len(db_fltr)
 		print 'CHSH', CHSH
 
