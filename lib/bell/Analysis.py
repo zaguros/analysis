@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-import Settings, files, Filter
+import Settings, Filter
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.lde import sscorr
 from analysis.lib.pq import pq_tools, pq_plots
@@ -924,9 +924,9 @@ def Analyze_SSRO_data(PQ_sync_number, PQ_special, PQ_sync_time, PQ_time, PQ_chan
         # One of these list should be False completely and the other one should be True once, indicating there
         # is one random number for each markers
 
-        rnd_0 = is_rnd_0[is_sync_num_s] #X is_rnd_0[is_sync_num_s_min_1] #for LT4 rnd mismatch test
-        rnd_1 = is_rnd_1[is_sync_num_s] #is_rnd_1[is_sync_num_s_min_1] #for LT4 rnd mismatch test
-        rnd_generated = is_rnd[is_sync_num_s] #is_rnd[is_sync_num_s_min_1] #for LT4 rnd mismatch test
+        rnd_0 = is_rnd_0[is_sync_num_s]         #X is_rnd_0[is_sync_num_s_min_1] #for LT4 rnd mismatch test
+        rnd_1 = is_rnd_1[is_sync_num_s]         #is_rnd_1[is_sync_num_s_min_1] #for LT4 rnd mismatch test
+        rnd_generated = is_rnd[is_sync_num_s]   #is_rnd[is_sync_num_s_min_1] #for LT4 rnd mismatch test
 
         # Filters for the sync time are created, there should be only one True in both filters which gives
         # the sync time of the random number

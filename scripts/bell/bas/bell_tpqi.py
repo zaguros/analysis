@@ -1,11 +1,11 @@
 import time
-folder = r'D:\measuring\data\After2014-11-19analysis\BS\20141109'# r'D:\measuring\data\2014-11-Entanglement_XX_data\BS'
+folder = r'D:\measuring\data\After2014-11-19analysis\BS'# r'D:\measuring\data\2014-11-Entanglement_XX_data\BS'
 
 filepaths = tb.get_all_msmt_filepaths(folder) 
 co = np.ones([1,4])
 sync_num_name = 'PQ_sync_number-1'
 
-st_start_ch0 = 5444000
+st_start_ch0 = 5440000
 st_len   = 100000 #50 ns
 ch0_ch1_diff = 600 #1 ns
 st_start_ch1=st_start_ch0 + ch0_ch1_diff
@@ -31,6 +31,10 @@ if False:
     fn = '{}_coincidences'.format(time.strftime('%Y%m%d_%H%M'))
     np.savez(os.path.join(folder,fn), cos)
 
+if False:
+    fn='_coincidences.npz'
+    cos = np.load(os.path.join(folder,fn))['arr_0']
+
 #plot the tpqi visibility vs something (or plot histogram for pts=1)
 if True:
     pts=1
@@ -38,7 +42,7 @@ if True:
     Vs=zeros(pts)
     Tots=zeros(pts)
     for i,x in enumerate(Xs):
-        st_start_ch0 = 5444500
+        st_start_ch0 = 5447000
         st_len   = 40000 #50 ns
         ch0_ch1_diff = 600 #1 ns
         st_start_ch1=st_start_ch0 + ch0_ch1_diff
@@ -67,6 +71,8 @@ if True:
         ax2.plot(Xs,Tots, color='g')
     else:
         figure()
-        bins=np.linspace(-1000,1000,200)
-        hist(cos_fltr,bins=bins)
+        ax=plt.subplot(111)
+        bins=np.linspace(-50,50,50)
+        ax.hist(cos_fltr,bins=bins, color='g')
+        ax.set_xlim(-30,30)
 #hist(cos[st_fltr_0 & st_fltr_1 ,0]/1000., bins=linspace(-700,700,10))

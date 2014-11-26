@@ -1,4 +1,4 @@
-f=h5py.File(r'K:\ns\qt\Diamond\Documents\Documents Just\MBD\After2014-11-19analysis\Total_Bell_events.hdf5','r')
+f=h5py.File(r'D:\measuring\data\After2014-11-19analysis\Total_Bell_events.hdf5','r')
 g=f['analysis']['Total_Bell_events']
 d=g.value
 cs=g.attrs['Columns'].split(', ')
@@ -32,8 +32,8 @@ rnd_0_lt4=np.sum(d[:,rnd_lt4]==0)/float(noof_ev)
 print 'RND0 LT3: {:.2f}%, RND0 LT4: {:.2f}% '.format(rnd_0_lt3*100,rnd_0_lt4*100 )
 print 'no of RND errors: {} '.format(np.sum(d[:,rnd_lt3]>1)+np.sum(d[:,rnd_lt4]>1))
 
-pts=15
-X=np.linspace(1000,100000,pts)
+pts=30
+X=np.linspace(1,30,pts)
 Y=np.zeros((pts,2))
 T=np.zeros((pts,2))
 for k,x in enumerate(X):
@@ -47,7 +47,7 @@ for k,x in enumerate(X):
 			& (((st_start_ch0+p_sep<=d[:,st_2]) & (d[:,st_2]<(st_start_ch0+p_sep+st_len)) & (d[:,ch_2]==0)) | ((st_start_ch1+p_sep<=d[:,st_2]) & (d[:,st_2]<(st_start_ch1+p_sep+st_len)) & (d[:,ch_2]==1)) )  \
 
 	#dt filter
-	dt = x # 10 ns
+	dt = 50000 # 10 ns
 	dt_fltr = np.abs(np.array(d[:,st_2] - d[:,st_1], dtype='int')-p_sep) < dt 
 	#print np.abs(np.array(d[:,st_2] - d[:,st_1], dtype='int')-p_sep)
 	#psi_min_plus_filter
@@ -58,7 +58,8 @@ for k,x in enumerate(X):
 	#print 'PSI PLUS check',np.sum(psi_plus_fltr), np.sum(d[:,psi_min]==0)
 	#print 'PSI other', np.sum(d[:,psi_min]>1)
 
-	total_time_filter=d[:,t]<300000000000 #5 minutes
+	total_time_filter=d[:,t]<x*60*1e12 #5 min
+ #5 minutes
 
 	#RND err fvilter
 	rnd_fltr= (d[:,rnd_lt3]<2) & (d[:,rnd_lt4]<2)
@@ -115,7 +116,7 @@ for k,x in enumerate(X):
 if pts>1:
     figure()
     ax=plt.subplot(111)
-    ax.plot(X/1000.,Y[:,0])
-    ax.plot(X/1000.,Y[:,1])
+    ax.plot(X,Y[:,0])
+    ax.plot(X,Y[:,1])
     ax2=ax.twinx()
-    ax2.plot(X/1000.,T[:,0], color='r')
+    ax2.plot(X,T[:,0], color='r')

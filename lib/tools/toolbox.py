@@ -279,13 +279,13 @@ def get_datetime_from_folder(folder):
     return datetime_from_timestamp(d+t)
 
 
-def get_measurement_string_from_folder(fodler):
+def get_measurement_name_from_folder(folder):
     return os.path.split(folder)[1][7:]
 
 def get_plot_title_from_folder(folder):
     d,t=get_date_time_string_from_folder(folder)
     timestamp = d + '/' + t
-    measurementstring = get_measurement_string_from_folder(folder)
+    measurementstring = get_measurement_name_from_folder(folder)
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
 
