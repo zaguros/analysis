@@ -84,19 +84,31 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
 
             parity_a_result = self.parity_result[0::2]
             parity_b_result = self.parity_result[1::2]
-
+            # print parity_a_result
+            # print parity_b_result
             # reshape parity a and b
-            parity_result_a0 = (parity_a_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
-            parity_result_b0 = (parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
-            parity_result_a1 = (1-parity_a_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
-            parity_result_b1 = (1-parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
-    
+            # parity_result_a0 = (parity_a_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            # parity_result_b0 = (parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            # parity_result_a1 = (1-parity_a_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            # parity_result_b1 = (1-parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            # print 'parity outcomes'
+            # print 'a0'
+            # print parity_result_a0
+            # print 'a1'
+            # print parity_result_a1
+            # print 'b0'
+            # print parity_result_b0
+            # print 'b1'
+            # print parity_result_b1            
+
             #Step 1 Multiply results with post selection parameter
             ssro_results_00 = parity_a_result*parity_b_result*self.ssro_results
             ssro_results_01 = parity_a_result*(1-parity_b_result)*self.ssro_results
             ssro_results_10 = (1-parity_a_result)*parity_b_result*self.ssro_results
             ssro_results_11 = (1-parity_a_result)*(1-parity_b_result)*self.ssro_results
-
+            # print'((1-parity_a_result)*parity_b_result)'
+            # print ((1-parity_a_result)*parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            # print parity_result_a1*parity_result_b0
             # Step 2 reshape
             parity_result_00 = (parity_a_result*parity_b_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
             parity_result_01 = (parity_a_result*(1-parity_b_result)).reshape((-1,self.pts,self.readouts)).sum(axis=0)
@@ -122,8 +134,10 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.p00 = (parity_result_00/self.reps.astype('float'))
             # print  self.p00
             self.p01 = ((parity_result_01)/self.reps.astype('float'))
+            # print parity_result_01
             # print  self.p01
             self.p10 = (parity_result_10/self.reps.astype('float'))
+            # print parity_result_10
             # print  self.p10
             self.p11 = ((parity_result_11)/self.reps.astype('float'))
             # print  self.p11
