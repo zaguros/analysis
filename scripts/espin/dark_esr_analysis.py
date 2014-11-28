@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp =None #'20141102235249'#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp ='20141125_094125' #YYYYmmddHHMMSS
 
 guess_offset = 1
 #guess_x0 = 2.807
@@ -34,9 +34,9 @@ guess_A_plus1 = 0.0
 guess_A_0 = 0.3
 #guess_x0 = 3.730
 #guess_sigma = 0.435e-3
-guess_Nsplit = 2.196e-3
+guess_Nsplit = 0*2.196e-3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.86 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.7 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -88,9 +88,9 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
         #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
         #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2)
-        return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
-                - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-                - A_0()*np.exp(-((x-x0())/sigma())**2) \
+        return o() - np.abs(A_min1())*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
+                - np.abs(A_plus1())*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
+                - np.abs(A_0())*np.exp(-((x-x0())/sigma())**2) \
     
     try:
         fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0, Nsplit],
