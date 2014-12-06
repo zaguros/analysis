@@ -128,7 +128,7 @@ def BarPlotTomoContrast(timestamps = [None,None], measurement_name = ['adwindata
 	# print 'Fidelity with ZmZ  = ' + str(F_ZmZ)
 	# print 'Fidelity with ent = ' + str(F_ent)
 
-
+	print 'XY = ' +str( (y[0]**2 + y[1]**2)**0.5)
 
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 

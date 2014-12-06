@@ -10,7 +10,8 @@ reload(plot)
 
 def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwindata'], 
             frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], offset = 0.5,
-            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True):
+            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True,
+            yaxis = [-0.5,1.05]):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
@@ -29,7 +30,7 @@ def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwi
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC()
         ax = a.plot_results_vs_sweepparam(ret='ax')
-        ax.set_ylim(-0.05,1.05)
+        ax.set_ylim(yaxis)
 
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
@@ -77,7 +78,8 @@ def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwi
 
 def Carbon_control_sweep_N_zoom(timestamp=None, measurement_name = ['adwindata'], 
             A = [0.5, 0.5],
-            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True):
+            fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True,
+            yaxis = [-0.05,1.05]):
     ''' Function to analyze data for optimization of the number of pulses for a controlled C13 gate. 
     '''
     
@@ -93,11 +95,14 @@ def Carbon_control_sweep_N_zoom(timestamp=None, measurement_name = ['adwindata']
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC()
         ax = a.plot_results_vs_sweepparam(ret='ax')
-        ax.set_ylim(-0.05,1.05)
+        ax.set_ylim(yaxis)
+        ax.axhspan(0,0.5,fill=False,ls='dotted')
 
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
         y_u = a.u_p0.reshape(-1)[:]
+
+        ax.set_xlim(x[0]-1,x[-1]+1)
 
         p0, fitfunc, fitfunc_str = common.fit_poly(A)
         

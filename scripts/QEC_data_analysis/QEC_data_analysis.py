@@ -14,7 +14,7 @@ reload(three_QEC)
 
 ''' save the datasets '''
 
-# three_QEC.save_QEC_dataset(older_than = '20141120_103734', no_error = '00')
+three_QEC.save_QEC_dataset(older_than = '20141120_103734', no_error = '00')
 
 # three_QEC.save_QEC_dataset(older_than = '20141121_141906', no_error = '11')
 
