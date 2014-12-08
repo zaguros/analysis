@@ -12,144 +12,6 @@ script_name = 'three_qubit_QEC_analysis.py'
 
 ''' These functions are old but can be useful '''
 
-def Contrast_Plot_QEC(timestamps=[None, None], measurement_name = ['adwindata'],folder_name ='QEC',
-        post_select_QEC = False, ssro_calib_timestamp =None, do_plot = False, return_data = False) :
-
-    '''
-    Function that makes a plot with errorbars of MBI type data that has been measured with a positive
-    and negative RO.
-    '''       
-
-    a_p, x, c0_p, u_c0_p, c0_00_p, u_c0_00_p, c0_01_p, u_c0_01_p, c0_10_p, u_c0_10_p, c0_11_p, u_c0_11_p, x_labels, folder_p = Plot_QEC(timestamp = timestamps[0], 
-            measurement_name = measurement_name, folder_name = 'positive',
-            ssro_calib_timestamp = ssro_calib_timestamp) 
-
-    a_n, x, c0_n, u_c0_n, c0_00_n, u_c0_00_n, c0_01_n, u_c0_01_n, c0_10_n, u_c0_10_n, c0_11_n, u_c0_11_n, x_labels, folder_n = Plot_QEC(timestamp = timestamps[1], 
-            measurement_name = measurement_name, folder_name = 'negative',
-            ssro_calib_timestamp =ssro_calib_timestamp) 
-        
-    ### Combine data
-
-        ## all data
-    y = (c0_p - c0_n)/2.
-    y_err =  1./2*(u_c0_p**2 + u_c0_n**2)**0.5      
-    if do_plot == True:
-        fig,ax = plt.subplots() 
-        rects = ax.errorbar(x,y,yerr=y_err,color = 'k' )
-        ax.set_ylim(-1.1,1.1)
-        ax.set_xlim(-0.1,1.1)
-        ax.set_title(str(folder_p)+'/'+'\n' + script_name)
-        ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-        ax.set_xlabel('error probability')
-        ax.set_ylabel('Contrast')
-
-        try:
-            fig.savefig(
-                os.path.join(folder_p,'QEC.png'))
-        except:
-            print 'Figure has not been saved.'
-
-        ## ms=0 data
-    y_00 = (c0_00_p - c0_00_n)/2.
-    y_00_err =  1./2*(u_c0_00_p**2 + u_c0_00_n**2)**0.5 
-
-    y_01 = (c0_01_p - c0_01_n)/2.
-    y_01_err =  1./2*(u_c0_01_p**2 + u_c0_01_n**2)**0.5 
-
-    y_10 = (c0_10_p - c0_10_n)/2.
-    y_10_err =  1./2*(u_c0_10_p**2 + u_c0_10_n**2)**0.5 
-
-    y_11 = (c0_11_p - c0_11_n)/2.
-    y_11_err =  1./2*(u_c0_11_p**2 + u_c0_11_n**2)**0.5 
-    if do_plot == True:
-        fig,ax = plt.subplots() 
-        ax.errorbar(x,y_00,yerr=y_00_err,color = 'c', label = 'y_00' )
-        ax.errorbar(x,y_01,yerr=y_01_err,color = 'k', label = 'y_01' )
-        ax.errorbar(x,y_10,yerr=y_10_err,color = 'm', label = 'y_10' )
-        ax.errorbar(x,y_11,yerr=y_11_err,color = 'b', label = 'y_11' )
-        ax.set_ylim(-1.1,1.1)
-        ax.set_xlim(-0.1,1.1)
-        plt.legend()
-        ax.set_title(str(folder_p)+'/'+'\n postselect')
-        ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-        ax.set_xlabel('error probability')
-        ax.set_ylabel('Contrast')
-
-
-        try:
-            fig.savefig(
-                os.path.join(folder_p,'QEC_ps.png'))
-        except:
-            print 'Figure has not been saved.'
-
-
-    # process the probabilities
-
-    p00_avg = (a_p.p00+a_n.p00)/2
-    p01_avg = (a_p.p01+a_n.p01)/2
-    p10_avg = (a_p.p10+a_n.p10)/2
-    p11_avg = (a_p.p11+a_n.p11)/2
-    if do_plot == True:
-        fig,ax = plt.subplots()
-        ax.set_title(str(folder_p)+'/'+ '\n probabilities')
-        ax.plot(x,p00_avg, 'c', label = 'p00')
-        ax.plot(x,p01_avg, 'k', label = 'p01')
-        ax.plot(x,p10_avg, 'm', label = 'p10')
-        ax.plot(x,p11_avg, 'b', label = 'p11')
-        plt.legend()
-        ax.set_xlabel('error probability')
-        ax.set_ylabel('outcome probability')
-
-        try:
-            fig.savefig(
-                os.path.join(folder_p,'QEC_probabilities.png'))
-        except:
-            print 'Figure has not been saved.'
-
-    if return_data == True:
-        return x, y, y_err, y_00, y_00_err, p00_avg, y_01, y_01_err, p01_avg, y_10, y_10_err, p10_avg, y_11, y_11_err, p11_avg
-
-def Contrast_Plot_Encoding(timestamps=[None, None], measurement_name = ['adwindata'],folder_name ='QEC',
-        post_select_QEC = False, ssro_calib_timestamp =None, do_plot = False, return_data = False) :
-
-    '''
-    Function that makes a plot with errorbars of MBI type data that has been measured with a positive
-    and negative RO.
-    '''       
-
-    a_p, x, c0_p, u_c0_p, x_labels, folder_p = Plot_Encoding(timestamp = timestamps[0], 
-            measurement_name = measurement_name, folder_name = 'positive',
-            ssro_calib_timestamp = ssro_calib_timestamp, return_raw = True) 
-
-    a_n, x, c0_n, u_c0_n, x_labels, folder_n = Plot_Encoding(timestamp = timestamps[1], 
-            measurement_name = measurement_name, folder_name = 'negative',
-            ssro_calib_timestamp =ssro_calib_timestamp, return_raw = True) 
-        
-    ### Combine data
-
-        ## all data
-    y = (c0_p - c0_n)/2.
-    y_err =  1./2*(u_c0_p**2 + u_c0_n**2)**0.5      
-    if do_plot == True:
-        fig,ax = plt.subplots() 
-        ax.errorbar(x,y,yerr=y_err,color = 'k' )
-        ax.set_ylim(-1.1,1.1)
-        ax.set_xlim(-0.1,1.1)
-        ax.set_title(str(folder_p)+'/'+'\n' + script_name)
-        ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-        ax.set_xlabel('error probability')
-        ax.set_ylabel('Contrast')
-
-        try:
-            fig.savefig(
-                os.path.join(folder_p,'QEC.png'))
-        except:
-            print 'Figure has not been saved.'
-    
-    if return_data == True:
-        return x, y, y_err, y_00, y_00_err, p00_avg, y_01, y_01_err, p01_avg, y_10, y_10_err, p10_avg, y_11, y_11_err, p11_avg
-
-
 def Contrast_Plot_QEC_full(timestamp = None, measurement_name = ['adwindata'],folder_name ='RO1',
         ssro_calib_timestamp =None, save = True,
         do_plot  = True):
@@ -361,200 +223,170 @@ def Plot_errorcurve_no_QEC(timestamp = None, measurement_name = ['adwindata'],fo
         return x, y, y_err
 
 
+''' New functions THT '''
+
+def load_QEC_data(folder, ssro_calib_folder, post_select = True):
+    ''' Loads a QEC measurment and returns all 
+    the results in a dictionairy'''
+
+    a = CP.ConditionalParityAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results(name='adwindata', post_select_QEC = False)
+    a.get_electron_ROC(ssro_calib_folder)
+
+    x = a.sweep_pts.reshape(-1)
+    c0, c0_u = a.convert_fidelity_to_contrast(a.p0,a.u_p0)
+  
+    if post_select:
+        a = CP.ConditionalParityAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name='adwindata', post_select_QEC = True)
+        a.get_electron_ROC(ssro_calib_folder  , post_select_QEC = True)
+
+        c0_00,c0_00_u =  a.convert_fidelity_to_contrast(a.p0_00,a.u_p0_00)
+        c0_01,c0_01_u =  a.convert_fidelity_to_contrast(a.p0_01,a.u_p0_01)
+        c0_10,c0_10_u =  a.convert_fidelity_to_contrast(a.p0_10,a.u_p0_10)
+        c0_11,c0_11_u =  a.convert_fidelity_to_contrast(a.p0_11,a.u_p0_11)
+
+    data_dict = {}
+    # data_dict['a'] = a
+    data_dict['x']          = x
+    data_dict['c0']         = c0 
+    data_dict['c0_u']       = c0_u 
+    
+    if post_select:
+        data_dict['c0_00']      = c0_00 
+        data_dict['c0_00_u']    = c0_00_u 
+        data_dict['c0_01']      = c0_01 
+        data_dict['c0_01_u']    = c0_01_u 
+        data_dict['c0_10']      = c0_10 
+        data_dict['c0_10_u']    = c0_10_u 
+        data_dict['c0_11']      = c0_11 
+        data_dict['c0_11_u']    = c0_11_u 
+        data_dict['p00']        = a.p00
+        data_dict['p01']        = a.p01
+        data_dict['p10']        = a.p10
+        data_dict['p11']        = a.p11
+
+    return data_dict
+
+def get_folder(timestamp, folder_name):
+    if timestamp == None:
+        timestamp, folder   = toolbox.latest_data(folder_name, return_timestamp =True)
+    else:
+        folder = toolbox.data_from_time(timestamp)
+    return timestamp, folder    
+
+def get_ssro_folder(ssro_calib_timestamp):
+    if ssro_calib_timestamp == None:
+        ssro_calib_folder = toolbox.latest_data('SSRO')
+    else:
+        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+    return ssro_calib_folder
 
 ''' These functions both load and plot individual measurements TODO THT, seperate loading from plotting'''
 
-def Plot_QEC(timestamp = None, measurement_name = ['adwindata'],folder_name ='QEC',
-        plot_post_select = False,
-        ssro_calib_timestamp = None, save = True,
-        do_plots = False, title =None ,fontsize = 10, post_select_QEC = True, return_raw = True, return_dict = False) :
+def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_timestamp = None,
+        post_select = False, save = True, title = None, fontsize = 10) :
     '''
-    Function that makes a bar plot with errorbars of MBI type data
+    Plots the results of a single QEC/Encoding measurement, from a raw data folder.
+    post_select must be false if no parity measurements
+    Length of the timestamp gives eaither a single measurement or a positive/negative one
     '''
+    ### Timestamps and folders
+    timestamp, folder = get_folder(timestamps[0], folder_name)
+    if len(timestamps) == 2:
+        timestamp2, folder2 = get_folder(timestamps[1], folder_name)
+    ssro_calib_folder = get_ssro_folder(ssro_calib_timestamp)
+
+    ### Get the data
+    data = load_QEC_data(folder = folder, ssro_calib_folder = ssro_calib_folder, post_select=post_select)
+    if len(timestamps) == 2:
+        data2 = load_QEC_data(folder = folder2, ssro_calib_folder = ssro_calib_folder, post_select=post_select)
+
+    ### Combine the data in case of positive/negative measurement    
+    if len(timestamps) == 2:
+        
+        data['c0'] = (data['c0'] - data2['c0'])/2.
+        data['c0_u'] =  1./2*(data['c0_u']**2 + data2['c0_u']**2)**0.5      
+
+    ### Plots
     plt.rc('font', size=fontsize)
-    if timestamp == None:
-        timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
+    
+    fig,ax = plt.subplots()
+    
+    ax.errorbar(data['x'], data['c0'],yerr=data['c0_u'], color = 'b' )
+    
+    if title == None:
+        ax.set_title(str(folder)+'/'+str(timestamp))
     else:
-        folder = toolbox.data_from_time(timestamp)
+        ax.set_title(title)
+    
+    ax.set_ylim(-1,1)
+    ax.set_xlim(-0.05,1.05)
+    ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
 
-    if ssro_calib_timestamp == None:
-        ssro_calib_folder = toolbox.latest_data('SSRO')
-    else:
-        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-        # print ssro_calib_folder
-    a = CP.ConditionalParityAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results(name='adwindata',post_select_QEC = False)
-    # print ssro_calib_folder
-    a.get_electron_ROC(ssro_calib_folder)
+    fig.savefig(os.path.join(folder,'QEC_single_measurment.png'))
+    fig.savefig(os.path.join(folder, 'QEC_single_measurment.pdf'),
+            format='pdf',bbox_inches='tight')
 
-    x_labels = a.sweep_pts.reshape(-1)
 
-    ''' all data '''
+    ### Post selected data
+    if post_select ==True:
+        
+        ### Combine negative/positive post selected data
+        if len(timestamps) ==2:
+            data['c0_00'] = (data['c0_00'] - data2['c0_00'])/2.
+            data['c0_00_u'] =  1./2*(data['c0_00_u']**2 + data2['c0_00_u']**2)**0.5   
+            data['c0_01'] = (data['c0_01'] - data2['c0_01'])/2.
+            data['c0_01_u'] =  1./2*(data['c0_01_u']**2 + data2['c0_01_u']**2)**0.5
+            data['c0_10'] = (data['c0_10'] - data2['c0_10'])/2.
+            data['c0_10_u'] =  1./2*(data['c0_10_u']**2 + data2['c0_10_u']**2)**0.5
+            data['c0_11'] = (data['c0_11'] - data2['c0_11'])/2.
+            data['c0_11_u'] =  1./2*(data['c0_11_u']**2 + data2['c0_11_u']**2)**0.5
 
-    c0,u_c0 = a.convert_fidelity_to_contrast(a.p0,a.u_p0)
-    x = x_labels
-
-    if do_plots ==True:
+        ### Plot postselected data
         fig,ax = plt.subplots()
-        ax.errorbar(x,c0,yerr=u_c0,color = 'k' )
-        # ax.set_xticks(x)
+        ax.errorbar(data['x'], data['c0_00'], yerr=data['c0_00_u'], label = '00',color = 'k' )
+        ax.errorbar(data['x'], data['c0_01'], yerr=data['c0_01_u'], label = '01',color = 'c' )
+        ax.errorbar(data['x'], data['c0_10'], yerr=data['c0_10_u'], label = '10',color = 'g' )
+        ax.errorbar(data['x'], data['c0_11'], yerr=data['c0_11_u'], label = '11',color = 'r' )
+        ax.set_xlim(-0.05,1.05)
+        ax.legend()
+ 
         if title == None:
             ax.set_title(str(folder)+'/'+str(timestamp))
         else:
             ax.set_title(title)
-        # print x_labels
-        # ax.set_xticklabels(x_labels.tolist())
-        ax.set_ylim(-1,1)
-        ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+        ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
 
-        try:
-            fig.savefig(os.path.join(folder,'QEC.png'))
-            fig.savefig(os.path.join(folder, title+'.pdf'),
-                    format='pdf',bbox_inches='tight')
-        except:
-            print 'Figure A has not been saved.'
-    
-    if post_select_QEC == False and return_dict == True:
-            data_dict = {}
-            # data_dict['a'] = a
-            data_dict['x'] =x 
-            data_dict['c0'] =c0 
-            data_dict['u_c0'] =u_c0 
-            data_dict['x_labels'] =x_labels 
-            # data_dict['folder'] =folder 
+        fig.savefig(os.path.join(folder,'QEC_single_measurment_ps.png'))
+        fig.savefig(os.path.join(folder,'QEC_single_measurment_ps.pdf'),
+                format='pdf',bbox_inches='tight')
 
-            return data_dict, folder 
-
-    ''' postselected data '''
-    if post_select_QEC == True:
-        a = CP.ConditionalParityAnalysis(folder)
-        a.get_sweep_pts()
-        a.get_readout_results(name='adwindata',post_select_QEC = post_select_QEC)
-        a.get_electron_ROC(ssro_calib_folder, post_select_QEC = post_select_QEC)
-                
-        c0_00,u_c0_00 =  a.convert_fidelity_to_contrast(a.p0_00,a.u_p0_00)
-        c0_01,u_c0_01 =  a.convert_fidelity_to_contrast(a.p0_01,a.u_p0_01)
-        c0_10,u_c0_10 =  a.convert_fidelity_to_contrast(a.p0_10,a.u_p0_10)
-        c0_11,u_c0_11 =  a.convert_fidelity_to_contrast(a.p0_11,a.u_p0_11)
         
-        if plot_post_select ==True:
-            fig,ax = plt.subplots()
-            ax.errorbar(x,c0_00,yerr=u_c0_00,color = 'k' )
-            ax.errorbar(x,c0_01,yerr=u_c0_01,color = 'c' )
-            ax.errorbar(x,c0_10,yerr=u_c0_10,color = 'g' )
-            ax.errorbar(x,c0_11,yerr=u_c0_11,color = 'r' )
-            # ax.set_xticks(x)
-            if title == None:
-                ax.set_title(str(folder)+'/'+str(timestamp))
-            else:
-                ax.set_title(title)
-            # print x_labels
-            # ax.set_xticklabels(x_labels.tolist())
-            # ax.set_ylim(-1,1)
-            ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+        ### Cobine neagtive/postitive outcome probabilities
+        if len(timestamps) == 2:
+            data['p00'] = (data['p00'] + data2['p00'])/2
+            data['p01'] = (data['p01'] + data2['p01'])/2
+            data['p10'] = (data['p10'] + data2['p10'])/2
+            data['p11'] = (data['p11'] + data2['p11'])/2
 
-            try:
-                fig.savefig(os.path.join(folder,'QEC.png'))
-                fig.savefig(os.path.join(folder, title+'.pdf'),
-                        format='pdf',bbox_inches='tight')
-            except:
-                print 'Figure A has not been saved.'
-        if return_raw == True:
-            return a, x, c0, u_c0, c0_00, u_c0_00, c0_01, u_c0_01, c0_10, u_c0_10, c0_11, u_c0_11, x_labels, folder
-        
-        elif return_dict:
-            data_dict = {}
-            # data_dict['a'] = a
-            data_dict['x'] =x 
-            data_dict['c0'] =c0 
-            data_dict['u_c0'] =u_c0 
-            data_dict['c0_00'] =c0_00 
-            data_dict['u_c0_00'] =u_c0_00 
-            data_dict['c0_01'] =c0_01 
-            data_dict['u_c0_01'] =u_c0_01 
-            data_dict['c0_10'] =c0_10 
-            data_dict['u_c0_10'] =u_c0_10 
-            data_dict['c0_11'] =c0_11 
-            data_dict['u_c0_11'] =u_c0_11 
-            data_dict['x_labels'] =x_labels 
-            # data_dict['folder'] =folder 
-            data_dict['p00'] = a.p00
-            data_dict['p01'] = a.p01
-            data_dict['p10'] = a.p10
-            data_dict['p11'] = a.p11
-
-            return data_dict, folder
-
-def Plot_Encoding(timestamp = None, measurement_name = ['adwindata'], folder_name ='QEC',
-        plot_post_select = False,
-        ssro_calib_timestamp = None, save = True,
-        do_plots = False, title =None ,fontsize = 10, return_raw = True, return_dict = False) :
-    '''
-    Load and plot encoding data (no postselection, because no parity measurements)
-    '''
-
-    ### Find data ###
-    if timestamp == None:
-        timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
-    else:
-        folder = toolbox.data_from_time(timestamp)
-
-    if ssro_calib_timestamp == None:
-        ssro_calib_folder = toolbox.latest_data('SSRO')
-    else:
-        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-    
-    ### Load data ###
-    a = CP.ConditionalParityAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results(name='adwindata',post_select_QEC = False)
-    a.get_electron_ROC(ssro_calib_folder)
-
-    x_labels = a.sweep_pts.reshape(-1)
-
-    c0,u_c0 = a.convert_fidelity_to_contrast(a.p0,a.u_p0)
-    x = x_labels
-
-
-    ### Plotting (optional) ###
-    if do_plots ==True:
-        plt.rc('font', size=fontsize)
+        ### Outcome probabilities
         fig,ax = plt.subplots()
-        ax.errorbar(x,c0,yerr=u_c0,color = 'k' )
-        # ax.set_xticks(x)
-        if title == None:
-            ax.set_title(str(folder)+'/'+str(timestamp))
-        else:
-            ax.set_title(title)
-        # ax.set_xticklabels(x_labels.tolist())
-        ax.set_ylim(-1,1)
-        ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+        ax.set_title(str(folder)+'/'+ '\n probabilities')
+        ax.plot(data['x'],data['p00'], 'c', label = 'p00')
+        ax.plot(data['x'],data['p01'], 'k', label = 'p01')
+        ax.plot(data['x'],data['p10'], 'm', label = 'p10')
+        ax.plot(data['x'],data['p11'], 'b', label = 'p11')
+        plt.legend()
+        ax.set_xlabel('error probability')
+        ax.set_ylabel('outcome probability')  
+        ax.set_title(str(folder)+'/'+str(timestamp) + '_QEC_probs')                
 
-        try:
-            fig.savefig(os.path.join(folder,'QEC.png'))
-            fig.savefig(os.path.join(folder, title+'.pdf'),
-                    format='pdf',bbox_inches='tight')
-        except:
-            print 'Figure A has not been saved.'
-    
-    ### Return dictionairy (optional) ###
-    if return_raw == True:
-        return a, x, c0, u_c0, x_labels, folder
-    
-    elif return_dict == True:
-            data_dict = {}
-            # data_dict['a'] = a
-            data_dict['x'] =x 
-            data_dict['c0'] =c0 
-            data_dict['u_c0'] =u_c0 
-            data_dict['x_labels'] =x_labels 
-            # data_dict['folder'] =folder 
-
-            return data_dict, folder 
-   
+        fig.savefig(os.path.join(folder,'QEC_probs'+'.png'))
+       
 
 def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
     QEC_dict = {}
@@ -570,15 +402,14 @@ def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
                 # print 'k_'+str(k)
                 
 
-                timestamp, folder = toolbox.latest_data(contains = direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)+'_'+state, older_than = older_than,return_timestamp = True)
+                timestamp, folder = toolbox.latest_data(contains = direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)
+                                                        +'_'+state, older_than = older_than,return_timestamp = True)
 
                 SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
-                # print SSRO_timestamp
+                   # print SSRO_timestamp
                 k_dict['k_'+str(k)] ={}
-                k_dict['k_'+str(k)], folder = Plot_QEC(timestamp = timestamp, folder_name = folder,
-                    ssro_calib_timestamp = SSRO_timestamp, return_raw = False, return_dict = True, post_select_QEC = True) 
-                
-                
+                k_dict['k_'+str(k)] = load_QEC_data(folder, SSRO_folder, post_select = True) 
+                          
             for item in k_dict['k_0']:
                 QEC_dict[str(error_sign)][direction][item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item]), axis=0)
 
@@ -597,7 +428,6 @@ def no_QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
             for k in range(2):
                 # print 'k_'+str(k)
                 
-
                 timestamp, folder = toolbox.latest_data(contains = 'no_corr_'+direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)+'_'+state, older_than = older_than,return_timestamp = True)
 
                 SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
@@ -613,16 +443,14 @@ def no_QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
     return QEC_dict,folder
 
 
-
 ''' these functions are used to open/close save/load from and to HDF5 files '''
 
 def openfile(name = 'QEC_141121_final.hdf5'):
-   datafile = h5py.File(os.path.join(r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data', name)) 
+   datafile = h5py.File(os.path.join(r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data10', name)) 
    return datafile
 
 def closefile(datafile):
     datafile.close()
-
 
 def save_data_hdf5file(datafile, data_dict, state, RO):
     f = datafile
@@ -631,7 +459,6 @@ def save_data_hdf5file(datafile, data_dict, state, RO):
     for item in data_dict:
         f.attrs [item] = data_dict[item]
         f_grp.create_dataset (item, data = data_dict[item])
-
 
 def load_data_hdf5file(datafile,state, RO):
     f = datafile
@@ -650,7 +477,7 @@ def load_data_hdf5file(datafile,state, RO):
 def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0):
 
     QEC_data_dict = {}
-    u_list = ['u_c0', 'u_c0_00','u_c0_01','u_c0_10','u_c0_11']
+    u_list = ['c0_u', 'c0_00_u','c0_01_u','c0_10_u','c0_11_u']
     c_list = ['c0', 'c0_00','c0_01','c0_10','c0_11']
     p_list = ['p00','p01','p10','p11']
     y_list = ['y','y_00','y_01','y_10','y_11']
@@ -667,13 +494,12 @@ def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0):
                                                         QEC_dict[str(1)]['positive'][c_list[v]]-
                                                         QEC_dict[str(-1)]['negative'][c_list[v]]-
                                                         QEC_dict[str(1)]['negative'][c_list[v]])/4
-
         
         
-        QEC_data_dict[y_err_list[v]] = (QEC_dict[str(-1)]['positive'][u_list[v]]**2+
+        QEC_data_dict[y_err_list[v]] = ((QEC_dict[str(-1)]['positive'][u_list[v]]**2+
                                                         QEC_dict[str(1)]['positive'][u_list[v]]**2+
                                                         QEC_dict[str(-1)]['negative'][u_list[v]]**2+
-                                                        QEC_dict[str(1)]['negative'][u_list[v]]**2)**0.5/4
+                                                        QEC_dict[str(1)]['negative'][u_list[v]]**2)**0.5)/4
     for p in range(4):
             QEC_data_dict[p_list[p]] = {}
             
