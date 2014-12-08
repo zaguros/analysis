@@ -45,9 +45,10 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     fixed = kw.pop('fixed', [])
     err_y = kw.pop ('err_y', None)
 
-    if (len(err_y) != len(y)):
-    	print 'Data and error arrays have non-matching lengths!'
-    	err_y = None
+    if err_y!=None:
+        if (len(err_y) != len(y)):
+        	print 'Data and error arrays have non-matching lengths!'
+        	err_y = None
 
     # use the standardized fitmethod: any arg is treated as initial guess
     if fitmethod != None:
