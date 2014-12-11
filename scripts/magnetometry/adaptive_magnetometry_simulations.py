@@ -125,7 +125,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_res
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
 		mgnt_exp.verbose=True
-		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update,, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
+		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
@@ -359,7 +359,7 @@ plt.show()
 fid0=0.87
 fid1=0.02
 reps=3
-simulate_sweep_field_variable_M (G=4,K=10,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
+#simulate_sweep_field_variable_M (G=4,K=10,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)
 '''
 simulate_sweep_field_variable_M (G=4,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
 simulate_sweep_field_variable_M (G=5,K=12,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=True, always_recalculate_phase= True)

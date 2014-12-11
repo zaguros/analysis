@@ -284,7 +284,7 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.p_tn  = None
             self.p_2tn = None
             self.debug_pk = False
-
+        self.repetitions=self.g.attrs['repetitions']
         self.sweep_pts = self.g.attrs['sweep_pts']
         self.ramsey_time = self.g.attrs['ramsey_time'] 
         self.N = self.g.attrs['adptv_steps']

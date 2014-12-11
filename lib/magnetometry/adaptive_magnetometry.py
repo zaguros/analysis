@@ -862,6 +862,7 @@ class RamseySequence_Exp (RamseySequence):
 		self.F=a.F
 		self.G=a.G
 		self.K=a.K
+		self.repetitions=a.repetitions
 		self.reps=a.reps
 		self.n_points =  2**(self.N+3)
 		self.t0 = a.t0
@@ -1365,7 +1366,9 @@ class AdaptiveMagnetometry ():
 		if self.error_bars:
 			self.std_H  = np.array(self.std_H)
 			self.err_sensitivity = self.std_H*self.total_time
-
+		else:
+			self.std_H  = self.sensitivity*0
+			self.err_sensitivity = self.sensitivity*0
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
 			self.calculate_scaling()
@@ -1552,7 +1555,7 @@ class AdaptiveMagnetometry ():
 		f.attrs ['fid0']=self.fid0
 		f.attrs ['fid1']=self.fid1
 		f.attrs ['T2']=self.T2
-
+		f.attrs ['repetitions']=self.repetitions
 		pr_grp = f.create_group('probability_densities')
 		msqe_grp = f.create_group('mean_square_error')
 		scaling = f.create_group('scaling')
@@ -1586,12 +1589,13 @@ class AdaptiveMagnetometry ():
 
 		self.F = f.attrs['F']
 		self.G = f.attrs['G']
+		self.K=f.attrs['K']
 		self.t0 = f.attrs ['tau0']
 		self.analyzed_N = f.attrs['analyzed_N']
 		self.fid0 = f.attrs ['fid0']
 		self.fid1 = f.attrs ['fid1']
 		self.T2 = f.attrs ['T2']
-
+		self.repetitions=f.attrs['repetitions']
 		pr_grp = f['/probability_densities']
 		msqe_grp = f['/mean_square_error']
 
