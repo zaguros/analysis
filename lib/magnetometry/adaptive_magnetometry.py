@@ -1263,7 +1263,7 @@ class AdaptiveMagnetometry ():
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 		ind = 0
 		check_params_labels = ['tau0','F','G']
-		self.nr_of_discarded_elements=[]
+		self.nr_discarded_elements=[]
 		list_estim_phases=[]
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
@@ -1281,6 +1281,7 @@ class AdaptiveMagnetometry ():
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
 				s.CR_after_postselection()
+				self.nr_discarded_elements.append(len(s.discarded_elements))
 				check_params = [(s.t0 == self.t0), (s.F == self.F),(s.G == self.G)]
 				if np.all(check_params):
 					s.convert_to_dict()
@@ -1307,7 +1308,7 @@ class AdaptiveMagnetometry ():
 					print 'Non matching parameters: ', msg, ' --- ', label
 				ind +=1
 		list_estim_phases = flatten(list_estim_phases)
-		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases}
+		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases,'nr_discarded_elements':self.nr_discarded_elements}
 
 	def plot_msqe_dictionary(self,y_log=False, save_plot=False):
 
@@ -1565,6 +1566,7 @@ class AdaptiveMagnetometry ():
 			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
 			n_grp.create_dataset ('ave_exp', data = self.results_dict[str(n)] ['ave_exp'])
 			n_grp.create_dataset ('estimated_phase_values', data = self.results_dict[str(n)] ['estimated_phase_values'])
+			n_grp.create_dataset ('nr_discarded_elements', data = self.results_dict[str(n)] ['nr_discarded_elements'])
 			n_grp.attrs['N'] = n
 
 		scaling.create_dataset ('total_time', data = self.total_time)
@@ -1607,7 +1609,11 @@ class AdaptiveMagnetometry ():
 					estimated_phase_values=curr_subgrp['estimated_phase_values'].value
 				else:	
 					estimated_phase_values=0*curr_subgrp['ave_exp'].value
-				self.results_dict[str(curr_n)] =  {'B_field':B_field,'ave_exp':ave_exp, 'msqe':msqe, 'F':self.F,'G':self.G,'estimated_phase_values':estimated_phase_values}
+				try:
+					nr_discarded_elements=curr_subgrp['nr_discarded_elements'].value
+				except:
+					nr_discarded_elements=None	
+				self.results_dict[str(curr_n)] =  {'B_field':B_field,'ave_exp':ave_exp, 'msqe':msqe, 'F':self.F,'G':self.G,'estimated_phase_values':estimated_phase_values,'nr_discarded_elements':nr_discarded_elements}
 		#for k in scaling_grp.keys():
 		#	self.scaling_grp[k]=scaling_grp[k].value
 		f.close()
