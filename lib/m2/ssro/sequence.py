@@ -371,12 +371,12 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             RO_clicks = RO_clicks[:rows_addphase*cols_addphase]
             self.clicks = np.squeeze(np.reshape(RO_clicks, (rows_addphase, cols_addphase)))
         set_phase = set_phase[:rows*cols]
-        #theta = theta[:rows*cols]
+        theta = theta[:rows*cols]
         CR_after = CR_after[:rows*cols]
 
         
         self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
-        #self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
+        self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
         self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
