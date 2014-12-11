@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 reload(sequence)
 
 ### settings
-timestamp = None#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '20141001_143935'#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 
 def fpga_calibration_analysis (folder):

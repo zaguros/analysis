@@ -18,6 +18,7 @@ from analysis.lib.tools import compare_functions as compare
 from analysis.lib.m2 import m2
 from matplotlib import rc, cm
 from compiler.ast import flatten
+from analysis.lib.math import statistics as stat
 
 #reload(sequence)
 reload(compare)
@@ -303,7 +304,8 @@ class RamseySequence():
 			curr_msmnt = np.rint(self.msmnt_dict[k])
 			#print len(curr_phase)
 			mult = np.rint(self.msmnt_multiplicity[k])
-
+			if self.phase_update==None:
+				self.phase_update=False
 			if self.phase_update:
 				beta, prob = self.analysis_dict_phase_update (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 			else:
@@ -815,7 +817,7 @@ class RamseySequence_Exp (RamseySequence):
 		self.msmnt_times = np.zeros(len(a.ramsey_time))
 		self.set_detuning = a.set_detuning
 		self.CR_after = a.CR_after
-
+		self.phase_update=a.phase_update
 		#if (a.debug_pk):
 		self.p_tn = a.p_tn
 		self.p_2tn = a.p_2tn
@@ -860,13 +862,22 @@ class RamseySequence_Exp (RamseySequence):
 			new_results = np.zeros((self.reps, self.N))
 			new_phases = np.zeros((self.reps, self.N))
 			rep = 0
-			for j in np.arange(self.reps):
-				if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+			CR_after_threshold = 7
+			if any(t<CR_after_threshold for t in self.CR_after[j,:]):
+					self.discarded_elements.append(j)
+				else:
+				#print 'for i = ', j , 'CR array',self.CR_after[j,:]
 					new_results[rep,:] = np.copy(res[j,:])
 					new_phases[rep,:] = np.copy(phases[j,:])
 					rep = rep + 1
-				else:
-					self.discarded_elements.append(j)
+
+				#if (len(self.CR_after[j,:])==np.count_nonzero(self.CR_after[j,:])):
+					#print 'for i = ', j , 'CR array',self.CR_after[j,:]
+				#	new_results[rep,:] = np.copy(res[j,:])
+				#	new_phases[rep,:] = np.copy(phases[j,:])
+				#	rep = rep + 1
+				#else:
+				#	self.discarded_elements.append(j)
 			self.reps = rep
 			self.msmnt_results =new_results[:self.reps,:]
 			self.msmnt_phases =  new_phases[:self.reps,:]
@@ -1081,8 +1092,28 @@ class AdaptiveMagnetometry ():
 		    	label_array.append('N='+str(N)+'_p'+str(per)+'_'+str(l))
 		return label_array, B_values
 
+	def specific_B_fields_for_sweep_sim(self,N,pts):
 		
-	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False):
+		B_dict={'1':np.linspace(-25.e6,25e6,pts),
+				'2':np.linspace(-12.5e6,25e6,pts),
+				'3':np.linspace((12.5-6.25)*1e6,(18.75+6.25)*1e6,pts),
+				'4':np.linspace((3.125-3.125)*1e6,(6.25+3.125)*1e6,pts),
+				'5':np.linspace((-14.0625-1.5625)*1e6,(-12.5+1.5625)*1e6,pts),
+				'6':np.linspace((0.78125-0.78125)*1e6,(1.5625+0.78125)*1e6,pts),
+				'7':np.linspace((-21.09375-0.390625)*1e6,(-20.703125+0.390625)*1e6,pts),
+				'8':np.linspace((2.9296875-0.1953125)*1e6,(3.125+0.1953125)*1e6,pts),
+				'9':np.linspace((23.92578125-0.09765625)*1e6,(24.0234375+0.09765625)*1e6,pts),
+				'10':np.linspace((-1.953125-0.048828125)*1e6,(-1.904296875+0.048828125)*1e6,pts),
+				'11':np.linspace((0.29296875-0.0244140625)*1e6,(0.3173828125+0.0244140625)*1e6,pts),
+				'12':np.linspace((-21.7407226563-0.012207031300000892)*1e6,(-21.728515625+0.012207031300000892)*1e6,pts),
+				'13':np.linspace((1.30004882813-0.00610351562)*1e6,(1.30615234375+0.00610351562)*1e6,pts),
+				'14':np.linspace((-7.58972167969-0.003051757810000666)*1e6,(-7.58666992188+0.003051757810000666)*1e6,pts),
+				
+		}
+
+		return B_dict[str(N)]
+	
+	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False,specific_B=False):
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
 		#sampling continous range
@@ -1093,7 +1124,10 @@ class AdaptiveMagnetometry ():
 		# sample per period
 		per=0
 		delta_f = 1./(self.t0*(2**N))
+
 		B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
+		if specific_B:
+			B=self.specific_B_fields_for_sweep_sim(N,self.nr_points_per_period)
 		self.B_values = np.hstack((B_values, B))
 		for l in np.arange(self.nr_points_per_period):
 			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
@@ -1149,7 +1183,7 @@ class AdaptiveMagnetometry ():
 		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
 		ind = 0
 		check_params_labels = ['tau0','F','G']
-
+		self.nr_of_discarded_elements=[]
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
 				label = 'N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(per)+'b'+str(pt)
@@ -1162,6 +1196,7 @@ class AdaptiveMagnetometry ():
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
 				s.CR_after_postselection()
+				self.nr_of_discarded_elements.append(len(s.discarded_elements))
 				check_params = [(s.t0 == self.t0), (s.F == self.F),(s.G == self.G)]
 				if np.all(check_params):
 					s.convert_to_dict()
@@ -1187,7 +1222,7 @@ class AdaptiveMagnetometry ():
 					print 'Non matching parameters: ', msg, ' --- ', label
 				ind +=1
 		list_estim_phases = flatten(list_estim_phases)
-		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases}
+		self.results_dict[str(N)] ={'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases,'nr_discarded_elements':self.nr_of_discarded_elements}
 
 	def plot_msqe_dictionary(self,y_log=False, save_plot=False):
 
@@ -1219,7 +1254,7 @@ class AdaptiveMagnetometry ():
 		self.scaling_variance=[]
 		self.total_time=[]
 		#print self.results_dict[str(2)].keys()
-		
+		self.std_H=[]
 		for i,n in enumerate(self.analyzed_N):
 			print 'scaling for N = ', n
 			msqe_phi = self.results_dict[str(n)]['ave_exp']
@@ -1237,8 +1272,10 @@ class AdaptiveMagnetometry ():
 				break
 			else:	
 				self.total_time.append(self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n)))
-			
-			print np.array(self.total_time)/self.t0
+				#Including overhead
+				#self.total_time.append(self.t0*5000*n*(self.G+self.F*(n-1)/2)+self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n)))
+			print 'scalinng without overhead', np.array(self.total_time)/self.t0
+			print self.G,self.F
 		
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)		
@@ -1246,7 +1283,9 @@ class AdaptiveMagnetometry ():
 		if self.error_bars:
 			self.std_H  = np.array(self.std_H)
 			self.err_sensitivity = self.std_H*self.total_time
-
+		else:
+			self.std_H=0*self.sensitivity
+			self.err_sensitivity=self.sensitivity*0
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
 			print 'Calculating scaling'
@@ -1276,7 +1315,7 @@ class AdaptiveMagnetometry ():
 		#NOTE!!!!!!!!
 		x_full = np.log10(self.total_time/self.t0)
 		y_full = np.log10(self.sensitivity/self.t0)
-
+		err_y = self.err_sensitivity/self.sensitivity
 
 		#x0 = self.total_time*1e6
 		#y0 = self.sensitivity*1e12
@@ -1434,11 +1473,13 @@ class AdaptiveMagnetometry ():
 			n_grp.create_dataset ('B_field', data = self.results_dict[str(n)] ['B_field'])
 			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
 			n_grp.create_dataset ('ave_exp', data = self.results_dict[str(n)] ['ave_exp'])
+			
 			n_grp.attrs['N'] = n
 
 		scaling.create_dataset ('total_time', data = self.total_time)
 		scaling.create_dataset ('scaling_variance_phi', data = self.scaling_variance)
 		scaling.create_dataset ('scaling_sensitivity', data = self.sensitivity)		
+		scaling.create_dataset ('scaling_error',data=self.err_sensitivity)
 		scaling.attrs['scaling factor'] = self.scaling_factor
 		scaling.attrs['error scaling factor'] = self.error_scaling_factor
 
@@ -1462,7 +1503,11 @@ class AdaptiveMagnetometry ():
 
 		pr_grp = f['/probability_densities']
 		msqe_grp = f['/mean_square_error']
-
+		scaling_grp = f['/scaling']
+		try:
+			self.err_sensitivity=scaling_grp['scaling_error'].value
+		except:
+			self.err_sensitivity=f.attrs['analyzed_N']*0
 		for k in pr_grp.keys():
 			self.prob_density_dict [k] = pr_grp[k].value
 
@@ -1473,6 +1518,12 @@ class AdaptiveMagnetometry ():
 				B_field = curr_subgrp['B_field'].value
 				msqe = curr_subgrp['msqe'].value
 				ave_exp = curr_subgrp['ave_exp'].value
-				self.results_dict[str(curr_n)] =  {'B_field':B_field,'ave_exp':ave_exp, 'msqe':msqe, 'F':self.F,'G':self.G}
+				if self.error_bars:
+					estimated_phase_values=curr_subgrp['estimated_phase_values'].value
+				else:	
+					estimated_phase_values=0*curr_subgrp['ave_exp'].value
+				self.results_dict[str(curr_n)] =  {'B_field':B_field,'ave_exp':ave_exp, 'msqe':msqe, 'F':self.F,'G':self.G,'estimated_phase_values':estimated_phase_values}
+		#for k in scaling_grp.keys():
+		#	self.scaling_grp[k]=scaling_grp[k].value
 		f.close()
 

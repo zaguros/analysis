@@ -111,22 +111,28 @@ def analyze_single_instance(label='adptv_estimation_det', compare_to_simulations
 	s.CR_after_postselection()
 	B_dict, index_dict = s.B_vs_index()
 	s.verbose=False
-	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
+	s.n_points=2**13
+	print s.n_points
+
+
+	
 	if compare_to_simulations:
 		beta_sim, p_sim, ave_exp,err_sim, a, b=s.compare_to_simulations(show_plot = True, verbose=True,do_save=True,plot_log=True)
+		beta_exp, p_exp, ave_exp,err_exp, mB, sB=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
 	else:
 		beta_exp, p_exp, ave_exp,err_exp, mB, sB=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
 	save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB)
 	#s.analyse_ramsey()
-	return beta_sim, p_sim, ave_exp,err_sim, a, b
+	return beta_exp, p_exp, ave_exp,err_exp, mB, sB
 
 def save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB):
-	fName = 'analysis'
-
+	fName = time.strftime ('%Y%m%d_%H%M%S')+'analysis_adaptive_magnetometry_single_inst_'+'N='+str(s.N)+'G='+str(s.G)+'F='+str(s.F)+'_fid0='+str(s.fid0)
+	s.folder=r'M:\tnw\ns\qt\Diamond\Projects\Magnetometry with adaptive measurements\Data\analyzed data'
 	if not os.path.exists(os.path.join(s.folder, fName+'.hdf5')):
 		mode = 'w'
 	else:
 		mode = 'r+'
+		#mode='w'
 		print 'Output file already exists!'
 	print os.path.join(s.folder, fName+'.hdf5')	
 	f = h5py.File(os.path.join(s.folder, fName+'.hdf5'), mode)
@@ -139,13 +145,15 @@ def save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB):
 	f.attrs ['fid0']=s.fid0
 	f.attrs ['fid1']=s.fid1
 	f.attrs ['T2']=s.T2
+	print type(beta_exp)
+	data = f.create_group('data')
+	data.create_dataset ('beta_exp', data = beta_exp)
+	data.create_dataset ('p_exp', data = p_exp)
+	data.create_dataset ('ave_exp', data = ave_exp)
+	data.create_dataset ('err_exp', data = err_exp)
+	data.create_dataset ('mB', data = mB)
+	data.create_dataset ('sB', data = sB)
 
-	f.attrs ['beta_exp']=beta_exp
-	f.attrs ['p_exp']=p_exp
-	f.attrs ['ave_exp']=ave_exp
-	f.attrs ['err_exp']=err_exp
-	f.attrs ['mB']=mB
-	f.attrs ['sB'] = sB
 
 	f.close()
 	print 'Data saved!'
@@ -293,7 +301,7 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #check_adwin_realtime_record_pk(label = result, newer_than = '102000')
 #analyze_single_instance(compare_to_simulations=True)
 #l=['N = 2','N = 3','N = 4','N = 5','N = 6','N = 7']
-analyze_sweep_field(F=1,G=2,nr_periods=1,newer_than='20141114_114505',older_than='20141115_142631')
+#analyze_sweep_field(F=1,G=2,nr_periods=1,newer_than='20141114_114505',older_than='20141115_142631')
 #for n,label in enumerate(l):
 #	print label
 #analyze_single_instance(label='153659',compare_to_simulations=True)

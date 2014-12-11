@@ -112,32 +112,35 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = False,specific_B=False):
 
 	#try:
 	print '############### Simulate #####################'
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=51)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N)+1:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
-		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update)
+		mgnt_exp.verbose=True
+		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update,specific_B=specific_B)
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 
-def analyze_saved_simulations (timestamp):
+def analyze_saved_simulations (timestamp,error_bars=False):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
+	mgnt_exp.error_bars=error_bars
 	mgnt_exp.load_analysis (timestamp=timestamp)
 	mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=True)
 	#mgnt_exp.G=G
 	#mgnt_exp.F=F
 	#mgnt_exp.K=K
+	mgnt_exp.error_bars=error_bars
 	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
 	return mgnt_exp
 
@@ -355,8 +358,8 @@ plt.show()
 
 fid0=0.87
 fid1=0.02
-reps=3
-simulate_sweep_field_variable_M (G=6,K=7,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False)
+reps=501
+#simulate_sweep_field_variable_M (G=5,K=5,F=7, fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = False, do_adaptive=True,specific_B=True)
 
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
