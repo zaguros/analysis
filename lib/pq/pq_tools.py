@@ -37,6 +37,28 @@ def get_photons(pqf, index = 1):
     
     return is_photon_0, is_photon_1
 
+def get_length_block(pqf, index = 1):
+    """
+    Returns the number of elements in one block
+    """
+    sync_num_name = '/PQ_sync_number-' + str(index)
+    
+    # Determines how long the block is
+    if type(pqf) == h5py._hl.files.File: 
+        sync_num = pqf[sync_num_name]
+        num_elements_block = len(sync_num)
+   
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_num = f[sync_num_name]
+        num_elements_block = len(sync_num)
+        f.close()
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise 
+
+    return num_elements_block
+
 
 
 def get_markers(pqf, chan, index = 1):
@@ -67,6 +89,38 @@ def get_markers(pqf, chan, index = 1):
     is_channel = channel == chan
 
     return (is_special & is_channel)
+
+def get_markers_with_num_markers(pqf, chan, index = 1):
+    """
+    returns a filter (1d-array): whether events are markers on the given channel
+    """
+
+    chan_name = '/PQ_channel-' + str(index)
+    spec_name = '/PQ_special-' + str(index)
+    
+    if type(pqf) == h5py._hl.files.File:
+
+        channel = pqf[chan_name].value
+        special = pqf[spec_name].value
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf,'r')
+        channel = f[chan_name].value
+        special = f[spec_name].value
+        f.close()
+    
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    is_special = special == 1
+    is_channel = channel == chan
+    is_marker = is_special & is_channel
+    num_markers = len(channel[is_marker])
+
+    return is_marker, num_markers
+
 
 def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, index = 1):
     """
@@ -183,59 +237,64 @@ def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, in
 
     print "Dif what it should be what we get", dif_should_and_get
 
-#     if dif_should_and_get > 0:
+    sync_num_final_rnd = sync_num[(is_rnd_0 | is_rnd_1)]
+    print len(sync_num_rnd), len(np.unique(sync_num_rnd))
+    print len(sync_num_final_rnd), np.sum(is_rnd_1) + np.sum(is_rnd_0)
 
-#         len_check = int(len(sync_num)/10.)
-#         num_unique_abs_times = 0
+    len_check = int(len(sync_num_final_rnd)/10.)
+    num_unique_sync_nums = 0
 
-#         last_number = 0
-#         indices_double_abs_times = [0]
-#         indices_to_be_saved = []
-
-
-#         for i in range(10):
-#             if i != 9:
-#                 temp_check = sync_num[(i*len_check):((i+1)*len_check)]
-#                 first_number = temp_check[0]
-#                 if first_number == last_number:
-#                     print "One less unique number"
-#                 last_number = temp_check[len(temp_check)-1]   
-#                 unique_abs_times, index_abs_times = np.unique(temp_check, return_index = True)
-#                 index_abs_times = np.sort(index_abs_times + (i* len_check))
-#                 for j in range(len(index_abs_times)):
-#                     if j != len(index_abs_times) - 1:
-#                         test = index_abs_times[j+1] - index_abs_times[j]
-#                         if test > 1:
-#                             for k in range(test-1):
-#                                 indices_to_be_saved.append(index_abs_times[j]+k+1)             
-#                 num_unique_abs_times = num_unique_abs_times + len(unique_abs_times)
-#             else:
-#                 temp_check = sync_num[(i*len_check)::]
-#                 first_number = temp_check[0]
-#                 if first_number == last_number:
-#                     print "One less unique number"
-#                 last_number = temp_check[len(temp_check)-1] 
-#                 unique_abs_times, index_abs_times = np.unique(temp_check, return_index = True)
-#                 index_abs_times = np.sort(index_abs_times + (i* len_check))
-#                 for j in range(len(index_abs_times)):
-#                     if j != len(index_abs_times) - 1:
-#                         test = index_abs_times[j+1] - index_abs_times[j]
-#                         if test > 1:
-#                             for k in range(test-1):
-#                                 indices_to_be_saved.append(index_abs_times[j]+k+1)
-#                 num_unique_abs_times = num_unique_abs_times + len(unique_abs_times)
-                
-               
-#         print "Length unique abs times PSB", num_unique_abs_times
-#         print "The extra abs times PSB", len(sync_num) - num_unique_abs_times
-
-#         unique_sync_num_BS, index_BS = np.unique(sync_num_BS, return_index = True)
-#         unique_absolute_time_BS, index_abs_time_BS = np.unique(time_BS, return_index = True)
+    last_number = 0
+    indices_double_sync_nums = []
+    indices_to_be_saved = []
 
 
-# print "Length unique abs times BS", len(unique_absolute_time_BS)
+    for i in range(10):
+        if i != 9:
+            temp_check = sync_num_final_rnd[(i*len_check):((i+1)*len_check)]
+            first_number = temp_check[0]
+            if first_number == last_number:
+                print "One less unique number"
+            last_number = temp_check[len(temp_check)-1]   
+            unique_sync_nums, index_sync_nums = np.unique(temp_check, return_index = True)
+            index_sync_nums = np.sort(index_sync_nums + (i* len_check))
+            for j in range(len(index_sync_nums)):
+                if j != len(index_sync_nums) - 1:
+                    test = index_sync_nums[j+1] - index_sync_nums[j]
+                    if test > 1:
+                        for k in range(test-1):
+                            indices_to_be_saved.append(index_sync_nums[j]+k+1)             
+            num_unique_sync_nums = num_unique_sync_nums + len(unique_sync_nums)
+        else:
+            temp_check = sync_num_final_rnd[(i*len_check)::]
+            first_number = temp_check[0]
+            if first_number == last_number:
+                print "One less unique number"
+            last_number = temp_check[len(temp_check)-1] 
+            unique_sync_nums, index_sync_nums = np.unique(temp_check, return_index = True)
+            index_sync_nums = np.sort(index_sync_nums + (i* len_check))
+            for j in range(len(index_sync_nums)):
+                if j != len(index_sync_nums) - 1:
+                    test = index_sync_nums[j+1] - index_sync_nums[j]
+                    if test > 1:
+                        for k in range(test-1):
+                            indices_to_be_saved.append(index_sync_nums[j]+k+1)
+            num_unique_sync_nums = num_unique_sync_nums + len(unique_sync_nums)
+            
+           
+    print "Length unique sync numbers", num_unique_sync_nums
+    print "The extra sync numbers", len(sync_num_final_rnd) - num_unique_sync_nums
 
+    print len(indices_to_be_saved)
+    print len(np.unique(indices_to_be_saved))
+    corresp_sync_num = []
 
+    for i,j in enumerate(indices_to_be_saved):
+        corresp_sync_num.append(sync_num_final_rnd[j])
+
+    Additional_sync_num, index_un_add_sync_num = np.unique(corresp_sync_num, return_index = True)
+    print len(Additional_sync_num)
+    print Additional_sync_num
 
     return is_rnd_0, is_rnd_1, add_seg_length
 
@@ -469,8 +528,6 @@ def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1,
         print "The number of unique sync numbers that have a marker is:", len(unique_sync_num_with_markers)
 
     return unique_sync_num_with_markers
-
-
 
 def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_win_min, second_win_max, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, VERBOSE = True):
     """

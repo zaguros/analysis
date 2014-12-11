@@ -24,6 +24,7 @@ reload(sequence)
 reload(compare)
 reload(toolbox)
 reload (stat)
+reload (fit)
 
 	
 class RamseySequence():
@@ -513,6 +514,7 @@ class RamseySequence_Simulation (RamseySequence):
 
 	def sim_cappellaro_variable_M (self):
 		
+		print 'Cappellaro!!!!!'		
 		if self.verbose:				
 			print '-------------------------------------------'
 			print 'Simulating Cappellaro protocol (variable M)'
@@ -561,7 +563,7 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 	def sim_berry_protocol (self, do_adaptive):
-		
+		print 'Berry!!!!!!'
 		if self.verbose:				
 			if do_adaptive:
 				adptv = '(adaptive)'
@@ -620,6 +622,57 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 
+	def sim_recalculate_optimal_phase (self, always_recalculate_phase):
+		
+
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.phase_update = True
+			self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+			nr_results = int((self.K+1)*(self.G + self.F*self.K/2.))
+			self.msmnt_phases = np.zeros((self.reps, nr_results))
+			self.phase_upd_values = np.zeros((self.reps, nr_results))
+			self.msmnt_times = np.zeros(nr_results)
+			self.msmnt_results = np.zeros((self.reps,nr_results))
+		
+			k_array = self.K-np.arange(self.K+1)
+			tau = 2**(k_array)
+			self.reset_rep_counter()
+
+			for r in np.arange(self.reps):
+				msmnt_results = np.zeros (nr_results)
+				t = np.zeros (self.K+1)
+				self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+				self.p_k [self.points] = 1/(2.*np.pi)
+				res_idx = 0
+
+				for i,k in enumerate(k_array):
+
+					t[i] = int(2**(k))
+					ttt = -2**(k+1)					
+					m_total = 0
+					MK = self.G+self.F*(self.K-k)
+
+					phase = 0.5*np.angle (self.p_k[ttt+self.points])
+
+					for m in np.arange(MK):
+						if always_recalculate_phase:
+							phase = 0.5*np.angle (self.p_k[ttt+self.points])
+						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
+						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
+						self.msmnt_results[r, res_idx] = m_res
+						self.msmnt_phases[r, res_idx] = phase
+						self.msmnt_times[res_idx] = t[i]
+						res_idx = res_idx + 1
+				#print 'Msmsnt results: ', self.msmnt_results
+				#print 'Cappellaro phases: ', np.round(self.msmnt_phases*180/np.pi)
+				#print 'Msmnt times: ', self.msmnt_times
+				self.inc_rep()
+
+
+
+
 
 
 	def sim_nonadaptive_variable_M (self):
@@ -630,7 +683,6 @@ class RamseySequence_Simulation (RamseySequence):
 			print '---------------------------------------------'
 			print '- N = '+str(self.N)+ ', G = '+str(self.G)+', F = '+str(self.F)
 		
-
 		if (self.G+self.F+self.K==0):
 			print 'Simulation parameters G, K, F not set!!'
 		else:			
@@ -1099,8 +1151,10 @@ class AdaptiveMagnetometry ():
 			nr_periods = self.nr_periods
 
 		periods = (np.unique(np.random.randint(0, nr_available_periods, size=nr_periods*3)-nr_available_periods/2))
+
 		if (len(periods)>nr_periods):
-			periods = periods [:nr_periods]
+			idxs = np.random.randint (0, len(periods), size = nr_periods)
+			periods = periods [idxs]
 		periods = np.sort(periods)
 		B_values = np.array([])
 		label_array = []
@@ -1112,8 +1166,9 @@ class AdaptiveMagnetometry ():
 		return label_array, B_values
 
 		
-	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False):
+	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False, always_recalculate_phase = False):
 
+		self.always_recalculate_phase = always_recalculate_phase
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
 		#sampling continous range
@@ -1124,22 +1179,25 @@ class AdaptiveMagnetometry ():
 		# sample per period
 		per=0
 		delta_f = 1./(self.t0*(2**N))
-		B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
-		self.B_values = np.hstack((B_values, B))
+		#B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
+		#self.B_values = np.hstack((B_values, B))
+		#self.B_values = np.unique(self.B_values)
 		for l in np.arange(self.nr_points_per_period):
 			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
 
 
-
-		msqe = np.zeros(self.nr_points_per_period*self.nr_periods)
-		ave_exps = [0]*self.nr_points_per_period*self.nr_periods
-		B_field = np.zeros(self.nr_points_per_period*self.nr_periods)
+		label_array, self.B_values = self.sample_B_space (N=N)		
+		self.B_values=np.unique(self.B_values)
+		nr_points = len(self.B_values)
+		msqe = np.zeros(nr_points)
+		ave_exps = [0]*nr_points
+		B_field = np.zeros(nr_points)
 
 		ind = 0
 		print "Simulating N="+str(N)+', '+str(len(self.B_values))+" instances of magnetic field"
 
 		list_estim_phases = []
-		for b in np.arange(self.nr_points_per_period*self.nr_periods):
+		for b in np.arange(nr_points):
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
 			s.setup_simulation (magnetic_field_hz = self.B_values[b], F=self.F,G=self.G,K=self.K) 
@@ -1148,11 +1206,15 @@ class AdaptiveMagnetometry ():
 			s.fid0 = self.fid0
 			s.fid1 = self.fid1
 	
-			
-			if phase_update:
-				s.sim_berry_protocol(do_adaptive=do_adaptive)
-			else:
-				s.sim_cappellaro_variable_M()
+
+			#if always_recalculate_phase:
+			s.phase_update = True
+			s.sim_recalculate_optimal_phase(always_recalculate_phase=always_recalculate_phase)
+			#else:			
+			#	if phase_update:
+			#		s.sim_berry_protocol(do_adaptive=do_adaptive)
+			#	else:
+			#		s.sim_cappellaro_variable_M()
 
 			s.convert_to_dict()
 
@@ -1287,7 +1349,11 @@ class AdaptiveMagnetometry ():
 			self.calculate_scaling()
 
 		if self.simulated_data:
-			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)+'.png'
+			if self.always_recalculate_phase:
+				add = '_alwRecPhase'
+			else:
+				add = ''
+			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)+add+'.png'
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)+'.png'
 
@@ -1351,9 +1417,13 @@ class AdaptiveMagnetometry ():
 			def fitfunc(x):
 				return a()+b()*x
 
+			if self.error_bars:
+				error_array = err_y[n0:n1]
+			else:
+				error_array = []
 
 			fit_result = fit.fit1d(x0,y0, None, p0=p0, fitfunc=fitfunc, fixed=[],
-                	do_print=False, ret=True)
+                	do_print=False, ret=True, err_y = error_array)
 			a_fit = fit_result['params_dict']['a']
 			b_fit = fit_result['params_dict']['b']
 			b_err = fit_result['error_dict']['b']
@@ -1410,11 +1480,15 @@ class AdaptiveMagnetometry ():
 		if do_fit:
 			p.plot (x_fit, y_fit, 'r')
 			#p.loglog (x_fit, y_guess, 'b')
-			plt.title('scaling:  '+str('{0:.2f}'.format(b_fit))+' +- '+str('{0:.2f}'.format(b_err)) + '$\mu$T*Hz$^{1/2}$', fontsize=15)
+			pars = '{F='+str(self.F)+ ', G='+str(self.G)+'}'
+			plt.title(pars+'scaling:  '+str('{0:.2f}'.format(b_fit))+' +- '+str('{0:.2f}'.format(b_err)) + '$\mu$T*Hz$^{1/2}$', fontsize=15)
 		
 		#NOTE!!!!!!!!!!
 		#p.loglog (self.total_time*1e6, self.sensitivity*1e12, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
-		p.plot (x_full, y_full, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
+		if self.error_bars:
+			p.errorbar (x_full, y_full, yerr= err_y, fmt='o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')
+		else:
+			p.plot (x_full, y_full, 'o', markersize=10, markeredgecolor = 'k', markerfacecolor='b')			
 		
 
 		plt.xlabel ('total ramsey time$ * tau_{0}^{-1}$', fontsize=15)
@@ -1435,6 +1509,8 @@ class AdaptiveMagnetometry ():
 
 		if self.simulated_data:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+			if self.always_recalculate_phase:
+				fName = fName + '_alwaysRecPhase'
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
 

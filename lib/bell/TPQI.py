@@ -2,7 +2,7 @@ import numpy as np
 import h5py, os
 from analysis.lib.pq import pq_tools
 from analysis.lib.tools import toolbox as tb
-import Settings, files, Filter
+import Settings, Filter
 import matplotlib.pyplot as plt
 
 def _aggregated_coincidences(Base_Folder):

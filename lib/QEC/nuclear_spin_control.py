@@ -13,6 +13,7 @@ import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
 # hf = hf_params.SamSIL5_sim_params
 
+
 ### import the experimental values for tau and N ###
 # import measurement.scripts.lt2_scripts.setup.msmt_params as msmt_params; reload(msmt_params)
 
@@ -96,7 +97,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-def get_C13_hyperfine_params(carbon_nrs, ms = '+1'):
+
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -838,6 +839,37 @@ def nuclear_initialization(carbon_nrs, N, tau, B_field=304.74, ms='+1'):
 
     single_qubit_pauli(rho_final, do_plot = True)
 
+def nuclear_TomoZ(carbon_nrs,N,Tau,Bfield=304.74,ms='+1',input_state=qutip.tensor(rho1,rho1)):
+    """
+    Performs the gate sequence for the read-out of the carbon via a swap.
+    Prints fidelities with several output states.
+    """
+
+    rho_start = input_state
+    electron_x  = qutip.tensor(x,Id)
+    electron_y  = qutip.tensor(y,Id)
+    Rz          = qutip.tensor(Id,z)
+
+    #gates (make them ideal)
+    Ren0,Ren1,Ren0Id,Ren1Id = c13_gate(carbon_nrs[0], N, Tau, B_field=Bfield, ms=ms, return_indiv=True,return_id=True)
+
+    Ren = qutip.tensor(rho0,Ren0Id) + qutip.tensor(rho1,Ren1Id)
+
+    print 'Gate sequence used in the T1 measurements: [C_basis_Ren, C_RO_y, C_RO_Ren, C_RO_x, C_RO_Trigger]'
+    
+    #sequence and result
+    seq       =   electron_x*Ren*(Rz.dag())*electron_y*Ren#electron_x*Ren*electron_y*Ren  # Define gate sequence
+    rho_final = seq*rho_start*seq.dag()                        # Apply gate sequence
+
+    print rho_final
+    psi_final = (qutip.tensor(ket0,ket0)+qutip.tensor(ket1,ket1))/np.sqrt(2)
+
+    #print psi_final*psi_final.dag()
+    print 'Fidelity with |1y>', qutip.fidelity(qutip.tensor(rho1,rhoy),rho_final)
+    print 'Fidelity with |0y>', qutip.fidelity(qutip.tensor(rho0,rhoy),rho_final)
+    print 'Fidelity with |1my>', qutip.fidelity(qutip.tensor(rho1,rhomy),rho_final)
+    print 'Fidelity with |0my>', qutip.fidelity(qutip.tensor(rho0,rhomy),rho_final)
+    #single_qubit_pauli(rho_final, do_plot = True)
 
 ######################
 ### Initialization ###
