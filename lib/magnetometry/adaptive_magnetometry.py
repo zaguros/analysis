@@ -1166,8 +1166,6 @@ class AdaptiveMagnetometry ():
 		return label_array, B_values
 
 	def specific_B_fields_for_sweep_sim(self,N,pts):
-		
-	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False, always_recalculate_phase = False):
 		B_dict={'1':np.linspace(-25.e6,25e6,pts),
 				'2':np.linspace(-12.5e6,25e6,pts),
 				'3':np.linspace((12.5-6.25)*1e6,(18.75+6.25)*1e6,pts),
@@ -1187,7 +1185,7 @@ class AdaptiveMagnetometry ():
 
 		return B_dict[str(N)]
 	
-	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False,specific_B=False):
+	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False,always_recalculate_phase = False,specific_B=False):
 		self.always_recalculate_phase = always_recalculate_phase
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
