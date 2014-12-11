@@ -272,7 +272,7 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         CR_after = np.array(adwingrp['CR_after'].value)
         set_phase = adwingrp['set_phase'].value
         theta = adwingrp['theta'].value
-
+        #print theta
         self.phase_calibration_msmnt = False
         self.debug_pk = True
 
@@ -288,7 +288,15 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         self.sweep_pts = self.g.attrs['sweep_pts']
         self.ramsey_time = self.g.attrs['ramsey_time'] 
         self.N = self.g.attrs['adptv_steps']
+        try:
+            self.do_add_phase=self.g.attrs['do_add_phase']
+        except:
+            self.do_add_phase=0   
 
+        if self.do_add_phase==0:
+            self.phase_update=False
+        else:
+            self.phase_update=True     
         try:
             self.K = self.g.attrs['adptv_steps']-1
         except:
@@ -317,12 +325,11 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.msmnt_type = 'realtime' 
         except:
             self.msmnt_type = 'table_based'
-
         try:
             self.T2_mult_t0 = self.g.attrs['T2']
         except:
-            self.T2_mult_t0 = 46
-        #print self.T2_mult_t0
+            self.T2_mult_t0 = 46    
+        print self.T2_mult_t0
 
         try:
             timer_data = np.array(adwingrp['timer'].value)
@@ -334,9 +341,11 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         try:
             self.save_pk_n = self.g.attrs['save_pk_n']
             self.save_pk_m = self.g.attrs['save_pk_m']
-        except:
+        except:    
+
             self.save_pk_n = 0
             self.save_pk_m = 0
+
         if self.save_pk_n>0:
             self.real_pk_adwin = np.array(adwingrp['real_p_k'].value)
             self.imag_pk_adwin = np.array(adwingrp['imag_p_k'].value)
@@ -347,12 +356,25 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         n_points = len(self.sweep_pts)
         rows = int(self.reps/float(len(self.sweep_pts)))
         cols = len(self.sweep_pts)
-        RO_clicks = RO_clicks[:rows*cols]
+        print 'self reps',self.reps
+        if self.do_add_phase==0:
+            RO_clicks = RO_clicks[:rows*cols]
+            self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
+            self.reps=rows
+        else:
+            m_sweeps=self.N*self.G + self.N*self.F*(self.N-1)/2
+            rows_addphase = int(len(RO_clicks)/float(m_sweeps))
+            self.reps=rows_addphase
+            cols_addphase = m_sweeps
+            print 'rows: ',rows_addphase, 'cols: ', cols_addphase, 'm_sweeps: ', m_sweeps, 'reps:', self.reps
+
+            RO_clicks = RO_clicks[:rows_addphase*cols_addphase]
+            self.clicks = np.squeeze(np.reshape(RO_clicks, (rows_addphase, cols_addphase)))
         set_phase = set_phase[:rows*cols]
         #theta = theta[:rows*cols]
         CR_after = CR_after[:rows*cols]
 
-        self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
+        
         self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
         #self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
         self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))

@@ -64,7 +64,7 @@ def B_vs_time (nr, label):
 	for i in np.arange(nr)+10:
 		try:
 			label0=label+'_%d'%i
-			beta_exp, p_exp, err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
+			beta_exp, p_exp, ave_exp,err_exp, mB, sB=analyze_single_instance(label=label0, compare_to_simulations=False)
 			error.append(sB)
 			print i, sB
 		except:
@@ -104,59 +104,25 @@ def analyze_single_instance(label='adptv_estimation_det', compare_to_simulations
 	f = toolbox.latest_data(contains=label)
 	s = magnetometry.RamseySequence_Exp (folder = f)
 	s.set_exp_pars (T2=96e-6, fid0=0.87, fid1=1-.975)
-	#print f
+	print f
 	s.load_exp_data()
-	s.convert_to_dict()
-	#s.print_results()
 	s.CR_after_postselection()
-	B_dict, index_dict = s.B_vs_index()
-	s.verbose=False
-	s.n_points=2**13
-	print s.n_points
-
-
+	s.convert_to_dict()
+	#print 'phases dict'
+	#print s.phases_dict
+	s.print_results()
 	
+	B_dict, index_dict = s.B_vs_index()
+
+	#beta, prob, err, mB, sB = s.mean_square_error(do_plot=True, save_plot=True)
 	if compare_to_simulations:
 		beta_sim, p_sim, ave_exp,err_sim, a, b=s.compare_to_simulations(show_plot = True, verbose=True,do_save=True,plot_log=True)
-		beta_exp, p_exp, ave_exp,err_exp, mB, sB=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
 	else:
-		beta_exp, p_exp, ave_exp,err_exp, mB, sB=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
-	save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB)
+		beta_sim, p_sim, ave_exp,err_sim, a, b=s.mean_square_error(show_plot = True, save_plot=True, do_plot=True)
+
 	#s.analyse_ramsey()
-	return beta_exp, p_exp, ave_exp,err_exp, mB, sB
+	return beta_sim, p_sim, ave_exp,err_sim, a, b
 
-def save_single_instance(s,beta_exp, p_exp, ave_exp,err_exp, mB, sB):
-	fName = time.strftime ('%Y%m%d_%H%M%S')+'analysis_adaptive_magnetometry_single_inst_'+'N='+str(s.N)+'G='+str(s.G)+'F='+str(s.F)+'_fid0='+str(s.fid0)
-	s.folder=r'M:\tnw\ns\qt\Diamond\Projects\Magnetometry with adaptive measurements\Data\analyzed data'
-	if not os.path.exists(os.path.join(s.folder, fName+'.hdf5')):
-		mode = 'w'
-	else:
-		mode = 'r+'
-		#mode='w'
-		print 'Output file already exists!'
-	print os.path.join(s.folder, fName+'.hdf5')	
-	f = h5py.File(os.path.join(s.folder, fName+'.hdf5'), mode)
-	f.attrs ['N'] = s.N
-	f.attrs ['K'] = s.K
-	f.attrs ['F'] = s.F
-	f.attrs ['G'] = s.G
-	f.attrs ['tau0']= s.t0
-
-	f.attrs ['fid0']=s.fid0
-	f.attrs ['fid1']=s.fid1
-	f.attrs ['T2']=s.T2
-	print type(beta_exp)
-	data = f.create_group('data')
-	data.create_dataset ('beta_exp', data = beta_exp)
-	data.create_dataset ('p_exp', data = p_exp)
-	data.create_dataset ('ave_exp', data = ave_exp)
-	data.create_dataset ('err_exp', data = err_exp)
-	data.create_dataset ('mB', data = mB)
-	data.create_dataset ('sB', data = sB)
-
-
-	f.close()
-	print 'Data saved!'
 '''
 def temporal_evolution_B(label, nr):
 
@@ -182,12 +148,14 @@ def single_repetition_evolution(label='adptv_estimation_det'):
 	s.CR_after_postselection()
 	#beta, prob = s.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 	return s
-def analyze_sweep_field():
+def analyze_sweep_field(G=1,F=2,nr_periods=1,phase_update=False,older_than=None,newer_than=None):
 
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=7, tau0=20e-9)
-	mgnt_exp.set_protocol (M=7, maj_reps = 5, maj_thr = 1)
-	mgnt_exp.set_sweep_params (nr_periods = 1, nr_points_per_period=7)
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
+	mgnt_exp.set_protocol (G=G,K=13,F=F)
+	mgnt_exp.error_bars=True
+	mgnt_exp.set_sweep_params (nr_periods = nr_periods, nr_points_per_period=7)
 	mgnt_exp.set_exp_params (T2=96e-6, fid0=0.87, fid1=1-.975)
+	mgnt_exp.phase_update=phase_update
 	#mgnt_exp.load_sweep_field_data (N=1,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=2,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=3,older_than=older_than,newer_than=newer_than)
@@ -299,11 +267,13 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #result = '4021'
 #check_adwin_realtime (label = result+'_test_pk_(n=4_m=1)', newer_than = '102000')
 #check_adwin_realtime_record_pk(label = result, newer_than = '102000')
-#analyze_single_instance(compare_to_simulations=True)
+#analyze_single_instance(label='105854',compare_to_simulations=True)
 #l=['N = 2','N = 3','N = 4','N = 5','N = 6','N = 7']
-#analyze_sweep_field(F=1,G=2,nr_periods=1,newer_than='20141114_114505',older_than='20141115_142631')
+
+analyze_sweep_field(F=7,G=5,nr_periods=1,phase_update=True,newer_than='20141126_014721')#,older_than='20141120_025235')
+
 #for n,label in enumerate(l):
 #	print label
-#analyze_single_instance(label='153659',compare_to_simulations=True)
+#analyze_single_instance(label='154340',compare_to_simulations=False)
 #check_adwin_realtime (label = 'rtAdwin', newer_than = '124600', print_details=False)
 #check_adwin_realtime_plots (N=4, M=5, outcomes = [5,0,2,1,5,5,0,2], newer_than='145500', do_plot=True)

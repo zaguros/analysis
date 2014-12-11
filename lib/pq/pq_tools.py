@@ -37,6 +37,28 @@ def get_photons(pqf, index = 1):
     
     return is_photon_0, is_photon_1
 
+def get_length_block(pqf, index = 1):
+    """
+    Returns the number of elements in one block
+    """
+    sync_num_name = '/PQ_sync_number-' + str(index)
+    
+    # Determines how long the block is
+    if type(pqf) == h5py._hl.files.File: 
+        sync_num = pqf[sync_num_name]
+        num_elements_block = len(sync_num)
+   
+    elif type(pqf) == str:
+        f = h5py.File(pqf, 'r')
+        sync_num = f[sync_num_name]
+        num_elements_block = len(sync_num)
+        f.close()
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise 
+
+    return num_elements_block
+
 
 
 def get_markers(pqf, chan, index = 1):
@@ -68,7 +90,7 @@ def get_markers(pqf, chan, index = 1):
 
     return (is_special & is_channel)
 
-def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, index = 1):
+def get_markers_with_num_markers(pqf, chan, index = 1):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
@@ -93,13 +115,188 @@ def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, index = 1):
         raise
 
     is_special = special == 1
+    is_channel = channel == chan
+    is_marker = is_special & is_channel
+    num_markers = len(channel[is_marker])
+
+    return is_marker, num_markers
+
+
+def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, index = 1):
+    """
+    returns a filter (1d-array): whether events are markers on the given channel
+    """
+
+    add_seg_length = 0
+
+    chan_name = '/PQ_channel-' + str(index)
+    spec_name = '/PQ_special-' + str(index)
+    sync_num_name = '/PQ_sync_number-' + str(index)
+    
+    if index != num_blocks:
+        if type(pqf) == h5py._hl.files.File:
+
+            channel = pqf[chan_name].value
+            special = pqf[spec_name].value
+            sync_num = pqf[sync_num_name].value
+
+        elif type(pqf) == str:
+
+            f = h5py.File(pqf,'r')
+            channel = f[chan_name].value
+            special = f[spec_name].value
+            sync_num = f[sync_num_name].value
+            f.close()
+        
+        else:
+            print "Neither filepath nor file enetered in function please check:", pqf
+            raise
+
+        if add_seg_length_old > 0:
+            channel = channel[add_seg_length_old::]
+            special = special[add_seg_length_old::]
+            sync_num = sync_num[add_seg_length_old::]
+
+        last_sync_num = sync_num[-1]
+
+        index = index + 1
+        chan_name = '/PQ_channel-' + str(index)
+        spec_name = '/PQ_special-' + str(index)
+        sync_num_name = '/PQ_sync_number-' + str(index)
+
+        
+        if type(pqf) == h5py._hl.files.File:
+
+            channel2 = pqf[chan_name].value
+            special2 = pqf[spec_name].value
+            sync_num2 = pqf[sync_num_name].value
+
+        elif type(pqf) == str:
+
+            f = h5py.File(pqf,'r')
+            channel2 = f[chan_name].value
+            special2 = f[spec_name].value
+            sync_num2 = f[sync_num_name].value
+            f.close()
+        
+        else:
+            print "Neither filepath nor file enetered in function please check:", pqf
+            raise
+
+        ad_channel = []
+
+        if sync_num2[0] == last_sync_num:
+            is_last_sync_num = sync_num2 == last_sync_num
+            ad_sync_num = sync_num2[is_last_sync_num]
+            ad_channel = channel2[is_last_sync_num]
+            ad_special = special2[is_last_sync_num]
+
+            channel = np.hstack((channel, ad_channel))
+            special = np.hstack((special, ad_special))
+            sync_num = np.hstack((sync_num, ad_sync_num))
+
+        add_seg_length  = len(ad_channel)
+
+    else:
+        if type(pqf) == h5py._hl.files.File:
+
+            channel = pqf[chan_name].value
+            special = pqf[spec_name].value
+            sync_num = pqf[sync_num_name].value
+
+        elif type(pqf) == str:
+
+            f = h5py.File(pqf,'r')
+            channel = f[chan_name].value
+            special = f[spec_name].value
+            sync_num = f[sync_num_name].value
+            f.close()
+        
+        else:
+            print "Neither filepath nor file enetered in function please check:", pqf
+            raise
+
+        if add_seg_length_old > 0:
+            channel = channel[add_seg_length_old::]
+            special = special[add_seg_length_old::]
+            sync_num = sync_num[add_seg_length_old::]
+
+    is_rnd = (special == 0 ) & (channel == 1)
+
+    is_special = special == 1
     is_channel_rnd_0 = channel == chan_rnd_0
     is_channel_rnd_1 = channel == chan_rnd_1
 
-    is_rnd_0 = is_special & is_channel_rnd_0
-    is_rnd_1 = is_special & is_channel_rnd_1
+    # returns a filter for the raw data which is true for every data point for which there is a random number
+    sync_num_rnd = np.unique(sync_num[is_rnd])
+    is_data_with_rndm_num = np.in1d(sync_num, sync_num_rnd)
+    
+    is_rnd_0 = (is_special & is_channel_rnd_0) & is_data_with_rndm_num
+    is_rnd_1 = (is_special & is_channel_rnd_1) & is_data_with_rndm_num
+    dif_should_and_get = -len(sync_num_rnd) + np.sum(is_rnd_1) + np.sum(is_rnd_0)
 
-    return is_rnd_0, is_rnd_1
+    print "Dif what it should be what we get", dif_should_and_get
+
+    sync_num_final_rnd = sync_num[(is_rnd_0 | is_rnd_1)]
+    print len(sync_num_rnd), len(np.unique(sync_num_rnd))
+    print len(sync_num_final_rnd), np.sum(is_rnd_1) + np.sum(is_rnd_0)
+
+    len_check = int(len(sync_num_final_rnd)/10.)
+    num_unique_sync_nums = 0
+
+    last_number = 0
+    indices_double_sync_nums = []
+    indices_to_be_saved = []
+
+
+    for i in range(10):
+        if i != 9:
+            temp_check = sync_num_final_rnd[(i*len_check):((i+1)*len_check)]
+            first_number = temp_check[0]
+            if first_number == last_number:
+                print "One less unique number"
+            last_number = temp_check[len(temp_check)-1]   
+            unique_sync_nums, index_sync_nums = np.unique(temp_check, return_index = True)
+            index_sync_nums = np.sort(index_sync_nums + (i* len_check))
+            for j in range(len(index_sync_nums)):
+                if j != len(index_sync_nums) - 1:
+                    test = index_sync_nums[j+1] - index_sync_nums[j]
+                    if test > 1:
+                        for k in range(test-1):
+                            indices_to_be_saved.append(index_sync_nums[j]+k+1)             
+            num_unique_sync_nums = num_unique_sync_nums + len(unique_sync_nums)
+        else:
+            temp_check = sync_num_final_rnd[(i*len_check)::]
+            first_number = temp_check[0]
+            if first_number == last_number:
+                print "One less unique number"
+            last_number = temp_check[len(temp_check)-1] 
+            unique_sync_nums, index_sync_nums = np.unique(temp_check, return_index = True)
+            index_sync_nums = np.sort(index_sync_nums + (i* len_check))
+            for j in range(len(index_sync_nums)):
+                if j != len(index_sync_nums) - 1:
+                    test = index_sync_nums[j+1] - index_sync_nums[j]
+                    if test > 1:
+                        for k in range(test-1):
+                            indices_to_be_saved.append(index_sync_nums[j]+k+1)
+            num_unique_sync_nums = num_unique_sync_nums + len(unique_sync_nums)
+            
+           
+    print "Length unique sync numbers", num_unique_sync_nums
+    print "The extra sync numbers", len(sync_num_final_rnd) - num_unique_sync_nums
+
+    print len(indices_to_be_saved)
+    print len(np.unique(indices_to_be_saved))
+    corresp_sync_num = []
+
+    for i,j in enumerate(indices_to_be_saved):
+        corresp_sync_num.append(sync_num_final_rnd[j])
+
+    Additional_sync_num, index_un_add_sync_num = np.unique(corresp_sync_num, return_index = True)
+    print len(Additional_sync_num)
+    print Additional_sync_num
+
+    return is_rnd_0, is_rnd_1, add_seg_length
 
 def get_multiple_photon_syncs(pqf, index = 1):
 
@@ -332,8 +529,6 @@ def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1,
 
     return unique_sync_num_with_markers
 
-
-
 def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_win_min, second_win_max, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, VERBOSE = True):
     """
     Retuns the total number of shots, total number of photons per shot, and the tailcounts per shot for the different tails which are filtered using
@@ -530,15 +725,15 @@ def filter_marker_time_lim(pqf, chan, sync_time_lim, index = 1, VERBOSE = True):
 
     return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
 
-def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max):
+def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = False):
     """
     Return two filters whether events are first window photons or second window
     photons with markers.
     """
     
     is_photon_first_window, is_photon_second_window = get_photons_in_sync_windows(pqf,
-                            first_win_min, first_win_max, second_win_min, second_win_max)
-    is_events_with_marker = filter_marker(pqf,chan)
+                            first_win_min, first_win_max, second_win_min, second_win_max, VERBOSE = VERBOSE)
+    is_events_with_marker = filter_marker(pqf,chan, VERBOSE = VERBOSE)
     
     is_photon_first_window_with_markers = is_photon_first_window & \
                                             is_events_with_marker
@@ -546,8 +741,6 @@ def get_photons_with_markers(pqf, chan, first_win_min, first_win_max, second_win
                                             is_events_with_marker
 
     return is_photon_first_window_with_markers, is_photon_second_window_with_markers
-
-
 
 
 ##############################################################################
