@@ -862,6 +862,7 @@ class RamseySequence_Exp (RamseySequence):
 		self.F=a.F
 		self.G=a.G
 		self.K=a.K
+		self.repetitions=a.repetitions
 		self.reps=a.reps
 		self.n_points =  2**(self.N+3)
 		self.t0 = a.t0
@@ -869,7 +870,14 @@ class RamseySequence_Exp (RamseySequence):
 		self.msmnt_times_tmp = np.zeros(len(a.ramsey_time))
 		self.set_detuning = a.set_detuning
 		self.CR_after = a.CR_after
-		self.phase_update=a.phase_update
+		try:
+			self.do_add_phase=a.do_add_phase
+			if self.do_add_phase==0:
+				self.phase_update=False
+			else:
+				self.phase_update=True	
+		except:	
+			self.phase_update=False
 		#if (a.debug_pk):
 		self.p_tn = a.p_tn
 		self.p_2tn = a.p_2tn
@@ -928,13 +936,15 @@ class RamseySequence_Exp (RamseySequence):
 		if (self.N>1):
 			res = np.copy(self.msmnt_results)
 			phases = np.copy(self.msmnt_phases)
+			#print np.shape(phases)
+			#print np.shape(self.msmnt_results)
 			self.discarded_elements = []
 			new_results = self.msmnt_results*0.
 			new_phases = self.msmnt_results*0.
 			rep = 0
-			CR_after_threshold = 7
+			self.CR_after_threshold = 7
 			for j in np.arange(self.reps):
-				if any(t<CR_after_threshold for t in self.CR_after[j,:]):
+				if any(t<self.CR_after_threshold for t in self.CR_after[j,:]):
 					self.discarded_elements.append(j)
 				else:
 				#print 'for i = ', j , 'CR array',self.CR_after[j,:]
@@ -1280,7 +1290,11 @@ class AdaptiveMagnetometry ():
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
+				print np.shape(s.msmnt_results)
+				print s.msmnt_results
+				self.repetitions = s.repetitions
 				s.CR_after_postselection()
+				self.CR_after_threshold=s.CR_after_threshold
 				self.nr_discarded_elements.append(len(s.discarded_elements))
 				check_params = [(s.t0 == self.t0), (s.F == self.F),(s.G == self.G)]
 				if np.all(check_params):
@@ -1552,6 +1566,9 @@ class AdaptiveMagnetometry ():
 		f.attrs ['fid0']=self.fid0
 		f.attrs ['fid1']=self.fid1
 		f.attrs ['T2']=self.T2
+		f.attrs ['repetitions']=self.repetitions
+		f.attrs['CR_after_threshold'] = self.CR_after_threshold
+		f.attrs['reps'] = self.reps
 
 		pr_grp = f.create_group('probability_densities')
 		msqe_grp = f.create_group('mean_square_error')
@@ -1591,7 +1608,7 @@ class AdaptiveMagnetometry ():
 		self.fid0 = f.attrs ['fid0']
 		self.fid1 = f.attrs ['fid1']
 		self.T2 = f.attrs ['T2']
-
+		self.repetitions=f.attrs['repetitions']
 		pr_grp = f['/probability_densities']
 		msqe_grp = f['/mean_square_error']
 

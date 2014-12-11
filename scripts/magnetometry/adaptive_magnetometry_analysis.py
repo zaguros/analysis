@@ -162,16 +162,16 @@ def analyze_sweep_field(G=1,F=2,nr_periods=1,phase_update=False,older_than=None,
 	mgnt_exp.load_sweep_field_data (N=4,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=5,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=6,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=10,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=11,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=12,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=13,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=14,older_than=older_than,newer_than=newer_than)
 	
-
+	print 'mgnt_exp repetitions', mgnt_exp.repetitions
 	plt.figure()
 
 	mgnt_exp.plot_msqe_dictionary(y_log=True)
