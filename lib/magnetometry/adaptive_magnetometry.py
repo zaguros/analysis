@@ -931,7 +931,7 @@ class RamseySequence_Exp (RamseySequence):
 
 
 
-	def CR_after_postselection(self):
+	def CR_after_postselection(self,threshold=2):
 
 		if (self.N>1):
 			res = np.copy(self.msmnt_results)
@@ -942,7 +942,7 @@ class RamseySequence_Exp (RamseySequence):
 			new_results = self.msmnt_results*0.
 			new_phases = self.msmnt_results*0.
 			rep = 0
-			self.CR_after_threshold = 7
+			self.CR_after_threshold = threshold
 			for j in np.arange(self.reps):
 				if any(t<self.CR_after_threshold for t in self.CR_after[j,:]):
 					self.discarded_elements.append(j)
@@ -1264,7 +1264,7 @@ class AdaptiveMagnetometry ():
 		list_estim_phases = flatten(list_estim_phases)
 		self.results_dict[str(N)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases}
 
-	def load_sweep_field_data (self, N, compare_to_simulations=False,older_than=None,newer_than=None):
+	def load_sweep_field_data (self, N, compare_to_simulations=False,older_than=None,newer_than=None,CR_after_threshold=2):
 
 		self.simulated_data = False
 		self.analyzed_N.append(N)
@@ -1293,7 +1293,7 @@ class AdaptiveMagnetometry ():
 				print np.shape(s.msmnt_results)
 				print s.msmnt_results
 				self.repetitions = s.repetitions
-				s.CR_after_postselection()
+				s.CR_after_postselection(threshold)
 				self.CR_after_threshold=s.CR_after_threshold
 				self.nr_discarded_elements.append(len(s.discarded_elements))
 				check_params = [(s.t0 == self.t0), (s.F == self.F),(s.G == self.G)]
