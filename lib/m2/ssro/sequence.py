@@ -301,8 +301,10 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.msmnt_type = 'realtime' 
         except:
             self.msmnt_type = 'table_based'
-
-        self.T2_mult_t0 = self.g.attrs['T2']
+        try:
+            self.T2_mult_t0 = self.g.attrs['T2']
+        except:
+            self.T2_mult_t0 = 46    
         print self.T2_mult_t0
 
         try:
@@ -312,9 +314,13 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.timer = np.mean (timer_data)*3.33333*1e-9*1000
         except:
             self.timer = None
+        try:
+            self.save_pk_n = self.g.attrs['save_pk_n']
+            self.save_pk_m = self.g.attrs['save_pk_m']
+        except:    
 
-        self.save_pk_n = self.g.attrs['save_pk_n']
-        self.save_pk_m = self.g.attrs['save_pk_m']
+            self.save_pk_n = 0
+            self.save_pk_m = 0
 
         if self.save_pk_n>0:
             self.real_pk_adwin = np.array(adwingrp['real_p_k'].value)
@@ -341,12 +347,12 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             RO_clicks = RO_clicks[:rows_addphase*cols_addphase]
             self.clicks = np.squeeze(np.reshape(RO_clicks, (rows_addphase, cols_addphase)))
         set_phase = set_phase[:rows*cols]
-        theta = theta[:rows*cols]
-        CR_after = CR_after[:rows*cols]
+        #theta = theta[:rows*cols]
+        #CR_after = CR_after[:rows*cols]
 
         
         self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
-        self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
+        #self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
         self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))

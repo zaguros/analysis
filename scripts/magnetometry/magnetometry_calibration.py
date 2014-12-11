@@ -21,14 +21,21 @@ def fpga_calibration_analysis (folder):
 
     ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
     print ssro_calib_folder
-    a = sequence.SequenceAnalysis(folder)
+    a = sequence.MagnetometrySequenceAnalysis(folder)
     a.get_sweep_pts()
     t=a.get_magnetometry_data(name='adwindata')
-    #print 'a clicks', np.sum(a.clicks, axis=0)
-    a.get_electron_ROC()
-    y = a.p0
-    uy = a.u_p0
+    print 'a clicks', np.sum(a.clicks, axis=0)
+            
+    a.normalized_ssro = np.sum(a.clicks, axis=0)/float(a.reps)
+    a.u_normalized_ssro = (a.normalized_ssro*(1.-a.normalized_ssro)/(float(a.reps)))**0.5  #this is quite ugly, maybe replace?
 
+    a.get_electron_ROC()
+    
+    #y = np.sum(a.clicks, axis=0)/float(a.reps)#a.p0
+    #uy = np.sum(a.clicks, axis=0)#a.u_p0
+    #a.p0=y
+    y=a.p0
+    uy=a.u_p0
     a.get_sweep_pts()
     x = a.sweep_pts
     print 'x ',x
@@ -46,7 +53,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False 
 
     if do_fit:
-        guess_frq = 1/360.
+        guess_frq = 0*1/1000.
         guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.
@@ -68,7 +75,7 @@ def fpga_calibration_analysis (folder):
         def fitfunc(x):
             return (o()-np.abs(A())) + np.abs(A()) * np.exp(-(x/Tdec())**2) * np.cos(2*np.pi*(f()*x - phi()/360.))
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[3,4],
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[0],
                 do_print=True, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
                 plot_data=False)

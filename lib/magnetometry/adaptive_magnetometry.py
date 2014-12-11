@@ -880,7 +880,7 @@ class RamseySequence_Exp (RamseySequence):
 			new_results = self.msmnt_results*0.
 			new_phases = self.msmnt_results*0.
 			rep = 0
-			CR_after_threshold = 10
+			CR_after_threshold = 7
 			for j in np.arange(self.reps):
 				if any(t<CR_after_threshold for t in self.CR_after[j,:]):
 					self.discarded_elements.append(j)
@@ -1184,7 +1184,11 @@ class AdaptiveMagnetometry ():
 		list_estim_phases=[]
 		for per in np.arange(self.nr_periods):
 			for pt in np.arange (self.nr_points_per_period):
-				label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
+				if self.phase_update:
+					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_addphase_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
+				else:
+					
+					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
 				print 'Processing...', label
 				if older_than:
 					f = toolbox.latest_data(contains=label,older_than=older_than,newer_than=newer_than)
@@ -1200,6 +1204,7 @@ class AdaptiveMagnetometry ():
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
+						print 'ERROR BARS: ', self.error_bars
 						if self.error_bars:
 							beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=s.set_detuning, do_plot=False, return_all_estimated_phases = True)
 							list_estim_phases.append(list_phase_values)
@@ -1462,6 +1467,7 @@ class AdaptiveMagnetometry ():
 			n_grp.create_dataset ('B_field', data = self.results_dict[str(n)] ['B_field'])
 			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
 			n_grp.create_dataset ('ave_exp', data = self.results_dict[str(n)] ['ave_exp'])
+			n_grp.create_dataset ('estimated_phase_values', data = self.results_dict[str(n)] ['estimated_phase_values'])
 			n_grp.attrs['N'] = n
 
 		scaling.create_dataset ('total_time', data = self.total_time)
@@ -1499,6 +1505,9 @@ class AdaptiveMagnetometry ():
 				curr_n = curr_subgrp.attrs['N']
 				B_field = curr_subgrp['B_field'].value
 				msqe = curr_subgrp['msqe'].value
-				self.results_dict[str(curr_n)] =  {'B_field':B_field, 'msqe':msqe, 'F':self.F,'G':self.G}
+				ave_exp = curr_subgrp['ave_exp'].value
+				estimated_phase_values=curr_subgrp['estimated_phase_values'].value
+
+				self.results_dict[str(curr_n)] =  {'B_field':B_field, 'ave_exp':ave_exp,'msqe':msqe, 'F':self.F,'G':self.G,'estimated_phase_values':estimated_phase_values}
 		f.close()
 

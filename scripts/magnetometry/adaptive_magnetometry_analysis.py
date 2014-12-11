@@ -138,27 +138,28 @@ def temporal_evolution_B(label, nr):
 		s.load_exp_data()
 '''
 
-def analyze_sweep_field(G=1,F=2,nr_periods=1,older_than=None,newer_than=None):
+def analyze_sweep_field(G=1,F=2,nr_periods=1,phase_update=False,older_than=None,newer_than=None):
 
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=13,F=F)
 	mgnt_exp.error_bars=True
 	mgnt_exp.set_sweep_params (nr_periods = nr_periods, nr_points_per_period=7)
 	mgnt_exp.set_exp_params (T2=96e-6, fid0=0.87, fid1=1-.975)
+	mgnt_exp.phase_update=phase_update
 	#mgnt_exp.load_sweep_field_data (N=1,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=2,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=3,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=3,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=4,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=5,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=6,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=10,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=5,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=6,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=10,older_than=older_than,newer_than=newer_than)
 	mgnt_exp.load_sweep_field_data (N=11,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=12,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=13,older_than=older_than,newer_than=newer_than)
-	#mgnt_exp.load_sweep_field_data (N=14,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=12,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=13,older_than=older_than,newer_than=newer_than)
+	mgnt_exp.load_sweep_field_data (N=14,older_than=older_than,newer_than=newer_than)
 	
 
 	plt.figure()
@@ -256,10 +257,10 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #result = '4021'
 #check_adwin_realtime (label = result+'_test_pk_(n=4_m=1)', newer_than = '102000')
 #check_adwin_realtime_record_pk(label = result, newer_than = '102000')
-#analyze_single_instance(compare_to_simulations=True)
+#analyze_single_instance(label='105854',compare_to_simulations=True)
 #l=['N = 2','N = 3','N = 4','N = 5','N = 6','N = 7']
 
-analyze_sweep_field(F=7,G=5,nr_periods=1)#,newer_than='20141114_114505',older_than='20141118_223228')
+analyze_sweep_field(F=7,G=5,nr_periods=1,phase_update=True,newer_than='20141126_014721')#,older_than='20141120_025235')
 
 #for n,label in enumerate(l):
 #	print label
