@@ -136,12 +136,12 @@ def analyze_saved_simulations (timestamp,error_bars=False):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
 	mgnt_exp.error_bars=error_bars
 	mgnt_exp.load_analysis (timestamp=timestamp)
-	mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=True)
+	#mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=False)
 	#mgnt_exp.G=G
 	#mgnt_exp.F=F
 	#mgnt_exp.K=K
 	mgnt_exp.error_bars=error_bars
-	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
+	mgnt_exp.plot_sensitivity_scaling(save_plot=False)
 	return mgnt_exp
 
 def simulate_adwin ():

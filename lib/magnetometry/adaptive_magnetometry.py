@@ -8,7 +8,7 @@ import os, sys
 import h5py
 import logging, time, timeit
 
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import  sequence
 from analysis.lib.tools import toolbox
@@ -1282,7 +1282,7 @@ class AdaptiveMagnetometry ():
 				else:
 					
 					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
-				print 'Processing...', label
+				#print 'Processing...', label
 				if older_than:
 					f = toolbox.latest_data(contains=label,older_than=older_than,newer_than=newer_than)
 				else:
@@ -1290,10 +1290,10 @@ class AdaptiveMagnetometry ():
 				s = RamseySequence_Exp (folder = f)
 				s.set_exp_pars (T2=96e-6, fid0=0.876, fid1=1-.964)
 				s.load_exp_data()
-				print np.shape(s.msmnt_results)
-				print s.msmnt_results
+				#print np.shape(s.msmnt_results)
+				#print s.msmnt_results
 				self.repetitions = s.repetitions
-				s.CR_after_postselection(threshold)
+				s.CR_after_postselection(CR_after_threshold)
 				self.CR_after_threshold=s.CR_after_threshold
 				self.nr_discarded_elements.append(len(s.discarded_elements))
 				check_params = [(s.t0 == self.t0), (s.F == self.F),(s.G == self.G)]
@@ -1302,7 +1302,7 @@ class AdaptiveMagnetometry ():
 					if compare_to_simulations:
 						beta, prob, err, mB, sB = s.compare_to_simulations (show_plot=False, do_save=True, verbose=False)
 					else:
-						print 'ERROR BARS: ', self.error_bars
+						#print 'ERROR BARS: ', self.error_bars
 						if self.error_bars:
 							beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=s.set_detuning, do_plot=False, return_all_estimated_phases = True)
 							list_estim_phases.append(list_phase_values)
@@ -1372,7 +1372,7 @@ class AdaptiveMagnetometry ():
 			else:	
 				self.total_time.append(self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n)))
 			
-			print np.array(self.total_time)/self.t0
+			#print np.array(self.total_time)/self.t0
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)		
 		self.sensitivity = (self.scaling_variance*self.total_time)#/((2*np.pi*self.gamma_e*self.t0)**2)
@@ -1382,6 +1382,7 @@ class AdaptiveMagnetometry ():
 		else:
 			self.std_H  = self.sensitivity*0
 			self.err_sensitivity = self.sensitivity*0
+
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
 			self.calculate_scaling()
@@ -1396,19 +1397,26 @@ class AdaptiveMagnetometry ():
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)+'.png'
 
 
+		print 'PLOTTING SCALING!!!!!!'
 		plt.figure()
 
 
 		#NOTE!!!
+
 		plt.loglog (self.total_time, self.sensitivity, 'ob')
 		if self.error_bars:
-			plt.loglog (self.total_time, self.sensitivity+self.err_sensitivity, ':r')
-			plt.loglog (self.total_time, self.sensitivity-self.err_sensitivity, ':r')		
+			#plt.loglog (self.total_time, self.sensitivity+self.err_sensitivity, ':r')
+			#plt.loglog (self.total_time, self.sensitivity-self.err_sensitivity, ':r')		
+			plt.fill_between (self.total_time, self.sensitivity-self.err_sensitivity, self.sensitivity+self.err_sensitivity, color='b', alpha=0.1)
+		plt.xscale('log')
+		plt.yscale('log')
 		plt.xlabel ('total ramsey time [$\mu$s]')
 		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
 		plt.ylabel ('$V_{H}$ T ')
 		plt.show()
 
+
+		
 		#x0 = np.log10(self.total_time*1e6)
 		#y0 = np.log10(self.sensitivity*1e12)
 		#NOTE!!!!!!!!
@@ -1540,6 +1548,7 @@ class AdaptiveMagnetometry ():
 
 		plt.show()
 		
+
 	def save(self, folder = None):
 		
 		if (folder==None):
@@ -1611,7 +1620,10 @@ class AdaptiveMagnetometry ():
 		self.fid0 = f.attrs ['fid0']
 		self.fid1 = f.attrs ['fid1']
 		self.T2 = f.attrs ['T2']
-		self.repetitions=f.attrs['repetitions']
+		try:
+			self.repetitions=f.attrs['repetitions']
+		except:
+			print 'Nr of repetitions: parameter not found!'
 		pr_grp = f['/probability_densities']
 		msqe_grp = f['/mean_square_error']
 

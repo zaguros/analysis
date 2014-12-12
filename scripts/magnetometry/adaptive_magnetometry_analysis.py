@@ -157,21 +157,21 @@ def analyze_sweep_field(G=1,F=2,nr_periods=1,phase_update=False,older_than=None,
 	mgnt_exp.set_exp_params (T2=96e-6, fid0=0.87, fid1=1-.975)
 	mgnt_exp.phase_update=phase_update
 	#mgnt_exp.load_sweep_field_data (N=1,older_than=older_than,newer_than=newer_than)
-	mgnt_exp.load_sweep_field_data (N=2,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=3,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=4,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=5,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=6,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
-	mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than,CR_after_threshold=CR_after_threshold)
+	mgnt_exp.load_sweep_field_data (N=2,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=3,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=4,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=5,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=6,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=7,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=8,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
+	mgnt_exp.load_sweep_field_data (N=9,older_than=older_than,newer_than=newer_than,CR_after_threshold=1)
 	#mgnt_exp.load_sweep_field_data (N=10,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=11,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=12,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=13,older_than=older_than,newer_than=newer_than)
 	#mgnt_exp.load_sweep_field_data (N=14,older_than=older_than,newer_than=newer_than)
 	
-	print 'mgnt_exp repetitions', mgnt_exp.repetitions
+	#print 'mgnt_exp repetitions', mgnt_exp.repetitions
 	plt.figure()
 
 	mgnt_exp.plot_msqe_dictionary(y_log=True)
@@ -270,7 +270,7 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #analyze_single_instance(label='105854',compare_to_simulations=True)
 #l=['N = 2','N = 3','N = 4','N = 5','N = 6','N = 7']
 
-analyze_sweep_field(F=7,G=5,nr_periods=1,phase_update=True,newer_than='20141126_014721',CR_after_threshold=2)#,older_than='20141120_025235')
+analyze_sweep_field(F=7,G=5,nr_periods=1,phase_update=False,CR_after_threshold=2)#newer_than='20141126_014721',older_than='20141120_025235')
 
 #for n,label in enumerate(l):
 #	print label
