@@ -1160,7 +1160,7 @@ class AdaptiveMagnetometry ():
 		else:
 			nr_periods = self.nr_periods
 
-		periods = (np.unique(np.random.randint(0, nr_available_periods, size=nr_periods*3)-nr_available_periods/2))
+		periods = (np.unique(np.random.randint(0, nr_available_periods, size=nr_periods*3)))-nr_available_periods/2
 
 		if (len(periods)>nr_periods):
 			idxs = np.random.randint (0, len(periods), size = nr_periods)
@@ -1226,6 +1226,9 @@ class AdaptiveMagnetometry ():
 		ind = 0
 		print "Simulating N="+str(N)+', '+str(len(self.B_values))+" instances of magnetic field"
 
+		self.phase_update = phase_update
+		self.do_adaptive = do_adaptive
+
 		list_estim_phases = []
 		for b in np.arange(nr_points):
 			sys.stdout.write(str(ind)+', ')	
@@ -1237,14 +1240,14 @@ class AdaptiveMagnetometry ():
 			s.fid1 = self.fid1
 	
 
-			#if always_recalculate_phase:
-			s.phase_update = True
-			s.sim_recalculate_optimal_phase(always_recalculate_phase=always_recalculate_phase)
-			#else:			
-			#	if phase_update:
-			#		s.sim_berry_protocol(do_adaptive=do_adaptive)
-			#	else:
-			#		s.sim_cappellaro_variable_M()
+			if always_recalculate_phase:
+				s.phase_update = True
+				s.sim_recalculate_optimal_phase(always_recalculate_phase=always_recalculate_phase)
+			else:			
+				if phase_update:
+					s.sim_berry_protocol(do_adaptive=do_adaptive)
+				else:
+					s.sim_cappellaro_variable_M()
 
 			s.convert_to_dict()
 
@@ -1410,8 +1413,8 @@ class AdaptiveMagnetometry ():
 			plt.fill_between (self.total_time, self.sensitivity-self.err_sensitivity, self.sensitivity+self.err_sensitivity, color='b', alpha=0.1)
 		plt.xscale('log')
 		plt.yscale('log')
-		plt.xlabel ('total ramsey time [$\mu$s]')
-		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]')
+		plt.xlabel ('total ramsey time [$\mu$s]', fontsize=15)
+		plt.ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]', fontsize=15)
 		plt.ylabel ('$V_{H}$ T ')
 		plt.show()
 
@@ -1555,9 +1558,13 @@ class AdaptiveMagnetometry ():
 			folder = self.folder 
 
 		if self.simulated_data:
-			fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
-			if self.always_recalculate_phase:
-				fName = fName + '_alwaysRecPhase'
+			if self.do_adaptive:
+				fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+				if self.always_recalculate_phase:
+					fName = fName + '_alwaysRecPhase'
+			else:
+				fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_NON_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
 
@@ -1577,8 +1584,15 @@ class AdaptiveMagnetometry ():
 		f.attrs ['fid0']=self.fid0
 		f.attrs ['fid1']=self.fid1
 		f.attrs ['T2']=self.T2
-		f.attrs ['repetitions']=self.repetitions
-		f.attrs['CR_after_threshold'] = self.CR_after_threshold
+		try:
+			f.attrs ['repetitions']=self.repetitions
+		except:
+			f.attrs ['repetitions']=-1
+			print 'param Repetiotions missing...'
+		try:	
+			f.attrs['CR_after_threshold'] = self.CR_after_threshold
+		except:
+			f.attrs['CR_after_threshold'] = -1
 		f.attrs['reps'] = self.reps
 
 		pr_grp = f.create_group('probability_densities')
@@ -1594,7 +1608,10 @@ class AdaptiveMagnetometry ():
 			n_grp.create_dataset ('msqe', data = self.results_dict[str(n)] ['msqe'])
 			n_grp.create_dataset ('ave_exp', data = self.results_dict[str(n)] ['ave_exp'])
 			n_grp.create_dataset ('estimated_phase_values', data = self.results_dict[str(n)] ['estimated_phase_values'])
-			n_grp.create_dataset ('nr_discarded_elements', data = self.results_dict[str(n)] ['nr_discarded_elements'])
+			try:
+				n_grp.create_dataset ('nr_discarded_elements', data = self.results_dict[str(n)] ['nr_discarded_elements'])
+			except:
+				pass
 			n_grp.attrs['N'] = n
 
 		scaling.create_dataset ('total_time', data = self.total_time)
