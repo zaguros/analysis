@@ -75,7 +75,7 @@ def fpga_calibration_analysis (folder):
         def fitfunc(x):
             return (o()-np.abs(A())) + np.abs(A()) * np.exp(-(x/Tdec())**2) * np.cos(2*np.pi*(f()*x - phi()/360.))
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[0],
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
                 do_print=True, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
                 plot_data=False)
