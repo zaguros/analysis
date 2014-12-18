@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 reload(sequence)
 
 ### settings
-timestamp = '20141001_143935'#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = None#'20141001_143935'#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 
 def fpga_calibration_analysis (folder):
@@ -53,7 +53,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False 
 
     if do_fit:
-        guess_frq = 0*1/1000.
+        guess_frq = 1/50000.
         guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.

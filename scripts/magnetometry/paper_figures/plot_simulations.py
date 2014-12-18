@@ -35,11 +35,11 @@ def add_scaling_plot(timestamp, ax, exp_data, label, marker_settings, color):
     #plt.show()
     return ax
 
-def compare_2plots(timestamp1, timestamp2, title):
+def compare_2plots(timestamp1, timestamp2, title, label1 = 'adapt', label2='non-adapt'):
     f = plt.figure(figsize=(8,6))
     ax = f.add_subplot(1,1,1)
-    ax = add_scaling_plot (timestamp = timestamp1, exp_data=True, ax=ax, label = 'adapt', marker_settings='o', color='b')
-    ax = add_scaling_plot (timestamp = timestamp2, exp_data=True, ax=ax, label = 'non adapt', marker_settings='^', color='r')
+    ax = add_scaling_plot (timestamp = timestamp1, exp_data=True, ax=ax, label = label1, marker_settings='o', color='b')
+    ax = add_scaling_plot (timestamp = timestamp2, exp_data=True, ax=ax, label = label2, marker_settings='^', color='r')
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlabel ('total ramsey time [$\mu$s]', fontsize=15)
@@ -71,13 +71,39 @@ def compare_multiple_plots(timestamps, labels, title):
 
 
 def compare_G3_variableF_imperfRO():
+    #compares adaptive (Cappellaro only) to non-adaptive (phase_update=True) for G=3
     compare_2plots (timestamp1= '20141215_152517', timestamp2='20141215_152604', title = 'G=3, F=0, RO_fid = 0.87')
     compare_2plots (timestamp1= '20141215_152820', timestamp2='20141215_152939', title = 'G=3, F=1, RO_fid = 0.87')
-    compare_2plots (timestamp1= '20141215_153251', timestamp2='20141215_134529', title = 'G=3, F=2, RO_fid = 0.87')
-    compare_2plots (timestamp1= '20141215_134649', timestamp2='20141215_134741', title = 'G=3, F=3, RO_fid = 0.87')
-    compare_2plots (timestamp1= '20141215_134924', timestamp2='20141215_135030', title = 'G=3, F=4, RO_fid = 0.87')
-    compare_2plots (timestamp1= '20141215_135229', timestamp2='20141215_135352', title = 'G=3, F=5, RO_fid = 0.87')
-    compare_2plots (timestamp1= '20141215_135556', timestamp2='20141215_135723', title = 'G=3, F=6, RO_fid = 0.87')
+    compare_2plots (timestamp1= '20141215_153251', timestamp2='20141215_153454', title = 'G=3, F=2, RO_fid = 0.87')
+    compare_2plots (timestamp1= '20141215_153913', timestamp2='20141215_154152', title = 'G=3, F=3, RO_fid = 0.87')
+    compare_2plots (timestamp1= '20141215_154728', timestamp2='20141215_155054', title = 'G=3, F=4, RO_fid = 0.87')
+    #compare_2plots (timestamp1= '20141215_135229', timestamp2='20141215_135352', title = 'G=3, F=5, RO_fid = 0.87')
+    #compare_2plots (timestamp1= '20141215_135556', timestamp2='20141215_135723', title = 'G=3, F=6, RO_fid = 0.87')
+
+
+def compare_G3_variableF_imperfRO_recalcPhase():
+    #compares adaptive (calculating optimal phase for each msmnt) and normal Cappellaro
+    compare_2plots (timestamp1= '20141215_152517', timestamp2='20141215_160631', title = 'G=3, F=0, RO_fid = 0.87', label1='Cappellaro', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_152820', timestamp2='20141215_160844', title = 'G=3, F=1, RO_fid = 0.87', label1='Cappellaro', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_153251', timestamp2='20141215_161225', title = 'G=3, F=2, RO_fid = 0.87', label1='Cappellaro', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_153913', timestamp2='20141215_161702', title = 'G=3, F=3, RO_fid = 0.87', label1='Cappellaro', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_154728', timestamp2='20141215_162257', title = 'G=3, F=4, RO_fid = 0.87', label1='Cappellaro', label2='always optimal')
+
+def compare_G3_variableF_imperfRO_optCapp_vs_nonadaptive():
+    #compares adaptive (Cappellaro optimal phase for each msmnt) to non-adaptive (phase_update=True) for G=3
+    compare_2plots (timestamp1= '20141215_160631', timestamp2='20141215_152604', title = 'G=3, F=0, RO_fid = 0.87', label1='opt Cappellaro', label2='non-adaptive')
+    compare_2plots (timestamp1= '20141215_160844', timestamp2='20141215_152939', title = 'G=3, F=1, RO_fid = 0.87', label1='opt Cappellaro', label2='non-adaptive')
+    compare_2plots (timestamp1= '20141215_161225', timestamp2='20141215_153454', title = 'G=3, F=2, RO_fid = 0.87', label1='opt Cappellaro', label2='non-adaptive')
+    compare_2plots (timestamp1= '20141215_161702', timestamp2='20141215_154152', title = 'G=3, F=3, RO_fid = 0.87', label1='opt Cappellaro', label2='non-adaptive')
+    compare_2plots (timestamp1= '20141215_162257', timestamp2='20141215_155054', title = 'G=3, F=4, RO_fid = 0.87', label1='opt Cappellaro', label2='non-adaptive')
+
+def check_recalcPhase_N1sweep():
+    #compares adaptive (Cappellaro optimal phase for each msmnt) to the same, but sweeping phase of the first msmnts (N=1) according to m*pi/G
+    compare_2plots (timestamp1= '20141215_172959', timestamp2='20141215_160631', title = 'G=3, F=0, RO_fid = 0.87', label1='N1_sweep', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_173214', timestamp2='20141215_160844', title = 'G=3, F=1, RO_fid = 0.87', label1='N1_sweep', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_173528', timestamp2='20141215_161225', title = 'G=3, F=2, RO_fid = 0.87', label1='N1_sweep', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_173929', timestamp2='20141215_161702', title = 'G=3, F=3, RO_fid = 0.87', label1='N1_sweep', label2='always optimal')
+    compare_2plots (timestamp1= '20141215_174445', timestamp2='20141215_162257', title = 'G=3, F=4, RO_fid = 0.87', label1='N1_sweep', label2='always optimal')
 
 
 def compare_G5_variableF_imperfRO():
@@ -105,7 +131,10 @@ def compare_cappellaro_varG ():
 
 #compare_G5_variableF_imperfRO()
 #compare_G5_variableF_perfRO()
-compare_cappellaro_varG()
+#compare_cappellaro_varG()
+#compare_G3_variableF_imperfRO_recalcPhase()
+#compare_G3_variableF_imperfRO_optCapp_vs_nonadaptive()
+check_recalcPhase_N1sweep()
 
 '''
 #mgnt_G5F7_N14_sim_sweep_phase_nonadapt=asim.analyze_saved_simulations('20141118_161545')
