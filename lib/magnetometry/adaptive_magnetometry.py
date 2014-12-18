@@ -622,8 +622,10 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 
-	def sim_recalculate_optimal_phase (self, always_recalculate_phase):
-		
+	def sim_recalculate_optimal_phase (self, always_recalculate_phase, N1_sweep=False):
+		#PARAMETERS:
+		#always_recalculate_phase: calculate Cappellaro phase before each msmnt, not only when updating tau
+		#N1_sweep: ONLY for N=1, update phase as m*pi/G
 
 		if (self.G+self.F+self.K==0):
 			print 'Simulation parameters G, K, F not set!!'
@@ -659,6 +661,9 @@ class RamseySequence_Simulation (RamseySequence):
 					for m in np.arange(MK):
 						if always_recalculate_phase:
 							phase = 0.5*np.angle (self.p_k[ttt+self.points])
+							if N1_sweep:
+								if i==0:
+									phase = m*np.pi/float(self.G)
 						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
 						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
 						self.msmnt_results[r, res_idx] = m_res
@@ -1299,6 +1304,7 @@ class AdaptiveMagnetometry ():
 		self.protocol = protocol
 
 		list_estim_phases = []
+		self.N1_sweep = N1_sweep
 		for b in np.arange(nr_points):
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
@@ -1644,6 +1650,12 @@ class AdaptiveMagnetometry ():
 
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+
+		try:
+			if self.N1_sweep:
+				fName = fName +"_N1sweep"
+		except:
+			pass
 
 		if not os.path.exists(os.path.join(folder, fName+'.hdf5')):
 			mode = 'w'
