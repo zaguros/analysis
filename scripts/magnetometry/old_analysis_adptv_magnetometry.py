@@ -16,6 +16,7 @@ from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
+from matplotlib.ticker import MaxNLocator
 
 reload(sequence)
 
@@ -114,7 +115,7 @@ class PhaseDistributionArray ():
 		self.save(os.path.join(pdata_path,'scaling_data'))
 	def save(self, name):
 		np.savez (name, n_points= self.n_points, B_max = self.B_max, N_max = self.N_max, data = self.data,
-				beta = self.beta, tau0 = self.t0, n = self.n, mean = self.mean, var = self.var, holevo_var = self.holevo_var,sens=self.sens)
+				beta = self.beta, tau0 = self.t0, n = self.n, mean = self.mean, var = self.var, holevo_var = self.holevo_var,sens=self.sens,T=self.T)
 
 	
 		
@@ -187,7 +188,7 @@ class RamseySequence():
 			else:
 				p0_b = p0 [k+t_n+self.points]
 			q = m_n*np.pi+phase_n
-			self.p_k [repetition, k+self.points] = 0.5*p0[k+self.points] + 0.25*(np.exp(1j*q)*p0_a + np.exp(-1j*q)*p0_b)
+			self.p_k [repetition, k+self.points] = 0.5*p0[k+self.points] + 0.25*(np.exp(-1j*q)*p0_a + np.exp(1j*q)*p0_b)
 			norm = float(np.sum(np.abs(self.p_k[repetition, :])**2)**0.5)
 			self.p_k[repetition, :] = self.p_k[repetition, :]/norm
 		#plt.plot (np.abs(self.p_k[repetition,:]))
@@ -274,6 +275,9 @@ class RamseySequence():
 	def plot_avg_phase_distribution (self, max_rep = None):
 		if (max_rep==None):
 			max_rep = self.reps
+		estimates=np.zeros(max_rep)
+		pos_estimates=np.zeros(max_rep)
+
 		for j in np.arange(max_rep):
 			if ( np.mod(10000*j/max_rep, 1000) == 0):
 				print 100*j/max_rep, '%'
@@ -282,6 +286,10 @@ class RamseySequence():
 				prob_avg = prob
 			else:
 				prob_avg = prob_avg + prob
+			prob=prob/np.sum(prob)	
+			P_pos=prob[len(beta)/2:]/(np.sum(np.abs(prob[len(beta)/2:])))
+			pos_estimates[j]=np.sum(P_pos*beta[len(beta)/2:])*1e-6
+			estimates[j]=np.sum(prob*beta*1e-6)
 		prob_avg = prob_avg/np.sum(np.abs(prob_avg))	
 		fig = plt.figure()
 		fig.clf()
@@ -295,11 +303,11 @@ class RamseySequence():
 
 		fig.savefig(os.path.join(self.folder,'P_distr_final.png'))
 			
-		return prob_avg
+		return prob_avg,estimates,pos_estimates
 		
 
 		
-	def phase_distribution_scaling (self, max_rep = None, do_plot=False):
+	def phase_distribution_scaling (self, mean_for_plot=None,max_rep = None, do_plot=False):
 	
 		print 'Analyzing scaling of estimation...'
 		
@@ -312,6 +320,9 @@ class RamseySequence():
 			fig.clf()
 			ax = fig.add_subplot(111)
 		offset=0
+		estimates=np.zeros(max_rep)
+		pos_estimates=np.zeros(max_rep)
+
 		for n in np.arange(self.N)+1:
 			print '############', n
 			for j in np.arange(max_rep):
@@ -320,6 +331,10 @@ class RamseySequence():
 					p_avg = prob
 				else:
 					p_avg = p_avg+prob
+				prob=prob/(np.sum(prob))	
+				P_pos=prob[len(beta)/2:]/(np.sum(np.abs(prob[len(beta)/2:])))
+				pos_estimates[j]=np.sum(P_pos*beta[len(beta)/2:])*1e-6
+				estimates[j]=np.sum(prob*beta*1e-6)
 			p_avg = p_avg/np.sum(np.abs(p_avg))
 			phase_distr.add (n = n, prob_distr = p_avg)
 			mean = np.sum(p_avg*beta)
@@ -335,17 +350,21 @@ class RamseySequence():
 				ax.plot (beta*1e-6, p_avg+offset,color='#262626')
 				ax.fill_between(beta*1e-6,p_avg+offset,y2=offset,color='grey',alpha=0.5*float(n**4)/(self.N**4))
 			offset=offset+max(p_avg)
-			Pdistr_dict['N%d'% n]={'beta':beta*1e-6,'pdistr':p_avg}	
+			Pdistr_dict['N%d'% n]={'beta':beta*1e-6,'pdistr':p_avg,'estimates':estimates,'pos_estimates':pos_estimates}	
 		#ax.xaxis.set_major_locator(MaxNLocator(6))
 		ax.yaxis.set_major_locator(MaxNLocator(4))
 		ax.set_xlabel ('Magnetic field [MHz]',fontsize=14)
 		ax.set_ylabel ('Probability',fontsize=14)
 		ax.tick_params(axis='both', which='both', labelsize=14)
-
-		ax.set_xlim([(mean*1e-6)-20,(mean*1e-6)+20])
+		print "mean_or_plot variable:  ", mean_for_plot
+		if mean_for_plot==None:
+			mean_for_plot=mean*1e-6
+		print "mean or plot set to:  ", mean_for_plot
+	
+		ax.set_xlim([(mean_for_plot)-5,(mean_for_plot)+5])
 		ax.set_ylim([-.1*ax.get_ylim()[1],ax.get_ylim()[1]])
-		ax.text((mean*1e-6)-18,-.1*ax.get_ylim()[1]/2.,'N=1',color='#262626',fontsize=14)
-		ax.text((mean*1e-6)-18,(offset-max(p_avg))*1.05,'N=%d'%n,color='#262626',fontsize=14)
+		ax.text((mean_for_plot)-3,-.1*ax.get_ylim()[1]/2.,'N=1',color='#262626',fontsize=14)
+		ax.text((mean_for_plot)-3,(offset-max(p_avg))*1.05,'N=%d'%n,color='#262626',fontsize=14)
 		fig.savefig(os.path.join(self.folder,'P_distr_scaling.png'))
 		fig.show()
 		pdata_path=os.path.join(self.folder,'processed_data')

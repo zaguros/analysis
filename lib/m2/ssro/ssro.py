@@ -70,6 +70,12 @@ class SSROAnalysis(m2.M2Analysis):
         pzero = len(np.where(cpsh==0)[0])/float(reps)
         annotation += "\np(0 counts) = %.2f" % (pzero)
 
+        f = self.analysis_h5data()
+        if not 'cpsh' in f:
+                f.create_group('cpsh')
+        g = f['/cpsh']
+        g[name]=  cpsh
+        f.close()
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -144,7 +150,7 @@ class SSROAnalysis(m2.M2Analysis):
 
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
-
+      
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -302,7 +308,7 @@ def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
         a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
         a.charge_hist(a.cr_counts, name=n)
         a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
-
+    #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity(plot,plot_photon_ms0)
     a.finish()
@@ -434,3 +440,35 @@ def awgssro_prjprob(folder, pop0=1./6):
     ax.set_ylabel('Prob. for projection into 0')
 
 
+def sync_num_fast_SSRO_ph_events(fp_LT, RO_start, VERBOSE = True):
+    """
+    Returns a list with the sync numbers of events that have at least one photon in the time from the readout start 
+    til the readout end. The length of the readout is taken from the data. The function als return the RO counts per shot.
+    """
+
+    f = h5py.File(fp_LT, 'r')
+    sync_num_RO = f['/PQ_sync_number-1'].value
+    special_RO = f['/PQ_special-1'].value
+    sync_time_RO = f['/PQ_sync_time-1'].value
+
+    # Get name of the group to find read out length
+    group = toolbox.get_msmt_name(fp_LT)
+    total_string_name = '/' + group + '/joint_params'
+    RO_length = f[total_string_name].attrs['LDE_RO_duration']  * 1e9
+    f.close()
+
+    is_ph_RO = special_RO == 0   
+
+    is_in_window = (RO_start  <= sync_time_RO) & (sync_time_RO < (RO_start + RO_length))
+    is_ph_RO_in_ro_window = is_in_window & is_ph_RO
+
+    sync_num_ph_events = np.unique(sync_num_RO[is_ph_RO_in_ro_window])
+
+    if VERBOSE:
+        print "The total number of events for which a photon was read out is:", len(sync_num_ph_events)
+        print "The total number of photons that are readout for these events:", sum(is_ph_RO_in_ro_window)
+        print "The average amount of photons detected for each sync number is:", float(sum(is_ph_RO_in_ro_window))\
+                                                                                        /len(sync_num_ph_events)
+
+
+    return sync_num_ph_events, is_ph_RO_in_ro_window, sync_num_RO

@@ -12,31 +12,31 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp =None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp =None#'20141125_094125' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.807
+#guess_x0 = 2.807
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
-guess_width = 0.2e-3
+guess_width = 0.002e-3
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
 #guess_width = 0.2e-3
-guess_sigma = 0.2e-3
+guess_sigma = guess_width
 guess_amplitude = 0.3
 
 # try fitting
 #guess_offset = 1.0
-guess_A_min1 = 0.3
-guess_A_plus1 = 0.3
+guess_A_min1 = 0.0
+guess_A_plus1 = 0.0
 guess_A_0 = 0.3
 #guess_x0 = 3.730
 #guess_sigma = 0.435e-3
-guess_Nsplit = 2.196e-3
+guess_Nsplit = 0*2.196e-3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.86 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.9 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -53,7 +53,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     ax.set_ylim(0,1.05)
 
-    
+    print center_guess
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
     else:
@@ -70,7 +70,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         else:
             print 'k'+str(k)
             print len(y)
-            guess_x0 = x[k]+ guess_splitN #convert to GHz and go to middle dip
+            guess_x0 = x[k]#+ guess_splitN #convert to GHz and go to middle dip
             print 'guess_ctr= '+str(guess_x0)
 
     ### fitfunction
@@ -88,22 +88,22 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         #         - A_plus1()*np.exp(-((x-(x0()+splitting+Nsplit()))/sigma())**2) \
         #         - A_0()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
         #         - A_0()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2)
-        return o() - A_min1()*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
-                - A_plus1()*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
-                - A_0()*np.exp(-((x-x0())/sigma())**2) \
+        return o() - np.abs(A_min1())*np.exp(-((x-(x0()-Nsplit()))/sigma())**2) \
+                - np.abs(A_plus1())*np.exp(-((x-(x0()+Nsplit()))/sigma())**2) \
+                - np.abs(A_0())*np.exp(-((x-x0())/sigma())**2) \
     
     try:
         fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, sigma, o, x0, Nsplit],
-        fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+        fitfunc = fitfunc, do_print=True, ret=True, fixed=[0,1,6])
         
-        # fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
+        #fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
         #         guess_amplitude, guess_width, guess_ctr,
         #         # (2, guess_splitN),
-        #         # (2, guess_splitC),
-        #         # (2, guess_splitB),
-        #         (3, guess_splitN),
+                 # (2, guess_splitC),
+                 # (2, guess_splitB),
+                 #(3, guess_splitN),
 
-        #         do_print=True, ret=True, fixed=[])
+        #         do_print=True, ret=True, fixed=[0,1,2,3])
         
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
@@ -117,14 +117,15 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         print '#############################'
     except Exception:
 
-
-        guess_ctr = float(raw_input('Center guess?'))
+        if center_guess ==True:
+            guess_ctr = float(raw_input('Center guess?'))
+        
         fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
                 guess_amplitude, guess_width, guess_ctr,
                 # (2, guess_splitN),
                 # (2, guess_splitC),
                 # (2, guess_splitB),
-                (3, guess_splitN),
+                #(3, guess_splitN),
                 do_print=True, ret=True, fixed=[4])
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         
@@ -137,12 +138,13 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 
     plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
             format='png')
-    print ret
+    ret='f0'
     if ret == 'f0':
+        #print fit_result[]
         f0 = fit_result['params_dict']['x0']
         u_f0 = fit_result['error_dict']['x0']
 
-        ax.text(f0, 0.8, '$f_0$ = ({:.3f} +/- {:.3f})'.format(
+        ax.text(f0, 0.4, '$f_0$ = ({:.3f} +/- {:.3f})'.format(
             (f0-2.8)*1e3, u_f0*1e3), ha='center')
 
         return (f0-2.8)*1e3, u_f0*1e3

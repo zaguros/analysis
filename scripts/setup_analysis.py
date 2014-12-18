@@ -2,6 +2,8 @@ import sys
 import os
 sys.path.append("d:/measuring")
 
+import h5py
+
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro, mbi, sequence, pqsequence
@@ -19,4 +21,3 @@ reload(pqsequence)
 reload(tail)
 reload(pq_tools)
 reload(pq_plots)
-

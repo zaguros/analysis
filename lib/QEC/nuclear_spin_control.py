@@ -11,6 +11,8 @@ import matplotlib.cm as cm
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
+# hf = hf_params.SamSIL5_sim_params
+
 
 ### import the experimental values for tau and N ###
 # import measurement.scripts.lt2_scripts.setup.msmt_params as msmt_params; reload(msmt_params)
@@ -97,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-def get_C13_hyperfine_params(carbon_nrs, ms = '+1'):
+
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -635,7 +637,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
 ### Experiments  ###
 ####################
 
-def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,200,51), B_field=304.22, ms='+1'):
+def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=403.554, ms='-1'):
     '''nuclear Rabi experiment without init
     scheme: x - Ren(N) - x - RO'''
 
@@ -765,7 +767,7 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
     return S[i]
 
 def nuclear_evolution_during_DD(carbon_nr, electron_state = 'ms0', carbon_init_state='x',
-            tau=9.420e-6, N_list=np.linspace(0,80,41), B_field=304.74, ms='+1'):
+            tau=9.420e-6, N_list=np.linspace(0,300,151), B_field=403.554, ms='-1'):
 
     if carbon_init_state == '0':
         rho_init_nuclear = rho0
@@ -839,6 +841,37 @@ def nuclear_initialization(carbon_nrs, N, tau, B_field=304.74, ms='+1'):
 
     single_qubit_pauli(rho_final, do_plot = True)
 
+def nuclear_TomoZ(carbon_nrs,N,Tau,Bfield=304.74,ms='+1',input_state=qutip.tensor(rho1,rho1)):
+    """
+    Performs the gate sequence for the read-out of the carbon via a swap.
+    Prints fidelities with several output states.
+    """
+
+    rho_start = input_state
+    electron_x  = qutip.tensor(x,Id)
+    electron_y  = qutip.tensor(y,Id)
+    Rz          = qutip.tensor(Id,z)
+
+    #gates (make them ideal)
+    Ren0,Ren1,Ren0Id,Ren1Id = c13_gate(carbon_nrs[0], N, Tau, B_field=Bfield, ms=ms, return_indiv=True,return_id=True)
+
+    Ren = qutip.tensor(rho0,Ren0Id) + qutip.tensor(rho1,Ren1Id)
+
+    print 'Gate sequence used in the T1 measurements: [C_basis_Ren, C_RO_y, C_RO_Ren, C_RO_x, C_RO_Trigger]'
+
+    #sequence and result
+    seq       =   electron_x*Ren*(Rz.dag())*electron_y*Ren#electron_x*Ren*electron_y*Ren  # Define gate sequence
+    rho_final = seq*rho_start*seq.dag()                        # Apply gate sequence
+
+    print rho_final
+    psi_final = (qutip.tensor(ket0,ket0)+qutip.tensor(ket1,ket1))/np.sqrt(2)
+
+    #print psi_final*psi_final.dag()
+    print 'Fidelity with |1y>', qutip.fidelity(qutip.tensor(rho1,rhoy),rho_final)
+    print 'Fidelity with |0y>', qutip.fidelity(qutip.tensor(rho0,rhoy),rho_final)
+    print 'Fidelity with |1my>', qutip.fidelity(qutip.tensor(rho1,rhomy),rho_final)
+    print 'Fidelity with |0my>', qutip.fidelity(qutip.tensor(rho0,rhomy),rho_final)
+    #single_qubit_pauli(rho_final, do_plot = True)
 
 ######################
 ### Initialization ###
@@ -2910,7 +2943,7 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
 
     return Fidelity, M
 
-def C13_fingerprint(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10e-9,5e-6,500), N=16, show_plot = True):
+def C13_fingerprint(carbon_nrs, ms='-1', B_field=403.553, tau_list = np.linspace(8.8e-6,9e-6,500), N=32, show_plot = True):
 
     A_par_list, A_perp_list = get_C13_hyperfine_params(carbon_nrs, ms = ms)
     print A_par_list

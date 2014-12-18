@@ -12,7 +12,7 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp = '141640' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '20141125_104016' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 1
 guess_ctr = 2.8280
 guess_splitB = 30.
@@ -32,7 +32,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     x = a.sweep_pts # convert to MHz
     y = a.p0.reshape(-1)[:]
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
-    ax.set_ylim(0.3,1.0)
+    ax.set_ylim(0.3,1.2)
 
 
     if center_guess == True:
@@ -65,7 +65,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
 ### script
 if __name__ == '__main__':
     if timestamp != None:
-        folder = toolbox.latest_data(timestamp)
+        folder = toolbox.data_from_time(timestamp)
     else:
         folder = toolbox.latest_data('DarkESR')
 
