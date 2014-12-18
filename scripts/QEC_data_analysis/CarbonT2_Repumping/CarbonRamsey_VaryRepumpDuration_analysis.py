@@ -77,19 +77,20 @@ def CosineSum_MBI_data(timestamp=None, measurement_name = ['adwindata'], ssro_ca
 
     # return fit_result
 
-def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
-    fitfunc_str = 'A *exp(-x/t) *cos(2pi * (f*x + phi/360) ) + (1-exp(-x/t)a)'
+def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t1,g_t2, *arg):
+    fitfunc_str = 'A *exp(-x/t1) *cos(2pi * (f*x + phi/360) ) + (1-exp(-x/t2))a'
 
     f = fit.Parameter(g_f, 'f')
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
     phi = fit.Parameter(g_phi, 'phi')
-    t   = fit.Parameter(g_t, 't')
+    t   = fit.Parameter(g_t1, 't1')
+    t2   = fit.Parameter(g_t2, 't2')
     print 'guessed frequency is '+str(g_f)
-    p0 = [f, a, A,phi,t]
+    p0 = [f, a, A,phi,t,t2]
 
     def fitfunc(x):
-        return (1-np.exp(-x/t()))*a() + A()*np.exp(-x/t()) * np.cos(2*np.pi*( f()*x + phi()/360.))
+        return (1-np.exp(-x/t2()))*a() + A()*np.exp(-x/t()) * np.cos(2*np.pi*( f()*x + phi()/360.))
 
     return p0, fitfunc, fitfunc_str
 
@@ -119,34 +120,34 @@ def FitSpinPumpTimes(fit_res_list,spin_pump_list,folder):
         y1_u[i]=np.absolute(fit_res['error'][4])
 
     print x,y0
-    fig=plt.figure(10)
+    fig=plt.figure()
     ax=plt.subplot(111)
-    #work around, because the function 'errorbar is a bit bugged...'
+    #work around, because the function 'errorbar is a bit bugged...see various threads on stackexchange'
     plt.rc('lines',**{'linestyle':'None'})
     plt.errorbar(x,y0,y0_u,color='blue',marker='o',fmt='')
     plt.errorbar(x,y1,y1_u,color='red',marker='o',fmt='')
-    plt.axis([0,60,0,1])
+    plt.axis([0,spin_pump_list[-1],0,1])
 
-    p0, fitfunc, fitfunc_str = fit_decaying_cos(1/20.,0.,0.02,-90.,1./0.037)
+    p0, fitfunc, fitfunc_str = fit_decaying_cos(1/20.,0.1,0.1,-90.,1./0.037,1./0.037)
 
 
     #fit an exponential starting at 0 repumping time and an exponent of 1.
-    fit_result=fit.fit1d(x,y0,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,print_info=False,fixed=[3])
-    plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],1001),ax=ax,print_info=False,plot_data=False,linestyle='-b')
+    fit_result=fit.fit1d(x,y0,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,print_info=False,fixed=[])
+    plot.plot_fit1d(fit_result,np.linspace(0,x[-1],1001),ax=ax,print_info=False,plot_data=False,linestyle='-b')
 
 
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.,0.5,0.,20.,1.)
     print fitfunc_str
 
     fit_result=fit.fit1d(x,y1,None,p0=p0,fitfunc=fitfunc,do_print=True,print_info=False,ret=True,fixed=[0,2,4])
-    plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],1001),ax=ax,print_info=False,plot_data=False,linestyle='-r')
+    plot.plot_fit1d(fit_result,np.linspace(0,x[-1],1001),ax=ax,print_info=False,plot_data=False,linestyle='-r')
 
 
     #fit with a double exponential:
     p0, fitfunc, fitfunc_str = common.fit_double_exp_decay_with_offset(-0.2,0.5,5.,0.5,20.)
     print fitfunc_str
     fit_result=fit.fit1d(x,y1,None,p0=p0,fitfunc=fitfunc,do_print=True,print_info=False,ret=True,fixed=[0])
-    plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],1001),ax=ax,print_info=False,plot_data=False,linestyle='-g')
+    plot.plot_fit1d(fit_result,np.linspace(0,x[-1],1001),ax=ax,print_info=False,plot_data=False,linestyle='-g')
 
 
     plt.title('Sample_111_No1_C13_C1_Ramsey_contrast_over_spinpumping_duration')
@@ -164,14 +165,20 @@ def FitSpinPumpTimes(fit_res_list,spin_pump_list,folder):
 
 
 
-timestamp_list=['20141202_211228','20141202_213444','20141202_215711','20141202_221923','20141202_224216','20141202_230523','20141202_232856','20141202_235306','20141203_001820']
-ssro_stamp='20141202_205422'
-spin_pump_list=[0,2,5,7,10,20,30,40,50]
+timestamp_list1=['20141202_211228','20141202_213444','20141202_215711','20141202_221923','20141202_224216','20141202_230523','20141202_232856','20141202_235306','20141203_001820']
+ssro_stamp1='20141202_205422'
+spin_pump_list1=[0,2,5,7,10,20,30,40,50]
+
+timestamp_list2=['20141204_194218','20141204_195449','20141204_200725','20141204_202004','20141204_203257','20141204_204551','20141204_205847','20141204_211155','20141204_212512','20141204_213859','20141204_215257','20141204_220656','20141204_222052','20141204_223442','20141204_224837','20141204_230238']
+# the zero spinpumping measurement is excluded right now, as it does not return expected fit values.
+#ssro_stamp2='20141204_190624' Not analyzed yet.
+spin_pump_list2=[2,5,7,10,15,20,25,30,35,40,50,70,85,100,125,150]
 
 fit_result_list=[]
-for i,timestamp in enumerate(timestamp_list):
+for i,timestamp in enumerate(timestamp_list2):
+
     cur_Fit_result,last_folder=CosineSum_MBI_data(timestamp=timestamp,
-        ssro_calib_timestamp=ssro_stamp,
+        ssro_calib_timestamp=ssro_stamp1,
         frequency=[430e3,468e3],
         offset=0.5,
         amplitude=[0.2,0.3],
@@ -181,4 +188,5 @@ for i,timestamp in enumerate(timestamp_list):
         show_guess=False)
     fit_result_list.append(cur_Fit_result)
 
-FitSpinPumpTimes(fit_result_list,spin_pump_list,last_folder)
+
+FitSpinPumpTimes(fit_result_list,spin_pump_list2,last_folder)
