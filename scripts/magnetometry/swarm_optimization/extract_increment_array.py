@@ -44,5 +44,5 @@ def extract_values(k_array=[], verbose = False, do_save = True):
 			print 'sensing times: ', tau
 			print
 
-
 extract_values (k_array = np.arange(12)+1)
+

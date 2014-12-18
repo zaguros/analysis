@@ -62,6 +62,27 @@ def simulate_berry (do_adaptive):
 	plt.show()
 
 
+def test_swarm_opt ():
+
+	F = 2
+	G = 5
+	K = 8
+	set_magnetic_field = 12.5e6/2.
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = K+1, reps=10, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
+	s.T2 = 96e-6
+	s.fid0 = .87
+	s.fid1 = 0.02
+
+	s.sim_swarm_optim()
+	s.convert_to_dict()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	plt.show()
+
+
+
+
 def simulate_cappellaro_debug_adwin ():
 	maj_reps = 1
 	M = 10
@@ -112,7 +133,8 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+#def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
 	print '############### Simulate #####################'
@@ -122,10 +144,12 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_res
 	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 11, nr_points_per_period=7)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
-	for n in np.arange(N)+1:
+	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
 		mgnt_exp.verbose=True
-		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
+		#mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
+		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B)
+
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
@@ -320,6 +344,7 @@ def simulate_adwin (N,M):
 
 
 
+
 #simulate_sweep_field (N=1, M=3, maj_reps=5, maj_thr=1, fid0=0.95)
 '''
 simulate_sweep_field (N=9, M=4, maj_reps=7, maj_thr=2, fid0=0.87)
@@ -356,6 +381,7 @@ plt.show()
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
 
+'''
 fid0=0.87
 fid1=0.02
 reps=11
@@ -371,8 +397,11 @@ simulate_sweep_field_variable_M (G=3,K=9,F=4 , fid0=fid0,fid1=fid1,print_results
 simulate_sweep_field_variable_M (G=3,K=9,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
 simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
 simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-
+'''
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
 #simulate_berry(do_adaptive=False)
+
+#test_swarm_opt()
+simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)

@@ -50,14 +50,18 @@ def compare_2plots(timestamp1, timestamp2, title):
     plt.legend()
     plt.show()
 
-def compare_multiple_plots(timestamps, labels, title):
+def compare_multiple_plots(timestamps, labels, title, colours = None):
     #MAX 10 plots!!!! Then no more markers!
     f = plt.figure(figsize=(8,6))
     ax = f.add_subplot(1,1,1)
     markers = ['o', '+', '^', 'v', '>', '<', 's', '*', 'D', '|']
     ccc = np.linspace(0,1,len(timestamps))
     for i,k in enumerate(timestamps):
-        ax = add_scaling_plot (timestamp = k, exp_data=True, ax=ax, label = labels[i], marker_settings=markers[i], color=cm.Set1(ccc[i]))
+        if colours==None:
+            c = cm.Set1(ccc[i])
+        else:
+            c = colours[i]
+        ax = add_scaling_plot (timestamp = k, exp_data=True, ax=ax, label = labels[i], marker_settings=markers[i], color=c)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -102,10 +106,18 @@ def compare_cappellaro_varG ():
     labels = ['G=0', 'G=1', 'G=2', 'G=3', 'G=4', 'G=5']
     compare_multiple_plots (timestamps=t_stamps, labels=labels, title = 'Cappellaro protocol (F=0, RO_fid=1)')
 
+def compare_swarm_opt ():
+    t_stamps = ['20141215_161225','20141218_155251','20141216_035209']
+    labels = ['G=5, F=2 capp', 'G=5, F=2 swarm', 'G=5, F=7 non_adptv']
+    colours = ['b', 'r', 'k']
+    compare_multiple_plots (timestamps=t_stamps, labels=labels, title = 'compare protocols', colours=colours)
+
+
 
 #compare_G5_variableF_imperfRO()
 #compare_G5_variableF_perfRO()
-compare_cappellaro_varG()
+#compare_cappellaro_varG()
+compare_swarm_opt()
 
 '''
 #mgnt_G5F7_N14_sim_sweep_phase_nonadapt=asim.analyze_saved_simulations('20141118_161545')

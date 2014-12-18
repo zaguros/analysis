@@ -672,6 +672,62 @@ class RamseySequence_Simulation (RamseySequence):
 
 
 
+	def sim_swarm_optim (self):
+		
+		print 'Swarm optimization!'
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.phase_update = True #Need this to be set to True to perform analysis considering data sotred as each msmnt_result in one separate array location!
+			self.always_recalculate_phase = True
+			self.swarm_opt = True
+			self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+			nr_results = int((self.K+1)*(self.G + self.F*self.K/2.))
+			self.msmnt_phases = np.zeros((self.reps, nr_results))
+			self.phase_upd_values = np.zeros((self.reps, nr_results))
+			self.msmnt_times = np.zeros(nr_results)
+			self.msmnt_results = np.zeros((self.reps,nr_results))
+		
+			k_array = self.K-np.arange(self.K+1)
+			tau = 2**(k_array)
+			self.reset_rep_counter()
+
+			swarm_opt_pars = np.load ('D:/measuring/analysis/scripts/magnetometry/swarm_optimization/phases_G'+str(self.G)+'_F'+str(self.F)+'/swarm_opt_G='+str(self.G)+'_F='+str(self.F)+'_K='+str(self.K)+'.npz')
+			self.u0 = swarm_opt_pars['u0']
+			self.u1 = swarm_opt_pars['u1']			
+
+			for r in np.arange(self.reps):
+				msmnt_results = np.zeros (nr_results)
+				t = np.zeros (self.K+1)
+				self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+				self.p_k [self.points] = 1/(2.*np.pi)
+				res_idx = 0
+				m_res = 0
+
+				for i,k in enumerate(k_array):
+
+					t[i] = int(2**(k))
+					ttt = -2**(k+1)					
+					m_total = 0
+					MK = self.G+self.F*(self.K-k)
+
+					for m in np.arange(MK):
+						if m_res == 0:
+							phase_inc_swarm = self.u0 [res_idx]
+						else:
+							phase_inc_swarm = self.u1 [res_idx]
+
+						phase_cappellaro = 0.5*np.angle (self.p_k[ttt+self.points])
+						phase = phase_cappellaro + phase_inc_swarm
+						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
+						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
+						self.msmnt_results[r, res_idx] = m_res
+						self.msmnt_phases[r, res_idx] = phase
+						self.msmnt_times[res_idx] = t[i]
+						res_idx = res_idx + 1
+				self.inc_rep()
+
+
 
 
 
@@ -1126,6 +1182,18 @@ class AdaptiveMagnetometry ():
 		self.simulated_data = None
 		self.error_bars = False
 
+		self.protocols = {}
+		capp_ptcl = {'do_adaptive':True, 'phase_update':False, 'always_recalculate_phase':False, 'swarm_optimization': False, 'code':'capp'}
+		mod_capp_ptcl = {'do_adaptive':True, 'phase_update':False, 'always_recalculate_phase':True, 'swarm_optimization': False, 'code':'modCapp'}
+		nonadptv_ptcl = {'do_adaptive':False, 'phase_update':True, 'always_recalculate_phase':False, 'swarm_optimization': False, 'code':'nnAdptv'}
+		phaseUpdate_ptcl = {'do_adaptive':True, 'phase_update':True, 'always_recalculate_phase':False, 'swarm_optimization': False, 'code':'adptvPhUpdate'}
+		swarmOptim_ptcl = {'do_adaptive':True, 'phase_update':True, 'always_recalculate_phase':True, 'swarm_optimization': True, 'code':'swarmOpt'}
+		self.protocols['cappellaro'] = capp_ptcl
+		self.protocols['modified_cappellaro'] = mod_capp_ptcl
+		self.protocols['non_adaptive'] = nonadptv_ptcl
+		self.protocols['cappellaro_phase_update'] = phaseUpdate_ptcl
+		self.protocols['swarm_optimization'] = swarmOptim_ptcl
+
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
@@ -1195,16 +1263,13 @@ class AdaptiveMagnetometry ():
 
 		return B_dict[str(N)]
 	
-	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False,always_recalculate_phase = False,specific_B=False):
-		self.always_recalculate_phase = always_recalculate_phase
+	def sweep_field_simulation (self, N, protocol, table_based=False, print_results=False, specific_B=False):
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
-		#sampling continous range
 		
 		B_values = np.array([])
 		label_array = []
-		#B = np.linspace(-1*self.B_max, self.B_max, self.nr_points_per_period)
-		# sample per period
+
 		per=0
 		delta_f = 1./(self.t0*(2**N))
 
@@ -1215,7 +1280,6 @@ class AdaptiveMagnetometry ():
 		for l in np.arange(self.nr_points_per_period):
 			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
 
-
 		label_array, self.B_values = self.sample_B_space (N=N)		
 		self.B_values=np.unique(self.B_values)
 		nr_points = len(self.B_values)
@@ -1224,10 +1288,15 @@ class AdaptiveMagnetometry ():
 		B_field = np.zeros(nr_points)
 
 		ind = 0
+		print 'PROTOCOL: ', self.protocols[protocol]
 		print "Simulating N="+str(N)+', '+str(len(self.B_values))+" instances of magnetic field"
 
-		self.phase_update = phase_update
-		self.do_adaptive = do_adaptive
+		self.phase_update = self.protocols[protocol]['phase_update']
+		self.do_adaptive = self.protocols[protocol]['do_adaptive']
+		self.always_recalculate_phase = self.protocols[protocol]['always_recalculate_phase']
+		self.swarm_optim = self.protocols[protocol]['swarm_optimization']
+		self.code = self.protocols[protocol]['code']
+		self.protocol = protocol
 
 		list_estim_phases = []
 		for b in np.arange(nr_points):
@@ -1239,15 +1308,18 @@ class AdaptiveMagnetometry ():
 			s.fid0 = self.fid0
 			s.fid1 = self.fid1
 	
-
-			if always_recalculate_phase:
-				s.phase_update = True
-				s.sim_recalculate_optimal_phase(always_recalculate_phase=always_recalculate_phase)
-			else:			
-				if phase_update:
-					s.sim_berry_protocol(do_adaptive=do_adaptive)
-				else:
-					s.sim_cappellaro_variable_M()
+			if protocol == 'cappellaro':
+				s.sim_cappellaro_variable_M()
+			elif protocol == 'modified_cappellaro':
+				s.sim_recalculate_optimal_phase(always_recalculate_phase=True)
+			elif protocol == 'non_adaptive':
+				s.sim_berry_protocol(do_adaptive=False)
+			elif protocol == 'cappellaro_phase_update':
+				s.sim_berry_protocol(do_adaptive=True)
+			elif protocol == 'swarm_optimization':
+				s.sim_swarm_optim()
+			else:
+				print 'Unknown protocol: ', protocol
 
 			s.convert_to_dict()
 
@@ -1558,12 +1630,17 @@ class AdaptiveMagnetometry ():
 			folder = self.folder 
 
 		if self.simulated_data:
-			if self.do_adaptive:
-				fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
-				if self.always_recalculate_phase:
-					fName = fName + '_alwaysRecPhase'
-			else:
-				fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_NON_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+
+			try:
+				fName = time.strftime ('%Y%m%d_%H%M%S')+ '_'+self.code+'_N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+			except:
+
+				if self.do_adaptive:
+					fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+					if self.always_recalculate_phase:
+						fName = fName + '_alwaysRecPhase'
+				else:
+					fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_NON_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
 
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
@@ -1588,7 +1665,7 @@ class AdaptiveMagnetometry ():
 			f.attrs ['repetitions']=self.repetitions
 		except:
 			f.attrs ['repetitions']=-1
-			print 'param Repetiotions missing...'
+			print 'param Repetitions missing...'
 		try:	
 			f.attrs['CR_after_threshold'] = self.CR_after_threshold
 		except:
