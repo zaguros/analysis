@@ -19,7 +19,7 @@ timestamp = None,
 add_folder = None,
 ret='f0',
 ssro_calib_folder='',
-do_save=True,
+do_save=False,
 sweep_direction = 'right',
 **kw):
 
