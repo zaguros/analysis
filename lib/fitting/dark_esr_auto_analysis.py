@@ -139,6 +139,83 @@ ssro_calib_folder='',
         return f0, u_f0
 
 
+def analyze_dark_esr_double( 
+guess_offset = 1,
+guess_A_min = 0.3,
+guess_A_plus = 0.3,
+guess_width = 0.2e-3,
+guess_amplitude = 0.3,
+guess_Csplit = 0.105e-3,
+timestamp = None,
+add_folder = None,
+ret='f0',
+ssro_calib_folder='',
+do_ROC = True,
+ret_folder = False,
+do_plot = True,
+**kw):
+
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        folder = toolbox.latest_data('DarkESR')
+
+    if add_folder !=None:
+        folder = add_folder
+
+    a = sequence.SequenceAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results('ssro')
+    if do_ROC == True:
+        a.get_electron_ROC()
+        y = a.p0.reshape(-1)[:]
+    else:
+        y = a.get_readout_results('ssro')
+
+    x = a.sweep_pts # convert to MHz
+    
+
+    guess_ctr = x[y.argmin()]
+    guess_ctr = x[len(x)/2.]
+    print 'guess_ctr = '+str(guess_ctr)
+
+    ### fitfunction
+    A_min = fit.Parameter(guess_A_min, 'A_min')
+    A_plus = fit.Parameter(guess_A_plus, 'A_plus')
+    o = fit.Parameter(guess_offset, 'o')
+    ctr = fit.Parameter(guess_ctr, 'ctr')
+    width = fit.Parameter(guess_width, 'width')
+    Csplit = fit.Parameter(guess_Csplit, 'Csplit')
+
+    def fitfunc(x):
+        return o() - A_min()*np.exp(-((x-(ctr()-Csplit()))/width())**2) \
+                - A_plus()*np.exp(-((x-(ctr()+Csplit()))/width())**2) \
+
+
+    fit_result = fit.fit1d(x, y, None, p0 = [A_min, A_plus, o, ctr, width, Csplit],
+            fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+ 
+    if do_plot == True:        
+        fig, ax = plt.subplots(1,1)
+        plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
+
+        plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
+        format='png')
+        plt.close(fig)
+
+
+    if ret == 'f0' and ret_folder == False:
+        f0 = fit_result['params_dict']['ctr']
+        u_f0 = fit_result['error_dict']['ctr']
+        return f0, u_f0
+
+    elif ret == 'f0' and ret_folder == True:
+        return f0, u_f0, folder
+
+
+
+
+
 
 
 

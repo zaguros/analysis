@@ -11,7 +11,7 @@ reload(plot)
 def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwindata'], 
             frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], offset = 0.5,
             fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True,
-            yaxis = [-0.5,1.05]):
+            yaxis = [-0.5,1.05], fixed=[2,6]):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
@@ -43,10 +43,11 @@ def Carbon_control_sweep_N(timestamp='20140507125650', measurement_name = ['adwi
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[3])
         elif len(frequency) == 2:
-            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1],offset)
+            p0, fitfunc, fitfunc_str = common.fit_double_decaying_cos(frequency[0], amplitude[0], phase[0], 
+                            decay_constant[0], frequency[1], amplitude[1], phase[1], decay_constant[1],offset)
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
-            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[2,6])
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
            
             ## Also plot the individual curves
             
