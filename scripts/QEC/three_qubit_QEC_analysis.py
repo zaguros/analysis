@@ -253,7 +253,7 @@ def load_QEC_data(folder, ssro_calib_folder, post_select = True):
     data_dict['x']          = x
     data_dict['c0']         = c0 
     data_dict['c0_u']       = c0_u 
-    
+
     if post_select:
         data_dict['c0_00']      = c0_00 
         data_dict['c0_00_u']    = c0_00_u 
@@ -327,8 +327,8 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
     ax.set_xlim(-0.05,1.05)
     ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
 
-    fig.savefig(os.path.join(folder,'QEC_single_measurment.png'))
-    fig.savefig(os.path.join(folder, 'QEC_single_measurment.pdf'),
+    fig.savefig(os.path.join(folder,'QEC_single_measurement.png'))
+    fig.savefig(os.path.join(folder, 'QEC_single_measurement.pdf'),
             format='pdf',bbox_inches='tight')
 
 
@@ -352,7 +352,7 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         ax.errorbar(data['x'], data['c0_01'], yerr=data['c0_01_u'], label = '01',color = 'c' )
         ax.errorbar(data['x'], data['c0_10'], yerr=data['c0_10_u'], label = '10',color = 'g' )
         ax.errorbar(data['x'], data['c0_11'], yerr=data['c0_11_u'], label = '11',color = 'r' )
-        ax.set_xlim(-0.05,1.05)
+        ax.set_xlim(-0.2,1.2)
         ax.legend()
  
         if title == None:
@@ -376,14 +376,18 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         ### Outcome probabilities
         fig,ax = plt.subplots()
         ax.set_title(str(folder)+'/'+ '\n probabilities')
-        ax.plot(data['x'],data['p00'], 'c', label = 'p00')
-        ax.plot(data['x'],data['p01'], 'k', label = 'p01')
-        ax.plot(data['x'],data['p10'], 'm', label = 'p10')
-        ax.plot(data['x'],data['p11'], 'b', label = 'p11')
+        ax.plot(data['x'],data['p00'], 'co', label = 'p00')
+        ax.plot(data['x'],data['p01'], 'ko', label = 'p01')
+        ax.plot(data['x'],data['p10'], 'mo', label = 'p10')
+        ax.plot(data['x'],data['p11'], 'bo', label = 'p11')
         plt.legend()
+        ax.set_xlim(-0.2,1.2)
         ax.set_xlabel('error probability')
         ax.set_ylabel('outcome probability')  
         ax.set_title(str(folder)+'/'+str(timestamp) + '_QEC_probs')                
+
+        print data['p00'] + data['p01'] + data['p10'] +data['p11']
+
 
         fig.savefig(os.path.join(folder,'QEC_probs'+'.png'))
        
@@ -972,3 +976,108 @@ def QEC_plot_process_fids(date = None,no_error = '00'):
             os.path.join(folder,date+'_errorsyn_'+no_error+'process_fids'+'.png'))
     except:
         print 'Figure has not been saved.'
+
+def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0','Z1','Z2','Z6'],ssro_calib_timestamp = None):
+
+    ssro_calib_folder = get_ssro_folder(ssro_calib_timestamp)
+    data = {}
+
+    y   = []
+    u_y = []
+
+    y_00 = []
+    y_01 = []
+    y_10 = []
+    y_11 = []
+
+    u_y_00 = []
+    u_y_01 = []
+    u_y_10 = []
+    u_y_11 = []
+
+    p_00 = []
+    p_01 = []
+    p_10 = []
+    p_11 = []
+
+    for state_RO in state_RO_list:
+        folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
+        folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
+    
+        folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1], older_than = older_than)
+        folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1], older_than = older_than)
+        
+
+        data_p = load_QEC_data(folder_p, ssro_calib_folder, post_select = True)
+        data_n = load_QEC_data(folder_n, ssro_calib_folder, post_select = True)
+
+        print folder_p
+        print folder_n
+        
+
+        y = y + [abs(((data_p['c0'] - data_n['c0'])/2.)[0])]
+        u_y = u_y + [abs( (1./2*(data_p['c0_u']**2 + data_n['c0_u']**2)**0.5   )[0])]
+
+        y_00 = y_00 + [(((data_p['c0_00'] - data_n['c0_00'])/2.)[0])]
+        u_y_00 = u_y_00 + [( ( 1./2*(data_p['c0_00_u']**2 + data_n['c0_00_u']**2)**0.5   )[0])]
+        y_01 = y_01 + [(((data_p['c0_01'] - data_n['c0_01'])/2.)[0])]
+        u_y_01 = u_y_01 + [( ( 1./2*(data_p['c0_01_u']**2 + data_n['c0_01_u']**2)**0.5)[0])]
+        y_10 = y_10 + [(((data_p['c0_10'] - data_n['c0_10'])/2.)[0])]
+        u_y_10 = u_y_10 + [( ( 1./2*(data_p['c0_10_u']**2 + data_n['c0_10_u']**2)**0.5)[0])]
+        y_11 = y_11 + [(((data_p['c0_11'] - data_n['c0_11'])/2.)[0])]
+        u_y_11 = u_y_11 + [( ( 1./2*(data_p['c0_11_u']**2 + data_n['c0_11_u']**2)**0.5)[0])]
+
+        p_00 = p_00+[((data_p['p00'] + data_n['p00'])/2)[0]]
+        p_01 = p_01+[((data_p['p01'] + data_n['p01'])/2)[0]]
+        p_10 = p_10+[((data_p['p10'] + data_n['p10'])/2)[0]]
+        p_11 = p_11+[((data_p['p11'] + data_n['p11'])/2)[0]]
+
+
+    x_ticks = state_RO_list
+    x = range(len(state_RO_list))
+    print x
+    fig,ax = plt.subplots()
+    ax.set_title(str(folder_p)+'/'+ '\n expectation values')
+    rects = ax.bar(x,y,yerr=u_y,align ='center',ecolor = 'k' )
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_ticks)
+    ax.set_xlim(x[0]-0.5,x[-1]+0.5)
+    ax.set_ylim(0,1)
+    def autolabel(rects):
+        for ii,rect in enumerate(rects):
+            height = rect.get_height()
+            plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(u_y[ii]*100))) +')',
+                ha='center', va='bottom')
+    
+    autolabel(rects)
+
+    fig,ax = plt.subplots()
+    ax.set_title(str(folder_p)+'/'+ '\n post_selected')
+    ax.errorbar(x, y_00, yerr=u_y_00, label = '00',color = 'k', fmt='o' )
+    ax.errorbar(x, y_01, yerr=u_y_01, label = '01',color = 'c', fmt='o' )
+    ax.errorbar(x, y_10, yerr=u_y_10, label = '10',color = 'g', fmt='o' )
+    ax.errorbar(x, y_11, yerr=u_y_11, label = '11',color = 'r', fmt='o' )
+    ax.set_xlim(x[0]-0.5,x[-1]+0.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_ticks)
+    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+    fig,ax = plt.subplots()
+    ax.set_title(str(folder_p)+'/'+ '\n probabilities')
+    ax.plot(x,p_00, 'co', label = 'p00')
+    ax.plot(x,p_01, 'ko', label = 'p01')
+    ax.plot(x,p_10, 'mo', label = 'p10')
+    ax.plot(x,p_11, 'bo', label = 'p11')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    ax.set_xlabel('error probability')
+    ax.set_ylabel('outcome probability')      
+    ax.set_xlim(x[0]-0.5,x[-1]+0.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_ticks)
+
+    print p_00[0][0] + p_01[0][0] + p_10[0][0] +p_11[0][0]
+    print p_00[1][0] + p_01[1][0] + p_10[1][0] +p_11[1][0]
+    print p_00[2][0] + p_01[2][0] + p_10[2][0] +p_11[2][0]
+    # print p_00[3][0] + p_01[3][0] + p_10[3][0] +p_11[3][0]
+
+

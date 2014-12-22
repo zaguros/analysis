@@ -6,8 +6,8 @@ from analysis.lib.fitting import fit, common, ramsey;reload(common); reload(fit)
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 
-''' Script to analyze and fit the electron Ramsey data with 13C initialization, THT 141201 ''' 
-
+''' Script to analyze and fit the electron Ramsey data with 13C initialization, 
+    as well as the simultaneously taken tomography data THT 141201 ''' 
 
 ''' Plan: 
 - We then want to fit this data with a model that gives us the initialization fidelity
@@ -42,14 +42,14 @@ def get_and_plot_data(timestamp_list, ssro_calib_folder):
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC(ssro_calib_folder)
         
-        if ii==0:
-            ax = a.plot_results_vs_sweepparam(ret='ax', markersize = 4, save=False, fmt = 'o-')
-            ax.set_ylim(-0.05,1.05)
-            ax.set_xlim(a.sweep_pts[0],a.sweep_pts[-1])
-            ax.axhspan(0,1,fill=False,ls='dotted')
-            ax.axhspan(0,0.5,fill=False,ls='dotted')
-        else: 
-            a.plot_results_vs_sweepparam(ax= ax,  markersize = 4, save=False, fmt = 'o-')
+        # if ii==0:
+        #     ax = a.plot_results_vs_sweepparam(ret='ax', markersize = 4, save=False, fmt = 'o-')
+        #     ax.set_ylim(-0.05,1.05)
+        #     ax.set_xlim(a.sweep_pts[0],a.sweep_pts[-1])
+        #     ax.axhspan(0,1,fill=False,ls='dotted')
+        #     ax.axhspan(0,0.5,fill=False,ls='dotted')
+        # else: 
+        #     a.plot_results_vs_sweepparam(ax= ax,  markersize = 4, save=False, fmt = 'o-')
         
         if ii==0:
             p0_sum     = a.p0
@@ -143,16 +143,183 @@ def get_data_timestamps(older_than, nr_of_repetitions, carbon = 'C1'):
     return timestamps, folders
 
 
+### the fit function for the Ramsey fit
+def fit_ramsey_gaussian_decay(g_tau, g_a, *arg):
+    """
+    fitfunction for a ramsey modulation, with gaussian decay,
+        y(x) = a + A*exp(-(x/tau)**2) * mod,
+
+        where:
+        mod = sum_i(cos(2pi*f_i*x +phi) - 1)
+
+    Initial guesses (in this order):
+        g_tau : decay const
+        g_A : Amplitude
+        g_a : offset
+
+        For the modulation:
+        an arbitrary no of tuples, in the form
+        (g_f, g_A)[i] = (frequency, Amplitude, phase)[i]
+    """
+    fitfunc_str = 'y(x) = a + exp(-(x/tau)**2)*('
+    no_frqs = len(arg)
+    if no_frqs == 0:
+        print 'no modulation frqs supplied'
+        return False
+    
+    tau = fit.Parameter(g_tau, 'tau')
+    # A = fit.Parameter(g_A, 'A')
+    a = fit.Parameter(g_a, 'a')
+    p0 = [tau, a]
+
+    print 'fitting with %d modulation frequencies' % no_frqs
+
+    frqs = []
+    amplitudes = []
+    phases = []
+    print arg
+    for i, m in enumerate(arg):
+        fitfunc_str += 'A%d*cos(2pi*f%d*x+phi%d)' % (i, i, i)
+        frqs.append(fit.Parameter(m[0], 'f%d'%i))
+        phases.append(fit.Parameter(m[2], 'phi%d'%i))
+        amplitudes.append(fit.Parameter(m[1], 'A%d'%i))
+        p0.append(frqs[i])
+        p0.append(amplitudes[i])
+        p0.append(phases[i])
+    fitfunc_str += ')'
+
+    def fitfunc(x):
+        prd = exp(-(x/tau())**2)
+        mod = 0
+        for i in range(no_frqs):
+            mod += amplitudes[i]() * (cos(2*pi*frqs[i]()*x+phases[i]()))
+        return a() + prd*mod
+
+    return p0, fitfunc, fitfunc_str
+
+### the fit function for the initialization fit
+def fit_initialization_fidelity(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t):
+    '''Fit function for an electron Ramsey with/without C13 initialization
+    g_F1 -  Fidelity of the strongly coupled C13
+    g_A1 -  Hyperfine of the strongly coupled C13
+    g_F2 -  Fidelity of the initialized C13
+    g_A2 -  Hyperfine of the initialized C13
+    g_f  -  Detuning (carrier frequency)
+    g_a  -  Offset, maybe fix to 0.5
+    g_A  -  Amplitude maybe fix to 0.5
+    g_t  -  Decay of Ramsey
+    
+    The function should take the complete data set (3 measurements) at once and fit it
+    '''
+ 
+    fitfunc_str = '''a + A * exp(-(x/t)^2) * [ 
+                      F1*F2         *cos[2pi*(f + (A1+A2)/2 )*x] 
+                    + F1*(1-F2)     *cos[2pi*(f + (A1-A2)/2 )*x] 
+                    + (1-F1)*F2     *cos[2pi*(f + (-A1+A2)/2 )*x] 
+                    + (1-F1)*(1-F2) *cos[2pi*(f + (-A1-A2)/2 )*x] 
+                    ]'''
+
+    F1  = fit.Parameter(g_F1, 'F1')
+    A1  = fit.Parameter(g_A1, 'A1')
+    F2  = fit.Parameter(g_F2, 'F2')
+    A2  = fit.Parameter(g_A2, 'A2')
+
+    f   = fit.Parameter(g_f, 'f')
+    a   = fit.Parameter(g_a, 'a')
+    A   = fit.Parameter(g_A, 'A')
+    t   = fit.Parameter(g_t, 't')
+
+    p0 = [F1, A1, F2, A2, f, a, A, t]
+
+    def fitfunc(x):
+        return (a() + A()*np.exp(-(x/t())**2) * (
+                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
+                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
+                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x) +
+                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x))
+                          )
+    return p0, fitfunc, fitfunc_str
+
+def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t):
+    '''Fit function for an electron Ramsey with/without C13 initialization
+    g_F1 -  Fidelity of the strongly coupled C13
+    g_A1 -  Hyperfine of the strongly coupled C13
+    g_F2 -  Fidelity of the initialized C13
+    g_A2 -  Hyperfine of the initialized C13
+    g_f  -  Detuning (carrier frequency)
+    g_a  -  Offset, maybe fix to 0.5
+    g_A  -  Amplitude maybe fix to 0.5
+    g_t  -  Decay of Ramsey
+    
+    The function should take the complete data set (3 measurements) at once and fit it
+    '''
+ 
+    fitfunc_str = '''a + A * exp(-(x/t)^2) * [ 
+                      F1*F2         *cos[2pi*(f + (A1+A2)/2 )*x] 
+                    + F1*(1-F2)     *cos[2pi*(f + (A1-A2)/2 )*x] 
+                    + (1-F1)*F2     *cos[2pi*(f + (-A1+A2)/2 )*x] 
+                    + (1-F1)*(1-F2) *cos[2pi*(f + (-A1-A2)/2 )*x] 
+                    ]'''
+
+    F1  = fit.Parameter(g_F1, 'F1')
+    A1  = fit.Parameter(g_A1, 'A1')
+    F2  = fit.Parameter(g_F2, 'F2')
+    A2  = fit.Parameter(g_A2, 'A2')
+
+    f   = fit.Parameter(g_f, 'f')
+    a   = fit.Parameter(g_a, 'a')
+    A   = fit.Parameter(g_A, 'A')
+    t   = fit.Parameter(g_t, 't')
+
+    p0 = [F1, A1, F2, A2, f, a, A, t]
+
+    def fitfunc(x):
+
+        L = len(x_all)/3
+        x_no_init   = x[0:L]
+        x_up        = x[L:2*L]
+        x_down      = x[2*L:3*L]
+
+        S_no_init =       (a() + A()*np.exp(-(x_no_init/t())**2) * (
+                          0.5*F1()          *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
+                          0.5*F1()          *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
+                          0.5*(1-F1())      *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x) +
+                          0.5*(1-F1())      *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x))
+                          )
+
+        S_up =       (a() + A()*np.exp(-(x_up/t())**2) * (
+                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
+                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
+                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x) +
+                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x))
+                          )
+
+        S_down =       (a() + A()*np.exp(-(x_down/t())**2) * (
+                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
+                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
+                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x) +
+                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x))
+                          )
+        S_tot = r_[S_no_init]#, S_up, S_down]
+
+        return S_tot
+
+    return p0, fitfunc, fitfunc_str
+
 
 ### get the data locations
-timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = 'C2')
-timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = 'C2')
+''' Data set 1: older than 20141202_092002, 10 measurements, C1, C2, C5
+    Data set 2: older than 20141203_212603, 20 measurements, C2'''
+
+
+timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = 'C5')
+# timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = 'C2')
 
 
 '''####################
 ### Nuclear RO data ###
 ####################'''
-
+'''
 ### Get the data
 a_C13_RO_up, folder_up = get_and_plot_data_nuc_RO(timestamp_dict['up_pos'],timestamp_dict['up_neg'],ssro_calib_folder)
 a_C13_RO_down, folder_down = get_and_plot_data_nuc_RO(timestamp_dict['down_pos'],timestamp_dict['down_neg'],ssro_calib_folder)
@@ -193,7 +360,7 @@ print 'Initialization by nuclear RO'
 print 'Up = '   + str(round(a_C13_RO_up.p0[2],3)) + '+/-' + str(round(a_C13_RO_up.u_p0[2],3))
 print 'Down = ' + str(round(a_C13_RO_down.p0[2],3)) + '+/-' + str(round(a_C13_RO_down.u_p0[2],3))
 print 'Average = ' + str(round(average_initialization,3)) + '+/-' + str(round(average_initialization_u,3))
-
+'''
 
 '''#########################
 ### Electron Ramsey data ###
@@ -204,6 +371,7 @@ a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder
 a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
 a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
 
+'''
 ### Plot the data all together
 fig = a_up.default_fig(figsize=(10,5))
 ax  = a_up.default_ax(fig)
@@ -224,21 +392,21 @@ guess_phi2  = 0.
 guess_tau   = 4600
 guess_a     = 0.5
 
-fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, ramsey.fit_ramsey_gaussian_decay,
+fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, fit_ramsey_gaussian_decay,
         guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
         (guess_f2, guess_A2, guess_phi2),
          fixed=[1,4,7],
-        do_print=True, ret=True)
-fit_result2 = fit.fit1d(a_up.x, a_up.p0, ramsey.fit_ramsey_gaussian_decay,
+        do_print=False, ret=True)
+fit_result2 = fit.fit1d(a_up.x, a_up.p0, fit_ramsey_gaussian_decay,
         guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
         (guess_f2, guess_A2, guess_phi2),
          fixed=[1,4,7],
-        do_print=True, ret=True)
-fit_result3 = fit.fit1d(a_down.x, a_down.p0, ramsey.fit_ramsey_gaussian_decay,
+        do_print=False, ret=True)
+fit_result3 = fit.fit1d(a_down.x, a_down.p0, fit_ramsey_gaussian_decay,
         guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
         (guess_f2, guess_A2, guess_phi2),
          fixed=[1,4,7],
-        do_print=True, ret=True)
+        do_print=False, ret=True)
 
 plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
         plot_data=False, linestyle = '-b')
@@ -251,4 +419,91 @@ plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
         format='pdf')
 plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),
         format='png')
+'''
+### Fitting the data at once to the initialization fidelities
+    ### Plot the data all together
+'''
+fig = a_up.default_fig(figsize=(10,5))
+ax  = a_up.default_ax(fig)
+ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
+
+ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
+ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
+ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
+ax.legend()
+
+#Frequencies in kHz
+guess_F1    =  0.5
+guess_A1    =  0.180e-3
+guess_F2    =  0.5
+guess_A2    =  1e-6
+
+guess_f     = 0.5e-3 
+guess_a     = 0.5
+guess_A     = 0.5
+guess_tau   = 4600
+
+
+fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, fit_initialization_fidelity,
+        guess_F1, guess_A1, guess_F2, guess_A2,
+        guess_f, guess_a, guess_A,guess_tau,
+         fixed=[2,3,5],
+        do_print=True, ret=True)
+fit_result2 = fit.fit1d(a_up.x, a_up.p0, fit_initialization_fidelity,
+        guess_F1, guess_A1, guess_F2, guess_A2,
+        guess_f, guess_a, guess_A,guess_tau,
+         fixed=[2,3,5],
+        do_print=True, ret=True)
+fit_result3 = fit.fit1d(a_down.x, a_down.p0, fit_initialization_fidelity,
+        guess_F1, guess_A1, guess_F2, guess_A2,
+        guess_f, guess_a, guess_A,guess_tau,
+         fixed=[2,3,5],
+        do_print=True, ret=True)
+
+plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+        plot_data=False, linestyle = '-b')
+plot.plot_fit1d(fit_result2, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+        plot_data=False, linestyle = '-r')
+plot.plot_fit1d(fit_result3, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+        plot_data=False, linestyle = '-k')
+'''
+###########################
+### to fit all at once: ###
+###########################
+
+
+fig = a_up.default_fig(figsize=(10,5))
+ax  = a_up.default_ax(fig)
+ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
+
+ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
+ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
+ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
+ax.legend()
+
+
+x_all =  r_[ a_noinit.x]#, a_up.x, a_down.x]
+y_all =  r_[ a_noinit.p0]#, a_up.p0, a_down.p0]
+
+#Frequencies in kHz
+guess_F1    =  0.5
+guess_A1    =  0.180e-3
+guess_F2    =  0.5
+guess_A2    =  0*1e-6
+
+guess_f     = 0.5e-3 
+guess_a     = 0.5
+guess_A     = 0.5
+guess_tau   = 4600
+
+fit_result1 = fit.fit1d(x_all, y_all, fit_initialization_fidelity_all,
+        guess_F1, guess_A1, guess_F2, guess_A2,
+        guess_f, guess_a, guess_A,guess_tau,
+         fixed=[3,4,5],
+        do_print=False, ret=True)
+
+plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+        plot_data=False, linestyle = '-b')
+
+
 
