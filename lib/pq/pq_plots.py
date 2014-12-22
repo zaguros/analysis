@@ -46,8 +46,6 @@ def plot_photon_hist(pqf, **kw):
     if ret == 'subplots':
         return fig, (ax0, ax1)
 
-
-
     
 def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     ret = kw.pop('ret', 'subplots')

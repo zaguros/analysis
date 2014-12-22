@@ -7,6 +7,7 @@ import h5py
 import platform
 import os
 import time
+import datetime
 
 try:
     import qt
@@ -36,6 +37,15 @@ def nearest_value(array, value):
     '''
     return array[nearest_idx(array,value)]
 
+def get_timestamp_from_now():
+    return timestamp_from_datetime(datetime.datetime.now())
+
+def timestamp_from_datetime(datetime_):
+    return datetime_.strftime('%Y%m%d%H%M%S')
+
+def datetime_from_timestamp(timestamp):
+    return datetime.datetime.strptime(timestamp,'%Y%m%d%H%M%S')
+    
 def verify_timestamp(timestamp):
     if len(timestamp) == 6:
         daystamp = time.strftime('%Y%m%d')
@@ -51,6 +61,7 @@ def verify_timestamp(timestamp):
 
     return daystamp, tstamp
 
+
 def is_older(ts0, ts1):
     '''
     returns True if timestamp ts0 is an earlier data than timestamp ts1,
@@ -64,8 +75,6 @@ def is_older(ts0, ts1):
         dstamp1, tstamp1 = verify_timestamp(ts1)
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
-
-
 
 def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
     '''
@@ -255,11 +264,28 @@ def measurement_filename(directory=os.getcwd(), ext='hdf5'):
                 os.path.join(directory,fn))
         return None
 
+def get_date_time_string_from_folder(folder):
+    if not os.path.isdir(folder):
+        logging.error('Argument {} is not a folder'.format(folder))
+    head,tail=os.path.split(folder)
+    d = os.path.split(head)[1]
+    if len(tail) < 6:
+        logging.error('Argument {} is not a valid measurement folder'.format(folder))
+    t = tail[:6]
+    return d,t
+
+def get_datetime_from_folder(folder):
+    d,t = get_date_time_string_from_folder(folder)
+    return datetime_from_timestamp(d+t)
+
+
+def get_measurement_name_from_folder(folder):
+    return os.path.split(folder)[1][7:]
+
 def get_plot_title_from_folder(folder):
-    measurementstring = os.path.split(folder)[1]
-    timestamp = os.path.split(os.path.split(folder)[0])[1] \
-            + '/' + measurementstring[:6]
-    measurementstring = measurementstring[7:]
+    d,t=get_date_time_string_from_folder(folder)
+    timestamp = d + '/' + t
+    measurementstring = get_measurement_name_from_folder(folder)
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
 
@@ -437,13 +463,49 @@ def clear_analysis_data(fp, ANALYSISGRP = 'analysis'):
     else:
         f.close()
 
-def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis'):
+def clear_raw_data(fp, name):
+    """
+    Deletes the raw data in the main folder. 
+    """
+
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    if name in f.keys():
+        try:
+            del f[name]
+            f.flush()
+            f.close()
+        except:
+            f.close()
+            raise
+    else:
+        f.close()
+
+def set_raw_data(fp, name, data):
+    """
+    Save the data in the main folder. Does not save any attributes
+    """
+    try:
+        f = h5py.File(fp, 'r+')
+    except:
+        print "Cannot open file", fp
+        raise
+
+    f[name] = data
+    f.flush()
+    f.close()        
+    
+def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
     put in the function. Also saves the attributes.
     """
     try:
-        f = h5py.File(fp, 'r+')
+        f = h5py.File(fp, permissions)
     except:
         print "Cannot open file", fp
         raise
@@ -509,14 +571,9 @@ def get_num_blocks(pqf):
                 Block_number = int(Block_name.strip('PQ_channel-'))
                 list_of_block_numbers.append(Block_number)
 
-        num_blocks = max(list_of_block_numbers)
-        return num_blocks
-
-
     elif type(pqf) == str:
 
         f = h5py.File(pqf, 'r')
-
         for k in f.keys():
             if 'PQ_channel-' in k:
                 Block_name =  str(k)
@@ -525,9 +582,53 @@ def get_num_blocks(pqf):
 
         f.close()
 
+    else:
+        print "Neither filepath nor file enetered in function please check:", pqf
+        raise
+
+    if len(list_of_block_numbers) > 0:
         num_blocks = max(list_of_block_numbers)
-        return num_blocks
+    else: 
+        num_blocks = 0
+
+    return num_blocks
+
+def get_num_blocks_2(pqf):
+    """
+    Returns the number of blocks in a file (the number of the time a PQ_channel-xx block is created)
+    It return the number xx
+    """
+
+    list_of_block_numbers = []
+
+    if type(pqf) == h5py._hl.files.File: 
+
+        keys = pqf.keys()
+
+    elif type(pqf) == str:
+
+        f = h5py.File(pqf, 'r')
+        keys = f.keys()
+        f.close()
 
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
+
+    for i in range(1000):
+        num_min = (i) * 10
+        min_pq = 'PQ_channel-' + str(num_min)
+        num_max = (i+1) * 10
+        max_pq = 'PQ_channel-' + str(num_max)
+        if (min_pq in keys) and not (max_pq in keys):
+            for j in range(10):
+                num_min_new = num_min + j
+                min_pq_new = 'PQ_channel-' + str(num_min_new)
+                num_max_new = num_min + j + 1
+                max_pq_new = 'PQ_channel-' + str(num_max_new)
+                if (min_pq_new in keys) and not (max_pq_new in keys):
+                    return num_min_new
+                else:
+                    continue
+        else:
+            continue

@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-import Settings, files
+import Settings
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.pq import pq_tools, pq_plots
 

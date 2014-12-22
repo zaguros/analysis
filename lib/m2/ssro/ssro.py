@@ -70,6 +70,12 @@ class SSROAnalysis(m2.M2Analysis):
         pzero = len(np.where(cpsh==0)[0])/float(reps)
         annotation += "\np(0 counts) = %.2f" % (pzero)
 
+        f = self.analysis_h5data()
+        if not 'cpsh' in f:
+                f.create_group('cpsh')
+        g = f['/cpsh']
+        g[name]=  cpsh
+        f.close()
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -144,7 +150,7 @@ class SSROAnalysis(m2.M2Analysis):
 
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
-
+      
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -302,7 +308,7 @@ def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
         a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
         a.charge_hist(a.cr_counts, name=n)
         a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
-
+    #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity(plot,plot_photon_ms0)
     a.finish()
