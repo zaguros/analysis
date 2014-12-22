@@ -388,7 +388,7 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         fig.savefig(os.path.join(folder,'QEC_probs'+'.png'))
        
 
-def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
+def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z', len_k = 6):
     QEC_dict = {}
     k_dict = {}
     
@@ -411,7 +411,10 @@ def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
                 k_dict['k_'+str(k)] = load_QEC_data(folder, SSRO_folder, post_select = True) 
                           
             for item in k_dict['k_0']:
-                QEC_dict[str(error_sign)][direction][item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item]), axis=0)
+                if len(k) == 4:
+                    QEC_dict[str(error_sign)][direction][item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item]), axis=0)
+                elif len(k) == 6:
+                    QEC_dict[str(error_sign)][direction][item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item], k_dict['k_4'][item], k_dict['k_5'][item]), axis=0)
 
     return QEC_dict,folder
 
@@ -590,7 +593,7 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
     else:
         QEC_data_dict, folder =  QEC_data_single_state_RO(older_than = older_than,state = state,RO = RO)
     
-    folder  = r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data'   
+    # folder  = r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data'   
 
     x = QEC_data_dict['x']
     y = QEC_data_dict['y']
