@@ -303,15 +303,17 @@ def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
 
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
         a.get_run(n)
-        a.cpsh_hist(a.ro_counts, a.reps, name=n)
-        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n)
-        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
-        a.charge_hist(a.cr_counts, name=n)
-        a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
+        a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
+        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.charge_hist(a.cr_counts, name=n, plot = plot)
+        a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n, plot = plot)
     #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity(plot,plot_photon_ms0)
     a.finish()
+
+
 
 def thcalib(folder='', analyze_probe = False):
     if folder=='':

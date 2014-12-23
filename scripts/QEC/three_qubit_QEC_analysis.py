@@ -172,8 +172,8 @@ def Plot_errorcurve_no_QEC(timestamp = None, measurement_name = ['adwindata'],fo
         ### postive RO data
     timestamp_pos, folder_a = toolbox.latest_data(contains = 'positive_'+folder_name, older_than = timestamp,return_timestamp = True)
     timestamp_neg, folder_b = toolbox.latest_data(contains = 'negative_'+folder_name, older_than = timestamp,return_timestamp = True)
-    print folder_a
-    print folder_b
+    # print folder_a
+    # print folder_b
     
     a = mbi.MBIAnalysis(folder_a)
     a.get_sweep_pts()
@@ -232,6 +232,7 @@ def load_QEC_data(folder, ssro_calib_folder, post_select = True):
     a = CP.ConditionalParityAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name='adwindata', post_select_QEC = False)
+    print ssro_calib_folder
     a.get_electron_ROC(ssro_calib_folder)
 
     x = a.sweep_pts.reshape(-1)
@@ -380,6 +381,7 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         ax.plot(data['x'],data['p01'], 'ko', label = 'p01')
         ax.plot(data['x'],data['p10'], 'mo', label = 'p10')
         ax.plot(data['x'],data['p11'], 'bo', label = 'p11')
+        ax.plot(data['x'],data['p00']+data['p01']+ data['p10']+data['p11'], 'go', label = 'sum')
         plt.legend()
         ax.set_xlim(-0.2,1.2)
         ax.set_xlabel('error probability')
@@ -392,7 +394,7 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         fig.savefig(os.path.join(folder,'QEC_probs'+'.png'))
        
 
-def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z', len_k = 6):
+def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z', len_k = 6, sym = '11'):
     QEC_dict = {}
     k_dict = {}
     
@@ -402,22 +404,23 @@ def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z', len_k = 6):
         for direction in ['positive','negative']:
             QEC_dict[str(error_sign)][direction] = {}
 
-            for k in range(4):
+            for k in range(len_k):
                 # print 'k_'+str(k)
                 
-
-                timestamp, folder = toolbox.latest_data(contains = direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)
+                print '----'
+                timestamp, folder = toolbox.latest_data(contains = sym +'_'+direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)
                                                         +'_'+state, older_than = older_than,return_timestamp = True)
-
+                print folder
                 SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
-                   # print SSRO_timestamp
+                print SSRO_folder
+                print '----'
                 k_dict['k_'+str(k)] ={}
                 k_dict['k_'+str(k)] = load_QEC_data(folder, SSRO_folder, post_select = True) 
                           
             for item in k_dict['k_0']:
-                if len(k) == 4:
+                if len_k == 4:
                     QEC_dict[str(error_sign)][direction][item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item]), axis=0)
-                elif len(k) == 6:
+                elif len_k == 6:
                     QEC_dict[str(error_sign)][direction][item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item], k_dict['k_4'][item], k_dict['k_5'][item]), axis=0)
 
     return QEC_dict,folder
@@ -452,7 +455,13 @@ def no_QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
 
 ''' these functions are used to open/close save/load from and to HDF5 files '''
 
-def openfile(name = 'QEC_141121_final.hdf5'):
+def openfile_single_state_RO(sym = '00', RO = 1, state = 'Z'):
+    name = 'error_sym_' + sym + '_state_'+state + '_RO_'+str(RO)+ '.hdf5'
+    datafile = h5py.File(os.path.join(r'D:\measuring\data\QEC_data\QEC_data', name)) 
+    return datafile
+
+
+def openfile(name = ''):
    datafile = h5py.File(os.path.join(r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data10', name)) 
    return datafile
 
@@ -462,6 +471,14 @@ def closefile(datafile):
 def save_data_hdf5file(datafile, data_dict, state, RO):
     f = datafile
     f_grp = f.create_group('state_'+state+'_RO_'+str(RO))
+
+    for item in data_dict:
+        f.attrs [item] = data_dict[item]
+        f_grp.create_dataset (item, data = data_dict[item])
+
+def save_data_single_state_RO_hdf5file(datafile, data_dict):
+    f = datafile
+    f_grp = f.create_group('data')
 
     for item in data_dict:
         f.attrs [item] = data_dict[item]
@@ -477,11 +494,19 @@ def load_data_hdf5file(datafile,state, RO):
 
     return data_dict
 
+def load_single_data_hdf5file(datafile):
+    f = datafile
+    f_grp = f['/'+'data']
+
+    data_dict = {}
+    for item in f_grp.keys():
+        data_dict[item] = f_grp[item].value
+    return data_dict
 
 
 ''' here you save new data '''
 
-def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0):
+def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0, sym = '00'):
 
     QEC_data_dict = {}
     u_list = ['c0_u', 'c0_00_u','c0_01_u','c0_10_u','c0_11_u']
@@ -491,7 +516,7 @@ def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0):
     y_err_list = ['y_err','y_err_00','y_err_01','y_err_10','y_err_11']
 
 
-    QEC_dict, folder = QEC_create_data_dict(older_than = older_than, RO = RO, state = state)
+    QEC_dict, folder = QEC_create_data_dict(older_than = older_than, RO = RO, state = state, sym = sym)
     for v in range(5):
         QEC_data_dict[y_list[v]] = {}
         QEC_data_dict[y_err_list[v]] = {}
@@ -516,6 +541,41 @@ def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0):
                                                             QEC_dict[str(1)]['negative'][p_list[p]])/4
 
     QEC_data_dict['x'] = QEC_dict[str(1)]['positive']['x']
+    QEC_data_dict['folder'] = folder
+
+    return QEC_data_dict, folder
+
+def QEC_data_single_state_RO_single_error_sign(older_than = None,state = 'Z',RO = 0, sym = '00',e_sign = 1):
+
+    QEC_data_dict = {}
+    u_list = ['c0_u', 'c0_00_u','c0_01_u','c0_10_u','c0_11_u']
+    c_list = ['c0', 'c0_00','c0_01','c0_10','c0_11']
+    p_list = ['p00','p01','p10','p11']
+    y_list = ['y','y_00','y_01','y_10','y_11']
+    y_err_list = ['y_err','y_err_00','y_err_01','y_err_10','y_err_11']
+
+
+    QEC_dict, folder = QEC_create_data_dict(older_than = older_than, RO = RO, state = state, sym = sym)
+
+    for v in range(5):
+        QEC_data_dict[y_list[v]] = {}
+        QEC_data_dict[y_err_list[v]] = {}
+
+
+        QEC_data_dict[y_list[v]] = (QEC_dict[str(e_sign)]['positive'][c_list[v]]-
+                                                        QEC_dict[str(e_sign)]['negative'][c_list[v]])/2
+        
+        
+        QEC_data_dict[y_err_list[v]] = ((QEC_dict[str(e_sign)]['positive'][u_list[v]]**2+
+                                                        QEC_dict[str(e_sign)]['negative'][u_list[v]]**2)**0.5)/2
+    for p in range(4):
+            QEC_data_dict[p_list[p]] = {}
+            
+            QEC_data_dict[p_list[p]] = (    QEC_dict[str(e_sign)]['positive'][p_list[p]]+
+                                                                QEC_dict[str(e_sign)]['negative'][p_list[p]])/2
+
+
+    QEC_data_dict['x'] = QEC_dict[str(e_sign)]['positive']['x']
     QEC_data_dict['folder'] = folder
 
     return QEC_data_dict, folder
@@ -553,6 +613,16 @@ def no_QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0):
 
     return QEC_data_dict, folder
 
+def save_QEC_dataset_single(older_than = None,sym = '11', RO = 1, state = 'Z'):
+    
+    datafile = openfile_single_state_RO(sym = sym, RO = RO, state = state)
+
+    QEC_temp_dict, folder = QEC_data_single_state_RO(older_than = older_than, RO = RO, state = state, sym = sym)
+
+    save_data_single_state_RO_hdf5file(datafile, QEC_temp_dict)
+       
+    closefile(datafile)
+
 def save_QEC_dataset(older_than = None, no_error = '11_1'):
     
     datafile = openfile(name = 'QEC_'+older_than[0:8]+'_error_syn_'+no_error+'.hdf5')
@@ -563,10 +633,10 @@ def save_QEC_dataset(older_than = None, no_error = '11_1'):
         for RO  in range(7):
             QEC_temp_dict[state]['Tomo_'+str(RO)] = {}
             QEC_temp_dict[state]['Tomo_'+str(RO)], folder = QEC_data_single_state_RO(older_than = older_than, RO = RO, state = state)
-
-            save_data_hdf5file(datafile,QEC_temp_dict[state]['Tomo_'+str(RO)], state, RO)
+            save_data_hdf5file(datafile, state, RO)
        
     closefile(datafile)
+
 
 def load_QEC_dataset(date = None, no_error = '00'):
 
@@ -582,22 +652,31 @@ def load_QEC_dataset(date = None, no_error = '00'):
 
     return QEC_temp_dict
 
+def load_QEC_dataset_single(sym = '11', RO = 1, state = 'Z'):
+    
+    datafile = openfile_single_state_RO(sym = sym, RO = RO, state = state)
 
+    QEC_temp_dict = load_single_data_hdf5file(datafile)
+    
+    closefile(datafile)
+    return QEC_temp_dict
 
 ''' from here you can plot data taken from an existing HDF5 file '''
 
-def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO = 0, load_set = True, older_than = None):        
+def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO = 0, load_set = True, older_than = None, e_sign = None):        
     
     
     if load_set == True:
         QEC_data_dict = {}   
-        dataset_dict = load_QEC_dataset(date = date, no_error = no_error)
-        QEC_data_dict  = dataset_dict[state]['Tomo_'+str(RO)]
+        dataset_dict = load_QEC_dataset_single(sym = no_error, state = state, RO = RO)
+        QEC_data_dict  = dataset_dict
         
     else:
-        QEC_data_dict, folder =  QEC_data_single_state_RO(older_than = older_than,state = state,RO = RO)
-    
-    # folder  = r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data'   
+        if e_sign == None:
+            QEC_data_dict, folder =  QEC_data_single_state_RO(older_than = older_than,state = state,RO = RO, sym = no_error)
+        else:
+            QEC_data_dict, folder =  QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,RO = RO, sym = no_error,e_sign = e_sign)
+    folder  = r'D:\measuring\data\QEC_data\figs'
 
     x = QEC_data_dict['x']
     y = QEC_data_dict['y']
@@ -621,13 +700,13 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
     ax.errorbar(x,y,yerr=y_err,color = 'k' )
     ax.set_ylim(-1.1,1.1)
     ax.set_xlim(-0.1,1.1)
-    ax.set_title(date+'_errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC')
+    ax.set_title('errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC')
     ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
     ax.set_xlabel('error probability')
     ax.set_ylabel('Contrast')
     try:
         fig.savefig(
-            os.path.join(folder,date+'_errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_all'+'.png'))
+            os.path.join(folder,'errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_all'+'.png'))
     except:
         print 'Figure has not been saved.'
 
@@ -639,14 +718,14 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
     ax.set_ylim(-1.1,1.1)
     ax.set_xlim(-0.1,1.1)
     plt.legend()
-    ax.set_title(date+'_errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC_PS')
+    ax.set_title('errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC_PS')
     ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
     ax.set_xlabel('error probability')
     ax.set_ylabel('Contrast')
 
     try:
         fig.savefig(
-            os.path.join(folder,date+'_errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_ps'+'.png'))
+            os.path.join(folder,'errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_ps'+'.png'))
     except:
         print 'Figure has not been saved.'
 
@@ -659,14 +738,15 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
     ax.plot(x,p_01, 'k', label = 'p01')
     ax.plot(x,p_10, 'm', label = 'p10')
     ax.plot(x,p_11, 'b', label = 'p11')
+    # ax.plot(x,p_00+p_01+p_10+p_11, 'g', label = 'sum')
     plt.legend()
     ax.set_xlabel('error probability')
     ax.set_ylabel('outcome probability')  
-    ax.set_title(date+'_errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC_probs')                
+    ax.set_title('errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC_probs')                
     
     try:
         fig.savefig(
-            os.path.join(folder,date+'_errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_probs'+'.png'))
+            os.path.join(folder,'errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_probs'+'.png'))
     except:
         print 'Figure has not been saved.'
 
@@ -697,7 +777,7 @@ def no_QEC_plot_single_state_RO(date = '20141120',state = 'Z',RO = 0, load_set =
     ax.errorbar(x,y,yerr=y_err,color = 'k' )
     ax.set_ylim(-1.1,1.1)
     ax.set_xlim(-0.1,1.1)
-    ax.set_title(date+'_state_'+state+'_RO_'+str(RO)+'_noQEC')
+    ax.set_title('state_'+state+'_RO_'+str(RO)+'_noQEC')
     ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
     ax.set_xlabel('error probability')
     ax.set_ylabel('Contrast')
@@ -822,7 +902,7 @@ def plot_QEC_sum_fidelities(date = None,state = 'Z',no_error = '00'):
         ax.errorbar(x,y,yerr=y_err)
         ax.set_ylim(-0.1,1.1)
         ax.set_xlim(-0.1,1.1)
-        ax.set_title(date+'_errorsyn_'+no_error+'_state_'+state+'QEC_'+sum_type)
+        ax.set_title('errorsyn_'+no_error+'_state_'+state+'QEC_'+sum_type)
         ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
         ax.set_xlabel('error probability')
         ax.set_ylabel('Fidelity'+sum_type)
@@ -922,28 +1002,6 @@ def QEC_process_fids(date = None,no_error = '00'):
                         + dataset_dict['X']['Tomo_'+str(6)][y_err_list[v]]**2 + dataset_dict['mX']['Tomo_'+str(6)][y_err_list[v]]**2 )**0.5
 
 
-        # process_dict['dec_toff_'+y_list[v]] = 1/2.+1/16.*( dataset_dict['X']['Tomo_'+str(6)][y_list[v]] - dataset_dict['mX']['Tomo_'+str(6)][y_list[v]]
-        #                 + dataset_dict['Z']['Tomo_'+str(0)][y_list[v]] - dataset_dict['mZ']['Tomo_'+str(0)][y_list[v]]
-        #                 - dataset_dict['Y']['Tomo_'+str(5)][y_list[v]] + dataset_dict['mY']['Tomo_'+str(5)][y_list[v]]
-        #                 +dataset_dict['Z']['Tomo_'+str(1)][y_list[v]] - dataset_dict['mZ']['Tomo_'+str(1)][y_list[v]]
-        #                 - dataset_dict['Y']['Tomo_'+str(6)][y_list[v]] + dataset_dict['mY']['Tomo_'+str(6)][y_list[v]]
-        #                 + dataset_dict['Z']['Tomo_'+str(3)][y_list[v]] - dataset_dict['mZ']['Tomo_'+str(3)][y_list[v]]
-        #                 - dataset_dict['Y']['Tomo_'+str(4)][y_list[v]] + dataset_dict['mY']['Tomo_'+str(4)][y_list[v]]
-        #                 -dataset_dict['Z']['Tomo_'+str(6)][y_list[v]] + dataset_dict['mZ']['Tomo_'+str(6)][y_list[v]]
-        #                 - dataset_dict['Y']['Tomo_'+str(3)][y_list[v]] + dataset_dict['mY']['Tomo_'+str(3)][y_list[v]]
-        #                 )
-
-        # process_dict['dec_toff_'+y_err_list[v]] = 1/16.*(dataset_dict['X']['Tomo_'+str(6)][y_list[v]]**2 + dataset_dict['mX']['Tomo_'+str(6)][y_list[v]]**2
-        #                 + dataset_dict['Z']['Tomo_'+str(0)][y_list[v]]**2 + dataset_dict['mZ']['Tomo_'+str(0)][y_list[v]]**2
-        #                 + dataset_dict['Y']['Tomo_'+str(5)][y_list[v]]**2 + dataset_dict['mY']['Tomo_'+str(5)][y_list[v]]**2
-        #                 +dataset_dict['Z']['Tomo_'+str(1)][y_list[v]]**2 + dataset_dict['mZ']['Tomo_'+str(1)][y_list[v]]**2
-        #                 + dataset_dict['Y']['Tomo_'+str(6)][y_list[v]]**2 + dataset_dict['mY']['Tomo_'+str(6)][y_list[v]]**2
-        #                 + dataset_dict['Z']['Tomo_'+str(3)][y_list[v]]**2 + dataset_dict['mZ']['Tomo_'+str(3)][y_list[v]]**2
-        #                 + dataset_dict['Y']['Tomo_'+str(4)][y_list[v]]**2 + dataset_dict['mY']['Tomo_'+str(4)][y_list[v]]**2
-        #                 +dataset_dict['Z']['Tomo_'+str(6)][y_list[v]]**2 + dataset_dict['mZ']['Tomo_'+str(6)][y_list[v]]**2
-        #                 + dataset_dict['Y']['Tomo_'+str(3)][y_list[v]]**2 + dataset_dict['mY']['Tomo_'+str(3)][y_list[v]]**2)**0.5
-
-
         process_dict['dec_avg_'+y_list[v]] = 1/3.*(process_dict['dec_1_'+y_list[v]]+process_dict['dec_2_'+y_list[v]]+process_dict['dec_3_'+y_list[v]])
         process_dict['dec_avg_'+y_err_list[v]] = 1/3.*(process_dict['dec_1_'+y_err_list[v]]**2+process_dict['dec_2_'+y_err_list[v]]**2+process_dict['dec_3_'+y_err_list[v]]**2)**0.5
 
@@ -1004,9 +1062,10 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
     p_11 = []
 
     for state_RO in state_RO_list:
-        folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
-        folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
-    
+        # folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
+        # folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
+
+
         folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1], older_than = older_than)
         folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1], older_than = older_than)
         
@@ -1014,8 +1073,8 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
         data_p = load_QEC_data(folder_p, ssro_calib_folder, post_select = True)
         data_n = load_QEC_data(folder_n, ssro_calib_folder, post_select = True)
 
-        print folder_p
-        print folder_n
+        # print folder_p
+        # print folder_n
         
 
         y = y + [abs(((data_p['c0'] - data_n['c0'])/2.)[0])]

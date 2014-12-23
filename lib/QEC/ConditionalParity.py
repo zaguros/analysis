@@ -122,15 +122,15 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             ### 'Probabilities 00, 01, 10, 11'
             # print self.reps.astype('float')
             # print float(len(self.ssro_results))
-            self.p00 = (parity_result_00/float(len(self.ssro_results)))
+            self.p00 = (parity_result_00/float(len(self.ssro_results)/self.pts))
             # print  self.p00
-            self.p01 = ((parity_result_01)/float(len(self.ssro_results)))
+            self.p01 = ((parity_result_01)/float(len(self.ssro_results)/self.pts))
             # print parity_result_01
             # print  self.p01
-            self.p10 = (parity_result_10/float(len(self.ssro_results)))
+            self.p10 = (parity_result_10/float(len(self.ssro_results)/self.pts))
             # print parity_result_10
             # print  self.p10
-            self.p11 = ((parity_result_11)/float(len(self.ssro_results)))
+            self.p11 = ((parity_result_11)/float(len(self.ssro_results)/self.pts))
             # print  self.p11
 
         else:
