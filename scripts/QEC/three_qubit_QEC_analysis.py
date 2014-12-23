@@ -663,7 +663,7 @@ def load_QEC_dataset_single(sym = '11', RO = 1, state = 'Z'):
 
 ''' from here you can plot data taken from an existing HDF5 file '''
 
-def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO = 0, load_set = True, older_than = None, e_sign = None):        
+def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO = 0, load_set = True, older_than = None, e_sign = None,plot_guide = True):        
     
     
     if load_set == True:
@@ -696,8 +696,12 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
     p_10 = QEC_data_dict['p10']
     p_11 = QEC_data_dict['p11']
 
+    x_g = [x[0],x[-1]]
+    y_g = [y[0],y[-1]]
+
     fig,ax = plt.subplots() 
     ax.errorbar(x,y,yerr=y_err,color = 'k' )
+    ax.plot(x_g,y_g,color = 'g' )
     ax.set_ylim(-1.1,1.1)
     ax.set_xlim(-0.1,1.1)
     ax.set_title('errorsyn_'+no_error+'_state_'+state+'_RO_'+str(RO)+'_QEC')
