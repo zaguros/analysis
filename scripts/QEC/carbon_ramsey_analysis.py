@@ -19,6 +19,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             plot_fit = False, do_print = False, fixed = [2], show_guess = True,
             return_phase = False,
             return_freq = False,
+            return_A = False,
             return_results = True,
             close_plot = False,
             title = 'Carbon'):
@@ -91,6 +92,13 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
             return phi0, u_phi0
+
+        if return_phase == True and return_A == True:
+            phi0 = fit_result['params_dict']['phi']
+            u_phi0 = fit_result['error_dict']['phi']
+            A = fit_result['params_dict']['A']
+            u_A = fit_result['error_dict']['A']
+            return phi0, u_phi0, A, u_A
 
     if return_results == True:
         return fit_results
@@ -263,4 +271,68 @@ def Carbon_Ramsey_Crosstalk_no_fit(older_than=None, crosstalk = None,measurement
 
       
 
+def Carbon_Ramsey_DD_freq(older_than = None,  carbon = 1,
+            frequency = 1, 
+            offset = 0.5, 
+            x0 = 0,  
+            amplitude = 0.5,  
+            decay_constant = 200, 
+            phase =0, 
+            exponent = 2, 
+            plot_fit = False, do_print = False, fixed = [2], show_guess = True,
+            return_phase = False,
+            return_freq = False,
+            return_results = True,
+            close_plot = False):
+    ''' 
+    '''
+    folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon), older_than = older_than)
+    folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
+    folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
+    
+    a1 = mbi.MBIAnalysis(folder1)
+    a1.get_sweep_pts()
+    a1.get_readout_results(name='adwindata')
+    a1.get_electron_ROC()
+
+    a2 = mbi.MBIAnalysis(folder2)
+    a2.get_sweep_pts()
+    a2.get_readout_results(name='adwindata')
+    a2.get_electron_ROC()
+
+    a3 = mbi.MBIAnalysis(folder3)
+    a3.get_sweep_pts()
+    a3.get_readout_results(name='adwindata')
+    a3.get_electron_ROC()
+
+    a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
+    a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
+    a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts]
+
+    x = a1.sweep_pts.reshape(-1)[:]
+    y = a1.p0.reshape(-1)[:]
+ 
+    ax = a1.plot_results_vs_sweepparam(ret='ax')
+
+    ax.plot(x,y)
+    p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
+            x0, decay_constant,exponent,frequency ,phase )
+
+    #plot the initial guess
+    if show_guess:
+        ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+
+    print 'fitfunction: '+fitfunc_str
+
+    ## plot data and fit as function of total time
+    if plot_fit == True:
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
+
+   
+    title = 'DD freq ramsey C' +str(carbon)
+    plt.savefig(os.path.join(folder1, title + '.pdf'),
+    format='pdf')
+    plt.savefig(os.path.join(folder1, title + '.png'),
+    format='png')
 

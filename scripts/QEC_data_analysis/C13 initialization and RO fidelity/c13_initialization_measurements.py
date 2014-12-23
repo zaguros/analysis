@@ -276,31 +276,41 @@ def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t)
     def fitfunc(x):
 
         L = len(x_all)/3
+        
+        
+
         x_no_init   = x[0:L]
         x_up        = x[L:2*L]
         x_down      = x[2*L:3*L]
 
+
         S_no_init =       (a() + A()*np.exp(-(x_no_init/t())**2) * (
-                          0.5*F1()          *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
-                          0.5*F1()          *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
-                          0.5*(1-F1())      *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x) +
-                          0.5*(1-F1())      *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x))
+                          0.5*F1()          *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x_no_init) +
+                          0.5*F1()          *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x_no_init) +
+                          0.5*(1-F1())      *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x_no_init) +
+                          0.5*(1-F1())      *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x_no_init))
                           )
 
         S_up =       (a() + A()*np.exp(-(x_up/t())**2) * (
-                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
-                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
-                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x) +
-                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x))
+                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x_up) +
+                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x_up) +
+                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x_up) +
+                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x_up))
                           )
 
         S_down =       (a() + A()*np.exp(-(x_down/t())**2) * (
-                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x) +
-                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x) +
-                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x) +
-                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x))
+                          F1()*F2()         *np.cos(2*np.pi*(f() + (A1()-A2())/2)*x_down) +
+                          F1()*(1-F2())     *np.cos(2*np.pi*(f() + (A1()+A2())/2)*x_down) +
+                          (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x_down) +
+                          (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x_down))
                           )
-        S_tot = r_[S_no_init]#, S_up, S_down]
+        print 'test'
+
+
+        S_tot = r_[S_no_init, S_up, S_down]
+        # S_tot = r_[S_no_init, S_no_init, S_no_init]
+
+        print S_tot
 
         return S_tot
 
@@ -312,7 +322,7 @@ def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t)
     Data set 2: older than 20141203_212603, 20 measurements, C2'''
 
 
-timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = 'C5')
+timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = 'C1')
 # timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = 'C2')
 
 
@@ -365,128 +375,128 @@ print 'Average = ' + str(round(average_initialization,3)) + '+/-' + str(round(av
 '''#########################
 ### Electron Ramsey data ###
 #########################'''
+if 0:
+    ### load electron ramsey data (and plot individual plots)
+    a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder)
+    a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
+    a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
 
-### load electron ramsey data (and plot individual plots)
-a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder)
-a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
-a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
+    ### Plot the data all together
+    fig = a_up.default_fig(figsize=(10,5))
+    ax  = a_up.default_ax(fig)
+    ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
 
-'''
-### Plot the data all together
-fig = a_up.default_fig(figsize=(10,5))
-ax  = a_up.default_ax(fig)
-ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
+    ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
+    ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
+    ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
+    ax.legend()
 
-ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
-ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
-ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
-ax.legend()
+    ### Fitting the data seperately to Ramsey decays
+    guess_f1    = 0.6e-3 #in GHz
+    guess_A1    = 0.5
+    guess_phi1  = 0.
+    guess_f2    = 0.40e-3 #in GHz
+    guess_A2    = 0.5
+    guess_phi2  = 0.
+    guess_tau   = 4600
+    guess_a     = 0.5
 
-### Fitting the data seperately to Ramsey decays
-guess_f1    = 0.6e-3 #in GHz
-guess_A1    = 0.5
-guess_phi1  = 0.
-guess_f2    = 0.40e-3 #in GHz
-guess_A2    = 0.5
-guess_phi2  = 0.
-guess_tau   = 4600
-guess_a     = 0.5
+    fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, fit_ramsey_gaussian_decay,
+            guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
+            (guess_f2, guess_A2, guess_phi2),
+             fixed=[1,4,7],
+            do_print=False, ret=True)
+    fit_result2 = fit.fit1d(a_up.x, a_up.p0, fit_ramsey_gaussian_decay,
+            guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
+            (guess_f2, guess_A2, guess_phi2),
+             fixed=[1,4,7],
+            do_print=False, ret=True)
+    fit_result3 = fit.fit1d(a_down.x, a_down.p0, fit_ramsey_gaussian_decay,
+            guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
+            (guess_f2, guess_A2, guess_phi2),
+             fixed=[1,4,7],
+            do_print=False, ret=True)
 
-fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, fit_ramsey_gaussian_decay,
-        guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
-        (guess_f2, guess_A2, guess_phi2),
-         fixed=[1,4,7],
-        do_print=False, ret=True)
-fit_result2 = fit.fit1d(a_up.x, a_up.p0, fit_ramsey_gaussian_decay,
-        guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
-        (guess_f2, guess_A2, guess_phi2),
-         fixed=[1,4,7],
-        do_print=False, ret=True)
-fit_result3 = fit.fit1d(a_down.x, a_down.p0, fit_ramsey_gaussian_decay,
-        guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
-        (guess_f2, guess_A2, guess_phi2),
-         fixed=[1,4,7],
-        do_print=False, ret=True)
+    plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+            plot_data=False, linestyle = '-b')
+    plot.plot_fit1d(fit_result2, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+            plot_data=False, linestyle = '-r')
+    plot.plot_fit1d(fit_result3, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+            plot_data=False, linestyle = '-k')
 
-plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-b')
-plot.plot_fit1d(fit_result2, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-r')
-plot.plot_fit1d(fit_result3, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-k')
+    plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
+            format='pdf')
+    plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),
+            format='png')
 
-plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
-        format='pdf')
-plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),
-        format='png')
-'''
 ### Fitting the data at once to the initialization fidelities
     ### Plot the data all together
-'''
-fig = a_up.default_fig(figsize=(10,5))
-ax  = a_up.default_ax(fig)
-ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
+if 0:
+    fig = a_up.default_fig(figsize=(10,5))
+    ax  = a_up.default_ax(fig)
+    ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
 
-ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
-ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
-ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
-ax.legend()
+    ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
+    ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
+    ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
+    ax.legend()
 
-#Frequencies in kHz
-guess_F1    =  0.5
-guess_A1    =  0.180e-3
-guess_F2    =  0.5
-guess_A2    =  1e-6
+    #Frequencies in kHz
+    guess_F1    =  0.5
+    guess_A1    =  0.180e-3
+    guess_F2    =  0.5
+    guess_A2    =  1e-6
 
-guess_f     = 0.5e-3 
-guess_a     = 0.5
-guess_A     = 0.5
-guess_tau   = 4600
+    guess_f     = 0.5e-3 
+    guess_a     = 0.5
+    guess_A     = 0.5
+    guess_tau   = 4600
 
 
-fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, fit_initialization_fidelity,
-        guess_F1, guess_A1, guess_F2, guess_A2,
-        guess_f, guess_a, guess_A,guess_tau,
-         fixed=[2,3,5],
-        do_print=True, ret=True)
-fit_result2 = fit.fit1d(a_up.x, a_up.p0, fit_initialization_fidelity,
-        guess_F1, guess_A1, guess_F2, guess_A2,
-        guess_f, guess_a, guess_A,guess_tau,
-         fixed=[2,3,5],
-        do_print=True, ret=True)
-fit_result3 = fit.fit1d(a_down.x, a_down.p0, fit_initialization_fidelity,
-        guess_F1, guess_A1, guess_F2, guess_A2,
-        guess_f, guess_a, guess_A,guess_tau,
-         fixed=[2,3,5],
-        do_print=True, ret=True)
+    fit_result1 = fit.fit1d(a_noinit.x, a_noinit.p0, fit_initialization_fidelity,
+            guess_F1, guess_A1, guess_F2, guess_A2,
+            guess_f, guess_a, guess_A,guess_tau,
+             fixed=[2,3,5],
+            do_print=True, ret=True)
+    fit_result2 = fit.fit1d(a_up.x, a_up.p0, fit_initialization_fidelity,
+            guess_F1, guess_A1, guess_F2, guess_A2,
+            guess_f, guess_a, guess_A,guess_tau,
+             fixed=[2,3,5],
+            do_print=True, ret=True)
+    fit_result3 = fit.fit1d(a_down.x, a_down.p0, fit_initialization_fidelity,
+            guess_F1, guess_A1, guess_F2, guess_A2,
+            guess_f, guess_a, guess_A,guess_tau,
+             fixed=[2,3,5],
+            do_print=True, ret=True)
 
-plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-b')
-plot.plot_fit1d(fit_result2, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-r')
-plot.plot_fit1d(fit_result3, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-k')
-'''
+    plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+            plot_data=False, linestyle = '-b')
+    plot.plot_fit1d(fit_result2, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+            plot_data=False, linestyle = '-r')
+    plot.plot_fit1d(fit_result3, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+            plot_data=False, linestyle = '-k')
+
 ###########################
 ### to fit all at once: ###
 ###########################
 
-
 fig = a_up.default_fig(figsize=(10,5))
 ax  = a_up.default_ax(fig)
 ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
 
-ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
-ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
-ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
-ax.legend()
+# ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
+# ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
+# ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
+# ax.legend()
 
+x_all       =  r_[ a_noinit.x, a_up.x, a_down.x]
+y_all       =  r_[ a_noinit.p0, a_up.p0, a_down.p0]
+y_all_error =  r_[ a_noinit.u_p0, a_up.u_p0, a_down.u_p0] 
 
-x_all =  r_[ a_noinit.x]#, a_up.x, a_down.x]
-y_all =  r_[ a_noinit.p0]#, a_up.p0, a_down.p0]
+ax.errorbar(x_all, y_all, y_all_error, 0*np.ones(len(y_all)),'.b', markersize = 2, label = 'no_init')
 
 #Frequencies in kHz
-guess_F1    =  0.5
+guess_F1    =  0
 guess_A1    =  0.180e-3
 guess_F2    =  0.5
 guess_A2    =  0*1e-6
@@ -496,14 +506,16 @@ guess_a     = 0.5
 guess_A     = 0.5
 guess_tau   = 4600
 
-fit_result1 = fit.fit1d(x_all, y_all, fit_initialization_fidelity_all,
-        guess_F1, guess_A1, guess_F2, guess_A2,
-        guess_f, guess_a, guess_A,guess_tau,
-         fixed=[3,4,5],
-        do_print=False, ret=True)
+p0, fitfunc, fitfunc_str = fit_initialization_fidelity_all(guess_F1, guess_A1, guess_F2, guess_A2,guess_f, guess_a, guess_A, guess_tau)
 
-plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-        plot_data=False, linestyle = '-b')
+ax.plot(x_all, fitfunc(x_all), ':', lw=2)
 
 
+# fit_result1 = fit.fit1d(x_all, y_all, fit_initialization_fidelity_all,
+#         guess_F1, guess_A1, guess_F2, guess_A2,
+#         guess_f, guess_a, guess_A, guess_tau,
+#          fixed=[3,4,5],
+#         do_print=False, ret=True)
 
+# plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
+#         plot_data=False, linestyle = '-b')

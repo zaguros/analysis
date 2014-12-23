@@ -115,7 +115,6 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	y = (y_a - y_b)/2.
 	y_err =  1./2*(y_err_a**2 + y_err_b**2)**0.5 
 	
-
 	# print folder_a
 	# print folder_b
 

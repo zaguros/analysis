@@ -71,7 +71,7 @@ def analyze_dark_esr_single(timestamp = None,center_guess = False, ax=None, ret=
 
 
 
-def analyze_dark_esr_double(timestamp = None,center_guess = False, ax=None, ret=None,min_dip_depth = 0.85 , **kw):
+def analyze_dark_esr_double(timestamp = None,center_guess = False, ax=None, ret=None,min_dip_depth = 0.85 ,do_ROC = True, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -85,11 +85,17 @@ def analyze_dark_esr_double(timestamp = None,center_guess = False, ax=None, ret=
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
-    a.get_electron_ROC()
+    # a.get_electron_ROC()
 
     x = a.sweep_pts # convert to MHz
     # y = a.get_readout_results('ssro')
-    y = a.p0.reshape(-1)[:]
+
+    if do_ROC == True:
+        a.get_electron_ROC()
+        y = a.p0.reshape(-1)[:]
+    else:
+        y = a.get_readout_results('ssro')
+    # y = a.p0.reshape(-1)[:]
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     ax.set_ylim(0.6,1.05)
 
