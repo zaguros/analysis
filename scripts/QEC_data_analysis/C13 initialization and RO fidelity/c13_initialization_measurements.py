@@ -276,8 +276,7 @@ def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t)
     def fitfunc(x):
 
         L = len(x_all)/3
-        
-        
+               
 
         x_no_init   = x[0:L]
         x_up        = x[L:2*L]
@@ -304,13 +303,9 @@ def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t)
                           (1-F1())*F2()     *np.cos(2*np.pi*(f() + (-A1()-A2())/2)*x_down) +
                           (1-F1())*(1-F2()) *np.cos(2*np.pi*(f() + (-A1()+A2())/2)*x_down))
                           )
-        print 'test'
-
 
         S_tot = r_[S_no_init, S_up, S_down]
         # S_tot = r_[S_no_init, S_no_init, S_no_init]
-
-        print S_tot
 
         return S_tot
 
@@ -480,42 +475,51 @@ if 0:
 ### to fit all at once: ###
 ###########################
 
-fig = a_up.default_fig(figsize=(10,5))
-ax  = a_up.default_ax(fig)
-ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
+if 1:
+    fig = a_up.default_fig(figsize=(10,5))
+    ax  = a_up.default_ax(fig)
+    ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
 
-# ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
-# ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
-# ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
-# ax.legend()
+    ax.errorbar(a_noinit.x,    a_noinit.p0, a_noinit.u_p0,0*np.ones(len(a_noinit.u_p0)), '.b', markersize = 2, label = 'no_init') 
+    ax.errorbar(a_up.x,        a_up.p0,     a_up.u_p0,    0*np.ones(len(a_up.u_p0)),     '.r', markersize = 2, label = 'up') 
+    ax.errorbar(a_down.x,      a_down.p0,   a_down.u_p0,  0*np.ones(len(a_down.u_p0)),   '.k', markersize = 2, label = 'down') 
+    ax.legend()
 
-x_all       =  r_[ a_noinit.x, a_up.x, a_down.x]
-y_all       =  r_[ a_noinit.p0, a_up.p0, a_down.p0]
-y_all_error =  r_[ a_noinit.u_p0, a_up.u_p0, a_down.u_p0] 
+    x_all       =  r_[ a_noinit.x, a_up.x, a_down.x]
+    y_all       =  r_[ a_noinit.p0, a_up.p0, a_down.p0]
+    y_all_error =  r_[ a_noinit.u_p0, a_up.u_p0, a_down.u_p0] 
 
-ax.errorbar(x_all, y_all, y_all_error, 0*np.ones(len(y_all)),'.b', markersize = 2, label = 'no_init')
+    # ax.errorbar(x_all, y_all, y_all_error, 0*np.ones(len(y_all)),'.b', markersize = 2, label = 'no_init')
 
-#Frequencies in kHz
-guess_F1    =  0
-guess_A1    =  0.180e-3
-guess_F2    =  0.5
-guess_A2    =  0*1e-6
+    #Frequencies in kHz
+    guess_F1    =  0.387993
+    guess_A1    =  0.181e-3
+    guess_F2    =  0
+    guess_A2    =  0.020e-3
 
-guess_f     = 0.5e-3 
-guess_a     = 0.5
-guess_A     = 0.5
-guess_tau   = 4600
-
-p0, fitfunc, fitfunc_str = fit_initialization_fidelity_all(guess_F1, guess_A1, guess_F2, guess_A2,guess_f, guess_a, guess_A, guess_tau)
-
-ax.plot(x_all, fitfunc(x_all), ':', lw=2)
+    guess_f     = 0.522e-3 
+    guess_a     = 0.5
+    guess_A     = 0.5
+    guess_tau   = 4800
 
 
-# fit_result1 = fit.fit1d(x_all, y_all, fit_initialization_fidelity_all,
-#         guess_F1, guess_A1, guess_F2, guess_A2,
-#         guess_f, guess_a, guess_A, guess_tau,
-#          fixed=[3,4,5],
-#         do_print=False, ret=True)
+    p0, fitfunc, fitfunc_str = fit_initialization_fidelity_all(guess_F1, guess_A1, guess_F2, guess_A2,guess_f, guess_a, guess_A, guess_tau)
 
-# plot.plot_fit1d(fit_result1, np.linspace(0,a_noinit.x[-1],201), ax=ax,
-#         plot_data=False, linestyle = '-b')
+    fit_result1 = fit.fit1d(x_all, y_all, fit_initialization_fidelity_all,
+            guess_F1, guess_A1, guess_F2, guess_A2,
+            guess_f, guess_a, guess_A, guess_tau,
+             fixed=[],
+            do_print=True, ret=True)
+
+    ### show guess
+    L = len(x_all)/3
+    guess_curves_no_init =  fitfunc(x_all)[0:L]
+    guess_curves_up      =  fitfunc(x_all)[L:2*L]
+    guess_curves_down    =  fitfunc(x_all)[2*L:3*L]
+
+    ax.plot( a_noinit.x, guess_curves_no_init, ':r', lw=2)
+
+
+
+    # plot.plot_fit1d(fit_result1, x_all, ax=ax,
+    #         plot_data=False, linestyle = '-b')
