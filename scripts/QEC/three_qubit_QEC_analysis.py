@@ -1574,7 +1574,7 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
     ax.set_xlim(0,0.03)
     ax.set_title('state_'+state+'_RO_'+str(RO)+'_noQEC_sweep_time')
     ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-    ax.set_xlabel('time (us)')
+    ax.set_xlabel('time (s)')
     ax.set_ylabel('Contrast')
     ax.legend()
     try:
