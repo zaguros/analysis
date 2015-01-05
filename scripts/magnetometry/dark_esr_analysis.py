@@ -15,7 +15,7 @@ from analysis.lib.tools import plot
 timestamp =None#'215430'#None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.84534
+guess_x0 = 1.745
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
@@ -37,7 +37,7 @@ guess_A_0 = 0.3
 #guess_sigma = 0.435e-3
 guess_Nsplit = guess_splitN
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.85 ,do_print=False,do_plot=False,guess_x0, **kw):
+def analyze_dark_esr(folder,guess_x0,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.85 ,do_print=False,do_plot=False, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -59,25 +59,25 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret='f0',min_dip_dept
     guess_ctr=guess_x0
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
-    '''
-    else:
-        j=0
-        print min_dip_depth
-        #print y[21]
-        while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
-            k = j
-            j += 1
-        #j = len(y)-2
-        if k > len(y)-5:
-            print 'Could not find dip'
-            return
-        else:
-            print 'k'+str(k)
-            print len(y)
-            guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
-            print 'guess_ctr= '+str(guess_ctr)
-    '''
-    ### fitfunction
+
+    # else:
+    #     j=0
+    #     print min_dip_depth
+    #     #print y[21]
+    #     while y[j]>min_dip_depth and j < len(y)-2:  #y[j]>0.93*y[j+1]: # such that we account for noise
+    #         k = j
+    #         j += 1
+    #     #j = len(y)-2
+    #     if k > len(y)-5:
+    #         print 'Could not find dip'
+    #         return
+    #     else:
+    #         print 'k'+str(k)
+    #         print len(y)
+    #         guess_ctr = x[k]+ guess_splitN #convert to GHz and go to middle dip
+    print 'guess_ctr= '+str(guess_ctr)
+
+### fitfunction
     A_min1 = fit.Parameter(guess_A_min1, 'A_min1')
     A_plus1 = fit.Parameter(guess_A_plus1, 'A_plus1')
     A_0 = fit.Parameter(guess_A_0, 'A_0')
