@@ -161,24 +161,25 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	if return_data == True:
 		return x_labels, x, y, y_err
 
-def BarPlotTomoContrastFull(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
+def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
 		plot_fit = True):
 		### SSRO calibration
 
-
-
-	for k in range(0,11):
+	for k in range(21):
 		
 		print k 
+		print 'positive'+ str(k)
 		if k < 9:
-			timestamp_9, folder_9 = toolbox.latest_data(contains = 'positive_'+ str(9), older_than = timestamp,return_timestamp = True)
-			timestamp_pos, folder_a = toolbox.latest_data(contains = 'positive_'+ str(k), older_than = timestamp_9,return_timestamp = True)
-			timestamp_neg, folder_b = toolbox.latest_data(contains = 'negative_'+ str(k), older_than = timestamp_9,return_timestamp = True)
+			print 'no'
+
+			timestamp_9, folder_9 = toolbox.latest_data(contains = 'state_' + state +'_positive_'+ str(9), older_than = timestamp,return_timestamp = True)
+			timestamp_pos, folder_a = toolbox.latest_data(contains = 'state_' + state +'_positive_'+ str(k), older_than = timestamp_9,return_timestamp = True)
+			timestamp_neg, folder_b = toolbox.latest_data(contains = 'state_' + state +'_negative_'+ str(k), older_than = timestamp_9,return_timestamp = True)
 		else:
 			print 'yes'
-			timestamp_pos, folder_a = toolbox.latest_data(contains = 'positive_'+ str(k), older_than = timestamp,return_timestamp = True)
-			timestamp_neg, folder_b = toolbox.latest_data(contains = 'negative_'+ str(k), older_than = timestamp,return_timestamp = True)
+			timestamp_pos, folder_a = toolbox.latest_data(contains = 'state_' + state +'_positive_'+ str(k), older_than = timestamp,return_timestamp = True)
+			timestamp_neg, folder_b = toolbox.latest_data(contains = 'state_' + state +'_negative_'+ str(k), older_than = timestamp,return_timestamp = True)
 		
 		print folder_a
 		print folder_b

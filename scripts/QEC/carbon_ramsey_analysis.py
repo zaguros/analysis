@@ -99,6 +99,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             A = fit_result['params_dict']['A']
             u_A = fit_result['error_dict']['A']
             return phi0, u_phi0, A, u_A
+            print 'ok'
 
     if return_results == True:
         return fit_results

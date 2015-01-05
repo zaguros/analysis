@@ -6,7 +6,8 @@ from analysis.lib.QEC import ConditionalParity as CP
 reload (CP)
 import h5py
 import csv
-
+from analysis.lib.m2.ssro import ssro
+reload(ssro)
 from matplotlib import pyplot as plt
 script_name = 'three_qubit_QEC_analysis.py'
 
@@ -21,7 +22,7 @@ def Contrast_Plot_QEC_full(timestamp = None, measurement_name = ['adwindata'],fo
         ### SSRO calibration
 
     for k in range(3):
-        print k 
+        # print k 
         timestamp_pos, folder_a = toolbox.latest_data(contains = 'positive_'+folder_name+ '_k'+ str(k), older_than = timestamp,return_timestamp = True)
         timestamp_neg, folder_b = toolbox.latest_data(contains = 'negative_'+folder_name+ '_k'+ str(k), older_than = timestamp,return_timestamp = True)
         
@@ -225,7 +226,7 @@ def Plot_errorcurve_no_QEC(timestamp = None, measurement_name = ['adwindata'],fo
 
 ''' New functions THT '''
 
-def load_QEC_data(folder, ssro_calib_folder, post_select = True):
+def load_QEC_data(folder, ssro_calib_folder = None, post_select = True):
     ''' Loads a QEC measurment and returns all 
     the results in a dictionairy'''
 
@@ -405,15 +406,13 @@ def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z', len_k = 6, sym 
             QEC_dict[str(error_sign)][direction] = {}
 
             for k in range(len_k):
-                # print 'k_'+str(k)
-                
-                print '----'
+
                 timestamp, folder = toolbox.latest_data(contains = sym +'_'+direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)
                                                         +'_'+state, older_than = older_than,return_timestamp = True)
                 print folder
+
                 SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
                 print SSRO_folder
-                print '----'
                 k_dict['k_'+str(k)] ={}
                 k_dict['k_'+str(k)] = load_QEC_data(folder, SSRO_folder, post_select = True) 
                           
@@ -441,7 +440,7 @@ def no_QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
                 timestamp, folder = toolbox.latest_data(contains = 'no_corr_'+direction+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)+'_'+state, older_than = older_than,return_timestamp = True)
 
                 SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
-                # print SSRO_timestamp
+                print SSRO_timestamp
                 k_dict['k_'+str(k)] ={}
                 k_dict['k_'+str(k)], folder = Plot_QEC(timestamp = timestamp, folder_name = folder,
                     ssro_calib_timestamp = SSRO_timestamp, return_raw = False, return_dict = True, post_select_QEC = False) 
@@ -517,6 +516,7 @@ def QEC_data_single_state_RO(older_than = None,state = 'Z',RO = 0, sym = '00'):
 
 
     QEC_dict, folder = QEC_create_data_dict(older_than = older_than, RO = RO, state = state, sym = sym)
+    print folder
     for v in range(5):
         QEC_data_dict[y_list[v]] = {}
         QEC_data_dict[y_err_list[v]] = {}
@@ -556,7 +556,7 @@ def QEC_data_single_state_RO_single_error_sign(older_than = None,state = 'Z',RO 
 
 
     QEC_dict, folder = QEC_create_data_dict(older_than = older_than, RO = RO, state = state, sym = sym)
-
+    print folder
     for v in range(5):
         QEC_data_dict[y_list[v]] = {}
         QEC_data_dict[y_err_list[v]] = {}
@@ -676,6 +676,7 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
             QEC_data_dict, folder =  QEC_data_single_state_RO(older_than = older_than,state = state,RO = RO, sym = no_error)
         else:
             QEC_data_dict, folder =  QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,RO = RO, sym = no_error,e_sign = e_sign)
+            print folder   
     folder  = r'D:\measuring\data\QEC_data\figs'
 
     x = QEC_data_dict['x']
@@ -757,7 +758,7 @@ def QEC_plot_single_state_RO(date = '20141120', no_error = '00',state = 'Z',RO =
     return QEC_data_dict, folder
 
 def no_QEC_plot_single_state_RO(date = '20141120',state = 'Z',RO = 0, load_set = False, older_than = None):        
-    
+
     
     if load_set == True:
         QEC_data_dict = {}   
@@ -766,7 +767,6 @@ def no_QEC_plot_single_state_RO(date = '20141120',state = 'Z',RO = 0, load_set =
         
     else:
         QEC_data_dict, folder =  no_QEC_data_single_state_RO(older_than = older_than,state = state,RO = RO)
-    
     
     folder  = r'K:\ns\qt\Diamond\Projects\QEC LT\QEC data'   
 
@@ -968,7 +968,6 @@ def QEC_process_fids(date = None,no_error = '00'):
     y_err_list = ['y_err','y_err_00','y_err_01','y_err_10','y_err_11']
 
     for v in range(5):
-        print v
         process_dict['dec_1_'+y_list[v]] = {}
         process_dict['dec_2_'+y_list[v]] = {}
         process_dict['dec_3_'+y_list[v]] = {}
@@ -1066,9 +1065,8 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
     p_11 = []
 
     for state_RO in state_RO_list:
-        # folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
-        # folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
-
+        # folder_p = toolbox.latest_data(contains = 'positive_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
+        # folder_n = toolbox.latest_data(contains = 'negative_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
 
         folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1], older_than = older_than)
         folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1], older_than = older_than)
@@ -1101,7 +1099,7 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
 
     x_ticks = state_RO_list
     x = range(len(state_RO_list))
-    print x
+    # print x
     fig,ax = plt.subplots()
     ax.set_title(str(folder_p)+'/'+ '\n expectation values')
     rects = ax.bar(x,y,yerr=u_y,align ='center',ecolor = 'k' )

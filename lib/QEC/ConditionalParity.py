@@ -59,9 +59,9 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.normalized_ssro_1 = self.ssro_results_1/(self.reps-self.parity_result).astype('float')
             self.u_normalized_ssro_1 = (self.normalized_ssro_1*(1-self.normalized_ssro_1)/(self.reps-self.parity_result))**0.5
 
-            # print 'Probabilities ms=0 and ms=-1'
-            # print np.average(self.parity_result/self.reps.astype('float'))
-            # print np.average((self.reps-self.parity_result)/self.reps.astype('float'))
+            #Probabilities ms=0 and ms=-1
+            self.p0 = np.average(self.parity_result/self.reps.astype('float'))
+            self.p1 = np.average((self.reps-self.parity_result)/self.reps.astype('float'))
 
         elif post_select_QEC == True:
             self.post_select = True
