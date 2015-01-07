@@ -346,6 +346,11 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.save_pk_n = 0
             self.save_pk_m = 0
 
+        try:
+            self.swarm_opt = self.g.attrs['swarm_opt']
+        except:
+            self.swarm_opt= 0
+
         if self.save_pk_n>0:
             self.real_pk_adwin = np.array(adwingrp['real_p_k'].value)
             self.imag_pk_adwin = np.array(adwingrp['imag_p_k'].value)
@@ -357,11 +362,8 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         rows = int(self.reps/float(len(self.sweep_pts)))
         cols = len(self.sweep_pts)
         print 'self reps',self.reps
-        if self.do_add_phase==0:
-            RO_clicks = RO_clicks[:rows*cols]
-            self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
-            self.reps=rows
-        else:
+
+        if self.do_add_phase==1:
             m_sweeps=self.N*self.G + self.N*self.F*(self.N-1)/2
             rows_addphase = int(len(RO_clicks)/float(m_sweeps))
             self.reps=rows_addphase
@@ -370,16 +372,34 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
 
             RO_clicks = RO_clicks[:rows_addphase*cols_addphase]
             self.clicks = np.squeeze(np.reshape(RO_clicks, (rows_addphase, cols_addphase)))
+            theta = theta[:rows*cols]
+            self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
+
+        elif self.swarm_opt:
+            m_sweeps=self.N*self.G + self.N*self.F*(self.N-1)/2
+            rows_addphase = int(len(RO_clicks)/float(m_sweeps))
+            self.reps=rows_addphase
+            cols_addphase = m_sweeps
+            RO_clicks = RO_clicks[:rows_addphase*cols_addphase]
+            self.clicks = np.squeeze(np.reshape(RO_clicks, (rows_addphase, cols_addphase)))
+            theta = theta[:rows_addphase*cols_addphase]
+            self.theta = np.squeeze(np.reshape(theta, (rows_addphase, cols_addphase)))
+        else:
+            RO_clicks = RO_clicks[:rows*cols]
+            self.clicks = np.squeeze(np.reshape(RO_clicks, (rows, cols)))
+            self.reps=rows
+            theta = theta[:rows*cols]
+            self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
+
         set_phase = set_phase[:rows*cols]
         #'14-12-18 Only for calibration. put back again if adaptive magnetometry
-        theta = theta[:rows*cols]
         CR_after = CR_after[:rows*cols]
 
         
         self.set_phase = np.squeeze(np.reshape(set_phase, (rows, cols)))
         #'14-12-18 Only for calibration. put back again if adaptive magnetometry
-        self.theta = np.squeeze(np.reshape(theta, (rows, cols)))
         self.CR_after =  np.squeeze(np.reshape(CR_after, (rows, cols)))
+
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
             self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  

@@ -34,9 +34,9 @@ guess_A_plus1 = 0.0
 guess_A_0 = 0.3
 #guess_x0 = 3.730
 #guess_sigma = 0.435e-3
-guess_Nsplit = 0*2.196e-3
+guess_Nsplit = 2.196e-3
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.9 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.85 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)

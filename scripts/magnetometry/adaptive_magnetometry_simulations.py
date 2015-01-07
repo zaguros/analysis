@@ -25,11 +25,11 @@ def simulate_cappellaro ():
 
 
 	F = 1
-	G = 4
-	K = 5
+	G = 100
+	K = 0
 
 	set_magnetic_field =12.5e6/2.
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=201, tau0=20e-9,)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=201, tau0=20e-9,)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
@@ -410,10 +410,11 @@ simulate_sweep_field_variable_M (G=3,K=9,F=4 , fid0=fid0,fid1=fid1,print_results
 simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
 simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
 '''
+simulate_cappellaro()
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
 #simulate_berry(do_adaptive=False)
 
 #test_swarm_opt()
-simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)
+#simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)

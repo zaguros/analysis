@@ -44,7 +44,7 @@ class RamseySequence():
 		self.fid1 = 0.015
 		self.theta = 0*np.pi/2#0*np.pi/180.
 		self.t0 = tau0
-		self.B_max = 1./(2*tau0)
+		self.B_max = 1./(4*tau0)
 		self.n_points = 2**(self.N+3)
 		self.curr_rep = 0
 		self.curr_msmnt = 1
@@ -241,6 +241,7 @@ class RamseySequence():
 			msmnt_results = np.array([msmnt_results])
 			times = np.array([times])
 			phase = np.array([phase])
+
 		for n in np.arange(N_max):
 			q = 2*np.pi*beta*times[n]*self.t0+phase[n]
 			dec = np.exp(-(times[n]*self.t0/self.T2)**2)
@@ -308,7 +309,7 @@ class RamseySequence():
 			#print len(curr_phase)
 			mult = np.rint(self.msmnt_multiplicity[k])
 
-			if self.phase_update:
+			if (self.phase_update or self.swarm_opt):
 				beta, prob = self.analysis_dict_phase_update (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 			else:
 				beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
@@ -388,7 +389,10 @@ class RamseySequence():
 		print 'T2 = ', self.T2
 		s.fid0 = self.fid0
 		s.fid1 = self.fid1
-		s.sim_cappellaro_variable_M()
+		if self.swarm_opt:
+			s.sim_swarm_optim()
+		else:
+			s.sim_cappellaro_variable_M()
 		s.convert_to_dict()
 		if s.verbose:
 			s.print_results()		
@@ -732,7 +736,7 @@ class RamseySequence_Simulation (RamseySequence):
 						res_idx = res_idx + 1
 				self.inc_rep()
 
-
+		def sim_SQL(self):
 
 
 
@@ -939,7 +943,8 @@ class RamseySequence_Exp (RamseySequence):
 				self.phase_update=True	
 		except:	
 			self.phase_update=False
-		#if (a.debug_pk):
+
+		self.swarm_opt = a.swarm_opt
 		self.p_tn = a.p_tn
 		self.p_2tn = a.p_2tn
 
@@ -962,9 +967,21 @@ class RamseySequence_Exp (RamseySequence):
 							#print self.msmnt_phases[0,:]
 							self.msmnt_times[i]=self.msmnt_times_tmp[n]
 						i+=1
+		elif self.swarm_opt:
+			print 'Loading exp data: formatting time array for swarm opt!'
+			self.msmnt_phases=self.theta_rad
+			i = 0 
+			if self.swarm_opt:
+				self.msmnt_times=self.msmnt_results[1]*0.
+				for n in np.arange(self.N):
+					MK=self.G+self.F*n
+					for m in np.arange(MK):
+						self.msmnt_times[i]=self.msmnt_times_tmp[n]
+						i = i + 1
 		else:
 			self.msmnt_phases=self.theta_rad
 			self.msmnt_times=self.msmnt_times_tmp
+
 		#print a.theta
 
 		self.discarded_elements = []
@@ -992,7 +1009,7 @@ class RamseySequence_Exp (RamseySequence):
 
 
 
-	def CR_after_postselection(self,threshold=2):
+	def CR_after_postselection(self,threshold=15):
 
 		if (self.N>1):
 			res = np.copy(self.msmnt_results)
@@ -1360,10 +1377,11 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				if self.phase_update:
 					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_addphase_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
+				elif self.swarm_opt:
+					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_swarm'+'_p'+str(per)+'b'+str(pt)	
 				else:
-					
 					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
-				#print 'Processing...', label
+				print 'Processing...', label
 				if older_than:
 					f = toolbox.latest_data(contains=label,older_than=older_than,newer_than=newer_than)
 				else:
