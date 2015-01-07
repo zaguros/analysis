@@ -174,6 +174,28 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 
+
+def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+#def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
+
+	#try:
+	print '############### Simulate #####################'
+	N=K+1
+	mgnt_exp = magnetometry.magnetometrySQL(tau0=0.5*20e-9)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=11)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.error_bars = error_bars
+	for g in [10, 100, 200, 300, 400, 500, 1000]:
+		mgnt_exp.verbose=True
+		mgnt_exp.sweep_field_simulation (G=g ,print_results=print_results, specific_B=specific_B)
+		plt.figure()
+		
+		mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_sensitivity_scaling()
+	mgnt_exp.save()
+
+
+
 def analyze_saved_simulations (timestamp,error_bars=False):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
 	mgnt_exp.error_bars=error_bars
