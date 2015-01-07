@@ -53,7 +53,6 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     a.plot_result_vs_sweepparam(ret=ret, name='ssro', ax=ax)
     ax.set_ylim(0,1.05)
 
-    print center_guess
     if center_guess == True:
         guess_ctr = float(raw_input('Center guess?'))
     else:
@@ -70,7 +69,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
         else:
             print 'k'+str(k)
             print len(y)
-            guess_x0 = x[k]#+ guess_splitN #convert to GHz and go to middle dip
+            guess_x0 = x[k]+ guess_splitN #convert to GHz and go to middle dip
             print 'guess_ctr= '+str(guess_x0)
 
     ### fitfunction

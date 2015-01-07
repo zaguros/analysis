@@ -126,7 +126,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
         except:
             print 'Figure B has not been saved.'
 
-    return x, c0, u_c0, c0_0, u_c0_0, c0_1, u_c0_1, x_labels, folder
+    return x, c0, u_c0, c0_0, u_c0_0, c0_1, u_c0_1, x_labels, folder, a.p0, a.p1
 
 
 def BarPlotTomoContrast(timestamps=[None, None], measurement_name = ['adwindata'],folder_name ='Tomo',
@@ -136,19 +136,23 @@ def BarPlotTomoContrast(timestamps=[None, None], measurement_name = ['adwindata'
     Function that makes a bar plot with errorbars of MBI type data that has been measured with a positive
     and negative RO.
     '''
-    x, c0_p, u_c0_p, c0_0_p, u_c0_0_p, c0_1_p, u_c0_1_p, x_labels, folder_p = BarPlotTomo(timestamp = timestamps[0], 
+    x, c0_p, u_c0_p, c0_0_p, u_c0_0_p, c0_1_p, u_c0_1_p, x_labels, folder_p, p0_p, p1_p = BarPlotTomo(timestamp = timestamps[0], 
             measurement_name = measurement_name, folder_name = 'positive',
-            ssro_calib_timestamp = ssro_calib_timestamp) 
+            ssro_calib_timestamp = ssro_calib_timestamp, plot_post_select =False, do_plots = False) 
 
-    x, c0_n, u_c0_n, c0_0_n, u_c0_0_n, c0_1_n, u_c0_1_n, x_labels, folder_n = BarPlotTomo(timestamp = timestamps[1], 
+    x, c0_n, u_c0_n, c0_0_n, u_c0_0_n, c0_1_n, u_c0_1_n, x_labels, folder_n, p0_n, p1_n  = BarPlotTomo(timestamp = timestamps[1], 
             measurement_name = measurement_name, folder_name = 'negative',
-            ssro_calib_timestamp =ssro_calib_timestamp) 
+            ssro_calib_timestamp =ssro_calib_timestamp,plot_post_select =False, do_plots = False) 
         
     ### Combine data
 
         ## all data
     y = (c0_p - c0_n)/2.
     y_err =  1./2*(u_c0_p**2 + u_c0_n**2)**0.5      
+    p0 = (p0_p + p0_n)/2.
+    p1 = (p1_p + p1_n)/2.
+    print 'fractional occurance ms=0 : ' + str(p0) 
+    print 'fractional occurance ms=-1 : ' + str(p1) 
 
     fig,ax = plt.subplots() 
     rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
