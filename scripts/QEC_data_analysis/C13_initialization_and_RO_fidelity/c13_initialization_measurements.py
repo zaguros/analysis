@@ -22,12 +22,7 @@ from matplotlib import pyplot as plt
 #                         '20141201_210831', '20141201_212240'] 
 
     ### Second data set
-''' 
-Carbons    : C1, C2, C5 
-older_than : 20141202_092002 
-'''
 
-ssro_calib_folder = 'D:\\measuring\\data\\20141201\\114408_AdwinSSRO_SSROCalibration_111_1_sil18'
 
 def get_and_plot_data(timestamp_list, ssro_calib_folder):
 
@@ -317,9 +312,19 @@ def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t)
     Data set 2: older than 20141203_212603, 20 measurements, C2
     Second data set for C1: older than 20150103_100036, 39 msmnts '''
 
-# timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = 'C5')
-# timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = 'C2')
-timestamp_dict, folders_dict = get_data_timestamps('20150103_100036', 38, carbon = 'C1')
+# ssro_calib_folder = 'D:\\measuring\\data\\20141201\\114408_AdwinSSRO_SSROCalibration_111_1_sil18'
+
+ssro_calib_folder = 'D:\\measuring\\data\\20150108\\065633_AdwinSSRO_SSROCalibration_111_1_sil18'
+
+carbon_nr = 'C5'
+
+# timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = carbon_nr)
+# timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = carbon_nr)
+if carbon_nr == 'C1':
+    timestamp_dict, folders_dict = get_data_timestamps('20150103_100036', 38, carbon = carbon_nr)
+
+elif carbon_nr == 'C5':
+    timestamp_dict, folders_dict = get_data_timestamps('20150108_084312', 29, carbon = carbon_nr)
 
 
 #######################
@@ -464,40 +469,45 @@ if 1:
     y_all       =  r_[ a_noinit.p0, a_up.p0, a_down.p0]
     y_all_error =  r_[ a_noinit.u_p0, a_up.u_p0, a_down.u_p0] 
 
-    ### Guess parameters, for C1 - Frequencies in kHz
-    guess_F1    =  0.372863
-    guess_A1    =  0.184e-3
-    guess_F2    =  0.93
-    guess_A2    =  -0.0364e-3     #Carbon 1:  -36.4
+        
+    
+    if carbon_nr == 'C1': ### Guess parameters, for C1 - Frequencies in kHz
+        guess_F1    =  0.372863
+        guess_A1    =  0.184e-3
+        guess_F2    =  0.93
+        guess_A2    =  -0.0364e-3     #Carbon 1:  -36.4
 
-    guess_f     = 0.525e-3 
-    guess_a     = 0.5
-    guess_A     = 0.48
-    guess_tau   = 5314
+        guess_f     = 0.525e-3 
+        guess_a     = 0.5
+        guess_A     = 0.48
+        guess_tau   = 5314
 
-    ### Guess parameters, for C5 - Frequencies in kHz
+    elif carbon_nr == 'C5':         ### Guess parameters, for C5 - Frequencies in kHz
 
-    # guess_F1    =  0.372863
-    # guess_A1    =  0.184e-3
-    # guess_F2    =  0.93
-    # guess_A2    =  0.0244e-3     #Carbon 1:  -36.4 - C2: 20.6  -C5: 24.4
+           
+        guess_F1    =  0.372863
+        guess_A1    =  0.184e-3
+        guess_F2    =  0.93
+        guess_A2    =  0.0242e-3     #Carbon 1:  -36.4 - C2: 20.6  -C5: 24.4
 
-    # guess_f     = 0.525e-3 
-    # guess_a     = 0.5
-    # guess_A     = 0.48
-    # guess_tau   = 5314
+        guess_f     = 0.525e-3 
+        guess_a     = 0.5
+        guess_A     = 0.48
+        guess_tau   = 5314
 
-    ### Guess parameters, for C2 - Frequencies in kHz
 
-    # guess_F1    =  0.372863
-    # guess_A1    =  0.184e-3
-    # guess_F2    =  0.93
-    # guess_A2    =  0.0206e-3     #Carbon 1:  -36.4 - C2: 20.6  -C5: 24.4
+    elif carbon_nr == 'C2':         ### Guess parameters, for C2 - Frequencies in kHz
 
-    # guess_f     = 0.525e-3 
-    # guess_a     = 0.5
-    # guess_A     = 0.48
-    # guess_tau   = 5314
+
+        guess_F1    =  0.372863
+        guess_A1    =  0.184e-3
+        guess_F2    =  0.93
+        guess_A2    =  0.0206e-3     #Carbon 1:  -36.4 - C2: 20.6  -C5: 24.4
+
+        guess_f     = 0.525e-3 
+        guess_a     = 0.5
+        guess_A     = 0.48
+        guess_tau   = 5314
 
     p0, fitfunc, fitfunc_str = fit_initialization_fidelity_all(guess_F1, guess_A1, guess_F2, guess_A2,guess_f, guess_a, guess_A, guess_tau)
 
