@@ -23,24 +23,42 @@ reload(magnetometry)
 
 def simulate_cappellaro ():
 
-
 	F = 1
-	G = 4
-	K = 5
+	G = 100
+	K = 0
 
 	set_magnetic_field =12.5e6/2.
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=201, tau0=20e-9,)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=201, tau0=20e-9,)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
 	s.fid0 = 1.-0.025
 	s.fid1 = 0.025
 
-
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority()
 	s.sim_cappellaro_variable_M()
 
+def simulate_sql (B=3*12.5e6/4.):
+
+	F = 0
+	G = 100
+	K = 0
+
+	set_magnetic_field = B
+	print set_magnetic_field
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=51, tau0=10e-9,)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
+	s.T2 = 96000e-6
+	s.fid0 = 0.87
+	s.fid1 = 0.025
+	s.B_max = 1/(4*s.t0)
+
+	s.sim_SQL(phase_deg=90)
+	s.convert_to_dict()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	plt.show()
 
 
 def simulate_berry (do_adaptive):
@@ -155,6 +173,28 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
+
+
+def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+#def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
+
+	#try:
+	print '############### Simulate #####################'
+	N=K+1
+	mgnt_exp = magnetometry.magnetometrySQL(tau0=0.5*20e-9)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=11)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.error_bars = error_bars
+	for g in [10, 100, 200, 300, 400, 500, 1000]:
+		mgnt_exp.verbose=True
+		mgnt_exp.sweep_field_simulation (G=g ,print_results=print_results, specific_B=specific_B)
+		plt.figure()
+		
+		mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_sensitivity_scaling()
+	mgnt_exp.save()
+
+
 
 def analyze_saved_simulations (timestamp,error_bars=False):
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
@@ -381,6 +421,7 @@ plt.show()
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
 
+'''
 def overnight_simulations_15dec2014():
 	fid0=0.87
 	fid1=0.02
@@ -390,7 +431,7 @@ def overnight_simulations_15dec2014():
 			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= True, N1_sweep=True) 
 			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= True, N1_sweep=False)
 			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False, N1_sweep=False)
-
+'''
 
 '''
 
@@ -410,10 +451,18 @@ simulate_sweep_field_variable_M (G=3,K=9,F=4 , fid0=fid0,fid1=fid1,print_results
 simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
 simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
 '''
+simulate_sql(B= -20e6)
+simulate_sql(B= -15e6)
+simulate_sql(B= -5e6)
+simulate_sql(B= 0)
+simulate_sql(B= 7e6)
+simulate_sql(B= 17e6)
+
+
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
 #simulate_berry(do_adaptive=False)
 
 #test_swarm_opt()
-simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)
+#simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)
