@@ -53,7 +53,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False 
 
     if do_fit:
-        guess_frq = 1/50000.
+        guess_frq = 1/10e3
         guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.
