@@ -769,7 +769,7 @@ class RamseySequence_Simulation (RamseySequence):
 
 				for m in np.arange(MK):
 
-					phase = phase_deg*180/np.pi #HACK for SQL!
+					phase = phase_deg*np.pi/180. #HACK for SQL!
 					m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
 					self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
 					self.msmnt_results[r, res_idx] = m_res
@@ -1255,6 +1255,7 @@ class AdaptiveMagnetometry ():
 		self.protocols['non_adaptive'] = nonadptv_ptcl
 		self.protocols['cappellaro_phase_update'] = phaseUpdate_ptcl
 		self.protocols['swarm_optimization'] = swarmOptim_ptcl
+		self.do_sql = False
 
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
@@ -1509,8 +1510,12 @@ class AdaptiveMagnetometry ():
 				print 'Error G F and K are not set!'
 				break
 			else:	
-				self.total_time.append(self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n)))
-			
+				if self.do_sql:
+					self.total_time.append(self.t0*n)
+					print 'current G = ', n, '   ---- time: ', self.t0*n*1e6, 'us'
+				else:
+					self.total_time.append(self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n)))
+
 			#print np.array(self.total_time)/self.t0
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)		
@@ -1815,14 +1820,14 @@ class AdaptiveMagnetometry ():
 		f.close()
 
 
-class magnetometrySQL(AdaptiveMAgnetometry):
+class magnetometrySQL(AdaptiveMagnetometry):
 
-	def __init__(self, tau0):
+	def __init__(self, tau0, max_G):
 		self.N = 1			#here it corresponds to the maximum N
 		self.t0 = tau0
 		self.reps = None
 		self.B_max = 1./(4*self.t0) #this is different than the usual!
-		self.n_points = 50000
+		self.n_points = round(100*max_G**0.5)
 		#self.nr_B_points = 2**(self.N+2)/2
 		self.results_dict = {} 
 		self.prob_density_dict = {}
@@ -1842,10 +1847,14 @@ class magnetometrySQL(AdaptiveMAgnetometry):
 		self.simulated_data = None
 		self.error_bars = False
 
+		self.always_recalculate_phase = False
+		self.do_adaptive = False
+
 		self.F = 0
 		self.K = 0
 
 		self.protocols = 'sql'
+		self.do_sql = True
 
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
@@ -1888,7 +1897,8 @@ class magnetometrySQL(AdaptiveMAgnetometry):
 			s.fid0 = self.fid0
 			s.fid1 = self.fid1
 			s.B_max = 1/(4*s.t0)
-			s.sim_SQL()
+			s.sim_SQL(phase_deg = 90)
+			s.n_points = 1000
 			s.convert_to_dict()
 
 			if print_results:
