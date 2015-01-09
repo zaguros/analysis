@@ -567,7 +567,6 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 	def sim_berry_protocol (self, do_adaptive):
-		print 'Berry!!!!!!'
 		if self.verbose:				
 			if do_adaptive:
 				adptv = '(adaptive)'
@@ -1362,7 +1361,7 @@ class AdaptiveMagnetometry ():
 		self.protocol = protocol
 
 		list_estim_phases = []
-		self.N1_sweep = N1_sweep
+		self.N1_sweep = False
 		for b in np.arange(nr_points):
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
