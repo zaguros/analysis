@@ -40,22 +40,25 @@ def return_t_stamps(protocol, N, G, fid):
 	return t_stamps	
 
 def compare_protocols (N, G, fid):
-	t_stamps = return_t_stamps (protocol = 'modCapp', N=N, G=G, fid=fid)
-	dict_G2_adptv = pt.generate_data_dict(timestamps=t_stamps)
-	pt.compare_scalings (data_dict = dict_G2_adptv, title = 'Cappellaro (G='+str(G)+') -- fid0 = '+fid, do_save=True)
+	#t_stamps = return_t_stamps (protocol = 'modCapp', N=N, G=G, fid=fid)
+	#dict_G2_adptv = pt.generate_data_dict(timestamps=t_stamps)
+	#pt.compare_scalings (data_dict = dict_G2_adptv, title = 'Cappellaro (G='+str(G)+') -- fid0 = '+fid, do_save=True)
 	t_stamps = return_t_stamps (protocol = 'nnAdptv', N=N, G=G, fid=fid)
 	dict_G2_nonadptv = pt.generate_data_dict(timestamps=t_stamps)
-	pt.compare_scalings (data_dict = dict_G2_adptv, title = 'non adptv  (G='+str(G)+') -- fid0 = '+fid, do_save=True)
-	pt.compare_best_sensitivities ([dict_G2_adptv, dict_G2_nonadptv], title =  'G='+str(G)+' -- fid0 = '+fid, legend_array = ['adptv', 'non adptv'], do_save=True)
-	pt.compare_scaling_fits ([dict_G2_adptv, dict_G2_nonadptv], title = 'G='+str(G)+' -- fid0 = '+fid, legend_array = ['adptv', 'non adptv'], do_save=True)
+	pt.compare_scalings (data_dict = dict_G2_nonadptv, title = 'non adptv  (G='+str(G)+') -- fid0 = '+fid, do_save=True)
+	#pt.compare_best_sensitivities ([dict_G2_adptv, dict_G2_nonadptv], title =  'G='+str(G)+' -- fid0 = '+fid, legend_array = ['adptv', 'non adptv'], do_save=True)
+	#pt.compare_scaling_fits ([dict_G2_adptv, dict_G2_nonadptv], title = 'G='+str(G)+' -- fid0 = '+fid, legend_array = ['adptv', 'non adptv'], do_save=True)
 
 
-print '###### G=2 ######'
-compare_protocols (N=10, G=2, fid='1.0')
-print '###### G=3 ######'
-compare_protocols (N=10, G=3, fid='1.0')
-compare_protocols (N=10, G=4, fid='1.0')
-compare_protocols (N=10, G=5, fid='1.0')
+
+compare_protocols (N=10, G=2, fid='0.87')
+compare_protocols (N=10, G=2, fid='0.75')
+compare_protocols (N=10, G=3, fid='0.87')
+compare_protocols (N=10, G=3, fid='0.75')
+compare_protocols (N=10, G=4, fid='0.87')
+compare_protocols (N=10, G=4, fid='0.75')
+compare_protocols (N=10, G=5, fid='0.75')
+compare_protocols (N=10, G=5, fid='0.87')
 
 '''
 t_stamps = ['20141215_152517', '20141215_152820', '20141215_153251', '20141215_153913', '20141215_154728', '20141215_155704']

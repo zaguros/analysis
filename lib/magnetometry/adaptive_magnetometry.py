@@ -161,6 +161,19 @@ class RamseySequence():
 					self.table_el_dict [ind] = self.table_elements[ind]
 				ind = ind+1
 
+	def reshape_SQL (self, G):		
+		total_data_size = len(self.stored_msmnt_results)
+		eff_reps = round(total_data_size/G)
+		eff_data_size = eff_reps*G
+
+		self.msmnt_results = np.copy (np.reshape(self.stored_msmnt_results[:eff_data_size], (eff_reps, G)))
+		self.msmnt_phases = np.copy (np.reshape(self.stored_msmnt_phases[:eff_data_size], (eff_reps, G)))
+		self.msmnt_times = np.ones(G)*self.stored_msmnt_times
+		self.G = G
+		self.reps = eff_reps
+		print  'Reshaping: G=', self.G, '   reps = ', self.reps 
+
+
 	def plot_updates (self, repetition = None):
 								
 		if (repetition == None):
@@ -249,6 +262,7 @@ class RamseySequence():
 				prob = prob*((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.
 			else:
 				prob = prob*(1-((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.)
+
 		prob = prob/np.sum(np.abs(prob))
 
 		return beta, prob
@@ -776,6 +790,11 @@ class RamseySequence_Simulation (RamseySequence):
 					self.msmnt_times[res_idx] = t[i]
 					res_idx = res_idx + 1
 			self.inc_rep()
+
+		rows, cols = np.shape(self.msmnt_results)
+		self.stored_msmnt_results = np.copy (np.reshape(self.msmnt_results, rows*cols))
+		self.stored_msmnt_phases = np.copy (np.reshape(self.msmnt_phases, rows*cols))
+		self.stored_msmnt_times = np.copy (self.msmnt_times[0])
 
 
 
@@ -1861,9 +1880,8 @@ class magnetometrySQL(AdaptiveMagnetometry):
 			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
 
 
-	def sweep_field_simulation (self, G, print_results=False, specific_B=False):
+	def sweep_field_simulation_SQL (self, print_results=False, specific_B=False):
 		self.simulated_data = True	
-		self.analyzed_N.append(G)	
 		B_values = np.array([])
 		label_array = []
 		N=1
@@ -1879,15 +1897,24 @@ class magnetometrySQL(AdaptiveMagnetometry):
 			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
 
 		label_array, self.B_values = self.sample_B_space (N=N)		
-		self.B_values=np.unique(self.B_values)
+		self.B_values=np.unique(self.B_values)*0.25
 		nr_points = len(self.B_values)
-		msqe = np.zeros(nr_points)
-		ave_exps = [0]*nr_points
-		B_field = np.zeros(nr_points)
+
+		list_estim_phases = []
+		G = 100*(np.arange(10)+1)
+		msqe = np.zeros((len(G), nr_points))
+		ave_exps = 0*msqe+1j*0*msqe
+		B_field = np.zeros((len(G), nr_points))
+
+		for i in np.arange(len(G)):
+			list_estim_phases.append([])
+			self.analyzed_N.append(G[i])	
+
+
 
 		ind = 0
-		list_estim_phases = []
 		for b in np.arange(nr_points):
+
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = 1, reps=self.reps, tau0=self.t0)
 			s.setup_simulation (magnetic_field_hz = self.B_values[b], F=0,G=self.G,K=0) 
@@ -1897,23 +1924,22 @@ class magnetometrySQL(AdaptiveMagnetometry):
 			s.fid1 = self.fid1
 			s.B_max = 1/(4*s.t0)
 			s.sim_SQL(phase_deg = 90)
-			s.n_points = 1000
-			s.convert_to_dict()
+			s.n_points = 10000
+			g_idx = 0
 
-			if print_results:
-				s.print_results()
-
-			if self.error_bars:
+			for g in G:
+				print 'G  = ', g
+				s.reshape_SQL(G=g)
+				s.convert_to_dict()
 				beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=self.B_values[b], do_plot=True, return_all_estimated_phases = True)
-				list_estim_phases.append(list_phase_values)
-			else:				
-				beta, p, ave_exp,H, mB, sB = s.mean_square_error(set_value=self.B_values[b], do_plot=False)
-			self.prob_density_dict[label_array[ind]] = p
-			ave_exps[ind]=ave_exp
-			msqe [ind] = H
-			B_field [ind] = self.B_values[b]
+				list_estim_phases[g_idx].append(list_phase_values)
+				ave_exps[g_idx, ind]=ave_exp
+				msqe [g_idx, ind] = H
+				B_field [g_idx, ind] = self.B_values[b]
+				g_idx = g_idx +1
 			ind =ind+1
-		list_estim_phases = flatten(list_estim_phases)
-		self.results_dict[str(G)] = {'B_field':B_field, 'ave_exp':ave_exps,'msqe':msqe, 'G':self.G,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases}
-
+		for i in np.arange(len(G)):
+			list_estim_phases[i] = flatten(list_estim_phases[i])
+			self.results_dict[str(G[i])] = {'B_field':B_field[i, :], 'ave_exp':ave_exps[i,:],'msqe':msqe[i,:], 'G':i,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases[i]}
+		print 'Simulations done!!'
 
