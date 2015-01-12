@@ -1,17 +1,19 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import time, os
 from matplotlib import rc, cm
 from analysis.lib.fitting import fit
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
 reload(magnetometry)
 load_data=False
 
-def analyze_saved_simulations (timestamp,error_bars=False):
+def analyze_saved_simulations (timestamp,error_bars=False, recalculate=True):
     mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
     mgnt_exp.error_bars=error_bars
     mgnt_exp.load_analysis (timestamp=timestamp)
-    mgnt_exp.calculate_scaling()
+    if recalculate:
+        mgnt_exp.calculate_scaling()
     return mgnt_exp
 
 def add_scaling_plot(timestamp, ax, exp_data, label, marker_settings, color, return_all = False):
@@ -77,7 +79,7 @@ def generate_data_dict (timestamps, save_name = None):
     return data_dict
 
 
-def compare_best_sensitivities (data_dict_array, legend_array, title, colours=None):
+def compare_best_sensitivities (data_dict_array, legend_array, title, colours=None, do_save = False):
     #compare_multiple_plots must be run before, to have a data_dict
 
     f = plt.figure(figsize=(8,6))
@@ -86,7 +88,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
     ccc = np.linspace(0,1,len(data_dict_array))
 
     idx = 0
-    plt.figure()    
+
     for data_dict in data_dict_array:
         list_F = []
         list_sens = []
@@ -126,11 +128,16 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
     ax.set_ylabel ('best sensitivity [VH*T]', fontsize=15)
     ax.set_title (title, fontsize=15)
     ax.legend()
+    if do_save:
+        fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_sensitivity_'+title
+        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        savepath = os.path.join(folder, fName)
+        f.savefig(savepath+'.pdf')
     plt.show()
 
 
 
-def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None, first_N = 3, last_N=10):
+def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None, first_N = 3, last_N=10, do_save=False):
     #compare_multiple_plots must be run before, to have a data_dict
 
     f = plt.figure(figsize=(8,6))
@@ -139,7 +146,7 @@ def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None,
     ccc = np.linspace(0,1,len(data_dict_array))
 
     idx = 0
-    plt.figure()    
+    f1 = plt.figure()    
     for data_dict in data_dict_array:
         list_F = []
         list_scaling = []
@@ -196,4 +203,52 @@ def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None,
     ax.set_ylabel ('scaling coefficient', fontsize=15)
     ax.set_title (title, fontsize=15)
     ax.legend()
+    if do_save:
+        fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_fits_'+title
+        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        savepath = os.path.join(folder, fName)
+        f.savefig(savepath+'.pdf')
     plt.show()
+
+def compare_scalings (data_dict, title, colours=None, do_save = False):
+    #compare_multiple_plots must be run before, to have a data_dict
+
+    f = plt.figure(figsize=(8,6))
+    ax = f.add_subplot(1,1,1)
+    markers = ['o', '^', 's','v', '>', '<',  '*', 'D', '+','|']
+    ccc = np.linspace(0,1,len(data_dict))
+
+    idx = 0
+    for i,k in enumerate(data_dict):
+        total_time =data_dict[k]['total_time']
+        F = data_dict[k]['F']
+        sensitivity = data_dict[k]['sensitivity']
+        err_sensitivity = data_dict[k]['err_sensitivity']
+    
+        if colours==None:
+            c = cm.Set1(ccc[idx])
+        else:
+            c = colours[idx]
+
+        ax.plot (total_time*1e6, sensitivity, markers[idx], color=c, label = 'F='+str(F))
+        ax.fill_between (total_time*1e6, sensitivity-err_sensitivity, sensitivity+err_sensitivity, color=c, alpha=0.2)
+
+        idx = idx + 1
+
+    ax.set_yscale ('log')
+    ax.set_xscale ('log')
+    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+        label.set_fontsize(15)
+
+    #plt.fill_between (F, sens-err_sens, sens+err_sens, color='RoyalBlue', alpha=0.2)
+    ax.set_xlabel ('total ramsey time [$\mu$s]', fontsize=15)
+    ax.set_ylabel ('sensitivity [VH*T]', fontsize=15)
+    ax.set_title (title, fontsize=15)
+    ax.legend()
+    if do_save:
+        fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_scalings_'+title
+        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        savepath = os.path.join(folder, fName)
+        f.savefig(savepath+'.pdf')
+    plt.show()
+
