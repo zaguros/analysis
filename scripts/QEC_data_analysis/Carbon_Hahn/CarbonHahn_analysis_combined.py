@@ -46,17 +46,12 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     ######################################
 
 
-    if Addressed_carbon == 1:
-        timestamp_pos=['20141104_194723','20141104_200359','20141104_215235']
-        timestamp_neg=['20141104_195541','20141104_205814','20141104_231030']
-    elif Addressed_carbon == 5:
+    
+    if Addressed_carbon == 5:
         timestamp_pos=['20150102_185838']
         timestamp_neg=['20150102_191030']
-        #timestamp_pos=['20141105_002824','20141105_004556','20141105_023521']
-        #timestamp_neg=['20141105_003711','20141105_014037','20141105_035322']
-    elif Addressed_carbon == 2:
-        timestamp_pos=['20141106_010336','20141106_012019','20141106_030844']
-        timestamp_neg=['20141106_011155','20141106_021431','20141106_045651']
+    else:
+        print "Carbon not measured"
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -171,18 +166,12 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     ######################################
 
 
-    if Addressed_carbon == 1:
-        timestamp_pos=['20141104_195135','20141104_203107','20141104_223132']
-        timestamp_neg=['20141104_195949','20141104_212524','20141104_234927']
-    elif Addressed_carbon == 5:
+    if Addressed_carbon == 5:
         timestamp_pos=['20150102_192226']
         timestamp_neg=['20150102_214323']
-        #timestamp_pos=['20141105_003250','20141105_011316','20141105_031420']
-        #timestamp_neg=['20141105_004136','20141105_020802','20141105_043221']
-    elif Addressed_carbon == 2:
-        timestamp_pos=['20141106_010748','20141106_014724','20141106_040245']
-        timestamp_neg=['20141106_011609','20141106_024138','20141106_055052']
-
+    else:
+        print "Carbon not measured"
+   
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
     else:
@@ -288,10 +277,6 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
 
-# Carbon_T2_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',            
-#             amplitude = 0.4)
+
 Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923', 
            amplitude = 0.4, show_guess=False)
-
-# Carbon_T2_analysis(Addressed_carbon=2, ssro_calib_timestamp ='20141105_114313', 
-#            amplitude = 0.4)
