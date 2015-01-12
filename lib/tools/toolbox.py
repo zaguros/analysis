@@ -193,12 +193,12 @@ def data_from_time(timestamp, folder = None):
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
+    global datadir
+
     if (folder != None):
         datadir = folder
-
-    datadir = r'd:\measuring\data'
-
-    daydirs = os.listdir(r'd:\measuring\data')
+        
+    daydirs = os.listdir(datadir)
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')
