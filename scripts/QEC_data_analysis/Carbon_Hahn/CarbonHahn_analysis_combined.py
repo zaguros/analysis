@@ -7,11 +7,10 @@ MB 2014-01-05
 import numpy as np
 import os, sys
 if os.name == 'posix':
-    sys.path.append("/Users/michielbakker/Documents/teamdiamond/")
+    sys.path.append("/Users/"+os.getlogin()+"/Documents/teamdiamond/")
 else:
     sys.path.append("/measuring/")
 from analysis.lib.tools import plot, toolbox
-from analysis.lib.tools import toolbox_mac as toolbox
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt

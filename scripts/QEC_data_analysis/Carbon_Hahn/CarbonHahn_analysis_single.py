@@ -7,7 +7,7 @@ MB 2014-01-05
 import numpy as np
 import os, sys
 if os.name == 'posix':
-    sys.path.append("/Users/michielbakker/Documents/teamdiamond/")
+    sys.path.append("/Users/"+os.getlogin()+"/Documents/teamdiamond/")
 else:
     sys.path.append("/measuring/")
 from analysis.lib.tools import toolbox
