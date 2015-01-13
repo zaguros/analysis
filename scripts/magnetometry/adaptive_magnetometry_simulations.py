@@ -458,15 +458,6 @@ def suppl_info_simulations (G, fid0):
 		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
 
-suppl_info_simulations (G=2, fid0= .87)
-suppl_info_simulations (G=3, fid0= .87)
-suppl_info_simulations (G=4, fid0= .87)
-suppl_info_simulations (G=5, fid0= .87)
-suppl_info_simulations (G=2, fid0= .75)
-suppl_info_simulations (G=3, fid0= .75)
-suppl_info_simulations (G=4, fid0= .75)
-suppl_info_simulations (G=5, fid0= .75)
-
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
 #simulate_berry(do_adaptive=False)
@@ -477,5 +468,5 @@ suppl_info_simulations (G=5, fid0= .75)
 #simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False)
 #simulate_sql()
 
-suppl_info_simulations (G=2, fid0=0.75)
-#suppl_info_simulations (G=5, fid0=0.75)
+#suppl_info_simulations (G=2, fid0=0.75)
+suppl_info_simulations (G=5, fid0=0.75)
