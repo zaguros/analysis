@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = None 
+timestamp = None
 
 
 ### fitfunction

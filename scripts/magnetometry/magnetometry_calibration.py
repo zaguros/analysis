@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 reload(sequence)
 
 ### settings
-timestamp = '20141001_143935'#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = None#'20141001_143935'#'20140603_134433' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 
 def fpga_calibration_analysis (folder):
@@ -53,7 +53,7 @@ def fpga_calibration_analysis (folder):
     do_fit2 = False 
 
     if do_fit:
-        guess_frq = 0*1/1000.
+        guess_frq = 1/10e3
         guess_amp = 0.5
         guess_of = 1
         # guess_slope = 0.
@@ -75,7 +75,7 @@ def fpga_calibration_analysis (folder):
         def fitfunc(x):
             return (o()-np.abs(A())) + np.abs(A()) * np.exp(-(x/Tdec())**2) * np.cos(2*np.pi*(f()*x - phi()/360.))
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[0],
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[],
                 do_print=True, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
                 plot_data=False)
