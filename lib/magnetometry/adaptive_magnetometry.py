@@ -1711,7 +1711,7 @@ class AdaptiveMagnetometry ():
 		plt.show()
 		
 
-	def save(self, folder = None):
+	def save(self, name = '', folder = None):
 		
 		if (folder==None):
 			folder = self.folder 
@@ -1738,6 +1738,7 @@ class AdaptiveMagnetometry ():
 		except:
 			pass
 
+		fName = fName+name
 		if not os.path.exists(os.path.join(folder, fName+'.hdf5')):
 			mode = 'w'
 		else:

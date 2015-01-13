@@ -176,7 +176,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
 	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
-	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_exp_params( T2 = 5e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -188,7 +188,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
-	mgnt_exp.save()
+	mgnt_exp.save(nem='_incl_T2')
 
 
 def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False):
@@ -453,7 +453,7 @@ def overnight_simulations_15dec2014():
 def suppl_info_simulations (G, fid0):
 	fid1=0.02
 	reps=31
-	for fff in [6,5,7,8,9,10]:#[0,1,2,3,4,5]:
+	for fff in [0,1,2,3,4,5]:
 		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
@@ -469,4 +469,4 @@ def suppl_info_simulations (G, fid0):
 #simulate_sql()
 
 #suppl_info_simulations (G=2, fid0=0.75)
-suppl_info_simulations (G=5, fid0=0.75)
+suppl_info_simulations (G=3, fid0=0.75)
