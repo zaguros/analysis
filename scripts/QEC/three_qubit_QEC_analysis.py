@@ -289,6 +289,7 @@ def get_ssro_folder(ssro_calib_timestamp):
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+        # print ssro_calib_folder
     return ssro_calib_folder
 
 ''' These functions both load and plot individual measurements TODO THT, seperate loading from plotting'''
@@ -304,7 +305,8 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
     timestamp, folder = get_folder(timestamps[0], folder_name)
     if len(timestamps) == 2:
         timestamp2, folder2 = get_folder(timestamps[1], folder_name)
-    ssro_calib_folder = get_ssro_folder(ssro_calib_timestamp)
+    SSRO_timestamp, ssro_calib_folder = get_folder(ssro_calib_timestamp,'AdwinSSRO')
+    # print ssro_calib_folder
 
     ### Get the data
     data = load_QEC_data(folder = folder, ssro_calib_folder = ssro_calib_folder, post_select=post_select)
@@ -321,17 +323,18 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
     plt.rc('font', size=fontsize)
     
     fig,ax = plt.subplots()
-    
+    # data['x'] = [0,40,100]
     ax.errorbar(data['x'], data['c0'],yerr=data['c0_u'], color = 'b' )
-    
+    x = data['x']
     if title == None:
         ax.set_title(str(folder)+'/'+str(timestamp))
     else:
         ax.set_title(title)
     
-    ax.set_ylim(-1,1)
-    ax.set_xlim(-0.05,1.05)
-    ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
+    # ax.set_ylim(-0.2,0.2)
+    ax.set_xlim(x[0]-x[-1]*0.1,x[-1]+x[-1]*0.1)
+    # ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
+    ax.hlines([-1,0,1],data['x'][0],data['x'][-1],linestyles='dotted')
 
     fig.savefig(os.path.join(folder,'QEC_single_measurement.png'))
     fig.savefig(os.path.join(folder, 'QEC_single_measurement.pdf'),
@@ -358,14 +361,18 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         ax.errorbar(data['x'], data['c0_01'], yerr=data['c0_01_u'], label = '01',color = 'c' )
         ax.errorbar(data['x'], data['c0_10'], yerr=data['c0_10_u'], label = '10',color = 'g' )
         ax.errorbar(data['x'], data['c0_11'], yerr=data['c0_11_u'], label = '11',color = 'r' )
-        ax.set_xlim(-0.2,1.2)
-        ax.legend()
+        # ax.set_xlim(-0.2,1.2)
+        ax.set_xlim(x[0]-x[-1]*0.1,x[-1]+x[-1]*0.1)
+        # ax.set_ylim(-0.3,0.3)
+
+        ax.legend(loc=3)
  
         if title == None:
             ax.set_title(str(folder)+'/'+str(timestamp))
         else:
             ax.set_title(title)
-        ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
+        # ax.hlines([-1,0,1],data['x'][0]-1,data['x'][-1]+1,linestyles='dotted')
+        ax.hlines([-1,0,1],data['x'][0],data['x'][-1],linestyles='dotted')
 
         fig.savefig(os.path.join(folder,'QEC_single_measurment_ps.png'))
         fig.savefig(os.path.join(folder,'QEC_single_measurment_ps.pdf'),
@@ -386,9 +393,10 @@ def plot_single_QEC_result(timestamps = [None], folder_name ='QEC', ssro_calib_t
         ax.plot(data['x'],data['p01'], 'ko', label = 'p01')
         ax.plot(data['x'],data['p10'], 'mo', label = 'p10')
         ax.plot(data['x'],data['p11'], 'bo', label = 'p11')
-        ax.plot(data['x'],data['p00']+data['p01']+ data['p10']+data['p11'], 'go', label = 'sum')
+        # ax.plot(data['x'],data['p00']+data['p01']+ data['p10']+data['p11'], 'go', label = 'sum')
         plt.legend()
         ax.set_xlim(-0.2,1.2)
+        ax.set_xlim(x[0]-x[-1]*0.1,x[-1]+x[-1]*0.1)
         ax.set_xlabel('error probability')
         ax.set_ylabel('outcome probability')  
         ax.set_title(str(folder)+'/'+str(timestamp) + '_QEC_probs')                
@@ -417,7 +425,7 @@ def QEC_create_data_dict(older_than = None, RO = 0, state = 'Z', len_k = 6, sym 
                                                         +'_'+state, older_than = older_than,return_timestamp = True)
                 # print folder
                 SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
-                print SSRO_folder
+                # print SSRO_folder
                 print '----'
                 k_dict['k_'+str(k)] ={}
                 k_dict['k_'+str(k)] = load_QEC_data(folder, SSRO_folder, post_select = True) 
@@ -459,20 +467,27 @@ def no_QEC_create_data_dict(older_than = None, RO = 0, state = 'Z'):
     return QEC_dict,folder
 
 
-def QEC_create_data_dict_single_error_single_elRO(older_than = None, RO = 0, state = 'Z', len_k = 6, sym = '11',error_sign = 1, el_RO = 'positive',sweep_time = False):
+def QEC_create_data_dict_single_error_single_elRO(older_than = None, RO = 0, state = 'Z', len_k = 6, sym = '11',error_sign = 1, el_RO = 'positive',sweep_time = False,echo = False, ms =0):
     QEC_dict = {}
     k_dict = {}
     
     for k in range(len_k):
         # print 'k_'+str(k)
-        if sweep_time == True:
-            timestamp, folder = toolbox.latest_data(contains = sym +'_sweep_time_'+el_RO+'_RO'+str(RO)+'_k'+str(k)
+        if sweep_time == True and echo == False:
+            # print older_than
+            timestamp, folder = toolbox.latest_data(contains = sym +'_sweep_time_'+el_RO+'_RO'+str(RO)+'_k'+str(k) 
                                                     +'_'+state, older_than = older_than,return_timestamp = True)
+        if sweep_time == True and echo == True:
+            # print older_than
+            timestamp, folder = toolbox.latest_data(contains = sym +'_sweep_time_'+el_RO+'_RO'+str(RO)+'_k'+str(k) 
+                                                    +'_'+state+'_ms'+str(ms), older_than = older_than,return_timestamp = True)
+            # print sym +'_sweep_time_'+el_RO+'_RO'+str(RO)+'_k'+str(k)+'_'+state
+            # print folder
         elif sweep_time == False:
             timestamp, folder = toolbox.latest_data(contains = sym +'_'+el_RO+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)
                                                     +'_'+state, older_than = older_than,return_timestamp = True)
         SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
-        print SSRO_folder
+        # print SSRO_folder
         k_dict['k_'+str(k)] ={}
         k_dict['k_'+str(k)] = load_QEC_data(folder, SSRO_folder, post_select = True) 
                   
@@ -481,7 +496,8 @@ def QEC_create_data_dict_single_error_single_elRO(older_than = None, RO = 0, sta
             QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item]), axis=0)
         elif len_k == 6:
             QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item], k_dict['k_4'][item], k_dict['k_5'][item]), axis=0)
-
+        elif len_k == 8:
+            QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item], k_dict['k_3'][item], k_dict['k_4'][item], k_dict['k_5'][item], k_dict['k_6'][item], k_dict['k_7'][item]), axis=0)
     return QEC_dict,folder
 
 
@@ -997,7 +1013,7 @@ def QEC_sum_data_single_state_RO(run = 1, no_error = '00',state = 'Z',RO = 0):
 
     return QEC_data_dict
 
-def QEC_sum_data_single_state_RO_single_error_sign(run = 1, no_error = '00',state = 'Z',RO = 0,error_sign = 1, load_set = True, older_than = None,sweep_time = False):
+def QEC_sum_data_single_state_RO_single_error_sign(run = 1, no_error = '00',state = 'Z',RO = 0,error_sign = 1, load_set = True, older_than = None,sweep_time = False, echo = False, ms = 0):
 
     QEC_data_dict = {}
     u_list = ['c0_u', 'c0_00_u','c0_01_u','c0_10_u','c0_11_u']
@@ -1019,7 +1035,7 @@ def QEC_sum_data_single_state_RO_single_error_sign(run = 1, no_error = '00',stat
             QEC_dict[str(error_sign)][el_RO] = load_QEC_dataset_single_sign_single_elRO(sym = no_error, RO = RO, state = state, error_sign = error_sign,el_RO = el_RO, run = run,sweep_time = sweep_time)
         elif load_set == False:
             QEC_dict[str(error_sign)][el_RO] , folder = QEC_create_data_dict_single_error_single_elRO(older_than = older_than, RO = RO, state = state, 
-                                                                                                len_k = 6, sym = no_error,error_sign = error_sign, el_RO = el_RO, sweep_time = sweep_time)
+                                                                                                len_k = 8, sym = no_error,error_sign = error_sign, el_RO = el_RO, sweep_time = sweep_time,echo = echo, ms = ms)
 
     for v in range(5):
         QEC_data_dict[y_list[v]] = {}
@@ -1719,7 +1735,9 @@ def QEC_plot_single_state_RO_saved_data(run = 1, no_error = '00',state = 'Z',RO 
     return QEC_data_dict, folder
 
 
-def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_error = '00',state = 'Z',add_encode = False, add_single =False, plot_no_correct = False,load_set = False):        
+def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_error = '00',
+                    do_toff = False,RO_list = [0],state = 'Z',
+                    add_encode = False, add_single =False, plot_no_correct = False,load_set = False, echo = True, ms = 0):        
     fig1,ax1 = plt.subplots() 
     fig2,ax2 = plt.subplots() 
     fig3,ax3 = plt.subplots() 
@@ -1728,9 +1746,9 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
     no_QEC_data_dict = {}
     QEC_single_data_dict = {}
 
-    for RO in [2]:
+    for RO in RO_list:
 
-        dataset_dict_full[RO] = QEC_sum_data_single_state_RO_single_error_sign(no_error = no_error,state = state,RO = RO,load_set = load_set, older_than = older_than,sweep_time = True)
+        dataset_dict_full[RO] = QEC_sum_data_single_state_RO_single_error_sign(no_error = no_error,state = state,RO = RO,load_set = load_set, older_than = older_than,sweep_time = True,echo = echo, ms = ms)
 
         QEC_data_dict  = dataset_dict_full[RO]
             
@@ -1738,7 +1756,7 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
 
         parity_time = 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
         x = QEC_data_dict['x']+ np.ones(len(QEC_data_dict['x']))*parity_time
-        
+        # x = np.linspace(0,30e-3,16)
         y = QEC_data_dict['y']
         y_00 = QEC_data_dict['y_00']
         y_01 = QEC_data_dict['y_01']
@@ -1756,8 +1774,15 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
         p_10 = QEC_data_dict['p10']
         p_11 = QEC_data_dict['p11']
 
-        
+        print x
+        print len(x)
+        print y
+        print len(y)
+        print y_err
+
         ax1.errorbar(x,y,yerr=y_err,color = color[RO], label = 'QEC, decode to Qubit '+str(RO+1))
+        # ax1.errorbar(x,(y_10+y_00)/2,yerr=(y_err_10**2+y_err_00**2)**0.5/2,color = color[RO], label = 'QEC, decode to Qubit '+str(RO+1))
+
 
         if plot_no_correct == True:
             y_no_corr = undo_correction_single_state_RO_error_sign(run = 1, no_error = no_error,state = state,RO = RO,error_sign = 1,sweep_time=True)
@@ -1765,14 +1790,15 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
             ax1.errorbar(x,y_no_corr,yerr = y_err, color = color[RO],ls = '-.', label = 'undo correction, Q'+str(RO+1))
 
 
-
+        
         ax2.errorbar(x,y_00,yerr=y_err_00,color = 'c', label = 'y_00' )
         ax2.errorbar(x,y_01,yerr=y_err_01,color = 'k', label = 'y_01' )
         ax2.errorbar(x,y_10,yerr=y_err_10,color = 'm', label = 'y_10' )
         ax2.errorbar(x,y_11,yerr=y_err_11,color = 'b', label = 'y_11' )
         ax2.set_ylim(-1.1,1.1)
-        ax2.set_xlim(-1e-3,35e-3)
-        ax2.legend()
+        ax2.set_ylim(-0.3,0.3)#1.1)
+        ax2.set_xlim(-0-0.1e-3,75e-3)
+        ax2.legend(loc = 2)
         ax2.set_title('sweep_time_error_syn_'+no_error+'_run_'+str(run)+'_state_'+state+'_RO_'+str(RO)+'_QEC_PS')
         ax2.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
         ax2.set_xlabel('time (s)')
@@ -1783,8 +1809,8 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
         ax3.plot(x,p_01, 'k', label = 'p01')
         ax3.plot(x,p_10, 'm', label = 'p10')
         ax3.plot(x,p_11, 'b', label = 'p11')
-        ax3.set_xlim(-1e-3,35e-3)
-        # ax3.legend()
+        ax3.set_xlim(-0.1e-3,65e-3)
+        ax3.legend(loc = 2)
         ax3.set_xlabel('time (s)')
         ax3.set_ylabel('outcome probability')  
         ax3.set_title('sweep_time_error_syn_'+no_error+'_run_'+str(run)+'_state_'+state+'_RO_'+str(RO)+'_QEC_probs')                
@@ -1805,29 +1831,29 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
           
             ax1.errorbar(x_single,y_single,yerr=y_single_err,color = color[RO],ls = ':', label = 'Single Qubit, sweep time, Q' + str(RO+1) )
 
-
-    dataset_dict_full[6] = QEC_sum_data_single_state_RO_single_error_sign(no_error = no_error,state = state,RO = 6,load_set = load_set, older_than = older_than,sweep_time = True)
-    y_toff = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
-    y_toff_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-    x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-    ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'QEC+ toffoli' )
-    
-    y_no_corr = undo_correction_single_state_RO_error_sign(run = 1, no_error = no_error,state = state,RO = RO,error_sign = 1,sweep_time=True)
-    dataset_dict_full[6]['y_no_corr'] = y_no_corr
-    y_toff = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
-    y_toff_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-    x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-    ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k',ls = '-.', label = 'undo QEC+ toffoli' )    
-    if add_encode == True:
-        no_QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
+    if do_toff == True:
+        dataset_dict_full[6] = QEC_sum_data_single_state_RO_single_error_sign(no_error = no_error,state = state,RO = 6,load_set = load_set, older_than = older_than,sweep_time = True)
+        y_toff = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
+        y_toff_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+        x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
+        ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'QEC+ toffoli' )
         
-        y_toff = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
-        y_toff_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
-        x = no_QEC_data_dict[0]['x']
-        ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k',ls ='--', label = 'Encoding, sweep time, toff' )
+        y_no_corr = undo_correction_single_state_RO_error_sign(run = 1, no_error = no_error,state = state,RO = RO,error_sign = 1,sweep_time=True)
+        dataset_dict_full[6]['y_no_corr'] = y_no_corr
+        y_toff = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
+        y_toff_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+        x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
+        ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k',ls = '-.', label = 'undo QEC+ toffoli' )    
+        if add_encode == True:
+            no_QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
+            
+            y_toff = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
+            y_toff_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
+            x = no_QEC_data_dict[0]['x']
+            ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k',ls ='--', label = 'Encoding, sweep time, toff' )
 
-    ax1.set_ylim(-1.1,1.1)
-    ax1.set_xlim(-1e-3,35e-3)
+    ax1.set_ylim(-0.3,0.1)#1.1)
+    ax1.set_xlim(-0.1e-3,75e-3)
     ax1.set_title('sweep_time_error_syn_'+no_error+'_run_'+str(run)+'_state_'+state+'_RO_'+str(RO)+'_QEC')
     ax1.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
     ax1.set_xlabel('time (s)')
