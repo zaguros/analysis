@@ -12,10 +12,62 @@ reload(toolbox)
 Analyze the zeno data
 NK 2014
 """
+def get_Zeno_data(electron_RO=['positive'], 
+				msmts='0',
+				state='Z',newer_than=None, previous_evo=None):
+	"""
+	this function finds data according to an input which specifies the folder name
+	Input: 	electron_RO 		is a list with e.g. positive and negative. 
+								If the list is longer than 1 element then the 
+								contrast values are returned.
+			previous_evo		As soon as this reaches 0 the analysis is stopped. 
+								This assumes that the evolution time is sweeped from low to high
+								in actual measurements.
+			msmts & state 		both strings are used to find the correct folder
+
+	Output: timestamp			specifies the evaluated folder
+			loop_bit			Boolean which signals the end of data acquisition and if the output data should be evaluated.
+			x_labels 			Tomographic bases. E.g. XI or ZZ
+			y 					Read-out results
+			y_err 				Read-out uncertainty
+			evo_time 			Free evolution of the specific state
+	"""
+	search_string=electron_RO[0]+'_logicState_'+state+'_'+msmts+'msmt'
+
+	loop_bit = False
+
+	if previous_evo == None:
+		previous_evo = 2000 #very high value such that all evolution times are taken into account.
+
+	#if the desired data set exists, then read the measured values.
+	if toolbox.latest_data(contains=search_string,
+									return_timestamp =True,
+									older_than=newer_than,
+									newer_than=None,
+									raise_exc=False) != False:
+
+		timestamp,folder=toolbox.latest_data(contains=search_string,
+									return_timestamp =True,
+									older_than=newer_than,
+									newer_than=None,
+									raise_exc=False)
+
+		x_labels,y,y_err= Zeno_get_2Q_values(timestamp)
+		evotime = float(folder[folder.find('EvoTime_')+8:])
+	else:
+		x_labels,y,y_err,evotime= 0,0,0
+
+	if evotime < previous_evo:
+		loop_bit = True
+
+	print loop_bit
+	print x_labels,evotime, loop_bit,timestamp	
+	print type(timestamp)
+
 
 def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 						measurement_name = ['adwindata'], 
-						ssro_calib_timestamp ='20150113_170834'):
+						ssro_calib_timestamp ='20150105_155052'):
 	"""
 	Returns the relevant 2qubit values for a given timestamp.
 	"""
