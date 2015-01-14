@@ -15,7 +15,7 @@ NK 2014
 
 def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 						measurement_name = ['adwindata'], 
-						ssro_calib_timestamp ='20150105_155052'):
+						ssro_calib_timestamp ='20150113_170834'):
 	"""
 	Returns the relevant 2qubit values for a given timestamp.
 	"""
@@ -74,7 +74,7 @@ def Zeno_2Q_state_fidelity_decay(timestamp_start=None,
 	ii=0
 
 	while loop_bit:
-		if toolbox.latest_data(contains='logicState_'+state,
+		if toolbox.latest_data(contains='negative_logicState_'+state,
 													return_timestamp =True,
 													older_than=timestamp_start,
 													newer_than=timestamp_stop,
@@ -82,7 +82,7 @@ def Zeno_2Q_state_fidelity_decay(timestamp_start=None,
 			print 'false reached'
 			loop_bit =False
 		else:
-			timestamp_start,folder=toolbox.latest_data(contains='logicState_'+state,
+			timestamp_start,folder=toolbox.latest_data(contains='negative_logicState_'+state,
 													return_timestamp =True,
 													older_than=timestamp_start,
 													newer_than=timestamp_stop,
@@ -240,14 +240,14 @@ def Zeno_1Q_state_fidelity_decay(timestamp_start=None,
 	ii=0
 
 	while loop_bit:
-		if toolbox.latest_data(contains='logicState_'+state,
+		if toolbox.latest_data(contains='positive_logicState_'+state,
 													return_timestamp =True,
 													older_than=timestamp_start,
 													newer_than=timestamp_stop,
 													raise_exc=False) == False:
 			loop_bit =False
 		else:
-			timestamp_start,folder=toolbox.latest_data(contains='logicState_'+state,
+			timestamp_start,folder=toolbox.latest_data(contains='positive_logicState_'+state,
 													return_timestamp =True,
 													older_than=timestamp_start,
 													newer_than=timestamp_stop,
@@ -395,6 +395,34 @@ def Zeno_1Q_proc_list(starts=[],
 
 		plt.xlabel('Free evolution time (s)')
 		plt.ylabel('logical qubit average fidelity')
+		plt.title('Timestamps_start_'+str(starts[0])+'_stop_'+str(stops[-1]))
+
+		print toolbox.latest_data('Zeno',older_than=starts[-1])
+		plt.savefig(os.path.join(toolbox.latest_data('Zeno',older_than=starts[-1]),'Zeno1QAvgDecays_decBit'+str(decoded_bit)+'_combined.pdf'),format='pdf')
+		plt.savefig(os.path.join(toolbox.latest_data('Zeno',older_than=starts[-1]),'Zeno1QAvgDecays_decBit'+str(decoded_bit)+'_combined.png'),format='png')
+		plt.show()
+		plt.close('all')
+
+def Zeno_1Q_state_list(starts=[],
+						stops=[],decoded_bit=1,state='Z'):
+	fid=[]
+	fid_u=[]
+	evotime=[]
+	if len(starts)==0:
+		print 'nothing to do here'
+
+	else:
+		fig=plt.figure()
+		ax=plt.subplot()
+		for i in range(len(starts)):
+			evotime,fid,fid_u = Zeno_1Q_state_fidelity_decay(timestamp_start=starts[i],
+									timestamp_stop=stops[i],
+									plot_results=False,decoded_bit=decoded_bit,state=state)
+			plt.errorbar(evotime,fid,fid_u,marker='o')
+		
+
+		plt.xlabel('Free evolution time (s)')
+		plt.ylabel('logical qubit state fidelity')
 		plt.title('Timestamps_start_'+str(starts[0])+'_stop_'+str(stops[-1]))
 
 		print toolbox.latest_data('Zeno',older_than=starts[-1])
