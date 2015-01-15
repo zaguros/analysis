@@ -1409,7 +1409,6 @@ def QEC_state_sum_all(state = 'Z', RO = 0,run_list_00 = [1,2,3],run_list_01 = [1
 
                 for jj,p in enumerate(p_list):
                     state_dict[run][p] +=  1/float(len(run_list))*state_dict_single[run][p]
-
             for k, yy in enumerate(y_list):
                 state_dict[run][ y_err_list[k]] = 1/float(len(run_list))*(state_dict[run]['temp'+ y_err_list[k]])**0.5
 
@@ -1433,17 +1432,11 @@ def QEC_state_sum_all(state = 'Z', RO = 0,run_list_00 = [1,2,3],run_list_01 = [1
         else:
 
             for k, yy in enumerate(y_list):
-<<<<<<< HEAD
-                summed_dict[yy] += 1/4.*state_dict_single[yy]
-                summed_dict['temp'+ y_err_list[k]] += state_dict_single[y_err_list[k]]**2
-
-=======
                 summed_dict[yy] += 1/4.*state_dict[run][yy]
                 summed_dict['temp'+ y_err_list[k]] += state_dict[run][y_err_list[k]]**2
 
             for jj,p in enumerate(p_list):
                     summed_dict[p] +=  1/4.*state_dict[run][p]
->>>>>>> FETCH_HEAD
         for k, yy in enumerate(y_list):
             summed_dict[ y_err_list[k]] = 1/4.*(summed_dict['temp'+ y_err_list[k]])**0.5
 
@@ -1457,15 +1450,6 @@ def QEC_state_sum_all(state = 'Z', RO = 0,run_list_00 = [1,2,3],run_list_01 = [1
 
 ''' plot single QEC / no QEC lines '''
 
-<<<<<<< HEAD
-def QEC_plot_single_state_RO_saved_data(run = 1, no_error = '00',state = 'Z',RO = 0, plot_separate = False,plot_guide = True,plot_no_correct = False):
-
-
-    dataset_dict_full = QEC_sum_data_single_state_RO(run = run, no_error = no_error,state = state,RO = RO)
-    QEC_data_dict  = dataset_dict_full
-
-    folder  = r'D:\measuring\data\QEC_data\figs'
-=======
 def QEC_plot_single_state_RO_saved_data(run = 1, no_error = '00',append_encode = False,append_single = False,state = 'Z',RO = 0, plot_separate = False,plot_guide = True,plot_no_correct = False):
 
     if no_error != '':
@@ -1475,7 +1459,6 @@ def QEC_plot_single_state_RO_saved_data(run = 1, no_error = '00',append_encode =
     QEC_data_dict  = dataset_dict_full
 
     folder  = r'D:\measuring\data\QEC_data\figs\Z_only'
->>>>>>> FETCH_HEAD
 
     x = QEC_data_dict['x']
     y = QEC_data_dict['y']
@@ -1498,15 +1481,10 @@ def QEC_plot_single_state_RO_saved_data(run = 1, no_error = '00',append_encode =
     x_g = [x[0],x[-1]]
     y_g = [y[0],y[-1]]
 
-<<<<<<< HEAD
-    fig,ax = plt.subplots()
-    ax.errorbar(x,y,yerr=y_err,color = 'k' )
-=======
     fig,ax = plt.subplots()
     ax.errorbar(x,y,yerr=y_err,color = 'k',ls = '', marker = 'o', ms = 4)
     x_fit, y_fit, p_err = fit_QEC_curve(x,y)
     ax.plot(x_fit,y_fit, color = 'k', label = 'QEC, p_c = '+str(int(p_err*100)/100.) )
->>>>>>> FETCH_HEAD
     if plot_guide == True:
         ax.plot(x_g,y_g,color = 'g' )
 
@@ -2027,154 +2005,9 @@ def QEC_plot_single_state_sweep_time(older_than = '20150107_090000',run = 1, no_
     except:
         print 'Figure has not been saved.'
 
-<<<<<<< HEAD
-# def QEC_plot_all_summed_sweep_time(add_encode = False, add_single =False, plot_no_correct = False,load_set = True):
-#     fig1,ax1 = plt.subplots()
-#     fig2,ax2 = plt.subplots()
-#     fig3,ax3 = plt.subplots()
-#     color = ['r','g','b']
-#     dataset_dict_full = {}
-#     no_QEC_data_dict = {}
-#     QEC_single_data_dict = {}
 
-#     for RO in [0,1,2]:
-
-#         dataset_dict_full[RO] = QEC_sweep_time_sum_states(RO  = RO)
-#         QEC_data_dict  = dataset_dict_full[RO]
-
-#         folder  = r'D:\measuring\data\QEC_data\figs\timesweep'
-
-#         parity_time = 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
-#         x = QEC_data_dict['x']+ np.ones(len(QEC_data_dict['x']))*parity_time
-
-#         y = QEC_data_dict['y']
-#         y_00 = QEC_data_dict['y_00']
-#         y_01 = QEC_data_dict['y_01']
-#         y_10 = QEC_data_dict['y_10']
-#         y_11 = QEC_data_dict['y_11']
-
-#         y_err = QEC_data_dict['y_err']
-#         y_err_00 = QEC_data_dict['y_err_00']
-#         y_err_01 = QEC_data_dict['y_err_01']
-#         y_err_10 = QEC_data_dict['y_err_10']
-#         y_err_11 = QEC_data_dict['y_err_11']
-
-#         p_00 = QEC_data_dict['p00']
-#         p_01 = QEC_data_dict['p01']
-#         p_10 = QEC_data_dict['p10']
-#         p_11 = QEC_data_dict['p11']
-
-
-#         ax1.errorbar(x,y,yerr=y_err,color = color[RO], label = 'QEC, decode to Qubit '+str(RO+1))
-
-#         if plot_no_correct == True:
-#             y_no_corr = undo_correction_single_state_RO_error_sign(run = 1, no_error = no_error,state = state,RO = RO,error_sign = 1,sweep_time=True)
-#             dataset_dict_full[RO]['y_no_corr'] = y_no_corr
-#             ax1.errorbar(x,y_no_corr,yerr = y_err, color = color[RO],ls = '-.', label = 'undo correction, Q'+str(RO+1))
-
-
-
-#         ax2.errorbar(x,y_00,yerr=y_err_00,color = 'c', label = 'y_00' )
-#         ax2.errorbar(x,y_01,yerr=y_err_01,color = 'k', label = 'y_01' )
-#         ax2.errorbar(x,y_10,yerr=y_err_10,color = 'm', label = 'y_10' )
-#         ax2.errorbar(x,y_11,yerr=y_err_11,color = 'b', label = 'y_11' )
-#         ax2.set_ylim(-1.1,1.1)
-#         ax2.set_xlim(-1e-3,35e-3)
-#         ax2.legend()
-#         ax2.set_title('sweep_time_error_syn_'+'_run_'+str(run)+'_state_'+state+'_RO_'+str(RO)+'_QEC_PS')
-#         ax2.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-#         ax2.set_xlabel('time (s)')
-#         ax2.set_ylabel('Contrast')
-
-#         ax3.set_title(str(folder)+'/'+ '\n probabilities')
-#         ax3.plot(x,p_00, 'c', label = 'p00')
-#         ax3.plot(x,p_01, 'k', label = 'p01')
-#         ax3.plot(x,p_10, 'm', label = 'p10')
-#         ax3.plot(x,p_11, 'b', label = 'p11')
-#         ax3.set_xlim(-1e-3,35e-3)
-#         # ax3.legend()
-#         ax3.set_xlabel('time (s)')
-#         ax3.set_ylabel('outcome probability')
-#         ax3.set_title('sweep_time_error_syn_'+'_run_'+str(run)+'_state_'+state+'_RO_'+str(RO)+'_QEC_probs')
-
-#         if add_encode == True:
-#             no_QEC_data_dict[RO] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = RO, load_set = load_set,error_sign = 0)
-
-#             x = no_QEC_data_dict[RO]['x']
-#             y = no_QEC_data_dict[RO]['y']
-#             y_err = no_QEC_data_dict[RO]['y_err']
-#             ax1.errorbar(x,y,yerr=y_err,color = color[RO],ls = '--', label = 'Encoding, sweep time, Q' + str(RO+1) )
-
-#         if add_single == True:
-#             QEC_single_data_dict[RO] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
-#             x_single = QEC_single_data_dict[RO]['x']
-#             y_single = QEC_single_data_dict[RO]['y']
-#             y_single_err = QEC_single_data_dict[RO]['y_err']
-
-#             ax1.errorbar(x_single,y_single,yerr=y_single_err,color = color[RO],ls = ':', label = 'Single Qubit, sweep time, Q' + str(RO+1) )
-
-
-
-#     dataset_dict_full[6] = QEC_sweep_time_sum_states(RO  = 6)
-
-#     y_toff = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
-#     y_toff_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-#     x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-#     ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'QEC+ toffoli' )
-#     if plot_no_correct == True:
-#         y_no_corr = undo_correction_single_state_RO_error_sign(run = 1, = state = state,RO = RO,error_sign = 1,sweep_time=True)
-#         dataset_dict_full[6]['y_no_corr'] = y_no_corr
-#         y_toff = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
-#         y_toff_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-#         x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-#         ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k',ls = '-.', label = 'undo QEC+ toffoli' )
-#     if add_encode == True:
-#         no_QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
-
-#         y_toff = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
-#         y_toff_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
-#         x = no_QEC_data_dict[0]['x']
-#         ax1.errorbar(x,y_toff,yerr=y_toff_err,color = 'k',ls ='--', label = 'Encoding, sweep time, toff' )
-
-#     ax1.set_ylim(-1.1,1.1)
-#     ax1.set_xlim(-1e-3,35e-3)
-#     ax1.set_title('sweep_time_error_syn_'+'_run_'+str(run)+'_state_'+state+'_RO_'+str(RO)+'_QEC')
-#     ax1.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-#     ax1.set_xlabel('time (s)')
-#     ax1.set_ylabel('Contrast')
-#     lgd = ax1.legend(loc = 2, bbox_to_anchor = (1,1))
-
-
-
-#     if plot_no_correct == True:
-#         try:
-#             fig1.savefig(
-#                 os.path.join(folder,'sweep_time_undo_correct_all'+'.pdf'))
-#         except:
-#             print 'Figure has not been saved.'
-#     else:
-#         try:
-#             fig1.savefig(
-#                 os.path.join(folder,'sweep_time_error_all'+'.pdf'),bbox_extra_artists = (lgd,),bbox_inches='tight')
-#         except:
-#             print 'Figure has not been saved.'
-
-#     try:
-#         fig2.savefig(
-#             os.path.join(folder,'sweep_time_error_syn_'+no_error+'_state_'+state+'_ps'+'.pdf'))
-#     except:
-#         print 'Figure has not been saved.'
-
-#     try:
-#         fig3.savefig(
-#             os.path.join(folder,'sweep_time_error_syn_'+no_error+'_state_'+state+'_probs'+'.pdf'))
-#     except:
-#         print 'Figure has not been saved.'
-=======
->>>>>>> FETCH_HEAD
 
 def no_QEC_plot_single_state_RO(state = 'Z',RO = 0, load_set = False, older_than = None):
-
 
     QEC_data_dict =  no_QEC_data_single_state_RO(older_than = older_than,state = state,RO = RO, load_set = load_set)
     QEC_idle_data_dict =  no_QEC_data_single_state_RO(idle = True,older_than = older_than,state = state,RO = RO, load_set = load_set)
