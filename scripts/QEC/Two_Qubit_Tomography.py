@@ -86,7 +86,9 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		folder_b = toolbox.latest_data(contains='negative' + tag)
 	elif len(timestamps)==1:		
 		folder_b = toolbox.data_from_time(timestamps[0])      
-		folder_a = toolbox.latest_data(contains = 'positive', older_than = timestamps[0])   
+		print folder_b
+		folder_a = toolbox.latest_data(contains = 'pos', older_than = timestamps[0])   
+		print folder_a
 	else:
 		folder_a = toolbox.data_from_time(timestamps[0])      
 		folder_b = toolbox.data_from_time(timestamps[1])     	   
@@ -140,6 +142,8 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		ax.set_xticks(x)
 		ax.set_xticklabels(x_labels.tolist())
 		ax.set_ylim(-1.1,1.1)
+		print 'test'
+		print folder_a
 		ax.set_title(str(folder_a)+'/'+str(timestamps[0]))
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 

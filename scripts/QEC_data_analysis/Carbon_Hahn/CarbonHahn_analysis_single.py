@@ -7,7 +7,7 @@ MB 2014-01-05
 import numpy as np
 import os, sys
 if os.name == 'posix':
-    sys.path.append("/Users/michielbakker/Documents/teamdiamond/")
+    sys.path.append("/Users/"+os.getlogin()+"/Documents/teamdiamond/")
 else:
     sys.path.append("/measuring/")
 from analysis.lib.tools import toolbox
@@ -48,16 +48,14 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     ######################################
 
 
-    if Addressed_carbon == 1:
-        if el_RO=='positive':
-            timestamp=['20141104_194723','20141104_200359','20141104_215235']
-        else:
-            timestamp=['20141104_195541','20141104_205814','20141104_231030']
-    elif Addressed_carbon == 5:
+    if Addressed_carbon == 5:
         if el_RO=='positive':
             timestamp=['20150102_185838']
         else:
             timestamp=['20150102_191030']
+    else:
+        print "Carbon not measured"
+        
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -166,16 +164,14 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     ######################################
 
 
-    if Addressed_carbon == 1:
-        if el_RO=='positive':
-            timestamp=['20141104_192226','20141104_203107','20141104_223132']
-        else:
-            timestamp=['20141104_195949','20141104_212524','20141104_234927']
-    elif Addressed_carbon == 5:
+    if Addressed_carbon == 5:
         if el_RO=='positive':
             timestamp=['20150102_192226']
         else:
             timestamp=['20150102_214323']
+    else:
+        print "Carbon not measured"
+        
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -284,11 +280,4 @@ Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923',
             offset = 0.5, 
             amplitude = -0.4,
             el_RO='negative')
-# Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141104_191406',
-#            offset = 0.5, 
-#            amplitude = 0.4,
-#            el_RO='positive')
-# Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141104_191406',
-#            offset = 0.5, 
-#            amplitude = -0.4,
-#            el_RO='negative')
+

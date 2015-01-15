@@ -47,18 +47,34 @@ def simulate_sql (B=3*12.5e6/4.):
 
 	set_magnetic_field = B
 	print set_magnetic_field
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=51, tau0=10e-9,)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=101, tau0=10e-9,)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
 	s.fid0 = 0.87
 	s.fid1 = 0.025
 	s.B_max = 1/(4*s.t0)
+	s.n_points = 1000
 
+	print 'Simulating data...\n'
 	s.sim_SQL(phase_deg=90)
+	print 'Done!'
+	print 'Plotting normal results...'
+	print 'Size results matrix: ', np.shape(s.msmnt_results)
 	s.convert_to_dict()
 	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 	plt.show()
+
+	for i in [200, 500, 1000]:
+		print 'Reshaping msmnt result into G = ', i
+		print 'Plotting...'
+		s.reshape_SQL(G=i)
+		print 'Size results matrix: ', np.shape(s.msmnt_results)
+		print 'Size phase matrix: ', np.shape(s.msmnt_phases)
+		print 'Size time array: ', np.shape(s.msmnt_times)
+		s.convert_to_dict()
+		beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+		plt.show()
 
 
 def simulate_berry (do_adaptive):
@@ -160,7 +176,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
 	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
-	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_exp_params( T2 = 5e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -172,26 +188,25 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
-	mgnt_exp.save()
+	mgnt_exp.save(nem='_incl_T2')
 
 
-def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False):
 #def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
 	print '############### Simulate #####################'
 	N=1
 	mgnt_exp = magnetometry.magnetometrySQL(tau0=0.5*20e-9, max_G = 3000)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=11)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=3)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
-	for g in [10,  500, 1000, 3000]:
-		mgnt_exp.G = g
-		mgnt_exp.verbose=True
-		mgnt_exp.sweep_field_simulation (G=g ,print_results=print_results, specific_B=specific_B)
-		plt.figure()
+	mgnt_exp.G = 100
+	mgnt_exp.verbose=True
+	mgnt_exp.sweep_field_simulation_SQL (print_results=print_results, specific_B=specific_B)
+	plt.figure()
 		
-		mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 
@@ -443,10 +458,6 @@ def suppl_info_simulations (G, fid0):
 		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
 
-suppl_info_simulations (G=2, fid0= 1.0)
-suppl_info_simulations (G=3, fid0= 1.0)
-suppl_info_simulations (G=4, fid0= 1.0)
-suppl_info_simulations (G=5, fid0= 1.0)
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
 #simulate_berry(do_adaptive=False)
@@ -454,4 +465,8 @@ suppl_info_simulations (G=5, fid0= 1.0)
 #test_swarm_opt()
 #simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)
 
-#simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=11, error_bars = True, specific_B=False)
+#simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False)
+#simulate_sql()
+
+suppl_info_simulations (G=3, fid0=0.75)
+#suppl_info_simulations (G=5, fid0=0.75)

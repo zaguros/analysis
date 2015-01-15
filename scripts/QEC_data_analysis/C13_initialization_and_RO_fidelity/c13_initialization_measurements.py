@@ -316,7 +316,7 @@ def fit_initialization_fidelity_all(g_F1, g_A1, g_F2,  g_A2, g_f, g_a, g_A, g_t)
 
 ssro_calib_folder = 'D:\\measuring\\data\\20150108\\065633_AdwinSSRO_SSROCalibration_111_1_sil18'
 
-carbon_nr = 'C5'
+carbon_nr = 'C2'
 
 # timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = carbon_nr)
 # timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = carbon_nr)
@@ -325,6 +325,10 @@ if carbon_nr == 'C1':
 
 elif carbon_nr == 'C5':
     timestamp_dict, folders_dict = get_data_timestamps('20150108_084312', 29, carbon = carbon_nr)
+
+elif  carbon_nr == 'C2':
+    timestamp_dict, folders_dict = get_data_timestamps('20150109_090120', 29, carbon = carbon_nr)
+
 
 
 #######################
@@ -502,7 +506,7 @@ if 1:
         guess_F1    =  0.372863
         guess_A1    =  0.184e-3
         guess_F2    =  0.93
-        guess_A2    =  0.0206e-3     #Carbon 1:  -36.4 - C2: 20.6  -C5: 24.4
+        guess_A2    =  0.0176e-3     #Carbon 1:  -36.4 - C2: 20.6  -C5: 24.4
 
         guess_f     = 0.525e-3 
         guess_a     = 0.5
