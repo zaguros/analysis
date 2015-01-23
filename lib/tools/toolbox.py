@@ -14,7 +14,7 @@ try:
     datadir = qt.config['datadir']
     print datadir
 except:
-    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
+    # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
     if os.name == 'posix':
         if (platform.system()=='Linux'):

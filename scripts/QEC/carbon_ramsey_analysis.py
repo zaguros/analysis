@@ -42,7 +42,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
 
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
+        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
         print ssro_calib_folder
 
 
