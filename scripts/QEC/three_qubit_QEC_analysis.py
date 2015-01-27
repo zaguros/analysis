@@ -4493,7 +4493,7 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     x0           = single_no_QEC_data_dict_mZ_Q1['x']
     
     ### load 1 round data (Majority voting/Toffoli)
-    toff_process_dict = no_QEC_toffoli_fids()
+    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2],state_list=['Z','mZ'])
     y_Z1              = toff_process_dict['toff_Zy']
     y_err_Z1          = toff_process_dict['toff_Zy_err']
     y_mZ1             = toff_process_dict['toff_mZy']
