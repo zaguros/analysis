@@ -319,7 +319,7 @@ def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_pl
     ccc = np.linspace(0,1,len(data_dict))
 
     idx = 0
-    for i,k in enumerate(data_dict):
+    for i,k in enumerate(sorted(data_dict)):
         total_time =data_dict[k]['total_time']
         F = data_dict[k]['F']
         sensitivity = data_dict[k]['sensitivity']
@@ -372,7 +372,7 @@ def compare_variance_with_overhead (data_dict, title, colours=None, do_save = Fa
     ccc = np.linspace(0,1,len(data_dict))
 
     idx = 0
-    for i,k in enumerate(data_dict):
+    for i,k in enumerate(sorted(data_dict)):
         sensing_time = data_dict[k]['total_time']
         F = data_dict[k]['F']
         G = data_dict[k]['G']

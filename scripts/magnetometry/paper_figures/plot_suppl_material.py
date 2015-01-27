@@ -46,7 +46,7 @@ def compare_cappellaro_G2_fid1():
 
 def return_t_stamps(protocol, N, G, fid, name):
 	t_stamps = []
-	for i in [0,1,2, 3, 4, 5]:
+	for i in [0,1,2, 3, 4, 5, 6, 7, 8]:
 		t_stamps.append('_'+protocol+'_N='+str(N)+'G='+str(G)+'F='+str(i)+'_fid0='+fid+name)
 	return t_stamps	
 
@@ -54,19 +54,23 @@ def compare_protocols (pr1, pr2, N, G, fid, name = ''):
 
 	t_stamps = return_t_stamps (protocol = pr1, N=N, G=G, fid=fid, name=name)
 	dict_G2_adptv = pt.generate_data_dict(timestamps=t_stamps)
-	pt.compare_scalings (data_dict = dict_G2_adptv, title = pr1+' (G='+str(G)+') -- fid0 = '+fid+name, do_save=True, add_HL_plot = False)
-	pt.compare_variance_with_overhead (data_dict=dict_G2_adptv, title = pr1+' (G='+str(G)+') -- fid0 = '+fid+name, do_save = True, overhead = 300e-6)
+	plot_colors =  ['RoyalBlue', 'crimson', 'forestgreen', 'deepskyblue', 'gold','darkslategray', 'cornsilk', 'darkkhaki', 'darkviolet', 'limegreen']
+	pt.compare_scalings (data_dict = dict_G2_adptv, title = pr1+' (G='+str(G)+') -- fid0 = '+fid+name, do_save=True, add_HL_plot = False, colours = plot_colors)
+	pt.compare_variance_with_overhead (data_dict=dict_G2_adptv, title = pr1+' (G='+str(G)+') -- fid0 = '+fid+name, do_save = True, overhead = 300e-6, colours = plot_colors)
 	t_stamps = return_t_stamps (protocol = pr2, N=N, G=G, fid=fid, name=name)
 	dict_G2_nonadptv = pt.generate_data_dict(timestamps=t_stamps)
-	pt.compare_scalings (data_dict = dict_G2_nonadptv, title = pr2+' (G='+str(G)+') -- fid0 = '+name, do_save=True, add_HL_plot = False)
-	pt.compare_variance_with_overhead (data_dict=dict_G2_nonadptv, title = pr2+' (G='+str(G)+') -- fid0 = '+fid+name, do_save = True, overhead = 300e-6)
-	pt.compare_best_sensitivities ([dict_G2_adptv, dict_G2_nonadptv], title =  'G='+str(G)+' -- fid0 = '+fid+name, legend_array = [pr1, pr2], do_save=True, colours = ['RoyalBlue', 'crimson', 'forestgreen', 'deepskyblue', 'gold','darkstategray'])
-	pt.compare_scaling_fits ([dict_G2_adptv, dict_G2_nonadptv], title = 'G='+str(G)+' -- fid0 = '+fid+name, legend_array = [pr1, pr2], do_save=True)
+	pt.compare_scalings (data_dict = dict_G2_nonadptv, title = pr2+' (G='+str(G)+') -- fid0 = '+name, do_save=True, add_HL_plot = False, colours = plot_colors)
+	pt.compare_variance_with_overhead (data_dict=dict_G2_nonadptv, title = pr2+' (G='+str(G)+') -- fid0 = '+fid+name, do_save = True, overhead = 300e-6, colours = plot_colors)
+	pt.compare_best_sensitivities ([dict_G2_adptv, dict_G2_nonadptv], title =  'G='+str(G)+' -- fid0 = '+fid+name, legend_array = [pr1, pr2], do_save=True, colours = plot_colors)
+	pt.compare_scaling_fits ([dict_G2_adptv, dict_G2_nonadptv], title = 'G='+str(G)+' -- fid0 = '+fid+name, legend_array = [pr1, pr2], do_save=True, colours = plot_colors)
 
 #compare_capp_modCapp_supplInfo ()
 pr1 = 'modCapp'
 pr2 = 'nnAdptv'
-compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='1.0', name='_incl_T2')
+#compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='1.0', name='_incl_T2')
+compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='0.75', name='_incl_T2')
+#compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='1.0', name='_incl_T2')
+#compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='0.75', name='_incl_T2')
 
 
 '''
