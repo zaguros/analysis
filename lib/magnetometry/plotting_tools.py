@@ -47,7 +47,7 @@ def compare_2plots(timestamp1, timestamp2, title):
     plt.legend()
     plt.show()
 
-def compare_multiple_plots(timestamps, labels, title, colours = None):
+def compare_multiple_plots(timestamps, labels, title, colours = None, do_save=False):
     #MAX 10 plots!!!! Then no more markers!
     f = plt.figure(figsize=(8,6))
     ax = f.add_subplot(1,1,1)
@@ -64,10 +64,17 @@ def compare_multiple_plots(timestamps, labels, title, colours = None):
     ax.set_yscale('log')
     ax.set_xlabel ('total ramsey time [$\mu$s]', fontsize=15)
     ax.set_ylabel ('$V_{H}T$', fontsize=15)
+    plt.axis('tight')
     plt.title (title, fontsize=20)
     for label in (ax.get_xticklabels() + ax.get_yticklabels()):
         label.set_fontsize(15)
-    plt.legend()
+    plt.legend(loc=3)
+    if do_save:
+        fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_plot_'+title
+        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        savepath = os.path.join(folder, fName)
+        f.savefig(savepath+'.pdf')
+        f.savefig(savepath+'.svg')
     plt.show()
 
 
@@ -75,7 +82,7 @@ def generate_data_dict (timestamps, save_name = None):
     data_dict = {}
     for i,k in enumerate(timestamps):
         data_file  = analyze_saved_simulations (timestamp=k,error_bars=True)
-        data_dict [k] = {'total_time': data_file.total_time, 'sensitivity':data_file.sensitivity, 'err_sensitivity':data_file.err_sensitivity, 'F':data_file.F, 'G':data_file.G, 'fid0':data_file.fid0}
+        data_dict [k] = {'total_time': data_file.total_time, 'sensitivity':data_file.sensitivity, 'err_sensitivity':data_file.err_sensitivity, 'F':data_file.F, 'G':data_file.G, 'fid0':data_file.fid0, 'tau0':data_file.t0}
     
     return data_dict
 
@@ -87,7 +94,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
     ax = f.add_subplot(1,1,1)
     markers = ['o', '^', 's','v', '>', '<',  '*', 'D', '+','|']
     ccc = np.linspace(0,1,len(data_dict_array))
-
+    
     idx = 0
 
     for data_dict in data_dict_array:
@@ -104,6 +111,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
             min_idxs = [iii for iii, val in enumerate(sensitivity) if val == min_sens]  
             m = min_idxs[0]
             list_err_sens.append(data_dict[k]['err_sensitivity'][m])
+            min_time = data_dict[k]['total_time'][m]
         
         F = np.array(list_F)
         ind = np.argsort(F)
@@ -116,7 +124,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
         else:
             c = colours[idx]
 
-        ax.plot (F, sens, color=c, label = legend_array[idx])
+        ax.plot (F, sens, markersize=15,color=c, label = legend_array[idx])
         ax.errorbar (F, sens,  yerr = err_sens, fmt=markers[idx], color=c)
         idx = idx + 1
 
@@ -134,11 +142,101 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
         folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f.savefig(savepath+'.pdf')
+        f.savefig(savepath+'.svg')
+    plt.show()
+
+
+def compare_sensitivity_repRate (data_dict_array, legend_array, title, colours=None, do_save = False, overhead = 0.):
+    #compare_multiple_plots must be run before, to have a data_dict
+
+    f = plt.figure(figsize=(8,6))
+    ax = f.add_subplot(1,1,1)
+    ax2 = ax.twinx()
+    line_propr = ['-', '--', ':']
+    markers = ['o', '^', 's','v', '>', '<',  '*', 'D', '+','|']
+
+    ccc = np.linspace(0,1,len(data_dict_array))
+
+    idx = 0
+
+    for data_dict in data_dict_array:
+        list_F = []
+        list_std_B = []
+        list_err_std_B = []
+        rep_rate = []
+
+        for i,k in enumerate(data_dict):
+            sensing_time = data_dict[k]['total_time']
+            F = data_dict[k]['F']
+            G = data_dict[k]['G']
+            list_F.append(F)
+            sensitivity = data_dict[k]['sensitivity']
+            variance = sensitivity/sensing_time
+            N = np.arange(len(sensing_time))+1
+            overhead_time = (G*N+F*N*(N-1)/2)*overhead
+            total_time = sensing_time + overhead_time
+            
+            min_var = min(variance)
+            min_idxs = [iii for iii, val in enumerate(variance) if val == min_var]  
+            m = min_idxs[0]
+    
+            err_min_sens = data_dict[k]['err_sensitivity'][m]
+            err_min_var = err_min_sens/sensing_time[m]
+            print min_var, err_min_var
+            list_std_B.append(1e6*(min_var**0.5)/(2*np.pi*28e9)) #B in microTesla
+            list_err_std_B.append(1e6*(err_min_var**0.5)/(2*np.pi*28e9))
+
+            optimal_time = sensing_time [m]+ overhead_time[m]
+            rep_rate.append(1./optimal_time)
+
+        F = np.array(list_F)
+        ind = np.argsort(F)
+        F=F[ind]
+        std_B = np.array(list_std_B)[ind]
+        err_std_B = np.array(list_err_std_B)[ind]
+        rep_rate = np.array(rep_rate)[ind]
+
+        if colours==None:
+            c = cm.Set1(ccc[idx])
+        else:
+            c = colours[idx]
+
+        ax.plot (F, std_B, line_propr[idx], color='b', label = legend_array[idx])
+        ax.errorbar (F, std_B,  yerr = err_std_B, fmt=markers[idx], color='b')
+
+        ax2.plot (F, rep_rate, line_propr[idx], color='r', label = legend_array[idx], linewidth=2)
+        ax2.plot (F, rep_rate, markers[idx], color='r')
+
+        idx = idx + 1
+
+    ax.set_yscale ('log')
+    for label in (ax.get_xticklabels() + ax.get_yticklabels()+ax2.get_yticklabels()):
+        label.set_fontsize(15)
+
+    for tl in ax.get_yticklabels():
+        tl.set_color('b')
+
+    for tl in ax2.get_yticklabels():
+        tl.set_color('r')
+
+
+    #plt.fill_between (F, sens-err_sens, sens+err_sens, color='RoyalBlue', alpha=0.2)
+    ax.set_xlabel ('F', fontsize=15)
+    ax.set_ylabel ('field estim uncertainty [$\mu$T]', fontsize=15, color='b')
+    ax2.set_ylabel ('max repetition rate [Hz]', color='r')
+    ax.set_title (title, fontsize=15)
+    ax.legend()
+    if do_save:
+        fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_std_repRate_'+title
+        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        savepath = os.path.join(folder, fName)
+        f.savefig(savepath+'.pdf')
+        f.savefig(savepath+'.svg')
     plt.show()
 
 
 
-def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None, first_N = 3, last_N=10, do_save=False):
+def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None, first_N = 2, last_N=8, do_save=False):
     #compare_multiple_plots must be run before, to have a data_dict
 
     f = plt.figure(figsize=(8,6))
@@ -209,9 +307,10 @@ def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None,
         folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f.savefig(savepath+'.pdf')
+        f.savefig(savepath+'.svg')
     plt.show()
 
-def compare_scalings (data_dict, title, colours=None, do_save = False):
+def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_plot = False, include_overhead = None):
     #compare_multiple_plots must be run before, to have a data_dict
 
     f1 = plt.figure(figsize=(8,6))
@@ -220,11 +319,12 @@ def compare_scalings (data_dict, title, colours=None, do_save = False):
     ccc = np.linspace(0,1,len(data_dict))
 
     idx = 0
-    for i,k in enumerate(data_dict):
+    for i,k in enumerate(sorted(data_dict)):
         total_time =data_dict[k]['total_time']
         F = data_dict[k]['F']
         sensitivity = data_dict[k]['sensitivity']
         err_sensitivity = data_dict[k]['err_sensitivity']
+        tau0 = data_dict[k]['tau0']
     
         if colours==None:
             c = cm.Set1(ccc[idx])
@@ -236,6 +336,14 @@ def compare_scalings (data_dict, title, colours=None, do_save = False):
 
         idx = idx + 1
 
+    if add_HL_plot:
+        kappa = np.arange(9)+1
+        N = 2**(kappa+1)-1
+        d_phi_HL = np.tan(np.pi/(N+2))
+        sens_HL = ((d_phi_HL)**2)*N*tau0
+        ax.plot (N*tau0*1e6, sens_HL, '--k', linewidth = 2, label = 'HL')
+
+
     ax.set_yscale ('log')
     ax.set_xscale ('log')
     for label in (ax.get_xticklabels() + ax.get_yticklabels()):
@@ -244,11 +352,69 @@ def compare_scalings (data_dict, title, colours=None, do_save = False):
     ax.set_xlabel ('total ramsey time [$\mu$s]', fontsize=15)
     ax.set_ylabel ('sensitivity [VH*T]', fontsize=15)
     ax.set_title (title, fontsize=15)
-    ax.legend()
+    ax.legend(loc=3)
+    plt.axis('tight')
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_scalings_'+title
         folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f1.savefig(savepath+'.pdf')
+        f1.savefig(savepath+'.svg')
     plt.show()
 
+
+def compare_variance_with_overhead (data_dict, title, colours=None, do_save = False, overhead = 0.):
+    #compare_multiple_plots must be run before, to have a data_dict
+
+    f1 = plt.figure(figsize=(8,6))
+    ax = f1.add_subplot(1,1,1)
+    markers = ['o', '^', 's','v', '>', '<',  '*', 'D', '+','|']
+    ccc = np.linspace(0,1,len(data_dict))
+
+    idx = 0
+    for i,k in enumerate(sorted(data_dict)):
+        sensing_time = data_dict[k]['total_time']
+        F = data_dict[k]['F']
+        G = data_dict[k]['G']
+        sensitivity = data_dict[k]['sensitivity']
+        variance = sensitivity/sensing_time
+        err_sensitivity = data_dict[k]['err_sensitivity']
+        err_variance = err_sensitivity/sensing_time
+        tau0 = data_dict[k]['tau0']
+        N = np.arange(len(sensing_time))+1
+        overhead_time = (G*N+F*N*(N-1)/2)*overhead
+        total_time = sensing_time + overhead_time
+    
+        #std_B = 1e6*(variance**0.5)/(2*np.pi*28e9*20e-9)
+        #err_std_B = 1e6*(err_variance**0.5)/(2*np.pi*28e9*20e-9)
+
+        if colours==None:
+            c = cm.Set1(ccc[idx])
+        else:
+            c = colours[idx]
+
+        ax.plot (1./total_time, variance, markers[idx], color=c, label = 'F='+str(F))
+        ax.fill_between (1./total_time, variance-err_variance, variance+err_variance, color=c, alpha=0.2)
+
+        idx = idx + 1
+
+
+    ax.set_yscale ('log')
+    ax.set_xscale ('log')
+    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+        label.set_fontsize(15)
+
+    ax.set_xlabel ('repetition rate [Hz]', fontsize=15)
+
+    ax.set_ylabel ('variance', fontsize=15)
+    ax.set_title (title, fontsize=15)
+    ax.legend(loc=2)
+    plt.axis('tight')
+
+    if do_save:
+        fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_var_repRate_'+title
+        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        savepath = os.path.join(folder, fName)
+        f1.savefig(savepath+'.pdf')
+        f1.savefig(savepath+'.svg')
+    plt.show()
