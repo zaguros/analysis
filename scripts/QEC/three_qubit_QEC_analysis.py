@@ -3762,8 +3762,8 @@ def QEC_2rounds0_plot(older_than = '20150114_012244',load_from_data = False, sav
 ''' This data set is found at:
 
     Set 1: 20150114_232135 to 20150116_085607. Contains pe = [0,0.1,0.2,0.3,0.4,0.5]
+    Set 2: 20150125_183842 to 20150125_234652. Contains pe = [0.2, 0.3, 0.4, 0.45]
 '''
-
 
 def QEC_2rounds_get_data_dict(older_than = None, RO = 0, state = 'Z',  sym = '11', error_signs = '11',
                                                                 electron_RO = 'positive', len_k = 6, ):
@@ -4059,7 +4059,10 @@ def QEC_2rounds_plot_other_curves(older_than = '20150116_085607',load_from_data 
 ''' Analysis of 3Round experiments with triply applied errors, added by THT '''
 ###############################################################################
 
-''' This data set is found at older_than = '20150119_053037' '''
+''' This data set is found at:
+    Set 1: older_than = '20150119_053037', Contains pe = [0,0.1,0.2,0.3,0.4,0.5]
+    Set 2: 20150125_001141 to 20150125_145530, Contains pe = [0.2, 0.3, 0.4, 0.45]
+'''
 
 def QEC_3rounds_get_data_dict(older_than = None, RO = 0, state = 'Z',  sym = '11', error_signs = '11',
                                                                 electron_RO = 'positive', len_k = 6,):
@@ -4475,9 +4478,9 @@ def QEC_3rounds_plot_outcome_probability_curves(older_than = '20150119_053037',l
     plt.close('all')
 
 
-#######################################
-''' Combined plots, multiple rounds '''
-#######################################
+########################################################
+''' Combined plots, multiple rounds (0,1,2,3 rounds) '''
+########################################################
 
 def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\QEC_data\figs'):
 
