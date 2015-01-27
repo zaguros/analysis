@@ -336,12 +336,12 @@ elif  carbon_nr == 'C2':
 #######################
 
 ### Get the data
-a_C13_RO_up, folder_up = get_and_plot_data_nuc_RO(timestamp_dict['up_pos'],timestamp_dict['up_neg'],ssro_calib_folder)
-a_C13_RO_down, folder_down = get_and_plot_data_nuc_RO(timestamp_dict['down_pos'],timestamp_dict['down_neg'],ssro_calib_folder)
-a_C13_RO_no, folder_no = get_and_plot_data_nuc_RO(timestamp_dict['no_pos'],timestamp_dict['no_neg'],ssro_calib_folder)
+# a_C13_RO_up, folder_up = get_and_plot_data_nuc_RO(timestamp_dict['up_pos'],timestamp_dict['up_neg'],ssro_calib_folder)
+# a_C13_RO_down, folder_down = get_and_plot_data_nuc_RO(timestamp_dict['down_pos'],timestamp_dict['down_neg'],ssro_calib_folder)
+# a_C13_RO_no, folder_no = get_and_plot_data_nuc_RO(timestamp_dict['no_pos'],timestamp_dict['no_neg'],ssro_calib_folder)
 
 
-if 1:
+if 0:
 
     ### plot for up initialization 
     fig,ax = plt.subplots(figsize=(5,5)) 
@@ -398,9 +398,9 @@ if 1:
 ### Electron Ramsey data ###
 #########################
 ### load electron ramsey data (and plot individual plots)
-a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder)
-a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
-a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
+# a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder)
+# a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
+# a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
 
     ###########################
     ###  fit data seperately ###
@@ -459,7 +459,7 @@ if 0:
     ### to fit all at once: ###
     ###########################
 
-if 1:
+if 0:
     fig = a_up.default_fig(figsize=(10,5))
     ax  = a_up.default_ax(fig)
     ax.set_xlim(a_up.x[0]-1,a_up.x[-1]+1)
@@ -564,3 +564,99 @@ if 1:
     ax.plot(x_temp, guess_curves_no_init, 'b', lw=2)
     ax.plot(x_temp, guess_curves_up, 'r', lw=2)
     ax.plot(x_temp, guess_curves_down, 'k', lw=2)
+
+
+
+
+##################################
+'''Fitting to a numerical model'''
+################################## 
+
+### THT: this seems an ideal job for using Qutip. Will do this on my laptop...
+# from scipy.linalg import expm, sinm, cosm
+# def fit_init_fidelity_numerical(g_F1, g_A_par_1, g_A_perp_1,  g_F2, g_A_par_2, g_A_perp_2, g_det, g_t):
+#     '''Fit function for an electron Ramsey with/without C13 initialization
+#     g_F1 -  Fidelity of the strongly coupled C13
+#     g_A1 -  Hyperfine of the strongly coupled C13
+#     g_F2 -  Fidelity of the initialized C13
+#     g_A2 -  Hyperfine of the initialized C13
+#     g_f  -  Detuning (carrier frequency)
+#     g_a  -  Offset, maybe fix to 0.5
+#     g_A  -  Amplitude maybe fix to 0.5
+#     g_t  -  Decay of Ramsey
+    
+#     The function should take the complete data set (3 measurements) at once and fit it
+#     '''
+
+#     fitfunc_str = '''numerical solution'''
+
+#     ### Parameters
+#         ### Spin 1
+#     F1          = fit.Parameter(g_F1, 'F1')
+#     A_par_1     = fit.Parameter(g_A_par_1, 'A_par_1')
+#     A_perp_1    = fit.Parameter(g_A_perp_1, 'A_perp_1')
+        
+#         ### Spin 2
+#     F2          = fit.Parameter(g_F2, 'F2')
+#     A_par_2     = fit.Parameter(g_A_par_2, 'A_par_2')
+#     A_perp_2    = fit.Parameter(g_A_perp_2, 'A_perp_2')
+
+#         ### Ramsey
+#     det = fit.Parameter(g_det, 'det')
+#     t   = fit.Parameter(g_t, 't')
+
+#     p0 = [F1, A_par_1, A_perp_1, F2, A_par_2, A_perp_2, det, t]
+
+#     def fitfunc(x):
+
+#         ### pauli matrices and basis states
+#         Id = np.matrix([[1, 0], [0, 1]])
+#         sz = np.matrix([[1, 0], [0, -1]])
+#         Iz = np.matrix([[1, 0], [0, -1]])
+#         Ix = np.matrix([[0, 1], [1,  0]])
+
+#         rho_x = (Id+Ix)/2.
+#         rho_Z = (Id+sz)/2.
+#         rho_mZ = (Id-sz)/2.
+
+#         ### Initial states 
+#         rho_e    = (Id+Ix)/2.
+#         rho_c1   = F1*rho_Z + (1-F1)*rho_mZ 
+#         rho_c2   = F2*rho_Z + (1-F2)*rho_mZ 
+#         rho = np.kron(np.kron(rho_e,rho_c1),rho_c2) 
+
+#         ### Hamiltonian
+#         H  =  (det*np.kron(sz,Id,Id) +
+#               A_par_1*np.kron(sz,Iz,Id) + A_par_2*np.kron(sz,Ix,Id) +
+#               A_par_2*np.kron(sz,Id,Iz) + A_perp_2*np.kron(sz,Id,Ix) )
+
+#         for tau in x:
+ 
+#             U  =  expm(-1j*H*tau)
+            
+#             ### State evolution
+#             rho_final = U * rho * U
+#             print rho_final
+
+#             ### Final fidelity
+
+#     return p0, fitfunc, fitfunc_str
+
+# data_F1          = 1
+# data_A_par_1     = 1e3
+# data_A_perp_1    = 0
+# data_F2          = 1
+# data_A_par_2     = 1e3
+# data_A_perp_2    = 0
+# data_det         = 400e3
+# data_t           = 0
+
+# p0, fitfunc, fitfunc_str = fit_init_fidelity_numerical(data_F1, data_A_par_1, data_A_perp_1,
+#                                                        data_F2, data_A_par_2, data_A_perp_2,
+#                                                        data_det, data_t)
+
+# xdata = np.linspace(0,6e-6,2)
+# ydata = fitfunc(xdata)
+
+# plt.figure()
+# plt.plot(xdata,ydata,'bo')
