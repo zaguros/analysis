@@ -182,13 +182,14 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
 		mgnt_exp.verbose=True
 		#mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
+		print 'T2* = ', mgnt_exp.T2
 		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B)
 
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
-	mgnt_exp.save(nem='_incl_T2')
+	mgnt_exp.save(name='_incl_T2')
 
 
 def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False):
@@ -468,5 +469,8 @@ def suppl_info_simulations (G, fid0):
 #simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False)
 #simulate_sql()
 
-suppl_info_simulations (G=3, fid0=0.75)
+suppl_info_simulations (G=5, fid0=0.75)
+suppl_info_simulations (G=5, fid0=1.0)
+suppl_info_simulations (G=5, fid0=0.87)
+
 #suppl_info_simulations (G=5, fid0=0.75)
