@@ -1278,8 +1278,12 @@ class AdaptiveMagnetometry ():
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
-			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
-		
+			folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+			if (os.path.exists(folder)):
+				self.folder = folder
+			else:
+				self.folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
 		self.fid0 = fid0

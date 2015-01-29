@@ -44,20 +44,23 @@ def compare_cappellaro_G2_fid1():
 	colours = ['k', 'r', 'b', 'g', 'RoyalBlue', 'c']
 	pt.compare_multiple_plots (timestamps=t_stamps, labels=labels, title = 'adaptive (G=2) - F0 = 1', colours=colours)
 
-def return_t_stamps(protocol, N, G, fid, name):
+def return_t_stamps(protocol, N, G, fid, name, F_array=None):
 	t_stamps = []
-	for i in [0,1,2, 3, 4, 5, 6, 7, 8]:
+	if not(F_array):
+		F_array = [0,1,2, 3, 4, 5]
+
+	for i in F_array:
 		t_stamps.append('_'+protocol+'_N='+str(N)+'G='+str(G)+'F='+str(i)+'_fid0='+fid+name)
 	return t_stamps	
 
 def compare_protocols (pr1, pr2, N, G, fid, name = ''):
 
-	t_stamps = return_t_stamps (protocol = pr1, N=N, G=G, fid=fid, name=name)
+	t_stamps = return_t_stamps (protocol = pr1, N=N, G=G, fid=fid, name=name, F_array = [3,4,5])
 	dict_G2_adptv = pt.generate_data_dict(timestamps=t_stamps)
 	plot_colors =  ['RoyalBlue', 'crimson', 'forestgreen', 'deepskyblue', 'gold','darkslategray', 'cornsilk', 'darkkhaki', 'darkviolet', 'limegreen']
 	pt.compare_scalings (data_dict = dict_G2_adptv, title = pr1+' (G='+str(G)+') -- fid0 = '+fid+name, do_save=True, add_HL_plot = False, colours = plot_colors)
 	pt.compare_variance_with_overhead (data_dict=dict_G2_adptv, title = pr1+' (G='+str(G)+') -- fid0 = '+fid+name, do_save = True, overhead = 300e-6, colours = plot_colors)
-	t_stamps = return_t_stamps (protocol = pr2, N=N, G=G, fid=fid, name=name)
+	t_stamps = return_t_stamps (protocol = pr2, N=N, G=G, fid=fid, name=name, F_array = [6,7,8])
 	dict_G2_nonadptv = pt.generate_data_dict(timestamps=t_stamps)
 	pt.compare_scalings (data_dict = dict_G2_nonadptv, title = pr2+' (G='+str(G)+') -- fid0 = '+name, do_save=True, add_HL_plot = False, colours = plot_colors)
 	pt.compare_variance_with_overhead (data_dict=dict_G2_nonadptv, title = pr2+' (G='+str(G)+') -- fid0 = '+fid+name, do_save = True, overhead = 300e-6, colours = plot_colors)
@@ -68,7 +71,7 @@ def compare_protocols (pr1, pr2, N, G, fid, name = ''):
 pr1 = 'modCapp'
 pr2 = 'nnAdptv'
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='1.0', name='_incl_T2')
-compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='0.75', name='_incl_T2')
+compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='0.7', name='_noT2')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='1.0', name='_incl_T2')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='0.75', name='_incl_T2')
 
