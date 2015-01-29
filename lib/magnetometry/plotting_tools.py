@@ -71,7 +71,11 @@ def compare_multiple_plots(timestamps, labels, title, colours = None, do_save=Fa
     plt.legend(loc=3)
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_plot_'+title
-        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        if os.path.exists(fo):
+            folder = fo
+        else:
+            folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f.savefig(savepath+'.pdf')
         f.savefig(savepath+'.svg')
@@ -139,7 +143,11 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
     ax.legend()
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_sensitivity_'+title
-        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        if os.path.exists(fo):
+            folder = fo
+        else:
+            folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f.savefig(savepath+'.pdf')
         f.savefig(savepath+'.svg')
@@ -228,7 +236,11 @@ def compare_sensitivity_repRate (data_dict_array, legend_array, title, colours=N
     ax.legend()
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_std_repRate_'+title
-        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        if os.path.exists(fo):
+            folder = fo
+        else:
+            folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f.savefig(savepath+'.pdf')
         f.savefig(savepath+'.svg')
@@ -304,7 +316,11 @@ def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None,
     ax.legend()
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_fits_'+title
-        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        if os.path.exists(fo):
+            folder = fo
+        else:
+            folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f.savefig(savepath+'.pdf')
         f.savefig(savepath+'.svg')
@@ -356,7 +372,11 @@ def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_pl
     plt.axis('tight')
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_scalings_'+title
-        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        if os.path.exists(fo):
+            folder = fo
+        else:
+            folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f1.savefig(savepath+'.pdf')
         f1.savefig(savepath+'.svg')
@@ -413,7 +433,11 @@ def compare_variance_with_overhead (data_dict, title, colours=None, do_save = Fa
 
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_var_repRate_'+title
-        folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+        if os.path.exists(fo):
+            folder = fo
+        else:
+            folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
         savepath = os.path.join(folder, fName)
         f1.savefig(savepath+'.pdf')
         f1.savefig(savepath+'.svg')
