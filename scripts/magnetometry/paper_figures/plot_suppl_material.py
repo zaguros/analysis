@@ -84,6 +84,30 @@ def compare_protocols (protocol_array, N, G, fid, name = ''):
 	#pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
 	return sens_dict
 
+def compare_room_temperature ():
+	pr1 = 'nnAdptv'
+	pr2 = 'swarmOpt'
+	sens_dict = compare_protocols (protocol_array = [pr1, pr2, pr1, pr2], N=10, G=5, fid=['0.88', '0.88', '1.0', '1.0'], name='_noT2')
+	nn88 = sens_dict['0']
+	sw88 = sens_dict['1']
+	nn100 = sens_dict['2']
+	sw100 = sens_dict['3']
+
+	matplotlib.rc ('xtick', labelsize=15)
+	matplotlib.rc ('ytick', labelsize=15)
+	f1 = plt.figure(figsize = (10,7))
+	plt.semilogy (sw88['F'], sw88['sensitivity'], 'RoyalBlue', linewidth =3)
+	plt.semilogy (nn88['F'], nn88['sensitivity'],'RoyalBlue', linestyle='--', linewidth =3)
+	plt.semilogy (sw88['F'], 3600*sw88['sensitivity'], 'crimson', linewidth =3)
+	plt.semilogy (nn88['F'], 3600*nn88['sensitivity'],'crimson', linestyle='--', linewidth =3)
+	plt.semilogy (sw100['F'], 50000*sw100['sensitivity'], 'forestgreen', linewidth =3)
+	plt.semilogy (nn100['F'], 50000*nn100['sensitivity'],'forestgreen', linestyle='--', linewidth =3)
+	plt.ylabel ('minimum sensitivity', fontsize=15)
+	plt.xlabel ('F', fontsize=15)
+	f1.savefig (r"M:\tnw\ns\qt\Diamond\Projects\Magnetometry with adaptive measurements\Data\analyzed data\compare_sens_roomTemperature.svg")
+	f1.savefig (r"M:\tnw\ns\qt\Diamond\Projects\Magnetometry with adaptive measurements\Data\analyzed data\compare_sens_roomTemperature.pdf")
+	plt.show()
+
 #compare_capp_modCapp_supplInfo ()
 pr1 = 'nnAdptv'
 pr2 = 'swarmOpt'
