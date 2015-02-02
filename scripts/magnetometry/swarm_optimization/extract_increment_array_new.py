@@ -97,38 +97,40 @@ def extract_values(fid, verbose = False, do_save = True):
 				print first_incr_0
 				go_on = False				
 			else:
-				tau_0 = []
-				tau_1 = []
-				incr_0 = np.zeros(n_els)
-				incr_1 = np.zeros(n_els)
 
-				for i in np.arange(n_els):
-					d1 = content[start_pt_1+i].split()
-					d0 = content[start_pt_0+i].split()
+				try:
+					tau_0 = []
+					tau_1 = []
+					incr_0 = np.zeros(n_els)
+					incr_1 = np.zeros(n_els)
 
-					tau_0.append(int(d0[1]))
-					tau_1.append(int(d1[1]))
+					for i in np.arange(n_els):
+						d1 = content[start_pt_1+i].split()
+						d0 = content[start_pt_0+i].split()
 
-					incr_0[i] = d0[0]
-					incr_1[i] = d1[0]
+						tau_0.append(int(d0[1]))
+						tau_1.append(int(d1[1]))
+						incr_0[i] = d0[0]
+						incr_1[i] = d1[0]
 
-				if verbose:
-					print 'EXRACTED QUANTITIES: '
-					print 'tau_0: ', tau_0
-					print 'incr_0: ', incr_0
-					print 'tau_1: ', tau_1
-					print 'incr_1: ', incr_1
-				curr_line = start_pt_0+n_els
-				start_retrieve = False
+					if verbose:
+						print 'EXRACTED QUANTITIES: '
+						print 'tau_0: ', tau_0
+						print 'incr_0: ', incr_0
+						print 'tau_1: ', tau_1
+						print 'incr_1: ', incr_1
+					curr_line = start_pt_0+n_els
+					start_retrieve = False
 
-				if do_save:
-					save_name = 'incr_fid'+str(fid)+'_G'+str(G)+'F'+str(F)+'_K='+str(K)+'.npz'
-					save_path = os.path.join (save_folder, save_name)
-					np.savez(save_path, tau_0=tau_0, tau_1 = tau_1, u0 = incr_0, u1 = incr_1, H_PSO=H_PSO, H_mK = H_mK)
-
+					if do_save:
+						save_name = 'incr_fid'+str(fid)+'_G'+str(G)+'F'+str(F)+'_K='+str(K)+'.npz'
+						save_path = os.path.join (save_folder, save_name)
+						np.savez(save_path, tau_0=tau_0, tau_1 = tau_1, u0 = incr_0, u1 = incr_1, H_PSO=H_PSO, H_mK = H_mK)
+				except:
+					print 'File parsing failed...'
 			start_retrieve = False
 
 		if ((K > 13) and (F == 5)):
 			go_on = False
 
-extract_values (fid=88)
+extract_values (fid=75)

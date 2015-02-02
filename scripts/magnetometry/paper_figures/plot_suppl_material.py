@@ -73,7 +73,7 @@ def compare_protocols (protocol_array, N, G, fid, name = ''):
 	dict_array = []
 
 	for j,pr in enumerate(protocol_array):
-		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = [0,1,2,3,4])
+		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = [0,1,2,3,4, 5])
 		print pr, t_stamps
 		dict_gen= pt.generate_data_dict(timestamps=t_stamps)
 		dict_array.append(dict_gen)
@@ -89,7 +89,7 @@ pr1 = 'modCapp'
 pr3 = 'nnAdptv'
 pr2 = 'swarmOpt'
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='1.0', name='_incl_T2')
-compare_protocols (protocol_array = [pr1, pr3, pr2], N=10, G=5, fid=['0.9', '0.88', '0.9'], name='_noT2')
+compare_protocols (protocol_array = [pr1, pr3, pr2], N=10, G=5, fid=['0.88', '0.88', '0.88'], name='_noT2')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='1.0', name='_incl_T2')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='0.75', name='_incl_T2')
 
