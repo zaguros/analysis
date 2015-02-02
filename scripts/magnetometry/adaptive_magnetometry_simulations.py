@@ -481,10 +481,10 @@ def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5]):
 
 #suppl_info_simulations_adptv (G=5, fid0=1., sweep_f = [3,4,5])
 #suppl_info_simulations_adptv (G=5, fid0=0.88, sweep_f = [0,1,2,3,4,5])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [3,4,5])
-suppl_info_simulations_adptv (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
+#suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [6,7])
+#suppl_info_simulations_adptv (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
+#suppl_info_simulations_nn_adptv (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
 
-#suppl_info_simulations_swarm (G=5, fid0=1.00, sweep_f = [0,1,2,3,4,5])
+suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
 
 

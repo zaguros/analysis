@@ -73,23 +73,24 @@ def compare_protocols (protocol_array, N, G, fid, name = ''):
 	dict_array = []
 
 	for j,pr in enumerate(protocol_array):
-		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = [0,1,2,3,4])
+		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = [0,1,2,3,4, 5])
 		print pr, t_stamps
 		dict_gen= pt.generate_data_dict(timestamps=t_stamps)
 		dict_array.append(dict_gen)
-		pt.compare_scalings (data_dict = dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save=True, add_HL_plot = False, colours = plot_colors)
-		pt.compare_variance_with_overhead (data_dict=dict_gen, title = pr1+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save = True, overhead = 300e-6, colours = plot_colors)
+		pt.compare_scalings (data_dict = dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save=False, add_HL_plot = False, colours = plot_colors)
+		pt.compare_variance_with_overhead (data_dict=dict_gen, title = pr1+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save = False, overhead = 300e-6, colours = plot_colors)
 
-	pt.compare_best_sensitivities (dict_array, title =  'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
-	pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
-
+	sens_dict = pt.compare_best_sensitivities (dict_array, title =  'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
+	#pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
+	return sens_dict
 
 #compare_capp_modCapp_supplInfo ()
-pr1 = 'modCapp'
-pr3 = 'nnAdptv'
+pr1 = 'nnAdptv'
 pr2 = 'swarmOpt'
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='1.0', name='_incl_T2')
-compare_protocols (protocol_array = [pr1, pr3, pr2], N=10, G=5, fid=['0.9', '0.88', '0.9'], name='_noT2')
+sens_dict = compare_protocols (protocol_array = [pr1, pr2, pr1, pr2], N=10, G=5, fid=['0.88', '0.88', '1.0', '1.0'], name='_noT2')
+#compare_protocols (protocol_array = [pr1, pr3, pr2], N=10, G=5, fid=['1.0', '1.0', '1.0'], name='_noT2')
+
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='1.0', name='_incl_T2')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='0.75', name='_incl_T2')
 
@@ -99,11 +100,11 @@ compare_protocols (protocol_array = [pr1, pr3, pr2], N=10, G=5, fid=['0.9', '0.8
 #compare_protocols (N=10, G=5, fid='0.75')
 #compare_protocols (N=10, G=10, fid='0.75')
 #compare_protocols (N=10, G=10, fid='1.0')
-compare_protocols (N=10, G=2, fid='0.87')
-compare_protocols (N=10, G=3, fid='0.87')
-compare_protocols (N=10, G=4, fid='0.87')
-compare_protocols (N=10, G=5, fid='0.87')
-compare_protocols (N=10, G=10, fid='0.87')
+#compare_protocols (N=10, G=2, fid='0.87')
+#compare_protocols (N=10, G=3, fid='0.87')
+#compare_protocols (N=10, G=4, fid='0.87')
+#compare_protocols (N=10, G=5, fid='0.87')
+#compare_protocols (N=10, G=10, fid='0.87')
 
 '''
 G=3
