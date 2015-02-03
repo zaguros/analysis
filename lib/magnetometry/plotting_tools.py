@@ -91,7 +91,7 @@ def generate_data_dict (timestamps, save_name = None):
     return data_dict
 
 
-def compare_best_sensitivities (data_dict_array, legend_array, title, colours=None, do_save = False):
+def compare_best_sensitivities (data_dict_array, legend_array, title,  colours=None, do_save = False):
     #compare_multiple_plots must be run before, to have a data_dict
 
     f = plt.figure(figsize=(8,6))
@@ -100,7 +100,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
     ccc = np.linspace(0,1,len(data_dict_array))
     
     idx = 0
-
+    sens_dict = {}
     for data_dict in data_dict_array:
         list_F = []
         list_sens = []
@@ -130,6 +130,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
 
         ax.plot (F, sens, markersize=15,color=c, label = legend_array[idx])
         ax.errorbar (F, sens,  yerr = err_sens, fmt=markers[idx], color=c)
+        sens_dict[str(idx)] = {'F':F, 'sensitivity':sens, 'err':err_sens, 'doc':legend_array[idx]}
         idx = idx + 1
 
     ax.set_yscale ('log')
@@ -152,7 +153,7 @@ def compare_best_sensitivities (data_dict_array, legend_array, title, colours=No
         f.savefig(savepath+'.pdf')
         f.savefig(savepath+'.svg')
     plt.show()
-
+    return sens_dict
 
 def compare_sensitivity_repRate (data_dict_array, legend_array, title, colours=None, do_save = False, overhead = 0.):
     #compare_multiple_plots must be run before, to have a data_dict
