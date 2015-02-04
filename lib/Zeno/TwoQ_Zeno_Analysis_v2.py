@@ -35,7 +35,7 @@ def get_Zeno_data(electron_RO=['positive'],
 			folder 				The folder of the latest timestamp
 	"""
 
-	search_string=electron_RO[0]+'_logicState_'+state+'_'+msmts+'msmt__RO'
+	search_string=electron_RO[0]+'_logicState_'+state+'_'+msmts+'msmt__ROBasis_'+ROBasis
 	loop_bit = False
 
 	timestamp=None
@@ -48,7 +48,7 @@ def get_Zeno_data(electron_RO=['positive'],
 									return_timestamp =True,
 									older_than=older_than,
 									newer_than=None,
-									raise_exc=False) != False:
+									raise_exc=False) != False and previous_evo!=0:
 
 		timestamp,folder=toolbox.latest_data(contains=search_string,
 									return_timestamp =True,
@@ -59,10 +59,10 @@ def get_Zeno_data(electron_RO=['positive'],
 		evotime,y,y_err= Zeno_get_2Q_values(timestamp)
 
 		x_labels = folder[folder.find('ROBasis_')+8:]
+	
 
 	else: #if the searched data does not exist --> dummy results. evotime has to be larger than previous_evo
-		x_labels,y,y_err,evotime= 'II',0,0,2001
-
+		x_labels,y,y_err,evotime= 'II',0,0,[2001]
 
 	if evotime[0] < previous_evo or previous_evo==None:
 		loop_bit = True
@@ -73,21 +73,20 @@ def get_Zeno_data(electron_RO=['positive'],
 
 	#if positive and negative RO are considered then adjust the search string and search for the same evo time.
 	
-	if len(electron_RO)>1 and (evotime < previous_evo or previous_evo==None):
-		search_string=electron_RO[1]+'_logicState_'+state+'_'+msmts+'msmt__ROBasis'+str(ROBasis)
+	if len(electron_RO)>1 and (evotime[0] < previous_evo or previous_evo==None) and loop_bit:
+		search_string=electron_RO[1]+'_logicState_'+state+'_'+msmts+'msmt__ROBasis_'+str(ROBasis)
 
 		timestamp2,folder2=toolbox.latest_data(contains=search_string,
 									return_timestamp =True,
-									older_than=newer_than,
+									older_than=older_than,
 									newer_than=timestamp, #choose the right search direction.
 									raise_exc=False)
-
 		if evotime[0] < previous_evo or previous_evo==None:
 			loop_bit = True
 
 			evotime2,y2,y_err2= Zeno_get_2Q_values(timestamp2,ssro_calib_timestamp =ssro_timestamp)
 		else:
-			x_labels,y2,y_err2,evotime2= 'II',0,0,2001
+			x_labels,y2,y_err2,evotime2= 'II',0,0,[2001]
 
 		if electron_RO[0]== 'positive':	
 			for i in range(len(y)):
@@ -103,7 +102,10 @@ def get_Zeno_data(electron_RO=['positive'],
 	
 	if loop_bit:
 		if len(electron_RO)==1:
-			return timestamp,loop_bit,x_labels,y,y_err,evotime,folder
+			if electron_RO[0]=='negative':
+				return timestamp,loop_bit,x_labels,-1*y,y_err,evotime,folder
+			else:
+				return timestamp,loop_bit,x_labels,y,y_err,evotime,folder
 
 		elif toolbox.is_older(timestamp,timestamp2):
 			return timestamp,loop_bit,x_labels,y,y_err,evotime,folder
@@ -111,7 +113,7 @@ def get_Zeno_data(electron_RO=['positive'],
 		else: 
 			return timestamp2,loop_bit,x_labels,y,y_err,evotime,folder2
 	else:
-		return newer_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(newer_than)
+		return older_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(older_than)
 
 
 def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
@@ -151,7 +153,7 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 
 def Zeno_1Q_state_fidelity_decay(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 								 	state='X',
-								 	plot_results=True,
+								 	plot_results=True,decoded_bit='2',
 								 	ssro_timestamp='20150128_080328'):
 	"""
 	Plots or returns the state fidelity for a decoded qubit as a function of time (one parity expectation value)
@@ -159,31 +161,46 @@ def Zeno_1Q_state_fidelity_decay(older_than_tstamp=None,msmts='0',eRO_list=['pos
 
 	loop_bit = True
 	evo_time=None
-	x_labels_arr=np.array([])
+
 	y_arr=[]
 	y_err_arr=[]
 	evo_time_arr=[]
 	ii=0
 
+	Tomo1Dict={'X':'ZZ','mX':'ZZ',
+	    'Y':'YZ',
+	    'mY':'YZ',
+	    'Z':'XI',
+	    'mZ':'XI'}
+
+	Tomo2Dict={'X':'ZZ','mX':'ZZ',
+	    'Y':'ZY',
+	    'mY':'ZY',
+	    'Z':'IX',
+	    'mZ':'IX'}
+	RODict={'1':Tomo1Dict,'2':Tomo2Dict}
+	evo_time=[2005]
 	while loop_bit:
 		older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder=get_Zeno_data(electron_RO=eRO_list,
 																					state=state,
 																					older_than=older_than_tstamp,
-																					previous_evo=evo_time[-1],
+																					previous_evo=evo_time[0],
 																					msmts=msmts,
-																					ssro_timestamp=ssro_timestamp)
-
-
+																					ssro_timestamp=ssro_timestamp,ROBasis=RODict[str(decoded_bit)][state])
 		#loop_bit is true as long as new data was found.
 		if loop_bit:
-			x_labels_arr.extend(x_labels); y_arr.extend(y); y_err_arr.extend(y_err)
-			evo_time_arr.extend(evo_time) 
+			y_arr=np.concatenate((y_arr,y))
+			y_err_arr=np.concatenate((y_err_arr,y_err))
+			evo_time_arr=np.concatenate((evo_time_arr,evo_time))
+
+
 
 	#select the correct expectation value and the right sign for the contrast.
+	sign=1
 
-	if state=='Y':
+	if 'Y' in state:
 		sign=-1
-	elif state=='Z':
+	elif state=='ZZ':
 		sign=1
 	elif state=='X':
 		sign=1
@@ -198,6 +215,9 @@ def Zeno_1Q_state_fidelity_decay(older_than_tstamp=None,msmts='0',eRO_list=['pos
 		RO_String=eRO_list[0]
 	else: RO_String = 'contrast'
 
+	fid_arr=fid_arr[np.argsort(evo_time_arr)]
+	fid_u_arr=fid_u_arr[np.argsort(evo_time_arr)]
+	evo_time_arr=np.sort(evo_time_arr)
 
 	if plot_results==True:
 		fig=plt.figure()
@@ -216,10 +236,10 @@ def Zeno_1Q_state_fidelity_decay(older_than_tstamp=None,msmts='0',eRO_list=['pos
 	else:
 		return evo_time_arr,fid_arr,fid_u_arr,older_than_tstamp,folder
 
-def Zeno_1Q_proc_fidelity_decay(msmts='1',
+def Zeno_1Q_proc_fidelity_decay(msmts='0',
 								eRO_list=['positive'],
 								older_than_tstamp=None,
-								plot_results=True,
+								plot_results=True,decoded_bit='2',
 								ssro_timestamp='20150128_080328'):
 	"""
 	Plots the process fidelity for a decoded qubit as a function of time
@@ -235,7 +255,7 @@ def Zeno_1Q_proc_fidelity_decay(msmts='1',
 		evo_time,fid,fid_u,tstamp,folder=Zeno_1Q_state_fidelity_decay(older_than_tstamp=older_than_tstamp,
 										eRO_list=eRO_list,
 										state=state, msmts=msmts,
-										plot_results=False,
+										plot_results=False,decoded_bit=decoded_bit,
 										ssro_timestamp=ssro_timestamp)
 		fid_arr.append(fid);fid_u_arr.append(fid_u)
 
@@ -245,7 +265,7 @@ def Zeno_1Q_proc_fidelity_decay(msmts='1',
 	for i in range(len(fid_arr[0])):
 		for ii in range(len(fid_arr)):
 			avg_fid[i]= avg_fid[i] + fid_arr[ii][i]/len(fid_arr)
-			avg_fid_u[i]= avg_fid_u[i] + fid_u_arr[ii][i]**2/36
+			avg_fid_u[i]= avg_fid_u[i] + fid_u_arr[ii][i]**2/len(state_list)**2
 		avg_fid_u[i]=avg_fid_u[i]**0.5
 
 
@@ -288,7 +308,7 @@ def Zeno_1Q_proc_fidelity_decay(msmts='1',
 		return evo_time,avg_fid,avg_fid_u,tstamp,folder
 
 def Zeno_1Q_proc_list(older_than_tstamp=None,
-						msmt_list=['0'],eRO_list=['positive'],decoded_bit=1):
+						msmt_list=['0'],eRO_list=['positive'],decoded_bit='2',ssro_timestamp=None):
 	fid=[]
 	fid_u=[]
 	evotime=[]
@@ -300,9 +320,9 @@ def Zeno_1Q_proc_list(older_than_tstamp=None,
 		ax=plt.subplot()
 		for i in range(len(msmt_list)):
 			evotime,fid,fid_u,tstamp,folder = Zeno_1Q_proc_fidelity_decay(older_than_tstamp=older_than_tstamp,
-									eRO_list=eRO_list, msmts=msmt_list[i],
+									eRO_list=eRO_list, msmts=msmt_list[i],ssro_timestamp=None,decoded_bit=decoded_bit,
 									plot_results=False)
-			plt.errorbar(evotime,fid,fid_u,marker='o',label=str(msmt_list[i])+' msmts')
+			plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',label=str(msmt_list[i])+' msmts')
 		
 		if len(eRO_list)==1:
 			RO_String=eRO_list[0]
@@ -323,7 +343,7 @@ def Zeno_1Q_proc_list(older_than_tstamp=None,
 		plt.close('all')
 
 def Zeno_1Q_state_list(older_than_tstamp=None,
-						msmt_list=['0'],eRO_list=['positive'],state='Z'):
+						msmt_list=['0'],eRO_list=['positive'],state='Z',ssro_timestamp=None,decoded_bit='2'):
 	fid=[]
 	fid_u=[]
 	evotime=[]
@@ -336,9 +356,9 @@ def Zeno_1Q_state_list(older_than_tstamp=None,
 		for i in range(len(msmt_list)):
 			evotime,fid,fid_u,tstamp,folder = Zeno_1Q_state_fidelity_decay(older_than_tstamp=older_than_tstamp,
 															msmts=msmt_list[i],
-															eRO_list=eRO_list,
-									plot_results=False,state=state)
-			plt.errorbar(evotime,fid,fid_u,marker='o',label=str(msmt_list[i])+' msmts')
+															eRO_list=eRO_list,decoded_bit=decoded_bit,
+									plot_results=False,state=state,ssro_timestamp=None)
+			plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',label=str(msmt_list[i])+' msmts')
 		
 
 		if len(eRO_list)==1:
