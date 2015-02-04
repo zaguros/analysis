@@ -5,7 +5,7 @@ from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
 from analysis.lib.QEC import ConditionalParity as CP
 from analysis.lib.fitting import fit, common, ramsey;reload(common); reload(fit)
-
+import matplotlib.cm as cm
 
 
 reload (CP)
@@ -922,9 +922,9 @@ def fit_QEC_2_rounds(g_C, g_A, g_p):
 
 def fit_QEC_2_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-    guess_C = 0.88
-    guess_A = 1
-    guess_p = 0.85
+        guess_C = 0.8
+        guess_A = 1.
+        guess_p = 1
 
     p0, fitfunc, fitfunc_str = fit_QEC_2_rounds(guess_C, guess_A, guess_p)
 
@@ -973,9 +973,9 @@ def fit_QEC_3_rounds(g_C, g_A, g_p):
 
 def fit_QEC_3_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-    guess_C = 0.88
-    guess_A = 1
-    guess_p = 0.85
+        guess_C = 0.8
+        guess_A = 1.
+        guess_p = 1
 
     p0, fitfunc, fitfunc_str = fit_QEC_3_rounds(guess_C, guess_A, guess_p)
 
@@ -4298,6 +4298,7 @@ def QEC_2rounds0_plot(older_than = '20150114_012244',load_from_data = False, sav
 
     Set 1: 20150114_232135 to 20150116_085607. Contains pe = [0,0.1,0.2,0.3,0.4,0.5]
     Set 2: 20150125_183842 to 20150125_234653. Contains pe = [0.2, 0.3, 0.4, 0.45]
+    Set 3: 20150201_011834 to 20150201_132340. Contains pe = [0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5] 
     Currently only analyzing the '11' error syndrome
 '''
 
@@ -4321,6 +4322,8 @@ def QEC_2rounds_get_data_dict(older_than = None, RO = 0, state = 'Z',  sym = '11
 
         if len(len_k) ==2:
             QEC_dict[item] = np.concatenate((k_dict['k_'+str(len_k[0])][item],k_dict['k_'+str(len_k[1])][item]), axis=0)
+        elif len(len_k) ==3:
+            QEC_dict[item] = np.concatenate((k_dict['k_'+str(len_k[0])][item],k_dict['k_'+str(len_k[1])][item],k_dict['k_'+str(len_k[2])][item]), axis=0)
         elif len(len_k) == 4:
             QEC_dict[item] = np.concatenate((k_dict['k_'+str(len_k[0])][item],k_dict['k_'+str(len_k[1])][item],k_dict['k_'+str(len_k[2])][item], k_dict['k_'+str(len_k[3])][item]), axis=0)
         elif len(len_k) == 6:
@@ -4339,6 +4342,10 @@ def QEC_2rounds_load_data(run = 1, load_from_data = False):
     elif run ==2:
         older_than = '20150125_234653'
         len_k = [4,5]
+    elif run ==3:
+        older_than = '20150201_132340'
+        len_k = [6,7,8]
+
 
     if load_from_data:
         data = {}
@@ -4362,13 +4369,17 @@ def QEC_2rounds_load_data(run = 1, load_from_data = False):
             pickle.dump(data, open( "2rounds_run1.p", "wb" ) )
         if run == 2:
             pickle.dump(data, open( "2rounds_run2.p", "wb" ) )
+        if run == 3:
+            pickle.dump(data, open( "2rounds_run3.p", "wb" ) )
 
     else:
         if run == 1: 
             data = pickle.load( open( "2rounds_run1.p", "rb" ) )
         elif run == 2: 
             data = pickle.load( open( "2rounds_run2.p", "rb" ) )
-    
+        elif run == 3: 
+            data = pickle.load( open( "2rounds_run3.p", "rb" ) )
+
     return data
 
 def QEC_2rounds_combine_eRO(data):
@@ -4434,7 +4445,6 @@ def QEC_2rounds_combine_error_signs(data):
     return data
 
 def QEC_2rounds_combine_syndromes(data):
-
     prop_list = ['p00','p01','p10','p11']
 
     for state in ['Z','mZ']:
@@ -4466,7 +4476,6 @@ def QEC_2rounds_combine_syndromes(data):
 
             for ii in range(len(prop_list)):
                 data[state + 'RO'+str(RO)][prop_list[ii]] = data[state + 'RO'+str(RO)][prop_list[ii]]
-
 
     return data
 
@@ -4521,7 +4530,7 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_mZ       = data_dict1['mZ']['y']
         y_err_mZ   = data_dict1['mZ']['y_err']
 
-    else:
+    elif len(runs) == 2:
         data_dict1  = QEC_2rounds_analysis(run=runs[0], load_from_data=False)
         x1          = data_dict1['Z']['x']
         y_Z1        = data_dict1['Z']['y']
@@ -4536,6 +4545,30 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_mZ2       = data_dict2['mZ']['y']
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
+    elif len(runs) == 3:
+        data_dict1  = QEC_2rounds_analysis(run=runs[0], load_from_data=False)
+        x1          = data_dict1['Z']['x']
+        y_Z1        = data_dict1['Z']['y']
+        y_err_Z1    = data_dict1['Z']['y_err']
+        y_mZ1       = data_dict1['mZ']['y']
+        y_err_mZ1   = data_dict1['mZ']['y_err']
+
+        data_dict2  = QEC_2rounds_analysis(run=runs[1], load_from_data=False)
+        x2          = data_dict2['Z']['x']
+        y_Z2        = data_dict2['Z']['y']
+        y_err_Z2    = data_dict2['Z']['y_err']
+        y_mZ2       = data_dict2['mZ']['y']
+        y_err_mZ2   = data_dict2['mZ']['y_err']
+
+        data_dict3  = QEC_2rounds_analysis(run=runs[2], load_from_data=False)
+        x3          = data_dict2['Z']['x']
+        y_Z3        = data_dict2['Z']['y']
+        y_err_Z3    = data_dict2['Z']['y_err']
+        y_mZ3       = data_dict2['mZ']['y']
+        y_err_mZ3   = data_dict2['mZ']['y_err']
+
+        
+    if runs[0] == 1 and runs[1] == 2:
         x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
         
         y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
@@ -4544,15 +4577,28 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
         y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
     
+    elif runs[0] == 1 and runs[1] == 3:
+        print 'yes'
+        x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
+        
+        y_Z = np.array([   (y_Z1[0]+y_Z2[0])/2.,    (y_Z1[1]+y_Z2[1])/2.,    (y_Z1[2]+y_Z2[2])/2.,     (y_Z1[3]+y_Z2[3])/2.,    y_Z2[4],   (y_Z1[4]+y_Z2[5])/2.,   y_Z2[6],  (y_Z1[5]+y_Z2[7])/2.]) 
+        y_mZ = np.array([(y_mZ1[0]+y_mZ2[0])/2.,  (y_mZ1[1]+y_mZ2[1])/2.,  (y_mZ1[2]+y_mZ2[2])/2.,   (y_mZ1[3]+y_mZ2[3])/2.,   y_mZ2[4], (y_mZ1[4]+y_mZ2[5])/2.,  y_mZ2[6],  (y_mZ1[5]+y_mZ2[7])/2.]) 
+
+        y_err_Z  = np.array([ (y_err_Z1[0]**2+y_err_Z2[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z2[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[2]**2)**0.5/2.,     (y_err_Z1[3]**2+y_err_Z2[3]**2)**0.5/2.,    y_err_Z2[4],   (y_err_Z1[4]**2+y_err_Z2[5]**2)**0.5/2.,   y_err_Z2[6],  (y_err_Z1[5]**2+y_err_Z2[7]**2)**0.5/2.]) 
+        y_err_mZ = np.array([ (y_err_mZ1[0]**2+y_err_mZ2[0]**2)**0.5/2.,  (y_err_mZ1[1]**2+y_err_mZ2[1]**2)**0.5/2.,  (y_err_mZ1[2]**2+y_err_mZ2[2]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[3]**2)**0.5/2.,   y_err_mZ2[4], (y_err_mZ1[4]**2+y_err_mZ2[5]**2)**0.5/2.,  y_err_mZ2[6],  (y_err_mZ1[5]**2+y_err_mZ2[7]**2)**0.5/2.]) 
+
+    # elif runs[0] == 1 and runs[1] == 3:
+
+
     return x, y_Z, y_err_Z, y_mZ, y_err_mZ
 
 def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs\multiple_rounds'):
 
 
-    x, y_Z, y_err_Z, y_mZ, y_err_mZ =  QEC_2rounds_combined_runs(runs=[1,2])
+    x, y_Z, y_err_Z, y_mZ, y_err_mZ =  QEC_2rounds_combined_runs(runs=[1,3])
 
     ### Z and -Z states seperately 
-    if 0:
+    if 1:
         fig1,ax = plt.subplots()
         ax.errorbar(x, y_Z, yerr=y_err_Z,color = 'b' )
         ax.plot([x[0],x[-1]], [y_Z[0],y_Z[-1]],'k:' )
@@ -4588,7 +4634,7 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
             print 'Figure has not been saved.'
 
     ### Averaging the +Z and -Z states
-    if 0:
+    if 1:
         fig4,ax4 = plt.subplots()
         ax4.errorbar(x, (y_Z-y_mZ)/2., yerr=(y_err_Z**2+y_err_mZ**2)**0.5/2.,color = 'b' )
         ax4.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
@@ -4657,20 +4703,27 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
             print 'Figure has not been saved.'
 
     ### Outcome probabilities
-    # if 1:
-    #     data_dict = QEC_2rounds_analysis(run=1, load_from_data=False)
+    if 0:
+        data_dict = QEC_2rounds_analysis(run=1, load_from_data=False)
+        x         = data_dict['Z']['x']
 
-    #     x          = data_dict['Z']['x']
+        data_dict2 = QEC_2rounds_analysis(run=2, load_from_data=False)
+        x2         = data_dict2['Z']['x']
+        
 
-    #     prop_list = ['p00','p01','p10','p11']
+        prop_list = ['p00','p01','p10','p11']
+        colors = cm.rainbow(np.linspace(0, 1, len(prop_list)))
 
-    #     for ii in range(len(prop_list)):
-    #         p = data_dict['Z' + syndrome+'_outcome_probs'][prop_list[ii]]
-    #         ax.plot(x,p,'b', color = colors[ii], label = prop_list[ii])
+        fig,ax = plt.subplots()
+        for ii in range(len(prop_list)):
+            p = data_dict['Z'][prop_list[ii]]
+            ax.plot(x,p,'o',ls='',color = colors[ii], label = 'run1_' + prop_list[ii])
 
-
-
-
+        colors = cm.rainbow(np.linspace(0, 1, len(prop_list)))
+        for ii in range(len(prop_list)):
+            p = data_dict2['Z'][prop_list[ii]]
+            ax.plot(x2,p,'b', color = colors[ii], label = 'run_2' + prop_list[ii])
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     plt.show()
     plt.close('all')
@@ -4937,7 +4990,6 @@ def QEC_3rounds_apply_final_QEC(data):
                 data[state + syndrome + error_sign]['x'] = data[state + 'RO0' + syndrome + error_sign]['x']
     return data
 
-
 def QEC_3rounds_analyze_outcome_probabilities(data):
 
     prop_list = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
@@ -4975,33 +5027,41 @@ def QEC_3rounds_analysis(run =1,load_from_data = False):
 
     return data_dict
 
-
 def QEC_3rounds_combined_runs(runs = [1,2]):
 
-    data_dict1  = QEC_3rounds_analysis(run=runs[0], load_from_data=False)
-    x1          = data_dict1['Z']['x']
-    y_Z1        = data_dict1['Z']['y']
-    y_err_Z1    = data_dict1['Z']['y_err']
-    y_mZ1       = data_dict1['mZ']['y']
-    y_err_mZ1   = data_dict1['mZ']['y_err']
+    if len(runs) == 1:
 
-    data_dict2  = QEC_3rounds_analysis(run=runs[1], load_from_data=False)
-    x2          = data_dict2['Z']['x']
-    y_Z2        = data_dict2['Z']['y']
-    y_err_Z2    = data_dict2['Z']['y_err']
-    y_mZ2       = data_dict2['mZ']['y']
-    y_err_mZ2   = data_dict2['mZ']['y_err']
+        data_dict1  = QEC_3rounds_analysis(run=runs[0], load_from_data=False)
+        x          = data_dict1['Z']['x']
+        y_Z        = data_dict1['Z']['y']
+        y_err_Z    = data_dict1['Z']['y_err']
+        y_mZ       = data_dict1['mZ']['y']
+        y_err_mZ   = data_dict1['mZ']['y_err']
 
-    x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
+    else:
+        data_dict1  = QEC_3rounds_analysis(run=runs[0], load_from_data=False)
+        x1          = data_dict1['Z']['x']
+        y_Z1        = data_dict1['Z']['y']
+        y_err_Z1    = data_dict1['Z']['y_err']
+        y_mZ1       = data_dict1['mZ']['y']
+        y_err_mZ1   = data_dict1['mZ']['y_err']
 
-    y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
-    y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]]) 
+        data_dict2  = QEC_3rounds_analysis(run=runs[1], load_from_data=False)
+        x2          = data_dict2['Z']['x']
+        y_Z2        = data_dict2['Z']['y']
+        y_err_Z2    = data_dict2['Z']['y_err']
+        y_mZ2       = data_dict2['mZ']['y']
+        y_err_mZ2   = data_dict2['mZ']['y_err']
 
-    y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
-    y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
-   
+        x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
+
+        y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
+        y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]]) 
+
+        y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
+        y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
+       
     return x, y_Z, y_err_Z, y_mZ, y_err_mZ
-
 
 def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
 
@@ -5045,7 +5105,7 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
 
 
     ### Averaging the states
-    if 1:
+    if 0:
         fig4,ax4 = plt.subplots()
         ax4.errorbar(x, (y_Z-y_mZ)/2., yerr=(y_err_Z**2+y_err_mZ**2)**0.5/2.,color = 'b' )
         ax4.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
@@ -5063,32 +5123,56 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         except:
             print 'Figure has not been saved.'
 
+    if 1:
+        x1, y_Z1, y_err_Z1, y_mZ1, y_err_mZ1 =  QEC_3rounds_combined_runs(runs=[1])
+        x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_3rounds_combined_runs(runs=[2])
+
+        fig4,ax4 = plt.subplots()
+        ax4.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2.,color = 'b', label = 'run1')
+        ax4.errorbar(x2, (y_Z2-y_mZ2)/2., yerr=(y_err_Z2**2+y_err_mZ2**2)**0.5/2.,color = 'r', label = 'run2' )
+        
+        ax4.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
+        ax4.plot([0,0.5], [1,0],'k:' )
+        ax4.set_ylim(-0.05,1.05)
+        ax4.set_xlim(-0.05,0.55)
+        ax4.set_title('QEC_data_3Rounds Zstate' +  '\n' + 'State = (Z+mZ)/2')
+        ax4.hlines([-1,0,1],x[0]-0.05,x[-1]+0.05,linestyles='dotted')
+        ax4.set_xlabel('error probability')
+        ax4.set_ylabel('Expectation value')
+        ax4.legend()
+
+        try:
+            fig4.savefig(
+                os.path.join(save_folder,'3Rounds_compare_runs.pdf'))
+        except:
+            print 'Figure has not been saved.'
+       
     plt.show()
     plt.close('all')
 
-def QEC_3rounds_plot_outcome_probability_curves(older_than = '20150119_053037',load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
-    import matplotlib.cm as cm
-    data_dict  = QEC_3rounds_analysis(older_than=older_than, load_from_data=load_from_data)
+def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
+    
+    data_dict = QEC_3rounds_analysis(run=1, load_from_data=False)
+    x         = data_dict['Z']['x']
 
-    x          = data_dict['Z']['x']
-
+    data_dict2 = QEC_3rounds_analysis(run=2, load_from_data=False)
+    x2         = data_dict2['Z']['x']
+        
     prop_list = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
                  'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
 
 
-    ###################
-    ### per syndrome ###
-    ###################
-
-    syndrome = '01'
-
     fig1,ax = plt.subplots()
-
     colors = cm.rainbow(np.linspace(0, 1, len(prop_list)))
 
     for ii in range(len(prop_list)):
-        p = data_dict['Z' + syndrome+'_outcome_probs'][prop_list[ii]]
-        ax.plot(x,p,'b', color = colors[ii], label = prop_list[ii])
+            p = data_dict['Z'][prop_list[ii]]
+            ax.plot(x,p,'o',ls='',color = colors[ii], label = 'run1_' + prop_list[ii])
+
+    for ii in range(len(prop_list)):
+            p = data_dict2['Z'][prop_list[ii]]
+            ax.plot(x2,p,'b', color = colors[ii], label = 'run_2' + prop_list[ii])
+            ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     ax.set_title('QEC_data_3Roundsoutcome probabilities' + '\n' + 'State = Z, syndrome ' + syndrome)
     ax.hlines([-1,0,1],x[0]-0.05,x[-1]+0.05,linestyles='dotted')

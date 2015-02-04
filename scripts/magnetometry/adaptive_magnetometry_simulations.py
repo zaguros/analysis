@@ -98,7 +98,7 @@ def simulate_berry (do_adaptive):
 
 def test_swarm_opt ():
 
-	F = 2
+	F = 3
 	G = 5
 	K = 8
 	set_magnetic_field = 12.5e6/2.
@@ -106,8 +106,8 @@ def test_swarm_opt ():
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96e-6
-	s.fid0 = .87
-	s.fid1 = 0.02
+	s.fid0 = .88
+	s.fid1 = 0.007
 
 	s.sim_swarm_optim()
 	s.convert_to_dict()
@@ -167,7 +167,7 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = ''):
 #def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
@@ -189,7 +189,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
-	mgnt_exp.save(name='_noT2')
+	mgnt_exp.save(name=name)
 
 
 def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False):
@@ -451,12 +451,11 @@ def overnight_simulations_15dec2014():
 '''
 
 
-def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
+def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
 	fid1=0.02
 	reps=31
 	for fff in sweep_f:
-		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
-		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
+		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
 
 def suppl_info_simulations_nn_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
 	fid1=0.02
@@ -464,6 +463,11 @@ def suppl_info_simulations_nn_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
 	for fff in sweep_f:
 		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
+def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
+	fid1=0.02
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name = name)
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
@@ -475,20 +479,11 @@ def suppl_info_simulations_nn_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
 #simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False)
 #simulate_sql()
 
-suppl_info_simulations_adptv (G=5, fid0=1.0, sweep_f = [0,1])
-suppl_info_simulations_nn_adptv (G=5, fid0=1.0, sweep_f = [1,2,3])
-suppl_info_simulations_adptv (G=5, fid0=0.95, sweep_f = [0,1,2])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.95, sweep_f = [1,2,3])
-suppl_info_simulations_adptv (G=5, fid0=0.9, sweep_f = [1,2,3])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.9, sweep_f = [1,2,3])
-suppl_info_simulations_adptv (G=5, fid0=0.85, sweep_f = [1,2,3])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.85, sweep_f = [3,4,5])
-suppl_info_simulations_adptv (G=5, fid0=0.8, sweep_f = [1,2,3])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.8, sweep_f = [4,5,6])
-suppl_info_simulations_adptv (G=5, fid0=0.75, sweep_f = [2,3,4])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.75, sweep_f = [5,6,7])
-suppl_info_simulations_adptv (G=5, fid0=0.7, sweep_f = [3,4,5])
-suppl_info_simulations_nn_adptv (G=5, fid0=0.7, sweep_f = [6,7,8])
+#suppl_info_simulations_adptv (G=5, fid0=1., sweep_f = [3,4,5])
+#suppl_info_simulations_adptv (G=5, fid0=0.88, sweep_f = [0,1,2,3,4,5])
+#suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [5])
 
+#suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
 
-#suppl_info_simulations (G=5, fid0=0.75)
+suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_noT2')
+

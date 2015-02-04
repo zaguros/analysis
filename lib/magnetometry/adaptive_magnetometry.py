@@ -696,7 +696,6 @@ class RamseySequence_Simulation (RamseySequence):
 
 	def sim_swarm_optim (self):
 		
-		print 'Swarm optimization!'
 		if (self.G+self.F+self.K==0):
 			print 'Simulation parameters G, K, F not set!!'
 		else:			
@@ -714,7 +713,18 @@ class RamseySequence_Simulation (RamseySequence):
 			tau = 2**(k_array)
 			self.reset_rep_counter()
 
-			swarm_opt_pars = np.load ('D:/measuring/analysis/scripts/magnetometry/swarm_optimization/phases_G'+str(self.G)+'_F'+str(self.F)+'/swarm_opt_G='+str(self.G)+'_F='+str(self.F)+'_K='+str(self.K)+'.npz')
+			file_old = 'D:/measuring/analysis/scripts/magnetometry/swarm_optimization/phases_G'+str(self.G)+'_F'+str(self.F)+'/swarm_opt_G='+str(self.G)+'_F='+str(self.F)+'_K='+str(self.K)+'.npz'
+			round_fid = int(round(self.fid0*100))
+			file_new = 'D:/measuring/analysis/scripts/magnetometry/swarm_optimization/incr_fid'+str(round_fid)+'_G'+str(self.G)+'/incr_fid'+str(round_fid)+'_G'+str(self.G)+'F'+str(self.F)+'_K='+str(self.K)+'.npz'
+			if os.path.exists (file_new):
+				swarm_incr_file = file_new
+			elif os.path.exists (file_old):
+				swarm_incr_file = file_old
+			else:
+				print 'ATTENTION!!! No file found!'
+				print file_new
+				print file_old
+			swarm_opt_pars = np.load (swarm_incr_file)
 			self.u0 = swarm_opt_pars['u0']
 			self.u1 = swarm_opt_pars['u1']			
 
@@ -1278,8 +1288,12 @@ class AdaptiveMagnetometry ():
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
-			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
-		
+			folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+			if (os.path.exists(folder)):
+				self.folder = folder
+			else:
+				self.folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
 		self.fid0 = fid0
