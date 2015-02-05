@@ -4517,6 +4517,12 @@ def QEC_2rounds_analysis(run =1,load_from_data = False):
 
 def QEC_2rounds_combined_runs(runs=[1,2]):
 
+    x          = {}
+    y_Z        = {}
+    y_err_Z    = {}
+    y_mZ       = {}
+    y_err_mZ   = {}
+
     if len(runs) == 1:
         data_dict1 = QEC_2rounds_analysis(run=runs[0], load_from_data=False)
         x          = data_dict1['Z']['x']
@@ -4540,7 +4546,28 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_mZ2       = data_dict2['mZ']['y']
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
+        
+        if runs[0] == 1 and runs[1] == 2:
+            x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
+            
+            y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
+            y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]]) 
+
+            y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
+            y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
+        
+        elif runs[0] == 1 and runs[1] == 3:
+         
+            x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
+            
+            y_Z = np.array([   (y_Z1[0]+y_Z2[0])/2.,    (y_Z1[1]+y_Z2[1])/2.,    (y_Z1[2]+y_Z2[2])/2.,     (y_Z1[3]+y_Z2[3])/2.,    y_Z2[4],   (y_Z1[4]+y_Z2[5])/2.,   y_Z2[6],  (y_Z1[5]+y_Z2[7])/2.]) 
+            y_mZ = np.array([(y_mZ1[0]+y_mZ2[0])/2.,  (y_mZ1[1]+y_mZ2[1])/2.,  (y_mZ1[2]+y_mZ2[2])/2.,   (y_mZ1[3]+y_mZ2[3])/2.,   y_mZ2[4], (y_mZ1[4]+y_mZ2[5])/2.,  y_mZ2[6],  (y_mZ1[5]+y_mZ2[7])/2.]) 
+
+            y_err_Z  = np.array([ (y_err_Z1[0]**2+y_err_Z2[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z2[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[2]**2)**0.5/2.,     (y_err_Z1[3]**2+y_err_Z2[3]**2)**0.5/2.,    y_err_Z2[4],   (y_err_Z1[4]**2+y_err_Z2[5]**2)**0.5/2.,   y_err_Z2[6],  (y_err_Z1[5]**2+y_err_Z2[7]**2)**0.5/2.]) 
+            y_err_mZ = np.array([ (y_err_mZ1[0]**2+y_err_mZ2[0]**2)**0.5/2.,  (y_err_mZ1[1]**2+y_err_mZ2[1]**2)**0.5/2.,  (y_err_mZ1[2]**2+y_err_mZ2[2]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[3]**2)**0.5/2.,   y_err_mZ2[4], (y_err_mZ1[4]**2+y_err_mZ2[5]**2)**0.5/2.,  y_err_mZ2[6],  (y_err_mZ1[5]**2+y_err_mZ2[7]**2)**0.5/2.]) 
+
     elif len(runs) == 3:
+
         data_dict1  = QEC_2rounds_analysis(run=runs[0], load_from_data=False)
         x1          = data_dict1['Z']['x']
         y_Z1        = data_dict1['Z']['y']
@@ -4556,41 +4583,38 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
         data_dict3  = QEC_2rounds_analysis(run=runs[2], load_from_data=False)
-        x3          = data_dict2['Z']['x']
-        y_Z3        = data_dict2['Z']['y']
-        y_err_Z3    = data_dict2['Z']['y_err']
-        y_mZ3       = data_dict2['mZ']['y']
-        y_err_mZ3   = data_dict2['mZ']['y_err']
+        x3          = data_dict3['Z']['x']
+        y_Z3        = data_dict3['Z']['y']
+        y_err_Z3    = data_dict3['Z']['y_err']
+        y_mZ3       = data_dict3['mZ']['y']
+        y_err_mZ3   = data_dict3['mZ']['y_err']
 
-        
-    if runs[0] == 1 and runs[1] == 2:
-        x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
-        
-        y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
-        y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]]) 
 
-        y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
-        y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
-    
-    elif runs[0] == 1 and runs[1] == 3:
-        print 'yes'
-        x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
-        
-        y_Z = np.array([   (y_Z1[0]+y_Z2[0])/2.,    (y_Z1[1]+y_Z2[1])/2.,    (y_Z1[2]+y_Z2[2])/2.,     (y_Z1[3]+y_Z2[3])/2.,    y_Z2[4],   (y_Z1[4]+y_Z2[5])/2.,   y_Z2[6],  (y_Z1[5]+y_Z2[7])/2.]) 
-        y_mZ = np.array([(y_mZ1[0]+y_mZ2[0])/2.,  (y_mZ1[1]+y_mZ2[1])/2.,  (y_mZ1[2]+y_mZ2[2])/2.,   (y_mZ1[3]+y_mZ2[3])/2.,   y_mZ2[4], (y_mZ1[4]+y_mZ2[5])/2.,  y_mZ2[6],  (y_mZ1[5]+y_mZ2[7])/2.]) 
+        # Set 1: 20150114_232135 to 20150116_085607. Contains pe = [0, 0.1, 0.2, 0.3,       0.4,       0.5]
+        # Set 2: 20150125_183842 to 20150125_234653. Contains pe = [        0.2, 0.3,       0.4, 0.45     ]
+        # Set 3: 20150201_011834 to 20150201_132340. Contains pe = [0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5] 
 
-        y_err_Z  = np.array([ (y_err_Z1[0]**2+y_err_Z2[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z2[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[2]**2)**0.5/2.,     (y_err_Z1[3]**2+y_err_Z2[3]**2)**0.5/2.,    y_err_Z2[4],   (y_err_Z1[4]**2+y_err_Z2[5]**2)**0.5/2.,   y_err_Z2[6],  (y_err_Z1[5]**2+y_err_Z2[7]**2)**0.5/2.]) 
-        y_err_mZ = np.array([ (y_err_mZ1[0]**2+y_err_mZ2[0]**2)**0.5/2.,  (y_err_mZ1[1]**2+y_err_mZ2[1]**2)**0.5/2.,  (y_err_mZ1[2]**2+y_err_mZ2[2]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[3]**2)**0.5/2.,   y_err_mZ2[4], (y_err_mZ1[4]**2+y_err_mZ2[5]**2)**0.5/2.,  y_err_mZ2[6],  (y_err_mZ1[5]**2+y_err_mZ2[7]**2)**0.5/2.]) 
 
-    elif runs[0] == 1 and runs[1] == 3:
+        if runs[0] == 1 and runs[1] == 2 and runs[2] == 3:
+            x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
 
+            y_Z = np.array([   (y_Z1[0]+y_Z3[0])/2.,    
+                                (y_Z1[1]+y_Z3[1])/2.,    (y_Z1[2]+y_Z2[0]+y_Z3[2])/3.,     (y_Z1[3]+y_Z2[1]+y_Z3[3])/3.,    
+                                y_Z3[4],   (y_Z1[4]+y_Z2[2]+y_Z3[5])/3.,   (y_Z2[3]+y_Z3[6])/2,  (y_Z1[5]+y_Z3[7])/2.]) 
+            y_mZ = np.array([   (y_mZ1[0]+y_mZ3[0])/2.,    (y_mZ1[1]+y_mZ3[1])/2.,    (y_mZ1[2]+y_mZ2[0]+y_mZ3[2])/3.,     (y_mZ1[3]+y_mZ2[1]+y_mZ3[3])/3.,    
+                                y_mZ3[4],   (y_mZ1[4]+y_mZ2[2]+y_mZ3[5])/3.,   (y_mZ2[3]+y_mZ3[6])/2,  (y_mZ1[5]+y_mZ3[7])/2.]) 
+
+            y_err_Z = np.array([   (y_err_Z1[0]**2+y_err_Z3[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z3[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[0]**2+y_err_Z3[2]**2)**0.5/3.,     (y_err_Z1[3]**2+y_err_Z2[1]**2+y_err_Z3[3]**2)**0.5/3.,    
+                                y_err_Z3[4],   (y_err_Z1[4]**2+y_err_Z2[2]**2+y_err_Z3[5]**2)**0.5/3.,   (y_err_Z2[3]**2+y_err_Z3[6]**2)**0.5/2,  (y_err_Z1[5]**2+y_err_Z3[7]**2)**0.5/2.]) 
+            y_err_mZ = np.array([   (y_err_mZ1[0]**2+y_err_mZ3[0]**2)**0.5/2.,    (y_err_mZ1[1]**2+y_err_mZ3[1]**2)**0.5/2.,    (y_err_mZ1[2]**2+y_err_mZ2[0]**2+y_err_mZ3[2]**2)**0.5/3.,     (y_err_mZ1[3]**2+y_err_mZ2[1]**2+y_err_mZ3[3]**2)**0.5/3.,    
+                                y_err_mZ3[4],   (y_err_mZ1[4]**2+y_err_mZ2[2]**2+y_err_mZ3[5]**2)**0.5/3.,   (y_err_mZ2[3]**2+y_err_mZ3[6]**2)**0.5/2,  (y_err_mZ1[5]**2+y_err_mZ3[7]**2)**0.5/2.]) 
 
     return x, y_Z, y_err_Z, y_mZ, y_err_mZ
 
-def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs\multiple_rounds'):
+def QEC_2rounds_plot_final_curves(runs = [1,3], load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs\multiple_rounds'):
 
 
-    x, y_Z, y_err_Z, y_mZ, y_err_mZ =  QEC_2rounds_combined_runs(runs=[1,3])
+    x, y_Z, y_err_Z, y_mZ, y_err_mZ =  QEC_2rounds_combined_runs(runs=runs)
 
     ### Z and -Z states seperately 
     if 1:
@@ -5321,7 +5345,7 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     x1b           = data_dict_mZ['x']
 
     ### load 2 rounds data
-    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2])
+    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2,3])
     
     ### load 3 rounds data
     x3, y_Z3, y_err_Z3, y_mZ3, y_err_mZ3 =  QEC_3rounds_combined_runs(runs=[1,2])
@@ -5346,30 +5370,29 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     ### Complete result (avaraged over Z and mZ)
     fig4,ax = plt.subplots(figsize=(8,8))
     
-    ax.errorbar(x0, y_tot0, yerr= y_err_tot0, color = 'm', ls = '', marker = 'o', ms = 4, label = '0 rounds, $p_c$='+str(int(fit_result0*1000)/1000.)+'('+str(int(u_fit_result0*1000))+')') 
-    ax.plot(x_fit0, y_fit0, color = 'm')
+    ax.errorbar(x0, (0.5*y_tot0+0.5), yerr= 0.5*y_err_tot0, color = 'm', ls = '', marker = 'o', ms = 4, label = '0 rounds, $p_c$='+str(int(fit_result0*1000)/1000.)+'('+str(int(u_fit_result0*1000))+')') 
+    ax.plot(x_fit0, (0.5*y_fit0+0.5), color = 'm')
     
-    ax.errorbar(x1, y_tot1, yerr= y_err_tot1,color = 'g', ls = '', marker = 'o', ms = 4, label = '1 round, $p_c$='+str(int(fit_result1*1000)/1000.)+'('+str(int(u_fit_result1*1000))+')') 
-    ax.plot(x_fit1, y_fit1, color = 'g')
+    ax.errorbar(x1, (0.5*y_tot1+0.5), yerr= 0.5*y_err_tot1,color = 'g', ls = '', marker = 'o', ms = 4, label = '1 round, $p_c$='+str(int(fit_result1*1000)/1000.)+'('+str(int(u_fit_result1*1000))+')') 
+    ax.plot(x_fit1, (0.5*y_fit1+0.5), color = 'g')
 
-    # ax.errorbar(x1b, y_tot1b, yerr= y_err_tot1b,color = 'm', label = '1 rounds QEC' )
+    # ax.errorbar(x1b, (0.5*y_tot1n+0.5), yerr= 0.5*y_err_tot1b,color = 'm', label = '1 rounds QEC' )
 
-    ax.errorbar(x2, y_tot2, yerr=y_err_tot2,color = 'b', marker = 'o', ms = 4, ls = '',label = '2 rounds, $p_c$='+str(int(fit_result2*1000)/1000.)+'('+str(int(u_fit_result2*1000))+')') 
-    ax.plot(x_fit2, y_fit2, color = 'b')
+    ax.errorbar(x2, (0.5*y_tot2+0.5), yerr=0.5*y_err_tot2,color = 'b', marker = 'o', ms = 4, ls = '',label = '2 rounds, $p_c$='+str(int(fit_result2*1000)/1000.)+'('+str(int(u_fit_result2*1000))+')') 
+    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = 'b')
 
-    ax.errorbar(x3,y_tot3, yerr=y_err_tot3,color = 'r', marker = 'o', ms = 4,ls = '', label = '3 rounds, $p_c$='+str(int(fit_result3*1000)/1000.)+'('+str(int(u_fit_result3*1000))+')') 
-    ax.plot(x_fit3, y_fit3, color = 'r')
+    ax.errorbar(x3, (0.5*y_tot3+0.5), yerr=0.5*y_err_tot3,color = 'r', marker = 'o', ms = 4,ls = '', label = '3 rounds, $p_c$='+str(int(fit_result3*1000)/1000.)+'('+str(int(u_fit_result3*1000))+')') 
+    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = 'r')
 
     # ax.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
-    
 
-    ax.plot([0,0.5], [1,0],'k:' )
-    ax.set_ylim(-0.05,1.05)
+    ax.plot([0,0.5], [1,0.5],'k:' )
+    ax.set_ylim(0.45,1.05)
     ax.set_xlim(-0.05,0.55)
     ax.set_title('QEC_data_multiple rounds, averaged over Z and -Z')
     ax.hlines([-1,0,1],x1[0]-0.05,x0[-1]+0.05,linestyles='dotted')
     ax.set_xlabel('error probability')
-    ax.set_ylabel('Expectation value')
+    ax.set_ylabel('Average fidelity')
     ax.legend()
 
     try:
@@ -5380,5 +5403,5 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     except:
         print 'Figure has not been saved.'
 
-    # plt.show()
-    # plt.close('all')
+    plt.show()
+    plt.close('all')
