@@ -560,7 +560,7 @@ def no_QEC_create_data_dict_single_error_single_elRO(idle = False,sweep_time = F
         if run == 3:
             k = k+4
         if idle == False and sweep_time == False:
-            print 'ok'
+            # print 'ok'
             print 'no_correct' +'_'+el_RO+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)+'_'+state
             timestamp, folder = toolbox.latest_data(contains = 'no_correct' +'_'+el_RO+'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)
                                                     +'_'+state, older_than = older_than,return_timestamp = True)
@@ -625,7 +625,7 @@ def single_Qubit_QEC_create_data_dict_single_error_single_elRO(older_than = None
         if sweep_time == False:
             timestamp, folder = toolbox.latest_data(contains = 'single_Qbit' +'_'+el_RO+'_'+ carbon +'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(error_sign)+'_'+state, older_than = older_than,return_timestamp = True)
         elif sweep_time == True and k !=4:
-            print 'ok'
+            # print 'ok'
             timestamp, folder = toolbox.latest_data(contains = 'single_Qbit_sweep_time' +'_'+el_RO+'_'+ carbon +'_RO'+str(RO)+'_k'+str(k)+'_sign'+ str(-1)+'_'+state, older_than = '20150105_142000',return_timestamp = True)
         if sweep_time == True and  k == 4:
             timestamp, folder = toolbox.latest_data(contains = 'single_Qbit_sweep_time' +'_'+el_RO+'_'+ carbon +'_RO'+str(RO)+'_k'+str(0)+'_sign'+ str(-1)+'_'+state, older_than = '20150106_100000',return_timestamp = True)
@@ -922,9 +922,9 @@ def fit_QEC_2_rounds(g_C, g_A, g_p):
 
 def fit_QEC_2_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-        guess_C = 0.8
-        guess_A = 1.
-        guess_p = 1
+    guess_C = 0.8
+    guess_A = 1.
+    guess_p = 1
 
     p0, fitfunc, fitfunc_str = fit_QEC_2_rounds(guess_C, guess_A, guess_p)
 
@@ -973,9 +973,9 @@ def fit_QEC_3_rounds(g_C, g_A, g_p):
 
 def fit_QEC_3_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-        guess_C = 0.8
-        guess_A = 1.
-        guess_p = 1
+    guess_C = 0.8
+    guess_A = 1.
+    guess_p = 1
 
     p0, fitfunc, fitfunc_str = fit_QEC_3_rounds(guess_C, guess_A, guess_p)
 
@@ -1395,7 +1395,7 @@ def no_QEC_data_single_state_RO(run = 0,idle = False, sweep_time = False, older_
         for el_RO in ['positive','negative']:
             QEC_dict[str(error_sign)][el_RO] = {}
             if load_set == False:
-                print 'ok'
+                # print 'ok'
                 QEC_dict[str(error_sign)][el_RO], folder = no_QEC_create_data_dict_single_error_single_elRO(idle = idle, sweep_time = sweep_time, older_than = older_than, RO = RO, state = state, error_sign = error_sign, el_RO = el_RO,run = run)
             else:
                 QEC_dict[str(error_sign)][el_RO]= load_no_QEC_dataset_single_sign_single_elRO(run = run,idle = idle, sweep_time = sweep_time, RO = RO, state = state, error_sign = error_sign,el_RO = el_RO)
@@ -1504,7 +1504,7 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
 
     for i, run in enumerate(run_list):
         if run !=3:
-            print 'ok'
+            # print 'ok'
             QEC_temp_dict = no_QEC_data_single_state_RO(run = run,idle = idle, sweep_time = sweep_time, older_than = older_than,state = state,RO = RO, load_set = load_set)
             if i == 0:
                 QEC_dict = {}
@@ -1515,28 +1515,32 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
                 QEC_dict['y_err_temp'] += QEC_temp_dict['y_err']**2
 
        
-    QEC_dict['x'] = QEC_temp_dict['x']
     
-    QEC_dict['y_err'] = 1/float(len(run_list)-1)*QEC_dict['y_err_temp']**0.5
     
+    if 3 in run_list and len(run_list)>1:
+        QEC_dict['y_err'] = 1/float(len(run_list)-1)*QEC_dict['y_err_temp']**0.5
+    elif 3 not in run_list:
+        QEC_dict['y_err'] = 1/float(len(run_list))*QEC_dict['y_err_temp']**0.5
+
     if add_4 == True:
         print 'ok2'
         # a bit stupid but the error signs and el_RO were already summed up (sloppy....)
         four_dict = load_QEC_dataset_single_sign_single_elRO(sym = 'no_correction', RO = RO, state = state, error_sign = 1,el_RO = 'positive', run = 4)
                                     
-        for item in ['y','y_err','x']:
-            if 3 in run_list:
+        for item in ['y','y_err']:
+            if 3 not in run_list:
                 QEC_dict[item] = np.concatenate((QEC_dict[item][0:5],four_dict[item],QEC_dict[item][5:]), axis=0)
-            else:
-                QEC_dict[item] = np.concatenate((QEC_dict[item],four_dict[item]), axis=0)
+            elif 3 in run_list:
+                QEC_dict[item] = np.concatenate((QEC_dict[item][0:5],1/2.*four_dict[item],QEC_dict[item][5:]), axis=0)
         
-    if 3 in run_list:
-        print QEC_dict['y']
-        print QEC_dict['y_err']
-        print QEC_dict['x']
+    if 3 in run_list and len(run_list)>1:
         QEC_temp_dict = no_QEC_data_single_state_RO(run = run,idle = idle, sweep_time = sweep_time, older_than = older_than,state = state,RO = RO, load_set = load_set)
-        QEC_dict['y'] += 1/float(len(run_list))*QEC_temp_dict['y']
+        QEC_dict['y'] +=  np.concatenate((1/float(len(run_list))*QEC_temp_dict['y'][0:5],1/2.*QEC_temp_dict['y'][5:6],1/float(len(run_list))*QEC_temp_dict['y'][6:]), axis=0)
         QEC_dict['y_err'] =  1/float(len(run_list))* (float(len(run_list)-1)*QEC_dict['y_err']**2+ QEC_temp_dict['y_err']**2)**0.5
+    elif 3 in run_list and len(run_list)==1:
+        QEC_temp_dict = no_QEC_data_single_state_RO(run = run,idle = idle, sweep_time = sweep_time, older_than = older_than,state = state,RO = RO, load_set = load_set)
+        QEC_dict['y'] = QEC_temp_dict['y']
+        QEC_dict['y_err'] = QEC_temp_dict['y_err']
 
     
     QEC_dict['x'] = QEC_temp_dict['x']
@@ -2971,7 +2975,7 @@ def QEC_process_fids(run = 1 ,no_error = '00'):
 
 
     p_list = ['p00','p01','p10','p11']
-    
+    p_dict = {}
     for p in range(4):
             p_dict[p_list[p]] = {}
 
@@ -3221,7 +3225,7 @@ def no_QEC_process_fids(idle = False):
     process_dict['x'] = dataset_dict['Z']['Tomo_'+str(0)]['x']
     return process_dict
 
-def no_QEC_toffoli_fids(idle = False,run_list = [0],state_list=['Z','mZ','Y','mY', 'X','mX'],add_4 = False):
+def no_QEC_toffoli_fids(idle = False,run_list = [0],state_list=['Z','mZ','Y','mY', 'X','mX'],add_4 = False,only_4=False):
 
     dataset_dict = {}
     toff_dict = {}
@@ -3237,8 +3241,11 @@ def no_QEC_toffoli_fids(idle = False,run_list = [0],state_list=['Z','mZ','Y','mY
         for RO in RO_list:
             dataset_dict[state]['Tomo_'+str(RO)] = {}
 
-            dataset_dict[state]['Tomo_'+str(RO)] = no_QEC_sum_data_single_state_RO(run_list = run_list,idle = idle,state = state,RO = RO,load_set = True,add_4 = add_4)
-        # print dataset_dict
+            if only_4 == False:
+                dataset_dict[state]['Tomo_'+str(RO)] = no_QEC_sum_data_single_state_RO(run_list = run_list,idle = idle,state = state,RO = RO,load_set = True,add_4 = add_4)
+            elif only_4 == True:
+                dataset_dict[state]['Tomo_'+str(RO)] = load_QEC_dataset_single_sign_single_elRO(sym = 'no_correction', RO = RO, state = state, error_sign = 1,el_RO = 'positive', run = 4)
+
 
 
         toff_dict['toff_'+state+'y'] = {}
@@ -3463,6 +3470,53 @@ def QEC_plot_process_fids(run_list = [1],no_error = '00',append_no_QEC = False, 
             except:
                 print 'Figure has not been saved.'
 
+def QEC_plot_process_fids_11_vs_idle():
+
+    process_dict = QEC_process_fids_sum_all(syndrome_list = ['11'])
+
+    x = process_dict['x']
+    folder  = r'D:\measuring\data\QEC_data\figs\process fidelities'
+
+    process_dict_idle = no_QEC_process_fids(idle = True)
+
+
+
+    fig,ax = plt.subplots()
+
+    y = process_dict['dec_'+'avg'+'_y']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, 'r', lw=1, label =  'QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
+    ax.errorbar(x,y,yerr=y_err,color = 'r',ls = '',marker = 'o',ms = 2)
+
+    y = process_dict['dec_'+'avg'+'_y_new']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, 'r',ls = ':', lw=1, label =  'Undo QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
+    ax.errorbar(x,y,yerr=y_err,color = 'r', ls = '',marker = 'o',ms = 2)
+
+
+    y_idle = process_dict_idle['dec_'+'avg'+'_y']
+    y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_err = fit_QEC_process_curve(x,y_idle)    
+    ax.plot(x_fit, y_fit, 'k',ls = '-', lw=1, label =  'with idling, no QEC, decode to '+ 'avg'+ ', p_correction: '+str(int(p_err*100)/100.)) 
+    ax.errorbar(x,y_idle,yerr=y_idle_err,color = 'k', ls = '',marker = 'o',ms = 2)
+
+    ax.set_ylim(-0,1)
+    ax.set_xlim(-0.02,1.02)
+    ax.set_title('all_summed_process_fidelity dec to '+'avg'+'.png')
+    ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = 'b')
+    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = 'b')
+    ax.set_xlabel('error probability')
+    ax.set_ylabel('Process Fidelity')
+    lgd = ax.legend()#loc = 2, bbox_to_anchor = (1,1))
+
+    try:
+        fig.savefig(
+            os.path.join(folder,'11_vs_idle'+'.pdf'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+    except:
+        print 'Figure has not been saved.'
 
 def QEC_plot_process_fids_sum(append_no_QEC =True, syndrome_list = ['00','01','10','11']):
 
@@ -3745,6 +3799,45 @@ def no_QEC_sum_Z_mZ():
 
     ax.plot([0,1],[1,-1],'k')
 
+def no_QEC_compare_Z_mZ(run_list = [0,1,2,3]):
+    fig,ax = plt.subplots()
+    for run in run_list:
+        if run !=4:
+            toff_process_dict = no_QEC_toffoli_fids(run_list = [run],state_list=['Z','mZ'],add_4 = False)
+            y_Z1              = toff_process_dict['toff_Zy']
+            y_err_Z1          = toff_process_dict['toff_Zy_err']
+            y_mZ1             = toff_process_dict['toff_mZy']
+            y_err_mZ1         = toff_process_dict['toff_mZy_err']
+            x1                = toff_process_dict['x']
+
+            
+            ax.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2., label = '1 round, run '+str(run) )
+        elif run ==4:
+            toff_process_dict = no_QEC_toffoli_fids(run_list = [run],state_list=['Z','mZ'],only_4 = True)
+            y_Z1              = toff_process_dict['toff_Zy']
+            y_err_Z1          = toff_process_dict['toff_Zy_err']
+            y_mZ1             = toff_process_dict['toff_mZy']
+            y_err_mZ1         = toff_process_dict['toff_mZy_err']
+            x1                = toff_process_dict['x']
+
+            ax.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2., label = '1 round, run '+str(run) )
+
+    ax.set_ylim(-1.1,1.1)
+    ax.set_xlim(-0.1,1.1)
+    # ax.set_xlim(0.37,0.53)
+    # ax.set_ylim(-0.1,0.25)
+    ax.hlines([-1,0,1],x1[0]-1,x1[-1]+1,linestyles='dotted')
+    ax.set_xlabel('error probability')
+    ax.legend()
+    ax.set_title('toffoli_decoded_state_Z_mZ'+'.png')
+    ax.set_ylabel('Contrast')
+    folder  = r'D:\measuring\data\QEC_data\figs\Encoding'
+    try:
+        fig.savefig(
+            os.path.join(folder,'compare_toffoli_decoded_state_Z_mZ_summed'+'.png'))
+    except:
+        print 'Figure has not been saved.'
+
 def no_QEC_plot_toff_fids_compare_runs(state_list = ['Z','mZ','Y','mY', 'X','mX'],run_list = [0]):
 
     folder  = r'D:\measuring\data\QEC_data\figs\Encoding'
@@ -3753,7 +3846,19 @@ def no_QEC_plot_toff_fids_compare_runs(state_list = ['Z','mZ','Y','mY', 'X','mX'
     for state in state_list:
         fig,ax = plt.subplots()
         for run in run_list:
-            toff_dict = no_QEC_toffoli_fids(run_list = [run],state_list=state_list)
+
+            if run !=4:
+                toff_dict = no_QEC_toffoli_fids(run_list = [run],state_list=state_list)
+                # toff_dict_idle = no_QEC_toffoli_fids(idle = True)
+
+                x = toff_dict['x']
+                y = toff_dict['toff_'+state+'y']
+                y_err = toff_dict['toff_'+state+'y_err']
+                ax.errorbar(x,y,yerr = y_err, label = 'toffoli state '+state + 'run '+str(run))
+
+        if 4 in run_list:
+            run =4
+            toff_dict = no_QEC_toffoli_fids(run_list = [run],state_list=state_list,only_4 =True)
             # toff_dict_idle = no_QEC_toffoli_fids(idle = True)
 
             x = toff_dict['x']
@@ -3761,18 +3866,19 @@ def no_QEC_plot_toff_fids_compare_runs(state_list = ['Z','mZ','Y','mY', 'X','mX'
             y_err = toff_dict['toff_'+state+'y_err']
             ax.errorbar(x,y,yerr = y_err, label = 'toffoli state '+state + 'run '+str(run))
 
-
         ax.set_title('toffoli_decoded_state_'+state+'.png')
 
         ax.set_ylim(-1.1,1.1)
         ax.set_xlim(-0.1,1.1)
+        # ax.set_xlim(0.37,0.53)
+        # ax.set_ylim(-0.25,0.1)        
         ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
         ax.set_xlabel('error probability')
         ax.set_ylabel('Contrast')
         ax.legend()
         try:
             fig.savefig(
-                os.path.join(folder,'toffoli_decoded_state_'+state+'.png'))
+                os.path.join(folder,'compare_toffoli_decoded_state_'+state+'.png'))
         except:
             print 'Figure has not been saved.'
 
