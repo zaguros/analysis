@@ -3796,9 +3796,13 @@ def no_QEC_sum_Z_mZ():
     ax.hlines([-1,0,1],x1[0]-1,x1[-1]+1,linestyles='dotted')
     ax.set_xlabel('error probability')
     ax.set_ylabel('Contrast')
-
-    ax.plot([0,1],[1,-1],'k')
-
+    folder  = r'D:\measuring\data\QEC_data\figs\Encoding'
+    # ax.plot([0,1],[1,-1],'k')
+    try:
+        fig.savefig(
+            os.path.join(folder,'toffoli_decoded_state_Z_mZ_summed'+'.png'))
+    except:
+        print 'Figure has not been saved.'
 def no_QEC_compare_Z_mZ(run_list = [0,1,2,3]):
     fig,ax = plt.subplots()
     for run in run_list:
