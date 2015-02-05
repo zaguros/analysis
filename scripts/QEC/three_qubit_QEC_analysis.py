@@ -922,9 +922,9 @@ def fit_QEC_2_rounds(g_C, g_A, g_p):
 
 def fit_QEC_2_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-        guess_C = 0.8
-        guess_A = 1.
-        guess_p = 1
+    guess_C = 0.8
+    guess_A = 1.
+    guess_p = 1
 
     p0, fitfunc, fitfunc_str = fit_QEC_2_rounds(guess_C, guess_A, guess_p)
 
@@ -973,9 +973,9 @@ def fit_QEC_3_rounds(g_C, g_A, g_p):
 
 def fit_QEC_3_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-        guess_C = 0.8
-        guess_A = 1.
-        guess_p = 1
+    guess_C = 0.8
+    guess_A = 1.
+    guess_p = 1
 
     p0, fitfunc, fitfunc_str = fit_QEC_3_rounds(guess_C, guess_A, guess_p)
 
@@ -1126,7 +1126,7 @@ def openfile_single_state_RO_run(sym = '00', RO = 1, state = 'Z', error_sign = 1
     name = 'run_'+str(run)+ '_error_sym_' + sym + '_state_'+state + '_RO_'+str(RO)+ '_sign'+str(error_sign)+'_el_RO_'+el_RO+'.hdf5'
 
     # print name
-    datafile = h5py.File(os.path.join(r'D:\measuring\data\QEC_data\new data', name))
+    datafile = h5py.File(os.path.join(r'D:\measuring\data\QEC_data\test2 data', name))
     return datafile
 
 def save_data_single_state_RO_hdf5file(datafile, data_dict):
@@ -1395,7 +1395,6 @@ def no_QEC_data_single_state_RO(run = 0,idle = False, sweep_time = False, older_
         for el_RO in ['positive','negative']:
             QEC_dict[str(error_sign)][el_RO] = {}
             if load_set == False:
-                print 'ok'
                 QEC_dict[str(error_sign)][el_RO], folder = no_QEC_create_data_dict_single_error_single_elRO(idle = idle, sweep_time = sweep_time, older_than = older_than, RO = RO, state = state, error_sign = error_sign, el_RO = el_RO,run = run)
             else:
                 QEC_dict[str(error_sign)][el_RO]= load_no_QEC_dataset_single_sign_single_elRO(run = run,idle = idle, sweep_time = sweep_time, RO = RO, state = state, error_sign = error_sign,el_RO = el_RO)
@@ -1504,7 +1503,6 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
 
     for i, run in enumerate(run_list):
         if run !=3:
-            print 'ok'
             QEC_temp_dict = no_QEC_data_single_state_RO(run = run,idle = idle, sweep_time = sweep_time, older_than = older_than,state = state,RO = RO, load_set = load_set)
             if i == 0:
                 QEC_dict = {}
@@ -1520,7 +1518,6 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
     QEC_dict['y_err'] = 1/float(len(run_list)-1)*QEC_dict['y_err_temp']**0.5
     
     if add_4 == True:
-        print 'ok2'
         # a bit stupid but the error signs and el_RO were already summed up (sloppy....)
         four_dict = load_QEC_dataset_single_sign_single_elRO(sym = 'no_correction', RO = RO, state = state, error_sign = 1,el_RO = 'positive', run = 4)
                                     
@@ -1531,9 +1528,7 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
                 QEC_dict[item] = np.concatenate((QEC_dict[item],four_dict[item]), axis=0)
         
     if 3 in run_list:
-        print QEC_dict['y']
-        print QEC_dict['y_err']
-        print QEC_dict['x']
+
         QEC_temp_dict = no_QEC_data_single_state_RO(run = run,idle = idle, sweep_time = sweep_time, older_than = older_than,state = state,RO = RO, load_set = load_set)
         QEC_dict['y'] += 1/float(len(run_list))*QEC_temp_dict['y']
         QEC_dict['y_err'] =  1/float(len(run_list))* (float(len(run_list)-1)*QEC_dict['y_err']**2+ QEC_temp_dict['y_err']**2)**0.5
@@ -5308,7 +5303,7 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     x0           = single_no_QEC_data_dict_mZ_Q1['x']
 
     ### load 1 round data (Majority voting/Toffoli)
-    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2],state_list=['Z','mZ'],add_4 = True)
+    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2,3],state_list=['Z','mZ'],add_4 = True)
     y_Z1              = toff_process_dict['toff_Zy']
     y_err_Z1          = toff_process_dict['toff_Zy_err']
     y_mZ1             = toff_process_dict['toff_mZy']
