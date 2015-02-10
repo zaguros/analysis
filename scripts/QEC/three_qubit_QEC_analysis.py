@@ -4683,9 +4683,9 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
             ## Weighted average
             y_Z     = np.array([y_Z1[0],
                                 y_Z1[1],  
-                                np.average( [y_Z1[2],y_Z2[0]], [weight_Z1[2],weight_Z2[0]]),   
-                                np.average( [y_Z1[3],y_Z2[1]], [weight_Z1[3],weight_Z2[1]]),   
-                                np.average( [y_Z1[4],y_Z2[2]], [weight_Z1[4],weight_Z2[2]]),   
+                                np.average( [y_Z1[2],y_Z2[0]], weight = [weight_Z1[2],weight_Z2[0]]),   
+                                np.average( [y_Z1[3],y_Z2[1]], weight = [weight_Z1[3],weight_Z2[1]]),   
+                                np.average( [y_Z1[4],y_Z2[2]], weight = [weight_Z1[4],weight_Z2[2]]),   
                                 y_Z2[3],  
                                 y_Z1[5])
             
@@ -4700,9 +4700,9 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
 
             y_mZ     = np.array([y_mZ1[0],
                                 y_mZ1[1],  
-                                np.average( [y_mZ1[2],y_mZ2[0]], [weight_mZ1[2],weight_mZ2[0]]),   
-                                np.average( [y_mZ1[3],y_mZ2[1]], [weight_mZ1[3],weight_mZ2[1]]),   
-                                np.average( [y_mZ1[4],y_mZ2[2]], [weight_mZ1[4],weight_mZ2[2]]),   
+                                np.average( [y_mZ1[2],y_mZ2[0]], weight = [weight_mZ1[2],weight_mZ2[0]]),   
+                                np.average( [y_mZ1[3],y_mZ2[1]], weight = [weight_mZ1[3],weight_mZ2[1]]),   
+                                np.average( [y_mZ1[4],y_mZ2[2]], weight = [weight_mZ1[4],weight_mZ2[2]]),   
                                 y_mZ2[3],  
                                 y_mZ1[5])
 
@@ -4727,14 +4727,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
             y_err_mZ = np.array([ (y_err_mZ1[0]**2+y_err_mZ2[0]**2)**0.5/2.,  (y_err_mZ1[1]**2+y_err_mZ2[1]**2)**0.5/2.,  (y_err_mZ1[2]**2+y_err_mZ2[2]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[3]**2)**0.5/2.,   y_err_mZ2[4], (y_err_mZ1[4]**2+y_err_mZ2[5]**2)**0.5/2.,  y_err_mZ2[6],  (y_err_mZ1[5]**2+y_err_mZ2[7]**2)**0.5/2.])
 
             ## Weighted average
-            y_Z = np.array([    np.average( [y_Z1[0],y_Z2[0]], [weight_Z1[0],weight_Z2[0]]),    
-                                np.average( [y_Z1[1],y_Z2[1]], [weight_Z1[1],weight_Z2[1]]),    
-                                np.average( [y_Z1[2],y_Z2[2]], [weight_Z1[2],weight_Z2[2]]),     
-                                np.average( [y_Z1[3],y_Z2[3]], [weight_Z1[3],weight_Z2[3]]),    
+            y_Z = np.array([    np.average( [y_Z1[0],y_Z2[0]], weight = [weight_Z1[0],weight_Z2[0]]),    
+                                np.average( [y_Z1[1],y_Z2[1]], weight = [weight_Z1[1],weight_Z2[1]]),    
+                                np.average( [y_Z1[2],y_Z2[2]], weight = [weight_Z1[2],weight_Z2[2]]),     
+                                np.average( [y_Z1[3],y_Z2[3]], weight = [weight_Z1[3],weight_Z2[3]]),    
                                 y_Z2[4],   
-                                np.average( [y_Z1[4],y_Z2[5]], [weight_Z1[4],weight_Z2[5]]),   
+                                np.average( [y_Z1[4],y_Z2[5]], weight = [weight_Z1[4],weight_Z2[5]]),   
                                 y_Z2[6],  
-                                np.average( [y_Z1[5],y_Z2[7]], [weight_Z1[5],weight_Z2[7]])])
+                                np.average( [y_Z1[5],y_Z2[7]], weight = [weight_Z1[5],weight_Z2[7]])])
 
             y_err_Z  = np.array([   1/(weight_Z1[0]+weight_Z2[0))**0.5,    
                                     1/(weight_Z1[1]+weight_Z2[1))**0.5,    
@@ -4745,14 +4745,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                     y_err_Z2[6],  
                                     1/(weight_Z1[5]+weight_Z2[7))**0.5])
 
-            y_mZ = np.array([   np.average( [y_mZ1[0],y_mZ2[0]], [weight_mZ1[0],weight_mZ2[0]]),    
-                                np.average( [y_mZ1[1],y_mZ2[1]], [weight_mZ1[1],weight_mZ2[1]]),    
-                                np.average( [y_mZ1[2],y_mZ2[2]], [weight_mZ1[2],weight_mZ2[2]]),     
-                                np.average( [y_mZ1[3],y_mZ2[3]], [weight_mZ1[3],weight_mZ2[3]]),    
+            y_mZ = np.array([   np.average( [y_mZ1[0],y_mZ2[0]], weight = [weight_mZ1[0],weight_mZ2[0]]),    
+                                np.average( [y_mZ1[1],y_mZ2[1]], weight = [weight_mZ1[1],weight_mZ2[1]]),    
+                                np.average( [y_mZ1[2],y_mZ2[2]], weight = [weight_mZ1[2],weight_mZ2[2]]),     
+                                np.average( [y_mZ1[3],y_mZ2[3]], weight = [weight_mZ1[3],weight_mZ2[3]]),    
                                 y_mZ2[4],   
-                                np.average( [y_mZ1[4],y_mZ2[5]], [weight_mZ1[4],weight_mZ2[5]]),   
+                                np.average( [y_mZ1[4],y_mZ2[5]], weight = [weight_mZ1[4],weight_mZ2[5]]),   
                                 y_mZ2[6],  
-                                np.average( [y_mZ1[5],y_mZ2[7]], [weight_mZ1[5],weight_mZ2[7]])])
+                                np.average( [y_mZ1[5],y_mZ2[7]], weight = [weight_mZ1[5],weight_mZ2[7]])])
 
             y_err_mZ  = np.array([  1/(weight_mZ1[0]+weight_mZ2[0))**0.5,    
                                     1/(weight_mZ1[1]+weight_mZ2[1))**0.5,    
@@ -4812,14 +4812,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                 y_err_mZ3[4],   (y_err_mZ1[4]**2+y_err_mZ2[2]**2+y_err_mZ3[5]**2)**0.5/3.,   (y_err_mZ2[3]**2+y_err_mZ3[6]**2)**0.5/2,  (y_err_mZ1[5]**2+y_err_mZ3[7]**2)**0.5/2.])
 
             ### weighted average
-            y_Z = np.array([    np.average( [y_Z1[0],y_Z3[0]],          [weight_Z1[0],weight_Z1_Z3[0]]),
-                                np.average( [y_Z1[1],y_Z3[1]],          [weight_Z1[1],weight_Z3[1]]),    
-                                np.average( [y_Z1[2],y_Z2[0],y_Z3[2]],  [weight_Z1[2],weight_Z2[0],weight_Z3[2]]),     
-                                np.average( [y_Z1[3],y_Z2[1],y_Z3[3]],  [weight_Z1[3],weight_Z2[1],weight_Z3[3]]),
+            y_Z = np.array([    np.average( [y_Z1[0],y_Z3[0]],          weight = [weight_Z1[0],weight_Z1_Z3[0]]),
+                                np.average( [y_Z1[1],y_Z3[1]],          weight = [weight_Z1[1],weight_Z3[1]]),    
+                                np.average( [y_Z1[2],y_Z2[0],y_Z3[2]],  weight = [weight_Z1[2],weight_Z2[0],weight_Z3[2]]),     
+                                np.average( [y_Z1[3],y_Z2[1],y_Z3[3]],  weight = [weight_Z1[3],weight_Z2[1],weight_Z3[3]]),
                                 y_Z3[4],   
-                                np.average( [y_Z1[4],y_Z2[2],y_Z3[5]],  [weight_Z1[4],weight_Z2[2],weight_Z3[5]]),   
-                                np.average( [y_Z2[3],y_Z3[6]],          [weight_Z2[3],weight_Z3[6]]),  
-                                np.average( [y_Z1[5],y_Z3[7]],          [weight_Z1[5],weight_Z3[7]])])
+                                np.average( [y_Z1[4],y_Z2[2],y_Z3[5]],  weight = [weight_Z1[4],weight_Z2[2],weight_Z3[5]]),   
+                                np.average( [y_Z2[3],y_Z3[6]],          weight = [weight_Z2[3],weight_Z3[6]]),  
+                                np.average( [y_Z1[5],y_Z3[7]],          weight = [weight_Z1[5],weight_Z3[7]])])
 
             y_err_Z = np.array([    1/(weight_Z1[0]+weight_Z3[0])**0.5,    
                                     1/(weight_Z1[1]+weight_Z3[1])**0.5,    
@@ -4830,14 +4830,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                     1/(weight_Z2[3]+weight_Z3[6])**0.5,  
                                     1/(weight_Z1[5]+weight_Z3[7])**0.5])
 
-            y_mZ = np.array([    np.average( [y_mZ1[0],y_mZ3[0]],          [weight_mZ1[0],weight_mZ1_mZ3[0]]),
-                                np.average( [y_mZ1[1],y_mZ3[1]],          [weight_mZ1[1],weight_mZ3[1]]),    
-                                np.average( [y_mZ1[2],y_mZ2[0],y_mZ3[2]],  [weight_mZ1[2],weight_mZ2[0],weight_mZ3[2]]),     
-                                np.average( [y_mZ1[3],y_mZ2[1],y_mZ3[3]],  [weight_mZ1[3],weight_mZ2[1],weight_mZ3[3]]),
+            y_mZ = np.array([    np.average( [y_mZ1[0],y_mZ3[0]],          weight = [weight_mZ1[0],weight_mZ1_mZ3[0]]),
+                                np.average( [y_mZ1[1],y_mZ3[1]],          weight = [weight_mZ1[1],weight_mZ3[1]]),    
+                                np.average( [y_mZ1[2],y_mZ2[0],y_mZ3[2]],  weight = [weight_mZ1[2],weight_mZ2[0],weight_mZ3[2]]),     
+                                np.average( [y_mZ1[3],y_mZ2[1],y_mZ3[3]],  weight = [weight_mZ1[3],weight_mZ2[1],weight_mZ3[3]]),
                                 y_mZ3[4],   
-                                np.average( [y_mZ1[4],y_mZ2[2],y_mZ3[5]],  [weight_mZ1[4],weight_mZ2[2],weight_mZ3[5]]),   
-                                np.average( [y_mZ2[3],y_mZ3[6]],          [weight_mZ2[3],weight_mZ3[6]]),  
-                                np.average( [y_mZ1[5],y_mZ3[7]],          [weight_mZ1[5],weight_mZ3[7]])])
+                                np.average( [y_mZ1[4],y_mZ2[2],y_mZ3[5]],  weight = [weight_mZ1[4],weight_mZ2[2],weight_mZ3[5]]),   
+                                np.average( [y_mZ2[3],y_mZ3[6]],          weight = [weight_mZ2[3],weight_mZ3[6]]),  
+                                np.average( [y_mZ1[5],y_mZ3[7]],          weight = [weight_mZ1[5],weight_mZ3[7]])])
 
             y_err_mZ = np.array([    1/(weight_mZ1[0]+weight_mZ3[0])**0.5,    
                                     1/(weight_mZ1[1]+weight_mZ3[1])**0.5,    
