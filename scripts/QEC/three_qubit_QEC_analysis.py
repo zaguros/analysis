@@ -947,8 +947,9 @@ def fit_QEC_2_rounds(g_C, g_A, g_p):
 
     def fitfunc(x):
         '''test'''
+
         # note p_n = 1/2.*(1-(1-2*p)^(1/n))
-        return ( C()*(A()*(  1-3*(1/2.*(1-(1-2*x)**(1/2.)))+3*(1/2.*(1-(1-2*x)**(1/2.)))**2-2*(1/2.*(1-(1-2*x)**(1/2.)))**3 
+        return ( C()*(A()*(  1-3*(1/2.*(1-(1-2*x)**(1/2.)))+3*(1/2.*(1-(1-2*x)**(1/2.)))**2-2*(1/2.*(1-(1-2*x)**(1/2.)))**3
             + 3*(2*p()-1)*((1/2.*(1-(1-2*x)**(1/2.)))-3*(1/2.*(1-(1-2*x)**(1/2.)))**2+2*(1/2.*(1-(1-2*x)**(1/2.)))**3)))**2)
 
     return p0, fitfunc, fitfunc_str
@@ -998,8 +999,9 @@ def fit_QEC_3_rounds(g_C, g_A, g_p):
 
     def fitfunc(x):
         '''test'''
+
         # note p_n = 1/2.*(1-(1-p)**(1/n))
-        return ( C()*(A()*(  1-3*(1/2.*(1-(1-2*x)**(1/3.)))+3*(1/2.*(1-(1-2*x)**(1/3.)))**2-2*(1/2.*(1-(1-2*x)**(1/3.)))**3 
+        return ( C()*(A()*(  1-3*(1/2.*(1-(1-2*x)**(1/3.)))+3*(1/2.*(1-(1-2*x)**(1/3.)))**2-2*(1/2.*(1-(1-2*x)**(1/3.)))**3
             + 3*(2*p()-1)*((1/2.*(1-(1-2*x)**(1/3.)))-3*(1/2.*(1-(1-2*x)**(1/3.)))**2+2*(1/2.*(1-(1-2*x)**(1/3.)))**3)))**3)
 
     return p0, fitfunc, fitfunc_str
@@ -1042,7 +1044,7 @@ def fit_timesweep_QEC_1round(g_A,g_T1,g_T2,g_T3,g_p1,g_p2,g_p3):
     '''
 
     fitfunc_str = ''''''
-    
+
     A   = fit.Parameter(g_A, 'A')
     T1   = fit.Parameter(g_T1, 'T1')
     T2   = fit.Parameter(g_T2, 'T2')
@@ -1073,11 +1075,11 @@ def fit_timesweep_QEC_1round(g_A,g_T1,g_T2,g_T3,g_p1,g_p2,g_p3):
 
 def fit_timesweep_QEC_1round_curve(x,y,A = 0.87, T1 = 9e-3,T2 = 10e-3, T3 = 19e-3,p1 = 0.95, p2 = 0.9, p3 = 0.85, return_errorbar=False,plot_guess = False):
 
-    guess_A    = A  
-    guess_p1   = p1 
-    guess_p2   = p2 
-    guess_p3   = p3 
-    
+    guess_A    = A
+    guess_p1   = p1
+    guess_p2   = p2
+    guess_p3   = p3
+
     p0, fitfunc, fitfunc_str = fit_timesweep_QEC_1round(guess_A, T1, T2, T3, guess_p1, guess_p2, guess_p3)
 
     fit_result = fit.fit1d(x, y, fit_timesweep_QEC_1round,
@@ -1097,7 +1099,7 @@ def fit_timesweep_QEC_1round_curve(x,y,A = 0.87, T1 = 9e-3,T2 = 10e-3, T3 = 19e-
         # print y_temp
         return x_temp, y_temp
     else:
-        return x_temp, y_temp           
+        return x_temp, y_temp
 
 def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
     fitfunc_str = 'a + A * exp(-((x-x0)/T )**n)'
@@ -1112,16 +1114,16 @@ def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
 
     def fitfunc(x):
         return a() + A() * np.exp(-(x-x0())**n()/(T()**n()))
-    
+
     return p0, fitfunc, fitfunc_str
 
 def fit_timesweep_single(x,y,a = 0, A = 0.4, x0 =0, T = 21e-3,n = 2, return_errorbar=False,plot_guess = False):
 
-        g_a =a 
-        g_A =A 
-        g_x0 =x0 
-        g_T =T 
-        g_n =n 
+        g_a =a
+        g_A =A
+        g_x0 =x0
+        g_T =T
+        g_n =n
 
         p0, fitfunc, fitfunc_str = fit_general_exponential(g_a, g_A, g_x0, g_T, g_n)
 
@@ -1130,15 +1132,15 @@ def fit_timesweep_single(x,y,a = 0, A = 0.4, x0 =0, T = 21e-3,n = 2, return_erro
                 fixed=[0,2],
                 do_print=True, ret=True)
 
-        p02, fitfunc2, fitfunc_str2 = fit_general_exponential(a, 
+        p02, fitfunc2, fitfunc_str2 = fit_general_exponential(a,
                         fit_result['params_dict']['A'], x0, fit_result['params_dict']['T'],fit_result['params_dict']['n'])
 
         x_temp      = np.linspace(x[0],x[-1],200)
         y_temp      =  fitfunc2(x_temp)
 
         if plot_guess == True:
-            y_temp      =  fitfunc(x_temp) 
-            return x_temp, y_temp           
+            y_temp      =  fitfunc(x_temp)
+            return x_temp, y_temp
         else:
             if return_errorbar == False:
                 return x_temp, y_temp,fit_result['params_dict']['T']
@@ -1496,7 +1498,7 @@ def no_QEC_extra_data_single_state_RO(run = 4,idle = False, sweep_time = False, 
                                                 +'_'+state, older_than = older_than,return_timestamp = True)
                # print folder
         SSRO_timestamp, SSRO_folder = toolbox.latest_data(contains = 'AdwinSSRO', older_than = timestamp,return_timestamp = True)
-        
+
         QEC_dict[str(error_sign)][el_RO] = load_QEC_data(folder, SSRO_folder, post_select = False)
 
 
@@ -1584,7 +1586,7 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
                     QEC_dict['y_err_temp'] += QEC_temp_dict['y_err']**2
 
            
-        
+
         
         if 3 in run_list and len(run_list)>1:
             QEC_dict['y_err'] = 1/float(len(run_list)-1)*QEC_dict['y_err_temp']**0.5
@@ -2295,15 +2297,15 @@ def QEC_sweep_time_sum_error_syns(RO  = 0, state = 'Z',run_list = ['00','11','01
                 summed_dict[yy] = 1/float(len(run_list))*dataset_dict_full[syndrome][yy]
                 summed_dict['temp'+ y_err_list[k]] = dataset_dict_full[syndrome][y_err_list[k]]**2
             for jj, p in enumerate(p_list):
-                    summed_dict[p_list[jj]]=1/float(len(run_list))*dataset_dict_full[syndrome][p]                    
+                    summed_dict[p_list[jj]]=1/float(len(run_list))*dataset_dict_full[syndrome][p]
 
         else:
             for k, yy in enumerate(y_list):
                 summed_dict[yy] += 1/float(len(run_list))*dataset_dict_full[syndrome][yy]
                 summed_dict['temp'+ y_err_list[k]] += dataset_dict_full[syndrome][y_err_list[k]]**2
             for jj, p in enumerate(p_list):
-                    summed_dict[p_list[jj]]+=1/float(len(run_list))*dataset_dict_full[syndrome][p]                  
-            
+                    summed_dict[p_list[jj]]+=1/float(len(run_list))*dataset_dict_full[syndrome][p]
+
     for k, yy in enumerate(y_list):
         summed_dict[y_err_list[k]] = 1/float(len(run_list))*summed_dict['temp'+ y_err_list[k]]**0.5
 
@@ -2567,7 +2569,7 @@ def QEC_plot_Z_mZ_sweep_time(run = 1,no_error_list = [],add_encode = False, add_
     # y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
     # y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
     # x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-    # ax1.errorbar(x,y_toff_parity,yerr=y_toff_parity_err,color = 'b',ls = '-',lw = 2,marker = 'o', ms = 4, label = 'undo QEC + majority vote' )    
+    # ax1.errorbar(x,y_toff_parity,yerr=y_toff_parity_err,color = 'b',ls = '-',lw = 2,marker = 'o', ms = 4, label = 'undo QEC + majority vote' )
 
     y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
     y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
@@ -2583,9 +2585,9 @@ def QEC_plot_Z_mZ_sweep_time(run = 1,no_error_list = [],add_encode = False, add_
     # # add best single qubit
     # x_single = QEC_single_data_dict[1]['x']
     # y_single = QEC_single_data_dict[1]['y']
-    # y_single_err = QEC_single_data_dict[1]['y_err']    
+    # y_single_err = QEC_single_data_dict[1]['y_err']
     # ax1.errorbar(x_single,y_single,yerr=y_single_err,color = 'g',ls = '',marker = 'o', ms = 4)#, label = 'Single Qubit  ' + str(2) )
-    
+
     # x_fit,y_fit, T, u_T = fit_timesweep_single(x_single,y_single,a = 0, A = 0.4, x0 =0, T = 21e-3,n = 2, return_errorbar=True)
     # print T*1e3
     # print u_T
@@ -3223,7 +3225,7 @@ def QEC_sum_probs(run_list = [1] ,no_error = '00'):
                 dataset_dict[state]['Tomo_'+str(RO)] = QEC_sum_data_single_state_RO(run = run, no_error = no_error,state = state,RO = RO)
 
 
-        
+
                 for p in range(4):
                     if mm == 0 and ii == 0 and jj == 0:
                         p_dict[p_list[p]] = {}
@@ -3369,11 +3371,11 @@ def no_QEC_process_fids(idle = False, run = 1):
     process_dict['dec_avg_'+'y_err'] = 1/3.*1/8.*((dataset_dict['Z']['Tomo_'+str(0)]['y_err']**2 + dataset_dict['mZ']['Tomo_'+str(0)]['y_err']**2
                     + dataset_dict['Y']['Tomo_'+str(5)]['y_err']**2 +  dataset_dict['mY']['Tomo_'+str(5)]['y_err']**2
                     + dataset_dict['X']['Tomo_'+str(6)]['y_err']**2 + dataset_dict['mX']['Tomo_'+str(6)]['y_err']**2 ) +
-                                
+
                                 (dataset_dict['Z']['Tomo_'+str(1)]['y_err']**2 + dataset_dict['mZ']['Tomo_'+str(1)]['y_err']**2
                                         + dataset_dict['Y']['Tomo_'+str(6)]['y_err']**2 +  dataset_dict['mY']['Tomo_'+str(6)]['y_err']**2
                                         + dataset_dict['X']['Tomo_'+str(6)]['y_err']**2 + dataset_dict['mX']['Tomo_'+str(6)]['y_err']**2 )+
-                                
+
                                (dataset_dict['Z']['Tomo_'+str(2)]['y_err']**2 + dataset_dict['mZ']['Tomo_'+str(2)]['y_err']**2
                                         + dataset_dict['Y']['Tomo_'+str(4)]['y_err']**2 +  dataset_dict['mY']['Tomo_'+str(4)]['y_err']**2
                                         + dataset_dict['X']['Tomo_'+str(6)]['y_err']**2 + dataset_dict['mX']['Tomo_'+str(6)]['y_err']**2 ))**0.5
@@ -3821,8 +3823,9 @@ def QEC_plot_process_fids_sum(append_no_QEC =True, syndrome_list = ['00','01','1
 
         y = no_process_dict['dec_'+t_list[i]+'_y']
         y_err = no_process_dict['dec_'+t_list[i]+'_y_err']
-        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)    
-        ax.plot(x_fit, y_fit, 'b',ls = '-', lw=1, label =  'Encode, $p_c$='+str(int(p_c*100)/100.)+'('+str(int(p_c_err*100))+')')  
+
+        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, 'b',ls = '-', lw=1, label =  'Encode, $p_c$='+str(int(p_c*100)/100.)+'('+str(int(p_c_err*100))+')')
         ax.errorbar(x,y,yerr=y_err,color = 'b', ls = '',marker ='.')
 
         y = toff_process_dict['toff_process_y']
@@ -3833,8 +3836,8 @@ def QEC_plot_process_fids_sum(append_no_QEC =True, syndrome_list = ['00','01','1
 
         # y_idle = process_dict_idle['dec_'+t_list[i]+'_y']
         # y_idle_err = process_dict_idle['dec_'+t_list[i]+'_y_err']
-        # x_fit, y_fit, p_err = fit_QEC_process_curve(x,y_idle)    
-        # ax.plot(x_fit, y_fit, 'k',ls = '-', lw=1, label =  'with idling, no QEC, decode to '+ t_list[i]+ ', p_correction: '+str(int(p_err*100)/100.)) 
+        # x_fit, y_fit, p_err = fit_QEC_process_curve(x,y_idle)
+        # ax.plot(x_fit, y_fit, 'k',ls = '-', lw=1, label =  'with idling, no QEC, decode to '+ t_list[i]+ ', p_correction: '+str(int(p_err*100)/100.))
         # ax.errorbar(x,y_idle,yerr=y_idle_err,color = 'k', ls = '',marker = '.')
 
         # y_idle = toff_dict_idle['toff_process_y']
@@ -3845,8 +3848,8 @@ def QEC_plot_process_fids_sum(append_no_QEC =True, syndrome_list = ['00','01','1
 
         y = single_process_dict['dec_'+t_list[i]+'_y']
         y_err = process_dict['dec_'+t_list[i]+'_y_err']
-        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)    
-        ax.plot(x_fit, y_fit, 'g',ls = '-', lw=1, label =  'single Qubit, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')  
+        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, 'g',ls = '-', lw=1, label =  'single Qubit, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
         ax.errorbar(x,y,yerr=y_err,color = 'g', ls = '',marker = 'o')
 
         ax.set_ylim(-0,1)
@@ -3870,9 +3873,9 @@ def plot_prob_single_syndrome(syndrome = '00'):
     if syndrome == '00' or syndrome == '01':
         run_list = [1,2,3]
     elif syndrome == '10':
-        run_list = [2]        
+        run_list = [2]
     elif syndrome == '11':
-        run_list = [3] 
+        run_list = [3]
     p_list = ['p00','p01','p10','p11']
     p_dict = QEC_sum_probs(run_list = run_list ,no_error = syndrome)
 
@@ -3904,9 +3907,9 @@ def plot_prob_fids_all():
         if syndrome == '00' or syndrome == '01':
             run_list = [1,2,3]
         elif syndrome == '10':
-            run_list = [2]        
+            run_list = [2]
         elif syndrome == '11':
-            run_list = [3] 
+            run_list = [3]
         p_dict[syndrome] = QEC_sum_probs(run_list = run_list ,no_error = syndrome)
 
         for p in p_list:
@@ -3915,7 +3918,7 @@ def plot_prob_fids_all():
             n+=1
 
         ax.bar(n_list[n-4:n],pp,color = color[i],align ='center',label = 'no error assigned to '+syndrome)
-    
+
     pp = []
     for p in p_list:
         pp +=[ 1/4.*(p_dict['00'][p][5]+p_dict['01'][p][5]+p_dict['10'][p][5]+p_dict['11'][p][5])]
@@ -3939,13 +3942,13 @@ def plot_prob_fids_all():
         print 'Figure has not been saved.'
 
 def no_QEC_plot_toff_fids():
-    
+
     toff_dict1 = no_QEC_toffoli_fids(state_list = ['Z','mZ'],run_list=[0,1,2],add_4 = False)
     toff_dict2 = no_QEC_toffoli_fids(state_list = ['Y','mY', 'X','mX'],run_list=[0],add_4 = False)
     # toff_dict_idle = no_QEC_toffoli_fids(idle = True)
 
     color =['b','g','r','c','m','k']
-    
+
     folder  = r'D:\measuring\data\QEC_data\figs\Encoding'
 
     fig,ax = plt.subplots()
@@ -4018,7 +4021,7 @@ def no_QEC_compare_Z_mZ(run_list = [0,1,2,3]):
             y_err_mZ1         = toff_process_dict['toff_mZy_err']
             x1                = toff_process_dict['x']
 
-            
+
             ax.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2., label = '1 round, run '+str(run) )
         elif run ==4:
             toff_process_dict = no_QEC_toffoli_fids(run_list = [run],state_list=['Z','mZ'],only_4 = True)
@@ -4079,7 +4082,7 @@ def no_QEC_plot_toff_fids_compare_runs(state_list = ['Z','mZ','Y','mY', 'X','mX'
         ax.set_ylim(-1.1,1.1)
         ax.set_xlim(-0.1,1.1)
         # ax.set_xlim(0.37,0.53)
-        # ax.set_ylim(-0.25,0.1)        
+        # ax.set_ylim(-0.25,0.1)
         ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
         ax.set_xlabel('error probability')
         ax.set_ylabel('Contrast')
@@ -4612,7 +4615,7 @@ def QEC_2rounds0_plot(older_than = '20150114_012244',load_from_data = False, sav
 
     Set 1: 20150114_232135 to 20150116_085607. Contains pe = [0,0.1,0.2,0.3,0.4,0.5]
     Set 2: 20150125_183842 to 20150125_234653. Contains pe = [0.2, 0.3, 0.4, 0.45]
-    Set 3: 20150201_011834 to 20150201_132340. Contains pe = [0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5] 
+    Set 3: 20150201_011834 to 20150201_132340. Contains pe = [0, 0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5]
     Currently only analyzing the '11' error syndrome
 '''
 
@@ -4679,7 +4682,7 @@ def QEC_2rounds_load_data(run = 1, load_from_data = False):
                                                                                         RO = RO, sym = syndrome, error_signs = error_signs,
                                                                                         electron_RO = electron_RO,
                                                                                         len_k=len_k)
-        if run == 1: 
+        if run == 1:
             pickle.dump(data, open( "2rounds_run1.p", "wb" ) )
         if run == 2:
             pickle.dump(data, open( "2rounds_run2.p", "wb" ) )
@@ -4687,11 +4690,11 @@ def QEC_2rounds_load_data(run = 1, load_from_data = False):
             pickle.dump(data, open( "2rounds_run3.p", "wb" ) )
 
     else:
-        if run == 1: 
+        if run == 1:
             data = pickle.load( open( "2rounds_run1.p", "rb" ) )
-        elif run == 2: 
+        elif run == 2:
             data = pickle.load( open( "2rounds_run2.p", "rb" ) )
-        elif run == 3: 
+        elif run == 3:
             data = pickle.load( open( "2rounds_run3.p", "rb" ) )
 
     return data
@@ -4780,7 +4783,7 @@ def QEC_2rounds_combine_syndromes(data):
                     for ii in range(len(prop_list)):
                         data[state + 'RO'+str(RO)][prop_list[ii]] = (data[state + 'RO'+str(RO)][prop_list[ii]] +
                                                                                     data[state + 'RO'+str(RO) + 'S'+syndrome][prop_list[ii]])
-               
+
 
             y = y; y_err   = (y_err**0.5)
 
@@ -4815,8 +4818,8 @@ def QEC_2rounds_apply_final_QEC(data):
                 data[state + syndrome + error_sign]['x'] = data[state + 'RO0' + syndrome + error_sign]['x']
 
                 for ii in range(len(prop_list)):
-                    data[state + syndrome + error_sign][prop_list[ii]] = (data[state+'RO0'+syndrome][prop_list[ii]] + 
-                                                                          data[state+'RO1'+syndrome][prop_list[ii]] + 
+                    data[state + syndrome + error_sign][prop_list[ii]] = (data[state+'RO0'+syndrome][prop_list[ii]] +
+                                                                          data[state+'RO1'+syndrome][prop_list[ii]] +
                                                                           data[state+'RO2'+syndrome][prop_list[ii]] +
                                                                           data[state+'RO6'+syndrome][prop_list[ii]])/4
     return data
@@ -4829,12 +4832,18 @@ def QEC_2rounds_analysis(run =1,load_from_data = False):
     data_dict  = QEC_2rounds_load_data(run = run, load_from_data = load_from_data)
     data_dict  = QEC_2rounds_combine_eRO(data_dict)
     data_dict  = QEC_2rounds_combine_error_signs(data_dict)
-    data_dict  = QEC_2rounds_combine_syndromes(data_dict) 
+    data_dict  = QEC_2rounds_combine_syndromes(data_dict)
     data_dict  = QEC_2rounds_apply_final_QEC(data_dict)
 
     return data_dict
 
 def QEC_2rounds_combined_runs(runs=[1,2]):
+
+    x          = {}
+    y_Z        = {}
+    y_err_Z    = {}
+    y_mZ       = {}
+    y_err_mZ   = {}
 
     if len(runs) == 1:
         data_dict1 = QEC_2rounds_analysis(run=runs[0], load_from_data=False)
@@ -4859,7 +4868,108 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_mZ2       = data_dict2['mZ']['y']
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
+        weight_Z1    =  1/(y_err_Z1)**2
+        weight_mZ1   =  1/(y_err_mZ1)**2
+        
+        weight_Z2    =  1/(y_err_Z2)**2
+        weight_mZ2   =  1/(y_err_mZ2)**2
+
+
+        if runs[0] == 1 and runs[1] == 2:
+            x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
+
+            ## Combine without weight
+            y_Z     = np.array([y_Z1[0],    y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]])
+            y_mZ    = np.array([y_mZ1[0],   y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]])
+
+            y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]])
+            y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]])
+
+            ## Weighted average
+            y_Z     = np.array([y_Z1[0],
+                                y_Z1[1],  
+                                np.average( [y_Z1[2],y_Z2[0]], weight = [weight_Z1[2],weight_Z2[0]]),   
+                                np.average( [y_Z1[3],y_Z2[1]], weight = [weight_Z1[3],weight_Z2[1]]),   
+                                np.average( [y_Z1[4],y_Z2[2]], weight = [weight_Z1[4],weight_Z2[2]]),   
+                                y_Z2[3],  
+                                y_Z1[5])
+            
+            y_err_Z = np.array([y_err_Z1[0],   
+                                y_err_Z1[1],  
+                                1/(weight_Z1[2]+weight_Z2[0])**0.5
+                                1/(weight_Z1[3]+weight_Z2[1])**0.5
+                                1/(weight_Z1[4]+weight_Z2[2])**0.5
+                                y_err_Z2[3],  
+                                y_err_Z1[5]])
+
+
+            y_mZ     = np.array([y_mZ1[0],
+                                y_mZ1[1],  
+                                np.average( [y_mZ1[2],y_mZ2[0]], weight = [weight_mZ1[2],weight_mZ2[0]]),   
+                                np.average( [y_mZ1[3],y_mZ2[1]], weight = [weight_mZ1[3],weight_mZ2[1]]),   
+                                np.average( [y_mZ1[4],y_mZ2[2]], weight = [weight_mZ1[4],weight_mZ2[2]]),   
+                                y_mZ2[3],  
+                                y_mZ1[5])
+
+            y_err_mZ = np.array([y_err_mZ1[0],   
+                                y_err_mZ1[1],  
+                                1/(weight_mZ1[2]+weight_mZ2[0])**0.5
+                                1/(weight_mZ1[3]+weight_mZ2[1])**0.5
+                                1/(weight_mZ1[4]+weight_mZ2[2])**0.5
+                                y_err_mZ2[3],  
+                                y_err_mZ1[5]])
+
+
+        elif runs[0] == 1 and runs[1] == 3:
+
+            x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
+
+            ## Combine without weight
+            y_Z = np.array([   (y_Z1[0]+y_Z2[0])/2.,    (y_Z1[1]+y_Z2[1])/2.,    (y_Z1[2]+y_Z2[2])/2.,     (y_Z1[3]+y_Z2[3])/2.,    y_Z2[4],   (y_Z1[4]+y_Z2[5])/2.,   y_Z2[6],  (y_Z1[5]+y_Z2[7])/2.])
+            y_mZ = np.array([(y_mZ1[0]+y_mZ2[0])/2.,  (y_mZ1[1]+y_mZ2[1])/2.,  (y_mZ1[2]+y_mZ2[2])/2.,   (y_mZ1[3]+y_mZ2[3])/2.,   y_mZ2[4], (y_mZ1[4]+y_mZ2[5])/2.,  y_mZ2[6],  (y_mZ1[5]+y_mZ2[7])/2.])
+
+            y_err_Z  = np.array([ (y_err_Z1[0]**2+y_err_Z2[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z2[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[2]**2)**0.5/2.,     (y_err_Z1[3]**2+y_err_Z2[3]**2)**0.5/2.,    y_err_Z2[4],   (y_err_Z1[4]**2+y_err_Z2[5]**2)**0.5/2.,   y_err_Z2[6],  (y_err_Z1[5]**2+y_err_Z2[7]**2)**0.5/2.])
+            y_err_mZ = np.array([ (y_err_mZ1[0]**2+y_err_mZ2[0]**2)**0.5/2.,  (y_err_mZ1[1]**2+y_err_mZ2[1]**2)**0.5/2.,  (y_err_mZ1[2]**2+y_err_mZ2[2]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[3]**2)**0.5/2.,   y_err_mZ2[4], (y_err_mZ1[4]**2+y_err_mZ2[5]**2)**0.5/2.,  y_err_mZ2[6],  (y_err_mZ1[5]**2+y_err_mZ2[7]**2)**0.5/2.])
+
+            ## Weighted average
+            y_Z = np.array([    np.average( [y_Z1[0],y_Z2[0]], weight = [weight_Z1[0],weight_Z2[0]]),    
+                                np.average( [y_Z1[1],y_Z2[1]], weight = [weight_Z1[1],weight_Z2[1]]),    
+                                np.average( [y_Z1[2],y_Z2[2]], weight = [weight_Z1[2],weight_Z2[2]]),     
+                                np.average( [y_Z1[3],y_Z2[3]], weight = [weight_Z1[3],weight_Z2[3]]),    
+                                y_Z2[4],   
+                                np.average( [y_Z1[4],y_Z2[5]], weight = [weight_Z1[4],weight_Z2[5]]),   
+                                y_Z2[6],  
+                                np.average( [y_Z1[5],y_Z2[7]], weight = [weight_Z1[5],weight_Z2[7]])])
+
+            y_err_Z  = np.array([   1/(weight_Z1[0]+weight_Z2[0))**0.5,    
+                                    1/(weight_Z1[1]+weight_Z2[1))**0.5,    
+                                    1/(weight_Z1[2]+weight_Z2[2))**0.5,     
+                                    1/(weight_Z1[3]+weight_Z2[3))**0.5,    
+                                    y_err_Z2[4],   
+                                    1/(weight_Z1[4]+weight_Z2[5))**0.5,   
+                                    y_err_Z2[6],  
+                                    1/(weight_Z1[5]+weight_Z2[7))**0.5])
+
+            y_mZ = np.array([   np.average( [y_mZ1[0],y_mZ2[0]], weight = [weight_mZ1[0],weight_mZ2[0]]),    
+                                np.average( [y_mZ1[1],y_mZ2[1]], weight = [weight_mZ1[1],weight_mZ2[1]]),    
+                                np.average( [y_mZ1[2],y_mZ2[2]], weight = [weight_mZ1[2],weight_mZ2[2]]),     
+                                np.average( [y_mZ1[3],y_mZ2[3]], weight = [weight_mZ1[3],weight_mZ2[3]]),    
+                                y_mZ2[4],   
+                                np.average( [y_mZ1[4],y_mZ2[5]], weight = [weight_mZ1[4],weight_mZ2[5]]),   
+                                y_mZ2[6],  
+                                np.average( [y_mZ1[5],y_mZ2[7]], weight = [weight_mZ1[5],weight_mZ2[7]])])
+
+            y_err_mZ  = np.array([  1/(weight_mZ1[0]+weight_mZ2[0))**0.5,    
+                                    1/(weight_mZ1[1]+weight_mZ2[1))**0.5,    
+                                    1/(weight_mZ1[2]+weight_mZ2[2))**0.5,     
+                                    1/(weight_mZ1[3]+weight_mZ2[3))**0.5,    
+                                    y_err_mZ2[4],   
+                                    1/(weight_mZ1[4]+weight_mZ2[5))**0.5,   
+                                    y_err_mZ2[6],  
+                                    1/(weight_mZ1[5]+weight_mZ2[7))**0.5])
+
     elif len(runs) == 3:
+
         data_dict1  = QEC_2rounds_analysis(run=runs[0], load_from_data=False)
         x1          = data_dict1['Z']['x']
         y_Z1        = data_dict1['Z']['y']
@@ -4875,43 +4985,82 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
         data_dict3  = QEC_2rounds_analysis(run=runs[2], load_from_data=False)
-        x3          = data_dict2['Z']['x']
-        y_Z3        = data_dict2['Z']['y']
-        y_err_Z3    = data_dict2['Z']['y_err']
-        y_mZ3       = data_dict2['mZ']['y']
-        y_err_mZ3   = data_dict2['mZ']['y_err']
+        x3          = data_dict3['Z']['x']
+        y_Z3        = data_dict3['Z']['y']
+        y_err_Z3    = data_dict3['Z']['y_err']
+        y_mZ3       = data_dict3['mZ']['y']
+        y_err_mZ3   = data_dict3['mZ']['y_err']
 
+        weight_Z1    =  1/(y_err_Z1)**2
+        weight_mZ1   =  1/(y_err_mZ1)**2
         
-    if runs[0] == 1 and runs[1] == 2:
-        x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
-        
-        y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
-        y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]]) 
+        weight_Z2    =  1/(y_err_Z2)**2
+        weight_mZ2   =  1/(y_err_mZ2)**2
 
-        y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
-        y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
-    
-    elif runs[0] == 1 and runs[1] == 3:
-        print 'yes'
-        x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
-        
-        y_Z = np.array([   (y_Z1[0]+y_Z2[0])/2.,    (y_Z1[1]+y_Z2[1])/2.,    (y_Z1[2]+y_Z2[2])/2.,     (y_Z1[3]+y_Z2[3])/2.,    y_Z2[4],   (y_Z1[4]+y_Z2[5])/2.,   y_Z2[6],  (y_Z1[5]+y_Z2[7])/2.]) 
-        y_mZ = np.array([(y_mZ1[0]+y_mZ2[0])/2.,  (y_mZ1[1]+y_mZ2[1])/2.,  (y_mZ1[2]+y_mZ2[2])/2.,   (y_mZ1[3]+y_mZ2[3])/2.,   y_mZ2[4], (y_mZ1[4]+y_mZ2[5])/2.,  y_mZ2[6],  (y_mZ1[5]+y_mZ2[7])/2.]) 
+        weight_Z3    =  1/(y_err_Z3)**2
+        weight_mZ3   =  1/(y_err_mZ3)**2
 
-        y_err_Z  = np.array([ (y_err_Z1[0]**2+y_err_Z2[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z2[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[2]**2)**0.5/2.,     (y_err_Z1[3]**2+y_err_Z2[3]**2)**0.5/2.,    y_err_Z2[4],   (y_err_Z1[4]**2+y_err_Z2[5]**2)**0.5/2.,   y_err_Z2[6],  (y_err_Z1[5]**2+y_err_Z2[7]**2)**0.5/2.]) 
-        y_err_mZ = np.array([ (y_err_mZ1[0]**2+y_err_mZ2[0]**2)**0.5/2.,  (y_err_mZ1[1]**2+y_err_mZ2[1]**2)**0.5/2.,  (y_err_mZ1[2]**2+y_err_mZ2[2]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[3]**2)**0.5/2.,   y_err_mZ2[4], (y_err_mZ1[4]**2+y_err_mZ2[5]**2)**0.5/2.,  y_err_mZ2[6],  (y_err_mZ1[5]**2+y_err_mZ2[7]**2)**0.5/2.]) 
+        if runs[0] == 1 and runs[1] == 2 and runs[2] == 3:
+            x   = np.array([ 0.,   0.1,  0.2,  0.3, 0.35,  0.4,  0.45, 0.5])
 
-    elif runs[0] == 1 and runs[1] == 3:
+            ### not weighted average
+            y_Z = np.array([   (y_Z1[0]+y_Z3[0])/2.,
+                                (y_Z1[1]+y_Z3[1])/2.,    (y_Z1[2]+y_Z2[0]+y_Z3[2])/3.,     (y_Z1[3]+y_Z2[1]+y_Z3[3])/3.,
+                                y_Z3[4],   (y_Z1[4]+y_Z2[2]+y_Z3[5])/3.,   (y_Z2[3]+y_Z3[6])/2,  (y_Z1[5]+y_Z3[7])/2.])
+            
+            y_mZ = np.array([   (y_mZ1[0]+y_mZ3[0])/2.,    (y_mZ1[1]+y_mZ3[1])/2.,    (y_mZ1[2]+y_mZ2[0]+y_mZ3[2])/3.,     (y_mZ1[3]+y_mZ2[1]+y_mZ3[3])/3.,
+                                y_mZ3[4],   (y_mZ1[4]+y_mZ2[2]+y_mZ3[5])/3.,   (y_mZ2[3]+y_mZ3[6])/2,  (y_mZ1[5]+y_mZ3[7])/2.])
+
+            y_err_Z = np.array([   (y_err_Z1[0]**2+y_err_Z3[0]**2)**0.5/2.,    (y_err_Z1[1]**2+y_err_Z3[1]**2)**0.5/2.,    (y_err_Z1[2]**2+y_err_Z2[0]**2+y_err_Z3[2]**2)**0.5/3.,     (y_err_Z1[3]**2+y_err_Z2[1]**2+y_err_Z3[3]**2)**0.5/3.,
+                                y_err_Z3[4],   (y_err_Z1[4]**2+y_err_Z2[2]**2+y_err_Z3[5]**2)**0.5/3.,   (y_err_Z2[3]**2+y_err_Z3[6]**2)**0.5/2,  (y_err_Z1[5]**2+y_err_Z3[7]**2)**0.5/2.])
+            y_err_mZ = np.array([   (y_err_mZ1[0]**2+y_err_mZ3[0]**2)**0.5/2.,    (y_err_mZ1[1]**2+y_err_mZ3[1]**2)**0.5/2.,    (y_err_mZ1[2]**2+y_err_mZ2[0]**2+y_err_mZ3[2]**2)**0.5/3.,     (y_err_mZ1[3]**2+y_err_mZ2[1]**2+y_err_mZ3[3]**2)**0.5/3.,
+                                y_err_mZ3[4],   (y_err_mZ1[4]**2+y_err_mZ2[2]**2+y_err_mZ3[5]**2)**0.5/3.,   (y_err_mZ2[3]**2+y_err_mZ3[6]**2)**0.5/2,  (y_err_mZ1[5]**2+y_err_mZ3[7]**2)**0.5/2.])
+
+            ### weighted average
+            y_Z = np.array([    np.average( [y_Z1[0],y_Z3[0]],          weight = [weight_Z1[0],weight_Z1_Z3[0]]),
+                                np.average( [y_Z1[1],y_Z3[1]],          weight = [weight_Z1[1],weight_Z3[1]]),    
+                                np.average( [y_Z1[2],y_Z2[0],y_Z3[2]],  weight = [weight_Z1[2],weight_Z2[0],weight_Z3[2]]),     
+                                np.average( [y_Z1[3],y_Z2[1],y_Z3[3]],  weight = [weight_Z1[3],weight_Z2[1],weight_Z3[3]]),
+                                y_Z3[4],   
+                                np.average( [y_Z1[4],y_Z2[2],y_Z3[5]],  weight = [weight_Z1[4],weight_Z2[2],weight_Z3[5]]),   
+                                np.average( [y_Z2[3],y_Z3[6]],          weight = [weight_Z2[3],weight_Z3[6]]),  
+                                np.average( [y_Z1[5],y_Z3[7]],          weight = [weight_Z1[5],weight_Z3[7]])])
+
+            y_err_Z = np.array([    1/(weight_Z1[0]+weight_Z3[0])**0.5,    
+                                    1/(weight_Z1[1]+weight_Z3[1])**0.5,    
+                                    1/(weight_Z1[2]+weight_Z2[0]+weight_Z3[2])**0.5,     
+                                    1/(weight_Z1[3]+weight_Z2[1]+weight_Z3[3])**0.5,
+                                    y_err_Z3[4],   
+                                    1/(weight_Z1[4]+weight_Z2[2]+weight_Z3[5])**0.5,   
+                                    1/(weight_Z2[3]+weight_Z3[6])**0.5,  
+                                    1/(weight_Z1[5]+weight_Z3[7])**0.5])
+
+            y_mZ = np.array([    np.average( [y_mZ1[0],y_mZ3[0]],          weight = [weight_mZ1[0],weight_mZ1_mZ3[0]]),
+                                np.average( [y_mZ1[1],y_mZ3[1]],          weight = [weight_mZ1[1],weight_mZ3[1]]),    
+                                np.average( [y_mZ1[2],y_mZ2[0],y_mZ3[2]],  weight = [weight_mZ1[2],weight_mZ2[0],weight_mZ3[2]]),     
+                                np.average( [y_mZ1[3],y_mZ2[1],y_mZ3[3]],  weight = [weight_mZ1[3],weight_mZ2[1],weight_mZ3[3]]),
+                                y_mZ3[4],   
+                                np.average( [y_mZ1[4],y_mZ2[2],y_mZ3[5]],  weight = [weight_mZ1[4],weight_mZ2[2],weight_mZ3[5]]),   
+                                np.average( [y_mZ2[3],y_mZ3[6]],          weight = [weight_mZ2[3],weight_mZ3[6]]),  
+                                np.average( [y_mZ1[5],y_mZ3[7]],          weight = [weight_mZ1[5],weight_mZ3[7]])])
+
+            y_err_mZ = np.array([    1/(weight_mZ1[0]+weight_mZ3[0])**0.5,    
+                                    1/(weight_mZ1[1]+weight_mZ3[1])**0.5,    
+                                    1/(weight_mZ1[2]+weight_mZ2[0]+weight_mZ3[2])**0.5,     
+                                    1/(weight_mZ1[3]+weight_mZ2[1]+weight_mZ3[3])**0.5,
+                                    y_err_mZ3[4],   
+                                    1/(weight_mZ1[4]+weight_mZ2[2]+weight_mZ3[5])**0.5,   
+                                    1/(weight_mZ2[3]+weight_mZ3[6])**0.5,  
+                                    1/(weight_mZ1[5]+weight_mZ3[7])**0.5])
+            
+    return x, y_Z, y_err_Z, y_mZ, y_err_mZ
+
+def QEC_2rounds_plot_final_curves(runs = [1,3], load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs\multiple_rounds'):
 
 
-        return x, y_Z, y_err_Z, y_mZ, y_err_mZ
+    x, y_Z, y_err_Z, y_mZ, y_err_mZ =  QEC_2rounds_combined_runs(runs=runs)
 
-def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs\multiple_rounds'):
-
-
-    x, y_Z, y_err_Z, y_mZ, y_err_mZ =  QEC_2rounds_combined_runs(runs=[1,3])
-
-    ### Z and -Z states seperately 
+    ### Z and -Z states seperately
     if 1:
         fig1,ax = plt.subplots()
         ax.errorbar(x, y_Z, yerr=y_err_Z,color = 'b' )
@@ -4924,11 +5073,12 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax.set_xlabel('error probability')
         ax.set_ylabel('Expectation value')
 
-        try:
-            fig1.savefig(
-                os.path.join(save_folder,'StateZ.png'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig1.savefig(
+                    os.path.join(save_folder,'StateZ.png'))
+            except:
+                print 'Figure has not been saved.'
 
         fig2,ax2 = plt.subplots()
         ax2.errorbar(x, y_mZ, yerr=y_err_mZ,color = 'b' )
@@ -4941,11 +5091,12 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax2.set_xlabel('error probability')
         ax2.set_ylabel('Expectation value')
 
-        try:
-            fig2.savefig(
-                os.path.join(save_folder,'StatemZ.png'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig2.savefig(
+                    os.path.join(save_folder,'StatemZ.png'))
+            except:
+                print 'Figure has not been saved.'
 
     ### Averaging the +Z and -Z states
     if 1:
@@ -4960,11 +5111,12 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax4.set_xlabel('error probability')
         ax4.set_ylabel('Expectation value')
 
-        try:
-            fig2.savefig(
-                os.path.join(save_folder,'Analyze_script.png'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig2.savefig(
+                    os.path.join(save_folder,'Analyze_script.png'))
+            except:
+                print 'Figure has not been saved.'
 
     ### Compare runs
     if 0:
@@ -4974,7 +5126,7 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         fig4,ax4 = plt.subplots()
         ax4.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2.,color = 'b',ls ='', label = 'run1')
         ax4.errorbar(x2, (y_Z2-y_mZ2)/2., yerr=(y_err_Z2**2+y_err_mZ2**2)**0.5/2.,color = 'r',ls ='', label = 'run2' )
-        
+
         ax4.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
         ax4.plot([0,0.5], [1,0],'k:' )
         ax4.set_ylim(-0.05,1.05)
@@ -4985,11 +5137,12 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax4.set_ylabel('Expectation value')
         ax4.legend()
 
-        try:
-            fig4.savefig(
-                os.path.join(save_folder,'2Rounds_compare_runs.pdf'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig4.savefig(
+                    os.path.join(save_folder,'2Rounds_compare_runs.pdf'))
+            except:
+                print 'Figure has not been saved.'
 
     ### Compare with and without run 2
     if 0:
@@ -4999,7 +5152,7 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         fig4,ax4 = plt.subplots()
         ax4.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2.,color = 'b',ls ='', label = 'only run 1')
         ax4.errorbar(x2, (y_Z2-y_mZ2)/2., yerr=(y_err_Z2**2+y_err_mZ2**2)**0.5/2.,color = 'r',ls ='', label = 'combined' )
-        
+
         ax4.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
         ax4.plot([0,0.5], [1,0],'k:' )
         ax4.set_ylim(-0.05,1.05)
@@ -5010,11 +5163,12 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax4.set_ylabel('Expectation value')
         ax4.legend()
 
-        try:
-            fig4.savefig(
-                os.path.join(save_folder,'2Rounds_with_without_run2.pdf'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig4.savefig(
+                    os.path.join(save_folder,'2Rounds_with_without_run2.pdf'))
+            except:
+                print 'Figure has not been saved.'
 
     ### Outcome probabilities
     if 0:
@@ -5023,7 +5177,7 @@ def QEC_2rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
 
         data_dict2 = QEC_2rounds_analysis(run=2, load_from_data=False)
         x2         = data_dict2['Z']['x']
-        
+
 
         prop_list = ['p00','p01','p10','p11']
         colors = cm.rainbow(np.linspace(0, 1, len(prop_list)))
@@ -5177,11 +5331,11 @@ def QEC_3rounds_load_data(run = 1, load_from_data = False):
                                                                                         RO = RO, sym = syndrome, error_signs = error_signs,
                                                                                         electron_RO = electron_RO,
                                                                                         len_k=len_k)
-        if run == 1: 
+        if run == 1:
             pickle.dump(data, open( "3rounds_run1.p", "wb" ) )
-        elif run == 2: 
+        elif run == 2:
             pickle.dump(data, open( "3rounds_run2.p", "wb" ) )
-    
+
     else:
         if run == 1:
             data = pickle.load( open( "3rounds_run1.p", "rb" ) )
@@ -5367,14 +5521,54 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
         y_mZ2       = data_dict2['mZ']['y']
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
+        weight_Z1    =  1/(y_err_Z1)**2
+        weight_mZ1   =  1/(y_err_mZ1)**2
+        
+        weight_Z2    =  1/(y_err_Z2)**2
+        weight_mZ2   =  1/(y_err_mZ2)**2
+
         x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
 
-        y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]]) 
-        y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]]) 
+        ### Combine without weight
+        y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]])
+        y_mZ = np.array([y_mZ1[0], y_mZ1[1], (y_mZ1[2]+y_mZ2[0])/2., (y_mZ1[3]+y_mZ2[1])/2., (y_mZ1[4]+y_mZ2[2])/2., y_mZ2[3], y_mZ1[5]])
 
-        y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]]) 
-        y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]]) 
-       
+        y_err_Z = np.array([y_err_Z1[0],   y_err_Z1[1],  (y_err_Z1[2]**2+y_err_Z2[0]**2)**0.5/2.,   (y_err_Z1[3]**2+y_err_Z2[1]**2)**0.5/2.,   (y_err_Z1[4]**2+y_err_Z2[2]**2)**0.5/2.,   y_err_Z2[3],  y_err_Z1[5]])
+        y_err_mZ = np.array([y_err_mZ1[0],   y_err_mZ1[1],  (y_err_mZ1[2]**2+y_err_mZ2[0]**2)**0.5/2.,   (y_err_mZ1[3]**2+y_err_mZ2[1]**2)**0.5/2.,   (y_err_mZ1[4]**2+y_err_mZ2[2]**2)**0.5/2.,   y_err_mZ2[3],  y_err_mZ1[5]])
+
+        ### Combine with weight
+        y_Z = np.array([y_Z1[0],   
+                        y_Z1[1],  
+                        np.average([y_Z1[2],y_Z2[0]], weight[y_Z1[2], y_Z2[0]]),    
+                        np.average([y_Z1[3],y_Z2[1]], weight[y_Z1[3], y_Z2[1]]),    
+                        np.average([y_Z1[4],y_Z2[2]], weight[y_Z1[4], y_Z2[2]]),    
+                        y_Z2[3],  
+                        y_Z1[5]])
+
+        y_err_Z = np.array([y_err_Z1[0],   
+                            y_err_Z1[1],  
+                            1/(weight_Z1[2]+weight_Z2[0])**0.5,   
+                            1/(weight_Z1[3]+weight_Z2[1])**0.5,   
+                            1/(weight_Z1[4]+weight_Z2[2])**0.5,   
+                            y_err_Z2[3],  
+                            y_err_Z1[5]])
+
+
+        y_mZ = np.array([y_mZ1[0],   
+                        y_mZ1[1],   
+                        np.average([y_mZ1[2],y_mZ2[0]], weight[y_mZ1[2], y_mZ2[0]]),    
+                        np.average([y_mZ1[3],y_mZ2[1]], weight[y_mZ1[3], y_mZ2[1]]),    
+                        np.average([y_mZ1[4],y_mZ2[2]], weight[y_mZ1[4], y_mZ2[2]]),    
+                        y_mZ2[3],   
+                        y_mZ1[5]])
+        y_err_mZ = np.array([y_err_mZ1[0],   
+                            y_err_mZ1[1],  
+                            1/(weight_mZ1[2]+weight_mZ2[0])**0.5,   
+                            1/(weight_mZ1[3]+weight_mZ2[1])**0.5,   
+                            1/(weight_mZ1[4]+weight_mZ2[2])**0.5,   
+                            y_err_mZ2[3],  
+                            y_err_mZ1[5]])
+
     return x, y_Z, y_err_Z, y_mZ, y_err_mZ
 
 def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
@@ -5444,7 +5638,7 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         fig4,ax4 = plt.subplots()
         ax4.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2.,color = 'b', label = 'run1')
         ax4.errorbar(x2, (y_Z2-y_mZ2)/2., yerr=(y_err_Z2**2+y_err_mZ2**2)**0.5/2.,color = 'r', label = 'run2' )
-        
+
         ax4.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
         ax4.plot([0,0.5], [1,0],'k:' )
         ax4.set_ylim(-0.05,1.05)
@@ -5460,18 +5654,18 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
                 os.path.join(save_folder,'3Rounds_compare_runs.pdf'))
         except:
             print 'Figure has not been saved.'
-       
+
     plt.show()
     plt.close('all')
 
 def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
-    
+
     data_dict = QEC_3rounds_analysis(run=1, load_from_data=False)
     x         = data_dict['Z']['x']
 
     data_dict2 = QEC_3rounds_analysis(run=2, load_from_data=False)
     x2         = data_dict2['Z']['x']
-        
+
     prop_list = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
                  'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
 
@@ -5640,12 +5834,13 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     x1b           = data_dict_mZ['x']
 
     ### load 2 rounds data
-    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2])
-    
+
+    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2,3])
+
     ### load 3 rounds data
     x3, y_Z3, y_err_Z3, y_mZ3, y_err_mZ3 =  QEC_3rounds_combined_runs(runs=[1,2])
 
-    ### Averaging over Z and mZ 
+    ### Averaging over Z and mZ
     y_tot0  = (y_Z0-y_mZ0)/2; y_err_tot0 = (y_err_Z0**2+y_err_mZ0**2)**0.5/2
     y_tot1  = (y_Z1-y_mZ1)/2; y_err_tot1 = (y_err_Z1**2+y_err_mZ1**2)**0.5/2
     y_tot1b = (y_Z1b-y_mZ1b)/2; y_err_tot1b = (y_err_Z1b**2+y_err_mZ1b**2)**0.5/2
@@ -5664,40 +5859,41 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     # x_fit3, y_fit3 = fit_QEC_3_rounds_curve(x3,y_tot3, return_errorbar=False,plot_guess = True)
     ### Complete result (avaraged over Z and mZ)
     fig4,ax = plt.subplots(figsize=(8,8))
-    
-    ax.errorbar(x0, y_tot0, yerr= y_err_tot0, color = 'm', ls = '', marker = 'o', ms = 4, label = '0 rounds, $p_c$='+str(int(fit_result0*1000)/1000.)+'('+str(int(u_fit_result0*1000))+')') 
-    ax.plot(x_fit0, y_fit0, color = 'm')
-    
-    ax.errorbar(x1, y_tot1, yerr= y_err_tot1,color = 'g', ls = '', marker = 'o', ms = 4, label = '1 round, $p_c$='+str(int(fit_result1*1000)/1000.)+'('+str(int(u_fit_result1*1000))+')') 
-    ax.plot(x_fit1, y_fit1, color = 'g')
 
-    # ax.errorbar(x1b, y_tot1b, yerr= y_err_tot1b,color = 'm', label = '1 rounds QEC' )
+    ax.errorbar(x0, (0.5*y_tot0+0.5), yerr= 0.5*y_err_tot0, color = 'm', ls = '', marker = 'o', ms = 4, label = '0 rounds, $p_c$='+str(int(fit_result0*1000)/1000.)+'('+str(int(u_fit_result0*1000))+')')
+    ax.plot(x_fit0, (0.5*y_fit0+0.5), color = 'm')
 
-    ax.errorbar(x2, y_tot2, yerr=y_err_tot2,color = 'b', marker = 'o', ms = 4, ls = '',label = '2 rounds, $p_c$='+str(int(fit_result2*1000)/1000.)+'('+str(int(u_fit_result2*1000))+')') 
-    ax.plot(x_fit2, y_fit2, color = 'b')
+    ax.errorbar(x1, (0.5*y_tot1+0.5), yerr= 0.5*y_err_tot1,color = 'g', ls = '', marker = 'o', ms = 4, label = '1 round, $p_c$='+str(int(fit_result1*1000)/1000.)+'('+str(int(u_fit_result1*1000))+')')
+    ax.plot(x_fit1, (0.5*y_fit1+0.5), color = 'g')
 
-    ax.errorbar(x3,y_tot3, yerr=y_err_tot3,color = 'r', marker = 'o', ms = 4,ls = '', label = '3 rounds, $p_c$='+str(int(fit_result3*1000)/1000.)+'('+str(int(u_fit_result3*1000))+')') 
-    ax.plot(x_fit3, y_fit3, color = 'r')
+    # ax.errorbar(x1b, (0.5*y_tot1n+0.5), yerr= 0.5*y_err_tot1b,color = 'm', label = '1 rounds QEC' )
+
+    ax.errorbar(x2, (0.5*y_tot2+0.5), yerr=0.5*y_err_tot2,color = 'b', marker = 'o', ms = 4, ls = '',label = '2 rounds, $p_c$='+str(int(fit_result2*1000)/1000.)+'('+str(int(u_fit_result2*1000))+')')
+    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = 'b')
+
+    ax.errorbar(x3, (0.5*y_tot3+0.5), yerr=0.5*y_err_tot3,color = 'r', marker = 'o', ms = 4,ls = '', label = '3 rounds, $p_c$='+str(int(fit_result3*1000)/1000.)+'('+str(int(u_fit_result3*1000))+')')
+    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = 'r')
 
     # ax.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
-    
 
-    ax.plot([0,0.5], [1,0],'k:' )
-    ax.set_ylim(-0.05,1.05)
+    ax.plot([0,0.5], [1,0.5],'k:' )
+    ax.set_ylim(0.45,1.05)
     ax.set_xlim(-0.05,0.55)
     ax.set_title('QEC_data_multiple rounds, averaged over Z and -Z')
     ax.hlines([-1,0,1],x1[0]-0.05,x0[-1]+0.05,linestyles='dotted')
     ax.set_xlabel('error probability')
-    ax.set_ylabel('Expectation value')
+    ax.set_ylabel('Average fidelity')
     ax.legend()
 
-    try:
-        fig4.savefig(
-            os.path.join(save_folder,'Multiple_rounds_Combined11.pdf'))
-        fig4.savefig(
-            os.path.join(save_folder,'Multiple_rounds_Combined11.png'))        
-    except:
-        print 'Figure has not been saved.'
 
-    # plt.show()
-    # plt.close('all')
+    if save_folder != None:
+        try:
+            fig4.savefig(
+                os.path.join(save_folder,'Multiple_rounds_Combined11.pdf'))
+            fig4.savefig(
+                os.path.join(save_folder,'Multiple_rounds_Combined11.png'))
+        except:
+            print 'Figure has not been saved.'
+
+    plt.show()
+    plt.close('all')
