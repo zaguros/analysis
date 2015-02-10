@@ -131,7 +131,7 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 		d,t = toolbox.get_date_time_string_from_folder(folder)
 		timestamp = toolbox.timestamp_from_datetime(t)
 	### SSRO calibration
-	if ssro_calib_timestamp == None: 
+	if ssro_calib_timestamp == None:
 	    ssro_calib_folder = toolbox.latest_data('SSRO',older_than=timestamp)
 	else:
 	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
@@ -524,7 +524,7 @@ def Zeno_1Q_proc_list(newer_than_tstamp=None,
 		plt.close('all')
 
 def Zeno_1Q_state_list(newer_than_tstamp=None,
-						msmt_list=['0'],eRO_list=['positive'],decoded_bit=1,state='Z'):
+						msmt_list=['0'],eRO_list=['positive'],decoded_bit=1,state='Z',ssro_timestamp=None):
 	fid=[]
 	fid_u=[]
 	evotime=[]
@@ -538,7 +538,7 @@ def Zeno_1Q_state_list(newer_than_tstamp=None,
 			evotime,fid,fid_u,tstamp,folder = Zeno_1Q_state_fidelity_decay(newer_than_tstamp=newer_than_tstamp,
 															msmts=msmt_list[i],
 															eRO_list=eRO_list,
-									plot_results=False,decoded_bit=decoded_bit,state=state)
+									plot_results=False,decoded_bit=decoded_bit,state=state,ssro_timestamp=ssro_timestamp)
 			plt.errorbar(evotime,fid,fid_u,marker='o',label=str(msmt_list[i])+' msmts')
 		
 

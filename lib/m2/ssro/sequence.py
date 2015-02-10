@@ -184,8 +184,8 @@ class SequenceAnalysis(m2.M2Analysis):
             self.sweep_name = 'sweep parameter'
 
         if ax == None:
-            fig = self.default_fig(figsize=(6,4))
             ax = self.default_ax(fig)
+            fig = self.default_fig(figsize=(6,4))
         else:
             save = False
         
