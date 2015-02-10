@@ -866,48 +866,97 @@ def QEC_plot_single_state_RO(older_than = None, no_error = '00',state = 'Z',RO =
 
 ### Fitfunctions
 
-def fit_QEC(g_O, g_A, g_p):
+# def fit_QEC(g_O, g_A, g_p):
+#     '''Fit function for QEC process fidelity data
+#     g_O -  Offset, given by the fidelity of the state that is insensitive to errors
+#     g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
+#     g_p -  Avegage probabililty to correct single qubit errors
+#     '''
+
+#     fitfunc_str = '''test'''
+
+#     O   = fit.Parameter(g_O , 'O')
+#     A   = fit.Parameter(g_A, 'A')
+#     p   = fit.Parameter(g_p, 'p')
+
+#     p0 = [O, A, p]
+
+#     def fitfunc(x):
+#         '''test'''
+#         return (O() + A()*(  1-3*x+3*x**2-2*x**3 + 3*(2*p()-1)*(x-3*x**2+2*x**3)))
+
+#     return p0, fitfunc, fitfunc_str
+
+# def fit_QEC_curve(x,y, return_errorbar=False):
+
+#         guess_O = 0
+#         guess_A = 0.5
+#         guess_p = 1
+#         p0, fitfunc, fitfunc_str = fit_QEC(guess_O, guess_A, guess_p)
+
+#         fit_result = fit.fit1d(x, y, fit_QEC,
+#                 guess_O, guess_A, guess_p,
+#                 fixed=[0],
+#                 do_print=True, ret=True)
+
+#         p02, fitfunc2, fitfunc_str2 = fit_QEC(guess_O, fit_result['params_dict']['A'], fit_result['params_dict']['p'])
+
+#         x_temp      = np.linspace(min(x),max(x),200)
+#         y_temp      =  fitfunc2(x_temp)
+
+#         if return_errorbar == False:
+#             return x_temp, y_temp,fit_result['params_dict']['p']
+#         else:
+#             return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
+
+def fit_QEC(g_A, g_pc):
     '''Fit function for QEC process fidelity data
     g_O -  Offset, given by the fidelity of the state that is insensitive to errors
     g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
     g_p -  Avegage probabililty to correct single qubit errors
     '''
 
-    fitfunc_str = '''test'''
+    fitfunc_str = '''A*[pc(1-6p**2+4p**3)+(1-pc)(1-2p)]'''
 
-    O   = fit.Parameter(g_O , 'O')
     A   = fit.Parameter(g_A, 'A')
-    p   = fit.Parameter(g_p, 'p')
+    pc   = fit.Parameter(g_pc, 'pc')
 
-    p0 = [O, A, p]
+    p0 = [A, pc]
 
-    def fitfunc(x):
+    def fitfunc(p):
         '''test'''
-        return (O() + A()*(  1-3*x+3*x**2-2*x**3 + 3*(2*p()-1)*(x-3*x**2+2*x**3)))
+        return (A()*(pc()*(1-6*p**2+4*p**3)+(1-pc())*(1-2*p)))
 
     return p0, fitfunc, fitfunc_str
 
-def fit_QEC_curve(x,y, return_errorbar=False):
+def fit_QEC_curve(x,y, return_errorbar=False,return_guess = False):
 
-        guess_O = 0
-        guess_A = 0.5
-        guess_p = 1
-        p0, fitfunc, fitfunc_str = fit_QEC(guess_O, guess_A, guess_p)
+    guess_A = 0.5
+    guess_pc = 1
+
+    p0, fitfunc, fitfunc_str = fit_QEC( guess_A, guess_pc)
+
+    if return_guess == True:
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc(x_temp) 
+        return x_temp, y_temp
+
+    else:
 
         fit_result = fit.fit1d(x, y, fit_QEC,
-                guess_O, guess_A, guess_p,
-                fixed=[0],
+                guess_A, guess_pc,
+                fixed=[],
                 do_print=True, ret=True)
 
-        p02, fitfunc2, fitfunc_str2 = fit_QEC(guess_O, fit_result['params_dict']['A'], fit_result['params_dict']['p'])
+        p02, fitfunc2, fitfunc_str2 = fit_QEC(fit_result['params_dict']['A'], fit_result['params_dict']['pc'])
 
         x_temp      = np.linspace(min(x),max(x),200)
         y_temp      =  fitfunc2(x_temp)
 
         if return_errorbar == False:
-            return x_temp, y_temp,fit_result['params_dict']['p']
+            return x_temp, y_temp, fit_result['params_dict']['pc']
         else:
-            return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
 
 def fit_QEC_process_curve(x,y, return_errorbar=False):
 
@@ -930,6 +979,7 @@ def fit_QEC_process_curve(x,y, return_errorbar=False):
             return x_temp, y_temp,fit_result['params_dict']['p']
         else:
             return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
+
 def fit_QEC_2_rounds(g_C, g_A, g_p):
     '''Fit function for QEC process fidelity data
     g_C -  Initial contrast
@@ -981,6 +1031,9 @@ def fit_QEC_2_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
             return x_temp, y_temp,fit_result['params_dict']['p']
         else:
             return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
+
+
+
 
 def fit_QEC_3_rounds(g_C, g_A, g_p):
     '''Fit function for QEC process fidelity data
@@ -1554,22 +1607,23 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
 
         print QEC_temp_dict[0]['y'][0:5]
 
-        QEC_dict['y'][0:5] = np.average([QEC_temp_dict[0]['y'][0:5],QEC_temp_dict[0]['y'][0:5],QEC_temp_dict[0]['y'][0:5],QEC_temp_dict[0]['y'][0:5]])
-                                # weights =[np.ones(len(QEC_temp_dict[0]['y'][0:5])),np.ones(len(QEC_temp_dict[0]['y'][0:5])),np.ones(len(QEC_temp_dict[0]['y'][0:5])),np.ones(len(QEC_temp_dict[0]['y'][0:5]))])# [1./(QEC_temp_dict[0]['y_err'][0:5])**2,1./(QEC_temp_dict[1]['y_err'][0:5])**2,1./(QEC_temp_dict[2]['y_err'][0:5])**2,1./(QEC_temp_dict[3]['y_err'][0:5])**2])
+        for ii in range(6):
+            QEC_dict['y'][ii] = np.average([QEC_temp_dict[0]['y'][ii],QEC_temp_dict[1]['y'][ii],QEC_temp_dict[2]['y'][ii],QEC_temp_dict[3]['y'][ii]],
+                                    weights =[1./(QEC_temp_dict[0]['y_err'][ii])**2,1./(QEC_temp_dict[1]['y_err'][ii])**2,1./(QEC_temp_dict[2]['y_err'][ii])**2,1./(QEC_temp_dict[3]['y_err'][ii])**2])
+            QEC_dict['y_err'][ii] = 1./(1./(QEC_temp_dict[0]['y_err'][ii])**2+1./(QEC_temp_dict[1]['y_err'][ii])**2+1./(QEC_temp_dict[2]['y_err'][ii])**2+1./(QEC_temp_dict[3]['y_err'][ii])**2)**0.5
 
         QEC_dict['y'][5:6] = np.average([four_dict['y'][0:1],QEC_temp_dict[3]['y'][5:6]],
                                 weights = [1./(four_dict['y_err'][0:1])**2,1./(QEC_temp_dict[3]['y_err'][5:6])**2])
+        QEC_dict['y_err'][5] = 1./(1./(four_dict['y_err'][0])**2+1./(QEC_temp_dict[3]['y_err'][5])**2)**0.5
 
-        QEC_dict['y'][6:] = np.average([QEC_temp_dict[0]['y'][5:],QEC_temp_dict[1]['y'][5:],QEC_temp_dict[2]['y'][5:],QEC_temp_dict[3]['y'][6:]],
-                                weights = [1./(QEC_temp_dict[0]['y_err'][5:])**2,1./(QEC_temp_dict[1]['y_err'][5:])**2,1./(QEC_temp_dict[2]['y_err'][5:])**2,1./(QEC_temp_dict[3]['y_err'][6:])**2])
+        for ii in range(6):
+            ii = ii+6
+            QEC_dict['y'][ii] = np.average([QEC_temp_dict[0]['y'][ii-1],QEC_temp_dict[1]['y'][ii-1],QEC_temp_dict[2]['y'][ii-1],QEC_temp_dict[3]['y'][ii]],
+                                    weights = [1./(QEC_temp_dict[0]['y_err'][ii-1])**2,1./(QEC_temp_dict[1]['y_err'][ii-1])**2,1./(QEC_temp_dict[2]['y_err'][ii-1])**2,1./(QEC_temp_dict[3]['y_err'][ii])**2])
 
-        QEC_dict['y_err'][0:5] = 1./(1./(QEC_temp_dict[0]['y_err'][0:5])**2+1./(QEC_temp_dict[1]['y_err'][0:5])**2+1./(QEC_temp_dict[2]['y_err'][0:5])**2+1./(QEC_temp_dict[3]['y_err'][0:5])**2)**0.5
+            QEC_dict['y_err'][ii] = 1./(1./(QEC_temp_dict[0]['y_err'][ii-1])**2+1./(QEC_temp_dict[1]['y_err'][ii-1])**2+1./(QEC_temp_dict[2]['y_err'][ii-1])**2+1./(QEC_temp_dict[3]['y_err'][ii])**2)**0.5
 
-        QEC_dict['y_err'][5:6] = 1./(1./(four_dict['y_err'][0:1])**2+1./(QEC_temp_dict[3]['y_err'][5:6])**2)**0.5
-
-        QEC_dict['y_err'][6:] = 1./(1./(QEC_temp_dict[0]['y_err'][5:])**2+1./(QEC_temp_dict[1]['y_err'][5:])**2+1./(QEC_temp_dict[2]['y_err'][5:])**2+1./(QEC_temp_dict[3]['y_err'][6:])**2)**0.5
-
-
+        
         QEC_dict['x'] = QEC_temp_dict[3]['x']
 
     elif do_weighted == False:
@@ -1616,6 +1670,7 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
         QEC_dict['x'] = QEC_temp_dict['x']
     
     return QEC_dict
+
 
 def no_QEC_data_single_state_RO_single_error_sign(idle = False, sweep_time = False, older_than = None,state = 'Z',RO = 0,error_sign = 0, load_set = False):
 
@@ -4033,6 +4088,25 @@ def no_QEC_compare_Z_mZ(run_list = [0,1,2,3]):
 
             ax.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2., label = '1 round, run '+str(run) )
 
+
+    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2,3],state_list=['Z','mZ'],add_4 = True,do_weighted = True)
+    y_Z1              = toff_process_dict['toff_Zy']
+    y_err_Z1          = toff_process_dict['toff_Zy_err']
+    y_mZ1             = toff_process_dict['toff_mZy']
+    y_err_mZ1         = toff_process_dict['toff_mZy_err']
+    x1                = toff_process_dict['x']
+
+
+
+    ### Averaging over Z and mZ
+    y_tot1  = (y_Z1-y_mZ1)/2; y_err_tot1 = (y_err_Z1**2+y_err_mZ1**2)**0.5/2
+
+    ### Fitting
+    x_fit1, y_fit1, fit_result1,u_fit_result1 = fit_QEC_curve(x1,y_tot1, return_errorbar=True)
+
+    ax.plot(x_fit1, (y_fit1),color = 'k')
+
+    ax.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2.,ls = '', label = 'weighted sum')
     ax.set_ylim(-1.1,1.1)
     ax.set_xlim(-0.1,1.1)
     # ax.set_xlim(0.37,0.53)
@@ -4892,13 +4966,13 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                 np.average( [y_Z1[3],y_Z2[1]], weight = [weight_Z1[3],weight_Z2[1]]),   
                                 np.average( [y_Z1[4],y_Z2[2]], weight = [weight_Z1[4],weight_Z2[2]]),   
                                 y_Z2[3],  
-                                y_Z1[5])
+                                y_Z1[5]])
             
             y_err_Z = np.array([y_err_Z1[0],   
                                 y_err_Z1[1],  
-                                1/(weight_Z1[2]+weight_Z2[0])**0.5
-                                1/(weight_Z1[3]+weight_Z2[1])**0.5
-                                1/(weight_Z1[4]+weight_Z2[2])**0.5
+                                1/(weight_Z1[2]+weight_Z2[0])**0.5,
+                                1/(weight_Z1[3]+weight_Z2[1])**0.5,
+                                1/(weight_Z1[4]+weight_Z2[2])**0.5,
                                 y_err_Z2[3],  
                                 y_err_Z1[5]])
 
@@ -4909,13 +4983,13 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                 np.average( [y_mZ1[3],y_mZ2[1]], weight = [weight_mZ1[3],weight_mZ2[1]]),   
                                 np.average( [y_mZ1[4],y_mZ2[2]], weight = [weight_mZ1[4],weight_mZ2[2]]),   
                                 y_mZ2[3],  
-                                y_mZ1[5])
+                                y_mZ1[5]])
 
             y_err_mZ = np.array([y_err_mZ1[0],   
                                 y_err_mZ1[1],  
-                                1/(weight_mZ1[2]+weight_mZ2[0])**0.5
-                                1/(weight_mZ1[3]+weight_mZ2[1])**0.5
-                                1/(weight_mZ1[4]+weight_mZ2[2])**0.5
+                                1/(weight_mZ1[2]+weight_mZ2[0])**0.5,
+                                1/(weight_mZ1[3]+weight_mZ2[1])**0.5,
+                                1/(weight_mZ1[4]+weight_mZ2[2])**0.5,
                                 y_err_mZ2[3],  
                                 y_err_mZ1[5]])
 
@@ -4941,14 +5015,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                 y_Z2[6],  
                                 np.average( [y_Z1[5],y_Z2[7]], weight = [weight_Z1[5],weight_Z2[7]])])
 
-            y_err_Z  = np.array([   1/(weight_Z1[0]+weight_Z2[0))**0.5,    
-                                    1/(weight_Z1[1]+weight_Z2[1))**0.5,    
-                                    1/(weight_Z1[2]+weight_Z2[2))**0.5,     
-                                    1/(weight_Z1[3]+weight_Z2[3))**0.5,    
+            y_err_Z  = np.array([   1/(weight_Z1[0]+weight_Z2[0])**0.5,    
+                                    1/(weight_Z1[1]+weight_Z2[1])**0.5,    
+                                    1/(weight_Z1[2]+weight_Z2[2])**0.5,     
+                                    1/(weight_Z1[3]+weight_Z2[3])**0.5,    
                                     y_err_Z2[4],   
-                                    1/(weight_Z1[4]+weight_Z2[5))**0.5,   
+                                    1/(weight_Z1[4]+weight_Z2[5])**0.5,   
                                     y_err_Z2[6],  
-                                    1/(weight_Z1[5]+weight_Z2[7))**0.5])
+                                    1/(weight_Z1[5]+weight_Z2[7])**0.5])
 
             y_mZ = np.array([   np.average( [y_mZ1[0],y_mZ2[0]], weight = [weight_mZ1[0],weight_mZ2[0]]),    
                                 np.average( [y_mZ1[1],y_mZ2[1]], weight = [weight_mZ1[1],weight_mZ2[1]]),    
@@ -4959,14 +5033,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                 y_mZ2[6],  
                                 np.average( [y_mZ1[5],y_mZ2[7]], weight = [weight_mZ1[5],weight_mZ2[7]])])
 
-            y_err_mZ  = np.array([  1/(weight_mZ1[0]+weight_mZ2[0))**0.5,    
-                                    1/(weight_mZ1[1]+weight_mZ2[1))**0.5,    
-                                    1/(weight_mZ1[2]+weight_mZ2[2))**0.5,     
-                                    1/(weight_mZ1[3]+weight_mZ2[3))**0.5,    
+            y_err_mZ  = np.array([  1/(weight_mZ1[0]+weight_mZ2[0])**0.5,    
+                                    1/(weight_mZ1[1]+weight_mZ2[1])**0.5,    
+                                    1/(weight_mZ1[2]+weight_mZ2[2])**0.5,     
+                                    1/(weight_mZ1[3]+weight_mZ2[3])**0.5,    
                                     y_err_mZ2[4],   
-                                    1/(weight_mZ1[4]+weight_mZ2[5))**0.5,   
+                                    1/(weight_mZ1[4]+weight_mZ2[5])**0.5,   
                                     y_err_mZ2[6],  
-                                    1/(weight_mZ1[5]+weight_mZ2[7))**0.5])
+                                    1/(weight_mZ1[5]+weight_mZ2[7])**0.5])
 
     elif len(runs) == 3:
 
@@ -5017,14 +5091,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                 y_err_mZ3[4],   (y_err_mZ1[4]**2+y_err_mZ2[2]**2+y_err_mZ3[5]**2)**0.5/3.,   (y_err_mZ2[3]**2+y_err_mZ3[6]**2)**0.5/2,  (y_err_mZ1[5]**2+y_err_mZ3[7]**2)**0.5/2.])
 
             ### weighted average
-            y_Z = np.array([    np.average( [y_Z1[0],y_Z3[0]],          weight = [weight_Z1[0],weight_Z1_Z3[0]]),
-                                np.average( [y_Z1[1],y_Z3[1]],          weight = [weight_Z1[1],weight_Z3[1]]),    
-                                np.average( [y_Z1[2],y_Z2[0],y_Z3[2]],  weight = [weight_Z1[2],weight_Z2[0],weight_Z3[2]]),     
-                                np.average( [y_Z1[3],y_Z2[1],y_Z3[3]],  weight = [weight_Z1[3],weight_Z2[1],weight_Z3[3]]),
+            y_Z = np.array([    np.average( [y_Z1[0],y_Z3[0]],          weights = [weight_Z1[0],weight_Z3[0]]),
+                                np.average( [y_Z1[1],y_Z3[1]],          weights = [weight_Z1[1],weight_Z3[1]]),    
+                                np.average( [y_Z1[2],y_Z2[0],y_Z3[2]],  weights = [weight_Z1[2],weight_Z2[0],weight_Z3[2]]),     
+                                np.average( [y_Z1[3],y_Z2[1],y_Z3[3]],  weights = [weight_Z1[3],weight_Z2[1],weight_Z3[3]]),
                                 y_Z3[4],   
-                                np.average( [y_Z1[4],y_Z2[2],y_Z3[5]],  weight = [weight_Z1[4],weight_Z2[2],weight_Z3[5]]),   
-                                np.average( [y_Z2[3],y_Z3[6]],          weight = [weight_Z2[3],weight_Z3[6]]),  
-                                np.average( [y_Z1[5],y_Z3[7]],          weight = [weight_Z1[5],weight_Z3[7]])])
+                                np.average( [y_Z1[4],y_Z2[2],y_Z3[5]],  weights = [weight_Z1[4],weight_Z2[2],weight_Z3[5]]),   
+                                np.average( [y_Z2[3],y_Z3[6]],          weights = [weight_Z2[3],weight_Z3[6]]),  
+                                np.average( [y_Z1[5],y_Z3[7]],          weights = [weight_Z1[5],weight_Z3[7]])])
 
             y_err_Z = np.array([    1/(weight_Z1[0]+weight_Z3[0])**0.5,    
                                     1/(weight_Z1[1]+weight_Z3[1])**0.5,    
@@ -5035,14 +5109,14 @@ def QEC_2rounds_combined_runs(runs=[1,2]):
                                     1/(weight_Z2[3]+weight_Z3[6])**0.5,  
                                     1/(weight_Z1[5]+weight_Z3[7])**0.5])
 
-            y_mZ = np.array([    np.average( [y_mZ1[0],y_mZ3[0]],          weight = [weight_mZ1[0],weight_mZ1_mZ3[0]]),
-                                np.average( [y_mZ1[1],y_mZ3[1]],          weight = [weight_mZ1[1],weight_mZ3[1]]),    
-                                np.average( [y_mZ1[2],y_mZ2[0],y_mZ3[2]],  weight = [weight_mZ1[2],weight_mZ2[0],weight_mZ3[2]]),     
-                                np.average( [y_mZ1[3],y_mZ2[1],y_mZ3[3]],  weight = [weight_mZ1[3],weight_mZ2[1],weight_mZ3[3]]),
+            y_mZ = np.array([    np.average( [y_mZ1[0],y_mZ3[0]],          weights = [weight_mZ1[0],weight_mZ3[0]]),
+                                np.average( [y_mZ1[1],y_mZ3[1]],          weights = [weight_mZ1[1],weight_mZ3[1]]),    
+                                np.average( [y_mZ1[2],y_mZ2[0],y_mZ3[2]],  weights = [weight_mZ1[2],weight_mZ2[0],weight_mZ3[2]]),     
+                                np.average( [y_mZ1[3],y_mZ2[1],y_mZ3[3]],  weights = [weight_mZ1[3],weight_mZ2[1],weight_mZ3[3]]),
                                 y_mZ3[4],   
-                                np.average( [y_mZ1[4],y_mZ2[2],y_mZ3[5]],  weight = [weight_mZ1[4],weight_mZ2[2],weight_mZ3[5]]),   
-                                np.average( [y_mZ2[3],y_mZ3[6]],          weight = [weight_mZ2[3],weight_mZ3[6]]),  
-                                np.average( [y_mZ1[5],y_mZ3[7]],          weight = [weight_mZ1[5],weight_mZ3[7]])])
+                                np.average( [y_mZ1[4],y_mZ2[2],y_mZ3[5]],  weights = [weight_mZ1[4],weight_mZ2[2],weight_mZ3[5]]),   
+                                np.average( [y_mZ2[3],y_mZ3[6]],          weights = [weight_mZ2[3],weight_mZ3[6]]),  
+                                np.average( [y_mZ1[5],y_mZ3[7]],          weights = [weight_mZ1[5],weight_mZ3[7]])])
 
             y_err_mZ = np.array([    1/(weight_mZ1[0]+weight_mZ3[0])**0.5,    
                                     1/(weight_mZ1[1]+weight_mZ3[1])**0.5,    
@@ -5269,8 +5343,7 @@ def QEC_2rounds_plot_other_curves(older_than = '20150116_085607',load_from_data 
     Set 2: 20150125_001141 to 20150125_145530, Contains pe = [0.2, 0.3, 0.4, 0.45]
 '''
 
-def QEC_3rounds_get_data_dict(older_than = None, RO = 0, state = 'Z',  sym = '11', error_signs = '11',
-                                                                electron_RO = 'positive', len_k = range(6)):
+def QEC_3rounds_get_data_dict(older_than = None, RO = 0, state = 'Z',  sym = '11', error_signs = '11',lectron_RO = 'positive', len_k = range(6)):
     QEC_dict = {}
     k_dict = {}
 
@@ -5539,9 +5612,9 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
         ### Combine with weight
         y_Z = np.array([y_Z1[0],   
                         y_Z1[1],  
-                        np.average([y_Z1[2],y_Z2[0]], weight[y_Z1[2], y_Z2[0]]),    
-                        np.average([y_Z1[3],y_Z2[1]], weight[y_Z1[3], y_Z2[1]]),    
-                        np.average([y_Z1[4],y_Z2[2]], weight[y_Z1[4], y_Z2[2]]),    
+                        np.average([y_Z1[2],y_Z2[0]], weights = [y_Z1[2], y_Z2[0]]),    
+                        np.average([y_Z1[3],y_Z2[1]], weights = [y_Z1[3], y_Z2[1]]),    
+                        np.average([y_Z1[4],y_Z2[2]], weights = [y_Z1[4], y_Z2[2]]),    
                         y_Z2[3],  
                         y_Z1[5]])
 
@@ -5556,9 +5629,9 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
 
         y_mZ = np.array([y_mZ1[0],   
                         y_mZ1[1],   
-                        np.average([y_mZ1[2],y_mZ2[0]], weight[y_mZ1[2], y_mZ2[0]]),    
-                        np.average([y_mZ1[3],y_mZ2[1]], weight[y_mZ1[3], y_mZ2[1]]),    
-                        np.average([y_mZ1[4],y_mZ2[2]], weight[y_mZ1[4], y_mZ2[2]]),    
+                        np.average([y_mZ1[2],y_mZ2[0]], weights = [y_mZ1[2], y_mZ2[0]]),    
+                        np.average([y_mZ1[3],y_mZ2[1]], weights = [y_mZ1[3], y_mZ2[1]]),    
+                        np.average([y_mZ1[4],y_mZ2[2]], weights = [y_mZ1[4], y_mZ2[2]]),    
                         y_mZ2[3],   
                         y_mZ1[5]])
         y_err_mZ = np.array([y_err_mZ1[0],   
@@ -5816,7 +5889,7 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     x0           = single_no_QEC_data_dict_mZ_Q1['x']
 
     ### load 1 round data (Majority voting/Toffoli)
-    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2,3],state_list=['Z','mZ'],add_4 = True)
+    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2,3],state_list=['Z','mZ'],add_4 = True,do_weighted = True)
     y_Z1              = toff_process_dict['toff_Zy']
     y_err_Z1          = toff_process_dict['toff_Zy_err']
     y_mZ1             = toff_process_dict['toff_mZy']
@@ -5896,4 +5969,4 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
             print 'Figure has not been saved.'
 
     plt.show()
-    plt.close('all')
+    # plt.close('all')
