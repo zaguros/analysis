@@ -5871,6 +5871,10 @@ def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_fol
     plt.close('all')
 
 
+###############
+''' Figures '''
+###############
+
 ########################################################
 ''' Combined plots, multiple rounds (0,1,2,3 rounds) '''
 ########################################################
@@ -5970,3 +5974,9 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
 
     plt.show()
     # plt.close('all')
+
+
+
+
+
+
