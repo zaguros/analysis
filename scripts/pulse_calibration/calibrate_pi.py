@@ -14,7 +14,7 @@ from analysis.lib.math import error
 import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 
 ### parameters
-timestamp = '20150202_212800'
+timestamp = '20150205_181456'
 msmt_type = 'mbi'
 guess_x0 = 0.395
 guess_of = 0.2

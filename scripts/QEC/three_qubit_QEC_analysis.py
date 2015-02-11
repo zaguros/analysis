@@ -4171,7 +4171,7 @@ def QEC_2rounds0_load_data(older_than = None, load_from_data = False, len_k = 2)
                 for syndrome in ['00','01','10','11']:
                     data[state + str(RO) + syndrome], folder = QEC_data_single_state_RO(older_than = older_than,state = state,
                                                                                         RO = RO, sym = syndrome, len_k=len_k)
-        pickle.dump(data, open( "2rounds0.p", "wb" ) )
+        pickle.dump(data, open( "2rounds0.p", "wb" ) ) #NOTE, these files are saved in: D:\Ipython_notebooks
     else:
         data = pickle.load( open( "2rounds0.p", "rb" ) )
 

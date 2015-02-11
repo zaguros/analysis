@@ -9,7 +9,7 @@ from analysis.lib.fitting import fit, common
 from matplotlib import pyplot as plt
 
 
-def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 2./3, T1 = 500, offset = 1./3,do_print = False):
+def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 0.1, T1 = 1000, offset =1,do_print = False):
     ''' Function to analyze T1 measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
