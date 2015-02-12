@@ -21,9 +21,9 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         if pq_folder != None:
             if pq_folder =='bs_remote':
                 h5filepath = 'X:' + self.g.attrs['bs_data_path'][12:]
-                print h5filepath
             else:
                 h5filepath = toolbox.measurement_filename(pq_folder)
+            print 'h5filepath:',h5filepath
             h5mode=kw.get('hdf5_mode', 'r')
             self.pqf = h5py.File(h5filepath,h5mode)
         else:

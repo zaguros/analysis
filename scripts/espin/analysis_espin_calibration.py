@@ -80,7 +80,7 @@ def analyse_dark_esr(**kw):
     guess_amplitude = kw.pop('guess_amplitude', 0.3)
     guess_width     = kw.pop('guess_width', 0.2e-3)
     guess_offset    = kw.pop('guess_offset', 1)
-    guess_x0        = kw.pop('guess_x0', 2.807)
+    guess_x0        = kw.pop('guess_x0', 2.805)
     guess_Nsplit    = kw.pop('guess_Nsplit', 2.196e-3)
 
     if timestamp != None:
