@@ -14,7 +14,7 @@ try:
     datadir = qt.config['datadir']
     print datadir
 except:
-    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
+    # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
     if os.name == 'posix':
         if (platform.system()=='Linux'):
@@ -193,12 +193,12 @@ def data_from_time(timestamp, folder = None):
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
+    global datadir
+
     if (folder != None):
         datadir = folder
-
-    datadir = r'd:\measuring\data'
-
-    daydirs = os.listdir(r'd:\measuring\data')
+        
+    daydirs = os.listdir(datadir)
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')

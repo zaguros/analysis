@@ -28,6 +28,7 @@ class Parameter:
 
 # added capability to fit data using weights (error bars in datapoints): 
 # errors can be passed by a list err_y - Cristian 24/11/2014
+# THT: I had to remove this because it crashes many measurements, including the optimizOr
 
 def fit1d(x, y, fitmethod, *arg, **kw):
     """
@@ -43,11 +44,15 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     do_print = kw.pop('do_print', False)
     ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
-    err_y = kw.pop ('err_y', None)
+    # err_y = kw.pop ('err_y', None)
 	#if False :
 	#    if (len(err_y) != len(y)):
 	#    	print 'Data and error arrays have non-matching lengths!'
 	#    	err_y = None
+
+    # if (len(err_y) != len(y)):
+    # 	print 'Data and error arrays have non-matching lengths!'
+    # 	err_y = None
 
     # use the standardized fitmethod: any arg is treated as initial guess
     if fitmethod != None:
@@ -72,10 +77,10 @@ def fit1d(x, y, fitmethod, *arg, **kw):
             p.set(params[i])
             i += 1
 
-        if (err_y != None):
-        	return ((y-fitfunc(x))/(err_y))
-        else:
-        	return y - fitfunc(x)
+        # if (err_y != None):
+        # 	return ((y-fitfunc(x))/(err_y))
+        # else:
+        return y - fitfunc(x)
 
     if x is None: x = arange(y.shape[0])
     p = [param() for param in p0]
