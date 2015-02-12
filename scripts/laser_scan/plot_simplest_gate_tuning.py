@@ -67,12 +67,13 @@ from analysis.lib.nv import nvlevels
 #Yellow_tuning_on_Ey = [27.66, 27.73, 26.56, 25.72,26.10,26.04, 26.36, 27.62, 30.64]
 #Yellow_tuning_on_Ex = [27.82, 28.06, -1,-1,-1,-1, 26.98,28.04, 30.80 ]
 
-time =[0,4,9,12,16,18,28,32,36,43,55,60]
-Ep = []
-Ey =[]
-strain_splitting = 
+#time =[0,4,9,12,16,18,28,32,36,43,55,60]
+gate_V = [0,-9,-18,-27,-36,-45]
+E_y =[72.38,72.68,72.56,72.32,71.62,70.72]
+E_x =[75.05,74.48,73.84,73.47,73.16,72.9]
 
-title= 'Pippin\' stability for D1 gate = -1350 mV'
+
+title= 'Pippin Sil1, tuning D1-2'
 fig = plt.figure()
 ax = fig.add_subplot(111)
 #ax.set_xlim([-19,1])
