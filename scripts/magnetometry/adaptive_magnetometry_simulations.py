@@ -16,32 +16,65 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 from matplotlib import rc, cm
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
-from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
+#from analysis.lib.magnetometry import adwin_debug_magnetometry as adwin_mgnt
 
-reload (sequence)
 reload(magnetometry)
-reload(adwin_mgnt)
+#reload(adwin_mgnt)
 
 def simulate_cappellaro ():
 
-
 	F = 1
-	G = 4
-	K = 5
+	G = 100
+	K = 0
 
 	set_magnetic_field =12.5e6/2.
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 6, reps=201, tau0=20e-9,)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=201, tau0=20e-9,)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
 	s.fid0 = 1.-0.025
 	s.fid1 = 0.025
 
-
 	#s.table_based_simulation()
 	#s.sim_cappellaro_majority()
 	s.sim_cappellaro_variable_M()
 
+def simulate_sql (B=3*12.5e6/4.):
+
+	F = 0
+	G = 100
+	K = 0
+
+	set_magnetic_field = B
+	print set_magnetic_field
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=101, tau0=10e-9,)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
+	s.T2 = 96000e-6
+	s.fid0 = 0.87
+	s.fid1 = 0.025
+	s.B_max = 1/(4*s.t0)
+	s.n_points = 1000
+
+	print 'Simulating data...\n'
+	s.sim_SQL(phase_deg=90)
+	print 'Done!'
+	print 'Plotting normal results...'
+	print 'Size results matrix: ', np.shape(s.msmnt_results)
+	s.convert_to_dict()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	plt.show()
+
+	for i in [200, 500, 1000]:
+		print 'Reshaping msmnt result into G = ', i
+		print 'Plotting...'
+		s.reshape_SQL(G=i)
+		print 'Size results matrix: ', np.shape(s.msmnt_results)
+		print 'Size phase matrix: ', np.shape(s.msmnt_phases)
+		print 'Size time array: ', np.shape(s.msmnt_times)
+		s.convert_to_dict()
+		beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+		plt.show()
 
 
 def simulate_berry (do_adaptive):
@@ -63,6 +96,27 @@ def simulate_berry (do_adaptive):
 	plt.show()
 
 
+def test_swarm_opt ():
+
+	F = 3
+	G = 5
+	K = 8
+	set_magnetic_field = 12.5e6/2.
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = K+1, reps=10, tau0=20e-9)
+
+	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
+	s.T2 = 96e-6
+	s.fid0 = .88
+	s.fid1 = 0.007
+
+	s.sim_swarm_optim()
+	s.convert_to_dict()
+	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	plt.show()
+
+
+
+
 def simulate_cappellaro_debug_adwin ():
 	maj_reps = 1
 	M = 10
@@ -78,62 +132,22 @@ def simulate_cappellaro_debug_adwin ():
 	s.maj_reps = maj_reps
 	s.maj_thr = 0
 
-def simulate_cappellaro_debug_adwin (verbose = False):
-	
-	F = 0
-	G = 10
-	N = 5
-	fid0 = 0.87
-	fid1 = 0.02
-	T2 = 960000e-6
-	reps = 100
-
-	set_magnetic_field =25/(20e-9*2**8)
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = N, reps=reps, tau0=20e-9)
-	s.setup_simulation (magnetic_field_hz = set_magnetic_field, F=F, G=G, K=N-1)
-	s.T2 = T2
-	s.fid0 = fid0
-	s.fid1 = fid1
-	s.sim_cappellaro_variable_M()
+	#s.table_based_simulation()
+	#s.sim_cappellaro_majority_with_plots(N_sim = [1,2, 3,4])
+	s.adwin_ultrafast_M(nr_coeff=51)
 	s.convert_to_dict()
-	if verbose:
-		print '---------------- Python Simulations Results ---------------------------'
-		s.print_results()
-	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=False)
+	s.print_results()
+	#s.print_table_positions()
+		
+	beta, p, err,a, b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+	#plt.plot (beta, p)
+	#plt.show()
 
-	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
-	a.setup_simulation (magnetic_field_hz = set_magnetic_field, F=F, G=G, K=N-1)
-	a.T2 = T2
-	a.fid0 = fid0
-	a.fid1 = fid1
-	a.adwin_optimal_looping_storage()
-	a.convert_to_dict()
-	if verbose:
-		print '--------------- ADwin Simulations Results ------------------------------'
-		a.print_results()
-	beta_ad, p_ad, av_exp_ad,H_ad, m_ad, s_ad = a.mean_square_error(set_value=set_magnetic_field, do_plot=False)
+	#s.sim_cappellaro_majority()
+	#s.convert_to_dict()
+	s.print_results()
+	#beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
-
-	plt.figure(figsize=(8,7))
-	plt.plot (beta_py*1e-6, p_py, 'b', label='python')
-	plt.plot (beta_ad*1e-6, p_ad, 'r', label='adwin')
-	plt.title ('$V_H$: python = '+a.f_pr(H_py)+' adwin = '+a.f_pr(H_ad), fontsize = 12)
-	plt.yscale ('log')
-	plt.xlabel ('magnetic field [MHz]')
-	plt.legend()
-	plt.show()
-
-def compare_algorithms ():
-	N = 4
-	F = 0
-	G = 3
-	set_magnetic_field =5/(20e-9*2**N)
-	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=1, tau0=20e-9)
-	a.setup_simulation (magnetic_field_hz = set_magnetic_field, F=F, G=G, K=N-1)
-	a.T2 = 100
-	a.fid0 = 1
-	a.fid1 = 0
-	a.compare_algorithms_optimal_looping_storage (do_plot=True)
 
 
 def simulate_nonadaptive ():
@@ -153,33 +167,62 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = ''):
+#def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
 	print '############### Simulate #####################'
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=101)
-	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
+	mgnt_exp.set_exp_params( T2 = 5000e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
-	for n in np.arange(N)+1:
+	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
-		mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update)
+		mgnt_exp.verbose=True
+		#mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
+		print 'T2* = ', mgnt_exp.T2
+		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B)
+
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
+	mgnt_exp.save(name=name)
+
+
+def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False):
+#def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
+
+	#try:
+	print '############### Simulate #####################'
+	N=1
+	mgnt_exp = magnetometry.magnetometrySQL(tau0=0.5*20e-9, max_G = 3000)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=3)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.error_bars = error_bars
+	mgnt_exp.G = 100
+	mgnt_exp.verbose=True
+	mgnt_exp.sweep_field_simulation_SQL (print_results=print_results, specific_B=specific_B)
+	plt.figure()
+		
+	mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 
-def analyze_saved_simulations (timestamp,G=0,K=0,F=0):
-	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=6, tau0=20e-9)
+
+
+def analyze_saved_simulations (timestamp,error_bars=False):
+	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
+	mgnt_exp.error_bars=error_bars
 	mgnt_exp.load_analysis (timestamp=timestamp)
-	mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=True)
-	mgnt_exp.G=G
-	mgnt_exp.F=F
-	mgnt_exp.K=K
-	mgnt_exp.plot_sensitivity_scaling(save_plot=True)
+	#mgnt_exp.plot_msqe_dictionary(y_log=True, save_plot=False)
+	#mgnt_exp.G=G
+	#mgnt_exp.F=F
+	#mgnt_exp.K=K
+	mgnt_exp.error_bars=error_bars
+	mgnt_exp.plot_sensitivity_scaling(save_plot=False)
 	return mgnt_exp
 
 def simulate_adwin ():
@@ -334,30 +377,27 @@ def test_adwin_sims(N, M, outcomes = [], do_plot = False, do_print=False):
 	return avg_phase_error
 
 
-def simulate_adwin (N,F,G, do_plot=False, reps=1, ext_outcomes = []):
-	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=reps, tau0=20e-9)
-	field = 10/(a.t0*2**N)
+def simulate_adwin (N,M):
+	a = adwin_mgnt.RamseySequence_Adwin (N_msmnts = N, reps=2000, tau0=20e-9)
+	field = 100/(a.t0*2**N)
 	a.renorm_ssro = False
 	a.verbose = False
 	a.maj_reps = 1
 	a.maj_thr = 0	
-	a.setup_simulation (magnetic_field_hz = field, F=F, G=G,K=N)
+	a.setup_simulation (magnetic_field_hz = field, M=M)
 
-	#a.T2 = 96e-6
-	a.fid0 = 0.87
+	a.T2 = 96e-6
+	a.fid0 = 0.88
 	a.fid1 = 0.02
-	a.G = G
-	a.F = F
-	#a.compare_adwin_python_optimal_looping_storage(do_plot=do_plot, ext_outcomes = ext_outcomes)
-	a.adwin_optimal_looping_storage (do_plot=False, ext_outcomes=ext_outcomes)
-	
+	a.adwin_optimal(use_fid_bayesian_update=True)
+
 	a.convert_to_dict()
 	a.print_results()
 		
-	beta, p, err,h, a, b = a.mean_square_error(set_value=field, do_plot=True, y_log=True)
-	print 'holevo variance: ', h
+	beta, p, err,a, b = a.mean_square_error(set_value=field, do_plot=True)
 	plt.show()
-	
+
+
 
 
 
@@ -392,21 +432,58 @@ plt.ylabel ('avg phase error [deg]')
 plt.xlabel('M')
 plt.legend()
 plt.show()
-
 '''
 
-#simulate_adwin(N=10, G=100, F=0,do_plot=True, reps=1, ext_outcomes = np.array([91,90,3,12,0,11,98,87,12,90]))
+#simulate_adwin(N=8, M= 20)
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
-#simulate_cappellaro_debug_adwin(verbose=True)
-#compare_algorithms()
+#simulate_cappellaro()
+
+'''
+def overnight_simulations_15dec2014():
+	fid0=0.87
+	fid1=0.02
+	reps=11
+	for g in [3,4,5,10, 20]:
+		for f in [0,1,2,3,4,5,7, 10]:
+			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= True, N1_sweep=True) 
+			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= True, N1_sweep=False)
+			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False, N1_sweep=False)
+'''
 
 
-fid0=0.87
-fid1=0.02
-reps=3
-simulate_sweep_field_variable_M (G=6,K=7,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False)
+def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
+	fid1=0.02
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
 
+def suppl_info_simulations_nn_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
+	fid1=0.02
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
+
+def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
+	fid1=0.02
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name = name)
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
 #simulate_berry(do_adaptive=False)
+
+#test_swarm_opt()
+#simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)
+
+#simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False)
+#simulate_sql()
+
+#suppl_info_simulations_adptv (G=5, fid0=1., sweep_f = [3,4,5])
+#suppl_info_simulations_adptv (G=5, fid0=0.88, sweep_f = [0,1,2,3,4,5])
+#suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [5])
+
+#suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
+
+suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_noT2')
+

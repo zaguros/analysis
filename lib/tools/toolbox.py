@@ -7,14 +7,14 @@ import h5py
 import platform
 import os
 import time
-from datetime import datetime
+import datetime
 
 try:
     import qt
     datadir = qt.config['datadir']
     print datadir
 except:
-    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
+    # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
     if os.name == 'posix':
         if (platform.system()=='Linux'):
@@ -37,6 +37,15 @@ def nearest_value(array, value):
     '''
     return array[nearest_idx(array,value)]
 
+def get_timestamp_from_now():
+    return timestamp_from_datetime(datetime.datetime.now())
+
+def timestamp_from_datetime(datetime_):
+    return datetime_.strftime('%Y%m%d%H%M%S')
+
+def datetime_from_timestamp(timestamp):
+    return datetime.datetime.strptime(timestamp,'%Y%m%d%H%M%S')
+    
 def verify_timestamp(timestamp):
     if len(timestamp) == 6:
         daystamp = time.strftime('%Y%m%d')
@@ -52,6 +61,7 @@ def verify_timestamp(timestamp):
 
     return daystamp, tstamp
 
+
 def is_older(ts0, ts1):
     '''
     returns True if timestamp ts0 is an earlier data than timestamp ts1,
@@ -65,8 +75,6 @@ def is_older(ts0, ts1):
         dstamp1, tstamp1 = verify_timestamp(ts1)
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
-
-
 
 def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
     '''
@@ -185,12 +193,12 @@ def data_from_time(timestamp, folder = None):
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
+    global datadir
+
     if (folder != None):
         datadir = folder
-
-    datadir = r'd:\measuring\data'
-
-    daydirs = os.listdir(r'd:\measuring\data')
+        
+    daydirs = os.listdir(datadir)
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')
@@ -256,11 +264,28 @@ def measurement_filename(directory=os.getcwd(), ext='hdf5'):
                 os.path.join(directory,fn))
         return None
 
+def get_date_time_string_from_folder(folder):
+    if not os.path.isdir(folder):
+        logging.error('Argument {} is not a folder'.format(folder))
+    head,tail=os.path.split(folder)
+    d = os.path.split(head)[1]
+    if len(tail) < 6:
+        logging.error('Argument {} is not a valid measurement folder'.format(folder))
+    t = tail[:6]
+    return d,t
+
+def get_datetime_from_folder(folder):
+    d,t = get_date_time_string_from_folder(folder)
+    return datetime_from_timestamp(d+t)
+
+
+def get_measurement_name_from_folder(folder):
+    return os.path.split(folder)[1][7:]
+
 def get_plot_title_from_folder(folder):
-    measurementstring = os.path.split(folder)[1]
-    timestamp = os.path.split(os.path.split(folder)[0])[1] \
-            + '/' + measurementstring[:6]
-    measurementstring = measurementstring[7:]
+    d,t=get_date_time_string_from_folder(folder)
+    timestamp = d + '/' + t
+    measurementstring = get_measurement_name_from_folder(folder)
     default_plot_title = timestamp+'\n'+measurementstring
     return default_plot_title
 
@@ -474,13 +499,13 @@ def set_raw_data(fp, name, data):
     f.flush()
     f.close()        
     
-def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis'):
+def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
     put in the function. Also saves the attributes.
     """
     try:
-        f = h5py.File(fp, 'r+')
+        f = h5py.File(fp, permissions)
     except:
         print "Cannot open file", fp
         raise
@@ -546,10 +571,6 @@ def get_num_blocks(pqf):
                 Block_number = int(Block_name.strip('PQ_channel-'))
                 list_of_block_numbers.append(Block_number)
 
-        num_blocks = max(list_of_block_numbers)
-        return num_blocks
-
-
     elif type(pqf) == str:
 
         f = h5py.File(pqf, 'r')
@@ -561,12 +582,16 @@ def get_num_blocks(pqf):
 
         f.close()
 
-        num_blocks = max(list_of_block_numbers)
-        return num_blocks
-
     else:
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
+
+    if len(list_of_block_numbers) > 0:
+        num_blocks = max(list_of_block_numbers)
+    else: 
+        num_blocks = 0
+
+    return num_blocks
 
 def get_num_blocks_2(pqf):
     """

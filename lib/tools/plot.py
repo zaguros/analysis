@@ -9,7 +9,7 @@ from analysis.lib.fitting import fit
 
 
 # TODO implement formatting options
-def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2, **kw):
+def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,add_txt = True, **kw):
     '''
     function to plot a fitresult as returned by analysis.lib.fitting.fit.fit1d().
     '''
@@ -18,6 +18,9 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
     print_info = kw.pop('print_info', True)
     info_xy = kw.pop('info_xy', 'auto')
     plot_data = kw.pop('plot_data', True)
+    linestyle = kw.pop('linestyle', '-')
+    color = kw.pop('color','r')
+
 
     if res == None or res == False:
         print 'plot_fit1d: No fit result.'
@@ -34,7 +37,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
             ax.plot(res['x'], res['y'], 'o')
     if fit_xvals == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), 'r-', lw=lw )
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle,color = color, lw=lw )
 
     if print_info and res['success']:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)
@@ -46,9 +49,10 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
             info_x = info_xy[0]
             info_y = info_xy[1]
 
-        ax.text(info_x, info_y, params_str, size='x-small',
-                color='k', ha='left', va='bottom',
-                bbox=dict(facecolor='white', alpha=0.5))
+        if add_txt == True:
+            ax.text(info_x, info_y, params_str, size='x-small',
+                    color='k', ha='left', va='bottom',
+                    bbox=dict(facecolor='white', alpha=0.5))
 
     if ret == None:
         return
