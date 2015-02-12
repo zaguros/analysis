@@ -5972,7 +5972,6 @@ def QEC_3rounds_analyze_outcome_probabilities(data):
     prop_list = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
                  'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
 
-    ### Average over all ROs
     for state in ['Z','mZ']:
         for syndrome in ['11']:
             data[state + syndrome + '_outcome_probs'] = {}
@@ -5981,14 +5980,17 @@ def QEC_3rounds_analyze_outcome_probabilities(data):
                 if i == 0:
                     for ii in range(len(prop_list)):
                         data[state + syndrome +'_outcome_probs'][prop_list[ii]] = data[state + 'RO'+str(RO) + 'S' +syndrome][prop_list[ii]]
+                        data[state + syndrome +'_outcome_probs'][prop_list[ii]] = data[state + 'RO'+str(RO) + 'S' +syndrome][prop_list[ii]]
                 else:
                     for ii in range(len(prop_list)):
                         data[state + syndrome +'_outcome_probs'][prop_list[ii]] = (data[state + syndrome +'_outcome_probs'][prop_list[ii]] +
                                                                          data[state + 'RO'+str(RO)+ 'S' + syndrome][prop_list[ii]])
             for ii in range(len(prop_list)):
                 data[state + syndrome +'_outcome_probs'][prop_list[ii]] = data[state + syndrome + '_outcome_probs'][prop_list[ii]]/4.
-
+    
+    
     return data
+
 
 def QEC_3rounds_analysis(run =1,load_from_data = False):
     ''' this functions returns a dictionairy that contains all data from the QEC_3rounds_experiments.
@@ -6006,6 +6008,13 @@ def QEC_3rounds_analysis(run =1,load_from_data = False):
 
 def QEC_3rounds_combined_runs(runs = [1,2]):
 
+    prop_list  = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
+                  'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
+
+    error_probs   = {}
+    error_probs1  = {}
+    error_probs2  = {}
+
     if len(runs) == 1:
 
         data_dict1  = QEC_3rounds_analysis(run=runs[0], load_from_data=False)
@@ -6015,6 +6024,9 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
         y_mZ       = data_dict1['mZ']['y']
         y_err_mZ   = data_dict1['mZ']['y_err']
 
+        for ii in range(len(prop_list)):
+            error_probs[prop_list[ii]] = (data_dict1['Z11'+'_outcome_probs'][prop_list[ii]] + data_dict1['mZ11'+'_outcome_probs'][prop_list[ii]])/2.
+
     else:
         data_dict1  = QEC_3rounds_analysis(run=runs[0], load_from_data=False)
         x1          = data_dict1['Z']['x']
@@ -6023,6 +6035,12 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
         y_mZ1       = data_dict1['mZ']['y']
         y_err_mZ1   = data_dict1['mZ']['y_err']
 
+        for ii in range(len(prop_list)):
+            error_probs1[prop_list[ii]] = (data_dict1['Z11'+'_outcome_probs'][prop_list[ii]] +data_dict1['mZ11'+'_outcome_probs'][prop_list[ii]])/2.
+
+        weight_Z1    =  1/(y_err_Z1)**2
+        weight_mZ1   =  1/(y_err_mZ1)**2
+        
         data_dict2  = QEC_3rounds_analysis(run=runs[1], load_from_data=False)
         x2          = data_dict2['Z']['x']
         y_Z2        = data_dict2['Z']['y']
@@ -6030,13 +6048,23 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
         y_mZ2       = data_dict2['mZ']['y']
         y_err_mZ2   = data_dict2['mZ']['y_err']
 
-        weight_Z1    =  1/(y_err_Z1)**2
-        weight_mZ1   =  1/(y_err_mZ1)**2
-        
+        for ii in range(len(prop_list)):
+            error_probs2[prop_list[ii]] = (data_dict2['Z11'+'_outcome_probs'][prop_list[ii]] +data_dict2['mZ11'+'_outcome_probs'][prop_list[ii]])/2.
+
         weight_Z2    =  1/(y_err_Z2)**2
         weight_mZ2   =  1/(y_err_mZ2)**2
 
         x   = np.array([ 0.,   0.1,  0.2,  0.3,  0.4,  0.45, 0.5])
+
+        ### Combine error probabilities
+        for ii in range(len(prop_list)):
+            error_probs[prop_list[ii]] = np.array([error_probs1[prop_list[ii]][0],   
+                                                    error_probs1[prop_list[ii]][1],  
+                                                    (error_probs1[prop_list[ii]][2]+error_probs2[prop_list[ii]][0])/2.,   
+                                                    (error_probs1[prop_list[ii]][3]+error_probs2[prop_list[ii]][1])/2.,   
+                                                    (error_probs1[prop_list[ii]][4]+error_probs2[prop_list[ii]][2])/2.,   
+                                                    error_probs2[prop_list[ii]][3],  
+                                                    error_probs1[prop_list[ii]][5]])
 
         ### Combine without weight
         y_Z = np.array([y_Z1[0],   y_Z1[1],  (y_Z1[2]+y_Z2[0])/2.,   (y_Z1[3]+y_Z2[1])/2.,   (y_Z1[4]+y_Z2[2])/2.,   y_Z2[3],  y_Z1[5]])
@@ -6078,13 +6106,14 @@ def QEC_3rounds_combined_runs(runs = [1,2]):
                             y_err_mZ2[3],  
                             y_err_mZ1[5]])
 
-    return x, y_Z, y_err_Z, y_mZ, y_err_mZ
+    return x, y_Z, y_err_Z, y_mZ, y_err_mZ, error_probs
 
-def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
+def QEC_3rounds_plot_final_curves(runs=[1,2],load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
 
-    x, y_Z, y_err_Z, y_mZ, y_err_mZ = QEC_3rounds_combined_runs(runs = [1,2])
+    x, y_Z, y_err_Z, y_mZ, y_err_mZ, error_probs = QEC_3rounds_combined_runs(runs = runs)
 
     ### Full result
+
     if 0:
         fig1,ax = plt.subplots()
         ax.errorbar(x, y_Z, yerr=y_err_Z,color = 'b' )
@@ -6097,11 +6126,12 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax.set_xlabel('error probability')
         ax.set_ylabel('Expectation value')
 
-        try:
-            fig1.savefig(
-                os.path.join(save_folder,'StateZ.png'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig1.savefig(
+                    os.path.join(save_folder,'StateZ.png'))
+            except:
+                print 'Figure has not been saved.'
 
         fig2,ax2 = plt.subplots()
         ax2.errorbar(x, y_mZ, yerr=y_err_mZ,color = 'b' )
@@ -6114,11 +6144,12 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax2.set_xlabel('error probability')
         ax2.set_ylabel('Expectation value')
 
-        try:
-            fig2.savefig(
-                os.path.join(save_folder,'StatemZ.png'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig2.savefig(
+                    os.path.join(save_folder,'StatemZ.png'))
+            except:
+                print 'Figure has not been saved.'
 
 
     ### Averaging the states
@@ -6134,15 +6165,16 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax4.set_xlabel('error probability')
         ax4.set_ylabel('Expectation value')
 
-        try:
-            fig2.savefig(
-                os.path.join(save_folder,'Analyze_script.png'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig2.savefig(
+                    os.path.join(save_folder,'Analyze_script.png'))
+            except:
+                print 'Figure has not been saved.'
 
     if 1:
-        x1, y_Z1, y_err_Z1, y_mZ1, y_err_mZ1 =  QEC_3rounds_combined_runs(runs=[1])
-        x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_3rounds_combined_runs(runs=[2])
+        x1, y_Z1, y_err_Z1, y_mZ1, y_err_mZ1, error_probs =  QEC_3rounds_combined_runs(runs=[1])
+        x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2, error_probs =  QEC_3rounds_combined_runs(runs=[2])
 
         fig4,ax4 = plt.subplots()
         ax4.errorbar(x1, (y_Z1-y_mZ1)/2., yerr=(y_err_Z1**2+y_err_mZ1**2)**0.5/2.,color = 'b', label = 'run1')
@@ -6158,16 +6190,138 @@ def QEC_3rounds_plot_final_curves(load_from_data = False, save_folder = r'D:\mea
         ax4.set_ylabel('Expectation value')
         ax4.legend()
 
-        try:
-            fig4.savefig(
-                os.path.join(save_folder,'3Rounds_compare_runs.pdf'))
-        except:
-            print 'Figure has not been saved.'
+        if save_folder != None:
+            try:
+                fig4.savefig(
+                    os.path.join(save_folder,'3Rounds_compare_runs.pdf'))
+            except:
+                print 'Figure has not been saved.'
 
     plt.show()
     plt.close('all')
 
-def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
+def QEC_3rounds_plot_outcome_probability_curves(runs = [1,2], load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
+
+    x, y_Z, y_err_Z, y_mZ, y_err_mZ, error_probs = QEC_3rounds_combined_runs(runs = runs)
+
+    prop_list  = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
+                  'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
+
+
+    #####################################################
+    ### A. Probabilties for the 16 different outcomes ###
+    #####################################################
+    
+    fig1,ax = plt.subplots()
+    colors  = cm.rainbow(np.linspace(0, 1, len(prop_list)))
+
+    for ii in range(len(prop_list)):
+            p = error_probs[prop_list[ii]]
+            ax.plot(x,p,'o',ls=':',color = colors[ii], label = prop_list[ii])
+
+    ax.set_title('QEC_data_3Rounds outcome probabilities' + '\n' + 'syndrome 11')
+    ax.hlines([-1,0,1],x[0]-0.05,x[-1]+0.05,linestyles='dotted')
+    ax.set_xlabel('error probability')
+    ax.set_ylabel('outcome probability')     
+    ax.set_ylim(-0.05,.7)
+    ax.set_xlim(-0.05,0.55+0.2)
+    ax.legend( bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    ax.legend(loc=1)
+   
+    try:
+        fig1.savefig(
+            os.path.join(save_folder,'Error_probs_3rounds'+'.png'))
+    except:
+        print 'Figure has not been saved.'
+
+    ###################################
+    ### probabilities per QEC round ###
+    ###################################
+
+    ### Round 1 ###
+    p_round1_00 = (error_probs['p0000'] +
+                   error_probs['p0010'] +
+                   error_probs['p0001'] +
+                   error_probs['p0011'])
+    p_round1_01 = (error_probs['p0100'] +
+                   error_probs['p0110'] +
+                   error_probs['p0101'] +
+                   error_probs['p0111'])
+    p_round1_10 = (error_probs['p1000'] +
+                   error_probs['p1010'] +
+                   error_probs['p1001'] +
+                   error_probs['p1011'])
+    p_round1_11 = (error_probs['p1100'] +
+                   error_probs['p1110'] +
+                   error_probs['p1101'] +
+                   error_probs['p1111'])
+
+    fig6,ax = plt.subplots()
+    ax.plot(x,p_round1_00,'bo:', label = 'R1 00')
+    ax.plot(x,p_round1_01,'ko:', label = 'R1 01')
+    ax.plot(x,p_round1_10,'go:', label = 'R1 10')
+    ax.plot(x,p_round1_11,'ro:', label = 'R1 11')
+
+    ax.set_title('outcome probabilities round 1')
+    ax.hlines([-1,0,1],x[0]-0.05,x[-1]+0.05,linestyles='dotted')
+    ax.set_xlabel('error probability')
+    ax.set_ylabel('outcome probability')
+    ax.legend( bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    ax.legend(loc=1)
+    ax.set_ylim(-0.05,.8)
+    ax.set_xlim(-0.05,0.55)
+
+    ### Round 2 ###
+    p_round2_00 = (error_probs['p0000'] +
+                   error_probs['p1000'] +
+                   error_probs['p0100'] +
+                   error_probs['p1100'])
+    p_round2_01 = (error_probs['p0001'] +
+                   error_probs['p1001'] +
+                   error_probs['p0101'] +
+                   error_probs['p1101'])
+    p_round2_10 = (error_probs['p0010'] +
+                   error_probs['p1010'] +
+                   error_probs['p0110'] +
+                   error_probs['p1110'])
+    p_round2_11 = (error_probs['p0011'] +
+                   error_probs['p1011'] +
+                   error_probs['p0111'] +
+                   error_probs['p1111'])
+
+    # fig6,ax = plt.subplots()
+    ax.plot(x,p_round2_00,'bo-', mfc='none', label = 'R2 00')
+    ax.plot(x,p_round2_01,'ko-', mfc='none', label = 'R2 01')
+    ax.plot(x,p_round2_10,'go-', mfc='none', label = 'R2 10')
+    ax.plot(x,p_round2_11,'ro-', mfc='none', label = 'R2 11')
+
+    ax.set_title('outcome probabilities for separate rounds')
+    ax.hlines([-1,0,1],x[0]-0.05,x[-1]+0.05,linestyles='dotted')
+    ax.set_xlabel('error probability')
+    ax.set_ylabel('outcome probability')
+    ax.legend( bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    ax.legend( loc=1)
+    ax.set_ylim(-0.05,.8)
+    ax.set_xlim(-0.05,0.55+0.1)
+
+    try:
+        fig6.savefig(
+            os.path.join(save_folder,'Error_probs_per_round_3rounds'+'.png'))
+    except:
+        print 'Figure has not been saved.'
+
+    ####################################
+    ### post selected probabilities? ###
+    ####################################
+
+    plt.show()
+    plt.close('all')
+
+
+
+def QEC_3rounds_plot_outcome_probability_curves_old(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
+
+    syndrome = '11'
 
     data_dict = QEC_3rounds_analysis(run=1, load_from_data=False)
     x         = data_dict['Z']['x']
@@ -6175,19 +6329,20 @@ def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_fol
     data_dict2 = QEC_3rounds_analysis(run=2, load_from_data=False)
     x2         = data_dict2['Z']['x']
 
-    prop_list = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
-                 'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
+    prop_list  = ['p0000','p0100','p1000','p1100','p0010','p0110','p1010','p1110',
+                  'p0001','p0101','p1001','p1101','p0011','p0111','p1011','p1111']
 
 
+    ### Probabilties for the 16 different outcomes
     fig1,ax = plt.subplots()
-    colors = cm.rainbow(np.linspace(0, 1, len(prop_list)))
+    colors  = cm.rainbow(np.linspace(0, 1, len(prop_list)))
 
     for ii in range(len(prop_list)):
-            p = data_dict['Z'][prop_list[ii]]
+            p = (data_dict['Z' +syndrome + '_outcome_probs'][prop_list[ii]] + data_dict['mZ' +syndrome + '_outcome_probs'][prop_list[ii]])/2
             ax.plot(x,p,'o',ls='',color = colors[ii], label = 'run1_' + prop_list[ii])
 
     for ii in range(len(prop_list)):
-            p = data_dict2['Z'][prop_list[ii]]
+            p = (data_dict2['Z'+syndrome + '_outcome_probs'][prop_list[ii]]+data_dict2['Z'+syndrome + '_outcome_probs'][prop_list[ii]])/2
             ax.plot(x2,p,'b', color = colors[ii], label = 'run_2' + prop_list[ii])
             ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
@@ -6232,7 +6387,7 @@ def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_fol
     ###############################
 
     state   = 'Z'
-    syndrome = '01'
+    syndrome = '11'
 
     ### Round 1 ###
     p_round1_00 = (data_dict[state + syndrome+'_outcome_probs']['p0000'] +
@@ -6307,6 +6462,10 @@ def QEC_3rounds_plot_outcome_probability_curves(load_from_data = False, save_fol
     plt.close('all')
 
 
+###############
+''' Figures '''
+###############
+
 ########################################################
 ''' Combined plots, multiple rounds (0,1,2,3 rounds) '''
 ########################################################
@@ -6344,10 +6503,10 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
 
     ### load 2 rounds data
 
-    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2,3])
+    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2, error_probs =  QEC_2rounds_combined_runs(runs=[1,2,3])
 
     ### load 3 rounds data
-    x3, y_Z3, y_err_Z3, y_mZ3, y_err_mZ3 =  QEC_3rounds_combined_runs(runs=[1,2])
+    x3, y_Z3, y_err_Z3, y_mZ3, y_err_mZ3, error_probs =  QEC_3rounds_combined_runs(runs=[1,2])
 
     ### Averaging over Z and mZ
     y_tot0  = (y_Z0-y_mZ0)/2; y_err_tot0 = (y_err_Z0**2+y_err_mZ0**2)**0.5/2
