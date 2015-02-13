@@ -15,7 +15,7 @@ from analysis.lib.tools import plot
 timestamp =None#'20141125_094125' #YYYYmmddHHMMSS
 
 guess_offset = 1
-#guess_x0 = 2.807
+guess_x0 = 2.807
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
