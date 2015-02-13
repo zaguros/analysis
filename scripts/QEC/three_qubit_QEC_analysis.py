@@ -6,7 +6,8 @@ from analysis.lib.m2.ssro import mbi
 from analysis.lib.QEC import ConditionalParity as CP
 from analysis.lib.fitting import fit, common, ramsey;reload(common); reload(fit)
 import matplotlib.cm as cm
-
+import matplotlib as mpl
+from pylab import *
 
 reload (CP)
 import h5py
@@ -6574,6 +6575,18 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
 
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
 
+c_green = (9/255.,232/255.,94/255.)
+c_grey = (64/255.,78/255.,77/255.)#(240/255.,242/255.,166/255.)
+c_blue = (68/255.,204/255.,255/255.)
+c_red = (150/255.,52/255.,132/255.)
+c_orange = (242/255.,129/255.,35/255.)#(5/255.,255/255.,229/255.)
+
+# c_green = (46/255.,198/255.,98/255.)
+# c_grey = (64/255.,78/255.,77/255.)
+# c_blue = (144/255.,170/255.,208/255.)
+# c_red = (112/255.,22/255.,60/255.)
+# c_orange = (242/255.,129/255.,35/255.)
+
 def QEC_plot_process_fids_final():
     syndrome_list = ['00','01','10','11']
 
@@ -6591,47 +6604,64 @@ def QEC_plot_process_fids_final():
     toff_dict_idle = no_QEC_toffoli_fids(idle = True)
 
 
-    fig,ax = plt.subplots(figsize = (10,8))
-    y = process_dict['dec_'+'avg'+'_y']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, 'r', lw=1, label =  'QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
-    ax.errorbar(x,y,yerr=y_err,color = 'r',ls = '',marker = '.')
+    fig,ax = plt.subplots(figsize = (10,10))
 
-    y = process_dict['dec_'+'avg'+'_y_new']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, 'r',ls = ':', lw=1, label =  'Undo QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
-    ax.errorbar(x,y,yerr=y_err,color = 'r', ls = '',marker = '.')
 
     y = no_process_dict['dec_'+'avg'+'_y']
     y_err = no_process_dict['dec_'+'avg'+'_y_err']
 
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, 'b',ls = '-', lw=1, label =  'Encode, $p_c$='+str(int(p_c*100)/100.)+'('+str(int(p_c_err*100))+')')
-    ax.errorbar(x,y,yerr=y_err,color = 'b', ls = '',marker ='.')
+    ax.plot(x_fit, y_fit, color = c_blue,ls = '-', lw=2, label =  'Encoded state, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y,yerr=y_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 5)
 
     # y = toff_process_dict['toff_process_y']
     # y_err = toff_process_dict['toff_process_y_err']
     # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    # ax.plot(x_fit, y_fit, 'b',ls = '-', lw=1,label =   'Encode + majority vote, $p_c$='+str(int(p_c*100)/100.)+'('+str(int(p_c_err*100))+')')
-    # ax.errorbar(x,y,yerr=y_err,color = 'b', ls = '',marker = 'o')
+    # ax.plot(x_fit, y_fit, 'b',ls = '-', lw=2,label =   'Encode + majority vote, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    # ax.errorbar(x,y,yerr=y_err,color = 'b',markeredgecolor = 'r', ls = '',marker = 'o')
 
 
     y = single_process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, 'g',ls = '-', lw=1, label =  'single Qubit, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
-    ax.errorbar(x,y,yerr=y_err,color = 'g', ls = '',marker = '.')
+    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=2, label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 5)
+
+
+    y = process_dict['dec_'+'avg'+'_y']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_red, lw=2, label =  'QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 5)
+
+    y = process_dict['dec_'+'avg'+'_y_new']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=2, label =  'No QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 5)
 
     ax.set_ylim(-0,1)
-    ax.set_xlim(-0.02,1.02)
-    ax.set_title('QEC process fidelities')
-    ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = 'b')
-    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = 'b')
-    ax.set_xlabel('error probability')
-    ax.set_ylabel('Process Fidelity')
+    ax.set_xlim(-0.01,1.01)
+
+    # ax.set_xticks([0,0.25,1])
+    # ax.set_yticks([0,0.25,1])
+
+    ax.set_xticks(np.arange(0,1.1,0.5))
+    ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
+    ax.tick_params(axis='x', which='major', labelsize=18)
+    ax.tick_params(axis='y', which='major', labelsize=18)
+    ax.tick_params('both', length=6, width=1.5, which='major')
+    ax.tick_params('both', length=4, width=1.5, which='minor')
+    # ax.set_title('QEC process fidelities')
+    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = c_grey,lw = 2)
+    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = c_grey,lw = 2)
+    ax.set_xlabel('Error probability',fontsize=18)
+    ax.set_ylabel('Process Fidelity',fontsize=18)
+
+    mpl.rcParams['axes.linewidth'] = 1.5
+
     lgd = ax.legend()#loc = 2, bbox_to_anchor = (1,1))
 
     try:
@@ -6643,40 +6673,86 @@ def QEC_plot_process_fids_final():
         print 'Figure has not been saved.'            
 
 def QEC_plot_process_fids_11_vs_idle_full():
-    fig,ax = plt.subplots()
+    fig,ax = plt.subplots(figsize= (10,10))
     process_dict = QEC_process_fids_sum_runs(run_list = [3],no_error = '11')
 
     x = process_dict['x']
     process_dict_idle = no_QEC_process_fids(idle = True, run = 0)
 
+
     y = process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, 'r', lw=1, label =  'QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
-    ax.errorbar(x,y,yerr=y_err,color = 'r',ls = '',marker = 'o',ms = 2)#,label =  'QEC')
+    ax.plot(x_fit, y_fit, color = c_red, lw=2, label =  'QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 5)
 
-    y_undo = process_dict['dec_'+'avg'+'_y_new']
-    y_undo_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit_undo, y_fit_undo, p_c, p_c_err = fit_QEC_process_curve(x,y_undo,return_errorbar = True)
-    ax.plot(x_fit_undo, y_fit_undo, 'r',ls = ':', lw=1, label =  'Undo QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
-    ax.errorbar(x,y_undo,yerr=y_undo_err,color = 'r', ls = '',marker = 'o',ms = 2)#,label =  'undo QEC')
+    y = process_dict['dec_'+'avg'+'_y_new']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=2, label =  'No QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 5)
 
     y_idle = process_dict_idle['dec_'+'avg'+'_y']
     y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
     x_fit_idle, y_fit_idle, p_err = fit_QEC_process_curve(x,y_idle)    
-    ax.plot(x_fit_idle, y_fit_idle, 'k',ls = '-', lw=1, label =  'Idle, $p_c$='+str(int(p_err*100)/100.)) 
-    ax.errorbar(x,y_idle,yerr=y_idle_err,color = 'k', ls = '',marker = 'o',ms = 2)#,label =  'Idle')
+    ax.plot(x_fit_idle, y_fit_idle, color = c_blue,ls = '-', lw=2, label =  'Encoded state, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.errorbar(x,y_idle,yerr=y_idle_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 5)
 
-    ax.set_ylim(0,1)
-    ax.set_xlim(-0.02,1.02)
-    ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
-    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = 'b')
-    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = 'b')
-    ax.set_title('11_vs_idle_process_fidelity.png')
-    ax.set_xlabel('error probability')
-    ax.set_ylabel('Process Fidelity')
-    ax.legend()#loc = 2, bbox_to_anchor = (1,1))
 
+    ax.set_ylim(-0,1)
+    ax.set_xlim(-0.01,1.01)
+
+    ax.set_xticks(np.arange(0,1.1,0.5))
+    ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
+    ax.tick_params(axis='x', which='major', labelsize=18)
+    ax.tick_params(axis='y', which='major', labelsize=18)
+    ax.tick_params('both', length=6, width=1.5, which='major')
+    ax.tick_params('both', length=4, width=1.5, which='minor')
+    # ax.set_title('QEC process fidelities')
+    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = c_grey,lw = 2)
+    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = c_grey,lw = 2)
+    ax.set_xlabel('Error probability',fontsize=18)
+    ax.set_ylabel('Process Fidelity',fontsize=18)
+
+    mpl.rcParams['axes.linewidth'] = 1.5
+
+    rectangle = plt.Rectangle((0.05, 0.5), 0.25, 0.15, color = c_grey, ls = 'dotted')
+    plt.gca().add_patch(rectangle)
+
+    #############################
+    ###### INSET ################
+    #############################
+
+    a = axes([.6, .55, .25, .25])
+    process_dict = QEC_process_fids_sum_runs(run_list = [5,6,7],no_error = '11')
+    
+    x = process_dict['x']
+    process_dict_idle = no_QEC_process_fids_sum_runs(idle = True, run_list = [2,3,4])
+
+    y = process_dict['dec_'+'avg'+'_y']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    plot(x_fit, y_fit, color = c_red, lw=1.5, label =  'QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
+    errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 5)
+
+    y_idle = process_dict_idle['dec_'+'avg'+'_y']
+    y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
+    x_fit_idle, y_fit_idle, p_err = fit_QEC_process_curve(x,y_idle)    
+    plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=1.5, label =  'Idle, $p_c$='+str(int(p_err*100)/100.)) 
+    errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 5)
+
+    # y = process_dict['dec_'+'avg'+'_y']
+    # y_err = process_dict['dec_'+'avg'+'_y_err']
+    # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    # y_idle = process_dict_idle['dec_'+'avg'+'_y']
+    # y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
+    # x_fit_idle, y_fit_idle, p_err = fit_QEC_process_curve(x,y_idle)   
+    # errorbar(x,y-y_idle,yerr=(y_err**2+y_idle_err**2)**0.5,color = c_orange,markeredgecolor = c_orange, ls = '',marker = 'o', ms = 5)
+    # plot(x_fit,y_fit-y_fit_idle,color = c_orange,ls = '-',lw = 1.5)    
+    # title('Deviation')
+    setp(a, xlim=(0.05,0.3),ylim=(0.5,0.65), xticks=[0.1,0.2,0.3], yticks=[0.5,0.6])
     try:
         fig.savefig(
             os.path.join(folder,'11_vs_idle_full_curve.png'))
@@ -6895,14 +6971,27 @@ def QEC_multiple_rounds():
 
     # ax.plot([x[0],x[-1]], [(y_Z[0]-y_mZ[0])/2,(y_Z[-1]-y_mZ[-1])/2],'k:' )
 
-    ax.plot([0,0.5], [1,0.5],'k:' )
-    ax.set_ylim(0.45,1.05)
-    ax.set_xlim(-0.05,0.55)
-    ax.set_title('QEC_data_multiple rounds, averaged over Z and -Z')
-    ax.hlines([-1,0,1],x1[0]-0.05,x0[-1]+0.05,linestyles='dotted')
-    ax.set_xlabel('error probability')
-    ax.set_ylabel('Average fidelity')
-    ax.legend()
+    ax.set_ylim(-0,1)
+    ax.set_xlim(-0.01,.51)
+
+    # ax.set_xticks([0,0.25,1])
+    # ax.set_yticks([0,0.25,1])
+
+    ax.set_xticks(np.arange(0,.51,0.25))
+    ax.set_xticks(np.arange(0,.51,0.1), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
+    ax.tick_params(axis='x', which='major', labelsize=18)
+    ax.tick_params(axis='y', which='major', labelsize=18)
+    ax.tick_params('both', length=6, width=1.5, which='major')
+    ax.tick_params('both', length=4, width=1.5, which='minor')
+    # ax.set_title('QEC process fidelities')
+    # ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = c_grey,lw = 2)
+    # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = c_grey,lw = 2)
+    ax.set_xlabel('Error probability',fontsize=18)
+    ax.set_ylabel('Process Fidelity',fontsize=18)
+
+    mpl.rcParams['axes.linewidth'] = 1.5
 
 
     if save_folder != None:
