@@ -5992,7 +5992,6 @@ def QEC_3rounds_analyze_outcome_probabilities(data):
     
     return data
 
-
 def QEC_3rounds_analysis(run =1,load_from_data = False):
     ''' this functions returns a dictionairy that contains all data from the QEC_3rounds_experiments.
         TO DO: describe the dictionairy entries
@@ -6317,8 +6316,6 @@ def QEC_3rounds_plot_outcome_probability_curves(runs = [1,2], load_from_data = F
 
     plt.show()
     plt.close('all')
-
-
 
 def QEC_3rounds_plot_outcome_probability_curves_old(load_from_data = False, save_folder = r'D:\measuring\data\QEC_data\figs'):
 
