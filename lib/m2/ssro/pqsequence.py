@@ -299,17 +299,22 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         bins = np.arange(start-self.hist_binsize_ns*.5,start+length,self.hist_binsize_ns)
         return np.histogram(self.sync_time_ns[np.where(self.is_ph & (self.sweep_idxs == 2*sweep_index+ms))], bins=bins)
 
-    def _get_fidelity_and_mean_cpsh(self,ms,sweep_index, start, length):
+    def _get_fidelity_and_mean_cpsh(self,ms,sweep_index, start, length, fltr=None):
+        #reps_per_sweep = self.reps_per_sweep XXXXX
+        if fltr == None:
+            fltr = np.ones(len(self.sync_nrs), dtype=np.bool)
+        reps_per_sweep = len(np.unique(self.sync_nrs[fltr & (self.sweep_idxs == 2*sweep_index+ms)]))
+        #print sweep_index, reps_per_sweep, float(reps_per_sweep)/ len(np.unique(self.sync_nrs[self.sweep_idxs == 2*sweep_index+ms]))
         st_fltr = (start  <= self.sync_time_ns) &  (self.sync_time_ns< (start + length))
-        vsync=self.sync_nrs[np.where(self.is_ph & st_fltr & (self.sweep_idxs == 2*sweep_index+ms))]
-        cpsh = float(len(vsync))/self.reps_per_sweep
+        vsync=self.sync_nrs[np.where(self.is_ph & st_fltr & (self.sweep_idxs == 2*sweep_index+ms) & fltr)]
+        cpsh = float(len(vsync))/reps_per_sweep
         if ms == 0:
             #print len(np.unique(vsync))
-            return float(len(np.unique(vsync)))/self.reps_per_sweep,cpsh
+            return float(len(np.unique(vsync)))/reps_per_sweep,cpsh
         elif ms == 1:
             #print 'len vsync',len(vsync)
             #print 'unique vsync',len(np.unique(vsync))
-            return float(self.reps_per_sweep-len(np.unique(vsync)))/self.reps_per_sweep,cpsh
+            return float(reps_per_sweep-len(np.unique(vsync)))/reps_per_sweep,cpsh
         
     def _get_RO_window(self, ms, sweep_index):
         if ms == 0:
@@ -512,6 +517,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
     def plot_fidelity_cpsh_vs_sweep(self, save=True, **kw):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
+        fltr = kw.get('fltr', True)
         if ax == None:
             fig = self.default_fig(figsize=(6,4))
             ax = self.default_ax(fig)
@@ -533,8 +539,8 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             start1, _tmp = self._get_RO_window(1,i)
             if ro_length != None:
                 length=ro_length
-            f0[i],mcpsh0[i] = self._get_fidelity_and_mean_cpsh(0,i, start0, length)
-            f1[i],mcpsh1[i] = self._get_fidelity_and_mean_cpsh(1,i, start1, length)
+            f0[i],mcpsh0[i] = self._get_fidelity_and_mean_cpsh(0,i, start0, length,fltr)
+            f1[i],mcpsh1[i] = self._get_fidelity_and_mean_cpsh(1,i, start1, length,fltr)
             u_f0[i] = np.sqrt(f0[i]*(1-f0[i])/self.reps_per_sweep)
             u_f1[i] = np.sqrt(f1[i]*(1-f1[i])/self.reps_per_sweep)
             mf[i] = (f0[i]+f1[i])/2.
