@@ -5,6 +5,7 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
+import pickle
 reload(common)
 reload(plot)
 
@@ -172,5 +173,17 @@ for ii, timestamp in enumerate(timestamp_list):
     ax.tick_params(axis='y', which='major', labelsize=30)
     mpl.rcParams['axes.linewidth'] = 1
     ax.tick_params('both', length=4, width=1, which='major')
-    plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + '.pdf'),format='pdf',bbox_inches='tight')
-    plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + '.png'),format='png',bbox_inches='tight')
+    # plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + '.pdf'),format='pdf',bbox_inches='tight')
+    # plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + '.png'),format='png',bbox_inches='tight')
+
+    if ii%2 ==0:
+        fitfunc_dict['x'] = fit_xvals
+        fitfunc_dict['y'+figure_name] =  res['fitfunc'](fit_xvals)
+        print fit_result['params_dict']
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(fit_result['params_dict']['a'], fit_result['params_dict']['A'], 
+                                                    0, fit_result['params_dict']['T'],fit_result['params_dict']['n'],0 ,0)
+        # fitfunc_dict['y_dec'+figure_name] =  2.*fitfunc(fit_xvals)-1
+
+        ax.plot(fit_xvals,fitfunc(fit_xvals),'m')
+        fitfunc_dict['y_dec'+figure_name] =  2.*fitfunc(fit_xvals)-1
+pickle.dump(fitfunc_dict, open( "ramseys.p", "wb" ) )

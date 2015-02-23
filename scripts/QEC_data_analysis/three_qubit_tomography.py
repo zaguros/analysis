@@ -173,7 +173,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
-		plot_fit = True, color = color):
+		plot_fit = True, color = 'r'):
 		### SSRO calibration
 	if state != '000init':
 		k_range = 21
