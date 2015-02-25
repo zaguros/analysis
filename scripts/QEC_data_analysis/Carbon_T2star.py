@@ -129,7 +129,7 @@ c_orange = (242/255.,129/255.,35/255.)
 c_orange_2 = (242/255.,129/255.,35/255.)
 
 # color_list = ['r','r','b','b','g','g']
-color_list = [c_orange,c_orange,c_blue,c_blue,c_green,c_green]
+color_list = [c_red,c_red,c_blue,c_blue,c_green,c_green]
 
 x_max_list = [14e-3,16e-3,16e-3,16e-3,32e-3,32e-3]
 f_list = [250,200,288,150,100,110]
@@ -150,7 +150,7 @@ for ii, timestamp in enumerate(timestamp_list):
 
 
     # plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,add_txt = False,linestyle = '-',linewidth = 1,color = color)
-    fig, ax = plt.subplots(figsize = (12,2.6))
+    fig, ax = plt.subplots(figsize = (12,3))
     res = fit_result
     fit_xvals=np.linspace(res['x'][0],res['x'][-1],1001)
     ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle = '-',color = color, linewidth=1 )
@@ -173,17 +173,18 @@ for ii, timestamp in enumerate(timestamp_list):
     ax.tick_params(axis='y', which='major', labelsize=30)
     mpl.rcParams['axes.linewidth'] = 1
     ax.tick_params('both', length=4, width=1, which='major')
-    # plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + '.pdf'),format='pdf',bbox_inches='tight')
-    # plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + '.png'),format='png',bbox_inches='tight')
+    plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + 'small.pdf'),format='pdf',bbox_inches='tight')
+    plt.savefig(os.path.join(folder, figure_name+'_'+timestamp_list[ii] + 'small.png'),format='png',bbox_inches='tight')
 
-    if ii%2 ==0:
-        fitfunc_dict['x'] = fit_xvals
-        fitfunc_dict['y'+figure_name] =  res['fitfunc'](fit_xvals)
-        print fit_result['params_dict']
-        p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(fit_result['params_dict']['a'], fit_result['params_dict']['A'], 
-                                                    0, fit_result['params_dict']['T'],fit_result['params_dict']['n'],0 ,0)
-        # fitfunc_dict['y_dec'+figure_name] =  2.*fitfunc(fit_xvals)-1
+#     if ii%2 ==0:
+#         fitfunc_dict['x'] = fit_xvals
+#         fitfunc_dict['y'+figure_name] =  res['fitfunc'](fit_xvals)
+#         print fit_result['params_dict']
+#         p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(fit_result['params_dict']['a'], fit_result['params_dict']['A'], 
+#                                                     0, fit_result['params_dict']['T'],fit_result['params_dict']['n'],0 ,0)
+#         # fitfunc_dict['y_dec'+figure_name] =  2.*fitfunc(fit_xvals)-1
 
-        ax.plot(fit_xvals,fitfunc(fit_xvals),'m')
-        fitfunc_dict['y_dec'+figure_name] =  2.*fitfunc(fit_xvals)-1
-pickle.dump(fitfunc_dict, open( "ramseys.p", "wb" ) )
+#         ax.plot(fit_xvals,fitfunc(fit_xvals),'m')
+#         # fitfunc_dict['y_dec'+figure_name] =  2.*fitfunc(fit_xvals)-1
+# # pickle.dump(fitfunc_dict, open( "ramseys.p", "wb" ) )
+    plt.show()

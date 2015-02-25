@@ -6,7 +6,7 @@ from analysis.lib.m2.ssro import mbi
 from analysis.lib.QEC import ConditionalParity as CP
 from analysis.lib.fitting import fit, common, ramsey;reload(common); reload(fit)
 import matplotlib.cm as cm
-import matplotlib as mpl
+import matplotlib as mpl; reload(mpl)
 from pylab import *
 
 reload (CP)
@@ -1474,7 +1474,8 @@ def fit_timesweep_single(x,y,a = 0, A = 0.4, x0 =0, T = 21,n = 2, return_errorba
         p02, fitfunc2, fitfunc_str2 = fit_general_exponential(a,
                         fit_result['params_dict']['A'], x0, fit_result['params_dict']['T'],fit_result['params_dict']['n'])
 
-        x_temp      = np.linspace(x[0],x[-1],301)
+        print (x[-1]-x[0])*1e3
+        x_temp      = np.linspace(x[0],x[-1],(x[-1]-x[0])*1e3)
         y_temp      =  fitfunc2(x_temp)
 
         if plot_guess == True:
@@ -3239,7 +3240,7 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
     except:
         print 'Figure has not been saved.'
 
-def no_QEC_sweep_time_plot_single_RO(state = 'Z',load_set = False, older_than = None):
+def no_QEC_sweep_time_plot_single_RO(load_set = False, older_than = None):
     fig, ax = plt.subplots()
     color = ['r','b','g','','','','k']
     QEC_data_dict = {}
@@ -3269,14 +3270,23 @@ def no_QEC_sweep_time_plot_single_RO(state = 'Z',load_set = False, older_than = 
     ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('Contrast')
-    fitfunc_dict = {}
-    fitfunc_dict = pickle.load( open( "ramseys.p", "rb" ) )
+    # fitfunc_dict = {}
+    # fitfunc_dict = pickle.load( open( "ramseys.p", "rb" ) )
 
-    ax.plot(x_temp,(y_temp['0']*y_temp['1']*y_temp['2'])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]), color = 'k', lw = 2, ls = ':', label = 'multiplied, not shifted')
-    print size(y_temp['0'][0:-17])
-    print size(y_temp['1'][17:])
-    print size(y_temp['2'][10:-7])
-    ax.plot(x_temp[0:-17],(y_temp['0'][0:-17]*y_temp['1'][17:]*y_temp['2'][10:-7])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]), color = 'k', lw = 2, ls = '--', label = 'multiplied, roughly shifted')
+    # ax.plot(x_temp,(y_temp['0']*y_temp['1']*y_temp['2'])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]), color = 'k', lw = 2, ls = ':', label = 'multiplied, not shifted')
+    # y_temp['0'] = y_temp['0'][0:-(400+1090)]
+    # y_temp['1'] = y_temp['1'][(400):(-1090)]
+    # y_temp['2'] = y_temp['2'][(400+1090):]
+    # x_temp = x_temp[0:-(400+1090)]
+    y_temp['0'] = y_temp['0'][(1090+980):-400]
+    y_temp['1'] = y_temp['1'][(400+980):-1090]
+    y_temp['2'] = y_temp['2'][(400+1090):-980]
+    x_temp = x_temp[0:-(400+1090+980)]
+    print size(y_temp['0'])
+    print size(x_temp)
+    
+    ax.plot(x_temp,(y_temp['0']*y_temp['1']*y_temp['2'])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]),
+     color = 'k', lw = 2, ls = '--', label = 'multiplied, shifted')
 
     # x_temp, y_temp,T, T_err = fit_timesweep_single(x_temp,y_temp['0']*y_temp['1']*y_temp['2'],return_errorbar = True)
     # ax.plot(fitfunc_dict['x']*1e3,fitfunc_dict['y_decRamsey_C1_ms0'], color ='r')
@@ -3298,7 +3308,7 @@ def no_QEC_sweep_time_plot_single_RO(state = 'Z',load_set = False, older_than = 
 
     try:
         fig.savefig(
-            os.path.join(folder,'Compare_RO.png'))
+            os.path.join(folder,'Compare_RO_shifted_RO_at_end.png'))
     except:
         print 'Figure has not been saved.'
 
@@ -6712,6 +6722,8 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
 ############################################
 ############################################
 
+
+
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
 
 c_green = (9/255.,232/255.,94/255.)
@@ -6745,11 +6757,12 @@ def QEC_plot_process_fids_final():
 
 
     fig,ax = plt.subplots(figsize = (10,10))
+    mpl.rcParams['pdf.fonttype'] = 42
 
     y = process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_red, lw=1, label =  'QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.plot(x_fit, y_fit, color = c_red, lw=1, label =  'QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
@@ -6757,7 +6770,7 @@ def QEC_plot_process_fids_final():
     y = process_dict['dec_'+'avg'+'_y_new']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1, label =  'No QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1, label =  'No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
@@ -6767,7 +6780,7 @@ def QEC_plot_process_fids_final():
     y = no_process_dict['dec_'+'avg'+'_y']
     y_err = no_process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_blue,ls = '-', lw=1, label =  'Encoded state, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.plot(x_fit, y_fit, color = c_blue,ls = '-', lw=1, label =  'Encoded state')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
@@ -6775,7 +6788,7 @@ def QEC_plot_process_fids_final():
     y = single_process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
@@ -6798,7 +6811,7 @@ def QEC_plot_process_fids_final():
     # ax.set_title('QEC process fidelities')
     ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
     ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.set_xlabel('Error probability $p_e$',fontsize=30)
+    ax.set_xlabel('Error probability',fontsize=30)
     ax.set_ylabel('Process Fidelity',fontsize=30)
 
     mpl.rcParams['axes.linewidth'] = 1.
@@ -6866,6 +6879,7 @@ def QEC_plot_process_fids_final():
 
 def QEC_plot_process_fids_11_vs_idle_full():
     fig,ax = plt.subplots(figsize= (10,10))
+    mpl.rcParams['pdf.fonttype'] = 42
     process_dict = QEC_process_fids_sum_runs(run_list = [3],no_error = '11')
 
     x = process_dict['x']
@@ -6892,19 +6906,19 @@ def QEC_plot_process_fids_11_vs_idle_full():
     
     y_idle = process_dict_idle['dec_'+'avg'+'_y']
     y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
-    x_fit_idle, y_fit_idle, p_err = fit_QEC_process_curve(x,y_idle)    
+    x_fit_idle, y_fit_idle, p_c, p_c_err= fit_QEC_process_curve(x,y_idle,return_errorbar = True)    
     ax.plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=1, label =  'Encoded state, idling')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
 
-    y = single_process_dict['dec_'+'avg'+'_y']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
-    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
-    for cap in caps:
-        cap.set_markeredgewidth(1)
+    # y = single_process_dict['dec_'+'avg'+'_y']
+    # y_err = process_dict['dec_'+'avg'+'_y_err']
+    # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    # ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    # (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
 
     ax.set_ylim(-0,1)
     ax.set_xlim(-0.01,1.01)
@@ -6920,7 +6934,7 @@ def QEC_plot_process_fids_11_vs_idle_full():
     # ax.set_title('QEC process fidelities')
     ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
     ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.set_xlabel('Error probability $p_e$',fontsize=30)
+    ax.set_xlabel('Error probability',fontsize=30)
     ax.set_ylabel('Process Fidelity',fontsize=30)
 
     mpl.rcParams['axes.linewidth'] = 1
@@ -6976,9 +6990,9 @@ def QEC_plot_process_fids_11_vs_idle_full():
 
     try:
         fig.savefig(
-            os.path.join(folder,'11_vs_idle_full_curve_4.png'))
+            os.path.join(folder,'11_vs_idle_full_curve.png'))
         fig.savefig(
-            os.path.join(folder,'11_vs_idle_full_curve_4.pdf'))
+            os.path.join(folder,'11_vs_idle_full_curve.pdf'))
     except:
         print 'Figure has not been saved.'
 
@@ -7080,32 +7094,32 @@ def QEC_plot_sweep_time():
 
     x = x*1000.
 
-    # y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
-    # y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-    # (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
-    #             color = c_red,markeredgecolor = c_red, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'QEC')
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
+    y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
+    y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
+                color = c_red,markeredgecolor = c_red, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'QEC')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
 
-    # y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
-    # y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-    # x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-    # x = x*1000.
-    # (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
-    #             color = c_orange_2,markeredgecolor = c_orange_2, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Parity')
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
+    y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
+    y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
+    x = x*1000.
+    (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
+                color = c_orange_2,markeredgecolor = c_orange_2, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'No QEC, parity')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
 
-    # y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
-    # y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
-    # x_enc = no_QEC_data_dict[0]['x']
-    # x_enc = x_enc*1000.
-    # x_temp, y_temp,T, T_err = fit_timesweep_single(x_enc,y_toff_encode,return_errorbar = True)
-    # ax1.plot(x_temp,1/2.*(1+y_temp),color = c_blue,ls = '-',lw = 1)
-    # (_,caps,_) = ax1.errorbar(x_enc[0:-1],1/2.*(y_toff_encode[0:-1]+1),yerr=1/2.*y_toff_encode_err[0:-1],
-    #             color = c_blue,markeredgecolor = c_blue, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Encoded state')
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
+    y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
+    y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
+    x_enc = no_QEC_data_dict[0]['x']
+    x_enc = x_enc*1000.
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_enc[0:-1],y_toff_encode[0:-1],return_errorbar = True)
+    ax1.plot(x_temp,1/2.*(1+y_temp),color = c_blue,ls = '-',lw = 1)
+    (_,caps,_) = ax1.errorbar(x_enc[0:-1],1/2.*(y_toff_encode[0:-1]+1),yerr=1/2.*y_toff_encode_err[0:-1],
+                color = c_blue,markeredgecolor = c_blue, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Encoded state')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
     # print T
     # print T_err
 
@@ -7114,7 +7128,7 @@ def QEC_plot_sweep_time():
     y_single = QEC_single_data_dict[1]['y']
     y_single_err = QEC_single_data_dict[1]['y_err']
     x_single = x_single*1000.
-    x_temp, y_temp,T, T_err = fit_timesweep_single(x_single,y_single,return_errorbar = True)
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_single[0:-4],y_single[0:-4],return_errorbar = True)
     ax1.plot(x_temp,1/2.*(1+y_temp),color = c_green,ls = '-',lw = 1)
     (_,caps,_) = ax1.errorbar(x_single[0:-4],1/2.*(y_single[0:-4]+1),yerr=1/2.*y_single_err[0:-4],
                 color = c_green,markeredgecolor = c_green, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Single qubit')
@@ -7125,13 +7139,13 @@ def QEC_plot_sweep_time():
     print T_err
 
     ax1.set_xticks(np.arange(0,36,10))
-    ax1.set_yticks(np.arange(0.5,1.1,0.5))
+    ax1.set_yticks(np.arange(0.5,1.1,0.25))
 
     ax1.tick_params(axis='x', which='major', labelsize=30)
     ax1.tick_params(axis='y', which='major', labelsize=30)
 
     ax1.hlines([0.5],x[0]-10,x[-1]+10,linestyles='dotted',color = '0.5', lw = 0.5)
-    # ax1.vlines([x[1],x[7]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+    ax1.vlines([x[1],x[7]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
     # plt.axvspan(x[1],x[7], facecolor='k', alpha=0.05)
     # plt.axvspan(-1,x[1], facecolor='k', alpha=0.05)
     # plt.axvspan(x[7],35, facecolor='k', alpha=0.05)
@@ -7147,9 +7161,9 @@ def QEC_plot_sweep_time():
 
     try:
         fig1.savefig(
-            os.path.join(folder,'QEC_sweep_time_1.png'))
+            os.path.join(folder,'QEC_sweep_time.png'))
         fig1.savefig(
-            os.path.join(folder,'QEC_sweep_time_1.pdf'))
+            os.path.join(folder,'QEC_sweep_time.pdf'))
     except:
         print 'Figure has not been saved.'
 
@@ -7226,22 +7240,22 @@ def QEC_multiple_rounds():
 
 
     (_,caps,_)=ax.errorbar(x0, (0.5*y_tot0+0.5), yerr= 0.5*y_err_tot0, color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6) 
-    ax.plot(x_fit0, (0.5*y_fit0+0.5), color = c_green, lw = 1,label = '0 rounds, $p_c$='+str(round(fit_result0*100)/100.)+'('+str(int(round(u_fit_result0*100)))+')')
+    ax.plot(x_fit0, (0.5*y_fit0+0.5), color = c_green, lw = 1,label = '0 rounds')#), $p_c$='+str(round(fit_result0*100)/100.)+'('+str(int(round(u_fit_result0*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
     (_,caps,_)=ax.errorbar(x1, (0.5*y_tot1+0.5), yerr= 0.5*y_err_tot1,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
-    ax.plot(x_fit1, (0.5*y_fit1+0.5), color = c_blue, lw = 1,label = '1 round, $p_c$='+str(round(fit_result1*100)/100.)+'('+str(int(round(u_fit_result1*100)))+')')
+    ax.plot(x_fit1, (0.5*y_fit1+0.5), color = c_blue, lw = 1,label = '1 round')#), $p_c$='+str(round(fit_result1*100)/100.)+'('+str(int(round(u_fit_result1*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
     (_,caps,_)=ax.errorbar(x2, (0.5*y_tot2+0.5), yerr=0.5*y_err_tot2,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
-    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = c_red, lw = 1,label = '2 rounds, $p_c$='+str(round(fit_result2*100)/100.)+'('+str(int(round(u_fit_result2*100)))+')')
+    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = c_red, lw = 1,label = '2 rounds')#), $p_c$='+str(round(fit_result2*100)/100.)+'('+str(int(round(u_fit_result2*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
     (_,caps,_)=ax.errorbar(x3, (0.5*y_tot3+0.5), yerr=0.5*y_err_tot3,color = c_orange_2,markeredgecolor = c_orange_2, ls = '',marker = 'o', ms = 7,capsize = 6)
-    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = c_orange_2, lw = 1,label = '3 rounds, $p_c$='+str(round(fit_result3*100)/100.)+'('+str(int(round(u_fit_result3*100)))+')')
+    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = c_orange_2, lw = 1,label = '3 rounds')#), $p_c$='+str(round(fit_result3*100)/100.)+'('+str(int(round(u_fit_result3*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
@@ -7263,7 +7277,7 @@ def QEC_multiple_rounds():
     # ax.set_title('QEC process fidelities')
     ax.hlines([0.5,1],x0[0]-1,x0[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
     # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.set_xlabel('Error probability $p_e$',fontsize=30)
+    ax.set_xlabel('Error probability pe',fontsize=30)
     ax.set_ylabel('Average state fidelity',fontsize=30)
 
     mpl.rcParams['axes.linewidth'] = 1.
@@ -7274,6 +7288,7 @@ def QEC_multiple_rounds():
     for label in lgd.get_texts():
         label.set_fontsize(20)
 
+    mpl.rcParams['pdf.fonttype'] = 42
 
 
     x, p_R1_11, p_R2_11 = QEC_3rounds_outcome_probability()
