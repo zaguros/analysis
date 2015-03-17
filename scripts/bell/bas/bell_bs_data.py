@@ -1,4 +1,4 @@
-folder = r'D:\bjhensen\data\Marked Bell Data\BS'
+folder =r'D:\measuring\data\201411-Bell_all_analysed_data_fisrt_try\BS' # r'D:\measuring\data\2014-12-Entanglement_XX_back_to_basics\BS'#
 
 
 
@@ -7,14 +7,14 @@ folder = r'D:\bjhensen\data\Marked Bell Data\BS'
 #PQ_sync_time = np.empty((0,), dtype = np.uint64)
 #PQ_time = np.empty((0,), dtype = np.uint64)      
 #PQ_channel = np.empty((0,), dtype = np.uint32)
-st_start_ch0 = 5442000
-st_len   = 50000 #50 ns
-ch0_ch1_diff = 1000 #1 ns
+st_start_ch0 = 5430000
+st_len   = 300000 #50 ns
+ch0_ch1_diff = 0 #1 ns
 st_start_ch1=st_start_ch0 + ch0_ch1_diff
 p_sep = 600000 #600 ns
-
+tot_time=0
 #load all BS data
-if False:
+if True:
     fps=tb.get_all_msmt_filepaths(folder)
     noof_markers=0
     psi_plus_0_sns=array([],dtype='uint32')
@@ -28,11 +28,17 @@ if False:
     for i,fp in enumerate(fps):
         f=h5py.File(fp,'r')
         print 'Running{}/{}'.format(i,len(fps))
-        sn = f['/PQ_sync_number-1'].value 
-        sp = f['/PQ_special-1'].value      
-        st = f['/PQ_sync_time-1'].value
-        #_PQ_time = f['/PQ_time'].value   
-        ch = f['/PQ_channel-1'].value
+        if False:
+            sn = f['/PQ_sync_number-1'].value 
+            sp = f['/PQ_special-1'].value      
+            st = f['/PQ_sync_time-1'].value
+            #_PQ_time = f['/PQ_time'].value   
+            ch = f['/PQ_channel-1'].value
+        if True:
+            try:
+                tot_time += (f['/PQ_time-1'][-1] - f['/PQ_time-1'][0])/1e12
+            except ValueError:
+                continue
         f.close()
         if False:
             noof_markers+=np.sum(sp)
@@ -55,7 +61,7 @@ if False:
             psi_plus_1_sns=np.hstack((psi_plus_1_sns,psi_plus_1_sn))
             psi_min_0_sns =np.hstack((psi_min_0_sns, psi_min_0_sn))
             psi_min_1_sns =np.hstack((psi_min_1_sns, psi_min_1_sn))
-        if True:
+        if False:
             hist_0,_tmp = np.histogram(st[(ch==0) & (sp==0)]/1000., bins=bins)
             hist_1,_tmp = np.histogram(st[(ch==1) & (sp==0)]/1000., bins=bins)
             hists_0[i]=hist_0
@@ -88,7 +94,7 @@ if False:
         semilogy(bins[rmin:rmax],np.sum(ch0,axis=0)[rmin:rmax])
 
 #tail counts, pulse counts and rejection
-if True:
+if False:
     bins= np.linspace(5400,5600,2000)
     tails=np.zeros(len(ch0))
     pulses=np.zeros(len(ch0))

@@ -7,9 +7,11 @@ import matplotlib as mpl
 from analysis.scripts.QEC import Two_Qubit_Tomography_Postselection as tomo_ps
 reload(tomo_ps)
 from analysis.lib.QEC import ConditionalParity as CP
+import matplotlib as mpl; reload(mpl)
 
 
 folder = r'D:\measuring\data\Analyzed figures\Three qubit states'
+folder = r'D:\measuring\data\QEC_data\figs\final figures'
 
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
@@ -43,7 +45,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
 		ax.set_xticks(x)
 		# ax.title = timestamp
-		print x_labels
+		# print x_labels
 		ax.set_xticklabels(x_labels.tolist())
 		ax.set_ylim(-1.1,1.1)
 		ax.set_title(str(folder)+'/'+str(timestamp))
@@ -80,7 +82,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	else:
 	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-	    print ssro_calib_folder
+	    # print ssro_calib_folder
 	### Obtain and analyze data
 		### postive RO data
 
@@ -172,7 +174,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
-		plot_fit = True):
+		plot_fit = True, color = 'r', plot_type = ''):
 		### SSRO calibration
 	if state != '000init':
 		k_range = 21
@@ -181,8 +183,8 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 
 	for k in range(k_range):
 		
-		print k 
-		print 'positive'+ str(k)
+		# print k 
+		# print 'positive'+ str(k)
 		if k < 9:
 			if k_range >9:
 				timestamp_9, folder_9 = toolbox.latest_data(contains = 'state_' + state +'_positive_'+ str(9), older_than = timestamp,return_timestamp = True)
@@ -196,8 +198,8 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			timestamp_neg, folder_b = toolbox.latest_data(contains = 'state_' + state +'_negative_'+ str(k), older_than = timestamp,return_timestamp = True)
 
 		
-		print folder_a
-		print folder_b
+		# print folder_a
+		# print folder_b
 
 
 		x_labels_t, x_t, y_t, y_err_t  = BarPlotTomoContrast(timestamps = [timestamp_pos,timestamp_neg], measurement_name = ['adwindata'],folder_name ='Tomo',
@@ -216,6 +218,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			y.extend(list(y_t))
 			y_err.extend(list(y_err_t))
 	x = range(len(y)) 
+	# x_labels = x_labels_t
 		# print x_labels.tolist
 		# print y.tolist
 
@@ -228,40 +231,121 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 	Tomo['mZ_list'] = [0,3,6,9,18,27,36]
 	Tomo['000init_list'] = [2,5,8,17,26,35,62]
 
-	state_tick_list = [x_labels[i] for i in Tomo[state+'_list']]
+	state_tick_list = x_labels
 
-	if plot_fit ==True: 
-		fig,ax = plt.subplots(figsize=(25,5)) 
-		x1 = [x[i] for i in np.linspace(0,8,9).astype(int)]
-		y1 = [y[i] for i in np.linspace(0,8,9).astype(int)]
-		y_err_1 = [y_err[i] for i in np.linspace(0,8,9).astype(int)]
-		x2 = [x[i] for i in np.linspace(9,35,27).astype(int)]
-		y2 = [y[i] for i in np.linspace(9,35,27).astype(int)]
-		y_err_2 = [y_err[i] for i in np.linspace(9,35,27).astype(int)]
-		x3 = [x[i] for i in np.linspace(36,62,27).astype(int)]
-		y3 = [y[i] for i in np.linspace(36,62,27).astype(int)]
-		y_err_3 = [y_err[i] for i in np.linspace(36,62,27).astype(int)]
+	if plot_fit ==True :
+		if plot_type != 'compressed': 
+			fig,ax = plt.subplots(figsize=(25,5)) 
+			x1 = [x[i] for i in np.linspace(0,8,9).astype(int)]
+			y1 = [y[i] for i in np.linspace(0,8,9).astype(int)]
+			y_err_1 = [y_err[i] for i in np.linspace(0,8,9).astype(int)]
+			x2 = [x[i] for i in np.linspace(9,35,27).astype(int)]
+			y2 = [y[i] for i in np.linspace(9,35,27).astype(int)]
+			y_err_2 = [y_err[i] for i in np.linspace(9,35,27).astype(int)]
+			x3 = [x[i] for i in np.linspace(36,62,27).astype(int)]
+			y3 = [y[i] for i in np.linspace(36,62,27).astype(int)]
+			y_err_3 = [y_err[i] for i in np.linspace(36,62,27).astype(int)]
 
-		ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = 'k' ,color = '0.9',linewidth = 3)
-		ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = 'k' ,color = '0.5',linewidth = 3)
-		ax.bar(x3,y3,yerr=y_err_3,align ='center',ecolor = 'k' ,color = 'k',linewidth = 3)
-		ax.set_xticks(Tomo[state+'_list'])
-		
-		ax.set_xticklabels(state_tick_list)
-		ax.set_ylim(-1.1,1.1)
-		ax.set_ylim(-1,1)
-		ax.set_xticks(x, minor = True)
-		yticks = np.linspace(-1,1,3)
-		plt.yticks(yticks)
-		# rects.set_linewidth(1.5)
-		ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 3)
-		ax.tick_params(axis='x', which='major', labelsize=20)
-		ax.tick_params(axis='y', which='major', labelsize=25)
-		# autolabel(rec4s)
-		ax.set_ylabel('Contrast',fontsize = 30)
-		mpl.rcParams['axes.linewidth'] = 3
-		ax.tick_params('both', length=5, width=3, which='major')
-		ax.tick_params('x', length=3, width=1.5, which='minor')
+			y_fid = [abs(y[i]) for i in Tomo[state+'_list']]
+
+			y_fid_err = [y_err[i] for i in Tomo[state+'_list']]
+
+			y_id = np.zeros(len(y))
+			for ii in Tomo[state+'_list']:
+				y_id[ii] = np.sign(y[ii])
+			print y_id
+			y_fidelity = 1/8.*(1+np.sum(y_fid))
+			y_fidelity_err = 1/8.*(np.sum(y_fid_err))**0.5
+
+			print state
+			print 'FIDELITY'
+			print y_fidelity
+			print y_fidelity_err
+			ax.bar(x,y_id,align ='center',color = c_red, alpha = 0.2,ecolor = c_red, linewidth = 0)
+			ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = color ,color = color,alpha = 1,linewidth = 1)
+			ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = color ,color = color,alpha = 1,linewidth = 1)
+			ax.bar(x3,y3,yerr=y_err_3,align ='center',ecolor = color ,color = color, alpha = 1,linewidth = 1)
+			ax.set_xticks(np.arange(0,63,1))
+			# ax.bar(x,y_id,align ='center',color = '0.9')
+			ax.set_xticklabels(state_tick_list, rotation = 'vertical')
+			ax.set_ylim(-1.1,1.1)
+			ax.set_ylim(-1,1)
+			ax.set_xlim(-0.5,62.5)
+			# ax.set_xticks(x, minor = True)
+			yticks = np.linspace(-1,1,3)
+			plt.yticks(yticks)
+			# rects.set_linewidth(1.5)
+			# ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 3)
+			ax.tick_params(axis='x', which='major', labelsize=20)
+			ax.tick_params(axis='y', which='major', labelsize=30)
+			# autolabel(rec4s)
+			ax.set_ylabel('Contrast',fontsize = 30)
+			mpl.rcParams['axes.linewidth'] = 1
+			mpl.rcParams['pdf.fonttype'] = 42
+
+		elif plot_type == 'compressed':
+			fig,ax = plt.subplots(figsize=(15,10)) 
+			if state == '000init':
+				fig,ax = plt.subplots(figsize=(7,5)) 
+
+			plot_list = [0,3,6,9,18,27,36,49,50,52,53,58,59,61,62] 
+			if state == '000init':
+				plot_list = [2,5,8,17,26,35,62]			
+			y_id = np.zeros(len(y))
+			for ii in Tomo[state+'_list']:
+				y_id[ii] = np.sign(y[ii])
+			print y_id
+
+			x1 = np.arange(0,len(plot_list),1)
+			y1 = [y[i] for i in plot_list]
+			y_err_1 = [y_err[i] for i in plot_list]
+
+			y_id_1 = [y_id[i] for i in plot_list]
+
+			state_tick_list_1 = [state_tick_list[i] for i in plot_list]
+
+			y_fid = [abs(y[i]) for i in Tomo[state+'_list']]
+
+			y_fid_err = [y_err[i] for i in Tomo[state+'_list']]
+
+
+
+			y_fidelity = 1/8.*(1+np.sum(y_fid))
+			y_fidelity_err = 1/8.*(np.sum(y_fid_err))**0.5
+
+			print state
+			print 'FIDELITY'
+			print y_fidelity
+			print y_fidelity_err
+			ax.bar(x1,y_id_1,align ='center',color = color, alpha = 0.2,ecolor = color, linewidth = 1,edgecolor = color)
+			ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = 'k' ,color = color,alpha = 1,linewidth = 1)
+
+			ax.set_xticks(np.arange(0,len(plot_list),1))
+			# ax.bar(x,y_id,align ='center',color = '0.9')
+			ax.set_xticklabels(state_tick_list_1, rotation = 'vertical')
+			
+
+			ax.set_ylim(-1,1)
+			if state == '000init':
+				ax.set_ylim(0,1)
+			ax.set_xlim(-0.5,len(plot_list)-0.5)
+			# ax.set_xticks(x, minor = True)
+			if state != '000init':
+				yticks = np.linspace(-1,1,3)
+			else:
+				yticks = np.linspace(0,1,2)
+			plt.yticks(yticks)
+			# rects.set_linewidth(1.5)
+			# ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 3)
+			ax.tick_params(axis='x', which='major', labelsize=30)
+			ax.tick_params(axis='y', which='major', labelsize=30)
+			# autolabel(rec4s)
+			ax.set_ylabel('Contrast',fontsize = 30)
+			mpl.rcParams['axes.linewidth'] = 1
+			mpl.rcParams['pdf.fonttype'] = 42
+
+		ax.tick_params('both', length=3, width=1, which='major')
+		# ax.tick_params('x', length=3, width=1.5, which='minor')
 			# print values on bar plot
 		# def autolabel(rects):
 		#     for ii,rect in enumerate(rects):
@@ -279,31 +363,67 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 		except:
 		    print 'Figure has not been saved.'
 
+c_grey = (240/255.,242/255.,166/255.)
+c_green = (9/255.,232/255.,94/255.)
+c_grey = (64/255.,78/255.,77/255.)#(240/255.,242/255.,166/255.)
+c_blue = (68/255.,204/255.,255/255.)
+c_red = (150/255.,52/255.,132/255.)
+c_orange = (240/255.,242/255.,166/255.)
+c_orange_2 = (242/255.,129/255.,35/255.)
 
-BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True)
+color_list = ['b',c_green,c_blue,c_red,c_orange_2,'r']
+
+# BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_grey)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True)
+# 		plot_fit = True,color = c_green)
 
-BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141230_064816', save = True,
-		plot_fit = True)
+# BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141230_064816', save = True,
+# 		plot_fit = True,color = c_red)
 
 # BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141230_064816', save = True,
-# 		plot_fit = True)
+# 		plot_fit = True,color = c_red)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True)
+# 		plot_fit = True,color = c_orange_2)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True)
+# 		plot_fit = True,color = 'r')
 
 BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True)
+		plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+
+# BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+# # BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		# ssro_calib_timestamp ='20141225_150151', save = True,
+# 		# plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+# BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141230_064816', save = True,
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+# # BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		# ssro_calib_timestamp ='20141230_064816', save = True,
+# 		# plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+# BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+# BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
+		# ssro_calib_timestamp ='20141225_150151', save = True,
+		# plot_fit = True,color = c_blue, plot_type = 'compressed')
+
+plt.show()
