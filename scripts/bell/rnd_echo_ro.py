@@ -25,14 +25,14 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10730, **kw):
     
     RO_length = a.g['joint_params'].attrs['LDE_RO_duration']*1e9
     
-    a.plot_histogram(0,start=0, length=3000, hist_binsize=1, save=False, log_plot=False)
+    a.plot_histogram(0,start=RO_start, length=RO_length, hist_binsize=1, save=False, log_plot=False)
     ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('FastSSRO'))
     
 
     roc = error.SingleQubitROC()
-    roc.F0, roc.u_F0, roc.F1, roc.u_F1 =pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
-    #(0.9398,0.0034,0.9942,0.0013)
-    print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    #roc.F0, roc.u_F0, roc.F1, roc.u_F1 =pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
+    roc.F0, roc.u_F0, roc.F1, roc.u_F1=(0.96,0.005,0.995,0.005)
+    #print pqsequence.get_analysed_fast_ssro_calibration(ssro_calib_folder, RO_length)
     ##ssro.get_SSRO_calibration(ssro_calib_folder, ro_duration)
     
     fig, ax = plt.subplots(1,1, figsize=(4.5,4))
@@ -66,9 +66,9 @@ def analyse_rnd_ro_bell(folder, save = True,RO_start=10730, **kw):
     print 'syncs without a random click: {} / {} = {:.2f} %'.format(a.reps-noof_reps_wo_rnd_clk, a.reps, float(a.reps-noof_reps_wo_rnd_clk)/a.reps*100.)
     
     is_last_random_click=np.append(np.diff(np.asarray(is_rnd_clk, dtype='int'))==-1,is_rnd_clk[-1])
-    start_rnd=np.min(sync_time_ns[is_rnd_clk])-20
-    length_rnd=np.max(sync_time_ns[is_rnd_clk])-start_rnd+20
-    pq_plots.plot_photon_hist_filter_comparison(a.pqf,is_last_random_click,start = start_rnd, length = length_rnd, hist_binsize = 1, save = False)
+    #start_rnd=np.min(sync_time_ns[is_rnd_clk])-20
+    #length_rnd=np.max(sync_time_ns[is_rnd_clk])-start_rnd+20
+    #pq_plots.plot_photon_hist_filter_comparison(a.pqf,is_last_random_click,start = start_rnd, length = length_rnd, hist_binsize = 1, save = False)
 
     marker_1_sync_numbers= sync_nrs[is_marker_1_event]
     marker_2_sync_numbers= sync_nrs[is_marker_2_event]
