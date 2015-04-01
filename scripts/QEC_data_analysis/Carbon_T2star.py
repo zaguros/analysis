@@ -129,7 +129,7 @@ c_orange = (242/255.,129/255.,35/255.)
 c_orange_2 = (242/255.,129/255.,35/255.)
 
 # color_list = ['r','r','b','b','g','g']
-color_list = [c_red,c_red,c_blue,c_blue,c_green,c_green]
+color_list = [c_orange_2,c_orange_2,c_blue,c_blue,c_green,c_green]
 
 x_max_list = [14e-3,16e-3,16e-3,16e-3,32e-3,32e-3]
 f_list = [250,200,288,150,100,110]
@@ -150,10 +150,11 @@ for ii, timestamp in enumerate(timestamp_list):
 
 
     # plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,add_txt = False,linestyle = '-',linewidth = 1,color = color)
-    fig, ax = plt.subplots(figsize = (12,3))
+    # fig, ax = plt.subplots(figsize = (10,3))
+    fig, ax = plt.subplots(figsize = (13,3))
     res = fit_result
     fit_xvals=np.linspace(res['x'][0],res['x'][-1],1001)
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle = '-',color = color, linewidth=1 )
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle = '-',color = color, linewidth = 2 )
 
     errlines = ax.errorbar(x,y,yerr = y_err, color = color,ls = '', marker = 'o',markersize = 7,markeredgecolor = color,capsize=5)
 	# set(errlines, linewidth=6)
@@ -165,7 +166,7 @@ for ii, timestamp in enumerate(timestamp_list):
     ax.set_yticks(np.arange(-1,1.1,0.2), minor = True)
     ax.set_xticklabels(xtick_rescaled)
     ax.set_xlabel('Free evolution time (ms)',fontsize = 30)
-    ax.set_ylabel(r'F$(|$x$\rangle)$',fontsize = 30)
+    ax.set_ylabel('State fidelity',fontsize = 30)
     # ax.hlines([0.5],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 1.5)
     ax.set_ylim([0,1])
 
