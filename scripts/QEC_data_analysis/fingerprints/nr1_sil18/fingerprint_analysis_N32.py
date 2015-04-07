@@ -16,7 +16,7 @@ reload(toolbox)
 import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
 
-def fingerprint(disp_sim_spin = True,n_sim_spins = 8,xrange = [0,20],):
+def fingerprint(disp_sim_spin = True,n_sim_spins = 2,xrange = [0,20],return_data = False):
 
 
     ###################
@@ -72,6 +72,9 @@ def fingerprint(disp_sim_spin = True,n_sim_spins = 8,xrange = [0,20],):
         format='pdf')
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
         format='png')
+
+    if return_data == True:
+      return a.sweep_pts, a.p0
 
 def load_mult_dat(timestamp, number_of_msmts, ssro_calib_folder=''):
    cum_pts = 0
