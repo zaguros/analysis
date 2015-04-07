@@ -2,6 +2,7 @@ import numpy as np
 import os,re
 import h5py
 from analysis.lib.tools import toolbox
+from analysis.lib.m2.ssro import ssro
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
@@ -117,7 +118,7 @@ def get_Zeno_data(electron_RO=['positive'],
 		#the contents of msmt_params are dumped into the attributes object of this layer.
 		#Attributes are again organized in dictionaries. --> Extract the desired value with a keyword
 		if u'parity_duration' in first_dict_layer.attrs.keys():
-			evotime[0]=first_dict_layer.attrs['parity_duration']
+			evotime[0]=first_dict_layer.attrs['parity_duration']*1e3
 		Datafile.close()
 		evo_was_zero=True
 
@@ -235,7 +236,11 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()
 	a.get_readout_results(name='adwindata')
-	a.get_electron_ROC(ssro_calib_folder)
+	try: 
+		a.get_electron_ROC(ssro_calib_folder)
+	except IOError:
+		ssro.ssrocalib(ssro_calib_folder)
+		a.get_electron_ROC(ssro_calib_folder)
 
 	x_labels = a.sweep_pts.reshape(-1)
 	y= ((a.p0.reshape(-1))-0.5)*2
@@ -330,12 +335,13 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 	fid_u_arr=fid_u_arr[np.argsort(evo_time_arr)]
 	evo_time_arr=np.sort(evo_time_arr)
 
+
 	if plot_results==True:
 		fig=plt.figure()
 		ax=plt.subplot()
 
 		plt.errorbar(evo_time_arr,fid_arr,fid_u_arr,color='blue',marker='o')
-		plt.xlabel('Evolution time (s)')
+		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('logical qubit state fidelity')
 		plt.title('logicState_'+state+'_stop_'+str(older_than_tstamp)+'_'+RO_String)
 
@@ -389,7 +395,7 @@ def Zeno_proc_fidelity(msmts='0',
 		else: RO_String = 'contrast'
 
 		plt.errorbar(evo_time,(3*avg_fid-1)/2.,1.5*avg_fid_u,color='blue',marker='o')
-		plt.xlabel('Evolution time (s)')
+		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('Process fidelity')
 		plt.title('Process_fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
 
@@ -405,7 +411,7 @@ def Zeno_proc_fidelity(msmts='0',
 		for i,state in enumerate(state_list):
 			plt.errorbar(evo_time,fid_arr[i],fid_u_arr[i],marker='o', label=state)
 
-		plt.xlabel('Evolution time (s)')
+		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('logical qubit state fidelity')
 		plt.title('State_fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
 		plt.legend()
@@ -451,7 +457,7 @@ def Zeno_proc_list(older_than_tstamp=None,
 										plot_results=False,single_qubit=True)
 				plt.errorbar(np.sort(evotime),(3*fid[np.argsort(evotime)]-1)/2,1.5*fid_u[np.argsort(evotime)],marker='o',markersize=4,label='1 qubit')
 
-			plt.xlabel('Evolution time (s)')
+			plt.xlabel('Evolution time (ms)')
 			plt.ylabel('Process fidelity')
 			plt.title('Process fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
 			plt.legend()
@@ -493,7 +499,7 @@ def Zeno_state_list(older_than_tstamp=None,
 			RO_String=eRO_list[0]
 		else: RO_String = 'contrast'
 
-		plt.xlabel('Evolution time (s)')
+		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('logical qubit state fidelity')
 		plt.title('logicState_'+state+'_stop_'+str(tstamp)+'_'+RO_String)
 		plt.legend()
@@ -508,6 +514,11 @@ def Zeno_state_list(older_than_tstamp=None,
 def Zen_Compare_Runs(msmt='0',older_timestamp_list=[None],eRO_list=['positive'],
 						decoded_bit='2',ssro_timestamp_list=[None],
 						single_qubit=False,plot_results=True):
+	"""
+	Takes a list of 'older_than' timestamps and searches for a run with the specified number of measurements.
+	Raw data is then plotted.
+	"""
+
 	fid_arr,fid=[],[]
 	fid_u_arr,fid_u=[],[]
 	evotime_arr,evotime=[],[]
@@ -525,22 +536,87 @@ def Zen_Compare_Runs(msmt='0',older_timestamp_list=[None],eRO_list=['positive'],
 		RO_String=eRO_list[0]
 	else: RO_String = 'contrast'
 
+	if plot_results:
+		fig=plt.figure()
+		ax=plt.subplot()
+		for i in range(len(older_timestamp_list)):
+			plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],marker='o',markersize=4,label=str(older_timestamp_list[i]))
+		
+		plt.xlabel('Evolution time (ms)')
+		plt.ylabel('Process fidelity')
+		plt.title('Process fidelity comparison'+'_'+RO_String+'_msmts_'+msmt)
+		plt.legend()
 
+		print 'Plots are saved in:'
+		print folder
+		plt.savefig(os.path.join(folder,'ZenoCompareRuns'+RO_String+'.pdf'),format='pdf')
+		plt.savefig(os.path.join(folder,'ZenoCompareRuns'+RO_String+'.png'),format='png')
+		plt.show()
+		plt.close('all')
+
+	### if no plot then return the results.
+	else: return evotime_arr[0], fid_arr, fid_u_arr,folder
+
+def ShowResults():
+	### this is a static function (no input parameters)
+	### combines two sets (see older_timestamp_lists) of zeno measurements and plots them in a graph.
+	### extendible for more than two measurement sets given that the evolution times stay the same.
+
+	evo0,fid0,fid_u0,folder = Zen_Compare_Runs(msmt='0',older_timestamp_list=['20150404_175544','20150403_230000'],eRO_list=['positive','negative'],
+	  						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+	evo1,fid1,fid_u1,folder = Zen_Compare_Runs(msmt='1',older_timestamp_list=['20150404_175544','20150330_161704'],eRO_list=['positive','negative'],
+	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+	evo2,fid2,fid_u2,folder = Zen_Compare_Runs(msmt='2',older_timestamp_list=['20150404_175544','20150330_161704'],eRO_list=['positive','negative'],
+	  						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+	evo3,fid3,fid_u3,folder = Zen_Compare_Runs(msmt='3',older_timestamp_list=['20150404_175544','20150330_233000'],eRO_list=['positive','negative'],
+	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+	evo4,fid4,fid_u4,folder = Zen_Compare_Runs(msmt='4',older_timestamp_list=['20150404_175544','20150330_233000',],eRO_list=['positive','negative'],
+	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+
+	fid_arr = [fid0,fid1,fid2,fid3,fid4]
+	fid_u_arr = [fid_u0,fid_u1,fid_u2,fid_u3,fid_u4]
+	evo_arr = [evo0,evo1,evo2,evo3,evo4]
+
+	print fid_u_arr[0]
+
+	### This loop fuses the measurement runs
+	for i in range(len(fid_arr)):
+		f_new = []
+		f_u_new = []
+		for j,fids in enumerate(fid_arr[i]):
+
+			if j == 0:
+				f_new = [fid/len(fid_arr[i]) for kk,fid in enumerate(fids)]
+				f_u_new = [fid_u**2 for kk,fid_u in enumerate(fid_u_arr[i][j])]
+			else:
+				### add up fidelities
+				f_new = [f_new[kk]+fid/len(fid_arr[i]) for kk,fid in enumerate(fids)]
+				### start constructing the error bars. It is now a sum of squared errors.
+				f_u_new = [f_u_new[kk]+fid_u**2 for kk,fid_u in enumerate(fid_u_arr[i][j])]
+		### Finally, take the square root for the error entries and devide by the number of traces taken into account
+		f_u_new = [np.sqrt(f_u_new[kk])/len(fid_arr[i]) for kk in range(len(f_u_new))]
+
+		### overwrite the entries in fid_arr and fid_u_arr in order to make them ready for plotting.
+		fid_arr[i] = f_new
+		fid_u_arr[i] = f_u_new
+
+	### start to plot the results
 	fig=plt.figure()
 	ax=plt.subplot()
-	for i in range(len(older_timestamp_list)):
-		plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],marker='o',markersize=4,label=str(older_timestamp_list[i]))
+
+
+	for ii in range(len(fid_arr)):
+
+		plt.errorbar(evo_arr[ii],fid_arr[ii],fid_u_arr[ii],marker='o',markersize=4,label=str(ii)+' msmts')
 	
-	plt.xlabel('Evolution time (s)')
+	plt.xlabel('Evolution time (ms)')
 	plt.ylabel('Process fidelity')
-	plt.title('Process fidelity comparison'+'_'+RO_String+'_msmts_'+msmt)
+	plt.title('Process fidelity averaged over ' + str(2) + ' Zeno sets')
 	plt.legend()
 
 	print 'Plots are saved in:'
 	print folder
-	plt.savefig(os.path.join(folder,'ZenoCompareRuns'+RO_String+'.pdf'),format='pdf')
-	plt.savefig(os.path.join(folder,'ZenoCompareRuns'+RO_String+'.png'),format='png')
+	plt.savefig(os.path.join(folder,'ZenoRuns_averaged'+'.pdf'),format='pdf')
+	plt.savefig(os.path.join(folder,'ZenoRuns_averaged'+'.png'),format='png')
 	plt.show()
 	plt.close('all')
-
- 

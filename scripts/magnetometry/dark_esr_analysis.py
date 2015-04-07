@@ -12,10 +12,10 @@ from analysis.lib.fitting import fit,esr
 from analysis.lib.tools import plot
 
 ### settings
-timestamp =None#'215430'#None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp ='20150324_215709'#'215430'#None#'20140710_205010' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 1.745
+guess_x0 = 1.747
 guess_splitB = 30.
 guess_splitN = 2.18e-3
 # guess_splitC = .8e-3 #12.78
@@ -28,16 +28,16 @@ guess_sigma = guess_width
 guess_amplitude = 0.3
 
 # try fitting
-#guess_offset = 1.0
-guess_A_min1 = 0
-guess_A_plus1 = 0
+guess_offset = 1.0
+guess_A_min1 = 0.35
+guess_A_plus1 = 0.2
 guess_A_0 = 0.3
 
 #guess_x0 = 3.730
 #guess_sigma = 0.435e-3
 guess_Nsplit = guess_splitN
 
-def analyze_dark_esr(folder,guess_x0,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.85 ,do_print=False,do_plot=False, **kw):
+def analyze_dark_esr(folder,guess_x0,center_guess = False, ax=None, ret='f0',min_dip_depth = 0.9 ,do_print=False,do_plot=False, **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -85,6 +85,7 @@ def analyze_dark_esr(folder,guess_x0,center_guess = False, ax=None, ret='f0',min
     x0 = fit.Parameter(guess_x0, 'x0')
     sigma = fit.Parameter(guess_sigma, 'sigma')
     Nsplit = fit.Parameter(guess_Nsplit, 'Nsplit')
+
     def fitfunc(x):
         # return o() - A_min1()*np.exp(-((x-(x0()-splitting-Nsplit()))/sigma())**2) \
         #         - A_min1()*np.exp(-((x-(x0()+splitting-Nsplit()))/sigma())**2) \
@@ -158,8 +159,10 @@ if __name__ == '__main__':
             folder = toolbox.latest_data(timestamp) 
     else:
         folder = toolbox.latest_data('DarkESR')
+
+
     print folder
-    fit_result=analyze_dark_esr(folder,center_guess = False)
+    fit_result=analyze_dark_esr(folder,guess_x0)
 
 
 

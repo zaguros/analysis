@@ -50,7 +50,7 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
     if Addressed_carbon == 5:
         if el_RO=='positive':
-            timestamp=['20150102_185838']
+            timestamp=['20150310_162052']
         else:
             timestamp=['20150102_191030']
     else:
@@ -276,8 +276,8 @@ Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923',
             offset = 0.5, 
             amplitude = 0.4,
             el_RO='positive')
-Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923',           
-            offset = 0.5, 
-            amplitude = -0.4,
-            el_RO='negative')
+# Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923',           
+#             offset = 0.5, 
+#             amplitude = -0.4,
+#             el_RO='negative')
 

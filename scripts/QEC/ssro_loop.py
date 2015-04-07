@@ -7,7 +7,7 @@ reload(ssro)
 from analysis.lib.tools import toolbox
 
 
-timestamp = '20141122_235000'
+timestamp = '20150403_235000'
 
 while 1:
 	timestamp, folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp, return_timestamp = True)

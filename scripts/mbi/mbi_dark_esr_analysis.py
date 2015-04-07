@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = None#'120943'#'171251'#None #'190948' #
+timestamp = '20150324_213946'#'120943'#'171251'#None #'190948' #
 
 guess_offset = 1.0
 guess_A_min1 = 0.3
@@ -48,10 +48,10 @@ else:
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
-a.get_readout_results(name='adwindata')
+a.get_readout_results(name='ssro')
 
 a.get_electron_ROC()
-ax = a.plot_results_vs_sweepparam(ret='ax',name='adwindata')
+ax = a.plot_results_vs_sweepparam(ret='ax',name='ssro')
 x = a.sweep_pts
 y = a.p0.reshape(-1)
 wrong_population = None
