@@ -184,8 +184,10 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
         timestamp_pos=['20141104_195135','20141104_203107','20141104_223132']
         timestamp_neg=['20141104_195949','20141104_212524','20141104_234927']
     elif Addressed_carbon == 5:
-        timestamp_pos=['20150102_192226']
-        timestamp_neg=['20150102_214323']
+        timestamp_pos=['20150309_193904']
+        timestamp_neg=['20150309_195337']
+        # timestamp_pos=['20150102_193904']
+        # timestamp_neg=['20150102_214323']
         #timestamp_pos=['20141105_003250','20141105_011316','20141105_031420']
         #timestamp_neg=['20141105_004136','20141105_020802','20141105_043221']
     elif Addressed_carbon == 2:
