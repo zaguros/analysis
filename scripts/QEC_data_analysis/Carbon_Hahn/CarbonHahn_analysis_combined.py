@@ -1,7 +1,7 @@
 """
 Script to analyze the C13 T2 data
 Averages over postive and negative electron RO
-MB 2014-01-05
+MAB 2014-01-05
 """
 
 import numpy as np
@@ -50,6 +50,9 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     if Addressed_carbon == 5:
         timestamp_pos=['20150102_185838']
         timestamp_neg=['20150102_191030']
+
+        
+
     else:
         print "Carbon not measured"
 
@@ -167,8 +170,11 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
     if Addressed_carbon == 5:
-        timestamp_pos=['20150102_192226']
-        timestamp_neg=['20150102_214323']
+        # timestamp_pos=['20150102_192226']
+        # timestamp_neg=['20150102_214323']
+        timestamp_neg=['20150310_191115']
+        timestamp_pos=['20150310_195806']
+        
     else:
         print "Carbon not measured"
    
@@ -279,4 +285,4 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
 Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923', 
-           amplitude = 0.4, show_guess=False)
+            amplitude = 0.4, show_guess=False)
