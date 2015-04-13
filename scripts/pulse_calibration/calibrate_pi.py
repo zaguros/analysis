@@ -17,8 +17,8 @@ import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 timestamp = None
 angle = '_pi_1'
 msmt_type = 'mbi'
-# guess_x0 = 0.460
-guess_x0 = 0.49
+guess_x0 = 0.460
+# guess_x0 = 0.49
 guess_of = 0
 guess_a = 0
 
