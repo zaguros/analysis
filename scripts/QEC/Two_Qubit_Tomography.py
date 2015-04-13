@@ -19,8 +19,17 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	    ssro_calib_folder = toolbox.latest_data('SSRO')
 	else:
 	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+<<<<<<< Updated upstream
 	    ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
 	    print ssro_calib_folder
+=======
+<<<<<<< HEAD
+	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+=======
+	    ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
+	    print ssro_calib_folder
+>>>>>>> origin/master
+>>>>>>> Stashed changes
 
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()
@@ -31,7 +40,8 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	y= ((a.p0.reshape(-1))-0.5)*2
 	x = range(len(y)) 
 	y_err = 2*a.u_p0.reshape(-1)
-
+	print 'y', y
+	print 'err', y_err
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )

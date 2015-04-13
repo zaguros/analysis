@@ -20,7 +20,7 @@ reload(common)
 def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =None, 
             offset = 0.5, 
             amplitude = 0.5,  
-            decay_constant = 0.2, 
+            decay_constant = 0.1, 
             x0=0,
             exponent = 1, 
             Addressed_carbon=1,
@@ -54,9 +54,11 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
             timestamp=['20141104_195541','20141104_205814','20141104_231030']
     elif Addressed_carbon == 5:
         if el_RO=='positive':
-            timestamp=['20141105_002824','20141105_004556','20141105_023521']
+            timestamp=['20150316_041301']
+            # timestamp=['20141105_002824','20141105_004556','20141105_023521']
         else:
-            timestamp=['20141105_003711','20141105_014037','20141105_035322']
+            timestamp=['20150316_054506']
+            # timestamp=['20141105_003711','20141105_014037','20141105_035322']
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -75,6 +77,7 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp[kk], return_timestamp = True)
         a.get_electron_ROC(ssro_calib_folder)
         cum_pts += a.pts
 
@@ -172,9 +175,11 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
             timestamp=['20141104_195949','20141104_212524','20141104_234927']
     elif Addressed_carbon == 5:
         if el_RO=='positive':
-            timestamp=['20141105_003250','20141105_011316','20141105_031420']
+            timestamp=['20150316_055528']
+            # timestamp=['20141105_003250','20141105_011316','20141105_031420']
         else:
-            timestamp=['20141105_004136','20141105_020802','20141105_043221']
+            timestamp=['20150316_042310']
+            # timestamp=['20141105_004136','20141105_020802','20141105_043221']
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -193,6 +198,7 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp[kk], return_timestamp = True)
         a.get_electron_ROC(ssro_calib_folder)
         cum_pts += a.pts
 
@@ -258,11 +264,11 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
     fit_results.append(fit_result)
 
-    filename= 'C13_T1_analysis_up_positive_C'+str(Addressed_carbon)+'_'+el_RO
+    filename= 'C13_T1_analysis_up_negative_C'+str(Addressed_carbon)+'_'+el_RO
     print 'plots are saved in ' + folder
 
     #configure the plot
-    plt.title('Sample_111_No1_C13_T1_up_positive_C'+str(Addressed_carbon)+'el_state_1')
+    plt.title('Sample_111_No1_C13_T1_up_negative_C'+str(Addressed_carbon)+'el_state_1')
     plt.xlabel('Free evolution time (s)')
     plt.ylabel('Fidelity')
     plt.axis([a.sweep_pts[0],a.sweep_pts[a.pts-1],ylim[0],ylim[1]])
@@ -275,19 +281,19 @@ def Carbon_T1_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
 
-Carbon_T1_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',           
-            offset = 0.5, 
-            amplitude = 0.4,
-            el_RO='positive')
-Carbon_T1_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',           
-            offset = 0.5, 
-            amplitude = -0.4,
-            el_RO='negative')
-Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141104_191406',
-           offset = 0.5, 
-           amplitude = 0.4,
-           el_RO='positive')
+# Carbon_T1_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',           
+#             offset = 0.5, 
+#             amplitude = 0.4,
+#             el_RO='positive')
+# Carbon_T1_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20141104_191406',           
+#             offset = 0.5, 
+#             amplitude = -0.4,
+#             el_RO='negative')
 Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141104_191406',
            offset = 0.5, 
            amplitude = -0.4,
+           el_RO='positive')
+Carbon_T1_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20141104_191406',
+           offset = 0.5, 
+           amplitude = 0.4,
            el_RO='negative')
