@@ -1,16 +1,31 @@
 '''script to analyze multiple ssro runs '''
 
-import sys
-sys.path.append(r'D:/measuring')
+import os, sys
+if os.name == 'posix':
+    sys.path.append("/Users/"+os.getlogin()+"/Documents/teamdiamond/")
+else:
+    sys.path.append("/measuring/")
 from analysis.lib.m2.ssro import ssro
 reload(ssro)
 from analysis.lib.tools import toolbox
 
 
+<<<<<<< Updated upstream
 timestamp = '20150403_235000'
+=======
+<<<<<<< HEAD
+timestamp = '20150315_235926'
+=======
+timestamp = '20150403_235000'
+>>>>>>> origin/master
+>>>>>>> Stashed changes
 
 while 0:
 	timestamp, folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp, return_timestamp = True)
+<<<<<<< HEAD
+	print folder
+	ssro.ssrocalib(folder = folder) 
+=======
 
 	ssro.ssrocalib(folder = folder) 
 
@@ -54,3 +69,7 @@ if 1:
 	u_f1_tot = (u_f1_tot)**0.5/len(folder_list)
 
 	print f0_tot , u_f0_tot,f1_tot , u_f1_tot, 1/2.*(f0_tot+f1_tot),1/2.*(u_f0_tot**2+u_f1_tot**2)**0.5
+<<<<<<< Updated upstream
+=======
+>>>>>>> origin/master
+>>>>>>> Stashed changes

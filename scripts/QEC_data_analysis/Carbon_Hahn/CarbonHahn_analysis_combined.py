@@ -45,14 +45,34 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     #    carbon_init= up el_state=0      #
     ######################################
 
-
+    
     
     if Addressed_carbon == 5:
+<<<<<<< HEAD
+        timestamp_pos=['20150315_215418']
+        timestamp_neg=['20150315_225753']
+        timestamp_pos=['20150317_103608']
+        timestamp_neg=['20150317_105622']
+    elif Addressed_carbon == 1:  
+        timestamp_pos=['20150316_000112']
+        timestamp_neg=['20150316_010415']
+        timestamp_pos=['20150317_015434']
+        timestamp_neg=['20150317_021428']
+    elif Addressed_carbon == 2:
+        timestamp_pos=['20150316_020808']
+        timestamp_neg=['20150316_031102']
+        timestamp_pos=['20150317_061458']
+        timestamp_neg=['20150317_063658']
+=======
         timestamp_pos=['20150102_185838']
         timestamp_neg=['20150102_191030']
 
         
 
+<<<<<<< Updated upstream
+=======
+>>>>>>> origin/master
+>>>>>>> Stashed changes
     else:
         print "Carbon not measured"
 
@@ -71,15 +91,19 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
     for kk in range(len(timestamp_pos)):
         folder_pos = toolbox.data_from_time(timestamp_pos[kk])
         folder_neg = toolbox.data_from_time(timestamp_neg[kk])
+        print folder_pos
+        print folder_neg
         a = mbi.MBIAnalysis(folder_pos)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_pos[kk], return_timestamp = True)
         a.get_electron_ROC(ssro_calib_folder)
         cum_pts += a.pts
 
         b = mbi.MBIAnalysis(folder_neg)
         b.get_sweep_pts()
         b.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_neg[kk], return_timestamp = True)
         b.get_electron_ROC(ssro_calib_folder)
 
         if kk == 0:
@@ -170,11 +194,40 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
     if Addressed_carbon == 5:
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+        timestamp_pos=['20150315_231309']#First
+        timestamp_neg=['20150315_220943']#First
+        timestamp_neg=['20150317_111643']#No shutter
+        timestamp_pos=['20150317_120932']#No shutter
+        # timestamp_neg=['20150317_084219']#Shutter
+        # timestamp_pos=['20150317_093928']#Shutter
+    elif Addressed_carbon == 1:
+        timestamp_pos=['20150316_012016']
+        timestamp_neg=['20150316_001620']
+        timestamp_neg=['20150317_023359']#No shutter
+        timestamp_pos=['20150317_032742']#No shutter
+        timestamp_neg=['20150317_000109']#Shutter
+        timestamp_pos=['20150317_005741']#Shutter
+    elif Addressed_carbon == 2:
+        timestamp_pos=['20150316_032609']
+        timestamp_neg=['20150316_022328']
+        timestamp_neg=['20150317_065552']#No shutter
+        timestamp_pos=['20150317_074908']#No shutter
+        # timestamp_neg=['20150317_042104']#Shutter
+        # timestamp_pos=['20150317_051738']#Shutter
+=======
+>>>>>>> Stashed changes
         # timestamp_pos=['20150102_192226']
         # timestamp_neg=['20150102_214323']
         timestamp_neg=['20150310_191115']
         timestamp_pos=['20150310_195806']
         
+<<<<<<< Updated upstream
+=======
+>>>>>>> origin/master
+>>>>>>> Stashed changes
     else:
         print "Carbon not measured"
    
@@ -196,12 +249,14 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         a = mbi.MBIAnalysis(folder_pos)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_pos[kk], return_timestamp = True)
         a.get_electron_ROC(ssro_calib_folder)
         cum_pts += a.pts
 
         b = mbi.MBIAnalysis(folder_neg)
         b.get_sweep_pts()
         b.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_neg[kk], return_timestamp = True)
         b.get_electron_ROC(ssro_calib_folder)
 
         if kk == 0:
@@ -284,5 +339,14 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
 
+<<<<<<< HEAD
+Carbon_T2_analysis(Addressed_carbon=1, 
+           amplitude = 0.4, show_guess=False)
+=======
 Carbon_T2_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923', 
+<<<<<<< Updated upstream
             amplitude = 0.4, show_guess=False)
+=======
+            amplitude = 0.4, show_guess=False)
+>>>>>>> origin/master
+>>>>>>> Stashed changes
