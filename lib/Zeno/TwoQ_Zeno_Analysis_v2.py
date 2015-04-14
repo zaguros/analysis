@@ -500,7 +500,7 @@ def fit_process_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 21./np.sqrt(2)
+	t = 17./np.sqrt(2)
 	p = 0.08
 	offset0 = 0.40
 
@@ -534,10 +534,10 @@ def fit_process_decay(msmts,ax,A0,evotime,fid):
 	if msmts =='0':
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 	else:
-		fixed = [0,1] ### fixed parameter: [0,1,2] --> fix decay time, offset and amplitude, p is the only free parameter. 
+		fixed = [0,1,2] ### fixed parameter: [0,1,2] --> fix decay time, offset and amplitude, p is the only free parameter. 
 										###[0,1] --> fix the amplitude and the offset for 0 measurements only.
 
-		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
 	p1 = str(round(fit_result['params'][-1]*100,1))
 	p1_u = str(round(fit_result['error'][-1]*100,1))
