@@ -342,6 +342,8 @@ def fit_1msmt_state_fid(g_A0, g_t, g_p):
         Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
+        # pmix = 1-A0()
+        # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
         return Fx
 
     return p0, fitfunc, fitfunc_str

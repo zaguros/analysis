@@ -653,7 +653,7 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 18.2/np.sqrt(2)
+	t = 21./np.sqrt(2)
 	p = 0.08
 
 	if msmts == '0':
@@ -725,6 +725,11 @@ def Zeno_state_list(older_than_tstamp=None,
 															msmts=msmt_list[i],
 															eRO_list=eRO_list,decoded_bit=decoded_bit,
 									plot_results=False,state=state,ssro_timestamp=ssro_timestamp)
+
+			if sum(evotime)/len(evotime) < 1: ### scaling in seconds detected. Rescale to ms!
+				for ii in range(len(evotime)-1):
+					evotime[ii] = evotime[ii]*1e3
+
 			evotime_arr.append(evotime[np.argsort(evotime)]); fid_arr.append(fid[np.argsort(evotime)]); fid_u_arr.append(fid_u[np.argsort(evotime)])
 		
 		if fitting:
