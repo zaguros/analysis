@@ -1,7 +1,7 @@
 """
 Script to analyze the C13 Rabi data
 Takes single read-out results for comparison (either negative or positive electron RO.)
-MB 2015-02-02
+MAB 2015-02-02
 """
 
 import numpy as np
@@ -38,7 +38,7 @@ def Carbon_RF_Rabi_analysis(measurement_name = ['adwindata'], ssro_calib_timesta
     Possible inputs for initial guesses: offset, amplitude, frequency, phase
     '''
 
-    #general plot parameters
+    #general plot 
     ylim=(0.0,1.0)
     figsize=(6,4.7)
 
@@ -54,6 +54,9 @@ def Carbon_RF_Rabi_analysis(measurement_name = ['adwindata'], ssro_calib_timesta
             timestamp=['20150128_191128']
         else:
             print "No negative measured"
+    else Addressed_carbon == 1:
+        if el_RO=='positive':
+            timestamp=['20150202_162810']
     else:
         print "Carbon not measured"
         
@@ -259,8 +262,8 @@ def Carbon_RF_Rabi_analysis(measurement_name = ['adwindata'], ssro_calib_timesta
     print 'plots are saved in ' + folder
 
     #configure the plot
-    plt.title('Sample_111_No1_C13_T2_RO_'+ str(el_RO) + '_C'+str(Addressed_carbon)+'el_state_1')
-    plt.xlabel('Free evolution time (s)')
+    plt.title('Sample_111_No1_C13_Rabi_RO_'+ str(el_RO) + '_C'+str(Addressed_carbon)+'el_state_1')
+    plt.xlabel('Pulse lenght')
     plt.ylabel('Fidelity')
     plt.axis([a.sweep_pts[0],a.sweep_pts[a.pts-1],ylim[0],ylim[1]])
 
@@ -271,8 +274,7 @@ def Carbon_RF_Rabi_analysis(measurement_name = ['adwindata'], ssro_calib_timesta
     format='png')
 
 
-
-Carbon_RF_Rabi_analysis(Addressed_carbon=5, ssro_calib_timestamp ='20150128_191128',           
+Carbon_RF_Rabi_analysis(Addressed_carbon=1, ssro_calib_timestamp ='20150128_191128',           
             el_RO='positive')
 
 

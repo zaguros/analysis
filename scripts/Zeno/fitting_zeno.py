@@ -83,7 +83,7 @@ def run():
 	if False:
 	    ax.plot(np.linspace(evo[0],evo[-1],201), fitfunc(np.linspace(evo[0],evo[-1],201)), ':', lw=2)
 
-	fit_result_single = fit.fit1d(evo,Fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[1,3]) #only fix x0 to be 0. The gaussian is centered.
+	fit_result_single = fit.fit1d(evo,Fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[1]) #only fix x0 to be 0. The gaussian is centered.
 
 	print 'fitfunction: '+fitfunc_str
 	## plot data and fit as function of total time
@@ -236,9 +236,9 @@ def run():
 	"""
 
 	for i in range(5):
-		plt.errorbar(data[str(i)][0],data[str(i)][1],data[str(i)][2],fmt='o',label = str(i)+' : '+results[i])
+		plt.errorbar(data[str(i)][0],data[str(i)][1],data[str(i)][2],fmt='o',ms=2.5,label = str(i)+' : '+results[i])
 
-	plt.errorbar(data['single'][0],data['single'][1],data['single'][2],fmt='o',label = 'single qubit')		
+	plt.errorbar(data['single'][0],data['single'][1],data['single'][2],fmt='o',ms=2.5,label = 'single qubit')		
 	plt.xlabel('Evolution time (ms)')
 	plt.ylabel('Process fidelity')
 	plt.title('Zeno run')
