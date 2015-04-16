@@ -30,26 +30,41 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         folder = toolbox.data_from_time(timestamp)
     else:
         timestamp, folder = toolbox.latest_data(folder_name, older_than=older_than, return_timestamp=True)
-
+    try:
+        Number_of_pulses = int(folder[folder.rfind('_N')+2:folder.rfind('_N')+4].replace('_',''))
+        Adressed_carbon = int(folder[folder.rfind('_C')+2:folder.rfind('_C')+3])
+        print 'N=', Number_of_pulses, '   C=', Adressed_carbon
+        DD_msmt = True
+    except:
+        DD_msmt = False
+    
     print 'Timestamp', timestamp
     print 'Folder', folder
-    
+
     if partstr in folder:
         numberstart = folder.find(partstr)+len(partstr)
         numberofparts = int(folder[numberstart:len(folder)])
         basis_str_pos = folder[folder.rfind('\\')+7:numberstart]
         if posneg:
+            posneg_str = 'posneg'
             if 'positive' in basis_str_pos:
                 basis_str_neg = basis_str_pos.replace('positive', 'negative')
             else:
                 basis_str_neg = basis_str_pos
                 basis_str_pos = basis_str_neg.replace('negative', 'positive')
+        else:
+            if 'positive' in basis_str_pos:
+                posneg_str = 'positive'
+            else:
+                posneg_str = 'negative'
     else:
         numberofparts = 1
         if 'positive' in folder:
+            posneg_str = 'positive'
             basis_str_pos = folder[folder.rfind('\\')+7:len(folder)]
             basis_str_neg = basis_str_pos.replace('positive', 'negative')
         else:
+            posneg_str = 'negative'
             basis_str_neg = folder[folder.rfind('\\')+7:len(folder)]
             basis_str_pos = basis_str_neg.replace('negative', 'positive')
 
@@ -91,6 +106,7 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
                 cum_sweep_pts = a.sweep_pts
                 cum_p0 = (a.p0+(1-b.p0))/2.
                 cum_u_p0 = np.sqrt(a.u_p0**2+b.u_p0**2)/2
+                reps_per_datapoint = a.reps
             else:
                 cum_sweep_pts = np.concatenate((cum_sweep_pts, a.sweep_pts))
                 cum_p0 = np.concatenate((cum_p0, (a.p0+(1-b.p0))/2))
@@ -108,6 +124,7 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
             a.get_sweep_pts()
             a.get_readout_results(name='adwindata')
             a.get_electron_ROC(ssro_calib_folder)
+            reps_per_datapoint = a.reps
             cum_pts += a.pts
 
             if kk == 0:
@@ -139,8 +156,13 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     fit_results = []
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
-    
+    # print np.shape(a.sweep_pts[:]),np.shape(a.p0[:,0]),np.shape(a.u_p0[:])
+    # print np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose()
     ax.plot(x,y)
+    if DD_msmt:
+        savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
+        save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
+        np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
 
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
              x0, decay_constant,exponent)
