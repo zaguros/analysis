@@ -170,6 +170,7 @@ def fit_4msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
 
     p0 = [A0,offset0,t,p]
 
+
     def fitfunc(x):
 
         decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )/32.
@@ -338,10 +339,14 @@ def fit_1msmt_state_fid(g_A0, g_t, g_p):
 
     def fitfunc(x):
 
+        # decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
+        # Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+
+
         decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
         Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
-        Cx = A0()*2.*(Fx-0.5)
-        Fx = Cx/2.+0.5
+        Cx = A0()*(Fx-0.5)
+        Fx = Cx+0.5
         # pmix = 1-A0()
         # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
         return Fx
@@ -561,6 +566,39 @@ def fit_6msmt_state_fid(g_A0, g_t, g_p):
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
         return Fx
+
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_X_state_fid(msmts,g_A0, g_p):
+    '''
+    g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
+    g_p         -  Probability for faulty parity measurement
+    msmts       -  Gives the number of measurements
+
+    The function should take the data set for 6 Zeno-measurements and fit the process fidelity with a prederived function. That depends on one parameter. The fidelity of the parity measurement.
+    '''
+
+    fitfunc_str = '''A0*(1-p)**n+0.5'''
+
+    ### Parameters
+
+    A0           = fit.Parameter(g_A0, 'A0')
+
+    ### Zeno
+    p   = fit.Parameter(g_p,'p')
+
+    p0 = [A0,p]
+
+    def fitfunc(x):
+
+        Fz0 = A0()
+        Con0 = 2.*(Fz0-0.5) ### contrast of the ZZ correlations for 0 measurements.
+        Conp = Con0*(1-p())**msmts ### after 6 measurements the contrast is reduced by (1-p)^6
+        Fzp = Conp/2. + 0.5 ### calculate the fidelity.
+
+        # Fz = A0()*(1-p())**msmts + 0.5
+        return Fzp
 
 
     return p0, fitfunc, fitfunc_str

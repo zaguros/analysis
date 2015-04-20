@@ -298,7 +298,7 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 	evo_time_arr=[]
 	ii=0
 
-	Tomo1Dict={'X':'ZZ','mX':'ZZ',
+	Tomo1Dict={'X':'YY','mX':'YY',
 	    'Y':'YZ',
 	    'mY':'YZ',
 	    'Z':'XI',
@@ -592,14 +592,14 @@ def Zeno_proc_list(older_than_tstamp=None,
 			ax=plt.subplot()
 			
 			if fitting:
-				color_list = ['b','g','r','c','m']
+				color_list = ['b','g','r','c','m','y','black']
 
 				result = ['0']*len(msmt_list) ### prepare the result strings.
 
-				amp0 = 0.44
+				amp0 = 0.39
 				offset0 = 0.40
 
-				t = 21.0/np.sqrt(2)
+				t = 11.0
 				p = 0.09
 				
 				for ii,msmts in enumerate(msmt_list):
@@ -653,7 +653,7 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 21./np.sqrt(2)
+	t = 8.785410
 	p = 0.08
 
 	if msmts == '0':
@@ -733,25 +733,48 @@ def Zeno_state_list(older_than_tstamp=None,
 			evotime_arr.append(evotime[np.argsort(evotime)]); fid_arr.append(fid[np.argsort(evotime)]); fid_u_arr.append(fid_u[np.argsort(evotime)])
 		
 		if fitting:
-			color_list = ['b','g','r','c','m']
+			color_list = ['b','g','r','c','m','y','black']
 
 			### plot the fits to the data
 			results = []
 			for kk,m in enumerate(msmt_list):
 				if m == '0':
-
-					fit_result, result_string = fit_State_decay(m,ax,0.43,evotime_arr[kk],fid_arr[kk])
-					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
-					results.append('p = 0')
-
+					if not 'X' in state:
+						fit_result, result_string = fit_State_decay(m,ax,0.43,evotime_arr[kk],fid_arr[kk])
+						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+						results.append('p = 0')
+					else:
+						p0, fitfunc,fitfunc_str = common.fit_poly([0])
+						fit_result = fit.fit1d(evotime_arr[kk],fid_arr[kk], None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[])
+						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+						results.append('p = 0')
 				else:
 					if 'Z' in state:
-						amp0 = 0.8647
+						amp0 = 0.8412
+						fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
+						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+						results.append(result_string)
 					elif 'Y' in state:
-						amp0 = 0.383 * 2
-					fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
-					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
-					results.append(result_string)
+						amp0 = 0.386 * 2
+						fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
+						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+						results.append(result_string)
+					elif 'X' in state:
+						### fit a straight offset to the X state data and find the error probability due to our gates.
+						
+						print int(m)
+						p0, fitfunc, fitfunc_str = Zfits.fit_X_state_fid(int(m),0.826,0.08)
+						fit_result = fit.fit1d(evotime_arr[kk],fid_arr[kk], None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=[0])
+						# plot.plot_fit1d(fit_result,np.linspace(0.0,100.0,len(fit_result['x'])), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+
+						p1 = str(round(fit_result['params'][0]*100,1))
+						p1_u = str(round(fit_result['error'][0]*100,1))
+
+						result_string = p1 + ' +- ' + p1_u 
+						results.append(result_string)
+
+
+					
 
 			### plot the data itself and incorporate the fit results in the labels.
 			for i in range(len(msmt_list)):
@@ -1042,7 +1065,7 @@ def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 			return evo_time_arr,fid_arr,fid_u_arr,older_than_tstamp,folder
 
 def Zeno_1Q_msmt_list(older_than_tstamp=None,
-						msmt_list=['0'],eRO_list=['positive'],state='Z',ssro_timestamp=None,decoded_bit='2'):
+						msmt_list=['0'],eRO_list=['positive'],state='Z',ssro_timestamp=None,decoded_bit='2',fitting = False):
 	fid=[]
 	fid_u=[]
 	evotime=[]
@@ -1057,15 +1080,21 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 															msmts=msmt_list[i],
 															eRO_list=eRO_list,decoded_bit=decoded_bit,
 									plot_results=False,state=state,ssro_timestamp=ssro_timestamp)
-			if msmt_list[i] == '0':
-				t = 15/np.sqrt(2)
-				p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
-				fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,1])
-				plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax, plot_data=False,add_txt = True, lw = 1)
-				
+			if fitting:
+				if msmt_list[i] == '0':
+					t = 12/np.sqrt(2)
+					p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
+					fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,1])
+					plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax, plot_data=False,add_txt = True, lw = 1)
+				else:
+					fit_result, result_string = fit_State_decay(msmt_list[i],ax,amp0,evotime_arr[kk],fid_arr[kk])
+					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+					results.append(result_string)
+
 			plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',label=str(msmt_list[i]))
 		
-
+		### fitting routine.
+		
 		if len(eRO_list)==1:
 			RO_String=eRO_list[0]
 		else: RO_String = 'contrast'
