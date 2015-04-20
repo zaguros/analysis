@@ -311,13 +311,15 @@ All of the functions below underlie the same model as the process fidelity funct
 For these functions we are only interested in the state fidelity of one state.
 Namely a state with X or YZ correlations which decays according to our number of Zeno measurements.
 """
-def fit_1msmt_state_fid(g_A0, g_t, g_p):
+def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump):
     '''
 
 
     g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
     g_p         -  Probability for faulty parity measurement
-    g_t         -  Decay of Ramsey. Fixed.
+    g_repump    -  Probability that a repumping event destroys the state.
+    g_t1        -  Decay of Ramsey (Data carbon). Fixed.
+    g_t2        - decay of the ancilla carbon
 
     The function should take the data set for 1 Zeno-measurement and fit the process fidelity with a prederived function. That depends on one parameter. The fidelity of the parity measurement.
     '''
@@ -329,21 +331,36 @@ def fit_1msmt_state_fid(g_A0, g_t, g_p):
     A0           = fit.Parameter(g_A0, 'A0')
 
         ### Ramsey
-    t   = fit.Parameter(g_t, 't')
+    t1   = fit.Parameter(g_t1, 't1')
+    t2   = fit.Parameter(g_t2, 't2')
 
     ### Zeno
     p   = fit.Parameter(g_p,'p')
+    repump = fit.Parameter(g_repump,'repump')
 
-    p0 = [A0,t,p]
+    p0 = [A0,t1,t2,p,repump]
+
 
     def fitfunc(x):
 
-        decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
-        Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
-        Cx = A0()*2.*(Fx-0.5)
-        Fx = Cx/2.+0.5
+        ### this fit function does not take detrimental repumping into account.
+        # decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
+        # Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+        # Cx = A0()*2.*(Fx-0.5)
+        # Fx = Cx/2.+0.5
         # pmix = 1-A0()
         # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
+
+        """
+        Taking repumping into account.
+        """
+        decay1 = np.exp(-x**2/(2*t2()**2))*(0.125+0.125*repump())
+        decay2 = np.exp((-0.125/(t2()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
+
+        Fx = 0.5+p()*(0.125+decay1+decay2+0.125*repump())
+        C  = A0()*2*(Fx-0.5)
+        Fx = C/2. + 0.5
+
         return Fx
 
     return p0, fitfunc, fitfunc_str

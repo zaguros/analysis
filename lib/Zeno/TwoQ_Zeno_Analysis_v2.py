@@ -653,14 +653,18 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 21./np.sqrt(2)
-	p = 0.08
+	t = 18./np.sqrt(2)
+	t1 = 9.
+	t2 = 18.
+	p = 0.92
+	repump = 0.95
+
 
 	if msmts == '0':
 		p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
 
 	elif msmts == '1':
-		p0, fitfunc,fitfunc_str = Zfits.fit_1msmt_state_fid(A0,t, p)
+		p0, fitfunc,fitfunc_str = Zfits.fit_1msmt_state_fid(A0,t1,t2, p,repump)
 
 		### manual option to show the intial guess in the plot.
 		if False:
@@ -686,13 +690,13 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	if msmts =='0':
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 	else:
-		fixed = [0,1] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
+		fixed = [0,1,2] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
 										###[0] --> fix the amplitude for 0 measurements only.
 
-		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
-	p1 = str(round(fit_result['params'][2-len(fixed)]*100,1))
-	p1_u = str(round(fit_result['error'][2-len(fixed)]*100,1))
+	p1 = str(round(fit_result['params'][0]*100,1))
+	p1_u = str(round(fit_result['error'][0]*100,1))
 
 	result_string = p1 + ' +- ' + p1_u 
 
@@ -746,9 +750,9 @@ def Zeno_state_list(older_than_tstamp=None,
 
 				else:
 					if 'Z' in state:
-						amp0 = 0.8647
+						amp0 = 0.405*2
 					elif 'Y' in state:
-						amp0 = 0.383 * 2
+						amp0 = (0.383 + 0.380) ### fitted values for mY and Y for 0 measurements
 					fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
 					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 					results.append(result_string)
