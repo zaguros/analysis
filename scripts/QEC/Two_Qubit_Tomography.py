@@ -18,18 +18,14 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	if ssro_calib_timestamp == None: 
 	    ssro_calib_folder = toolbox.latest_data('SSRO')
 	else:
-	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-<<<<<<< Updated upstream
-	    ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
-	    print ssro_calib_folder
-=======
-<<<<<<< HEAD
-	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-=======
-	    ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
-	    print ssro_calib_folder
->>>>>>> origin/master
->>>>>>> Stashed changes
+		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
+		print ssro_calib_folder
+	# <<<<<<< HEAD
+	    # ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+	# =======
+		
+
 
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()

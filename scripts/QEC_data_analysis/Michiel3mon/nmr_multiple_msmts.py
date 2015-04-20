@@ -13,7 +13,7 @@ from analysis.lib.tools import plot
 
 reload(plot)
 ### settings
-timestamp = '20150202_162810' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '20150203_144510' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 0.9
 #guess_ctr = 469.023e3 #4.08306e8
 #guess_splitB = 30.
@@ -32,8 +32,8 @@ def analyze_nmr_single(timestamp = None,center_guess = False, ax=None, ret=None,
     # rdts = np.zeros((0))
 
 
-    for i in range(14):
-        timestamp, folder = toolbox.latest_data(contains = 'NuclearRFRabi_111_1_sil18Rabi_C1_el1_positive_'+str(i),return_timestamp = True)
+    for i in range(15):
+        timestamp, folder = toolbox.latest_data(contains = 'NuclearRFRabi_111_1_sil18Rabi_C5_el1_positive_'+str(i),return_timestamp = True)
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
@@ -61,10 +61,10 @@ def analyze_nmr_single(timestamp = None,center_guess = False, ax=None, ret=None,
     fit_result['yerr'] = ysig
     plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, linewidth=2, color='0.25', figsize=(6,4.7), add_txt=False,**kw)
     plt.tight_layout()
-    plt.xticks(np.linspace(468.9,469.2,4),[str(468.9),str(469.0),str(469.1),str(469.2)])
-    ax.set_ylim([0.5,1])
-    ax.set_xlim([4.6885e2,4.6921e2])
-    plt.yticks([0.5, 0.75, 1])
+    # plt.xticks(np.linspace(468.9,469.2,4),[str(468.9),str(469.0),str(469.1),str(469.2)])
+    # ax.set_ylim([0.5,1])
+    # ax.set_xlim([4.6885e2,4.6921e2])
+    # plt.yticks([0.5, 0.75, 1])
     mpl.rcParams['axes.linewidth'] = 2
     ax.tick_params(axis='x', which='major', labelsize=15)
     ax.tick_params(axis='y', which='major', labelsize=15)
