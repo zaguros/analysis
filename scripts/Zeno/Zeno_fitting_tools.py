@@ -88,7 +88,7 @@ def fit_2msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
 
         decay = 0.125*np.exp(- ( x**2 /(2. * (t()**2) ) ) )
         decay2 = np.exp((4./9.)*( x**2 /((t()**2) ) ) )
-        Fx = 0.5+decay*((p()-1.)**2+3.*decay2*(p()-1.)**2)
+        Fx = 0.5+decay*(1.+3*decay2)*((p()-1.)**2)
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())**2
@@ -311,15 +311,16 @@ All of the functions below underlie the same model as the process fidelity funct
 For these functions we are only interested in the state fidelity of one state.
 Namely a state with X or YZ correlations which decays according to our number of Zeno measurements.
 """
-def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump):
+def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
     '''
 
 
     g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
     g_p         -  Probability for faulty parity measurement
     g_repump    -  Probability that a repumping event destroys the state.
-    g_t1        -  Decay of Ramsey (Data carbon). Fixed.
-    g_t2        - decay of the ancilla carbon
+    g_t1        -  Decay of Ramsey (ancilla carbon). Fixed.
+    g_t2        -  decay of the data carbon. Fixed.
+    take_repump -  bool which tells the fit to take detrimental repumping into account or not.
 
     The function should take the data set for 1 Zeno-measurement and fit the process fidelity with a prederived function. That depends on one parameter. The fidelity of the parity measurement.
     '''
@@ -331,35 +332,43 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump):
     A0           = fit.Parameter(g_A0, 'A0')
 
         ### Ramsey
-    t1   = fit.Parameter(g_t1, 't1')
     t2   = fit.Parameter(g_t2, 't2')
 
     ### Zeno
     p   = fit.Parameter(g_p,'p')
-    repump = fit.Parameter(g_repump,'repump')
 
-    p0 = [A0,t1,t2,p,repump]
+    if take_repump:
+        t1   = fit.Parameter(g_t1, 't1')
+        repump = fit.Parameter(g_repump,'repump')
+        p0 = [A0,t1,t2,p,repump]
+
+    else:
+        p0 = [A0,t2,p]
 
 
     def fitfunc(x):
 
         ### this fit function does not take detrimental repumping into account.
-        # decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
-        # Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
-        # Cx = A0()*2.*(Fx-0.5)
-        # Fx = Cx/2.+0.5
-        # pmix = 1-A0()
-        # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
+        if take_repump:
+            decay1 = np.exp(-x**2/(2*t2()**2))*(0.125+0.125*repump())
+            decay2 = np.exp((-0.125/(t2()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
 
-        """
-        Taking repumping into account.
-        """
-        decay1 = np.exp(-x**2/(2*t2()**2))*(0.125+0.125*repump())
-        decay2 = np.exp((-0.125/(t2()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
+            Fx = 0.5+p()*(0.125+decay1+decay2+0.125*repump())
+            C  = A0()*2*(Fx-0.5)
+            Fx = C/2. + 0.5
 
-        Fx = 0.5+p()*(0.125+decay1+decay2+0.125*repump())
-        C  = A0()*2*(Fx-0.5)
-        Fx = C/2. + 0.5
+        # """
+        # Taking repumping into account.
+        # """
+        else:
+            
+
+            decay = np.exp(- ( x**2 /(2. * (t2()**2) ) ) )
+            Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+            Cx = A0()*2.*(Fx-0.5)
+            Fx = Cx/2.+0.5
+            pmix = 1-A0()
+            Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
 
         return Fx
 
@@ -578,6 +587,89 @@ def fit_6msmt_state_fid(g_A0, g_t, g_p):
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
         return Fx
+
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_8msmt_state_fid(g_A0, g_t, g_p):
+    '''
+
+
+    g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
+    g_p         -  Probability for faulty parity measurement
+    g_t         -  Decay of Ramsey. Fixed.
+
+    The function should take the data set for 8 Zeno-measurements and fit the state fidelity with a prederived function. 
+    That depends on one parameter. The Probability of the parity measurement to mix the state.
+    '''
+
+    fitfunc_str = '''analyitcal solution'''
+
+    ### Parameters
+
+    A0           = fit.Parameter(g_A0, 'A0')
+
+
+    ### Ramsey (decay time divided by sqrt(2).)
+    t   = fit.Parameter(g_t, 't')
+
+    ### Zeno
+    p   = fit.Parameter(g_p,'p')
+
+    p0 = [A0,t,p]
+
+    def fitfunc(x):
+
+        decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )/512.
+
+        decay2 = 9. * np.exp((16./81.)*( x**2 /((t()**2) ) ) )*(p()-1.)**8
+
+        decay3 = 36. * np.exp((28./81.)*( x**2 /((t()**2) ) ) )*(p()-1.)**8
+
+        decay4 = 84. * np.exp((36./81.)*( x**2 /((t()**2) ) ) )*(p()-1.)**8
+
+        decay5 = 126. * np.exp((40./81.)*( x**2 /((t()**2) ) ) )*(p()-1.)**8
+
+        #### decay to 0.5 only for 6 measurements no other constant parts of the function due to echo effects.
+        
+        Fx = 0.5 + decay*((p()-1)**8 + decay2 + decay3 + decay4 + decay5)
+
+        Cx = A0()*2.*(Fx-0.5)
+        Fx = Cx/2.+0.5
+        return Fx
+
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_X_state_fid(msmts,g_A0, g_p):
+    '''
+    g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
+    g_p         -  Probability for faulty parity measurement
+    msmts       -  Gives the number of measurements
+
+    The function should take the data set for 6 Zeno-measurements and fit the process fidelity with a prederived function. That depends on one parameter. The fidelity of the parity measurement.
+    '''
+
+    fitfunc_str = '''A0*(1-p)**n+0.5'''
+
+    ### Parameters
+
+    A0           = fit.Parameter(g_A0, 'A0')
+
+    ### Zeno
+    p   = fit.Parameter(g_p,'p')
+
+    p0 = [A0,p]
+
+    def fitfunc(x):
+
+        Fz0 = A0()
+        Con0 = 2.*(Fz0-0.5) ### contrast of the ZZ correlations for 0 measurements.
+        Conp = Con0*(1-p())**msmts ### after 6 measurements the contrast is reduced by (1-p)^6
+        Fzp = Conp/2. + 0.5 ### calculate the fidelity.
+
+        # Fz = A0()*(1-p())**msmts + 0.5
+        return Fzp
 
 
     return p0, fitfunc, fitfunc_str

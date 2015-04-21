@@ -63,9 +63,9 @@ def get_Zeno_data(electron_RO=['positive'],
 	Output: timestamp			specifies the latest evaluated folder
 			loop_bit			Boolean which signals the end of data acquisition and if the output data should be evaluated.
 			x_labels 			Tomographic bases. E.g. XI or ZZ
-			y 					Read-out results
-			y_err 				Read-out uncertainty
-			evo_time 			Free evolution of the specific state
+			y 					List, Read-out results (AVERAGED CONTRAST)
+			y_err 				List, Read-out uncertainty
+			evo_time 			List, Evolution time associated with y
 			folder 				The folder of the latest timestamp
 			evo_was_zero		Boolean which signifies if the first evolution time was Zero. This will then stop further data acquisition.
 	"""
@@ -244,7 +244,7 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 						measurement_name = ['adwindata'], 
 						ssro_calib_timestamp =None):
 	"""
-	Returns the relevant RO values for a given timestamp.
+	Returns the relevant CONTRAST values for a given timestamp.
 	"""
 
 	if timestamp == None and folder==None:
@@ -275,11 +275,11 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 		ssro.ssrocalib(ssro_calib_folder)
 		a.get_electron_ROC(ssro_calib_folder)
 
-	x_labels = a.sweep_pts.reshape(-1)
-	y= ((a.p0.reshape(-1))-0.5)*2
+	evo_time = a.sweep_pts.reshape(-1)
+	y = ((a.p0.reshape(-1))-0.5)*2
 	y_err = 2*a.u_p0.reshape(-1)
 
-	return x_labels,y,y_err
+	return evo_time,y,y_err
 
 
 def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
@@ -371,8 +371,9 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 	if 'm' in state:
 		sign=-1*sign
 
-	fid_arr=(sign*np.array(y_arr)+1)/2.
-	fid_u_arr=np.array(y_err_arr)/2.
+	fid_arr=(sign*np.array(y_arr)+1)/2. ### convert expectation value to fidelity
+
+	fid_u_arr=np.array(y_err_arr)/2. ### uncertainty is therefore cut into two as well.
 
 	if len(eRO_list)==1:
 		RO_String=eRO_list[0]
@@ -455,7 +456,7 @@ def Zeno_proc_fidelity(msmts='0',
 			RO_String=eRO_list[0]
 		else: RO_String = 'contrast'
 
-		plt.errorbar(evo_time,(3*avg_fid-1)/2.,1.5*avg_fid_u,color='blue',marker='o')
+		plt.errorbar(evo_time,(3.*avg_fid-1.)/2.,1.5*avg_fid_u,color='blue',marker='o') ### for a derivation see Equation 15 in Gilchrist et al. PRA 71, 062310 (2005) & the cited references
 		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('Process fidelity')
 		plt.title('Process_fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
@@ -653,18 +654,22 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 18./np.sqrt(2)
+	# t = 18./np.sqrt(2)
 	t1 = 9.
-	t2 = 18.
+	t2 = 8.8
+	t = t2
 	p = 0.92
 	repump = 0.95
+
+	print 'A0 ', A0
+	print 't2 ', t2
 
 
 	if msmts == '0':
 		p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
 
 	elif msmts == '1':
-		p0, fitfunc,fitfunc_str = Zfits.fit_1msmt_state_fid(A0,t1,t2, p,repump)
+		p0, fitfunc,fitfunc_str = Zfits.fit_1msmt_state_fid(A0,t1,t2, p,repump,False)
 
 		### manual option to show the intial guess in the plot.
 		if False:
@@ -685,12 +690,15 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	elif msmts == '6':
 		p0, fitfunc,fitfunc_str = Zfits.fit_6msmt_state_fid(A0,t, p)
 
+	elif msmts == '8':
+		p0, fitfunc,fitfunc_str = Zfits.fit_8msmt_state_fid(A0,t, p)
+
 	### msmts = 0 is an exception
 	fixed = [0,1]
 	if msmts =='0':
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 	else:
-		fixed = [0,1,2] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
+		fixed = [0,1] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
 										###[0] --> fix the amplitude for 0 measurements only.
 
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
@@ -747,14 +755,17 @@ def Zeno_state_list(older_than_tstamp=None,
 						fit_result, result_string = fit_State_decay(m,ax,0.43,evotime_arr[kk],fid_arr[kk])
 						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 						results.append('p = 0')
+						
 					else:
+						### ZZ correlated state.
 						p0, fitfunc,fitfunc_str = common.fit_poly([0])
 						fit_result = fit.fit1d(evotime_arr[kk],fid_arr[kk], None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[])
 						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 						results.append('p = 0')
+						ampZ = fit_result['params'][0]*100
 				else:
 					if 'Z' in state:
-						amp0 = 0.8412
+						amp0 = 0.8012
 						fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
 						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 						results.append(result_string)
@@ -767,11 +778,14 @@ def Zeno_state_list(older_than_tstamp=None,
 						### fit a straight offset to the X state data and find the error probability due to our gates.
 						
 						print int(m)
-						p0, fitfunc, fitfunc_str = Zfits.fit_X_state_fid(int(m),0.826,0.08)
-						fit_result = fit.fit1d(evotime_arr[kk],fid_arr[kk], None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=[0])
-						# plot.plot_fit1d(fit_result,np.linspace(0.0,100.0,len(fit_result['x'])), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+						p0, fitfunc, fitfunc_str = common.fit_line(0.852,0.0)
+						fit_result = fit.fit1d(evotime_arr[kk],fid_arr[kk], None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=[1])
+						plot.plot_fit1d(fit_result,np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 
-						p1 = str(round(fit_result['params'][0]*100,1))
+						if '0' not in msmt_list:
+							ampZ = 1
+
+						p1 = str(round(ampZ-fit_result['params'][0]*100,1))
 						p1_u = str(round(fit_result['error'][0]*100,1))
 
 						result_string = p1 + ' +- ' + p1_u 
