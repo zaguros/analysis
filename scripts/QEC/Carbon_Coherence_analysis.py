@@ -38,6 +38,15 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     except:
         DD_msmt = False
     
+    try:
+        Tomo = folder[folder.rfind('Tomo')+4:folder.rfind('Tomo')+6]
+        Adressed_carbon = folder[folder.rfind('_C')+2:folder.rfind('_C')+5]
+        print   'C=', Adressed_carbon
+        print   'Tomo=', Tomo
+        Tomo_msmt = True
+    except:
+        Tomo_msmt = False
+
     print 'Timestamp', timestamp
     print 'Folder', folder
 
@@ -159,10 +168,16 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     # print np.shape(a.sweep_pts[:]),np.shape(a.p0[:,0]),np.shape(a.u_p0[:])
     # print np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose()
     ax.plot(x,y)
-    if DD_msmt:
+    if Tomo_msmt:
+        savestr = timestamp + '_Tomo' + Tomo + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
+        save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/MultiCarbon_Tomo_msmt/' + savestr
+        np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
+    elif DD_msmt:
         savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
         np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
+
+
 
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
              x0, decay_constant,exponent)
@@ -257,3 +272,99 @@ def Carbon_T(timestamp=None, folder_name = 'Hahn', measurement_name = 'adwindata
 
     return fit_results
 
+def Carbon_assymetric_RO(timestamps=None, timestamps_neg=None ,older_than =None, posneg = False, folder_name = 'Hahn', measurement_name = 'adwindata', ssro_calib_timestamp =None,
+            offset = 0.5, 
+            x0 = 0,  
+            amplitude = 0.5,  
+            sigma = 5, 
+            partstr = 'part', plot_fit = True, do_print = True, fixed = [0], show_guess = False):
+    ''' 
+    Inputs:
+    timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
+    measurement_name: list of measurement names
+    List of parameters (order important for 'fixed') 
+    offset, amplitude, decay_constant,exponent,frequency ,phase 
+    '''
+    figsize=(6,4.7)
+    Number_of_folders = len(timestamps)
+    folders = []
+    folders_neg = []
+    Tomo_names = []
+    for tstmp_nr, timestamp in enumerate(timestamps):
+        folder = toolbox.data_from_time(timestamp)
+        folders.append(folder)
+        Tomo_names.append(folder[folder.rfind('Tomo')+4:folder.rfind('Tomo')+6])
+        if timestamps_neg != None:
+            folder =  toolbox.data_from_time(timestamps_neg[tstmp_nr])
+            folders_neg.append(folder)
+        print 'Tomo=', Tomo_names
+    DD_msmt = False
+    
+    print 'Timestamp', timestamp
+    print 'Folder', folder
+
+    if ssro_calib_timestamp == None: 
+        ssro_calib_folder = toolbox.latest_data('SSRO')
+    else:
+        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
+        print ssro_calib_folder
+    colors = ['b','g','r']
+
+    fit_results = []
+
+    for kk in range(Number_of_folders):
+        
+        a = mbi.MBIAnalysis(folders[kk])
+        a.get_sweep_pts()
+        a.get_readout_results(name='adwindata')
+        a.get_electron_ROC(ssro_calib_folder)
+        reps_per_datapoint = a.reps
+        
+        if timestamps_neg != None:
+            b = mbi.MBIAnalysis(folders_neg[kk])
+            b.get_sweep_pts()
+            b.get_readout_results(name='adwindata')
+            b.get_electron_ROC(ssro_calib_folder)
+
+            a.p0    = (a.p0+(1-b.p0))/2.
+            a.u_p0  = np.sqrt(a.u_p0**2+b.u_p0**2)/2
+
+        x = a.sweep_pts.reshape(-1)[:]
+        y = a.p0.reshape(-1)[:]
+
+        
+        # ax.plot(x,y)
+        
+        p0, fitfunc, fitfunc_str = common.fit_gauss(offset, amplitude, 
+             x0, sigma)
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+        print 'T2*= %.2f +- %.2f' % (fit_result['params_dict']['sigma'],fit_result['error_dict']['sigma'])
+        label = Tomo_names[kk]+', x0= %.2f +- %.2f' % (2.**.5*fit_result['params_dict']['x0'],2.**.5*fit_result['error_dict']['x0'])
+        if kk==0:
+            ax=a.plot_results_vs_sweepparam(ret='ax',ax=None, 
+                                            figsize=figsize, 
+                                            ylim=(0.4,1.0),
+                                            labels=[label],
+                                            )
+            ax.set_xlim((-15.,15.))
+        else:
+           a.plot_results_vs_sweepparam(ax=ax, 
+                                       figsize=figsize, 
+                                       ylim=(0.4,1.),
+                                       labels=[label]
+                                       ) 
+        
+       
+    ## plot data and fit as function of total time
+        print fit_result['params_dict']['x0']
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,color=colors[kk], add_txt=False)
+        # ax.set_label(Tomo_names[kk])
+        fit_results.append(fit_result)
+    plt.legend(loc='lower')
+    plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+    format='pdf')
+    plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+    format='png')
+
+    return fit_results
