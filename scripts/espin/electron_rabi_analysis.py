@@ -15,11 +15,9 @@ reload(sequence)
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-<<<<<<< HEAD
-guess_frq = 1./100
-=======
-guess_frq = 1./0.025
->>>>>>> d019abd3f4760859ea625c80f9d8ab8c26339847
+
+guess_frq = 1./3.
+
 
 guess_amp = 1
 guess_of = 0

@@ -7,7 +7,7 @@ MB 2014-01-05
 import numpy as np
 import os, sys
 if os.name == 'posix':
-    sys.path.append("/Users/michielbakker/Documents/teamdiamond/")
+    sys.path.append("/Users/"+os.getlogin()+"/Documents/teamdiamond/")
 else:
     sys.path.append("/measuring/")
 from analysis.lib.tools import plot, toolbox
@@ -16,6 +16,7 @@ from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 reload(common)
+reload(mbi)
 #general plot parameters
 ylim=(0.5,1.0)
 figsize=(6,4.7)
@@ -30,11 +31,8 @@ def Carbon_T2_analysis_ms0(measurement_name = ['adwindata'], ssro_calib_timestam
             plot_fit = True, do_print = True, show_guess = False):
     ''' 
     Function to gather and analyze T1 measurements of a specific carbon.
-
     Addressed_carbon: selects the used timestamps and therefore the analyzed carbon
-
     measurement_name: list of measurement names
-
     Possible inputs for initial guesses: offset, amplitude, decay_constant,exponent
     '''
 
@@ -47,18 +45,21 @@ def Carbon_T2_analysis_ms0(measurement_name = ['adwindata'], ssro_calib_timestam
     ######################################
 
 
-    if Addressed_carbon == 1:
-        timestamp_pos=['20141104_194723','20141104_200359','20141104_215235']
-        timestamp_neg=['20141104_195541','20141104_205814','20141104_231030']
-    elif Addressed_carbon == 5:
-        timestamp_pos=['20150102_185838']
-        timestamp_neg=['20150102_191030']
-        #timestamp_pos=['20141105_002824','20141105_004556','20141105_023521']
-        #timestamp_neg=['20141105_003711','20141105_014037','20141105_035322']
+    if Addressed_carbon == 5:
+        timestamp_pos=['20150315_215418']
+        timestamp_neg=['20150315_225753']
+        timestamp_pos=['20150317_103608']
+        timestamp_neg=['20150317_105622']
+    elif Addressed_carbon == 1:  
+        timestamp_pos=['20150316_000112']
+        timestamp_neg=['20150316_010415']
+        timestamp_pos=['20150317_015434']
+        timestamp_neg=['20150317_021428']
     elif Addressed_carbon == 2:
-        timestamp_pos=['20141106_010336','20141106_012019','20141106_030844']
-        timestamp_neg=['20141106_011155','20141106_021431','20141106_045651']
-
+        timestamp_pos=['20150316_020808']
+        timestamp_neg=['20150316_031102']
+        timestamp_pos=['20150317_061458']
+        timestamp_neg=['20150317_063658']
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
     else:
@@ -77,12 +78,14 @@ def Carbon_T2_analysis_ms0(measurement_name = ['adwindata'], ssro_calib_timestam
         a = mbi.MBIAnalysis(folder_pos)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_pos[kk], return_timestamp = True)
         a.get_electron_ROC(ssro_calib_folder)
         cum_pts += a.pts
 
         b = mbi.MBIAnalysis(folder_neg)
         b.get_sweep_pts()
         b.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_neg[kk], return_timestamp = True)
         b.get_electron_ROC(ssro_calib_folder)
 
         if kk == 0:
@@ -130,7 +133,7 @@ def Carbon_T2_analysis_ms0(measurement_name = ['adwindata'], ssro_calib_timestam
 
     fit_results = []
 
-    x = a.sweep_pts.reshape(-1)[:]*2
+    x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
     y_err = a.u_p0.reshape(-1)[:]
     ax.plot(x,y)
@@ -180,20 +183,27 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
             Addressed_carbon=5,
             plot_fit = True, do_print = True, show_guess = False):
 
-    if Addressed_carbon == 1:
-        timestamp_pos=['20141104_195135','20141104_203107','20141104_223132']
-        timestamp_neg=['20141104_195949','20141104_212524','20141104_234927']
-    elif Addressed_carbon == 5:
-        timestamp_pos=['20150309_193904']
-        timestamp_neg=['20150309_195337']
-        # timestamp_pos=['20150102_193904']
-        # timestamp_neg=['20150102_214323']
-        #timestamp_pos=['20141105_003250','20141105_011316','20141105_031420']
-        #timestamp_neg=['20141105_004136','20141105_020802','20141105_043221']
+    if Addressed_carbon == 5:
+        timestamp_pos=['20150315_231309']#First
+        timestamp_neg=['20150315_220943']#First
+        # timestamp_neg=['20150317_111643']#No shutter
+        # timestamp_pos=['20150317_120932']#No shutter
+        # timestamp_neg=['20150317_084219']#Shutter
+        # timestamp_pos=['20150317_093928']#Shutter
+    elif Addressed_carbon == 1:
+        timestamp_pos=['20150316_012016']
+        timestamp_neg=['20150316_001620']
+        # timestamp_neg=['20150317_023359']#No shutter
+        # timestamp_pos=['20150317_032742']#No shutter
+        # timestamp_neg=['20150317_000109']#Shutter
+        # timestamp_pos=['20150317_005741']#Shutter
     elif Addressed_carbon == 2:
-        timestamp_pos=['20141106_010748','20141106_014724','20141106_040245']
-        timestamp_neg=['20141106_011609','20141106_024138','20141106_055052']
-
+        timestamp_pos=['20150316_032609']
+        timestamp_neg=['20150316_022328']
+        # timestamp_neg=['20150317_065552']#No shutter
+        # timestamp_pos=['20150317_074908']#No shutter
+        # timestamp_neg=['20150317_042104']#Shutter
+        # timestamp_pos=['20150317_051738']#Shutter
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
     else:
@@ -212,12 +222,14 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
         a = mbi.MBIAnalysis(folder_pos)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_pos[kk], return_timestamp = True)
         a.get_electron_ROC(ssro_calib_folder)
         cum_pts += a.pts
 
         b = mbi.MBIAnalysis(folder_neg)
         b.get_sweep_pts()
         b.get_readout_results(name='adwindata')
+        timestamp_SSRO, ssro_calib_folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp_neg[kk], return_timestamp = True)
         b.get_electron_ROC(ssro_calib_folder)
 
         if kk == 0:
@@ -228,7 +240,7 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
             cum_sweep_pts = np.concatenate((cum_sweep_pts, a.sweep_pts))
             cum_p0 = np.concatenate((cum_p0, (a.p0+(1-b.p0))/2))
             cum_u_p0 = np.concatenate((cum_u_p0, np.sqrt(a.u_p0**2+b.u_p0**2)/2))
-            print
+            
 
     a.pts   = cum_pts
     a.sweep_pts = cum_sweep_pts
@@ -261,7 +273,7 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
 
     fit_results = []
 
-    x = a.sweep_pts.reshape(-1)[:]*2
+    x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
     y_err = a.u_p0.reshape(-1)[:]
     ax.plot(x,y)
@@ -299,19 +311,21 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
 
     return x,y, y_err, fit_result
 
-folder = r'D:\measuring\data\Analyzed figures\Carbon Hahn'
-color_list = ['g','g']
-x_max_list = [120e-3,2000e-3]
-figure_name_list = ['C5_T2_ms0','C5_T2_ms1']
+carbonnr = 1
+
+folder = "/Users/"+os.getlogin()+"/Documents/"
+color_list = ['y','y']
+x_max_list = [100e-3,1200e-3]
+figure_name_list = ['C'+str(carbonnr)+'_T2_ms0','C'+str(carbonnr)+'_T2_ms1']
 spacing = [40e-3]+[500e-3]
 
 for ii in range(2):
     figure_name = figure_name_list[ii]
     if ii == 0:
-        x,y, y_err, fit_result = Carbon_T2_analysis_ms0(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923', 
+        x,y, y_err, fit_result = Carbon_T2_analysis_ms0(Addressed_carbon=carbonnr, ssro_calib_timestamp =None, 
                             amplitude = 0.4, show_guess=False)
     elif ii == 1:
-        x,y, y_err, fit_result = Carbon_T2_analysis_ms1(Addressed_carbon=5, ssro_calib_timestamp ='20150102_153923', 
+        x,y, y_err, fit_result = Carbon_T2_analysis_ms1(Addressed_carbon=carbonnr, ssro_calib_timestamp =None, 
                             amplitude = 0.4, show_guess=False)
 
 
@@ -323,22 +337,23 @@ for ii in range(2):
 
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,add_txt = False,linewidth =2, linestyle = '-',color = '0.25')
 
-    errlines = ax.errorbar(x,y,yerr = y_err, color = 'g',ls = '', marker = 'o',markersize = 8,capsize=5, lw = 2)
+    errlines = ax.errorbar(x,y,yerr = y_err, color = 'b',ls = '', marker = 'o',markersize = 8,capsize=5, lw = 2)
     # set(errlines, linewidth=6)
 
     ax.set_ylim([0,1])
-    ax.set_xlim([0-x_max_list[ii]*0.01,x_max_list[ii]+0.1e-3])
+    ax.set_xlim([0,x_max_list[ii]+0.1e-3])
     plt.xticks(xticks)
     ax.set_xticklabels(xticks)
-    ax.set_xlabel('Free evolution time (s)',fontsize = 25)
-    ax.set_ylabel(r'F$(|0\rangle)$',fontsize = 30)
+    ax.set_xlabel('Free evolution time (s)',fontsize = 20)
+    ax.set_ylabel('Fidelity',fontsize = 20)
     ax.hlines([0.5],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 2)
     ax.set_ylim([0,1])
     yticks = np.linspace(0,1,3)
     plt.yticks(yticks)
-    ax.tick_params(axis='x', which='major', labelsize=25)
-    ax.tick_params(axis='y', which='major', labelsize=25)
-    mpl.rcParams['axes.linewidth'] = 2
+    ax.tick_params(axis='x', which='major', labelsize=20)
+    ax.tick_params(axis='y', which='major', labelsize=20)
+    plt.rcParams['axes.linewidth'] = 2
     ax.tick_params('both', length=4, width=2, which='major')
     plt.savefig(os.path.join(folder, figure_name + '.pdf'),format='pdf',bbox_inches='tight')
     plt.savefig(os.path.join(folder, figure_name + '.png'),format='png',bbox_inches='tight')
+    plt.close()

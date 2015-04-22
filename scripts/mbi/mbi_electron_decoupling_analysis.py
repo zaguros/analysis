@@ -8,53 +8,64 @@ from matplotlib import pyplot as plt
 
 reload(common)
 
-def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offset = 0.5, amplitude = 0.5, position =0, T2 = 800, power=2, plot_fit = True, do_print = False, show_guess = False):
+def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offset = 0.5, 
+                        amplitude = 0.5, position =0, T2 = 800, 
+                        power=2, plot_fit = True, do_print = False, 
+                        show_guess = False):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
-    timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
+    timestamp: list of timestamps in format in format yyyymmdd_hhmmss or hhmmss or None. (Added: List functionality. NK 20150320)
     measurement_name: list of measurement names
     Based on electron_T1_anal,
     '''
 
     if timestamp != None:
-        folder = toolbox.data_from_time(timestamp)
+        if type(timestamp)==str:
+            folder_list=[toolbox.data_from_time(timestamp)]
+        else:
+            folder_list = []
+            for t in timestamp:
+                folder_list.append(toolbox.data_from_time(t))
     else:
-        folder = toolbox.latest_data('Decoupling')
+        folder_list = [toolbox.latest_data('Decoupling')]
 
     fit_results = []
-    for k in range(0,len(measurement_name)):
-        a = mbi.MBIAnalysis(folder)
-        a.get_sweep_pts()
-        a.get_readout_results(name=measurement_name[k])
-        a.get_electron_ROC()
-        ax = a.plot_results_vs_sweepparam(ret='ax')
+    for ii,f in enumerate(folder_list):
+        for k in range(0,len(measurement_name)):
+            a = mbi.MBIAnalysis(f)
+            a.get_sweep_pts()
+            a.get_readout_results(name=measurement_name[k])
+            a.get_electron_ROC()
+            if ii==0:
+                ax = a.plot_results_vs_sweepparam(ret='ax')
+            else:
+                ax.errorbar(a.sweep_pts.reshape(-1)[:],a.p0.reshape(-1)[:],yerr=a.u_p0.reshape(-1)[:],fmt='o')
+            x = a.sweep_pts.reshape(-1)[:]
+            y = a.p0.reshape(-1)[:]
 
-        x = a.sweep_pts.reshape(-1)[:]
-        y = a.p0.reshape(-1)[:]
+            p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
 
-        p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
+            #plot the initial guess
+            if show_guess:
+                ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
 
-        #plot the initial guess
-        if show_guess:
-            ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,2])
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,2])
+            ## plot data and fit as function of total time
+            if plot_fit == True:
+                plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
 
-        ## plot data and fit as function of total time
-        if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+            fit_results.append(fit_result)
 
-        fit_results.append(fit_result)
+    plt.savefig(os.path.join(folder_list[0], 'analyzed_result.pdf'),
+    format='pdf')
+    plt.savefig(os.path.join(folder_list[0], 'analyzed_result.png'),
+    format='png')
 
-        plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
-        format='pdf')
-        plt.savefig(os.path.join(folder, 'analyzed_result.png'),
-        format='png')
-
-        ## plot data and fit as function of tau
-        #plt.figure()
-        #plt.plot(np.linspace(0,x[-1],201), fit_result['fitfunc'](np.linspace(0,x[-1],201)), ':', lw=2)
-        #plt.plot(x, y, '.', lw=2)
+            ## plot data and fit as function of tau
+            #plt.figure()
+            #plt.plot(np.linspace(0,x[-1],201), fit_result['fitfunc'](np.linspace(0,x[-1],201)), ':', lw=2)
+            #plt.plot(x, y, '.', lw=2)
 
 
 

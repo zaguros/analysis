@@ -9,12 +9,11 @@ from analysis.lib import fitting
 from analysis.lib.m2.ssro import sequence, mbi
 from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit,esr
-from analysis.lib.fitting import common
 from analysis.lib.tools import plot
 
-
+reload(plot)
 ### settings
-timestamp = None # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
+timestamp = '20150203_144510' # '125821' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 guess_offset = 0.9
 #guess_ctr = 469.023e3 #4.08306e8
 #guess_splitB = 30.
@@ -33,10 +32,9 @@ def analyze_nmr_single(timestamp = None,center_guess = False, ax=None, ret=None,
     # rdts = np.zeros((0))
 
 
-    for i in range(20):
-        timestamp, folder = toolbox.latest_data(contains = 'NuclearRFRabi_111_1_sil18Rabi_C5_el1_positive_'+str(i)+'run',return_timestamp = True)
+    for i in range(15):
+        timestamp, folder = toolbox.latest_data(contains = 'NuclearRFRabi_111_1_sil18Rabi_C5_el1_positive_'+str(i),return_timestamp = True)
         a = mbi.MBIAnalysis(folder)
-
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC()    
@@ -56,22 +54,28 @@ def analyze_nmr_single(timestamp = None,center_guess = False, ax=None, ret=None,
         guess_ctr = x[y.argmin()]
         print 'guess_ctr = '+str(guess_ctr)
     
-    # # try fitting
+    # try fitting
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             do_print=False, ret=True, fixed=[])
-    # fit_result = fit.fit1d(x, y, common.fit_2gauss, guess_offset,
-    #         guess_amplitude, guess_ctr-30e-3,guess_width, guess_amplitude, guess_ctr+30e-3,guess_width,
-    #         do_print=False, ret=True, fixed=[])
     fit_result['yerr'] = ysig
-    plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
+    plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, linewidth=2, color='0.25', figsize=(6,4.7), add_txt=False,**kw)
+    plt.tight_layout()
+    # plt.xticks(np.linspace(468.9,469.2,4),[str(468.9),str(469.0),str(469.1),str(469.2)])
+    # ax.set_ylim([0.5,1])
+    # ax.set_xlim([4.6885e2,4.6921e2])
+    # plt.yticks([0.5, 0.75, 1])
+    mpl.rcParams['axes.linewidth'] = 2
+    ax.tick_params(axis='x', which='major', labelsize=15)
+    ax.tick_params(axis='y', which='major', labelsize=15)
+    ax.set_xlabel('RF frq (kHz)',fontsize =15)
+    
+    ax.tick_params('both', length=4, width=2, which='major')
+    ax.set_ylabel(r'fidelity wrt. $|0\rangle$', fontsize=15)
+    # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 
-    ax.set_xlabel('RF frq (kHz)')
-    ax.set_ylabel(r'fidelity wrt. $|0\rangle$')
-    ax.set_title(a.timestamp+'\n'+a.measurementstring)
-
-    plt.savefig(os.path.join(folder, 'nmr_analysis.png'),
-            format='png')
+    plt.savefig(os.path.join(folder, 'nmr_analysis.pdf'),
+            format='pdf')
     if ret == 'f0':
         f0 = fit_result['params_dict']['x0']
         u_f0 = fit_result['error_dict']['x0']

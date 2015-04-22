@@ -297,6 +297,20 @@ def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
         return a() + A() * np.exp(-(x-x0())**n()/(T()**n()))
     return p0, fitfunc, fitfunc_str
 
+def fit_general_exponential_fixed_offset(f_a, g_A, g_x0, g_T, g_n):
+    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n)'
+
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    T = fit.Parameter(g_T, 'T')
+    n = fit.Parameter(g_n, 'n')
+
+    p0 = [A, x0, T, n]
+
+    def fitfunc(x):
+        return f_a + A() * np.exp(-(x-x0())**n()/(T()**n()))
+    return p0, fitfunc, fitfunc_str
+
 def fit_2gauss(g_a1, g_A1, g_x01, g_sigma1, g_A2, g_x02, g_sigma2):
 ### i think there should be a factor 2 infront of the sigma
     fitfunc_str = 'a1 + A1 * exp(-(x-x01)**2/(2*sigma1**2)) +\
