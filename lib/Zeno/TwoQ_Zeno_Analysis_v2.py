@@ -667,7 +667,7 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	t = 8.25
 	t1 = 9./np.sqrt(2)
 	t2 = 8.25
-	p = 0.92
+	p = 0.25
 	repump = 0.95
 
 	print 'A0 ', A0
@@ -701,22 +701,25 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 
 	elif msmts == '8':
 		p0, fitfunc,fitfunc_str = Zfits.fit_8msmt_state_fid(A0,t, p)
+		if False:
+			ax.plot(np.linspace(0.,120.0,201), fitfunc(np.linspace(0.,120.0,201)), ':', lw=2)
 
 	### msmts = 0 is an exception
 	fixed = [0,1]
 	if msmts =='0':
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 	else:
-		fixed = [0] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
+		fixed = [0,1] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
 										###[0] --> fix the amplitude for 0 measurements only.
 
-		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
 
 	print fit_result['params']
 
-	p1 = str(round(fit_result['params'][1]*100,1))
-	p1_u = str(round(fit_result['error'][1]*100,1))
-
+	p1 = str(round(fit_result['params'][0]*100,1))
+	p1_u = str(round(fit_result['error'][0]*100,1))
+	# p1 = 'test'
+	# p1_u = 'ing'
 	result_string = p1 + ' +- ' + p1_u 
 
 	return fit_result, result_string
@@ -1131,13 +1134,13 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 			if fitting:
 				
 				if msmt_list[i] == '0':
-					t = 12/np.sqrt(2)
+					t = 8.2
 					p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
 					fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,1])
 					plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = 1)
 					results.append('0 : p = 0')
 				else:
-					fit_result, result_string = fit_State_decay(msmt_list[i],ax,0.415*2,evotime,fid)
+					fit_result, result_string = fit_State_decay(msmt_list[i],ax,0.390*2,evotime,fid)
 					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = 1)
 					results.append(result_string)
 				print len(results)
