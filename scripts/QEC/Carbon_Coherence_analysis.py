@@ -39,11 +39,16 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         DD_msmt = False
     
     try:
-        Tomo = folder[folder.rfind('Tomo')+4:folder.rfind('Tomo')+6]
+        
+
+        Tomo = folder[folder.find('Tomo')+4:folder.find('Tomo')+6]
         Adressed_carbon = folder[folder.rfind('_C')+2:folder.rfind('_C')+5]
         print   'C=', Adressed_carbon
         print   'Tomo=', Tomo
-        Tomo_msmt = True
+        if Tomo == folder[folder.find('Tomo'):folder.find('Tomo')+4]:
+            Tomo_msmt = True
+        else:
+            Tomo_msmt = False
     except:
         Tomo_msmt = False
 
@@ -168,6 +173,8 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     # print np.shape(a.sweep_pts[:]),np.shape(a.p0[:,0]),np.shape(a.u_p0[:])
     # print np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose()
     ax.plot(x,y)
+    print Tomo_msmt
+    print DD_msmt
     if Tomo_msmt:
         savestr = timestamp + '_Tomo' + Tomo + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/MultiCarbon_Tomo_msmt/' + savestr
@@ -176,7 +183,8 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
         np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
-
+    else:
+        pass
 
 
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 

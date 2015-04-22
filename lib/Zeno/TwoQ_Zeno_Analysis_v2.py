@@ -18,6 +18,14 @@ Analyze the zeno data
 NK 2014
 """
 
+#############################################
+
+"Global variables for plotting!"
+color_list = ['b','g','r','c','m','y','black']
+
+############################################
+
+
 def calculate_max_fidelity(fid,fid_u,fid_ort,fid_u_ort):
 	"""
 	calculate the maximum achievable fidelity by quadratically adding two orthogonal vectors.
@@ -502,7 +510,7 @@ def fit_process_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 17./np.sqrt(2)
+	t = 8.34
 	p = 0.08
 	offset0 = 0.40
 
@@ -598,16 +606,16 @@ def Zeno_proc_list(older_than_tstamp=None,
 
 				result = ['0']*len(msmt_list) ### prepare the result strings.
 
-				amp0 = 0.39
-				offset0 = 0.40
+				amp0 = 0.402
+				offset0 = 0.397
 
-				t = 11.0
+				t = 8.34
 				p = 0.09
 				
 				for ii,msmts in enumerate(msmt_list):
 					fit_result, result[ii] = fit_process_decay(msmts,ax,amp0,evotime_arr[ii],fid_arr[ii])
 
-					plot.plot_fit1d(fit_result, np.linspace(0.0,100.0,1001), ax=ax, plot_data=False,color = color_list[ii],add_txt = False, lw = 1)
+					plot.plot_fit1d(fit_result, np.linspace(0.0,110.0,1001), ax=ax, plot_data=False,color = color_list[ii],add_txt = False, lw = 1)
 
 					if msmts == '0':
 						result[ii] = ' p = 0'
@@ -628,7 +636,7 @@ def Zeno_proc_list(older_than_tstamp=None,
 			plt.xlabel('Evolution time (ms)')
 			plt.ylabel('Process fidelity')
 			plt.title('Process fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
-			plt.legend()
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
 			print 'Plots are saved in:'
 			print folder
@@ -655,9 +663,9 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	fit_result		the fitted function for plotting.
 	"""
 
-	t = 18./np.sqrt(2)
-	t1 = 9.
-	t2 = 18.
+	t = 8.25
+	t1 = 9./np.sqrt(2)
+	t2 = 8.25
 	p = 0.92
 	repump = 0.95
 
@@ -692,13 +700,15 @@ def fit_State_decay(msmts,ax,A0,evotime,fid):
 	if msmts =='0':
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 	else:
-		fixed = [0,1,2] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
+		fixed = [0] ### fixed parameter: [0,1] --> fix time and amplitude, p is the only free parameter. 
 										###[0] --> fix the amplitude for 0 measurements only.
 
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
-	p1 = str(round(fit_result['params'][0]*100,1))
-	p1_u = str(round(fit_result['error'][0]*100,1))
+	print fit_result['params']
+
+	p1 = str(round(fit_result['params'][1]*100,1))
+	p1_u = str(round(fit_result['error'][1]*100,1))
 
 	result_string = p1 + ' +- ' + p1_u 
 
@@ -757,12 +767,12 @@ def Zeno_state_list(older_than_tstamp=None,
 						ampZ = fit_result['params'][0]*100
 				else:
 					if 'Z' in state:
-						amp0 = 0.8412
+						amp0 = (0.401+0.42) ### fitted amplitudes for mZ and Z
 						fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
 						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 						results.append(result_string)
 					elif 'Y' in state:
-						amp0 = 0.386 * 2
+						amp0 = (0.386+0.340) ### fitted amplitudes for Y and mY
 						fit_result, result_string = fit_State_decay(m,ax,amp0,evotime_arr[kk],fid_arr[kk])
 						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
 						results.append(result_string)
@@ -1051,12 +1061,12 @@ def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 		#select the correct expectation value and the right sign for the contrast.
 		sign=1
 
-		# if 'Y' in state:
-		# 	sign=1
-		# elif state=='Z':
-		# 	sign=1
-		# elif state=='X':
-		# 	sign=1
+		if 'Y' in state:
+			sign=-1
+		elif state=='Z':
+			sign=1
+		elif state=='X':
+			sign=1
 		
 		if 'm' in state:
 			sign=-1*sign
@@ -1095,6 +1105,9 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 	fid=[]
 	fid_u=[]
 	evotime=[]
+
+	results = [] ## list that will collect the fit results.
+
 	if len(eRO_list)==0:
 		print 'nothing to do here'
 
@@ -1107,17 +1120,23 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 															eRO_list=eRO_list,
 									plot_results=False,state=state,ssro_timestamp=ssro_timestamp)
 			if fitting:
+				
 				if msmt_list[i] == '0':
 					t = 12/np.sqrt(2)
 					p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
 					fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,1])
-					plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax, plot_data=False,add_txt = True, lw = 1)
+					plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = 1)
+					results.append('0 : p = 0')
 				else:
-					fit_result, result_string = fit_State_decay(msmt_list[i],ax,amp0,evotime_arr[kk],fid_arr[kk])
-					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk],add_txt = False, lw = 1)
+					fit_result, result_string = fit_State_decay(msmt_list[i],ax,0.415*2,evotime,fid)
+					plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = 1)
 					results.append(result_string)
+				print len(results)
+				print i
+				plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt='o',label=str(msmt_list[i])+': '+results[i])
 
-			plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',label=str(msmt_list[i]))
+			else:
+				plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',label=str(msmt_list[i]))
 		
 		### fitting routine.
 		
@@ -1128,7 +1147,7 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('logical qubit state fidelity')
 		plt.title('logicState_'+state+'_stop_'+str(tstamp)+'_'+RO_String)
-		plt.legend()
+		plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
 		print 'Plots are saved in:'
 		print folder
@@ -1203,7 +1222,7 @@ def Zeno_1Q_proc_fidelity(msmts='1',
 		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('logical qubit state fidelity')
 		plt.title('State_fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
-		plt.legend()
+		plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
 		plt.savefig(os.path.join(folder,'Zeno1QStateFidelities.pdf'),format='pdf')
 		plt.savefig(os.path.join(folder,'Zeno1QStateFidelities.png'),format='png')
