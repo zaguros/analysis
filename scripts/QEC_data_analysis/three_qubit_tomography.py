@@ -270,6 +270,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			print y_fidelity_err
 
 			y_fid = [abs(y[i])/0.93 for i in [9,18,27]]
+			y_fid = [abs(y[i]) for i in [9,18,27]]
 
 			y_fid_err = [y_err[i] for i in [9,18,27]]
 
@@ -470,15 +471,15 @@ y_fidelity_cs1[5],y_fidelity_cs2[5],y_fidelity_cs3[5], y_fidelity_cs4[5],y_fidel
 		ssro_calib_timestamp ='20141225_150151', save = True,
 		plot_fit = True,color = c_blue)
 
-# print sum(y_fidelity_cs1)/6.
-# print sum(y_fidelity_cs2)/6.
-# print sum(y_fidelity_cs3)/6.
-# print sum(y_fidelity_cs4)/6.
-# print sum(y_fidelity_err**2)**0.5/6.
+print sum(y_fidelity_cs1)/6.
+print sum(y_fidelity_cs2)/6.
+print sum(y_fidelity_cs3)/6.
+print sum(y_fidelity_cs4)/6.
+print sum(y_fidelity_err**2)**0.5/6.
 
-BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+# BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue)
 
 
 # BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
