@@ -15,16 +15,18 @@ import analysis.scripts.pulse_calibration.calibration_funcs as funcs
 
 ### parameters
 timestamp = None
+angle = '_pi_o'
 msmt_type = 'mbi'
-guess_x0 = 0.415
-guess_of = 0.2
+# guess_x0 = 0.460
+guess_x0 = 0.48
+guess_of = 0
 guess_a = 0
 
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data()
+    folder = toolbox.latest_data(angle)
 
 if msmt_type == 'sequence':
     a = sequence.SequenceAnalysis(folder)

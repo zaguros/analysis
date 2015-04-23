@@ -45,6 +45,10 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
     # err_y = kw.pop ('err_y', None)
+	#if False :
+	#    if (len(err_y) != len(y)):
+	#    	print 'Data and error arrays have non-matching lengths!'
+	#    	err_y = None
 
     # if (len(err_y) != len(y)):
     # 	print 'Data and error arrays have non-matching lengths!'
@@ -82,10 +86,11 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     p = [param() for param in p0]
     
     # do the fit and process
-    p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True)
+    p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
         success = False
         print 'ERROR: Fit did not converge !'
+        print 'reason: ',mesg
         #return False
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
