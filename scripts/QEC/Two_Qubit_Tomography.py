@@ -237,3 +237,68 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 		        os.path.join(folder_a,'tomo.png'))
 		except:
 		    print 'Figure has not been saved.'
+
+
+def BarPlotTomoContrastFull_BP(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo', older_than = None, newer_than = None, ssro_calib_timestamp =None, save = True, plot_fit = True):
+	### SSRO calibration
+
+	Tomo_str_list = []
+	Tomo_basis_list = ([
+	            ['X','I'],['Y','I'],['Z','I'],
+	            ['I','X'],['I','Y'],['I','Z'],
+	            ['X','X'],['X','Y'],['X','Z'],
+	            ['Y','X'],['Y','Y'],['Y','Z'],
+	            ['Z','X'],['Z','Y'],['Z','Z']])
+
+	for BP in Tomo_basis_list:
+		Tomo_str_list.append(''.join([str(s) for s in BP]))
+
+
+	for k, BP in enumerate(Tomo_str_list):
+		print 'Tomo' + BP +'_ROpositive_'
+		timestamp_pos, folder_a = toolbox.latest_data(contains = 'sweep_phase_FET0.305s_auto_C1&2_Tomo' + BP +'_ROpositive_', older_than = older_than, newer_than = newer_than, return_timestamp = True)
+		timestamp_neg, folder_b = toolbox.latest_data(contains = 'sweep_phase_FET0.305s_auto_C1&2_Tomo' + BP +'_ROnegative_', older_than = older_than, newer_than = newer_than, return_timestamp = True)
+
+		x_labels_t, x_t, y_t, y_err_t  = BarPlotTomoContrast(timestamps = [timestamp_pos,timestamp_neg], measurement_name = ['adwindata'],
+								ssro_calib_timestamp =None, save = False,
+								plot_fit = False, return_data = True)
+		if k == 0:
+			print type(x_labels_t)
+			print list(x_labels_t)
+			x_labels = list(x_labels_t)
+			x = list(x_t)
+			y = list(y_t)
+			y_err = list(y_err_t)
+		else:
+			x_labels.extend(list(x_labels_t))
+			x.extend(list(x_t))
+			y.extend(list(y_t))
+			y_err.extend(list(y_err_t))
+	
+	x = range(len(y)) 
+	# print x_labels.tolist
+	# print y.tolist
+
+	if plot_fit ==True: 
+		fig,ax = plt.subplots(figsize=(35,5)) 
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		ax.set_xticks(x)
+		ax.set_xticklabels(x_labels)
+		ax.set_ylim(-1.1,1.1)
+		ax.set_title(str(folder_a)+'/'+str(timestamp_neg))
+		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+
+			# print values on bar plot
+		def autolabel(rects):
+		    for ii,rect in enumerate(rects):
+		        height = rect.get_height()
+		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+		            ha='center', va='bottom')
+		autolabel(rects)
+
+	if save and ax != None:
+		try:
+		    fig.savefig(
+		        os.path.join(folder_a,'tomo.png'))
+		except:
+		    print 'Figure has not been saved.'

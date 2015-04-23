@@ -190,12 +190,15 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
              x0, decay_constant,exponent)
 
+    p0, fitfunc, fitfunc_str = common.fit_line(offset, amplitude)
+    fixed=[]
          #plot the initial guess
     if show_guess:
         ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
+    print 'zeropoint', (0.5-fit_result['params_dict']['a'])/(fit_result['params_dict']['b'])
     ## plot data and fit as function of total time
     if plot_fit == True:
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
