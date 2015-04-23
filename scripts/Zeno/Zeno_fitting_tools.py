@@ -51,8 +51,14 @@ def fit_1msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())
         Fzp = Conp/2. + 0.5
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -93,8 +99,12 @@ def fit_2msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())**2
         Fzp = Conp/2. + 0.5
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*(A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -138,8 +148,13 @@ def fit_3msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Conp = Con0*(1-p())**3
         Fzp = Conp/2. + 0.5
 
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -185,8 +200,13 @@ def fit_4msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Conp = Con0*(1-p())**4
         Fzp = Conp/2. + 0.5
 
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -237,8 +257,13 @@ def fit_5msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Conp = Con0*(1-p())**5
         Fzp = Conp/2. + 0.5
 
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -288,14 +313,19 @@ def fit_6msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Conp = Con0*(1-p())**6 ### after 6 measurements the contrast is reduced by (1-p)^6
         Fzp = Conp/2. + 0.5 ### calculate the fidelity.
 
-        am = (2*A0()+1)/2. ### incorporate the amplitude for 0 measurements A0.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
         ### notice that the fit does not distinguish between logical Z and logical Y states. Both are assumed to decay in the same way.
         ### we also do not distinguish between orthogonal states
         ### the formula for the process fidelity is usually given by Fproc = (3*avgStateFid-1)/2
         ### here it becomes Fproc = (Fx+Fy+Fz-1)/2 = (Fx*2+Fz-1)/2
 
-        return (2.*am*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
