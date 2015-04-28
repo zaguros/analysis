@@ -319,6 +319,15 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 	    'mZ':'IX'}
 
 
+	### for preserving the XX expectation value for several measurements.
+	Tomo3Dict={'X':'XX','mX':'XX',
+	    'Y':'XX',
+	    'mY':'XX',
+	    'Z':'XX',
+	    'mZ':'XX'}
+
+
+
 	if single_qubit:
 		### choose orthogonal bases to see the effect of a detuning
 		if single_qubit_ort:
@@ -345,7 +354,7 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 			    'Z':'IX',
 			    'mZ':'IX'}
 
-	RODict={'1':Tomo1Dict,'2':Tomo2Dict}
+	RODict={'1':Tomo1Dict,'2':Tomo2Dict,'3':Tomo3Dict}
 	evo_time=[2005]
 	while loop_bit:
 		older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder,evo_was_zero=get_Zeno_data(electron_RO=eRO_list,
@@ -380,6 +389,12 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 		sign=-1*sign
 	if decoded_bit == '1' and 'X' in state:
 		sign = -1*sign
+
+	#### if we look at the XX expectation value then the sign of the expectation value does not change when looking at different logical states.
+	if decoded_bit == '3':
+		sign = 1
+
+
 
 	fid_arr=(sign*np.array(y_arr)+1)/2. ### convert expectation value to fidelity
 
