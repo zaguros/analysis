@@ -289,6 +289,138 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 
 	return evo_time,y,y_err
 
+def general_plotter(list_of_names = [],older_than = None,list_of_labels = None, xlabel = '', fitting = None, fixed = []):
+	
+	"""
+	This function takes any data set with positive and negative folders.
+	It then plots that specific data set under the assumption that all plotted data sets have a common x-axis.
+	list of names : list of a list of folder names, the script then always takes the newest data. You can nest names to combine several measurements.
+	"""
+
+	folder_pos_list = range(len(list_of_names))
+	folder_neg_list = range(len(list_of_names))
+	for i in range(len(list_of_names)):
+		timestamp = older_than
+		folder_pos_i = []
+		folder_neg_i = []
+		for j,name in enumerate(list_of_names[i]):
+			timestamp, folder   = toolbox.latest_data(contains = name,older_than = timestamp,return_timestamp =True)
+
+			if 'positive' in folder:
+				folder_pos = folder
+				timestamp_neg, folder_neg   = toolbox.latest_data(contains = name,return_timestamp =True, older_than = timestamp)
+				timestamp = timestamp_neg ### update latest timestamp, needed for loop
+			else:
+				folder_neg = folder
+				timestamp_pos, folder_pos   = toolbox.latest_data(contains = name,return_timestamp =True, older_than = timestamp)
+				timestamp = timestamp_pos ### update timestamp, needed for loop
+			### append found folders
+			folder_pos_i.append(folder_pos)
+			folder_neg_i.append(folder_neg)
+
+		### append folder list.
+		folder_pos_list[i] = folder_pos_i
+		folder_neg_list[i] = folder_neg_i
+
+	### SSRO calibration
+
+
+	ssro_calib_folder = toolbox.latest_data('SSRO',older_than = timestamp)
+
+
+	### collect the data. initialize arrays.
+	x_arr = range(len(list_of_names))
+	y_arr = range(len(list_of_names))
+	y_err_arr = range(len(list_of_names))
+
+	for i in range(len(list_of_names)):
+		y_i = []
+		y_err_i = []
+		y_err = []
+		for j in range(len(list_of_names[i])):
+			a_pos = mbi.MBIAnalysis(folder_pos_list[i][j])
+			a_pos.get_sweep_pts()
+			a_pos.get_readout_results(name='adwindata')
+			try: 
+				a_pos.get_electron_ROC(ssro_calib_folder)
+			except IOError:
+				ssro.ssrocalib(ssro_calib_folder)
+				a_pos.get_electron_ROC(ssro_calib_folder)
+
+			a_neg = mbi.MBIAnalysis(folder_neg_list[i][j])
+			a_neg.get_sweep_pts()
+			a_neg.get_readout_results(name='adwindata')
+			a_neg.get_electron_ROC(ssro_calib_folder)
+
+
+			### combine y-values
+			y_i = ((a_pos.p0.reshape(-1))-(a_neg.p0.reshape(-1))+1)/(2.*len(list_of_names[i])) ###averaged fidelity.
+			u_pos = a_pos.u_p0.reshape(-1)
+			u_neg = a_neg.u_p0.reshape(-1)
+
+			for kk in range(len(a_pos.u_p0)):
+				y_err_i.append((u_pos[kk]**2+u_neg[kk]**2)/(2.*len(list_of_names[i]))**2)
+			# print y_err_i
+
+			if j == 0:
+				y_arr[i] = y_i
+				y_err_arr[i] = y_err_i
+			else:
+				y_arr[i] = [y_arr[i][kk]+y_i[kk] for kk in range(len(y_i))]
+				y_err_arr[i] = [y_err_arr[i][kk]+y_err_i[kk] for kk in range(len(y_i))]
+
+			print y_err_arr[i][0]
+
+		### get x values
+		x_arr[i] = a_pos.sweep_pts.reshape(-1)
+
+	
+	### take the sqrt of the errors
+	for jj,l in enumerate(y_err_arr):
+		for kk,err in enumerate(l):
+			y_err_arr[jj][kk] = np.sqrt(err)
+
+	fig=plt.figure()
+	ax=plt.subplot()
+
+	if fitting != None:
+		#### place desired fit here / manipulate parameters yourself!
+		if fitting == 'FreeExp':
+			offset = 0.5
+			amplitude = 0.25
+			x0 = 0
+			decay_constant = 600.
+			exponent = 2.
+			
+
+		    
+			for i in range(len(list_of_names)):
+			    #plot the initial guess
+				p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
+					         x0, decay_constant,exponent)
+				if False:
+				    ax.plot(np.linspace(x_arr[i][0],x_arr[i][-1],201), fitfunc(np.linspace(x_arr[i][0],x_arr[i][-1],201)), ':', lw=2)
+				fit_result = fit.fit1d(x_arr[i],y_arr[i], None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+				plot.plot_fit1d(fit_result, np.linspace(0.0,x_arr[i][-1],1001), ax=ax, plot_data=False,add_txt = True, lw = 1)
+
+
+
+	for i in range(len(list_of_names)):
+		if list_of_labels == None:
+			label = ' '
+		else:
+			label = list_of_labels[i]
+
+		plt.errorbar(x_arr[i],y_arr[i],y_err_arr[i],marker='o',label=label)
+	plt.xlabel(xlabel)
+
+	plt.title('General_plotting'+timestamp)
+	plt.legend()
+
+	plt.savefig(os.path.join(folder,'General_plotting.pdf'),format='pdf')
+	plt.savefig(os.path.join(folder,'General_plotting.png'),format='png')
+	plt.show()
+	plt.close('all')
 
 def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 								 	state='X',
@@ -452,6 +584,7 @@ def Zeno_proc_fidelity(msmts='0',
 										ssro_timestamp=ssro_timestamp,single_qubit=single_qubit)
 		if single_qubit and ('Y' in state or 'Z' in state):
 			### get the orthogonal measurements in.
+
 			evo_time_ort,fid_ort,fid_u_ort,tstamp,folder=Zeno_state_fidelity(older_than_tstamp=older_than_tstamp,
 											eRO_list=eRO_list,
 											state=state, msmts=msmts,
@@ -914,7 +1047,7 @@ def Zen_Compare_Runs(msmt='0',older_timestamp_list=[None],eRO_list=['positive'],
 		fig=plt.figure()
 		ax=plt.subplot()
 		for i in range(len(older_timestamp_list)):
-			plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],marker='o',markersize=4,label=str(older_timestamp_list[i]))
+			plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],fmt='o',markersize=4,label=str(older_timestamp_list[i]))
 			
 		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('Process fidelity')
