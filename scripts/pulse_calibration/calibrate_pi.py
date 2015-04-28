@@ -18,7 +18,7 @@ timestamp = None
 angle = '_pi_o'
 msmt_type = 'mbi'
 # guess_x0 = 0.460
-guess_x0 = 0.48
+guess_x0 = 0.47
 guess_of = 0
 guess_a = 0
 

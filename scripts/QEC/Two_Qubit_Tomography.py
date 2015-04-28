@@ -239,7 +239,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 		    print 'Figure has not been saved.'
 
 
-def BarPlotTomoContrastFull_BP(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo', older_than = None, newer_than = None, ssro_calib_timestamp =None, save = True, plot_fit = True):
+def BarPlotTomoContrastFull_mult_msmts(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo', older_than = None, newer_than = None, ssro_calib_timestamp =None, save = True, plot_fit = True):
 	### SSRO calibration
 
 	Tomo_str_list = []
@@ -279,21 +279,36 @@ def BarPlotTomoContrastFull_BP(timestamp = None, measurement_name = ['adwindata'
 	# print x_labels.tolist
 	# print y.tolist
 
+	squared = 0.
+	fidel = 1.
+	for ii in x:
+		if y[ii]>0.2:
+			print x_labels[ii]
+			print y[ii]
+			fidel += y[ii]
+			squared += y_err[ii]**2
+			print y_err[ii]
+
+	print 'rooterror', squared**0.5
+	print 'fidelity' , fidel / 4.
 	if plot_fit ==True: 
-		fig,ax = plt.subplots(figsize=(35,5)) 
+		fig,ax = plt.subplots(figsize=(10,5)) 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		y2 = [0,0,0,0,0,0,1,0,0,0,0,1,0,1,0]
+		rects2 = ax.bar(x,y2,align ='center', alpha=0.2 )
 		ax.set_xticks(x)
-		ax.set_xticklabels(x_labels)
+		ax.set_xticklabels(x_labels,fontsize=20)
+		ax.tick_params(axis='y', which='major', labelsize=20)
 		ax.set_ylim(-1.1,1.1)
 		ax.set_title(str(folder_a)+'/'+str(timestamp_neg))
-		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted', linewidth=2)
 
 			# print values on bar plot
 		def autolabel(rects):
 		    for ii,rect in enumerate(rects):
 		        height = rect.get_height()
 		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
-		            ha='center', va='bottom')
+		            ha='center', va='bottom', fontsize=12)
 		autolabel(rects)
 
 	if save and ax != None:

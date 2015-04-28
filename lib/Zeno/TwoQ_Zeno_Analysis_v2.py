@@ -1032,7 +1032,7 @@ def Zen_Compare_Runs(msmt='0',older_timestamp_list=[None],eRO_list=['positive'],
 		fig=plt.figure()
 		ax=plt.subplot()
 		for i in range(len(older_timestamp_list)):
-			plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],marker='o',markersize=4,label=str(older_timestamp_list[i]))
+			plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],fmt='o',markersize=4,label=str(older_timestamp_list[i]))
 			
 		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('Process fidelity')
