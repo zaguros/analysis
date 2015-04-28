@@ -118,7 +118,9 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
             # this routine verifies that any output directory is a 'valid' directory
             # (i.e, obeys the regular naming convention)
-            _timestamp = daydir + d[9:15]
+
+            # _timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
+            _timestamp = daydir + d[:6]
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
