@@ -11,9 +11,11 @@ reload(common)
 reload(mbi)
 
 def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name = 'Hahn', measurement_name = 'adwindata', ssro_calib_timestamp =None,
-            offset = 0.5, 
+            offset = 0.5,
+            save_data = False, 
             x0 = 0,  
-            amplitude = 0.5,  
+            amplitude = 0.5,
+            fit_func = 'exp',  
             decay_constant = 200, 
             exponent = 2, 
             partstr = 'part', plot_fit = True, do_print = True, fixed = [0,2], show_guess = False):
@@ -175,11 +177,11 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     ax.plot(x,y)
     print Tomo_msmt
     print DD_msmt
-    if Tomo_msmt:
+    if Tomo_msmt and save_data:
         savestr = timestamp + '_Tomo' + Tomo + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/MultiCarbon_Tomo_msmt/' + savestr
         np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
-    elif DD_msmt:
+    elif DD_msmt and save_data:
         savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
         np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
@@ -187,18 +189,22 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         pass
 
 
-    p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
+    if fit_func == 'line':
+        fixed = []
+        p0, fitfunc, fitfunc_str = common.fit_line(offset, amplitude)
+    elif fit_func == 'exp':
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
              x0, decay_constant,exponent)
-
-    p0, fitfunc, fitfunc_str = common.fit_line(offset, amplitude)
-    fixed=[]
+    
+    
+    # fixed=[]
          #plot the initial guess
     if show_guess:
         ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
-    ax.hlines([0.5],0,1.4,linestyles='dotted',linewidth = 2)
+    ax.hlines([0.5],x[0],x[-1],linestyles='dotted',linewidth = 2)
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
-    print 'zeropoint', (0.5-fit_result['params_dict']['a'])/(fit_result['params_dict']['b'])
+    # print 'zeropoint', (0.5-fit_result['params_dict']['a'])/(fit_result['params_dict']['b'])
     ## plot data and fit as function of total time
     if plot_fit == True:
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
