@@ -16,7 +16,8 @@ reload(common)
 ## Data location ##
 measurement_name = ['adwindata']
 
-timestamp = ['20150429_113126', '20150429_113332', '20150429_113704','20150429_114159']
+timestamp = ['20150429_113126', '20150429_113332', '20150429_113704','20150429_114159',
+                '20150430_095434','20150430_100149']
 ## fit paramaters initial values (general exponential function) ##
 offset      = 0.5
 amplitude   = 0.45
