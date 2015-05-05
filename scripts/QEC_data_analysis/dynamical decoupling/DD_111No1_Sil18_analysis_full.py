@@ -16,10 +16,19 @@ reload(common)
 ## Data location ##
 measurement_name = ['adwindata']
 
-timestamp128 = ['20150429_110632', '20150429_110915', '20150429_111413']
-timestamp256 = ['20150429_113126', '20150429_113332', '20150429_113704','20150429_114159']
-timestamp512 = ['20150429_115420', '20150429_115558', '20150429_115839','20150429_120219','20150429_120701']
-timestamp1024 = ['20150429_120802', '20150429_120904', '20150429_121029','20150429_121220','20150429_121427','20150429_121659','20150429_121945']
+timestamp128 = ['20150429_110632', '20150429_110915', '20150429_111413','20150430_103829','20150430_104617']
+
+timestamp256 = ['20150429_113126', '20150429_113332', '20150429_113704','20150429_114159',
+                '20150430_095434','20150430_100149']
+
+timestamp512 = ['20150429_115420', '20150429_115558', '20150429_115839',
+                '20150429_120219','20150429_120701','20150430_100255','20150430_100834','20150430_101511']
+
+timestamp1024 = ['20150429_120802', '20150429_120904', '20150429_121029','20150429_121220',
+                '20150429_121427','20150429_121659','20150429_121945','20150430_101738',
+                '20150430_102105','20150430_102455','20150430_102908','20150430_103340']
+
+timestamp2048 = []
 
 timestamplist = [timestamp128,timestamp256,timestamp512,timestamp1024]
 labels = ['128','256','512','1024']
@@ -43,6 +52,9 @@ cum_p0              = np.empty(0)
 cum_u_p0              = np.empty(0)
 
 cum_normalized_ssro = np.empty(0)
+
+# fig=plt.figure()
+# ax=plt.subplot()
 #for k in range(0,len(measurement_name)):
 for ii, timestamp in enumerate(timestamplist):
     for kk in range(len(timestamp)):
@@ -70,11 +82,11 @@ for ii, timestamp in enumerate(timestamplist):
     if ii == 0:
         ax = a.plot_results_vs_sweepparam(ret='ax',labels=[labels[ii]])
     else:
-        plt.errorbar(cum_sweep_pts,cum_p0,cum_u_p0,fmt='o',label=labels[ii],color = color_list[ii])
+        plt.errorbar(cum_sweep_pts,cum_p0,cum_u_p0,fmt='o',label=labels[ii],color=color_list[ii])
 
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
-
+    y_u = cum_u_p0
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
 
     #plot the initial guess
@@ -88,6 +100,13 @@ for ii, timestamp in enumerate(timestamplist):
         plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,add_txt = False, plot_data=False,color=color_list[ii])
 
     fit_results.append(fit_result)
+
+    cum_pts = 0
+    cum_sweep_pts       = np.empty(0)
+    cum_p0              = np.empty(0)
+    cum_u_p0              = np.empty(0)
+
+    cum_normalized_ssro = np.empty(0)
 
 print folder
 

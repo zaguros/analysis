@@ -20,7 +20,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             plot_fit = False, do_print = False, fixed = [2], show_guess = True,
             return_phase = False,
             return_freq = False,
-            return_A = False,
+            return_amp = False,
             return_results = True,
             close_plot = False,
             title = 'Carbon'):
@@ -89,18 +89,17 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
             u_f0 = fit_result['error_dict']['f']
             return f0, u_f0
 
-        if return_phase == True:
+        if return_phase == True and return_amp == False:
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
             return phi0, u_phi0
 
-        if return_phase == True and return_A == True:
+        if return_phase == True and return_amp == True:
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
             A = fit_result['params_dict']['A']
             u_A = fit_result['error_dict']['A']
             return phi0, u_phi0, A, u_A
-            print 'ok'
 
     if return_results == True:
         return fit_results
@@ -119,6 +118,7 @@ def Carbon_Ramsey_Crosstalk(timestamp=None, measurement_name = ['adwindata'], ss
             return_phase = False,
             return_freq = False,
             return_results = True,
+            return_amp = False,
             close_plot = False,
             title = None):
     ''' 
@@ -208,7 +208,11 @@ def Carbon_Ramsey_Crosstalk(timestamp=None, measurement_name = ['adwindata'], ss
         if return_phase == True:
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
-            return phi0, u_phi0
+            Amp = fit_result['params_dict']['A']
+            if return_amp == True:    
+                return phi0, u_phi0, Amp
+            else:
+                return phi0, u_phi0
 
     if return_results == True:
         return fit_results
