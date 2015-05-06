@@ -46,13 +46,20 @@ def fit_1msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
     def fitfunc(x):
 
         decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
-        Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+        Hahn = np.exp(-(x/604.)**1.6162)
+        Fx = -0.25*decay*(-1.+p())-0.25*(-1.+p())*Hahn + 0.5
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())
         Fzp = Conp/2. + 0.5
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -93,8 +100,12 @@ def fit_2msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())**2
         Fzp = Conp/2. + 0.5
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*(A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -131,15 +142,22 @@ def fit_3msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
 
         decay2 = np.exp((3./8.)*( x**2 /((t()**2) ) ) )
 
-        Fx = -(-11.+3*p()*(3+(3-p())*p()))/16.+decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)
+        Hahn = np.exp(-(x/604.)**1.6162)
+
+        Fx = -Hahn*((-11.+3*p()*(3+(3-p())*p()))/16.+0.5)+decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)+0.5
 
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())**3
         Fzp = Conp/2. + 0.5
 
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -178,6 +196,7 @@ def fit_4msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
 
         decay3 = 10.*np.exp((12./25.)*( x**2 /((t()**2) ) ) )*(p()-1.)**4
 
+
         Fx = 0.5+decay*((p()-1)**4+decay2+decay3)
 
         Fz0 = 2.*offset0()
@@ -185,8 +204,13 @@ def fit_4msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Conp = Con0*(1-p())**4
         Fzp = Conp/2. + 0.5
 
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -228,17 +252,24 @@ def fit_5msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         bracket2 = (bracket1 * p() -10)*p() + 5
         bracket3 = (bracket2*5*p()-21)*2./64.
 
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
         #### decaying parts + the constant part which arises from the measurement echo.
 
-        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - bracket3
+        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - (bracket3+0.5)*Hahn+0.5
 
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())**5
         Fzp = Conp/2. + 0.5
 
-        am = (2*A0()+1)/2.
-        return (2.*am*Fx+Fzp-1.)/2.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -288,14 +319,19 @@ def fit_6msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         Conp = Con0*(1-p())**6 ### after 6 measurements the contrast is reduced by (1-p)^6
         Fzp = Conp/2. + 0.5 ### calculate the fidelity.
 
-        am = (2*A0()+1)/2. ### incorporate the amplitude for 0 measurements A0.
+        # am = (2*A0()+1)/2.
+        # return (2.*am*Fx+Fzp-1.)/2.
+        ### commented out because apparently wrong.
+        Cx = 2*Fx-1.
+        Cxred = 2*A0()*Cx
+        Fx = (Cxred+1)/2.
+        return (2.*Fx+Fzp-1.)/2.
 
         ### notice that the fit does not distinguish between logical Z and logical Y states. Both are assumed to decay in the same way.
         ### we also do not distinguish between orthogonal states
         ### the formula for the process fidelity is usually given by Fproc = (3*avgStateFid-1)/2
         ### here it becomes Fproc = (Fx+Fy+Fz-1)/2 = (Fx*2+Fz-1)/2
 
-        return (2.*am*Fx+Fzp-1.)/2.
 
     return p0, fitfunc, fitfunc_str
 
@@ -348,7 +384,11 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
 
     def fitfunc(x):
 
-        ### this fit function does not take detrimental repumping into account.
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
+        ### this fit function does take detrimental repumping into account.
+        ### no hahn echo time...
+
         if take_repump:
             decay1 = np.exp(-x**2/(2*t2()**2))*(0.125+0.125*repump())
             decay2 = np.exp((-0.125/(t2()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
@@ -358,17 +398,16 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
             Fx = C/2. + 0.5
 
         # """
-        # Taking repumping into account.
+        # Taking repumping not into account.
         # """
         else:
             
-
             decay = np.exp(- ( x**2 /(2. * (t2()**2) ) ) )
-            Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+            Fx = -0.25*decay*(-1.+p())-0.25*(-1.+p())*Hahn + 0.5
             Cx = A0()*2.*(Fx-0.5)
             Fx = Cx/2.+0.5
-            pmix = 1-A0()
-            Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
+            # pmix = 1-A0()
+            # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
 
         return Fx
 
@@ -440,11 +479,13 @@ def fit_3msmt_state_fid(g_A0, g_t, g_p):
 
     def fitfunc(x):
 
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
         decay = -0.0625*np.exp(- ( x**2 /(2. * (t()**2) ) ) )
 
         decay2 = np.exp((3./8.)*( x**2 /((t()**2) ) ) )
 
-        Fx = -(-11.+3*p()*(3+(3-p())*p()))/16.+decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)
+        Fx = - Hahn*((-11.+3*p()*(3+(3-p())*p()))/16.+0.5) + 0.5 + decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
@@ -523,6 +564,8 @@ def fit_5msmt_state_fid(g_A0, g_t, g_p):
 
     def fitfunc(x):
 
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
         decay = -np.exp(- ( x**2 /(2. * (t()**2) ) ) )/64.
 
         decay2 = 6.*np.exp((5./18.)*( x**2 /((t()**2) ) ) )
@@ -535,7 +578,7 @@ def fit_5msmt_state_fid(g_A0, g_t, g_p):
 
         #### decaying parts + the constant part which arises from the measurement echo.
 
-        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - bracket3
+        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - (bracket3+0.5)*Hahn + 0.5
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5

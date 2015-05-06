@@ -452,7 +452,7 @@ def overnight_simulations_15dec2014():
 
 
 def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
-	fid1=0.02
+	fid1=0.15
 	reps=31
 	for fff in sweep_f:
 		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
@@ -485,5 +485,5 @@ def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
 
 #suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
 
-suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_noT2')
+suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_low_fid1')
 
