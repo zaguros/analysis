@@ -31,7 +31,8 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	a.get_sweep_pts()
 	a.get_readout_results(name='adwindata')
 	a.get_electron_ROC(ssro_calib_folder)
-
+	# a.p0 = a.normalized_ssro
+	# a.u_p0 = a.u_normalized_ssro
 	x_labels = a.sweep_pts.reshape(-1)
 	y= ((a.p0.reshape(-1))-0.5)*2
 	x = range(len(y)) 

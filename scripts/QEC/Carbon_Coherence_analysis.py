@@ -12,7 +12,9 @@ reload(mbi)
 
 def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name = 'Hahn', measurement_name = 'adwindata', ssro_calib_timestamp =None,
             offset = 0.5,
-            save_data = False, 
+            save_data = True,
+            save_name = None,
+            save_with_folder_name=False,
             x0 = 0,  
             amplitude = 0.5,
             fit_func = 'exp',  
@@ -100,18 +102,23 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         print ssro_calib_folder
 
     cum_pts = 0
+    timestamp_list = []
     print numberofparts
     if posneg:
         
         for kk in range(numberofparts):
             if partstr in folder:
-                folder_pos = toolbox.latest_data(basis_str_pos+str(kk+1).zfill(zfill), older_than = older_than)
+                timestamp, folder_pos = toolbox.latest_data(basis_str_pos+str(kk+1).zfill(zfill), older_than = older_than, return_timestamp=True)
+                timestamp_list.append(timestamp)
                 # print folder_pos
-                folder_neg = toolbox.latest_data(basis_str_neg+str(kk+1).zfill(zfill), older_than = older_than)
+                timestamp, folder_neg = toolbox.latest_data(basis_str_neg+str(kk+1).zfill(zfill), older_than = older_than, return_timestamp=True)
+                timestamp_list.append(timestamp)
                 # print folder_neg
             else:
-                folder_pos = toolbox.latest_data(basis_str_pos, older_than = older_than)
-                folder_neg = toolbox.latest_data(basis_str_neg, older_than = older_than)
+                timestamp, folder_pos = toolbox.latest_data(basis_str_pos, older_than = older_than,  return_timestamp=True)
+                timestamp_list.append(timestamp)
+                timestamp, folder_neg = toolbox.latest_data(basis_str_neg, older_than = older_than, return_timestamp=True)
+                timestamp_list.append(timestamp)
             a = mbi.MBIAnalysis(folder_pos)
             a.get_sweep_pts()
             a.get_readout_results(name='adwindata')
@@ -152,7 +159,8 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
 
     else:
         for kk in range(numberofparts):
-            folder = toolbox.latest_data(basis_str_pos+str(kk+1).zfill(zfill), older_than = older_than)
+            timestamp, folder = toolbox.latest_data(basis_str_pos+str(kk+1).zfill(zfill), older_than = older_than, return_timestamp=True)
+            timestamp_list.append(timestamp)
             a = mbi.MBIAnalysis(folder)
             a.get_sweep_pts()
             a.get_readout_results(name='adwindata')
@@ -195,16 +203,22 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     ax.plot(x,y)
     print Tomo_msmt
     print DD_msmt
-    if Tomo_msmt and save_data:
-        savestr = timestamp + '_Tomo' + Tomo + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
-        save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/MultiCarbon_Tomo_msmt/' + savestr
-        np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
-    elif DD_msmt and save_data:
-        savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
-        save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
-        np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
-    else:
-        pass
+    if save_data:
+        if save_with_folder_name == False:
+            if Tomo_msmt and save_data:
+                savestr = timestamp + '_Tomo' + Tomo + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
+                save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/MultiCarbon_Tomo_msmt/' + savestr
+                np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
+            elif DD_msmt and save_data:
+                savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
+                save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
+                np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
+        else:
+            savestr = 'From' + str(min(map(int,timestamp_list))) + '_To' + str(max(map(int,timestamp_list))) + basis_str_pos + '.txt'
+            save_folder_str = r'D:/Dropbox/QEC LT/Decoupling memory/General_Data/' + savestr
+            print save_folder_str
+            np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
+
 
 
     if fit_func == 'line':

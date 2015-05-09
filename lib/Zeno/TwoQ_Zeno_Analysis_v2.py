@@ -183,15 +183,19 @@ def get_Zeno_data(electron_RO=['positive'],
 		return older_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(older_than),evo_was_zero
 
 
-def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1):
+def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1,xxxTest = False):
 	"""
 	Analyzes the test states. In a time window which is specified by older_than and newer_than in timestamp format.
 	Analyzes a maximum of N states.
 	"""
 
 	N=2*N #we always perform a contrast measurement: positiv and negative --> Two folders.
-
-	search_string='_1msmts_TESTSTATE_ZZ'
+	if xxxTest:
+		search_string = '_1msmts_TESTSTATE_XXX'
+		ylabel = 'XXX contrast'
+	else:
+		search_string='_1msmts_TESTSTATE_ZZ'
+		ylabel ='ZZ contrast'
 
 	x_arr=[]
 	y_arr=[]
@@ -236,7 +240,7 @@ def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1):
 	for i in range(len(y_arr)):
 		plt.errorbar(x_arr[i],y_arr[i],y_u_arr[i],marker='o',label=old_Arr[i])
 	plt.xlabel('timestamp')
-	plt.ylabel('ZZ contrast')
+	plt.ylabel(ylabel)
 	plt.title('test states')
 	plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 	plt.xlim(-0.5,N/2-0.5)
@@ -1283,6 +1287,7 @@ def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 		'4' : 14.0,
 		'6' : 16.0,
 		'8' : 16.0,
+		'16' : 18.0
 		}
 
 		evo_time=[2005]
