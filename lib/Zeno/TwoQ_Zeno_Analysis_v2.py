@@ -183,19 +183,20 @@ def get_Zeno_data(electron_RO=['positive'],
 		return older_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(older_than),evo_was_zero
 
 
-def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1,xxxTest = False):
+def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1,q3test = False):
 	"""
 	Analyzes the test states. In a time window which is specified by older_than and newer_than in timestamp format.
 	Analyzes a maximum of N states.
 	"""
 
 	N=2*N #we always perform a contrast measurement: positiv and negative --> Two folders.
-	if xxxTest:
+
+	if q3test:
 		search_string = '_1msmts_TESTSTATE_XXX'
-		ylabel = 'XXX contrast'
+		y_label = 'XXX contrast'
 	else:
 		search_string='_1msmts_TESTSTATE_ZZ'
-		ylabel ='ZZ contrast'
+		y_label = 'ZZ contrast'
 
 	x_arr=[]
 	y_arr=[]
@@ -240,7 +241,7 @@ def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1,xxxTes
 	for i in range(len(y_arr)):
 		plt.errorbar(x_arr[i],y_arr[i],y_u_arr[i],marker='o',label=old_Arr[i])
 	plt.xlabel('timestamp')
-	plt.ylabel(ylabel)
+	plt.ylabel(y_label)
 	plt.title('test states')
 	plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 	plt.xlim(-0.5,N/2-0.5)
@@ -1186,8 +1187,8 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 		decode_list = ['2','3','2qubit'] ### this list is needed to choose the corresponding read-out values from the state fidelity routine
 
 		### Zeno_proc_fidelity returns average fidelities which get calculated from expectation values via F = 0.5+<observable>/2
-		### needs to be calculated backwards and from this the fidelity needs to be calculated by taking all 3 expectation values into account.
-		### <obervable> = 2*F-0.5
+		### need to be calculated backwards and obtain the fidelity from all 3 expectation values.
+		### <obervable> = 2*(F-0.5)
 
 		for ii in range(len(msmt_list)):
 			for mm, decode in enumerate(decode_list):
@@ -1197,10 +1198,10 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 				if mm == 0:
 					fid = 2*(fid_int-0.5)
 					print fid
-					fid_u = (2*fid_u_int)**2/16 ### errors are summed quadratically and divided by 4**2 = 9
+					fid_u = (2*fid_u_int)**2/16 ### errors are summed quadratically and divided by 4**2 = 16
 
 				else:
-					fid = np.add(fid,2*(fid_int-0.5)) ### add expectation values
+					fid = np.add(fid,2*(fid_int-0.5)) ### add absolute value of the expectation values
 					fid_u = np.add(fid_u,(2*fid_u_int)**2/9) ### add statistical errors together.
 
 
@@ -1287,7 +1288,6 @@ def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 		'4' : 14.0,
 		'6' : 16.0,
 		'8' : 16.0,
-		'16' : 18.0
 		}
 
 		evo_time=[2005]
@@ -1482,3 +1482,190 @@ def Zeno_1Q_proc_fidelity(msmts='1',
 
 	else:
 		return evo_time,avg_fid,avg_fid_u,tstamp,folder
+
+def Zeno_3q_state_expectation(older_than_tstamp=None,msmts='0',eRO_list=['positive','negative'],
+								 	state='00',RO_basis = 'XXX',
+								 	plot_results=True,
+								 	ssro_timestamp=None):
+	"""
+	Plots or returns the absolute value of the expectation value of an input state as a function of time
+	"""
+
+	loop_bit = True
+	evo_time=None
+
+	y_arr=[]
+	y_err_arr=[]
+	evo_time_arr=[]
+	ii=0
+
+	evo_time=[2005]
+	while loop_bit:
+		older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder,evo_was_zero=get_Zeno_data(electron_RO=eRO_list,
+																					state=state,
+																					older_than=older_than_tstamp,
+																					previous_evo=evo_time[0],
+																					msmts=msmts,
+																					ssro_timestamp=ssro_timestamp,ROBasis=RO_basis,
+																					single_qubit=False)
+		#loop_bit is true as long as new data was found.
+		if loop_bit:
+			y_arr=np.concatenate((y_arr,y))
+			y_err_arr=np.concatenate((y_err_arr,y_err))
+			evo_time_arr=np.concatenate((evo_time_arr,evo_time))
+			# if an evolution time of zero was reached --> stop the evaluation.
+			if evo_was_zero:
+				loop_bit=False
+
+
+	#select the correct expectation value and the right sign for the contrast.
+	sign=1
+
+	if 'Y' in RO_basis:
+		sign=-1
+
+	exp_arr=sign*np.array(y_arr) 
+
+	exp_u_arr=np.array(y_err_arr) 
+
+	if len(eRO_list)==1:
+		RO_String=eRO_list[0]
+	else: RO_String = 'contrast'
+
+	exp_arr=exp_arr[np.argsort(evo_time_arr)]
+	exp_u_arr=exp_u_arr[np.argsort(evo_time_arr)]
+	evo_time_arr=np.sort(evo_time_arr)
+
+	if plot_results==True:
+		fig=plt.figure()
+		ax=plt.subplot()
+
+		plt.errorbar(evo_time_arr,exp_arr,exp_u_arr,color='blue',marker='o')
+		plt.xlabel('Evolution time (ms)')
+		plt.ylabel('Expectation value')
+		plt.title('logicState_'+state+'_stop_'+str(older_than_tstamp)+'_basis_' + RO_basis)
+
+		plt.savefig(os.path.join(folder,'Zeno3Q_msmt'+str(msmts)+'_basis_'+RO_basis + '.pdf'),format='pdf')
+		plt.savefig(os.path.join(folder,'Zeno3Q_msmt'+str(msmts)+'_basis_'+RO_basis + '.png'),format='png')
+		plt.show()
+		plt.close('all')
+		print folder
+	else:
+		return evo_time_arr,exp_arr,exp_u_arr,older_than_tstamp,folder
+
+def Zeno_3q_state(older_than_tstamp=None,msmts='0',eRO_list=['positive','negative'],
+								 	state='00',
+								 	plot_results=True,
+								 	ssro_timestamp=None):
+	"""
+	Plots or returns the absolute value of the expectation value of an input state as a function of time
+	Plots all the 3 qubit expectation values for a specific state.
+	"""
+
+	State_dict = {
+		'00'	:	['XIX','IXX','XXX'],
+		'00p10' :	['IZZ','IXX','XXX'],
+		'00p11' :	['XXI','YYI','ZZI','XXX']
+	}
+
+	loop_bit = True
+	evo_time=None
+
+	y_arr=[0]*len(State_dict[state])
+	y_u_arr=[0]*len(State_dict[state])
+	evo_time_arr=[0]*(len(State_dict[state]))
+
+	evo_time=[2005]
+
+	for kk,RO_basis in enumerate(State_dict[state]):
+		evo_time,exp,exp_u,tstamp,folder = Zeno_3q_state_expectation(eRO_list = eRO_list,
+																					state = state,
+																					older_than_tstamp=older_than_tstamp,
+																					msmts=msmts,
+																					ssro_timestamp=ssro_timestamp,RO_basis=RO_basis,
+																					plot_results=False)
+		y_arr[kk] = exp[np.argsort(evo_time)]
+		y_u_arr[kk] = exp_u[np.argsort(evo_time)]
+		evo_time_arr[kk] = np.sort(evo_time)
+
+
+
+
+	if plot_results==True:
+		fig=plt.figure()
+		ax=plt.subplot()
+
+		for kk, label in enumerate(State_dict[state]):
+			plt.errorbar(evo_time_arr[kk],y_arr[kk],y_u_arr[kk],marker='o',label = label)
+
+		plt.xlabel('Evolution time (ms)')
+		plt.ylabel('Measured Expectation value')
+		plt.title('logicState_'+state+'_stop_'+str(tstamp))
+		plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+		plt.savefig(os.path.join(folder,'Zeno3Q_msmt'+str(msmts) + '.pdf'),format='pdf')
+		plt.savefig(os.path.join(folder,'Zeno3Q_msmt'+str(msmts) + '.png'),format='png')
+		plt.show()
+		plt.close('all')
+		print folder
+
+	else:
+		return evo_time_arr,y_arr,y_u_arr,tstamp,folder
+
+def Zeno_3q_state_list(older_than_tstamp=None,msmts_list=['0'],eRO_list=['positive','negative'],
+								 	state='00',
+								 	plot_results=True,
+								 	ssro_timestamp=None):
+	"""
+	Plots or returns the absolute value of the expectation value of an input state as a function of time
+	Takes a list for the number of zeno measurements and plots all data for that measurement for comparison.
+	"""
+
+	State_dict = {
+		'00'	:	['XIX','IXX','XXX'],
+		'00p10' :	['IZZ','IXX','XXX'],
+		'00p11' :	['XXI','YYI','ZZI','XXX']
+	}
+
+	loop_bit = True
+	evo_time=None
+
+	y_arr=[0]*len(msmts_list)
+	y_u_arr=[0]*len(msmts_list)
+	evo_time_arr=[0]*len(msmts_list)
+
+	evo_time=[2005]
+
+	for kk,msmts in enumerate(msmts_list):
+		evo_time,exp,exp_u,tstamp,folder = Zeno_3q_state(eRO_list = eRO_list, state = state,
+																older_than_tstamp=older_than_tstamp,
+																msmts=msmts,
+																ssro_timestamp=ssro_timestamp,
+																plot_results=False)
+		y_arr[kk] = exp
+		y_u_arr[kk] = exp_u
+		evo_time_arr[kk] = evo_time
+
+
+
+
+	if plot_results==True:
+		fig=plt.figure()
+		ax=plt.subplot()
+		for ii, msmt in enumerate(msmts_list):
+			for kk, label in enumerate(State_dict[state]):
+				plt.errorbar(evo_time_arr[ii][kk],y_arr[ii][kk],y_u_arr[ii][kk],marker='o',label = msmt + ' msmt : '+ label)
+
+		plt.xlabel('Evolution time (ms)')
+		plt.ylabel('Measured Expectation value')
+		plt.title('logicState_'+state+'_stop_'+str(tstamp))
+		plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+		plt.savefig(os.path.join(folder,'Zeno3Q_msmt_list' + '.pdf'),format='pdf')
+		plt.savefig(os.path.join(folder,'Zeno3Q_msmt_list' + '.png'),format='png')
+		plt.show()
+		plt.close('all')
+		print folder
+
+	else:
+		return evo_time_arr,y_arr,y_u_arr,tstamp,folder

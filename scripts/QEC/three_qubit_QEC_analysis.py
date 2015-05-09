@@ -5153,7 +5153,7 @@ def QEC_2rounds0_load_data(older_than = None, load_from_data = False, len_k = 2)
                 for syndrome in ['00','01','10','11']:
                     data[state + str(RO) + syndrome], folder = QEC_data_single_state_RO(older_than = older_than,state = state,
                                                                                         RO = RO, sym = syndrome, len_k=len_k)
-        pickle.dump(data, open( "2rounds0.p", "wb" ) ) #NOTE, these files are saved in: D:\Ipython_notebooks
+        pickle.dump(data, open( "2rounds0.p", "wb" ) )
     else:
         data = pickle.load( open( "2rounds0.p", "rb" ) )
 
@@ -6975,24 +6975,31 @@ def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True)
         # pin_c2 =0.035# 0.093 # 0 #
         # pin_c5 =0.035# 0.115 # 0 #
 
-        # Obtained from encoding Corrected for el RO and basis rotations
-        pin_no =0.062# 0.093 # 0 #
-        pin_c1 =0.0766#0.072 # 0 #
-        pin_c2 =0.0483# 0.093 # 0 #
-        pin_c5 =0.0614# 0.115 # 0 #
+        # # Obtained from encoding Corrected for el RO and basis rotations
+        # pin_no =0.062# 0.093 # 0 #
+        # pin_c1 =0.0766#0.072 # 0 #
+        # pin_c2 =0.0483# 0.093 # 0 #
+        # pin_c5 =0.0614# 0.115 # 0 #
 
-        # Obtained from encoding Corrected for el RO 
-        pin_no =0.0776# 0.093 # 0 #
-        pin_c1 =0.0917#0.072 # 0 #
-        pin_c2 =0.0645# 0.093 # 0 #
-        pin_c5 =0.0770# 0.115 # 0 #
+        # # Obtained from encoding Corrected for el RO 
+        # pin_no =0.0776# 0.093 # 0 #
+        # pin_c1 =0.0917#0.072 # 0 #
+        # pin_c2 =0.0645# 0.093 # 0 #
+        # pin_c5 =0.0770# 0.115 # 0 #
 
 
-        pin_no      =0.0856612#0.062# 0.093 # 0 #
-        pin_no_alt  = 0.093
-        pin_c1      =0.0650188#0.0766#0.072 # 0 #
-        pin_c2      =0.0822674#0.0483# 0.093 # 0 #
-        pin_c5      =0.11562#0.0614# 0.115 # 0 #
+        # pin_no      =0.0856612#0.062# 0.093 # 0 #
+        # pin_no_alt  = 0.093
+        # pin_c1      =0.0650188#0.0766#0.072 # 0 #
+        # pin_c2      =0.0822674#0.0483# 0.093 # 0 #
+        # pin_c5      =0.11562#0.0614# 0.115 # 0 #
+
+
+        # obtained from corrected way 150428
+        pin_no = 0.0775644
+        pin_c1 = 0.0640236
+        pin_c2 = 0.0912455
+        pin_c5 = 0.077205
 
         F1 = 0.988
         F0 = 0.890
@@ -7000,21 +7007,27 @@ def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True)
         p = linspace(0,1,1000)
 
         ptot_no = p + pin_no-2*p*pin_no
-        ptot_no_alt = p + pin_no_alt-2*p*pin_no_alt
+        # ptot_no_alt = p + pin_no_alt-2*p*pin_no_alt
         ptot_c1 = p + pin_c1-2*p*pin_c1
         ptot_c2 = p + pin_c2-2*p*pin_c2
         ptot_c5 = p + pin_c5-2*p*pin_c5
 
-        p_no_error = 1-3*ptot_no+3*ptot_no**2
-        p_no_error_alt = 1-3*ptot_no_alt+3*ptot_no_alt**2
-        p_c1       = ptot_c1-ptot_c1**2
-        p_c2       = ptot_c2-ptot_c2**2
-        p_c5       = ptot_c5-ptot_c5**2
+        # p_no_error = 1-3*ptot_no+3*ptot_no**2
+
+        # p_c1       = ptot_c1-ptot_c1**2
+        # p_c2       = ptot_c2-ptot_c2**2
+        # p_c5       = ptot_c5-ptot_c5**2
+
+        #correct way to do this 150428
+        p_no_error = 1-ptot_c1-ptot_c2-ptot_c5+ptot_c1*ptot_c2+ptot_c1*ptot_c5+ptot_c2*ptot_c5
+        p_c1 = ptot_c1-ptot_c1*ptot_c2-ptot_c1*ptot_c5+ptot_c2*ptot_c5
+        p_c2 = ptot_c2-ptot_c2*ptot_c1-ptot_c2*ptot_c5+ptot_c1*ptot_c5
+        p_c5 = ptot_c5-ptot_c5*ptot_c1-ptot_c5*ptot_c2+ptot_c1*ptot_c2
 
         #### For 11 assignment
         if syndrome == '11':
             P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
-            P_D_no_error_alt = p_no_error_alt*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+            # P_D_no_error_alt = p_no_error_alt*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
             P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
             P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
             P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
@@ -7022,7 +7035,7 @@ def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True)
         #### For 00 assignment
         if syndrome == '00':
             P_D_no_error = p_no_error*F0**2 + p_c1*(1-F1)**2 + (p_c2+p_c5)*F0*(1-F1)
-            P_D_no_error_alt = p_no_error_alt*F0**2 + p_c1*(1-F1)**2 + (p_c2+p_c5)*F0*(1-F1)
+            # P_D_no_error_alt = p_no_error_alt*F0**2 + p_c1*(1-F1)**2 + (p_c2+p_c5)*F0*(1-F1)
             P_D_c1 = p_no_error*(1-F0)**2 + p_c1*F1**2 + (p_c2+p_c5)*F1*(1-F0)
             P_D_c2 = p_no_error*F0*(1-F0) + p_c1*(1-F1)*F1 + (p_c2)*F0*F1+ (p_c5)*(1-F0)*(1-F1)
             P_D_c5 = p_no_error*F0*(1-F0) + p_c1*(1-F1)*F1 + (p_c5)*F0*F1+ (p_c2)*(1-F0)*(1-F1)
@@ -7030,7 +7043,7 @@ def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True)
         #### For 01 assignment
         if syndrome == '01':
             P_D_no_error = p_no_error*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
-            P_D_no_error_alt = p_no_error_alt*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
+            # P_D_no_error_alt = p_no_error_alt*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
             P_D_c1 = p_no_error*(1-F0)*(1-F1)+ p_c1*F1*F0 + p_c2*F0*(1-F1)+ p_c5*F1*(1-F0)
             P_D_c2 = p_no_error*F1*(1-F0) + p_c1*(1-F0)*F1 + (p_c2)*F1*F1+ (p_c5)*(1-F0)*(1-F1)
             P_D_c5 = p_no_error*F0*(1-F1) + p_c1*(1-F1)*F0 + (p_c5)*F0*F0+ (p_c2)*(1-F0)*(1-F1)
@@ -7038,7 +7051,7 @@ def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True)
         #### For 10 assignment
         if syndrome == '10':
             P_D_no_error = p_no_error*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
-            P_D_no_error_alt = p_no_error_alt*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
+            # P_D_no_error_alt = p_no_error_alt*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
             P_D_c1 = p_no_error*(1-F0)*(1-F1)+ p_c1*F1*F0 + p_c2*F0*(1-F1)+ p_c5*F1*(1-F0)
             P_D_c2 = p_no_error*F0*(1-F1) + p_c1*(1-F1)*F0 + (p_c2)*F0*F0+ (p_c5)*(1-F0)*(1-F1)
             P_D_c5 = p_no_error*F1*(1-F0) + p_c1*(1-F0)*F1 + (p_c5)*F1*F1+ (p_c2)*(1-F0)*(1-F1)
@@ -7092,8 +7105,8 @@ def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True)
     if syndrome == '11': 
         color = c_orange
 
-    plt.setp(ax.spines.values(), color=color)
-    plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=color)
+    # plt.setp(ax.spines.values(), color=color)
+    # plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=color)
 
     try:
         fig.savefig(
@@ -7347,24 +7360,59 @@ def QEC_plot_process_fids_final():
     color = [c_green,c_orange,c_red,'r']
     pin = [0.127,0.113,0.123,0.145]
 
-    pin_no =0.0776# 0.093 # 0 #
-    pin_c1 =0.0917#0.072 # 0 #
-    pin_c2 =0.0645# 0.093 # 0 #
-    pin_c5 =0.0770# 0.115 # 0 #
+    # pin_no =0.0776# 0.093 # 0 #
+    # pin_c1 =0.0917#0.072 # 0 #
+    # pin_c2 =0.0645# 0.093 # 0 #
+    # pin_c5 =0.0770# 0.115 # 0 #
 
     F = 0.939
+
+    # p = linspace(0,1,1000)
+
+    # ptot_no = p + pin_no-2*p*pin_no
+    # ptot_c1 = p + pin_c1-2*p*pin_c1
+    # ptot_c2 = p + pin_c2-2*p*pin_c2
+    # ptot_c5 = p + pin_c5-2*p*pin_c5
+
+    # p_no_error = 1-3*ptot_no+3*ptot_no**2
+    # p_c1       = ptot_c1-ptot_c1**2
+    # p_c2       = ptot_c2-ptot_c2**2
+    # p_c5       = ptot_c5-ptot_c5**2
+
+    # P_D_no_error = p_no_error*F**2 + p_c1*(1-F)**2 + (p_c2+p_c5)*F*(1-F)
+    # P_D_c1 = p_no_error*(1-F)**2 + p_c1*F**2 + (p_c2+p_c5)*F*(1-F)
+    # P_D_c2 = p_no_error*F*(1-F) + p_c1*(1-F)*F + (p_c2)*F*F+ (p_c5)*(1-F)*(1-F)
+    # P_D_c5 = p_no_error*F*(1-F) + p_c1*(1-F)*F + (p_c5)*F*F+ (p_c2)*(1-F)*(1-F)
+
+
+    # obtained from corrected way 150428
+    pin_no = 0.0775644
+    pin_c1 = 0.0640236
+    pin_c2 = 0.0912455
+    pin_c5 = 0.077205
+
+    F1 = 0.988
+    F0 = 0.890
 
     p = linspace(0,1,1000)
 
     ptot_no = p + pin_no-2*p*pin_no
+    # ptot_no_alt = p + pin_no_alt-2*p*pin_no_alt
     ptot_c1 = p + pin_c1-2*p*pin_c1
     ptot_c2 = p + pin_c2-2*p*pin_c2
     ptot_c5 = p + pin_c5-2*p*pin_c5
 
-    p_no_error = 1-3*ptot_no+3*ptot_no**2
-    p_c1       = ptot_c1-ptot_c1**2
-    p_c2       = ptot_c2-ptot_c2**2
-    p_c5       = ptot_c5-ptot_c5**2
+    # p_no_error = 1-3*ptot_no+3*ptot_no**2
+
+    # p_c1       = ptot_c1-ptot_c1**2
+    # p_c2       = ptot_c2-ptot_c2**2
+    # p_c5       = ptot_c5-ptot_c5**2
+
+    #correct way to do this 150428
+    p_no_error = 1-ptot_c1-ptot_c2-ptot_c5+ptot_c1*ptot_c2+ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c1 = ptot_c1-ptot_c1*ptot_c2-ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c2 = ptot_c2-ptot_c2*ptot_c1-ptot_c2*ptot_c5+ptot_c1*ptot_c5
+    p_c5 = ptot_c5-ptot_c5*ptot_c1-ptot_c5*ptot_c2+ptot_c1*ptot_c2
 
     P_D_no_error = p_no_error*F**2 + p_c1*(1-F)**2 + (p_c2+p_c5)*F*(1-F)
     P_D_c1 = p_no_error*(1-F)**2 + p_c1*F**2 + (p_c2+p_c5)*F*(1-F)
@@ -7394,7 +7442,7 @@ def QEC_plot_process_fids_final():
     
     plt.xlim([-0.01,1.01])
     plt.xlabel('$p_e$',fontsize = 25)
-    plt.ylim([-0.01,1.01])
+    plt.ylim([0,1])
     plt.xticks([0,0.5,1])
     plt.yticks([0,0.5,1])
     plt.ylabel('Normalized \n occurence',fontsize = 25)
@@ -7768,6 +7816,13 @@ def plot_prob_timesweep_11():
     pin_c2      =0.0803633#0.0822674
     pin_c5      =0.110111#0.11562
 
+    pin_no      =0.0796758#0.0856612
+    # pin_no_alt  = 0.093
+    pin_c1      =0.0642991#0.0650188
+    pin_c2      =0.0827476#0.0822674
+    pin_c5      =0.11351#0.11562
+
+
     F1 = 0.988
     F0 = 0.890
 
@@ -7775,26 +7830,32 @@ def plot_prob_timesweep_11():
     
     T21 = 9.6
     T22 = 12.0
-    T25 = 21.0
+    T25 = 18.2
 
 
     p1h = 1/2.*(1-np.exp(-(0.5*t/T21)**2))
     p2h = 1/2.*(1-np.exp(-(0.5*t/T22)**2))
     p5h = 1/2.*(1-np.exp(-(0.5*t/T25)**2))
 
-    pavg = (p1h+p2h+p5h)/3.
+    # pavg = (p1h+p2h+p5h)/3.
 
-    ptot_no = pavg + pin_no-2*pavg*pin_no
+    # ptot_no = pavg + pin_no-2*pavg*pin_no
     # ptot_no_alt = pavg + pin_no_alt-2*pavg*pin_no_alt
     ptot_c1 =p1h+ pin_c1-2*p1h*pin_c1
     ptot_c2 =p2h+ pin_c2-2*p2h*pin_c2
     ptot_c5 =p5h+ pin_c5-2*p5h*pin_c5
 
-    p_no_error = 1-3*ptot_no+3*ptot_no**2
+    # p_no_error = 1-3*ptot_no+3*ptot_no**2
     # p_no_error_alt = 1-3*ptot_no_alt+3*ptot_no_alt**2
-    p_c1       = ptot_c1-ptot_c1**2
-    p_c2       = ptot_c2-ptot_c2**2
-    p_c5       = ptot_c5-ptot_c5**2
+    # p_c1       = ptot_c1-ptot_c1**2
+    # p_c2       = ptot_c2-ptot_c2**2
+    # p_c5       = ptot_c5-ptot_c5**2
+
+    #correct way to do this 150428
+    p_no_error = 1-ptot_c1-ptot_c2-ptot_c5+ptot_c1*ptot_c2+ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c1 = ptot_c1-ptot_c1*ptot_c2-ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c2 = ptot_c2-ptot_c2*ptot_c1-ptot_c2*ptot_c5+ptot_c1*ptot_c5
+    p_c5 = ptot_c5-ptot_c5*ptot_c1-ptot_c5*ptot_c2+ptot_c1*ptot_c2
 
     #### For 11 assignment
     if syndrome == '11':
@@ -7803,6 +7864,7 @@ def plot_prob_timesweep_11():
         P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
         P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
         P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
+
 
 
     for jj,p in enumerate(p_list):
@@ -7942,7 +8004,7 @@ def QEC_multiple_rounds():
     ax.plot([0,0.5,1],[1,0.5,0],color = '0.5',ls = 'dotted')
     
     ax.set_ylim(0.48,1.0)
-    ax.set_xlim(-0.01,0.51)
+    # ax.set_xlim(-0.01,0.51)
 
 
     ax.set_xticks(np.arange(0,0.51,0.25))
