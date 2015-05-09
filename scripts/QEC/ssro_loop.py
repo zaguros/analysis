@@ -11,7 +11,7 @@ from analysis.lib.tools import toolbox
 
 
 
-timestamp = '20150421_073046'
+timestamp = '20150505_081846'
 
 while 1:
 	timestamp, folder = toolbox.latest_data('AdwinSSRO', older_than = timestamp, return_timestamp = True)
