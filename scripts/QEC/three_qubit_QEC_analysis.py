@@ -632,6 +632,7 @@ def single_Qubit_QEC_create_data_dict_single_error_single_elRO(older_than = None
         len_k =2
     elif sweep_time == True:
         len_k = 4
+    print len_k
 
     if Qubit == 1:
         carbon = 'C1'
@@ -673,8 +674,10 @@ def single_Qubit_QEC_create_data_dict_single_error_single_elRO(older_than = None
             QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item]), axis=0)
         if len_k ==2 and run !=0:
             QEC_dict[item] = np.concatenate((k_dict['k_2'][item],k_dict['k_3'][item]), axis=0)            
-        elif len_k == 4:
+        elif len_k == 4 and run !=0:
             QEC_dict[item] = np.concatenate((k_dict['k_4'][item],k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item],k_dict['k_3'][item]), axis=0)
+        elif len_k == 4:
+            QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item],k_dict['k_3'][item]), axis=0)
     return QEC_dict,folder
 
 ''' simple plotting QEC data without loading/saving '''
@@ -3159,6 +3162,58 @@ def QEC_plot_Z_mZ_sweep_time(run = 1,no_error_list = [],add_encode = False, add_
     except:
         print 'Figure has not been saved.'
 
+def QEC_plot_Z_mZ_sweep_time_single_RO(run = 1,no_error_list =['11'],load_set = True):
+
+    folder  = r'D:\measuring\data\QEC_data\figs\timesweep'
+    parity_time = 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
+
+    color = ['r','g','b','r','g','b','k']
+    dataset_dict_full = {}
+    no_QEC_data_dict = {}
+    QEC_single_data_dict = {}
+
+    fig1, ax1 = plt.subplots()
+
+    for RO in [0,1,2,6]:
+        print RO
+        dataset_dict_full[RO] = {}
+        no_QEC_data_dict[RO] = {}
+        QEC_single_data_dict[RO] = {}
+        for state in ['Z','mZ']:
+                print RO
+                print state
+                dataset_dict_full[RO][state] = QEC_sweep_time_sum_error_syns(state = state,RO = RO,run_list = no_error_list)
+
+        # average Z and mZ data
+        dataset_dict_full[RO]['x'] = dataset_dict_full[RO]['Z']['x']
+        dataset_dict_full[RO]['y'] = 1/2.*(dataset_dict_full[RO]['Z']['y']-dataset_dict_full[RO]['mZ']['y'])
+        dataset_dict_full[RO]['y_no_corr'] = 1/2.*(dataset_dict_full[RO]['Z']['y_no_corr']-dataset_dict_full[RO]['mZ']['y_no_corr'])
+        dataset_dict_full[RO]['y_err']= 1/2.*(dataset_dict_full[RO]['Z']['y_err']**2+dataset_dict_full[RO]['mZ']['y_err']**2)**0.5
+
+
+        x = dataset_dict_full[RO]['x']+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
+
+        ax1.errorbar(x,dataset_dict_full[RO]['y_no_corr'],yerr=dataset_dict_full[RO]['y_err'],color = color[RO],ls ='-',marker = 'o', ms = 4, label = 'RO '+str(RO) )
+
+
+
+
+    ax1.hlines([0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+    # ax1.vlines([x_enc[4],x[7]],-0.1,1.1,color = '0.5')
+    # plt.axvspan(x_enc[4],x[7], facecolor='k', alpha=0.1)
+    ax1.set_ylim(-0.1,1.1)
+    ax1.set_xlim(-1e-3,35e-3)
+    ax1.set_xlabel('time (s)')
+    ax1.set_ylabel('Contrast')
+    lgd = ax1.legend()#loc = 2, bbox_to_anchor = (1,1))
+
+    try:
+        fig1.savefig(
+            os.path.join(folder,'QEC_sweep_time_single_RO'+'.png'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+        fig1.savefig(
+            os.path.join(folder,'QEC_sweep_time_single_RO'+'.pdf'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+    except:
+        print 'Figure has not been saved.'
 
 def QEC_plot_Z_mZ_sweep_time_compare_syndromes(no_error_list = ['00','01','10','11'],add_encode = False,encode_run = 0, add_single =False, plot_no_correct = True,add_toffoli = True,load_set = True):
 
@@ -3364,13 +3419,14 @@ def no_QEC_plot_single_state_RO(state = 'Z',RO = 0, load_set = False, older_than
 
 def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than = None):
     fig,ax = plt.subplots()
-    color = ['r','g','b']
+    color = ['r','g','b','k','k','k','k']
     QEC_data_dict = {}
     QEC_single_data_dict = {}
 
-    for  RO in [0,1,2]:
+    for  RO in [0,1,2,6]:
+        print RO
         QEC_data_dict[RO] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = RO, load_set = load_set,error_sign = 0)
-        QEC_single_data_dict[RO] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
+        # QEC_single_data_dict[RO] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
 
         folder  = r'D:\measuring\data\QEC_data\figs\Encoding'
 
@@ -3380,9 +3436,9 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
         y_err = QEC_data_dict[RO]['y_err']
 
 
-        x_single = QEC_single_data_dict[RO]['x']
-        y_single = QEC_single_data_dict[RO]['y']
-        y_single_err = QEC_single_data_dict[RO]['y_err']
+        # x_single = QEC_single_data_dict[RO]['x']
+        # y_single = QEC_single_data_dict[RO]['y']
+        # y_single_err = QEC_single_data_dict[RO]['y_err']
 
         if RO == 2:
             extra_time = 2*(4.996e-6*34 +11.312e-6*48) # 2*(13.616e-6*34)+116e-6
@@ -3391,17 +3447,17 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
         elif RO == 1:
             extra_time =  2*(4.996e-6*34 +13.616e-6*34)#2*(11.312e-6*48)+116e-6
 
-        x_single = x_single #+ np.ones(len(x_single))* extra_time
+        # x_single = x_single #+ np.ones(len(x_single))* extra_time
 
-        ax.errorbar(x,y,yerr=y_err,color = color[RO], label = 'Encoding, sweep time, Q' + str(RO+1) )
-        ax.errorbar(x_single,y_single,yerr=y_single_err,color = color[RO],ls = ':', label = 'Single Qubit, sweep time, Q' + str(RO+1) )
+        ax.errorbar(x,y,yerr=y_err,color = color[RO], label = 'Encoding, sweep time, RO ' + str(RO) )
+        # ax.errorbar(x_single,y_single,yerr=y_single_err,color = color[RO],ls = ':', label = 'Single Qubit, sweep time, Q' + str(RO+1) )
 
-    QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
+    # QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
 
-    y_toff = 1/2.*(QEC_data_dict[0]['y']+QEC_data_dict[1]['y']+QEC_data_dict[2]['y']-QEC_data_dict[6]['y'])
-    y_toff_err = 1/2.*(QEC_data_dict[0]['y_err']**2+QEC_data_dict[1]['y_err']**2+QEC_data_dict[2]['y_err']**2+QEC_data_dict[6]['y_err']**2)**0.5
+    # y_toff = 1/2.*(QEC_data_dict[0]['y']+QEC_data_dict[1]['y']+QEC_data_dict[2]['y']-QEC_data_dict[6]['y'])
+    # y_toff_err = 1/2.*(QEC_data_dict[0]['y_err']**2+QEC_data_dict[1]['y_err']**2+QEC_data_dict[2]['y_err']**2+QEC_data_dict[6]['y_err']**2)**0.5
 
-    ax.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'Encoding, sweep time, toff' )
+    # ax.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'Encoding, sweep time, toff' )
     ax.set_ylim(-.1,1.1)
     ax.set_xlim(-0.001,0.035)
     # ax.set_title('state_'+state+'_RO_'+str(RO)+'_noQEC_sweep_time')
@@ -3531,7 +3587,7 @@ def single_Qubit_no_QEC_plot_single_state_RO(run_list = [0],state = 'Z',Qubit = 
 def single_Qubit_sweep_time_no_QEC_plot_single_state(state = 'Z', load_set = False, older_than = None):
     fig,ax = plt.subplots()
     color = ['r','g','b']
-    for Qubit in [1,2,3]:
+    for Qubit in [2]:#[1,2,3]:
 
         QEC_data_dict =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = Qubit, load_set = load_set)
 
@@ -8004,7 +8060,7 @@ def QEC_multiple_rounds():
     ax.plot([0,0.5,1],[1,0.5,0],color = '0.5',ls = 'dotted')
     
     ax.set_ylim(0.48,1.0)
-    # ax.set_xlim(-0.01,0.51)
+    ax.set_xlim(-0.01,0.51)
 
 
     ax.set_xticks(np.arange(0,0.51,0.25))
@@ -8073,7 +8129,7 @@ def QEC_multiple_rounds():
     
     plt.xlim([-0.02,0.52])
     plt.xlabel('$p_e$',fontsize = 25)
-    plt.ylim([0.24,1.1])
+    plt.ylim([0.25,1.0])
     plt.ylabel('Normalized \n occurence',fontsize = 25)
 
     plt.xticks(np.arange(0.0,0.52,0.25))
