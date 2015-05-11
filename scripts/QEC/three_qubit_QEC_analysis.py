@@ -3206,7 +3206,9 @@ def QEC_plot_Z_mZ_sweep_time_single_RO(run = 1,no_error_list =['11'],load_set = 
     ax1.set_xlabel('time (s)')
     ax1.set_ylabel('Contrast')
     lgd = ax1.legend()#loc = 2, bbox_to_anchor = (1,1))
-
+    
+    np.savetxt('timesweep.txt',(x,dataset_dict_full[0]['y_no_corr'],dataset_dict_full[1]['y_no_corr'],dataset_dict_full[2]['y_no_corr'],dataset_dict_full[6]['y_no_corr']
+                ,dataset_dict_full[0]['y_err'],dataset_dict_full[1]['y_err'],dataset_dict_full[2]['y_err'],dataset_dict_full[6]['y_err']))
     try:
         fig1.savefig(
             os.path.join(folder,'QEC_sweep_time_single_RO'+'.png'),bbox_extra_artists = (lgd,),bbox_inches='tight')
