@@ -16,7 +16,7 @@ reload(toolbox)
 import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
 
-def fingerprint(disp_sim_spin = True,n_sim_spins = 8,xrange = [0,20],):
+def fingerprint(disp_sim_spin = True,n_sim_spins = 2,xrange = [0,20],return_data = False):
 
 
     ###################
@@ -49,7 +49,7 @@ def fingerprint(disp_sim_spin = True,n_sim_spins = 8,xrange = [0,20],):
     ax.set_xlim(4.9,5.1)
     ax.set_xlim(xrange)
     start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(xrange[0], xrange[1], (xrange[1]- xrange[0])/10))
+    ax.xaxis.set_ticks(np.arange(xrange[0], xrange[1], (xrange[1]- xrange[0])/10.))
 
     ax.set_ylim(-0.05,1.05)
     ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
@@ -72,6 +72,9 @@ def fingerprint(disp_sim_spin = True,n_sim_spins = 8,xrange = [0,20],):
         format='pdf')
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
         format='png')
+
+    if return_data == True:
+      return a.sweep_pts, a.p0
 
 def load_mult_dat(timestamp, number_of_msmts, ssro_calib_folder=''):
    cum_pts = 0

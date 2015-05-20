@@ -161,6 +161,19 @@ class RamseySequence():
 					self.table_el_dict [ind] = self.table_elements[ind]
 				ind = ind+1
 
+	def reshape_SQL (self, G):		
+		total_data_size = len(self.stored_msmnt_results)
+		eff_reps = round(total_data_size/G)
+		eff_data_size = eff_reps*G
+
+		self.msmnt_results = np.copy (np.reshape(self.stored_msmnt_results[:eff_data_size], (eff_reps, G)))
+		self.msmnt_phases = np.copy (np.reshape(self.stored_msmnt_phases[:eff_data_size], (eff_reps, G)))
+		self.msmnt_times = np.ones(G)*self.stored_msmnt_times
+		self.G = G
+		self.reps = eff_reps
+		print  'Reshaping: G=', self.G, '   reps = ', self.reps 
+
+
 	def plot_updates (self, repetition = None):
 								
 		if (repetition == None):
@@ -241,6 +254,7 @@ class RamseySequence():
 			msmnt_results = np.array([msmnt_results])
 			times = np.array([times])
 			phase = np.array([phase])
+
 		for n in np.arange(N_max):
 			q = 2*np.pi*beta*times[n]*self.t0+phase[n]
 			dec = np.exp(-(times[n]*self.t0/self.T2)**2)
@@ -248,6 +262,7 @@ class RamseySequence():
 				prob = prob*((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.
 			else:
 				prob = prob*(1-((self.fid0+self.fid1)-(self.fid0-self.fid1)*dec*np.cos(q))/2.)
+
 		prob = prob/np.sum(np.abs(prob))
 
 		return beta, prob
@@ -308,7 +323,7 @@ class RamseySequence():
 			#print len(curr_phase)
 			mult = np.rint(self.msmnt_multiplicity[k])
 
-			if self.phase_update:
+			if (self.phase_update or self.swarm_opt):
 				beta, prob = self.analysis_dict_phase_update (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
 			else:
 				beta, prob = self.analysis_dict (phase = curr_phase, msmnt_results = curr_msmnt, times = np.rint(self.msmnt_times))
@@ -392,7 +407,10 @@ class RamseySequence():
 		#print 'T2 = ', self.T2
 		s.fid0 = self.fid0
 		s.fid1 = self.fid1
-		s.sim_cappellaro_variable_M()
+		if self.swarm_opt:
+			s.sim_swarm_optim()
+		else:
+			s.sim_cappellaro_variable_M()
 		s.convert_to_dict()
 		if s.verbose:
 			s.print_results()		
@@ -567,7 +585,6 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 	def sim_berry_protocol (self, do_adaptive):
-		print 'Berry!!!!!!'
 		if self.verbose:				
 			if do_adaptive:
 				adptv = '(adaptive)'
@@ -626,8 +643,10 @@ class RamseySequence_Simulation (RamseySequence):
 				self.inc_rep()
 
 
-	def sim_recalculate_optimal_phase (self, always_recalculate_phase):
-		
+	def sim_recalculate_optimal_phase (self, always_recalculate_phase, N1_sweep=False):
+		#PARAMETERS:
+		#always_recalculate_phase: calculate Cappellaro phase before each msmnt, not only when updating tau
+		#N1_sweep: ONLY for N=1, update phase as m*pi/G
 
 		if (self.G+self.F+self.K==0):
 			print 'Simulation parameters G, K, F not set!!'
@@ -663,6 +682,9 @@ class RamseySequence_Simulation (RamseySequence):
 					for m in np.arange(MK):
 						if always_recalculate_phase:
 							phase = 0.5*np.angle (self.p_k[ttt+self.points])
+							if N1_sweep:
+								if i==0:
+									phase = m*np.pi/float(self.G)
 						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
 						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
 						self.msmnt_results[r, res_idx] = m_res
@@ -676,6 +698,117 @@ class RamseySequence_Simulation (RamseySequence):
 
 
 
+	def sim_swarm_optim (self):
+		
+		if (self.G+self.F+self.K==0):
+			print 'Simulation parameters G, K, F not set!!'
+		else:			
+			self.phase_update = True #Need this to be set to True to perform analysis considering data sotred as each msmnt_result in one separate array location!
+			self.always_recalculate_phase = True
+			self.swarm_opt = True
+			self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+			nr_results = int((self.K+1)*(self.G + self.F*self.K/2.))
+			self.msmnt_phases = np.zeros((self.reps, nr_results))
+			self.phase_upd_values = np.zeros((self.reps, nr_results))
+			self.msmnt_times = np.zeros(nr_results)
+			self.msmnt_results = np.zeros((self.reps,nr_results))
+		
+			k_array = self.K-np.arange(self.K+1)
+			tau = 2**(k_array)
+			self.reset_rep_counter()
+
+			file_old = 'D:/measuring/analysis/scripts/magnetometry/swarm_optimization/phases_G'+str(self.G)+'_F'+str(self.F)+'/swarm_opt_G='+str(self.G)+'_F='+str(self.F)+'_K='+str(self.K)+'.npz'
+			round_fid = int(round(self.fid0*100))
+			file_new = 'D:/measuring/analysis/scripts/magnetometry/swarm_optimization/incr_fid'+str(round_fid)+'_G'+str(self.G)+'/incr_fid'+str(round_fid)+'_G'+str(self.G)+'F'+str(self.F)+'_K='+str(self.K)+'.npz'
+			if os.path.exists (file_new):
+				swarm_incr_file = file_new
+			elif os.path.exists (file_old):
+				swarm_incr_file = file_old
+			else:
+				print 'ATTENTION!!! No file found!'
+				print file_new
+				print file_old
+			swarm_opt_pars = np.load (swarm_incr_file)
+			self.u0 = swarm_opt_pars['u0']
+			self.u1 = swarm_opt_pars['u1']			
+
+			for r in np.arange(self.reps):
+				msmnt_results = np.zeros (nr_results)
+				t = np.zeros (self.K+1)
+				self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+				self.p_k [self.points] = 1/(2.*np.pi)
+				res_idx = 0
+				m_res = 0
+
+				for i,k in enumerate(k_array):
+
+					t[i] = int(2**(k))
+					ttt = -2**(k+1)					
+					m_total = 0
+					MK = self.G+self.F*(self.K-k)
+
+					for m in np.arange(MK):
+						if m_res == 0:
+							phase_inc_swarm = self.u0 [res_idx]
+						else:
+							phase_inc_swarm = self.u1 [res_idx]
+
+						phase_cappellaro = 0.5*np.angle (self.p_k[ttt+self.points])
+						phase = phase_cappellaro + phase_inc_swarm
+						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
+						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
+						self.msmnt_results[r, res_idx] = m_res
+						self.msmnt_phases[r, res_idx] = phase
+						self.msmnt_times[res_idx] = t[i]
+						res_idx = res_idx + 1
+				self.inc_rep()
+
+	def sim_SQL(self, phase_deg):
+		#how do we measure the SQL data, just hacking the swarm opt code??
+		self.phase_update = True #Need this to be set to True to perform analysis considering data sorted as each msmnt_result in one separate array location!
+		self.always_recalculate_phase = True
+		self.swarm_opt = True
+		self.total_nr_msmnts = self.G*(2**(self.K+1)-1) + self.F*(2**(self.K+1)-2-self.K)
+		nr_results = int((self.K+1)*(self.G + self.F*self.K/2.))
+		self.msmnt_phases = np.zeros((self.reps, nr_results))
+		self.phase_upd_values = np.zeros((self.reps, nr_results))
+		self.msmnt_times = np.zeros(nr_results)
+		self.msmnt_results = np.zeros((self.reps,nr_results))
+	
+		k_array = self.K-np.arange(self.K+1)
+		tau = 2**(k_array)
+		self.reset_rep_counter()
+
+		for r in np.arange(self.reps):
+			msmnt_results = np.zeros (nr_results)
+			t = np.zeros (self.K+1)
+			self.p_k = np.zeros (self.discr_steps)+1j*np.zeros (self.discr_steps)
+			self.p_k [self.points] = 1/(2.*np.pi)
+			res_idx = 0
+			m_res = 0
+
+			for i,k in enumerate(k_array):
+
+				t[i] = int(2**(k))
+				ttt = -2**(k+1)					
+				m_total = 0
+				MK = self.G+self.F*(self.K-k)
+
+				for m in np.arange(MK):
+
+					phase = phase_deg*np.pi/180. #HACK for SQL!
+					m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
+					self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
+					self.msmnt_results[r, res_idx] = m_res
+					self.msmnt_phases[r, res_idx] = phase
+					self.msmnt_times[res_idx] = t[i]
+					res_idx = res_idx + 1
+			self.inc_rep()
+
+		rows, cols = np.shape(self.msmnt_results)
+		self.stored_msmnt_results = np.copy (np.reshape(self.msmnt_results, rows*cols))
+		self.stored_msmnt_phases = np.copy (np.reshape(self.msmnt_phases, rows*cols))
+		self.stored_msmnt_times = np.copy (self.msmnt_times[0])
 
 
 
@@ -884,7 +1017,8 @@ class RamseySequence_Exp (RamseySequence):
 				self.phase_update=True	
 		except:	
 			self.phase_update=False
-		#if (a.debug_pk):
+
+		self.swarm_opt = a.swarm_opt
 		self.p_tn = a.p_tn
 		self.p_2tn = a.p_2tn
 
@@ -907,9 +1041,21 @@ class RamseySequence_Exp (RamseySequence):
 							#print self.msmnt_phases[0,:]
 							self.msmnt_times[i]=self.msmnt_times_tmp[n]
 						i+=1
+		elif self.swarm_opt:
+			print 'Loading exp data: formatting time array for swarm opt!'
+			self.msmnt_phases=self.theta_rad
+			i = 0 
+			if self.swarm_opt:
+				self.msmnt_times=self.msmnt_results[1]*0.
+				for n in np.arange(self.N):
+					MK=self.G+self.F*n
+					for m in np.arange(MK):
+						self.msmnt_times[i]=self.msmnt_times_tmp[n]
+						i = i + 1
 		else:
 			self.msmnt_phases=self.theta_rad
 			self.msmnt_times=self.msmnt_times_tmp
+
 		#print a.theta
 
 		self.discarded_elements = []
@@ -937,7 +1083,7 @@ class RamseySequence_Exp (RamseySequence):
 
 
 
-	def CR_after_postselection(self,threshold=2):
+	def CR_after_postselection(self,threshold=15):
 
 		if (self.N>1):
 			res = np.copy(self.msmnt_results)
@@ -1132,11 +1278,28 @@ class AdaptiveMagnetometry ():
 		self.simulated_data = None
 		self.error_bars = False
 
+		self.protocols = {}
+		capp_ptcl = {'do_adaptive':True, 'phase_update':False, 'always_recalculate_phase':False, 'swarm_optimization': False, 'code':'capp'}
+		mod_capp_ptcl = {'do_adaptive':True, 'phase_update':False, 'always_recalculate_phase':True, 'swarm_optimization': False, 'code':'modCapp'}
+		nonadptv_ptcl = {'do_adaptive':False, 'phase_update':True, 'always_recalculate_phase':False, 'swarm_optimization': False, 'code':'nnAdptv'}
+		phaseUpdate_ptcl = {'do_adaptive':True, 'phase_update':True, 'always_recalculate_phase':False, 'swarm_optimization': False, 'code':'adptvPhUpdate'}
+		swarmOptim_ptcl = {'do_adaptive':True, 'phase_update':True, 'always_recalculate_phase':True, 'swarm_optimization': True, 'code':'swarmOpt'}
+		self.protocols['cappellaro'] = capp_ptcl
+		self.protocols['modified_cappellaro'] = mod_capp_ptcl
+		self.protocols['non_adaptive'] = nonadptv_ptcl
+		self.protocols['cappellaro_phase_update'] = phaseUpdate_ptcl
+		self.protocols['swarm_optimization'] = swarmOptim_ptcl
+		self.do_sql = False
+
 		if (os.name =='posix'):
 			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
 		else:
-			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
-		
+			folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+			if (os.path.exists(folder)):
+				self.folder = folder
+			else:
+				self.folder = r'V:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+
 	def set_exp_params(self, T2 = 96e-6, fid0 = 0.88, fid1 = 0.015):
 		self.T2 = T2
 		self.fid0 = fid0
@@ -1201,16 +1364,13 @@ class AdaptiveMagnetometry ():
 
 		return B_dict[str(N)]
 	
-	def sweep_field_simulation (self, N, do_adaptive, table_based=False,print_results=False, phase_update=False,always_recalculate_phase = False,specific_B=False):
-		self.always_recalculate_phase = always_recalculate_phase
+	def sweep_field_simulation (self, N, protocol, table_based=False, print_results=False, specific_B=False):
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
-		#sampling continous range
 		
 		B_values = np.array([])
 		label_array = []
-		#B = np.linspace(-1*self.B_max, self.B_max, self.nr_points_per_period)
-		# sample per period
+
 		per=0
 		delta_f = 1./(self.t0*(2**N))
 		print delta_f
@@ -1221,7 +1381,6 @@ class AdaptiveMagnetometry ():
 		for l in np.arange(self.nr_points_per_period):
 			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
 
-
 		#label_array, self.B_values = self.sample_B_space (N=N)		
 		self.B_values=np.unique(self.B_values)
 		nr_points = len(self.B_values)
@@ -1230,12 +1389,18 @@ class AdaptiveMagnetometry ():
 		B_field = np.zeros(nr_points)
 
 		ind = 0
+		print 'PROTOCOL: ', self.protocols[protocol]
 		print "Simulating N="+str(N)+', '+str(len(self.B_values))+" instances of magnetic field"
 
-		self.phase_update = phase_update
-		self.do_adaptive = do_adaptive
+		self.phase_update = self.protocols[protocol]['phase_update']
+		self.do_adaptive = self.protocols[protocol]['do_adaptive']
+		self.always_recalculate_phase = self.protocols[protocol]['always_recalculate_phase']
+		self.swarm_optim = self.protocols[protocol]['swarm_optimization']
+		self.code = self.protocols[protocol]['code']
+		self.protocol = protocol
 
 		list_estim_phases = []
+		self.N1_sweep = False
 		for b in np.arange(nr_points):
 			sys.stdout.write(str(ind)+', ')	
 			s = RamseySequence_Simulation (N_msmnts = N, reps=self.reps, tau0=self.t0)
@@ -1245,15 +1410,18 @@ class AdaptiveMagnetometry ():
 			s.fid0 = self.fid0
 			s.fid1 = self.fid1
 	
-
-			if always_recalculate_phase:
-				s.phase_update = True
-				s.sim_recalculate_optimal_phase(always_recalculate_phase=always_recalculate_phase)
-			else:			
-				if phase_update:
-					s.sim_berry_protocol(do_adaptive=do_adaptive)
-				else:
-					s.sim_cappellaro_variable_M()
+			if protocol == 'cappellaro':
+				s.sim_cappellaro_variable_M()
+			elif protocol == 'modified_cappellaro':
+				s.sim_recalculate_optimal_phase(always_recalculate_phase=True)
+			elif protocol == 'non_adaptive':
+				s.sim_berry_protocol(do_adaptive=False)
+			elif protocol == 'cappellaro_phase_update':
+				s.sim_berry_protocol(do_adaptive=True)
+			elif protocol == 'swarm_optimization':
+				s.sim_swarm_optim()
+			else:
+				print 'Unknown protocol: ', protocol
 
 			s.convert_to_dict()
 
@@ -1288,10 +1456,11 @@ class AdaptiveMagnetometry ():
 			for pt in np.arange (self.nr_points_per_period):
 				if self.phase_update:
 					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_addphase_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
+				elif self.swarm_opt:
+					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_swarm'+'_p'+str(per)+'b'+str(pt)	
 				else:
-					
 					label = '_N = '+str(N)+'_'+'M=('+str(self.G)+', '+str(self.F)+')'+'_rtAdwin_'+'_p'+str(per)+'b'+str(pt)
-				#print 'Processing...', label
+				print 'Processing...', label
 				if older_than:
 					f = toolbox.latest_data(contains=label,older_than=older_than,newer_than=newer_than)
 				else:
@@ -1396,9 +1565,13 @@ class AdaptiveMagnetometry ():
 				print 'Error G F and K are not set!'
 				break
 			else:	
-				T_phase_sens=self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n))
-				T_overhead=240e-6 * 1/2*(n)*(2*self.G+self.F*(n-1))#240e-6
-				#print T_overhead
+				if self.do_sql:
+					self.total_time.append(self.t0*n)
+					print 'current G = ', n, '   ---- time: ', self.t0*n*1e6, 'us'
+				else:
+					T_phase_sens=self.t0*(self.G*(2**(n)-1)+self.F*(2**(n)-1-n))
+					T_overhead=240e-6 * 1/2*(n)*(2*self.G+self.F*(n-1))#240e-6
+					#print T_overhead
 				
 				if include_overhead:
 					self.total_time.append((T_phase_sens+T_overhead))
@@ -1587,22 +1760,34 @@ class AdaptiveMagnetometry ():
 		plt.show()
 		
 
-	def save(self, folder = None):
+	def save(self, name = '', folder = None):
 		
 		if (folder==None):
 			folder = self.folder 
 
 		if self.simulated_data:
-			if self.do_adaptive:
-				fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
-				if self.always_recalculate_phase:
-					fName = fName + '_alwaysRecPhase'
-			else:
-				fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_NON_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+
+			try:
+				fName = time.strftime ('%Y%m%d_%H%M%S')+ '_'+self.code+'_N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+			except:
+
+				if self.do_adaptive:
+					fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
+					if self.always_recalculate_phase:
+						fName = fName + '_alwaysRecPhase'
+				else:
+					fName = time.strftime ('%Y%m%d_%H%M%S')+'_simulated_NON_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
 
 		else:
 			fName = time.strftime ('%Y%m%d_%H%M%S')+'_adaptive_magnetometry_'+'N='+str(self.N)+'G='+str(self.G)+'F='+str(self.F)+'_fid0='+str(self.fid0)
 
+		try:
+			if self.N1_sweep:
+				fName = fName +"_N1sweep"
+		except:
+			pass
+
+		fName = fName+name
 		if not os.path.exists(os.path.join(folder, fName+'.hdf5')):
 			mode = 'w'
 		else:
@@ -1623,7 +1808,7 @@ class AdaptiveMagnetometry ():
 			f.attrs ['repetitions']=self.repetitions
 		except:
 			f.attrs ['repetitions']=-1
-			print 'param Repetiotions missing...'
+			print 'param Repetitions missing...'
 		try:	
 			f.attrs['CR_after_threshold'] = self.CR_after_threshold
 		except:
@@ -1701,4 +1886,110 @@ class AdaptiveMagnetometry ():
 		#for k in scaling_grp.keys():
 		#	self.scaling_grp[k]=scaling_grp[k].value
 		f.close()
+
+
+class magnetometrySQL(AdaptiveMagnetometry):
+
+	def __init__(self, tau0, max_G):
+		self.N = 1			#here it corresponds to the maximum N
+		self.t0 = tau0
+		self.reps = None
+		self.B_max = 1./(4*self.t0) #this is different than the usual!
+		self.n_points = round(100*max_G**0.5)
+		#self.nr_B_points = 2**(self.N+2)/2
+		self.results_dict = {} 
+		self.prob_density_dict = {}
+		self.analyzed_N = []
+		self.gamma_e = 28e9 #~28 GHz/T
+
+		self.nr_periods = None
+		self.nr_points_per_period = None
+		
+		self.scaling_variance=[]
+		self.total_time=[]
+		self.sensitivity = []
+		self.analyzed_N = []
+
+		self.scaling_factor = None
+		self.error_scaling_factor = None
+		self.simulated_data = None
+		self.error_bars = False
+
+		self.always_recalculate_phase = False
+		self.do_adaptive = False
+
+		self.F = 0
+		self.K = 0
+
+		self.protocols = 'sql'
+		self.do_sql = True
+
+		if (os.name =='posix'):
+			self.folder = '/home/cristian/Work/Research/adaptive magnetometry/data_analysis/'
+		else:
+			self.folder = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
+
+
+	def sweep_field_simulation_SQL (self, print_results=False, specific_B=False):
+		self.simulated_data = True	
+		B_values = np.array([])
+		label_array = []
+		N=1
+
+		per=0
+		delta_f = 1./(self.t0*(2**N))
+
+		B = np.linspace(per*delta_f, (per+1)*delta_f, self.nr_points_per_period)
+		if specific_B:
+			B=self.specific_B_fields_for_sweep_sim(N,self.nr_points_per_period)
+		self.B_values = np.hstack((B_values, B))
+		for l in np.arange(self.nr_points_per_period):
+			label_array.append('N='+str(N)+'G='+str(self.G)+'F='+str(self.F)+'_p'+str(0)+'_'+str(l))
+
+		label_array, self.B_values = self.sample_B_space (N=N)		
+		self.B_values=np.unique(self.B_values)*0.25
+		nr_points = len(self.B_values)
+
+		list_estim_phases = []
+		G = 100*(np.arange(10)+1)
+		msqe = np.zeros((len(G), nr_points))
+		ave_exps = 0*msqe+1j*0*msqe
+		B_field = np.zeros((len(G), nr_points))
+
+		for i in np.arange(len(G)):
+			list_estim_phases.append([])
+			self.analyzed_N.append(G[i])	
+
+
+
+		ind = 0
+		for b in np.arange(nr_points):
+
+			sys.stdout.write(str(ind)+', ')	
+			s = RamseySequence_Simulation (N_msmnts = 1, reps=self.reps, tau0=self.t0)
+			s.setup_simulation (magnetic_field_hz = self.B_values[b], F=0,G=self.G,K=0) 
+			s.verbose = False
+			s.T2 = self.T2
+			s.fid0 = self.fid0
+			s.fid1 = self.fid1
+			s.B_max = 1/(4*s.t0)
+			s.sim_SQL(phase_deg = 90)
+			s.n_points = 10000
+			g_idx = 0
+
+			for g in G:
+				print 'G  = ', g
+				s.reshape_SQL(G=g)
+				s.convert_to_dict()
+				beta, p, ave_exp,H, mB, sB, list_phase_values = s.mean_square_error(set_value=self.B_values[b], do_plot=True, return_all_estimated_phases = True)
+				list_estim_phases[g_idx].append(list_phase_values)
+				ave_exps[g_idx, ind]=ave_exp
+				msqe [g_idx, ind] = H
+				B_field [g_idx, ind] = self.B_values[b]
+				g_idx = g_idx +1
+			ind =ind+1
+		for i in np.arange(len(G)):
+			list_estim_phases[i] = flatten(list_estim_phases[i])
+			self.results_dict[str(G[i])] = {'B_field':B_field[i, :], 'ave_exp':ave_exps[i,:],'msqe':msqe[i,:], 'G':i,'K':self.K,'F':self.F, 'estimated_phase_values':list_estim_phases[i]}
+		print 'Simulations done!!'
 

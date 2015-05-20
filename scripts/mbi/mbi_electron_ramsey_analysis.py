@@ -13,7 +13,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 
-timestamp = '20141203_180041'#'211609'#None#'174154' 
+timestamp = None#'20150105_144445'#'211609'#None#'174154' 
 guess_f1 = 0.6e-3 #in GHz
 guess_A1 = 0.5
 guess_phi1 = 0.
@@ -33,6 +33,7 @@ guess_a = 0.5
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
+    print folder
 else:
     folder = toolbox.latest_data('Ramsey')
 

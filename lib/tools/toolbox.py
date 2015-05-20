@@ -14,7 +14,7 @@ try:
     datadir = qt.config['datadir']
     print datadir
 except:
-    # Added a line for Mac compatibility. Does require data to be saved in correct folder (as below).
+    # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
     if os.name == 'posix':
         if (platform.system()=='Linux'):
@@ -118,12 +118,15 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
             # this routine verifies that any output directory is a 'valid' directory
             # (i.e, obeys the regular naming convention)
+
+            # _timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
             _timestamp = daydir + d[:6]
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
                 continue
             timestamp = dstamp+tstamp
+
             if contains in d:              
                 
                 if older_than != None:
@@ -138,7 +141,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     if len(measdirs) == 0:
         if raise_exc == True:
-            raise Exception('No fitting data found.')
+            raise Exception('No fitting data found containing {}.'.format(contains))
         else:
             return False
     else:
@@ -150,55 +153,17 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             return os.path.join(search_dir,daydir,measdir)
         else: return str(daydir)+str(measdir[:6]) , os.path.join(search_dir,daydir,measdir)
 
-# def newer_data(starttimestamp, endtimestamp=None, contains='',):
-#     '''
-#     finds all matching data in the given range. default end is now.
-#     '''
-#     if endtimestamp == None:
-#         endtimestamp = time.strftime("%Y%m%d%H%M%S")
-
-#     results = []
-#     daydirs = os.listdir(datadir)
-#     if len(daydirs) == 0:
-#         logging.warning('No data found in datadir')
-#         return None
-#     daydirs.sort()
-
-#     if len(endtimestamp) == 6:
-#         endday = time.strftime('%Y%m%d')
-#         endtime = endtimestamp
-#     elif len(endtimestamp) == 14:
-#         endday = endtimestamp[:8]
-#         endtime = endtimestamp[8:]
-#     else:
-#         logging.warning("Cannot interpret timestamp '%s'" % endtimestamp)
-#         return None
-
-#     if len(starttimestamp) == 6:
-#         startday = time.strftime('%Y%m%d')
-#         starttime = starttimestamp
-#     elif len(starttimestamp) == 14:
-#         startday = starttimestamp[:8]
-#         starttime = starttimestamp[8:]
-#     else:
-#         logging.warning("Cannot interpret timestamp '%s'" % starttimestamp)
-#         return None
-
-#     # TODO continue here
-
-#     return None
-
 def data_from_time(timestamp, folder = None):
     '''
     returns the full path of the data specified by its timestamp in the
     form YYYYmmddHHMMSS.
     '''
+    global datadir
+
     if (folder != None):
         datadir = folder
-
-    datadir = r'd:\measuring\data'
-
-    daydirs = os.listdir(r'd:\measuring\data')
+        
+    daydirs = os.listdir(datadir)
 
     if len(daydirs) == 0:
         raise Exception('No data in the data directory specified')

@@ -15,10 +15,12 @@ reload(sequence)
 from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
-guess_frq = 1./280
+
+guess_frq = 1./3.
+
 
 guess_amp = 1
-guess_of = 1
+guess_of = 0
 # guess_slope = 0.
 guess_phi = 0.
 guess_k = 0.
@@ -66,12 +68,12 @@ fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'
 def fitfunc(x):
     return (o()-A()) + A() * np.exp(-(k()*x)**2) * np.cos(2*np.pi*(f()*x - phi()))
 
-fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2,4],
+fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[4],
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)
 
-print "pi pulse = {:.3f} ".format(1/f()/2.) + a.sweep_name
+print "pi pulse = {:.5f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 plt.savefig(os.path.join(folder, 'electronrabi_analysis_fit.png'))
