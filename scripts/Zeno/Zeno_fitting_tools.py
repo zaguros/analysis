@@ -46,7 +46,8 @@ def fit_1msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
     def fitfunc(x):
 
         decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
-        Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+        Hahn = np.exp(-(x/604.)**1.6162)
+        Fx = -0.25*decay*(-1.+p())-0.25*(-1.+p())*Hahn + 0.5
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
         Conp = Con0*(1-p())
@@ -141,7 +142,9 @@ def fit_3msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
 
         decay2 = np.exp((3./8.)*( x**2 /((t()**2) ) ) )
 
-        Fx = -(-11.+3*p()*(3+(3-p())*p()))/16.+decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)
+        Hahn = np.exp(-(x/604.)**1.6162)
+
+        Fx = -Hahn*((-11.+3*p()*(3+(3-p())*p()))/16.+0.5)+decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)+0.5
 
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
@@ -192,6 +195,7 @@ def fit_4msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         decay2 = 5.*np.exp((8./25.)*( x**2 /((t()**2) ) ) )*(p()-1.)**4
 
         decay3 = 10.*np.exp((12./25.)*( x**2 /((t()**2) ) ) )*(p()-1.)**4
+
 
         Fx = 0.5+decay*((p()-1)**4+decay2+decay3)
 
@@ -248,9 +252,11 @@ def fit_5msmt_proc_fid(g_A0, g_offset0, g_t, g_p):
         bracket2 = (bracket1 * p() -10)*p() + 5
         bracket3 = (bracket2*5*p()-21)*2./64.
 
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
         #### decaying parts + the constant part which arises from the measurement echo.
 
-        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - bracket3
+        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - (bracket3+0.5)*Hahn+0.5
 
         Fz0 = 2.*offset0()
         Con0 = 2.*(Fz0-0.5)
@@ -378,7 +384,11 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
 
     def fitfunc(x):
 
-        ### this fit function does not take detrimental repumping into account.
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
+        ### this fit function does take detrimental repumping into account.
+        ### no hahn echo time...
+
         if take_repump:
             decay1 = np.exp(-x**2/(2*t2()**2))*(0.125+0.125*repump())
             decay2 = np.exp((-0.125/(t2()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
@@ -388,17 +398,16 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
             Fx = C/2. + 0.5
 
         # """
-        # Taking repumping into account.
+        # Taking repumping not into account.
         # """
         else:
             
-
             decay = np.exp(- ( x**2 /(2. * (t2()**2) ) ) )
-            Fx = -0.25*decay*(-1.+p())-0.25*(-3.+p())
+            Fx = -0.25*decay*(-1.+p())-0.25*(-1.+p())*Hahn + 0.5
             Cx = A0()*2.*(Fx-0.5)
             Fx = Cx/2.+0.5
-            pmix = 1-A0()
-            Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
+            # pmix = 1-A0()
+            # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
 
         return Fx
 
@@ -470,11 +479,13 @@ def fit_3msmt_state_fid(g_A0, g_t, g_p):
 
     def fitfunc(x):
 
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
         decay = -0.0625*np.exp(- ( x**2 /(2. * (t()**2) ) ) )
 
         decay2 = np.exp((3./8.)*( x**2 /((t()**2) ) ) )
 
-        Fx = -(-11.+3*p()*(3+(3-p())*p()))/16.+decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)
+        Fx = - Hahn*((-11.+3*p()*(3+(3-p())*p()))/16.+0.5) + 0.5 + decay*((p()-1.)**3+4.*decay2*(p()-1.)**3)
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
@@ -553,6 +564,8 @@ def fit_5msmt_state_fid(g_A0, g_t, g_p):
 
     def fitfunc(x):
 
+        Hahn  = np.exp(-(x/604.)**1.6162)
+
         decay = -np.exp(- ( x**2 /(2. * (t()**2) ) ) )/64.
 
         decay2 = 6.*np.exp((5./18.)*( x**2 /((t()**2) ) ) )
@@ -565,7 +578,7 @@ def fit_5msmt_state_fid(g_A0, g_t, g_p):
 
         #### decaying parts + the constant part which arises from the measurement echo.
 
-        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - bracket3
+        Fx = decay*((p()-1)**5*(1+decay2)+decay3) - (bracket3+0.5)*Hahn + 0.5
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5

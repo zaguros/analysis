@@ -67,21 +67,29 @@ def compare_protocols_old (pr1, pr2, N, G, fid, name = ''):
 	pt.compare_best_sensitivities ([dict_G2_adptv, dict_G2_nonadptv], title =  'G='+str(G)+' -- fid0 = '+fid+name, legend_array = [pr1, pr2], do_save=True, colours = plot_colors)
 	pt.compare_scaling_fits ([dict_G2_adptv, dict_G2_nonadptv], title = 'G='+str(G)+' -- fid0 = '+fid+name, legend_array = [pr1, pr2], do_save=True, colours = plot_colors)
 
-def compare_protocols (protocol_array, N, G, fid, name = ''):
+def compare_protocols (protocol_array, N, G, fid, name = '', F_array=None, add_HL_plot=False, y_lim=None):
 
 	plot_colors =  ['RoyalBlue', 'crimson', 'forestgreen', 'deepskyblue', 'gold','darkslategray', 'cornsilk', 'darkkhaki', 'darkviolet', 'limegreen']
 	dict_array = []
+	if not(F_array):
+		F_array = [0,1,2,3,4,5]
 
 	for j,pr in enumerate(protocol_array):
-		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = [0,1,2,3,4, 5,6,7,8,9])
+
+		#if (pr=='nnAdptv'):
+		#	ff = [0,1,2,3,4,5,6,7]
+		#	print 'Non adaptive!!'
+		#else:
+		#	ff = [0,1,2,3,4,5]
+		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = F_array)
 		print pr, t_stamps
 		dict_gen= pt.generate_data_dict(timestamps=t_stamps)
 		dict_array.append(dict_gen)
-		pt.compare_scalings (data_dict = dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save=False, add_HL_plot = False, colours = plot_colors)
-		pt.compare_variance_with_overhead (data_dict=dict_gen, title = pr1+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save = False, overhead = 300e-6, colours = plot_colors)
+		pt.compare_scalings (data_dict = dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save=True, add_HL_plot = add_HL_plot, colours = plot_colors, y_lim=y_lim)
+		pt.compare_variance_with_overhead (data_dict=dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save = False, overhead = 300e-6, colours = plot_colors)
 
 	sens_dict = pt.compare_best_sensitivities (dict_array, title =  'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
-	#pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
+	pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
 	return sens_dict
 
 def compare_room_temperature ():
@@ -93,26 +101,48 @@ def compare_room_temperature ():
 	nn100 = sens_dict['2']
 	sw100 = sens_dict['3']
 
-	matplotlib.rc ('xtick', labelsize=15)
-	matplotlib.rc ('ytick', labelsize=15)
+	sw88_B = 1e12*sw88['sensitivity']/((2*np.pi*28*20)**2)
+	nn88_B = 1e12*nn88['sensitivity']/((2*np.pi*28*20)**2)
+	sw100_B = 1e12*sw100['sensitivity']/((2*np.pi*28*20)**2)
+	nn100_B = 1e12*nn100['sensitivity']/((2*np.pi*28*20)**2)
+
+	matplotlib.rc ('xtick', labelsize=25)
+	matplotlib.rc ('ytick', labelsize=25)
 	f1 = plt.figure(figsize = (10,7))
-	plt.semilogy (sw88['F'], sw88['sensitivity'], 'RoyalBlue', linewidth =3)
-	plt.semilogy (nn88['F'], nn88['sensitivity'],'RoyalBlue', linestyle='--', linewidth =3)
-	plt.semilogy (sw88['F'], 3600*sw88['sensitivity'], 'crimson', linewidth =3)
-	plt.semilogy (nn88['F'], 3600*nn88['sensitivity'],'crimson', linestyle='--', linewidth =3)
-	plt.semilogy (sw100['F'], 50000*sw100['sensitivity'], 'forestgreen', linewidth =3)
-	plt.semilogy (nn100['F'], 50000*nn100['sensitivity'],'forestgreen', linestyle='--', linewidth =3)
-	plt.ylabel ('minimum sensitivity', fontsize=15)
-	plt.xlabel ('F', fontsize=15)
-	f1.savefig (r"M:\tnw\ns\qt\Diamond\Projects\Magnetometry with adaptive measurements\Data\analyzed data\compare_sens_roomTemperature.svg")
-	f1.savefig (r"M:\tnw\ns\qt\Diamond\Projects\Magnetometry with adaptive measurements\Data\analyzed data\compare_sens_roomTemperature.pdf")
+	plt.semilogy (sw88['F'], 1e3*sw88_B**0.5, 'RoyalBlue', linewidth =3, label = 'sw88')
+	plt.semilogy (sw88['F'], 1e3*sw88_B**0.5, marker='^', color='RoyalBlue', markersize=12, label = 'a')
+	plt.semilogy (nn88['F'], 1e3*nn88_B**0.5,'RoyalBlue', linestyle='--', linewidth =3, label = 'b')
+	plt.semilogy (sw88['F'], 1e3*nn88_B**0.5, marker='v',color='RoyalBlue', markersize=12, label = 'c')
+	plt.semilogy (sw88['F'], 1e3*(3600*sw88_B)**0.5, 'crimson', linewidth =3, label = 'd')
+	plt.semilogy (sw88['F'], 1e3*(3600*sw88_B)**0.5, marker='h',color='crimson', markersize=10, label = 'e')
+	plt.semilogy (nn88['F'], 1e3*(3600*nn88_B)**0.5,'crimson', linestyle='--', linewidth =3, label = 'r')
+	plt.semilogy (nn88['F'], 1e3*(3600*nn88_B)**0.5, marker='*',color='crimson', markersize=15, label = 'f')
+	plt.semilogy (sw100['F'], 1e3*(50000*sw100_B)**0.5, 'forestgreen', linewidth =3, label = 'g')
+	plt.semilogy (sw100['F'], 1e3*(50000*sw100_B)**0.5, marker='o', color='forestgreen', markersize=10, label = 'h')
+	plt.semilogy (nn100['F'], 1e3*(50000*nn100_B)**0.5,'forestgreen', linestyle='--', linewidth =3, label = 'i')
+	plt.semilogy (nn100['F'], 1e3*(50000*nn100_B)**0.5,marker='s',color='forestgreen', markersize=10, label = 'l')
+	plt.ylabel ('minimum sensitivity', fontsize=20)
+	plt.xlabel ('F', fontsize=25)
+	plt.legend()
+	f1.savefig (r"D:\measuring\compare_sens_roomTemperature_nT.svg")
+	f1.savefig (r"D:\measuring\compare_sens_roomTemperature_nT.pdf")
 	plt.show()
 
+
+compare_room_temperature()
+#def plot_fig_S1 ():
+
+#pr1 = 'modCapp'
+#pr2 = 'nnAdptv'
+#compare_protocols (protocol_array = [pr1, pr2], N=10, G=5, fid=['1.0', '1.0'], name='_incl_T2', add_HL_plot=True, y_lim=[1e-10, 1e-5])
+#compare_protocols (protocol_array = [pr1, pr2], N=10, G=5, fid=['0.75', '0.75'], name='_incl_T2', add_HL_plot=True, y_lim=[1e-10, 1e-5])
+
 #compare_capp_modCapp_supplInfo ()
-pr1 = 'modCapp'
-pr2 = 'nnAdptv'
+#pr1 = 'modCapp'
+#pr2 = 'nnAdptv'
+#pr3 = 'swarmOpt'
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=5, fid='1.0', name='_incl_T2')
-compare_protocols (protocol_array = [pr1, pr2], N=10, G=5, fid=['0.45', '0.45'], name='_noT2')
+#compare_protocols (protocol_array = [pr1, pr2], N=10, G=5, fid=['0.65', '0.65'], name='')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='1.0', name='_incl_T2')
 #compare_protocols (pr1=pr1, pr2=pr2, N=10, G=3, fid='0.75', name='_incl_T2')
 

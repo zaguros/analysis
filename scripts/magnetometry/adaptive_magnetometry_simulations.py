@@ -451,20 +451,18 @@ def overnight_simulations_15dec2014():
 '''
 
 
-def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
-	fid1=0.15
-	reps=31
-	for fff in sweep_f:
-		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
-
-def suppl_info_simulations_nn_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
+def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
 	fid1=0.02
 	reps=31
 	for fff in sweep_f:
-		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
+		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
-def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
-	fid1=0.02
+def suppl_info_simulations_nn_adptv (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], name=''):
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
+
+def suppl_info_simulations_swarm (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], name=''):
 	reps=31
 	for fff in sweep_f:
 		simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name = name)
@@ -481,9 +479,9 @@ def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
 
 #suppl_info_simulations_adptv (G=5, fid0=1., sweep_f = [3,4,5])
 #suppl_info_simulations_adptv (G=5, fid0=0.88, sweep_f = [0,1,2,3,4,5])
-#suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [5])
+suppl_info_simulations_nn_adptv (G=5, fid0=0.88, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
 
 #suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
 
-suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_low_fid1')
+suppl_info_simulations_swarm (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
 

@@ -11,11 +11,15 @@ reload(common)
 reload(mbi)
 
 def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name = 'Hahn', measurement_name = 'adwindata', ssro_calib_timestamp =None,
-            offset = 0.5, 
+            offset = 0.5,
+            save_data = False, 
             x0 = 0,  
-            amplitude = 0.5,  
+            amplitude = 0.5,
+            fit_func = 'exp',  
             decay_constant = 200, 
-            exponent = 2, 
+            exponent = 2,
+            frequency = 3.,
+            zfill = 1,
             partstr = 'part', plot_fit = True, do_print = True, fixed = [0,2], show_guess = False):
     ''' 
     Inputs:
@@ -59,6 +63,7 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         numberstart = folder.find(partstr)+len(partstr)
         numberofparts = int(folder[numberstart:len(folder)])
         basis_str_pos = folder[folder.rfind('\\')+7:numberstart]
+        # print 'Ja', basis_str_pos
         if posneg:
             posneg_str = 'posneg'
             if 'positive' in basis_str_pos:
@@ -100,8 +105,10 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         
         for kk in range(numberofparts):
             if partstr in folder:
-                folder_pos = toolbox.latest_data(basis_str_pos+str(kk+1), older_than = older_than)
-                folder_neg = toolbox.latest_data(basis_str_neg+str(kk+1), older_than = older_than)
+                folder_pos = toolbox.latest_data(basis_str_pos+str(kk+1).zfill(zfill), older_than = older_than)
+                # print folder_pos
+                folder_neg = toolbox.latest_data(basis_str_neg+str(kk+1).zfill(zfill), older_than = older_than)
+                # print folder_neg
             else:
                 folder_pos = toolbox.latest_data(basis_str_pos, older_than = older_than)
                 folder_neg = toolbox.latest_data(basis_str_neg, older_than = older_than)
@@ -110,12 +117,19 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
             a.get_readout_results(name='adwindata')
             a.get_electron_ROC(ssro_calib_folder)
             cum_pts += a.pts
-
+            print a.sweep_pts
             b = mbi.MBIAnalysis(folder_neg)
             b.get_sweep_pts()
             b.get_readout_results(name='adwindata')
             b.get_electron_ROC(ssro_calib_folder)
-            print a.p0, b.p0
+            if a.pts == 1:
+                a.sweep_pts = [a.sweep_pts[0]*len(a.sweep_pts)]
+                b.sweep_pts = [b.sweep_pts[0]*len(b.sweep_pts)]
+                print a.sweep_pts
+            if False:
+                a.p0 = (1.-a.p0)
+                b.p0 = (1.-b.p0)
+            # print a.p0, b.p0
             if kk == 0:
                 cum_sweep_pts = a.sweep_pts
                 cum_p0 = (a.p0+(1-b.p0))/2.
@@ -125,22 +139,28 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
                 cum_sweep_pts = np.concatenate((cum_sweep_pts, a.sweep_pts))
                 cum_p0 = np.concatenate((cum_p0, (a.p0+(1-b.p0))/2))
                 cum_u_p0 = np.concatenate((cum_u_p0, np.sqrt(a.u_p0**2+b.u_p0**2)/2))
-
+            # print a.get_sweep_pts
         a.pts   = cum_pts
         a.sweep_pts = cum_sweep_pts
         a.p0    = cum_p0
+        # print 
+        # print cum_sweep_pts
+        # print
+        # print cum_p0
+        # print
         a.u_p0  = cum_u_p0
 
     else:
         for kk in range(numberofparts):
-            folder = toolbox.latest_data(basis_str_pos+str(kk+1), older_than = older_than)
+            folder = toolbox.latest_data(basis_str_pos+str(kk+1).zfill(zfill), older_than = older_than)
             a = mbi.MBIAnalysis(folder)
             a.get_sweep_pts()
             a.get_readout_results(name='adwindata')
             a.get_electron_ROC(ssro_calib_folder)
             reps_per_datapoint = a.reps
             cum_pts += a.pts
-
+            if a.pts == 1:
+                a.sweep_pts = [a.sweep_pts[0]*len(a.sweep_pts)]
             if kk == 0:
                 cum_sweep_pts = a.sweep_pts
                 cum_p0 = a.p0
@@ -159,10 +179,10 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     sorting_order=a.sweep_pts.argsort()
     a.sweep_pts.sort()
     a.p0=a.p0[sorting_order]
-    print a.p0
-    print a.u_p0
+    # print a.p0
+    # print a.u_p0
     a.u_p0=a.u_p0[sorting_order]
-
+    print 'plot1'
     ax=a.plot_results_vs_sweepparam(ret='ax',ax=None, 
                                     figsize=figsize, 
                                     ylim=(0.0,1.05)
@@ -175,11 +195,11 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
     ax.plot(x,y)
     print Tomo_msmt
     print DD_msmt
-    if Tomo_msmt:
+    if Tomo_msmt and save_data:
         savestr = timestamp + '_Tomo' + Tomo + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/MultiCarbon_Tomo_msmt/' + savestr
         np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
-    elif DD_msmt:
+    elif DD_msmt and save_data:
         savestr = timestamp + '_C' + str(Adressed_carbon) + '_N' + str(Number_of_pulses) + '_' + posneg_str + '_Pts' + str(cum_pts) + '_Reps' + str(reps_per_datapoint) + '.txt'    
         save_folder_str = 'D:/Dropbox/QEC LT/Decoupling memory/XYdata/' + savestr
         np.savetxt(save_folder_str, np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose(),header=savestr)
@@ -187,15 +207,29 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
         pass
 
 
-    p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
-             x0, decay_constant,exponent)
+    if fit_func == 'line':
+        fixed = []
+        p0, fitfunc, fitfunc_str = common.fit_line(offset, amplitude)
+    elif fit_func == 'exp':
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
+            x0, decay_constant,exponent)
+    elif fit_func == 'decaying cosine':
+        fixed = [0,2,6]
+        phase = 0.
+        # frequency = 
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
+            x0, decay_constant, exponent,frequency,phase)
 
+    
+    
+    # fixed=[]
          #plot the initial guess
     if show_guess:
         ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
-
+    ax.hlines([0.5],x[0],x[-1],linestyles='dotted',linewidth = 2)
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
+    # print 'zeropoint', (0.5-fit_result['params_dict']['a'])/(fit_result['params_dict']['b'])
     ## plot data and fit as function of total time
     if plot_fit == True:
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
@@ -209,6 +243,131 @@ def Carbon_T_mult(timestamp=None, older_than =None, posneg = True, folder_name =
 
     return fit_results
 
+def Carbon_T_averaging(timestamp=None, older_than =None, posneg = True, folder_name = 'Hahn', measurement_name = 'adwindata', ssro_calib_timestamp =None,
+            offset = 0.3, 
+            x0 = 0,  
+            amplitude = 0.7,  
+            decay_constant = 10, 
+            exponent = 1, 
+            partstr = 'part', plot_fit = True, do_print = True, fixed = [2,4], show_guess = False):
+    ''' 
+    Inputs:
+    timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
+    measurement_name: list of measurement names
+    List of parameters (order important for 'fixed') 
+    offset, amplitude, decay_constant,exponent,frequency ,phase 
+    '''
+    figsize=(6,4.7)
+
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        timestamp, folder = toolbox.latest_data(folder_name, older_than=older_than, return_timestamp=True)
+
+    print 'Timestamp', timestamp
+    print 'Folder', folder
+
+    numberstart = folder.rfind('reppart') + 7
+    numberofparts = 12
+    basis_str_pos = folder[folder.rfind('\\')+7:numberstart]
+        
+  
+
+        # basis_str_pos , basis_str_neg = basis_str_neg , basis_str_pos
+
+
+
+    if ssro_calib_timestamp == None: 
+        ssro_calib_folder = toolbox.latest_data('SSRO')
+    else:
+        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
+        print ssro_calib_folder
+
+    cum_pts = 0
+    print numberofparts
+    
+    for kk in range(numberofparts):
+        if len(str(kk+1)) == 2:
+            strprt = str(kk+1)
+        else:
+            strprt = str(kk+1) + '_' 
+        folder = toolbox.latest_data(basis_str_pos+strprt, older_than = older_than)
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name='adwindata')
+        a.get_electron_ROC(ssro_calib_folder)
+        reps_per_datapoint = a.reps
+        cum_pts += a.pts
+
+        if kk == 0:
+            # cum_sweep_pts = a.sweep_pts
+            cum_p0 = np.zeros((1,len(a.sweep_pts)))
+            cum_u_p0 = np.zeros((1, len(a.sweep_pts)))
+    
+        # cum_sweep_pts = np.concatenate((cum_sweep_pts, a.sweep_pts))
+        # print a.p0
+        # print cum_p0[0,:]
+        # print a.u_p0
+        cum_p0[0,:] += a.p0.reshape(-1)
+        cum_u_p0[0,:] += np.power(a.u_p0.reshape(-1),2)
+    
+    # sumvar = np.zeros((1,len(a.p0)))
+    # for ii in range(numberofparts):
+    #     sumvar += np.power(cum_p0[ii,:],2)  
+    TEMP = np.sqrt(cum_u_p0)/numberofparts
+    a.u_p0 = TEMP.transpose()
+    # np.sqrt(a.u_p0**2+b.u_p0**2)/2
+    a.pts   = cum_pts
+    # a.sweep_pts = cum_sweep_pts
+    TEMP = cum_p0 / numberofparts
+    a.p0 = TEMP.transpose()
+    # a.u_p0  = cum_u_p0
+
+
+    # sorting_order=a.sweep_pts.argsort()
+    # a.sweep_pts.sort()
+    # a.p0=a.p0[sorting_order]
+    # print a.p0
+    # print a.u_p0
+    # a.u_p0=a.u_p0[sorting_order]
+
+    ax=a.plot_results_vs_sweepparam(ret='ax',ax=None, 
+                                    figsize=figsize, 
+                                    ylim=(0.0,1.05)
+                                    )
+    fit_results = []
+    x = a.sweep_pts.reshape(-1)[:]
+    y = a.p0.reshape(-1)[:]
+    # print np.shape(a.sweep_pts[:]),np.shape(a.p0[:,0]),np.shape(a.u_p0[:])
+    # print np.vstack((a.sweep_pts[:],a.p0[:,0],a.u_p0[:,0])).transpose()
+    ax.plot(x,y)
+
+
+    p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
+             x0, decay_constant,exponent)
+
+    # p0, fitfunc, fitfunc_str = common.fit_line(offset, amplitude)
+    # fixed=[]
+         #plot the initial guess
+    if show_guess:
+        ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+    ax.hlines([0.5],0,1.4,linestyles='dotted',linewidth = 2)
+    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+
+    # print 'zeropoint', (0.5-fit_result['params_dict']['a'])/(fit_result['params_dict']['b'])
+    ## plot data and fit as function of total time
+    if plot_fit == True:
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
+
+    fit_results.append(fit_result)
+
+    plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+    format='pdf')
+    plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+    format='png')
+
+    return fit_results
 
 def Carbon_T(timestamp=None, folder_name = 'Hahn', measurement_name = 'adwindata', ssro_calib_timestamp =None,
             offset = 0.5, 
@@ -244,7 +403,7 @@ def Carbon_T(timestamp=None, folder_name = 'Hahn', measurement_name = 'adwindata
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name='adwindata')
-
+    print a.normalized_ssro
     a.get_electron_ROC(ssro_calib_folder)
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
