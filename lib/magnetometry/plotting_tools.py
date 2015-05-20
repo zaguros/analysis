@@ -2,11 +2,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import time, os
+import h5py
 from matplotlib import rc, cm
 from analysis.lib.fitting import fit
 from analysis.lib.magnetometry import adaptive_magnetometry as magnetometry
 reload(magnetometry)
 load_data=False
+
 
 def analyze_saved_simulations (timestamp,error_bars=False, recalculate=True):
     mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
@@ -327,7 +329,7 @@ def compare_scaling_fits (data_dict_array, legend_array, title='', colours=None,
         f.savefig(savepath+'.svg')
     plt.show()
 
-def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_plot = False, include_overhead = None):
+def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_plot = False, include_overhead = None, y_lim=None):
     #compare_multiple_plots must be run before, to have a data_dict
 
     f1 = plt.figure(figsize=(8,6))
@@ -348,21 +350,23 @@ def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_pl
         else:
             c = colours[idx]
 
-        ax.plot (total_time*1e6, sensitivity, markers[idx], color=c, label = 'F='+str(F))
+        ax.plot (total_time*1e6, sensitivity, markers[idx], color=c, markersize=10, label = 'F='+str(F))
         ax.fill_between (total_time*1e6, sensitivity-err_sensitivity, sensitivity+err_sensitivity, color=c, alpha=0.2)
 
         idx = idx + 1
 
     if add_HL_plot:
-        kappa = np.arange(9)+1
+        kappa = np.arange(8)+2
         N = 2**(kappa+1)-1
         d_phi_HL = np.tan(np.pi/(N+2))
         sens_HL = ((d_phi_HL)**2)*N*tau0
         ax.plot (N*tau0*1e6, sens_HL, '--k', linewidth = 2, label = 'HL')
 
-
+    ax.set_ylim ([1e-10, 1e-5])
     ax.set_yscale ('log')
     ax.set_xscale ('log')
+    #if y_lim:
+
     for label in (ax.get_xticklabels() + ax.get_yticklabels()):
         label.set_fontsize(15)
 
@@ -370,7 +374,7 @@ def compare_scalings (data_dict, title, colours=None, do_save = False, add_HL_pl
     ax.set_ylabel ('sensitivity [VH*T]', fontsize=15)
     ax.set_title (title, fontsize=15)
     ax.legend(loc=3)
-    plt.axis('tight')
+    #plt.axis('tight')
     if do_save:
         fName = time.strftime ('%Y%m%d_%H%M%S')+'_plot_compare_scalings_'+title
         fo = r'M:/tnw/ns/qt/Diamond/Projects/Magnetometry with adaptive measurements/Data/analyzed data'
