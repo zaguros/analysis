@@ -109,6 +109,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     i = len(daydirs)-1
     while len(measdirs) == 0 and i >= 0:
         daydir = daydirs[i]
+        print search_dir, daydir
         all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
         all_measdirs.sort()
 

@@ -142,7 +142,7 @@ def combine_piezoscans_1D (timestamp_array):
 		i= i+1
 	plt.show()
 
-t_array, times = get_files (contains='laser', older_than = '20150422_215600', newer_than = '20150422_215138')
+#t_array, times = get_files (contains='laser', older_than = '20150422_215600', newer_than = '20150422_215138')
 
 #times = np.array(times)
 #times = times - min(times)
@@ -150,7 +150,7 @@ t_array, times = get_files (contains='laser', older_than = '20150422_215600', ne
 
 
 
-V, Y = load_data (timestamp = '215200')
+V, Y = load_data (timestamp = '112232')
 Vf, freq = load_calibration ()
 freq = freq-min(freq)
 
