@@ -26,14 +26,32 @@ def Carbon_gate_optimization_XY(measurement_name = ['adwindata'],
     ################################
     ### Measurements on Carbon 1 ###
     ################################
-    ''' data set: starts on 20141207_223728 ends on 20141208_040234'''
 
     # t_stamp =  '20141208_040429'    #older than time stamp to seperate different data sets
     # tau_list = ['4.988e-06', '4.99e-06', '4.992e-06', '4.994e-06', '4.996e-06', '4.998e-06', '5e-06', '5.002e-06', '5.004e-06' ]
     # tau_list = ['4.992e-06', '4.994e-06', '4.996e-06', '4.998e-06']
     # ssro_calib_folder = 'D:\\measuring\\data\\20141207\\223337_AdwinSSRO_SSROCalibration_111_1_sil18'
     # N_list = np.arange(32,51,2)
+
+
+    ### other resonances for C1??
     
+    t_stamp =  '20150329_120000'
+    ssro_calib_folder = 'D:\\measuring\\data\\20150329\\100452_AdwinSSRO_SSROCalibration_111_1_sil18'
+    
+
+    # tau0 = 7.22e-6
+    # tau_range = 8e-9
+    # tau_list = np.arange(tau0 - tau_range,tau0 + tau_range,2e-9)
+    # N_list   = np.arange(34,60,2)
+
+    
+    tau0 = 9.436e-6
+    tau_range = 8e-9
+    tau_list = np.arange(tau0 - tau_range,tau0 + tau_range,2e-9)
+    N_list   = np.arange(34,60,2)
+    
+
     ################################
     ### Measurements on Carbon 5 ###
     ################################
@@ -64,23 +82,24 @@ def Carbon_gate_optimization_XY(measurement_name = ['adwindata'],
     # ssro_calib_folder = 'D:\\measuring\\data\\20141210\\071632_AdwinSSRO_SSROCalibration_111_1_sil18'
     # N_list = np.arange(20,35,2)
 
-    t_stamp =  '20141216_043138'    #older than time stamp to seperate different data sets
-    tau_list = ['1.1296e-05',   '1.1298e-05',   '1.13e-05',
-         '1.1302e-05',   '1.1304e-05',   '1.1306e-05',
-         '1.1308e-05',   '1.131e-05',   '1.1312e-05',
-         '1.1314e-05',   '1.1316e-05',   '1.1318e-05',
-         '1.132e-05',   '1.1322e-05',   '1.1324e-05']
-    ssro_calib_folder = 'D:\\measuring\\data\\20141216\\040057_AdwinSSRO_SSROCalibration_111_1_sil18'
-    N_list = np.arange(24,39,2)
+    
 
-    t_stamp =  '20141217_065954'    #older than time stamp to seperate different data sets
-    tau_list = ['1.1288e-05', '1.129e-05', '1.1292e-05', '1.1294e-05',
-         '1.1296e-05',   '1.1298e-05',   '1.13e-05',
-         '1.1302e-05',   '1.1304e-05',   '1.1306e-05',
-         '1.1308e-05',   '1.131e-05',   '1.1312e-05',
-         '1.1314e-05',   '1.1316e-05']
-    ssro_calib_folder = 'D:\\measuring\\data\\20141216\\040057_AdwinSSRO_SSROCalibration_111_1_sil18'
-    N_list = np.arange(32,53,2)
+
+    # t_stamp =  '20150226_223255'    #older than time stamp to seperate different data sets
+    # ssro_calib_folder = 'D:\\measuring\\data\\20150225\\231447_AdwinSSRO_SSROCalibration_111_1_sil18'
+    # tau_list = np.arange(9.652e-6, 9.658e-6, 2e-9)
+    
+    # tau_list = np.r_[tau_list, np.arange(9.678e-6, 9.684e-6, 2e-9), np.arange(9.671e-6,9.6735e-6,0.5e-9)]
+    # N_list   = np.arange(9, 16, 1)
+
+    # t_stamp =  '20141217_065954'    #older than time stamp to seperate different data sets
+    # tau_list = ['1.1288e-05', '1.129e-05', '1.1292e-05', '1.1294e-05',
+    #      '1.1296e-05',   '1.1298e-05',   '1.13e-05',
+    #      '1.1302e-05',   '1.1304e-05',   '1.1306e-05',
+    #      '1.1308e-05',   '1.131e-05',   '1.1312e-05',
+    #      '1.1314e-05',   '1.1316e-05']
+    # ssro_calib_folder = 'D:\\measuring\\data\\20141216\\040057_AdwinSSRO_SSROCalibration_111_1_sil18'
+    # N_list = np.arange(32,53,2)
 
 
 
@@ -129,7 +148,72 @@ def Carbon_gate_optimization_XY(measurement_name = ['adwindata'],
 
 
 
+    ################################
+    ### Measurements on Carbon 3 ###
+    ################################
 
+    ###
+    ###Set 1
+    ###
+
+    # t_stamp =  '20150320_120000'    #older than time stamp to seperate different data sets
+    # ssro_calib_folder = 'D:\\measuring\\data\\20150320\\022926_AdwinSSRO_SSROCalibration_111_1_sil18'
+    # tau_list = np.arange(9.668e-6, 9.668e-6+16e-9, 2e-9)
+    # N_list   = np.arange(6, 16, 2)
+    
+    # tau_list = np.arange(11.944e-6-10e-9, 11.944e-6+10e-9, 2e-9)
+    # N_list   = np.arange(10,24, 2)
+
+    # tau_list = np.arange(13.082e-6-10e-9, 13.082e-6+10e-9, 2e-9)
+    # N_list   = np.arange(10, 24, 2)
+
+
+
+    ###
+    ### Set 2
+    ### --> FAILED!!!
+
+    # t_stamp =  '20150322_120000'
+    # ssro_calib_folder = 'D:\\measuring\\data\\20150320\\163938_AdwinSSRO_SSROCalibration_111_1_sil18'
+    
+    # tau_list = np.arange(9.668e-6-4e-9, 9.668e-6+16e-9, 2e-9)
+    # N_list   = np.arange(6, 18, 2)
+
+    # tau0=10.806
+    # tau_list = np.arange(tau0*1e-6-14e-9, tau0*1e-6+14e-9, 2e-9)
+    # N_list   = np.arange(6, 22, 2)
+
+
+    # tau0=15.362
+    # tau_list = np.arange(tau0*1e-6-14e-9, tau0*1e-6+14e-9, 2e-9)
+    # N_list   = np.arange(6, 22, 2)
+
+    # tau0=16.5
+    # tau_list = np.arange(tau0*1e-6-14e-9, tau0*1e-6+14e-9, 2e-9)
+    # N_list   = np.arange(6, 22, 2)
+
+
+    ###
+    ### Set 3
+    ###
+    # t_stamp =  '20150327_120000'    #older than time stamp to seperate different data sets
+    # ssro_calib_folder = 'D:\\measuring\\data\\20150327\\024343_AdwinSSRO_SSROCalibration_111_1_sil18'
+
+    # tau_list = np.arange(9.668e-6-4e-9, 9.668e-6+16e-9, 2e-9)
+    # N_list   = np.arange(6, 18, 2)
+
+    # tau0=15.362
+    # tau_list = np.arange(tau0*1e-6-14e-9, tau0*1e-6+14e-9, 2e-9)
+    # N_list   = np.arange(12, 24, 2)
+
+    # tau0=16.5
+    # tau_list = np.arange(tau0*1e-6-14e-9, tau0*1e-6+14e-9, 2e-9)
+    # N_list   = np.arange(12, 24, 2)
+
+
+#######################################################
+#### Evaluation                                    ####
+#######################################################
     for ii, tau in enumerate(tau_list):
 
         folder_list_positive=[]
@@ -161,10 +245,15 @@ def Carbon_gate_optimization_XY(measurement_name = ['adwindata'],
 
         for k in N_list:
             # print tau
-            # print k
-            folder_positive = toolbox.latest_data(contains = str(tau) + '_N'+ str(k) +'positive', older_than=t_stamp)
-            folder_negative = toolbox.latest_data(contains = str(tau) + '_N'+ str(k) +'negative', older_than=t_stamp)
-             
+            # print k 
+            
+            folder_positive = toolbox.latest_data(contains = 'positive_tau'+ str(tau) + '_N'+ str(k), older_than=t_stamp)
+            #print folder_positive
+            folder_negative = toolbox.latest_data(contains = 'negative_tau'+ str(tau) + '_N'+ str(k) , older_than=t_stamp)
+            #print folder_negative
+            ### The folders below can be used to analyze the results for carbon 3 (faulty folder naming fo these measurements)
+            # folder_negative = toolbox.latest_data(contains = '_tau'+ str(tau) + '_N'+ str(k)+'negative' , older_than=t_stamp)
+            # folder_positive = toolbox.latest_data(contains = '_tau'+ str(tau) + '_N'+ str(k)+'positive', older_than=t_stamp)
             folder_list_positive = folder_list_positive+[folder_positive]
             folder_list_negative = folder_list_negative+[folder_negative]
 
@@ -172,35 +261,31 @@ def Carbon_gate_optimization_XY(measurement_name = ['adwindata'],
         y_all_u = []
         for i,folder in enumerate(folder_list_positive):
                                    
-                # print folder_list_positive[i]     
-                # print folder_list_negative[i]           
-                
-                a = mbi.MBIAnalysis(folder_list_positive[i])
-                a.get_sweep_pts()
-                a.get_readout_results(name='adwindata')
-                a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
-                
-                b = mbi.MBIAnalysis(folder_list_negative[i])
-                b.get_sweep_pts()
-                b.get_readout_results(name='adwindata')
-                b.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
+            # print folder_list_positive[i]     
+            # print folder_list_negative[i]           
+            
+            a = mbi.MBIAnalysis(folder_list_positive[i])
+            a.get_sweep_pts()
+            a.get_readout_results(name='adwindata')
+            a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
+            
+            b = mbi.MBIAnalysis(folder_list_negative[i])
+            b.get_sweep_pts()
+            b.get_readout_results(name='adwindata')
+            b.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
 
+            a.p0 = 2*a.p0-1; a.u_p0 = 2*a.u_p0
+            b.p0 = 2*b.p0-1; b.u_p0 = 2*b.u_p0
 
-                a.p0 = 2*a.p0-1; a.u_p0 = 2*a.u_p0
-                b.p0 = 2*b.p0-1; b.u_p0 = 2*b.u_p0
+            a.p0 = (a.p0 - b.p0)/2
+            a.u_p0 = ((a.u_p0**2 + b.u_p0**2)**0.5)/2
 
-                a.p0 = (a.p0 - b.p0)/2
-                a.u_p0 = ((a.u_p0**2 + b.u_p0**2)**0.5)/2
-
-                a.u_p0 =   (1./(a.p0[0]**2 + a.p0[1]**2)*(
-                a.p0[0]**2 * a.u_p0[0]**2 + 
-                a.p0[1]**2 * a.u_p0[1]**2))**0.5
-                a.p0 = (a.p0[0]**2 + a.p0[1]**2)**0.5
-
-                 
-                y_all.append(a.p0[0])
-                y_all_u.append(a.u_p0[0])
-           
+            a.u_p0 =   (1./(a.p0[0]**2 + a.p0[1]**2) * (a.p0[0]**2 * a.u_p0[0]**2 + a.p0[1]**2 * a.u_p0[1]**2))**0.5
+            a.p0 = (a.p0[0]**2 + a.p0[1]**2)**0.5
+             
+            y_all.append(a.p0[0])
+            y_all_u.append(a.u_p0[0])
+       
         if ii == 0:
             fig = a.default_fig(figsize=(7.5,5))
             ax2 = a.default_ax(fig)
@@ -208,7 +293,7 @@ def Carbon_gate_optimization_XY(measurement_name = ['adwindata'],
             ax2.axhspan(0,1,fill=False,ls='dotted')
             ax2.set_ylim(0.4,1)
             ax2.set_xlim(N_list[0],N_list[-1]+1)
-            ax2.set_xlim(N_list[0]-8,N_list[-1]+1+8)
+            ax2.set_xlim(N_list[0]-2,N_list[-1]+1+2)
             colors = cm.rainbow(np.linspace(0, 1, len(tau_list)))
 
         # ax2.errorbar(N_list, y_all, y_all_u, 0*np.ones(len(y_all_u)), '.-', lw=1, color = colors[ii],
@@ -266,7 +351,7 @@ def Carbon_gate_optimization(timestamp2=None, measurement_name = ['adwindata'],
     ''' Function to analyze data for optimization of the number of pulses for a controlled C13 gate. 
         The timestamp given should be for the no_pulse measurement
     '''
-       
+
     ################################
     ### Measurements on Carbon 1 ###
     ################################
@@ -322,7 +407,7 @@ def Carbon_gate_optimization(timestamp2=None, measurement_name = ['adwindata'],
     '1.0052e-05', '1.0054e-05', '1.0056e-05', '1.0058e-05','1.006e-05']
     ssro_calib_folder = 'D:\\measuring\data\\20141203\\041410_AdwinSSRO_SSROCalibration_111_1_sil18'
     pulse_list =['x','-x','y','-y','no_pulse']    
-
+    
 
 
     for ii, tau in enumerate(tau_list):
@@ -444,8 +529,9 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
     folder_list_negative = []
 
     if carbon == 1:
-        tau_list = [4.994e-6,4.994e-6,4.994e-6,4.996e-6,4.996e-6,4.996e-6,4.998e-6,4.998e-6,4.998e-6]
-        N_list  = [32,34,36,32,34,36,34,36,38]
+        tau_list = [7.218e-6,4.994e-6,4.994e-6,4.996e-6,4.996e-6,
+                               4.996e-6,4.998e-6,4.998e-6,7.214e-6]
+        N_list  = [40,34,36,32,34,36,34,36,42]
         # tau_list = [4.998e-6,4.998e-6,5.000e-6]
         # N_list =[38,40,40]
     if carbon == 2:
@@ -461,29 +547,52 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
         tau_list =  [11.308e-6, 11.308e-6, 11.308e-6, 11.310e-6, 11.310e-6, 11.310e-6, 11.312e-6, 11.312e-6, 11.312e-6]
         N_list   = [44,46,48,46,48,50,46,48,50]
 
-
+        # tau_list =  [11.310e-6, 11.310e-6]
+        # N_list =  [48,50]
+        
+    if carbon == 3:
+        # tau_list = np.arange(9.668e-6-10e-9, 9.668e-6+10e-9, 2e-9)
+        # N_list=[]
+        # for i,t in enumerate(tau_list):
+        #     N_list.extend(np.arange(12, 24, 2))
+        tau_list =   [11.942e-6, 11.942e-6, 11.942e-6, 11.944e-6, 11.944e-6,
+                                             11.944, 11.946e-6, 11.946e-6,11.946e-6]
+                                            
+        N_list =  [12,14,16,12,14,16,12,14,16] 
 
 
     x_tick_labels = []
     for i in range(len(tau_list)):
-        x_tick_labels = x_tick_labels+ ['tau: '+str(tau_list[i]*1e6)+' us, N: '+str(N_list[i])]
-
+        if carbon == 3:
+            for j in range(len(N_list)):
+                x_tick_labels = x_tick_labels+ ['tau: '+str(tau_list[i]*1e6)+' us, N: '+str(N_list[j])]
+        else:
+            x_tick_labels = x_tick_labels+ ['tau: '+str(tau_list[i]*1e6)+' us, N: '+str(N_list[i])]
     # ssro_calib_folder = 'D:\\measuring\data\\20141203\\041410_AdwinSSRO_SSROCalibration_111_1_sil18'
-    for ii in range(len(tau_list)):
 
-        folder_positive = toolbox.latest_data(contains = 'Gate_calibration_Sil18_C'+str(carbon)+'_ii_'+ str(ii) +'_positive', older_than=older_than)
-        folder_negative = toolbox.latest_data(contains = 'Gate_calibration_Sil18_C'+str(carbon)+'_ii_'+ str(ii) +'_negative', older_than=older_than)
-         
+    for ii in range(len(tau_list)):
+        if carbon == 3:
+            for jj,Nj in enumerate(np.arange(12, 24, 2)):
+                folder_positive = toolbox.latest_data(contains = '_positive_tau'+str(tau_list[ii])+'_N'+str(Nj), older_than=older_than)
+                folder_negative = toolbox.latest_data(contains = '_negative_tau'+str(tau_list[ii])+'_N'+str(Nj), older_than=older_than)
+                
+                folder_list_positive = folder_list_positive+[folder_positive]
+                folder_list_negative = folder_list_negative+[folder_negative]
+        else:
+            folder_positive = toolbox.latest_data(contains = 'Gate_calibration_Sil18_C'+str(carbon)+'_ii_'+ str(ii) +'_positive', older_than=older_than)
+            folder_negative = toolbox.latest_data(contains = 'Gate_calibration_Sil18_C'+str(carbon)+'_ii_'+ str(ii) +'_negative', older_than=older_than)
+            folder_list_positive = folder_list_positive+[folder_positive]
+            folder_list_negative = folder_list_negative+[folder_negative]
         # folder_positive = toolbox.latest_data(contains = '_ii_'+ str(ii) +'_positive', older_than=older_than)
         # folder_negative = toolbox.latest_data(contains = '_ii_'+ str(ii) +'_negative', older_than=older_than)
          
 
-        folder_list_positive = folder_list_positive+[folder_positive]
-        folder_list_negative = folder_list_negative+[folder_negative]
+        
 
         y_all = []
         y_all_u = []
-        
+    print len(folder_list_positive)
+
     for i,folder in enumerate(folder_list_positive):
 
         a = mbi.MBIAnalysis(folder_list_positive[i])
@@ -507,26 +616,56 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
         a.p0[1]**2 * a.u_p0[1]**2))**0.5
         a.p0 = (a.p0[0]**2 + a.p0[1]**2)**0.5
 
-         
+
         y_all.append(a.p0[0])
         y_all_u.append(a.u_p0[0])
-           
 
-    fig = a.default_fig(figsize=(7.5,5))
-    ax2 = a.default_ax(fig)
-    start, end = ax2.get_xlim()
-    ax2.axhspan(0,1,fill=False,ls='dotted')
-    # ax2.set_ylim(0.4,1)
+    # print len(np.arange(12, 24, 2))
+    # print y_all
 
-    x_tick_labels = []
-    for i in range(len(tau_list)):
-        x_tick_labels = x_tick_labels+ ['tau: '+str(tau_list[i]*1e6)+' us, N: '+str(N_list[i])+ '\n height: ' + str(np.around(y_all[i],3))]
+    if carbon == 3:
+        fig = a.default_fig(figsize=(7.5,5))
+        ax2 = a.default_ax(fig)
+        ax2.axhspan(0,1,fill=False,ls='dotted')
+        ax2.set_ylim(0.4,1)
+        colors = cm.rainbow(np.linspace(0, 1, len(tau_list)))
 
-    ax2.bar(range(len(tau_list)), y_all, width=0.8,yerr = y_all_u)
-    ax2.set_xticks(np.arange(9) + 0.8/2)
-    ax2.set_xticklabels(x_tick_labels, rotation=90)
-    ax2.get_xaxis().set_tick_params(direction='in',pad = -120, labelcolor = 'white')
-    ax2.text(0.8,0.9,'max at '+ x_tick_labels[np.argmax(y_all)])
+        for i,t in enumerate(tau_list):
+            x = np.arange(12, 24, 2)
+            y = y_all[i*len(np.arange(12, 24, 2)):(i+1)*len(np.arange(12, 24, 2))]
+            y_u = y_all_u[i*len(np.arange(12, 24, 2)):(i+1)*len(np.arange(12, 24, 2))]
+            label = 'tau = ' +str(t) + '_min = ' + str(np.around(y[np.argmax(y)],3)) + ' +/- ' + str(np.around(y_u[np.argmax(y)],3)) + ' at N = ' + str(np.arange(12,24,2)[np.argmax(y)])
+            ax2.errorbar(x, y, yerr=y_u,fmt='o',label=label, color = colors[i])
+
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        # start, end = ax2.get_xlim()
+
+        # x_tick_labels = []
+        # for i in range(len(tau_list)):
+        #     x_tick_labels = x_tick_labels+ ['tau: '+str(tau_list[i]*1e6)+' us, N: '+str(N_list[i])+ '\n height: ' + str(np.around(y_all[i],3))]
+
+        # ax2.bar(range(len(tau_list)), y_all, width=0.8,yerr = y_all_u)
+        # ax2.set_xticks(np.arange(9) + 0.8/2)
+        # ax2.set_xticklabels(x_tick_labels, rotation=90)
+        # ax2.get_xaxis().set_tick_params(direction='in',pad = -120, labelcolor = 'white')
+        # ax2.text(0.8,0.9,'max at '+ x_tick_labels[np.argmax(y_all)])
+
+    else:
+        fig = a.default_fig(figsize=(7.5,5))
+        ax2 = a.default_ax(fig)
+        start, end = ax2.get_xlim()
+        ax2.axhspan(0,1,fill=False,ls='dotted')
+        # ax2.set_ylim(0.4,1)
+
+        x_tick_labels = []
+        for i in range(len(tau_list)):
+            x_tick_labels = x_tick_labels+ ['tau: '+str(tau_list[i]*1e6)+' us, N: '+str(N_list[i])+ '\n height: ' + str(np.around(y_all[i],3))]
+
+        ax2.bar(range(len(tau_list)), y_all, width=0.8,yerr = y_all_u)
+        ax2.set_xticks(np.arange(9) + 0.8/2)
+        ax2.set_xticklabels(x_tick_labels, rotation=90)
+        ax2.get_xaxis().set_tick_params(direction='in',pad = -120, labelcolor = 'white')
+        ax2.text(0.8,0.9,'max at '+ x_tick_labels[np.argmax(y_all)])
 
     plt.savefig(os.path.join(folder_list_positive[0], 'analyzed_result.pdf'),
     format='pdf')

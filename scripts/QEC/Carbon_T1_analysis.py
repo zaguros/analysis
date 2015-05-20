@@ -22,11 +22,12 @@ def Carbon_T1(timestamp=None, measurement_name = 'adwindata', ssro_calib_timesta
     List of parameters (order important for 'fixed') 
     offset, amplitude, decay_constant,exponent,frequency ,phase 
     '''
+    figsize=(6,4.7)
 
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('T1')
+        folder = toolbox.latest_data('Hahn')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -42,7 +43,16 @@ def Carbon_T1(timestamp=None, measurement_name = 'adwindata', ssro_calib_timesta
     a.get_sweep_pts()
     a.get_readout_results(name='adwindata')
     a.get_electron_ROC(ssro_calib_folder)
-    ax = a.plot_results_vs_sweepparam(ret='ax')
+    # print a.result_corrected
+    # print a.p0[:,0]
+    # print a.sweep_pts
+    # print a.labels
+    # print a.u_p0[:,0]
+    # print a.readouts
+    ax=a.plot_results_vs_sweepparam(ret='ax',ax=None, 
+                                    figsize=figsize, 
+                                    ylim=(0.0,1.0)
+                                    )
 
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
@@ -69,3 +79,4 @@ def Carbon_T1(timestamp=None, measurement_name = 'adwindata', ssro_calib_timesta
     format='png')
 
     return fit_results
+
