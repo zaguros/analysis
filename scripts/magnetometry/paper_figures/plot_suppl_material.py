@@ -81,15 +81,15 @@ def compare_protocols (protocol_array, N, G, fid, name = '', F_array=None, add_H
 		#	print 'Non adaptive!!'
 		#else:
 		#	ff = [0,1,2,3,4,5]
-		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name, F_array = F_array)
+		t_stamps = return_t_stamps (protocol = pr, N=N, G=G, fid=fid[j], name=name[j], F_array = F_array)
 		print pr, t_stamps
 		dict_gen= pt.generate_data_dict(timestamps=t_stamps)
 		dict_array.append(dict_gen)
-		pt.compare_scalings (data_dict = dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save=True, add_HL_plot = add_HL_plot, colours = plot_colors, y_lim=y_lim)
-		pt.compare_variance_with_overhead (data_dict=dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name, do_save = False, overhead = 300e-6, colours = plot_colors)
+		pt.compare_scalings (data_dict = dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name[j], do_save=True, add_HL_plot = add_HL_plot, colours = plot_colors, y_lim=y_lim)
+		pt.compare_variance_with_overhead (data_dict=dict_gen, title = pr+' (G='+str(G)+') -- fid0 = '+fid[j]+name[j], do_save = False, overhead = 300e-6, colours = plot_colors)
 
-	sens_dict = pt.compare_best_sensitivities (dict_array, title =  'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
-	pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name, legend_array = protocol_array, do_save=True, colours = plot_colors)
+	sens_dict = pt.compare_best_sensitivities (dict_array, title =  'G='+str(G)+' -- fid0 = '+fid[j]+name[j], legend_array = protocol_array, do_save=True, colours = plot_colors)
+	pt.compare_scaling_fits (dict_array, title = 'G='+str(G)+' -- fid0 = '+fid[j]+name[j], legend_array = protocol_array, do_save=True, colours = plot_colors)
 	return sens_dict
 
 def compare_room_temperature ():
@@ -129,8 +129,12 @@ def compare_room_temperature ():
 	plt.show()
 
 
-compare_room_temperature()
+#compare_room_temperature()
 #def plot_fig_S1 ():
+
+pr1 = 'nnAdptv'
+pr2 = 'swarmOpt'
+sens_dict = compare_protocols (protocol_array = [pr1, pr1], N=10, G=5, fid=['0.88', '0.88'], name=['_noT2_symmRO', '_noT2'])
 
 #pr1 = 'modCapp'
 #pr2 = 'nnAdptv'
