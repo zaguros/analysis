@@ -223,18 +223,37 @@ def fit_saturation_with_offset_linslope(g_a, g_b, g_A, g_xsat, *arg):
 
     return p0, fitfunc, fitfunc_str
 
-def fit_poly(indices, *arg):
+def fit_poly(*arg):
     fitfunc_str = 'sum_n ( a[n] * x**n )'
 
     idx = 0
     p0 = []
-    for i,a in enumerate(indices):
+    for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
+        idx = i
 
     def fitfunc(x):
         val = 0
-        for i in range(len(indices)):
+        for i in range(idx):
             val += p0[i]() * x**i
+        return val
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_poly_shifted(g_x0,*arg):
+    fitfunc_str = 'sum_n ( a[n] * (x-x0)**n )'
+
+    idx = 0
+    p0 = []
+    x0 = fit.Parameter(g_x0, 'x0')
+    p0.append(x0)   
+    for i,a in enumerate(arg):
+        p0.append(fit.Parameter(a, 'a%d'%i))
+        idx = i
+    def fitfunc(x):
+        val = 0
+        for i in range(idx):
+            val += p0[i+1]() * (x-x0())**i
         return val
 
     return p0, fitfunc, fitfunc_str

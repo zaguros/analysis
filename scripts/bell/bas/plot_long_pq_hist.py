@@ -1,12 +1,13 @@
 #folder=r'D:\measuring\data\After2014-11-19analysis\BS\20141120\132743_Bell_BS_full_Belllhfbt_day7_run2'
 #folder=r'D:\measuring\data\After2014-11-19analysis\BS\20141118'
-folder=r'O:\BellDataLt4'
+folder=r'D:\measuring\data\2015-04-21-lhfbt4\BS'
 
 if True:
-	fps=tb.get_all_msmt_filepaths(folder, pattern='full_Belllhfbt')
+	fps=tb.get_all_msmt_filepaths(folder, pattern='Fourth')
 	first_sts_all = np.empty((0,), dtype = np.uint64)
 
-	for fp in fps:
+	for i,fp in enumerate(fps):
+		print i,
 		try:
 			f=h5py.File(fp,'r')
 			open_size=250000
@@ -20,9 +21,9 @@ if True:
 			continue
 
 		syncs_per_rep = 251
-		time_per_sync = 15000#000
+		time_per_sync = 15000000
 		if len(sn)>100: 
-			fltr =(sn<252) & (sp==1) & ((ch==4))
+			fltr = (sp==0) & ((ch==0))
 			rep_indices=np.floor((sn-1)/syncs_per_rep)
 			sync_in_rep = np.mod(sn-1,syncs_per_rep)
 			reps = int(rep_indices[-1])
@@ -38,11 +39,11 @@ if True:
 			for i in range(noof_unique_rep_indeces):
 				rep_time_0s[first_event_indices[i]:first_event_indices[i+1]] =  tt_first_sync[i]
 
-			first_sts = tt[fltr] - rep_time_0s[fltr]
+			first_sts = tt[fltr] #- rep_time_0s[fltr]
 
 			first_sts_all = np.hstack((first_sts_all,first_sts)) 
 
 if True:
-	bins=np.linspace(0,260*15,20000)
+	bins=np.linspace(0,260*15,200000)
 	figure()
-	hist(first_sts_all/1e3, bins=bins,color='g', histtype='step')
+	hist(first_sts_all/1e6, bins=bins,color='g', histtype='step')
