@@ -6,6 +6,7 @@ from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 reload(common)
+reload(mbi)
 
 def exp_sin(timestamp=None, measurement_name = ['adwindata'],
             offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],

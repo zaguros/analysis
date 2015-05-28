@@ -11,10 +11,10 @@ from analysis.lib.tools import toolbox
 from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
 from analysis.lib.math import error
-
+reload(plot)
 # fit_startup = False
 
-timestamp ='20150128_184533'
+timestamp ='20150202_162810'
 guess_frq = 1/4000.
 guess_amp = 1
 guess_k = 0.
@@ -59,8 +59,22 @@ def fitfunc(x) :
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
 
-plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
+plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, color='0.25',add_txt=False,
         plot_data=False)
+
+
+ax.set_ylim([-0.05,1.05])
+ax.set_xlim([4.688e2,4.6925e2])
+plt.xticks(np.linspace(0,2000,5))
+plt.yticks(np.linspace(0, 1, 3))
+mpl.rcParams['axes.linewidth'] = 2
+ax.tick_params(axis='x', which='major', labelsize=15)
+ax.tick_params(axis='y', which='major', labelsize=15)
+ax.set_xlabel('Pulse Length (us)',fontsize =15)
+plt.tight_layout()
+ax.tick_params('both', length=4, width=2, which='major')
+ax.set_ylabel(r'$F(|0\rangle)$', fontsize=15)
+ax.set_title('')
 
 plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.pdf'),
         format='pdf')

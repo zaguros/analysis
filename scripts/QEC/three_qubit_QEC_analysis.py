@@ -6,7 +6,7 @@ from analysis.lib.m2.ssro import mbi
 from analysis.lib.QEC import ConditionalParity as CP
 from analysis.lib.fitting import fit, common, ramsey;reload(common); reload(fit)
 import matplotlib.cm as cm
-import matplotlib as mpl
+import matplotlib as mpl; reload(mpl)
 from pylab import *
 
 reload (CP)
@@ -632,6 +632,7 @@ def single_Qubit_QEC_create_data_dict_single_error_single_elRO(older_than = None
         len_k =2
     elif sweep_time == True:
         len_k = 4
+    print len_k
 
     if Qubit == 1:
         carbon = 'C1'
@@ -673,8 +674,10 @@ def single_Qubit_QEC_create_data_dict_single_error_single_elRO(older_than = None
             QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item]), axis=0)
         if len_k ==2 and run !=0:
             QEC_dict[item] = np.concatenate((k_dict['k_2'][item],k_dict['k_3'][item]), axis=0)            
-        elif len_k == 4:
+        elif len_k == 4 and run !=0:
             QEC_dict[item] = np.concatenate((k_dict['k_4'][item],k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item],k_dict['k_3'][item]), axis=0)
+        elif len_k == 4:
+            QEC_dict[item] = np.concatenate((k_dict['k_0'][item],k_dict['k_1'][item],k_dict['k_2'][item],k_dict['k_3'][item]), axis=0)
     return QEC_dict,folder
 
 ''' simple plotting QEC data without loading/saving '''
@@ -867,49 +870,6 @@ def QEC_plot_single_state_RO(older_than = None, no_error = '00',state = 'Z',RO =
 
 ### Fitfunctions
 
-# def fit_QEC(g_O, g_A, g_p):
-#     '''Fit function for QEC process fidelity data
-#     g_O -  Offset, given by the fidelity of the state that is insensitive to errors
-#     g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
-#     g_p -  Avegage probabililty to correct single qubit errors
-#     '''
-
-#     fitfunc_str = '''test'''
-
-#     O   = fit.Parameter(g_O , 'O')
-#     A   = fit.Parameter(g_A, 'A')
-#     p   = fit.Parameter(g_p, 'p')
-
-#     p0 = [O, A, p]
-
-#     def fitfunc(x):
-#         '''test'''
-#         return (O() + A()*(  1-3*x+3*x**2-2*x**3 + 3*(2*p()-1)*(x-3*x**2+2*x**3)))
-
-#     return p0, fitfunc, fitfunc_str
-
-# def fit_QEC_curve(x,y, return_errorbar=False):
-
-#         guess_O = 0
-#         guess_A = 0.5
-#         guess_p = 1
-#         p0, fitfunc, fitfunc_str = fit_QEC(guess_O, guess_A, guess_p)
-
-#         fit_result = fit.fit1d(x, y, fit_QEC,
-#                 guess_O, guess_A, guess_p,
-#                 fixed=[0],
-#                 do_print=True, ret=True)
-
-#         p02, fitfunc2, fitfunc_str2 = fit_QEC(guess_O, fit_result['params_dict']['A'], fit_result['params_dict']['p'])
-
-#         x_temp      = np.linspace(min(x),max(x),200)
-#         y_temp      =  fitfunc2(x_temp)
-
-#         if return_errorbar == False:
-#             return x_temp, y_temp,fit_result['params_dict']['p']
-#         else:
-#             return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
-
 def fit_QEC(g_A, g_pc,g_O):
     '''Fit function for QEC process fidelity data
     g_O -  Offset, given by the fidelity of the state that is insensitive to errors
@@ -933,8 +893,8 @@ def fit_QEC(g_A, g_pc,g_O):
 
 def fit_QEC_curve(x,y, return_errorbar=False,return_guess = False):
 
-    guess_A = 0.5
-    guess_pc = 1
+    guess_A = 0.85
+    guess_pc = 0.5
 
     p0, fitfunc, fitfunc_str = fit_QEC( guess_A, guess_pc,0)
 
@@ -955,24 +915,266 @@ def fit_QEC_curve(x,y, return_errorbar=False,return_guess = False):
         x_temp      = np.linspace(min(x),max(x),200)
         y_temp      =  fitfunc2(x_temp)
 
+        print 'A'
+        print fit_result['params_dict']['A']
         if return_errorbar == False:
             return x_temp, y_temp, fit_result['params_dict']['pc']
         else:
             return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
 
-def fit_QEC_process_curve(x,y, return_errorbar=False):
+def fit_QEC_process_curve(x,y, A = 0.5, pc = 1, O = 0.5, return_errorbar=False,return_guess = False):
+
+    guess_O = O
+    guess_A = A
+    guess_p = pc
+
+    p0, fitfunc, fitfunc_str = fit_QEC(guess_A, guess_p,guess_O)
+
+    if return_guess == True:
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc(x_temp) 
+        return x_temp, y_temp
+
+    else:
+        fit_result = fit.fit1d(x, y, fit_QEC,
+             guess_A, guess_p,guess_O,
+                fixed=[],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_QEC( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = fit_result['params_dict']['O'])
+
+        x_temp      = np.linspace(min(x),max(x),200)
+        y_temp      =  fitfunc2(x_temp)
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['pc']
+        elif return_errorbar == 'all':
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['params_dict']['A'],fit_result['params_dict']['O']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
+
+
+
+def fit_QEC_11(g_A, g_pc,g_O,F0=0.890,F1 = 0.988):
+    '''Fit function for QEC process fidelity data
+    g_O -  Offset, given by the fidelity of the state that is insensitive to errors
+    g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
+    g_p -  Avegage probabililty to correct single qubit errors
+    '''
+
+    fitfunc_str = '''A*[pc(1-6p**2+4p**3)+(1-pc)(1-2p)]'''
+
+    A   = fit.Parameter(g_A, 'A')
+    O = fit.Parameter(g_O,'O')
+    pc   = fit.Parameter(g_pc, 'pc')
+
+    p0 = [A, pc,O]
+
+    def fitfunc(p):
+        '''test'''
+        return (O()+A()*(pc()*(1-6*p**2+4*p**3)+(1-pc())*(1-2*p))*(F1**2-(3*F1**2-F0**2-2*F0*F1)*(p-p**2)))
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_QEC_process_curve_11(x,y, A=0.5,pc=1,O=0.5,return_errorbar=False,return_guess=False):
+
+    guess_O = O
+    guess_A = A
+    guess_p = pc
+    p0, fitfunc, fitfunc_str = fit_QEC_11(guess_A, guess_p,guess_O)
+
+    if return_guess == True:
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc(x_temp) 
+        return x_temp, y_temp
+
+    else:
+        fit_result = fit.fit1d(x, y, fit_QEC_11,
+             guess_A, guess_p,guess_O,
+                fixed=[],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_QEC_11( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = fit_result['params_dict']['O'])
+
+        x_temp      = np.linspace(min(x),max(x),200)
+        y_temp      =  fitfunc2(x_temp)
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['pc']
+        elif return_errorbar == 'all':
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['params_dict']['A'],fit_result['params_dict']['O']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
+
+def fit_QEC_curve_11(x,y, A=0.5,pc=1,O=0.5,return_errorbar=False,return_guess=False):
+
+    guess_O = O
+    guess_A = A
+    guess_p = pc
+    p0, fitfunc, fitfunc_str = fit_QEC_11(guess_A, guess_p,guess_O)
+
+    if return_guess == True:
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc(x_temp) 
+        return x_temp, y_temp
+
+    else:
+        fit_result = fit.fit1d(x, y, fit_QEC_11,
+             guess_A, guess_p,0,
+                fixed=[2],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_QEC_11( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = 0)
+
+        x_temp      = np.linspace(min(x),max(x),200)
+        y_temp      =  fitfunc2(x_temp)
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['pc']
+        elif return_errorbar == 'all':
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['params_dict']['A'],fit_result['params_dict']['O']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
+
+def fit_QEC_11_2_alt(g_A, g_pc,g_O,F0=0.890,F1 = 0.988):
+    '''Fit function for QEC process fidelity data
+    g_O -  Offset, given by the fidelity of the state that is insensitive to errors
+    g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
+    g_p -  Avegage probabililty to correct single qubit errors
+    '''
+
+    fitfunc_str = '''A*[pc(1-6p**2+4p**3)+(1-pc)(1-2p)]'''
+
+    A   = fit.Parameter(g_A, 'A')
+    O = fit.Parameter(g_O,'O')
+    pc   = fit.Parameter(g_pc, 'pc')
+
+    p0 = [A, pc,O]
+
+    def fitfunc(p):
+        '''test'''
+        p2 = 1/2.*(1-np.sqrt(1-2*p))
+        return (O()+A()*(pc()*(1-6*p**2+4*p**3)+(1-pc())*(1-2*p))*(F1**2-(3*F1**2-F0**2-2*F0*F1)*(p2-p2**2)))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_QEC_curve_11_2(x,y, A=0.5,pc=1,O=0.5,return_errorbar=False,return_guess=False):
+
+    guess_O = O
+    guess_A = A
+    guess_p = pc
+    p0, fitfunc, fitfunc_str = fit_QEC_11_2_alt(guess_A, guess_p,guess_O)
+
+    if return_guess == True:
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc(x_temp) 
+        return x_temp, y_temp
+
+    else:
+        fit_result = fit.fit1d(x, y, fit_QEC_11_2_alt,
+             guess_A, guess_p,0,
+                fixed=[2],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_QEC_11_2_alt( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = 0)
+
+        x_temp      = np.linspace(min(x),max(x),200)
+        y_temp      =  fitfunc2(x_temp)
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['pc']
+        elif return_errorbar == 'all':
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['params_dict']['A'],fit_result['params_dict']['O']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
+
+def fit_QEC_11_3_alt(g_A, g_pc,g_O,F0=0.890,F1 = 0.988):
+    '''Fit function for QEC process fidelity data
+    g_O -  Offset, given by the fidelity of the state that is insensitive to errors
+    g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
+    g_p -  Avegage probabililty to correct single qubit errors
+    '''
+
+    fitfunc_str = '''A*[pc(1-6p**2+4p**3)+(1-pc)(1-2p)]'''
+
+    A   = fit.Parameter(g_A, 'A')
+    O = fit.Parameter(g_O,'O')
+    pc   = fit.Parameter(g_pc, 'pc')
+
+    p0 = [A, pc,O]
+
+    def fitfunc(p):
+        '''test'''
+        p3 = 1/2.*(1-(1-2*p)**(1/3.))
+        return (O()+A()*(pc()*(1-6*p**2+4*p**3)+(1-pc())*(1-2*p))*(F1**2-(3*F1**2-F0**2-2*F0*F1)*(p3-p3**2))**2)
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_QEC_curve_11_3(x,y, A=0.5,pc=1,O=0.5,return_errorbar=False,return_guess=False):
+
+    guess_O = O
+    guess_A = A
+    guess_p = pc
+    p0, fitfunc, fitfunc_str = fit_QEC_11_3_alt(guess_A, guess_p,guess_O)
+
+    if return_guess == True:
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc(x_temp) 
+        return x_temp, y_temp
+
+    else:
+        fit_result = fit.fit1d(x, y, fit_QEC_11_3_alt,
+             guess_A, guess_p,0,
+                fixed=[2],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_QEC_11_3_alt( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = 0)
+
+        x_temp      = np.linspace(min(x),max(x),200)
+        y_temp      =  fitfunc2(x_temp)
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['pc']
+        elif return_errorbar == 'all':
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['params_dict']['A'],fit_result['params_dict']['O']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
+def fit_QEC_00(g_A, g_pc,g_O,F0=0.890,F1 = 0.988):
+    '''Fit function for QEC process fidelity data
+    g_O -  Offset, given by the fidelity of the state that is insensitive to errors
+    g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
+    g_p -  Avegage probabililty to correct single qubit errors
+    '''
+
+    fitfunc_str = '''A*[pc(1-6p**2+4p**3)+(1-pc)(1-2p)]'''
+
+    A   = fit.Parameter(g_A, 'A')
+    O = fit.Parameter(g_O,'O')
+    pc   = fit.Parameter(g_pc, 'pc')
+
+    p0 = [A, pc,O]
+
+    def fitfunc(p):
+        '''test'''
+        return (O()+A()*(pc()*(1-6*p**2+4*p**3)+(1-pc())*(1-2*p))*(F0**2-(3*F0**2-F1**2-2*F0*F1)*(p-p**2)))
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_QEC_process_curve_00(x,y, return_errorbar=False):
 
     guess_O = 0.5
     guess_A = 0.5
     guess_p = 1
-    p0, fitfunc, fitfunc_str = fit_QEC(guess_A, guess_p,guess_O)
+    p0, fitfunc, fitfunc_str = fit_QEC_00(guess_A, guess_p,guess_O)
 
-    fit_result = fit.fit1d(x, y, fit_QEC,
+    fit_result = fit.fit1d(x, y, fit_QEC_00,
          guess_A, guess_p,guess_O,
             fixed=[],
             do_print=True, ret=True)
 
-    p02, fitfunc2, fitfunc_str2 = fit_QEC( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = fit_result['params_dict']['O'])
+    p02, fitfunc2, fitfunc_str2 = fit_QEC_00( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = fit_result['params_dict']['O'])
 
     x_temp      = np.linspace(min(x),max(x),200)
     y_temp      =  fitfunc2(x_temp)
@@ -982,116 +1184,50 @@ def fit_QEC_process_curve(x,y, return_errorbar=False):
     else:
         return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
 
-# def fit_QEC_2_rounds(g_C, g_A, g_p):
-#     '''Fit function for QEC process fidelity data
-#     g_C -  Initial contrast
-#     g_A -  Extra uncorrected/introduced errors
-#     g_p -  Avegage probabililty to correct single qubit errors
-#     '''
-
-#     fitfunc_str = '''test'''
-
-#     C   = fit.Parameter(g_C , 'C')
-#     A   = fit.Parameter(g_A, 'A')
-#     p   = fit.Parameter(g_p, 'p')
-
-#     p0 = [C, A, p]
-
-#     def fitfunc(x):
-#         '''test'''
-
-#         # note p_n = 1/2.*(1-(1-2*p)^(1/n))
-#         return ( C()*(A()*(  1-3*(1/2.*(1-(1-2*x)**(1/2.)))+3*(1/2.*(1-(1-2*x)**(1/2.)))**2-2*(1/2.*(1-(1-2*x)**(1/2.)))**3
-#             + 3*(2*p()-1)*((1/2.*(1-(1-2*x)**(1/2.)))-3*(1/2.*(1-(1-2*x)**(1/2.)))**2+2*(1/2.*(1-(1-2*x)**(1/2.)))**3)))**2)
-
-#     return p0, fitfunc, fitfunc_str
-
-# def fit_QEC_2_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
-
-#     guess_C = 0.8
-#     guess_A = 1.
-#     guess_p = 1
-
-#     p0, fitfunc, fitfunc_str = fit_QEC_2_rounds(guess_C, guess_A, guess_p)
-
-#     fit_result = fit.fit1d(x, y, fit_QEC_2_rounds,
-#             guess_C, guess_A, guess_p,
-#             fixed=[1],
-#             do_print=True, ret=True)
-
-#     p02, fitfunc2, fitfunc_str2 = fit_QEC_2_rounds( fit_result['params_dict']['C'],guess_A, fit_result['params_dict']['p'])
-
-#     x_temp      = np.linspace(x[0],x[-1],200)
-#     y_temp      =  fitfunc2(x_temp)
-
-#     if plot_guess == True:
-#         y_temp      =  fitfunc(x_temp)
-
-#         return x_temp, y_temp
-#     else:
-#         if return_errorbar == False:
-#             return x_temp, y_temp,fit_result['params_dict']['p']
-#         else:
-#             return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
-
-
-def fit_QEC_2_rounds(g_A, g_P1, g_P2):
+def fit_QEC_01(g_A, g_pc,g_O,F0=0.890,F1 = 0.988):
     '''Fit function for QEC process fidelity data
-    g_C -  Initial contrast
-    g_A -  Extra uncorrected/introduced errors
+    g_O -  Offset, given by the fidelity of the state that is insensitive to errors
+    g_A -  Amplitude, g_iven by the fidelity of the states that are sensitive
     g_p -  Avegage probabililty to correct single qubit errors
     '''
 
-    fitfunc_str = '''test'''
+    fitfunc_str = '''A*[pc(1-6p**2+4p**3)+(1-pc)(1-2p)]'''
 
     A   = fit.Parameter(g_A, 'A')
-    P1   = fit.Parameter(g_P1, 'P1')
-    P2   = fit.Parameter(g_P2, 'P2')
+    O = fit.Parameter(g_O,'O')
+    pc   = fit.Parameter(g_pc, 'pc')
 
-    p0 = [A,P1,P2]
+    p0 = [A, pc,O]
 
     def fitfunc(p):
         '''test'''
-
-        pn = 1/2.*(1-(1-2*p)**(1/2.))
-        return (A()*(
-            P1()*P2()*(1-6*pn**2+4*pn**3)**2+
-            P1()*(1-P2())*(1-6*pn**2+4*pn**3)*(1-2*pn)+
-            (1-P1())*P2()*(1-6*p**2+4*p**3)
-            +(1-P1())*(1-P2())*(1-2*p)
-            ))
+        return (O()+A()*(pc()*(1-6*p**2+4*p**3)+(1-pc())*(1-2*p))*(F0*F1*(1-2*p+2*p**2)+(F0**2+F1**2)*(p-p**2)))
 
     return p0, fitfunc, fitfunc_str
 
-def fit_QEC_2_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
 
-    
-    guess_A = 0.8
-    guess_P1 = 2.7
-    guess_P2 =-0.7
+def fit_QEC_process_curve_01(x,y, return_errorbar=False):
 
-    p0, fitfunc, fitfunc_str = fit_QEC_2_rounds(guess_A, guess_P1, guess_P2)
+    guess_O = 0.5
+    guess_A = 0.5
+    guess_p = 1
+    p0, fitfunc, fitfunc_str = fit_QEC_01(guess_A, guess_p,guess_O)
 
-    x_temp      = np.linspace(x[0],x[-1],200)
+    fit_result = fit.fit1d(x, y, fit_QEC_01,
+         guess_A, guess_p,guess_O,
+            fixed=[],
+            do_print=True, ret=True)
 
-    if plot_guess == True:
-        y_temp      =  fitfunc(x_temp)
+    p02, fitfunc2, fitfunc_str2 = fit_QEC_01( fit_result['params_dict']['A'], fit_result['params_dict']['pc'],g_O = fit_result['params_dict']['O'])
 
-        return x_temp, y_temp
+    x_temp      = np.linspace(min(x),max(x),200)
+    y_temp      =  fitfunc2(x_temp)
+
+    if return_errorbar == False:
+        return x_temp, y_temp,fit_result['params_dict']['pc']
     else:
-        fit_result = fit.fit1d(x, y, fit_QEC_2_rounds,
-                guess_A, guess_P1, guess_P2,
-                fixed=[1],
-                do_print=True, ret=True)
+        return x_temp, y_temp,fit_result['params_dict']['pc'],fit_result['error_dict']['pc']
 
-        p02, fitfunc2, fitfunc_str2 = fit_QEC_2_rounds( fit_result['params_dict']['A'],guess_P1, fit_result['params_dict']['P2'])
-        # p02, fitfunc2, fitfunc_str2 = fit_QEC_2_rounds( fit_result['params_dict']['A'],fit_result['params_dict']['P1'], fit_result['params_dict']['P2'])
-        x_temp      = np.linspace(x[0],x[-1],200)
-        y_temp      =  fitfunc2(x_temp)        
-        if return_errorbar == False:
-            return x_temp, y_temp,fit_result['params_dict']['p']
-        else:
-            return x_temp, y_temp,guess_P1,fit_result['params_dict']['P2']
 
 def fit_QEC_2_rounds2(g_A, g_P, g_P2):
     '''Fit function for QEC process fidelity data
@@ -1112,15 +1248,19 @@ def fit_QEC_2_rounds2(g_A, g_P, g_P2):
         '''test'''
 
         p2 = 1/2.*(1-np.sqrt(1-2*p))
-        return (A()*(P()*P()*(1-6*p2**2+4*p2**3)**2+P()*(1-P())*(1-6*p2**2+4*p2**3)*(1-2*p2)+(1-P())*P()*(1-6*p**2+4*p**3)
-            +(1-P())*(1-P())*(1-2*p)))
+        # return (A()*(P()*P()*(1-6*p2**2+4*p2**3)**2+
+        #     P()*(1-P())*(1-6*p2**2+4*p2**3)*(1-2*p2)+
+        #     (1-P())*P()*(1-6*p**2+4*p**3)
+        #     +(1-P())*(1-P())*(1-2*p)))
+        return (A()*(P()*(1-6*p2**2+4*p2**3)**2+
+            (1-P())*(1-2*p)))
 
     return p0, fitfunc, fitfunc_str
 
 def fit_QEC_2_rounds_curve2(x,y, return_errorbar=False,plot_guess = False):
 
     
-    guess_A = 1.
+    guess_A = 0.7
     guess_P = 1
     guess_P2 = 1
 
@@ -1147,86 +1287,8 @@ def fit_QEC_2_rounds_curve2(x,y, return_errorbar=False,plot_guess = False):
         else:
             return x_temp, y_temp,fit_result['params_dict']['P'],fit_result['error_dict']['P']
 
-def temp_test_fit_2rounds():
-    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2,3])
 
-    y_tot2  = (y_Z2-y_mZ2)/2; y_err_tot2 = (y_err_Z2**2+y_err_mZ2**2)**0.5/2
-
-    x_fit2b, y_fit2b, fit_result2b,u_fit_result2b = fit_QEC_2_rounds_curve2(x2,y_tot2, return_errorbar=True)
-    x_fit2, y_fit2, fit_result2,u_fit_result2 = fit_QEC_2_rounds_curve(x2,y_tot2, return_errorbar=True)
-    # 
-    # x_fit2, y_fit2 = fit_QEC_2_rounds_curve(x2,y_tot2, return_errorbar=False,plot_guess = True)
-
-    ### Complete result (avaraged over Z and mZ)
-    fig4,ax = plt.subplots(figsize=(10,8))
-
-    ax.errorbar(x2, (0.5*y_tot2+0.5), yerr=0.5*y_err_tot2,color = 'b', marker = 'o', ms = 4, ls = '')#,label = '2 rounds, $p_c$='+str(int(fit_result2*1000)/1000.)+'('+str(int(u_fit_result2*1000))+')')
-    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = 'b',label = 'Fit separate correction proabilities')
-    ax.plot(x_fit2b, (0.5*y_fit2b+0.5), color = 'r',ls = '--',label = "Fit average correction probability")
-    ax.legend()
-
-    save_folder = r'D:\measuring\data\QEC_data\figs'
-    try:
-        fig4.savefig(
-            os.path.join(save_folder,'understanding_fits_2rounds.pdf'))
-        fig4.savefig(
-            os.path.join(save_folder,'understanding_fits_2rounds.png'))
-    except:
-        print 'Figure has not been saved.'
-
-# def fit_QEC_3_rounds(g_C, g_A, g_p):
-#     '''Fit function for QEC process fidelity data
-#     g_C -  Initial contrast
-#     g_A -  Extra uncorrected/introduced errors
-#     g_p -  Avegage probabililty to correct single qubit errors
-#     '''
-
-#     fitfunc_str = '''test'''
-
-#     C   = fit.Parameter(g_C , 'C')
-#     A   = fit.Parameter(g_A, 'A')
-#     p   = fit.Parameter(g_p, 'p')
-
-#     p0 = [C, A, p]
-
-#     def fitfunc(x):
-#         '''test'''
-
-#         # note p_n = 1/2.*(1-(1-p)**(1/n))
-#         return ( C()*(A()*(  1-3*(1/2.*(1-(1-2*x)**(1/3.)))+3*(1/2.*(1-(1-2*x)**(1/3.)))**2-2*(1/2.*(1-(1-2*x)**(1/3.)))**3
-#             + 3*(2*p()-1)*((1/2.*(1-(1-2*x)**(1/3.)))-3*(1/2.*(1-(1-2*x)**(1/3.)))**2+2*(1/2.*(1-(1-2*x)**(1/3.)))**3)))**3)
-
-#     return p0, fitfunc, fitfunc_str
-
-# def fit_QEC_3_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
-
-#     guess_C = 0.8
-#     guess_A = 1.
-#     guess_p = 1
-
-#     p0, fitfunc, fitfunc_str = fit_QEC_3_rounds(guess_C, guess_A, guess_p)
-
-#     fit_result = fit.fit1d(x, y, fit_QEC_3_rounds,
-#             guess_C, guess_A, guess_p,
-#             fixed=[1],
-#             do_print=True, ret=True)
-
-#     p02, fitfunc2, fitfunc_str2 = fit_QEC_3_rounds( fit_result['params_dict']['C'],guess_A, fit_result['params_dict']['p'])
-
-#     x_temp      = np.linspace(x[0],x[-1],200)
-#     y_temp      =  fitfunc2(x_temp)
-
-#     if plot_guess == True:
-#         y_temp      =  fitfunc(x_temp)
-
-#         return x_temp, y_temp
-#     else:
-#         if return_errorbar == False:
-#             return x_temp, y_temp,fit_result['params_dict']['p']
-#         else:
-#             return x_temp, y_temp,fit_result['params_dict']['p'],fit_result['error_dict']['p']
-
-def fit_QEC_3_rounds(g_A,g_P1,g_P2,g_P3):
+def fit_QEC_2_rounds2_11(g_A, g_P, g_P2,F0=0.890,F1 = 0.988):
     '''Fit function for QEC process fidelity data
     g_C -  Initial contrast
     g_A -  Extra uncorrected/introduced errors
@@ -1236,57 +1298,49 @@ def fit_QEC_3_rounds(g_A,g_P1,g_P2,g_P3):
     fitfunc_str = '''test'''
 
     A   = fit.Parameter(g_A, 'A')
-    P1   = fit.Parameter(g_P1, 'P1')
-    P2   = fit.Parameter(g_P2, 'P2')
-    P3   = fit.Parameter(g_P3, 'P3')
+    P   = fit.Parameter(g_P, 'P')
+    # P2   = fit.Parameter(g_P2, 'P2')
 
-    p0 = [A,P1,P2,P3]
+    p0 = [A,P]
 
     def fitfunc(p):
         '''test'''
-        p3 = 1/2.*(1-(1-2*p)**(1/3.))
-        p2 = 1/2.*(1-(1-2*p3)**(2/3.))
-        return (A()*(P1()*P2()*P3()*(1-6*p3**2+4*p3**3)**3+
-                    P1()*P2()*(1-P3())*(1-6*p3**2+4*p3**3)**2*(1-2*p3)+
-                    P1()*(1-P2())*P3()*(1-6*p3**2+4*p3**3)*(1-6*p2**2+4*p2**3)+
-                     (1-P1())*P2()*P3()*(1-6*p2**2+4*p2**3)*(1-6*p3**2+4*p3**3)+
-                     P1()*(1-P2())*(1-P3())*(1-6*p3**2+4*p3**3)*(1-2*p2)+
-                     (1-P1())*P2()*(1-P3())*(1-6*p2**2+4*p2**3)*(1-2*p3)+
-                         (1-P1())*(1-P2())*P3()*(1-6*p**2+4*p**3)+
-                            (1-P1())*(1-P2())*(1-P3())*(1-2*p)))
+
+        p2 = 1/2.*(1-np.sqrt(1-2*p))
+        return (A()*(P()*(1-6*p2**2+4*p2**3)**2+
+           +(1-P())*(1-2*p))*(F1**2-(3*F1**2-F0**2-2*F0*F1)*(p2-p2**2)))
 
     return p0, fitfunc, fitfunc_str
 
-def fit_QEC_3_rounds_curve(x,y, return_errorbar=False,plot_guess = False):
+def fit_QEC_2_rounds_curve2_11(x,y, return_errorbar=False,plot_guess = False):
 
-    guess_A = 0.75
-    guess_P1 = 0.7
-    guess_P2 = 0.7
-    guess_P3 = 0.7
-
-  
-    x_temp      = np.linspace(x[0],x[-1],200)
     
-    p0, fitfunc, fitfunc_str = fit_QEC_3_rounds( guess_A, guess_P1, guess_P2, guess_P2)
+    guess_A = 0.7
+    guess_P = 1
+    guess_P2 = 1
+
+    p0, fitfunc, fitfunc_str = fit_QEC_2_rounds2_11(guess_A, guess_P, guess_P2)
+
+    x_temp      = np.linspace(x[0],x[-1],200)
 
     if plot_guess == True:
         y_temp      =  fitfunc(x_temp)
 
         return x_temp, y_temp
     else:
-        
-        fit_result = fit.fit1d(x, y, fit_QEC_3_rounds,
-                guess_A, guess_P1, guess_P2, guess_P2,
+        fit_result = fit.fit1d(x, y, fit_QEC_2_rounds2_11,
+                guess_A, guess_P, guess_P2,
                 fixed=[],
                 do_print=True, ret=True)
-        p02, fitfunc2, fitfunc_str2 = fit_QEC_3_rounds( fit_result['params_dict']['A'], fit_result['params_dict']['P1'], fit_result['params_dict']['P2'], fit_result['params_dict']['P3'])
 
-        y_temp      =  fitfunc2(x_temp)
+        p02, fitfunc2, fitfunc_str2 = fit_QEC_2_rounds2_11( fit_result['params_dict']['A'],fit_result['params_dict']['P'], guess_P2)
 
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc2(x_temp)        
         if return_errorbar == False:
-            return x_temp, y_temp,fit_result['params_dict']['P1']
+            return x_temp, y_temp,fit_result['params_dict']['p']
         else:
-            return x_temp, y_temp,fit_result['params_dict']['P1'],fit_result['error_dict']['P1']            
+            return x_temp, y_temp,fit_result['params_dict']['P'],fit_result['error_dict']['P']
 
 def fit_QEC_3_rounds2(g_A,g_P):
     '''Fit function for QEC process fidelity data
@@ -1307,15 +1361,18 @@ def fit_QEC_3_rounds2(g_A,g_P):
         '''test'''
         p3 = 1/2.*(1-(1-2*p)**(1/3.))
         p2 = 1/2.*(1-(1-2*p)**(2/3.))
-        return (A()*(P()*P()*P()*(1-6*p3**2+4*p3**3)**3+
-                    P()*P()*(1-P())*(1-6*p3**2+4*p3**3)**2*(1-2*p3)+
-                    P()*(1-P())*P()*(1-6*p3**2+4*p3**3)*(1-6*p2**2+4*p2**3)+
-                     (1-P())*P()*P()*(1-6*p2**2+4*p2**3)*(1-6*p3**2+4*p3**3)+
-                     P()*(1-P())*(1-P())*(1-6*p3**2+4*p3**3)*(1-2*p2)+
-                     (1-P())*P()*(1-P())*(1-6*p2**2+4*p2**3)*(1-2*p3)+
-                         (1-P())*(1-P())*P()*(1-6*p**2+4*p**3)+
-                            (1-P())*(1-P())*(1-P())*(1-2*p)))
+        # return (A()*(P()*P()*P()*(1-6*p3**2+4*p3**3)**3+
+        #             P()*P()*(1-P())*(1-6*p3**2+4*p3**3)**2*(1-2*p3)+
+        #             P()*(1-P())*P()*(1-6*p3**2+4*p3**3)*(1-6*p2**2+4*p2**3)+
+        #              (1-P())*P()*P()*(1-6*p2**2+4*p2**3)*(1-6*p3**2+4*p3**3)+
+        #              P()*(1-P())*(1-P())*(1-6*p3**2+4*p3**3)*(1-2*p2)+
+        #              (1-P())*P()*(1-P())*(1-6*p2**2+4*p2**3)*(1-2*p3)+
+        #                  (1-P())*(1-P())*P()*(1-6*p**2+4*p**3)+
+        #                     (1-P())*(1-P())*(1-P())*(1-2*p)))
 
+        return (A()*(P()*(1-6*p3**2+4*p3**3)**3+
+                    (1-P())*(1-2*p)))
+        
     return p0, fitfunc, fitfunc_str
 
 def fit_QEC_3_rounds_curve2(x,y, return_errorbar=False,plot_guess = False):
@@ -1347,31 +1404,163 @@ def fit_QEC_3_rounds_curve2(x,y, return_errorbar=False,plot_guess = False):
             return x_temp, y_temp,fit_result['params_dict']['P1']
         else:
             return x_temp, y_temp,fit_result['params_dict']['P'],fit_result['error_dict']['P']            
-def temp_test_fit_3rounds():
-    x3, y_Z3, y_err_Z3, y_mZ3, y_err_mZ3 =  QEC_3rounds_combined_runs(runs=[1,2])
-    y_tot3  = (y_Z3-y_mZ3)/2; y_err_tot3 = (y_err_Z3**2+y_err_mZ3**2)**0.5/2
 
-    x_fit3, y_fit3, fit_result3,u_fit_result3 = fit_QEC_3_rounds_curve(x3,y_tot3, return_errorbar=True)
-    # x_fit3, y_fit3 = fit_QEC_3_rounds_curve(x3,y_tot3, return_errorbar=False,plot_guess = True)
-    # 
-    # x_fit2, y_fit2 = fit_QEC_2_rounds_curve(x2,y_tot2, return_errorbar=False,plot_guess = True)
 
-    ### Complete result (avaraged over Z and mZ)
-    fig4,ax = plt.subplots(figsize=(10,8))
+def fit_QEC_3_rounds2_11(g_A,g_P,F0=0.890,F1 = 0.988):
+    '''Fit function for QEC process fidelity data
+    g_C -  Initial contrast
+    g_A -  Extra uncorrected/introduced errors
+    g_p -  Avegage probabililty to correct single qubit errors
+    '''
 
-    ax.errorbar(x3, (0.5*y_tot3+0.5), yerr=0.5*y_err_tot3,color = 'b', marker = 'o', ms = 4, ls = '')#,label = '3 rounds, $p_c$='+str(int(fit_result3*1000)/1000.)+'('+str(int(u_fit_result3*1000))+')')
-    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = 'b',label = 'Fit separate correction proabilities')
-    # ax.plot(x_fit3b, (0.5*y_fit3b+0.5), color = 'r',ls = '--',label = "Fit average correction probability")
-    ax.legend()
+    fitfunc_str = '''test'''
 
-    save_folder = r'D:\measuring\data\QEC_data\figs'
-    try:
-        fig4.savefig(
-            os.path.join(save_folder,'understanding_fits_3rounds.pdf'))
-        fig4.savefig(
-            os.path.join(save_folder,'understanding_fits_3rounds.png'))
-    except:
-        print 'Figure has not been saved.'
+    A   = fit.Parameter(g_A, 'A')
+    P   = fit.Parameter(g_P, 'P')
+
+
+    p0 = [A,P]
+
+    def fitfunc(p):
+        '''test'''
+        p3 = 1/2.*(1-(1-2*p)**(1/3.))
+        p2 = 1/2.*(1-(1-2*p)**(2/3.))
+        return (A()*(P()*(1-6*p3**2+4*p3**3)**3
+                    +(1-P())*(1-2*p))*(F1**2-(3*F1**2-F0**2-2*F0*F1)*(p3-p3**2))**2)
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_QEC_3_rounds_curve2_11(x,y, return_errorbar=False,plot_guess = False):
+
+    guess_A = 0.75
+    guess_P = 1
+
+
+  
+    x_temp      = np.linspace(x[0],x[-1],200)
+    
+    p0, fitfunc, fitfunc_str = fit_QEC_3_rounds2_11( guess_A, guess_P)
+
+    if plot_guess == True:
+        y_temp      =  fitfunc(x_temp)
+
+        return x_temp, y_temp
+    else:
+        
+        fit_result = fit.fit1d(x, y, fit_QEC_3_rounds2_11,
+                guess_A,  guess_P,
+                fixed=[],
+                do_print=True, ret=True)
+        p02, fitfunc2, fitfunc_str2 = fit_QEC_3_rounds2_11( fit_result['params_dict']['A'], fit_result['params_dict']['P'])
+
+        y_temp      =  fitfunc2(x_temp)
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['P1']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['P'],fit_result['error_dict']['P']                        
+
+def fit_no_error_detection(g_Pin):
+
+    '''Fit function for QEC error detection curve 'no error'
+    g_pin - guess for initial error on encoded state
+    '''
+
+    fitfunc_str = '''test'''
+
+    Pin   = fit.Parameter(g_Pin, 'Pin')
+
+
+    p0 = [Pin]
+
+    def fitfunc(p):
+        '''test'''
+
+        return 1 - 3 *(p + Pin() - 2 *p *Pin()) + 3* (p + Pin() - 2 *p *Pin())**2
+
+    return p0, fitfunc, fitfunc_str    
+
+
+def fit_error_detection(g_Pin):
+
+    '''Fit function for QEC error detection curve 'no error'
+    g_pin - guess for initial error on encoded state
+    '''
+
+    fitfunc_str = '''test'''
+
+    Pin   = fit.Parameter(g_Pin, 'Pin')
+
+
+    p0 = [Pin]
+
+    def fitfunc(p):
+        '''test'''
+
+        return (Pin() + p - 2*Pin()*p) - (Pin() + p - 2*Pin()*p)**2
+
+    return p0, fitfunc, fitfunc_str   
+
+
+def fit_no_error_detection_curve(x,y,pin = 0.127, return_errorbar=False,plot_guess = False):
+
+    
+    guess_Pin = pin
+
+
+    p0, fitfunc, fitfunc_str = fit_no_error_detection(guess_Pin)
+
+    x_temp      = np.linspace(x[0],x[-1],200)
+
+    if plot_guess == True:
+        y_temp      =  fitfunc(x_temp)
+        # print x_temp
+        # print y_temp
+        return x_temp, y_temp
+    else:
+        fit_result = fit.fit1d(x, y, fit_no_error_detection, guess_Pin,
+                fixed=[0],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_no_error_detection( fit_result['params_dict']['Pin'])
+
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc2(x_temp) 
+
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['Pin']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['Pin'],fit_result['error_dict']['Pin']
+
+def fit_error_detection_curve(x,y, pin = 0.127 ,return_errorbar=False,plot_guess = False):
+
+    
+    guess_Pin = pin
+
+
+    p0, fitfunc, fitfunc_str = fit_error_detection(guess_Pin)
+
+    x_temp      = np.linspace(x[0],x[-1],200)
+
+    if plot_guess == True:
+        y_temp      =  fitfunc(x_temp)
+
+        return x_temp, y_temp
+    else:
+        fit_result = fit.fit1d(x, y, fit_error_detection,
+                guess_Pin,
+                fixed=[],
+                do_print=True, ret=True)
+
+        p02, fitfunc2, fitfunc_str2 = fit_error_detection( fit_result['params_dict']['Pin'])
+
+        x_temp      = np.linspace(x[0],x[-1],200)
+        y_temp      =  fitfunc2(x_temp) 
+               
+        if return_errorbar == False:
+            return x_temp, y_temp,fit_result['params_dict']['Pin']
+        else:
+            return x_temp, y_temp,fit_result['params_dict']['Pin'],fit_result['error_dict']['Pin']
 
 def fit_timesweep_QEC_1round(g_A,g_T1,g_T2,g_T3,g_p1,g_p2,g_p3):
 
@@ -1474,7 +1663,8 @@ def fit_timesweep_single(x,y,a = 0, A = 0.4, x0 =0, T = 21,n = 2, return_errorba
         p02, fitfunc2, fitfunc_str2 = fit_general_exponential(a,
                         fit_result['params_dict']['A'], x0, fit_result['params_dict']['T'],fit_result['params_dict']['n'])
 
-        x_temp      = np.linspace(x[0],x[-1],301)
+        print (x[-1]-x[0])*1e3
+        x_temp      = np.linspace(x[0],x[-1],(x[-1]-x[0])*1e3)
         y_temp      =  fitfunc2(x_temp)
 
         if plot_guess == True:
@@ -2972,6 +3162,60 @@ def QEC_plot_Z_mZ_sweep_time(run = 1,no_error_list = [],add_encode = False, add_
     except:
         print 'Figure has not been saved.'
 
+def QEC_plot_Z_mZ_sweep_time_single_RO(run = 1,no_error_list =['11'],load_set = True):
+
+    folder  = r'D:\measuring\data\QEC_data\figs\timesweep'
+    parity_time = 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
+
+    color = ['r','g','b','r','g','b','k']
+    dataset_dict_full = {}
+    no_QEC_data_dict = {}
+    QEC_single_data_dict = {}
+
+    fig1, ax1 = plt.subplots()
+
+    for RO in [0,1,2,6]:
+        print RO
+        dataset_dict_full[RO] = {}
+        no_QEC_data_dict[RO] = {}
+        QEC_single_data_dict[RO] = {}
+        for state in ['Z','mZ']:
+                print RO
+                print state
+                dataset_dict_full[RO][state] = QEC_sweep_time_sum_error_syns(state = state,RO = RO,run_list = no_error_list)
+
+        # average Z and mZ data
+        dataset_dict_full[RO]['x'] = dataset_dict_full[RO]['Z']['x']
+        dataset_dict_full[RO]['y'] = 1/2.*(dataset_dict_full[RO]['Z']['y']-dataset_dict_full[RO]['mZ']['y'])
+        dataset_dict_full[RO]['y_no_corr'] = 1/2.*(dataset_dict_full[RO]['Z']['y_no_corr']-dataset_dict_full[RO]['mZ']['y_no_corr'])
+        dataset_dict_full[RO]['y_err']= 1/2.*(dataset_dict_full[RO]['Z']['y_err']**2+dataset_dict_full[RO]['mZ']['y_err']**2)**0.5
+
+
+        x = dataset_dict_full[RO]['x']+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
+
+        ax1.errorbar(x,dataset_dict_full[RO]['y_no_corr'],yerr=dataset_dict_full[RO]['y_err'],color = color[RO],ls ='-',marker = 'o', ms = 4, label = 'RO '+str(RO) )
+
+
+
+
+    ax1.hlines([0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+    # ax1.vlines([x_enc[4],x[7]],-0.1,1.1,color = '0.5')
+    # plt.axvspan(x_enc[4],x[7], facecolor='k', alpha=0.1)
+    ax1.set_ylim(-0.1,1.1)
+    ax1.set_xlim(-1e-3,35e-3)
+    ax1.set_xlabel('time (s)')
+    ax1.set_ylabel('Contrast')
+    lgd = ax1.legend()#loc = 2, bbox_to_anchor = (1,1))
+    
+    np.savetxt('timesweep.txt',(x,dataset_dict_full[0]['y_no_corr'],dataset_dict_full[1]['y_no_corr'],dataset_dict_full[2]['y_no_corr'],dataset_dict_full[6]['y_no_corr']
+                ,dataset_dict_full[0]['y_err'],dataset_dict_full[1]['y_err'],dataset_dict_full[2]['y_err'],dataset_dict_full[6]['y_err']))
+    try:
+        fig1.savefig(
+            os.path.join(folder,'QEC_sweep_time_single_RO'+'.png'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+        fig1.savefig(
+            os.path.join(folder,'QEC_sweep_time_single_RO'+'.pdf'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+    except:
+        print 'Figure has not been saved.'
 
 def QEC_plot_Z_mZ_sweep_time_compare_syndromes(no_error_list = ['00','01','10','11'],add_encode = False,encode_run = 0, add_single =False, plot_no_correct = True,add_toffoli = True,load_set = True):
 
@@ -3177,13 +3421,14 @@ def no_QEC_plot_single_state_RO(state = 'Z',RO = 0, load_set = False, older_than
 
 def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than = None):
     fig,ax = plt.subplots()
-    color = ['r','g','b']
+    color = ['r','g','b','k','k','k','k']
     QEC_data_dict = {}
     QEC_single_data_dict = {}
 
-    for  RO in [0,1,2]:
+    for  RO in [0,1,2,6]:
+        print RO
         QEC_data_dict[RO] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = RO, load_set = load_set,error_sign = 0)
-        QEC_single_data_dict[RO] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
+        # QEC_single_data_dict[RO] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
 
         folder  = r'D:\measuring\data\QEC_data\figs\Encoding'
 
@@ -3193,9 +3438,9 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
         y_err = QEC_data_dict[RO]['y_err']
 
 
-        x_single = QEC_single_data_dict[RO]['x']
-        y_single = QEC_single_data_dict[RO]['y']
-        y_single_err = QEC_single_data_dict[RO]['y_err']
+        # x_single = QEC_single_data_dict[RO]['x']
+        # y_single = QEC_single_data_dict[RO]['y']
+        # y_single_err = QEC_single_data_dict[RO]['y_err']
 
         if RO == 2:
             extra_time = 2*(4.996e-6*34 +11.312e-6*48) # 2*(13.616e-6*34)+116e-6
@@ -3204,17 +3449,17 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
         elif RO == 1:
             extra_time =  2*(4.996e-6*34 +13.616e-6*34)#2*(11.312e-6*48)+116e-6
 
-        x_single = x_single #+ np.ones(len(x_single))* extra_time
+        # x_single = x_single #+ np.ones(len(x_single))* extra_time
 
-        ax.errorbar(x,y,yerr=y_err,color = color[RO], label = 'Encoding, sweep time, Q' + str(RO+1) )
-        ax.errorbar(x_single,y_single,yerr=y_single_err,color = color[RO],ls = ':', label = 'Single Qubit, sweep time, Q' + str(RO+1) )
+        ax.errorbar(x,y,yerr=y_err,color = color[RO], label = 'Encoding, sweep time, RO ' + str(RO) )
+        # ax.errorbar(x_single,y_single,yerr=y_single_err,color = color[RO],ls = ':', label = 'Single Qubit, sweep time, Q' + str(RO+1) )
 
-    QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
+    # QEC_data_dict[6] =  no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,sweep_time = True,idle = False,state = state,RO = 6, load_set = load_set,error_sign = 0)
 
-    y_toff = 1/2.*(QEC_data_dict[0]['y']+QEC_data_dict[1]['y']+QEC_data_dict[2]['y']-QEC_data_dict[6]['y'])
-    y_toff_err = 1/2.*(QEC_data_dict[0]['y_err']**2+QEC_data_dict[1]['y_err']**2+QEC_data_dict[2]['y_err']**2+QEC_data_dict[6]['y_err']**2)**0.5
+    # y_toff = 1/2.*(QEC_data_dict[0]['y']+QEC_data_dict[1]['y']+QEC_data_dict[2]['y']-QEC_data_dict[6]['y'])
+    # y_toff_err = 1/2.*(QEC_data_dict[0]['y_err']**2+QEC_data_dict[1]['y_err']**2+QEC_data_dict[2]['y_err']**2+QEC_data_dict[6]['y_err']**2)**0.5
 
-    ax.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'Encoding, sweep time, toff' )
+    # ax.errorbar(x,y_toff,yerr=y_toff_err,color = 'k', label = 'Encoding, sweep time, toff' )
     ax.set_ylim(-.1,1.1)
     ax.set_xlim(-0.001,0.035)
     # ax.set_title('state_'+state+'_RO_'+str(RO)+'_noQEC_sweep_time')
@@ -3239,7 +3484,7 @@ def no_QEC_sweep_time_plot_single_state(state = 'Z',load_set = False, older_than
     except:
         print 'Figure has not been saved.'
 
-def no_QEC_sweep_time_plot_single_RO(state = 'Z',load_set = False, older_than = None):
+def no_QEC_sweep_time_plot_single_RO(load_set = False, older_than = None):
     fig, ax = plt.subplots()
     color = ['r','b','g','','','','k']
     QEC_data_dict = {}
@@ -3269,14 +3514,23 @@ def no_QEC_sweep_time_plot_single_RO(state = 'Z',load_set = False, older_than = 
     ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('Contrast')
-    fitfunc_dict = {}
-    fitfunc_dict = pickle.load( open( "ramseys.p", "rb" ) )
+    # fitfunc_dict = {}
+    # fitfunc_dict = pickle.load( open( "ramseys.p", "rb" ) )
 
-    ax.plot(x_temp,(y_temp['0']*y_temp['1']*y_temp['2'])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]), color = 'k', lw = 2, ls = ':', label = 'multiplied, not shifted')
-    print size(y_temp['0'][0:-17])
-    print size(y_temp['1'][17:])
-    print size(y_temp['2'][10:-7])
-    ax.plot(x_temp[0:-17],(y_temp['0'][0:-17]*y_temp['1'][17:]*y_temp['2'][10:-7])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]), color = 'k', lw = 2, ls = '--', label = 'multiplied, roughly shifted')
+    # ax.plot(x_temp,(y_temp['0']*y_temp['1']*y_temp['2'])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]), color = 'k', lw = 2, ls = ':', label = 'multiplied, not shifted')
+    # y_temp['0'] = y_temp['0'][0:-(400+1090)]
+    # y_temp['1'] = y_temp['1'][(400):(-1090)]
+    # y_temp['2'] = y_temp['2'][(400+1090):]
+    # x_temp = x_temp[0:-(400+1090)]
+    y_temp['0'] = y_temp['0'][(1090+980):-400]
+    y_temp['1'] = y_temp['1'][(400+980):-1090]
+    y_temp['2'] = y_temp['2'][(400+1090):-980]
+    x_temp = x_temp[0:-(400+1090+980)]
+    print size(y_temp['0'])
+    print size(x_temp)
+    
+    ax.plot(x_temp,(y_temp['0']*y_temp['1']*y_temp['2'])*y_temp[str(6)][0]/(y_temp['0'][0]*y_temp['1'][0]*y_temp['2'][0]),
+     color = 'k', lw = 2, ls = '--', label = 'multiplied, shifted')
 
     # x_temp, y_temp,T, T_err = fit_timesweep_single(x_temp,y_temp['0']*y_temp['1']*y_temp['2'],return_errorbar = True)
     # ax.plot(fitfunc_dict['x']*1e3,fitfunc_dict['y_decRamsey_C1_ms0'], color ='r')
@@ -3298,7 +3552,7 @@ def no_QEC_sweep_time_plot_single_RO(state = 'Z',load_set = False, older_than = 
 
     try:
         fig.savefig(
-            os.path.join(folder,'Compare_RO.png'))
+            os.path.join(folder,'Compare_RO_shifted_RO_at_end.png'))
     except:
         print 'Figure has not been saved.'
 
@@ -3335,7 +3589,7 @@ def single_Qubit_no_QEC_plot_single_state_RO(run_list = [0],state = 'Z',Qubit = 
 def single_Qubit_sweep_time_no_QEC_plot_single_state(state = 'Z', load_set = False, older_than = None):
     fig,ax = plt.subplots()
     color = ['r','g','b']
-    for Qubit in [1,2,3]:
+    for Qubit in [2]:#[1,2,3]:
 
         QEC_data_dict =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(older_than = older_than,state = state,sweep_time = True, error_sign = -1, Qubit = Qubit, load_set = load_set)
 
@@ -4350,60 +4604,37 @@ def QEC_plot_process_fids_sum_new_fits(append_no_QEC =True, syndrome_list = ['00
         except:
             print 'Figure has not been saved.'            
 
-def plot_prob_single_syndrome(syndrome = '11',run_list = []):
-    folder  = r'D:\measuring\data\QEC_data\figs\Probabilities'
-    if syndrome == '00' or syndrome == '01':
-        run_list = [1,2,3]
-    elif syndrome == '10':
-        run_list = [2]
-    elif syndrome == '11':
-        if run_list == []:
-            run_list = [3]
 
-    p_list = ['p00','p01','p10','p11']
-    p_dict = QEC_sum_probs(run_list = run_list ,no_error = syndrome)
 
-    fig,ax = plt.subplots()
-    color = ['c','k','m','b']
+# def plot_prob_timesweep_single_syndrome(syndrome = '11'):
+#     folder  = r'D:\measuring\data\QEC_data\figs\Probabilities'
 
-    for jj,p in enumerate(p_list):
-        ax.plot(p_dict['x'],p_dict[p],color[jj],label = p)
+#     p_list = ['p11','p01','p00','p10']
+#     p_dict = QEC_timesweep_sum_probs(no_error = syndrome)
 
-    ax.legend()
-    ax.set_xlim([-0.01,1.01])
-    ax.set_ylim([-0.01,1.01])
-    ax.set_xlabel('Error probability')
-    ax.set_ylabel('Measured outcome probability')    
+#     fig,ax = plt.subplots()
+#     color =  [c_green,c_orange,c_red,'r']
+#     label_list = ['no error', 'Qubit 1','Qubit 2', 'Qubit 3']
 
-    try:
-        fig.savefig(
-            os.path.join(folder,'probability_plot_'+syndrome+'.png'))
-    except:
-        print 'Figure has not been saved.'
+#     for jj,p in enumerate(p_list):
+#         ax.plot(p_dict['x'],p_dict[p],color = color[jj],label = label_list[jj])
 
-def plot_prob_timesweep_single_syndrome(syndrome = '00'):
-    folder  = r'D:\measuring\data\QEC_data\figs\Probabilities'
+#     ax.legend()
+#     ax.set_ylim(-0.01,1.01)
+#     ax.set_xlim(-1e-3,35e-3)
+#     print 'ok'
+#     ax.hlines([0.301401517586],x[0]-1,x[-1]+1,linestyles='dotted', color = c_green,lw = 0.5)
+#     ax.hlines([0.203400853559],x[0]-1,x[-1]+1,linestyles='dotted', color = c_red,lw = 0.5)
+#     ax.hlines([0.247598809228],x[0]-1,x[-1]+1,linestyles='dotted', color = c_orange,lw = 0.5)
+#     ax.hlines([0.247598819488],x[0]-1,x[-1]+1,linestyles='dotted', color = 'r',lw = 0.5)
+#     ax.set_xlabel('Time (s)')
+#     ax.set_ylabel('Measured outcome probability')    
 
-    p_list = ['p00','p01','p10','p11']
-    p_dict = QEC_timesweep_sum_probs(no_error = syndrome)
-
-    fig,ax = plt.subplots()
-    color = ['c','k','m','b']
-
-    for jj,p in enumerate(p_list):
-        ax.plot(p_dict['x'],p_dict[p],color[jj],label = p)
-
-    ax.legend()
-    ax.set_ylim(-0.01,1.01)
-    ax.set_xlim(-1e-3,35e-3)
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Measured outcome probability')    
-
-    try:
-        fig.savefig(
-            os.path.join(folder,'timesweep_probability_plot_'+syndrome+'.png'))
-    except:
-        print 'Figure has not been saved.' 
+#     try:
+#         fig.savefig(
+#             os.path.join(folder,'timesweep_probability_plot_'+syndrome+'.png'))
+#     except:
+#         print 'Figure has not been saved.' 
 
 
 
@@ -4473,6 +4704,7 @@ def plot_timesweep_prob_different_error():
             os.path.join(folder,'timesweep_error_probabilities.png'))
     except:
         print 'Figure has not been saved.'
+
 def plot_prob_fids_all():
     p_dict = {}
     p_list = ['p00','p01','p10','p11']
@@ -6706,13 +6938,361 @@ def QEC_multiple_rounds_plot_combined_curves(save_folder = r'D:\measuring\data\Q
     plt.show()
     # plt.close('all')
 
+#######################################
+''' Error probability curves fitted '''
+#######################################
+folder = r'D:\measuring\data\QEC_data\figs\final figures'
+
+def QEC_fit_error_probability_curves():
+
+    fig,ax = plt.subplots(figsize = (10,10))
+    syndrome_list = ['00','01','10','11']
+    p_dict = {}
+    for syndrome in syndrome_list:
+
+        if syndrome == '00' or syndrome == '01':
+            run_list = [1,2,3]
+        elif syndrome == '10':
+            run_list = [2]
+        elif syndrome == '11':
+            run_list = [3]
+
+        p_list = ['p00','p01','p10','p11']
+        p_dict[syndrome] = QEC_sum_probs(run_list = run_list ,no_error = syndrome)
+
+    p_dict['no error'] = 1/4.*(p_dict['00']['p00']+p_dict['01']['p01']+p_dict['10']['p10']+p_dict['11']['p11'])
+    p_dict['Q3'] = 1/4.*(p_dict['00']['p01']+p_dict['01']['p00']+p_dict['10']['p11']+p_dict['11']['p10'])  # Carbon 5
+    p_dict['Q1'] = 1/4.*(p_dict['00']['p10']+p_dict['01']['p11']+p_dict['10']['p00']+p_dict['11']['p01'])  # Carbon 2
+    p_dict['Q2'] = 1/4.*(p_dict['00']['p11']+p_dict['01']['p10']+p_dict['10']['p01']+p_dict['11']['p00'])  # Carbon 1
+
+
+    color = [c_orange,c_green,c_red,'r']
+    pin = [0.127,0.123,0.145,0.113]
+    for i,error in enumerate(['no error','Q1','Q2','Q3']):
+        if error == 'no error':
+            # x_fit,y_fit, pin, u_pin = fit_no_error_detection_curve(p_dict[syndrome]['x'],p_dict[error], return_errorbar=True,plot_guess = False)
+            x_fit,y_fit= fit_no_error_detection_curve(linspace(0,1,100),0.25*np.ones(100), return_errorbar=False,plot_guess = True)
+
+        else:
+            # x_fit,y_fit, pin, u_pin = fit_error_detection_curve(p_dict[syndrome]['x'],p_dict[error], return_errorbar=True,plot_guess = False)
+            x_fit,y_fit= fit_error_detection_curve(linspace(0,1,100),0.25*np.ones(100),pin = pin[i], return_errorbar=False,plot_guess = True)
+        ax.plot(p_dict[syndrome]['x'],p_dict[error],label = error, color = color[i], marker = 'o',markersize = 5,ls = '',markeredgecolor = color[i])
+
+        ax.plot(x_fit,y_fit,color = color[i])
+    lgd = ax.legend(loc = 9,frameon=False)
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+    plt.xlim([-0.01,1.01])
+    plt.xlabel('$p_e$',fontsize = 25)
+    plt.ylim([-0.01,1.01])
+    plt.xticks([0,0.5,1])
+    plt.yticks([0,0.5,1])
+    plt.ylabel('Normalized \n occurence',fontsize = 25)
+
+    plt.xticks(np.arange(0,1.1,0.5))
+    # plt.xticks(np.arange(0,1.1,0.1), minor = True)
+    plt.yticks(np.arange(0,1.1,0.5))
+    # plt.yticks(np.arange(0,1.1,0.1), minor = True)
+    plt.tick_params(axis='x', which='major', labelsize=25)
+    plt.tick_params(axis='y', which='major', labelsize=25)
+    plt.tick_params('both', length=6, width=1, which='major')
+    plt.tick_params('both', length=4, width=1, which='minor')
+
+def plot_prob_single_syndrome(syndrome = '11',run_list = [],add_simulation=True):
+    if syndrome == '00' or syndrome == '01':
+        run_list = [1,2,3]
+    elif syndrome == '10':
+        run_list = [2]
+    elif syndrome == '11':
+        if run_list == []:
+            run_list = [3]
+
+    if syndrome == '00':
+        p_list = ['p00','p10','p11','p01']
+
+    if syndrome == '11':
+        p_list = ['p11','p01','p00','p10']
+
+    if syndrome == '01':
+        p_list = ['p01','p11','p10','p00']
+
+    if syndrome == '10':
+        p_list = ['p10','p00','p01','p11']
+
+    p_dict = QEC_sum_probs(run_list = run_list ,no_error = syndrome)
+
+    if add_simulation == True:
+        pin_no_alt= 0.093 # 0 #
+        # pin_c1 =0.072 # 0 #
+        # pin_c2 = 0.093 # 0 #
+        # pin_c5 = 0.115 # 0 #
+
+        # pin_no =0.035# 0.093 # 0 #
+        # pin_c1 =0.035#0.072 # 0 #
+        # pin_c2 =0.035# 0.093 # 0 #
+        # pin_c5 =0.035# 0.115 # 0 #
+
+        # # Obtained from encoding Corrected for el RO and basis rotations
+        # pin_no =0.062# 0.093 # 0 #
+        # pin_c1 =0.0766#0.072 # 0 #
+        # pin_c2 =0.0483# 0.093 # 0 #
+        # pin_c5 =0.0614# 0.115 # 0 #
+
+        # # Obtained from encoding Corrected for el RO 
+        # pin_no =0.0776# 0.093 # 0 #
+        # pin_c1 =0.0917#0.072 # 0 #
+        # pin_c2 =0.0645# 0.093 # 0 #
+        # pin_c5 =0.0770# 0.115 # 0 #
+
+
+        # pin_no      =0.0856612#0.062# 0.093 # 0 #
+        # pin_no_alt  = 0.093
+        # pin_c1      =0.0650188#0.0766#0.072 # 0 #
+        # pin_c2      =0.0822674#0.0483# 0.093 # 0 #
+        # pin_c5      =0.11562#0.0614# 0.115 # 0 #
+
+
+        # obtained from corrected way 150428
+        pin_no = 0.0775644
+        pin_c1 = 0.0640236
+        pin_c2 = 0.0912455
+        pin_c5 = 0.077205
+
+        F1 = 0.988
+        F0 = 0.890
+
+        p = linspace(0,1,1000)
+
+        ptot_no = p + pin_no-2*p*pin_no
+        # ptot_no_alt = p + pin_no_alt-2*p*pin_no_alt
+        ptot_c1 = p + pin_c1-2*p*pin_c1
+        ptot_c2 = p + pin_c2-2*p*pin_c2
+        ptot_c5 = p + pin_c5-2*p*pin_c5
+
+        # p_no_error = 1-3*ptot_no+3*ptot_no**2
+
+        # p_c1       = ptot_c1-ptot_c1**2
+        # p_c2       = ptot_c2-ptot_c2**2
+        # p_c5       = ptot_c5-ptot_c5**2
+
+        #correct way to do this 150428
+        p_no_error = 1-ptot_c1-ptot_c2-ptot_c5+ptot_c1*ptot_c2+ptot_c1*ptot_c5+ptot_c2*ptot_c5
+        p_c1 = ptot_c1-ptot_c1*ptot_c2-ptot_c1*ptot_c5+ptot_c2*ptot_c5
+        p_c2 = ptot_c2-ptot_c2*ptot_c1-ptot_c2*ptot_c5+ptot_c1*ptot_c5
+        p_c5 = ptot_c5-ptot_c5*ptot_c1-ptot_c5*ptot_c2+ptot_c1*ptot_c2
+
+        #### For 11 assignment
+        if syndrome == '11':
+            P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+            # P_D_no_error_alt = p_no_error_alt*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+            P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
+            P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
+            P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
+
+        #### For 00 assignment
+        if syndrome == '00':
+            P_D_no_error = p_no_error*F0**2 + p_c1*(1-F1)**2 + (p_c2+p_c5)*F0*(1-F1)
+            # P_D_no_error_alt = p_no_error_alt*F0**2 + p_c1*(1-F1)**2 + (p_c2+p_c5)*F0*(1-F1)
+            P_D_c1 = p_no_error*(1-F0)**2 + p_c1*F1**2 + (p_c2+p_c5)*F1*(1-F0)
+            P_D_c2 = p_no_error*F0*(1-F0) + p_c1*(1-F1)*F1 + (p_c2)*F0*F1+ (p_c5)*(1-F0)*(1-F1)
+            P_D_c5 = p_no_error*F0*(1-F0) + p_c1*(1-F1)*F1 + (p_c5)*F0*F1+ (p_c2)*(1-F0)*(1-F1)
+
+        #### For 01 assignment
+        if syndrome == '01':
+            P_D_no_error = p_no_error*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
+            # P_D_no_error_alt = p_no_error_alt*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
+            P_D_c1 = p_no_error*(1-F0)*(1-F1)+ p_c1*F1*F0 + p_c2*F0*(1-F1)+ p_c5*F1*(1-F0)
+            P_D_c2 = p_no_error*F1*(1-F0) + p_c1*(1-F0)*F1 + (p_c2)*F1*F1+ (p_c5)*(1-F0)*(1-F1)
+            P_D_c5 = p_no_error*F0*(1-F1) + p_c1*(1-F1)*F0 + (p_c5)*F0*F0+ (p_c2)*(1-F0)*(1-F1)
+
+        #### For 10 assignment
+        if syndrome == '10':
+            P_D_no_error = p_no_error*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
+            # P_D_no_error_alt = p_no_error_alt*F0*F1 + p_c1*(1-F0)*(1-F1) +  p_c2*F1*(1-F0)+ p_c2*F0*(1-F1)
+            P_D_c1 = p_no_error*(1-F0)*(1-F1)+ p_c1*F1*F0 + p_c2*F0*(1-F1)+ p_c5*F1*(1-F0)
+            P_D_c2 = p_no_error*F0*(1-F1) + p_c1*(1-F1)*F0 + (p_c2)*F0*F0+ (p_c5)*(1-F0)*(1-F1)
+            P_D_c5 = p_no_error*F1*(1-F0) + p_c1*(1-F0)*F1 + (p_c5)*F1*F1+ (p_c2)*(1-F0)*(1-F1)
+        
+
+    fig,ax = plt.subplots(figsize = (5,5))
+    color = [c_green,c_orange,c_red,'r']
+    label = ['No error','Qubit 1','Qubit 2', 'Qubit 3']
+    if add_simulation == True:
+        plt.plot(p,P_D_no_error, color = color[0])
+        # plt.plot(p,P_D_no_error_alt, color = color[0],ls = ':')
+        plt.plot(p,P_D_c1, color = color[2])
+        plt.plot(p,P_D_c2, color = color[1])
+        plt.plot(p,P_D_c5, color = color[3])
+
+        for p_D in [P_D_no_error,P_D_c1,P_D_c2,P_D_c5]:
+            print p_D[len(p_D)/2.]
+
+    for i,p in enumerate(p_list):
+        ax.plot(p_dict['x'],p_dict[p],label = label[i], color = color[i], marker = 'o',
+            markersize = 5,ls = '',markeredgecolor = color[i])
+
+
+        # ax.plot(x_fit,y_fit,color = color[i])
+    lgd = ax.legend(loc = 9,frameon=False)
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+    plt.xlim([-0.01,1.01])
+    plt.xlabel('$p_e$',fontsize = 25)
+    plt.ylim([-0.0,1.0])
+    plt.xticks([0,0.5,1])
+    plt.yticks([0,0.5,1])
+    plt.ylabel('Occurence',fontsize = 25)
+
+    plt.xticks(np.arange(0,1.1,0.5))
+    # plt.xticks(np.arange(0,1.1,0.1), minor = True)
+    plt.yticks(np.arange(0,1.1,0.5))
+    # plt.yticks(np.arange(0,1.1,0.1), minor = True)
+    plt.tick_params(axis='x', which='major', labelsize=25)
+    plt.tick_params(axis='y', which='major', labelsize=25)
+    plt.tick_params('both', length=6, width=1, which='major')
+    plt.tick_params('both', length=4, width=1, which='minor')
+
+    if syndrome == '00': 
+        color = c_green
+    if syndrome == '01': 
+        color = c_blue
+    if syndrome == '10': 
+        color = c_red
+    if syndrome == '11': 
+        color = c_orange
+
+    # plt.setp(ax.spines.values(), color=color)
+    # plt.setp([ax.get_xticklines(), ax.get_yticklines()], color=color)
+
+    try:
+        fig.savefig(
+            os.path.join(folder,'Probability_plot_syn'+syndrome+'.pdf'))
+    except:
+        print 'Figure has not been saved.' 
+
+def QEC_compare_syndromes():
+    fig,ax = plt.subplots(figsize= (10,10))
+    mpl.rcParams['pdf.fonttype'] = 42
+    
+    color = [c_green, c_blue,c_red,c_orange]
+
+    for i, no_error in enumerate(['11']):#,'01','10','11']):
+        if no_error == '00':
+            run_list = [1,2,3]
+        elif no_error == '01':
+            run_list = [1,2,3]
+        elif no_error == '10':
+            run_list = [2]
+        elif no_error == '11':
+            run_list = [3]
+        process_dict = QEC_process_fids_sum_runs(run_list = run_list,no_error = no_error)
+
+
+        x = process_dict['x']
+
+        y = process_dict['dec_'+'avg'+'_y']
+        y_new = process_dict['dec_'+'avg'+'_y_new']
+        y_err = process_dict['dec_'+'avg'+'_y_err']
+        
+        if no_error == '11':
+            # x_fit1, y_fit1, p_c, p_c_err= fit_QEC_process_curve_11(x,y,return_errorbar = True)
+            # # x_fit1, y_fit1 = fit_QEC_process_curve_11(x,y,A=A,pc=p,O=O,return_guess=True)
+            # # print p, A,O
+            # ax.plot(x_fit1, y_fit1, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)
+            
+            x_fit, y_fit, p_c, p_c_err= fit_QEC_process_curve_11(x,y_new,return_errorbar = True)
+            ax.plot(x_fit, y_fit, color = color[i], lw=1, label =  'QEC, undo, no error: '+ no_error)
+            print 'CORRECTION PROBABILITY UNDO'+no_error
+            print p_c
+            print p_c_err
+            x_fit, y_fit, p_c, p_c_err= fit_QEC_process_curve_11(x,y,return_errorbar = True)
+
+            # x_fit, y_fit = fit_QEC_process_curve(x,y,A=A,pc=p,O=O,return_guess=True)
+            # print p, A,O
+            ax.plot(x_fit, y_fit, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)
+            # ax.plot(x_fit,y_fit1-y_fit)
+            # print y_fit1-y_fit
+        if no_error == '00':
+            # x_fit1, y_fit1, p_c, p_c_err = fit_QEC_process_curve_00(x,y,return_errorbar = True)
+            # ax.plot(x_fit1, y_fit1, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)
+            x_fit, y_fit, p_c, p_c_err= fit_QEC_process_curve_00(x,y_new,return_errorbar = True)
+            ax.plot(x_fit, y_fit, color = color[i], lw=1, label =  'QEC, undo, no error: '+ no_error)
+            print 'CORRECTION PROBABILITY UNDO'+no_error
+            print p_c
+            print p_c_err
+            x_fit, y_fit, p_c, p_c_err= fit_QEC_process_curve_00(x,y,return_errorbar = True)
+
+            # x_fit, y_fit = fit_QEC_process_curve(x,y,A=A,pc=p,O=O,return_guess=True)
+            # print p, A,O
+            ax.plot(x_fit, y_fit, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)
+            # ax.plot(x_fit,y_fit1-y_fit)
+        if no_error == '10' or no_error == '01':
+            # x_fit1, y_fit1, p_c, p_c_err = fit_QEC_process_curve_01(x,y,return_errorbar = True)
+            # ax.plot(x_fit1, y_fit1, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)
+            x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+            ax.plot(x_fit, y_fit, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)
+            # ax.plot(x_fit,y_fit1-y_fit)
+            
+
+        print 'CORRECTION PROBABILITY '+no_error
+        print p_c
+        print p_c_err
+
+        # ax.plot(x_fit, y_fit, color = color[i], lw=1, label =  'QEC, no error: '+ no_error)#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = color[i],markeredgecolor = color[i],ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+        # y = process_dict['dec_'+'avg'+'_y_new']
+        # y_err = process_dict['dec_'+'avg'+'_y_err']
+        # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        # ax.plot(x_fit, y_fit, color = color[i],ls = '-.', lw=1)#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        # (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = color[i],markeredgecolor = color[i], ls = '',marker = 'o', ms = 7,capsize = 6)
+        # for cap in caps:
+        #     cap.set_markeredgewidth(1)
+    
+
+    ax.set_ylim(-0,1)
+    ax.set_xlim(-0.01,1.01)
+
+    ax.set_xticks(np.arange(0,1.1,0.5))
+    ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
+    ax.tick_params('both', length=6, width=1, which='major')
+    ax.tick_params('both', length=4, width=1, which='minor')
+    ax.set_title('QEC process fidelities')
+    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
+    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
+    ax.set_xlabel('Error probability',fontsize=25)
+    ax.set_ylabel('Process fidelity',fontsize=25)
+
+    mpl.rcParams['axes.linewidth'] = 1
+
+    lgd = ax.legend(loc = 1,frameon = False)
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+    try:
+        fig.savefig(
+            os.path.join(folder,'Compare_syndromes.png'))
+        fig.savefig(
+            os.path.join(folder,'Compare_syndromes.pdf'))
+    except:
+        print 'Figure has not been saved.'
+
 ############################################
 ############################################
 ''' FIGURES THAT WE WANT TO PLOT FOR REAL'''
 ############################################
 ############################################
 
+
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
+
 
 c_green = (9/255.,232/255.,94/255.)
 c_grey = (64/255.,78/255.,77/255.)#(240/255.,242/255.,166/255.)
@@ -6745,11 +7325,27 @@ def QEC_plot_process_fids_final():
 
 
     fig,ax = plt.subplots(figsize = (10,10))
+    mpl.rcParams['pdf.fonttype'] = 42
+    y = single_process_dict['dec_'+'avg'+'_y']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+
+    y = no_process_dict['dec_'+'avg'+'_y']
+    y_err = no_process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_blue,ls = '-', lw=1, label =  'Encoded state')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
+    for cap in caps:
+        cap.set_markeredgewidth(1)
 
     y = process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_red, lw=1, label =  'QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.plot(x_fit, y_fit, color = c_red, lw=1, label =  'QEC, symmetrized read-out')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
@@ -6757,28 +7353,16 @@ def QEC_plot_process_fids_final():
     y = process_dict['dec_'+'avg'+'_y_new']
     y_err = process_dict['dec_'+'avg'+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1, label =  'No QEC, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1, label =  'No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
 
 
 
-    y = no_process_dict['dec_'+'avg'+'_y']
-    y_err = no_process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_blue,ls = '-', lw=1, label =  'Encoded state, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
-    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
-    for cap in caps:
-        cap.set_markeredgewidth(1)
 
-    y = single_process_dict['dec_'+'avg'+'_y']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
-    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
-    for cap in caps:
-        cap.set_markeredgewidth(1)
+
+
 
 
     ax.set_ylim(-0,1)
@@ -6791,28 +7375,27 @@ def QEC_plot_process_fids_final():
     ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
     ax.set_yticks(np.arange(0,1.1,0.5))
     ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
-    ax.tick_params(axis='x', which='major', labelsize=30)
-    ax.tick_params(axis='y', which='major', labelsize=30)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
     ax.tick_params('both', length=6, width=1, which='major')
     ax.tick_params('both', length=4, width=1, which='minor')
     # ax.set_title('QEC process fidelities')
-    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.set_xlabel('Error probability $p_e$',fontsize=30)
-    ax.set_ylabel('Process Fidelity',fontsize=30)
+    # ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
+    # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
+    ax.set_xlabel('Error probability',fontsize=25)
+    ax.set_ylabel('Process fidelity',fontsize=25)
 
     mpl.rcParams['axes.linewidth'] = 1.
 
     lgd = ax.legend(loc = 3,frameon=False)#loc = 2, bbox_to_anchor = (1,1))
     for label in lgd.get_texts():
-        label.set_fontsize(20)
+        label.set_fontsize(25)
 
     #############################
     ###### INSET ################
     #############################
 
     a = axes([.525, .525, .35, .35])
-
     syndrome_list = ['00','01','10','11']
     p_dict = {}
     for syndrome in syndrome_list:
@@ -6828,32 +7411,114 @@ def QEC_plot_process_fids_final():
         p_dict[syndrome] = QEC_sum_probs(run_list = run_list ,no_error = syndrome)
 
     p_dict['no error'] = 1/4.*(p_dict['00']['p00']+p_dict['01']['p01']+p_dict['10']['p10']+p_dict['11']['p11'])
-    p_dict['Q2'] = 1/4.*(p_dict['00']['p01']+p_dict['01']['p00']+p_dict['10']['p11']+p_dict['11']['p10'])
-    p_dict['Q3'] = 1/4.*(p_dict['00']['p10']+p_dict['01']['p11']+p_dict['10']['p00']+p_dict['11']['p01'])
-    p_dict['Q1'] = 1/4.*(p_dict['00']['p11']+p_dict['01']['p10']+p_dict['10']['p01']+p_dict['11']['p00'])
+    p_dict['Q3'] = 1/4.*(p_dict['00']['p01']+p_dict['01']['p00']+p_dict['10']['p11']+p_dict['11']['p10'])  # Carbon 5
+    p_dict['Q1'] = 1/4.*(p_dict['00']['p10']+p_dict['01']['p11']+p_dict['10']['p00']+p_dict['11']['p01'])  # Carbon 2
+    p_dict['Q2'] = 1/4.*(p_dict['00']['p11']+p_dict['01']['p10']+p_dict['10']['p01']+p_dict['11']['p00'])  # Carbon 1
 
     color = [c_green,c_orange,c_red,'r']
+    pin = [0.127,0.113,0.123,0.145]
+
+    # pin_no =0.0776# 0.093 # 0 #
+    # pin_c1 =0.0917#0.072 # 0 #
+    # pin_c2 =0.0645# 0.093 # 0 #
+    # pin_c5 =0.0770# 0.115 # 0 #
+
+    F = 0.939
+
+    # p = linspace(0,1,1000)
+
+    # ptot_no = p + pin_no-2*p*pin_no
+    # ptot_c1 = p + pin_c1-2*p*pin_c1
+    # ptot_c2 = p + pin_c2-2*p*pin_c2
+    # ptot_c5 = p + pin_c5-2*p*pin_c5
+
+    # p_no_error = 1-3*ptot_no+3*ptot_no**2
+    # p_c1       = ptot_c1-ptot_c1**2
+    # p_c2       = ptot_c2-ptot_c2**2
+    # p_c5       = ptot_c5-ptot_c5**2
+
+    # P_D_no_error = p_no_error*F**2 + p_c1*(1-F)**2 + (p_c2+p_c5)*F*(1-F)
+    # P_D_c1 = p_no_error*(1-F)**2 + p_c1*F**2 + (p_c2+p_c5)*F*(1-F)
+    # P_D_c2 = p_no_error*F*(1-F) + p_c1*(1-F)*F + (p_c2)*F*F+ (p_c5)*(1-F)*(1-F)
+    # P_D_c5 = p_no_error*F*(1-F) + p_c1*(1-F)*F + (p_c5)*F*F+ (p_c2)*(1-F)*(1-F)
+
+
+    # obtained from corrected way 150428
+    pin_no = 0.0775644
+    pin_c1 = 0.0640236
+    pin_c2 = 0.0912455
+    pin_c5 = 0.077205
+
+    F1 = 0.988
+    F0 = 0.890
+
+    p = linspace(0,1,1000)
+
+    ptot_no = p + pin_no-2*p*pin_no
+    # ptot_no_alt = p + pin_no_alt-2*p*pin_no_alt
+    ptot_c1 = p + pin_c1-2*p*pin_c1
+    ptot_c2 = p + pin_c2-2*p*pin_c2
+    ptot_c5 = p + pin_c5-2*p*pin_c5
+
+    # p_no_error = 1-3*ptot_no+3*ptot_no**2
+
+    # p_c1       = ptot_c1-ptot_c1**2
+    # p_c2       = ptot_c2-ptot_c2**2
+    # p_c5       = ptot_c5-ptot_c5**2
+
+    #correct way to do this 150428
+    p_no_error = 1-ptot_c1-ptot_c2-ptot_c5+ptot_c1*ptot_c2+ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c1 = ptot_c1-ptot_c1*ptot_c2-ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c2 = ptot_c2-ptot_c2*ptot_c1-ptot_c2*ptot_c5+ptot_c1*ptot_c5
+    p_c5 = ptot_c5-ptot_c5*ptot_c1-ptot_c5*ptot_c2+ptot_c1*ptot_c2
+
+    P_D_no_error = p_no_error*F**2 + p_c1*(1-F)**2 + (p_c2+p_c5)*F*(1-F)
+    P_D_c1 = p_no_error*(1-F)**2 + p_c1*F**2 + (p_c2+p_c5)*F*(1-F)
+    P_D_c2 = p_no_error*F*(1-F) + p_c1*(1-F)*F + (p_c2)*F*F+ (p_c5)*(1-F)*(1-F)
+    P_D_c5 = p_no_error*F*(1-F) + p_c1*(1-F)*F + (p_c5)*F*F+ (p_c2)*(1-F)*(1-F)
+
+    color = [c_green,c_orange,c_red,'r']
+    label = ['No error','Qubit 1','Qubit 2', 'Qubit 3']
+
+    plt.plot(p,P_D_no_error, color = color[0])
+    # plt.plot(p,P_D_no_error_alt, color = color[0],ls = ':')
+    plt.plot(p,P_D_c1, color = color[2])
+    plt.plot(p,P_D_c2, color = color[1])
+    plt.plot(p,P_D_c5, color = color[3])
+
     for i,error in enumerate(['no error','Q1','Q2','Q3']):
-        plot(p_dict[syndrome]['x'],p_dict[error],label = error, color = color[i], marker = 'o',markersize = 5,lw = 0.5,markeredgecolor = color[i])
+    #     if error == 'no error':
+    #         x_fit,y_fit= fit_no_error_detection_curve(linspace(0,1,100),0.25*np.ones(100), return_errorbar=False,plot_guess = True)
+    #     else:
+    #         x_fit,y_fit= fit_error_detection_curve(linspace(0,1,100),0.25*np.ones(100),pin = pin[i], return_errorbar=False,plot_guess = True)
+        
+        plot(p_dict[syndrome]['x'],p_dict[error],label = error, color = color[i], marker = 'o',markersize = 5,ls = '',markeredgecolor = color[i])
+        
     lgd = a.legend(loc = 9,frameon=False)
     for label in lgd.get_texts():
-        label.set_fontsize(18)
+        label.set_fontsize(25)
     
     plt.xlim([-0.01,1.01])
-    plt.xlabel('$p_e$',fontsize = 18)
-    plt.ylim([-0.01,1.01])
+    plt.xlabel('$p_e$',fontsize = 25)
+    plt.ylim([0,1])
     plt.xticks([0,0.5,1])
     plt.yticks([0,0.5,1])
-    plt.ylabel('Normalized occurence',fontsize = 18)
+    plt.ylabel('Normalized \n occurence',fontsize = 25)
 
     plt.xticks(np.arange(0,1.1,0.5))
     # plt.xticks(np.arange(0,1.1,0.1), minor = True)
     plt.yticks(np.arange(0,1.1,0.5))
     # plt.yticks(np.arange(0,1.1,0.1), minor = True)
-    plt.tick_params(axis='x', which='major', labelsize=18)
-    plt.tick_params(axis='y', which='major', labelsize=18)
+    plt.tick_params(axis='x', which='major', labelsize=25)
+    plt.tick_params(axis='y', which='major', labelsize=25)
     plt.tick_params('both', length=6, width=1, which='major')
     plt.tick_params('both', length=4, width=1, which='minor')
+
+    print p_dict['no error'][0]
+    print p_dict['Q1'][0]
+    print p_dict['Q2'][0]
+    print p_dict['Q3'][0]
+    print 1/3.*(p_dict['Q1'][0]+p_dict['Q2'][0]+p_dict['Q3'][0])
 
 
     try:
@@ -6866,6 +7531,7 @@ def QEC_plot_process_fids_final():
 
 def QEC_plot_process_fids_11_vs_idle_full():
     fig,ax = plt.subplots(figsize= (10,10))
+    mpl.rcParams['pdf.fonttype'] = 42
     process_dict = QEC_process_fids_sum_runs(run_list = [3],no_error = '11')
 
     x = process_dict['x']
@@ -6873,38 +7539,38 @@ def QEC_plot_process_fids_11_vs_idle_full():
 
     single_process_dict = single_Qubit_no_QEC_process_fids()
 
-
+    y_idle = process_dict_idle['dec_'+'avg'+'_y']
+    y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
+    x_fit_idle, y_fit_idle, p_c, p_c_err= fit_QEC_process_curve(x,y_idle,return_errorbar = True)    
+    ax.plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=2,label =  'Encoded state, idling')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    (_,caps,_)=ax.errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 7,capsize = 6)
+    for cap in caps:
+        cap.set_markeredgewidth(1)
 
     y = process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_red, lw=1, label =  'QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_red, lw=2,label =  'QEC, optimized read-out')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
     y = process_dict['dec_'+'avg'+'_y_new']
     y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1, label =  'No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=2,label =  'No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
     
-    y_idle = process_dict_idle['dec_'+'avg'+'_y']
-    y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
-    x_fit_idle, y_fit_idle, p_err = fit_QEC_process_curve(x,y_idle)    
-    ax.plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=1, label =  'Encoded state, idling')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
-    (_,caps,_)=ax.errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 7,capsize = 6)
-    for cap in caps:
-        cap.set_markeredgewidth(1)
 
-    y = single_process_dict['dec_'+'avg'+'_y']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
-    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
-    for cap in caps:
-        cap.set_markeredgewidth(1)
+
+    # y = single_process_dict['dec_'+'avg'+'_y']
+    # y_err = process_dict['dec_'+'avg'+'_y_err']
+    # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    # ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=2,label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    # (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
 
     ax.set_ylim(-0,1)
     ax.set_xlim(-0.01,1.01)
@@ -6913,30 +7579,30 @@ def QEC_plot_process_fids_11_vs_idle_full():
     ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
     ax.set_yticks(np.arange(0,1.1,0.5))
     ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
-    ax.tick_params(axis='x', which='major', labelsize=30)
-    ax.tick_params(axis='y', which='major', labelsize=30)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
     ax.tick_params('both', length=6, width=1, which='major')
     ax.tick_params('both', length=4, width=1, which='minor')
     # ax.set_title('QEC process fidelities')
-    ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.set_xlabel('Error probability $p_e$',fontsize=30)
-    ax.set_ylabel('Process Fidelity',fontsize=30)
+    # ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw 2 .5)
+    # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw 2 .5)
+    ax.set_xlabel('Error probability',fontsize=25)
+    ax.set_ylabel('Process fidelity',fontsize=25)
 
     mpl.rcParams['axes.linewidth'] = 1
 
     lgd = ax.legend(loc = 3,frameon = False)
     for label in lgd.get_texts():
-        label.set_fontsize(20)
+        label.set_fontsize(25)
 
-    rectangle = plt.Rectangle((0.08, 0.5), 0.19, 0.15,edgecolor = '0.6', fill = None, lw = 1)
+    rectangle = plt.Rectangle((0.08, 0.5), 0.19, 0.15,edgecolor = '0.6', fill = None, lw = 2 )
     plt.gca().add_patch(rectangle)
 
     #############################
     ###### INSET ################
     #############################
 
-    a = axes([.525, .525, .35, .35])
+    a = axes([.515, .520, .35, .35])
     process_dict = QEC_process_fids_sum_runs(run_list = [5,6,7],no_error = '11')
     
     x = process_dict['x']
@@ -6944,15 +7610,15 @@ def QEC_plot_process_fids_11_vs_idle_full():
 
     y = process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    plot(x_fit, y_fit, color = c_red, lw=0.5, label =  'QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+    plot(x_fit, y_fit, color = c_red, lw=1.5, label =  'QEC, $p_c$='+str(int(p_c*1000)/1000.)+'('+str(int(p_c_err*1000))+')')
     (_,caps,_)=errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 5,capsize = 5, elinewidth = 2)
     for cap in caps:
         cap.set_markeredgewidth(1)
     y_idle = process_dict_idle['dec_'+'avg'+'_y']
     y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
     x_fit_idle, y_fit_idle, p_err = fit_QEC_process_curve(x,y_idle)    
-    plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=0.5, label =  'Idle, $p_c$='+str(int(p_err*100)/100.)) 
+    plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=1.5, label =  'Idle, $p_c$='+str(int(p_err*100)/100.)) 
     (_,caps,_)=errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 5,capsize = 5, elinewidth = 2)
     for cap in caps:
         cap.set_markeredgewidth(1)
@@ -6961,24 +7627,24 @@ def QEC_plot_process_fids_11_vs_idle_full():
     #     label.set_fontsize(18)
     
     plt.xlim([0.08,0.27])
-    plt.xlabel('$p_e$',fontsize = 18)
+    # plt.xlabel('$p_e$',fontsize = 25)
     plt.ylim([0.5,0.65])
     plt.xticks([0.1,0.2,0.3])
     plt.yticks([0.5,0.6])
-    plt.ylabel('Process Fidelity',fontsize = 18)
+    # plt.ylabel('Process fidelity',fontsize = 25)
 
     # plt.xticks(np.arange(0,1.1,0.5))
     # plt.xticks(np.arange(0,1.1,0.1), minor = True)
     # plt.yticks(np.arange(0,1.1,0.5))
     # plt.yticks(np.arange(0,1.1,0.1), minor = True)
-    plt.tick_params(axis='x', which='major', labelsize=18)
-    plt.tick_params(axis='y', which='major', labelsize=18)
+    plt.tick_params(axis='x', which='major', labelsize=25)
+    plt.tick_params(axis='y', which='major', labelsize=25)
 
     try:
         fig.savefig(
-            os.path.join(folder,'11_vs_idle_full_curve_4.png'))
+            os.path.join(folder,'11_vs_idle_full_curve_2.png'))
         fig.savefig(
-            os.path.join(folder,'11_vs_idle_full_curve_4.pdf'))
+            os.path.join(folder,'11_vs_idle_full_curve_2.pdf'))
     except:
         print 'Figure has not been saved.'
 
@@ -7076,80 +7742,99 @@ def QEC_plot_sweep_time():
             QEC_single_data_dict[RO]['y'] = 1/2.*(QEC_single_data_dict[RO]['Z']['y']-QEC_single_data_dict[RO]['mZ']['y'])
             QEC_single_data_dict[RO]['y_err']= 1/2.*(QEC_single_data_dict[RO]['Z']['y_err']**2+QEC_single_data_dict[RO]['mZ']['y_err']**2)**0.5
 
-    x = dataset_dict_full[RO]['x']+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
-
-    x = x*1000.
-
-    # y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
-    # y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-    # (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
-    #             color = c_red,markeredgecolor = c_red, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'QEC')
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
-
-    # y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
-    # y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
-    # x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
-    # x = x*1000.
-    # (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
-    #             color = c_orange_2,markeredgecolor = c_orange_2, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Parity')
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
-
-    # y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
-    # y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
-    # x_enc = no_QEC_data_dict[0]['x']
-    # x_enc = x_enc*1000.
-    # x_temp, y_temp,T, T_err = fit_timesweep_single(x_enc,y_toff_encode,return_errorbar = True)
-    # ax1.plot(x_temp,1/2.*(1+y_temp),color = c_blue,ls = '-',lw = 1)
-    # (_,caps,_) = ax1.errorbar(x_enc[0:-1],1/2.*(y_toff_encode[0:-1]+1),yerr=1/2.*y_toff_encode_err[0:-1],
-    #             color = c_blue,markeredgecolor = c_blue, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Encoded state')
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
-    # print T
-    # print T_err
-
     # add best single qubit
     x_single = QEC_single_data_dict[1]['x']
     y_single = QEC_single_data_dict[1]['y']
     y_single_err = QEC_single_data_dict[1]['y_err']
     x_single = x_single*1000.
-    x_temp, y_temp,T, T_err = fit_timesweep_single(x_single,y_single,return_errorbar = True)
-    ax1.plot(x_temp,1/2.*(1+y_temp),color = c_green,ls = '-',lw = 1)
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_single[0:-4],y_single[0:-4],return_errorbar = True)
+    
     (_,caps,_) = ax1.errorbar(x_single[0:-4],1/2.*(y_single[0:-4]+1),yerr=1/2.*y_single_err[0:-4],
-                color = c_green,markeredgecolor = c_green, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Single qubit')
+                color = c_green,markeredgecolor = c_green, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Un-encoded qubit')
     for cap in caps:
         cap.set_markeredgewidth(1)
+    ax1.plot(x_temp,1/2.*(1+y_temp),color = c_green,ls = '-',lw = 1)
+
+    y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
+    y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
+    x_enc = no_QEC_data_dict[0]['x']
+    x_enc = x_enc*1000.
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_enc[0:-1],y_toff_encode[0:-1],return_errorbar = True)
+    
+    (_,caps,_) = ax1.errorbar(x_enc[0:-1],1/2.*(y_toff_encode[0:-1]+1),yerr=1/2.*y_toff_encode_err[0:-1],
+                color = c_blue,markeredgecolor = c_blue, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '1 round')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    ax1.plot(x_temp,1/2.*(1+y_temp),color = c_blue,ls = '-',lw = 1)
+
+    x = dataset_dict_full[RO]['x']+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
+
+    x = x*1000.
+
+    fit_data_QEC = loadtxt('QEC.txt')
+    fit_data_parity = loadtxt('parity.txt')
+
+    y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
+    y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
+                color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '2 rounds')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    ax1.plot(fit_data_QEC[:,0][6:55],(fit_data_QEC[:,1][6:55]+1)/2.,color = c_red, ls = '-', lw = 1)
+
+    y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
+    y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
+    x = x*1000.
+    (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
+                color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    ax1.plot(fit_data_parity[:,0][6:55],(fit_data_parity[:,1][6:55]+1)/2.,color = c_red, ls = '-.', lw = 1)
+
+
+
+    # print T
+    # print T_err
+
+
 
     print T
     print T_err
 
     ax1.set_xticks(np.arange(0,36,10))
-    ax1.set_yticks(np.arange(0.5,1.1,0.5))
+    ax1.set_yticks(np.arange(0.5,1.1,0.25))
 
-    ax1.tick_params(axis='x', which='major', labelsize=30)
-    ax1.tick_params(axis='y', which='major', labelsize=30)
+    ax1.tick_params(axis='x', which='major', labelsize=25)
+    ax1.tick_params(axis='y', which='major', labelsize=25)
 
     ax1.hlines([0.5],x[0]-10,x[-1]+10,linestyles='dotted',color = '0.5', lw = 0.5)
-    # ax1.vlines([x[1],x[7]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
-    # plt.axvspan(x[1],x[7], facecolor='k', alpha=0.05)
+    ax1.vlines([x[1],x[7]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+    plt.axvspan(x[1],x[7], facecolor='y', alpha=0.1)
     # plt.axvspan(-1,x[1], facecolor='k', alpha=0.05)
     # plt.axvspan(x[7],35, facecolor='k', alpha=0.05)
     ax1.set_ylim(0.48,1.0)
-    ax1.set_xlim(-0.3,30)
-    ax1.set_xlabel('Time (ms)',fontsize = 30)
-    ax1.set_ylabel('Average state fidelity',fontsize = 30)
-    lgd = ax1.legend(loc = (0.65,0.75),frameon = False)
+    ax1.set_xlim(-1,30)
+    ax1.set_xlabel('Time (ms)',fontsize = 25)
+    ax1.set_ylabel('Average state fidelity',fontsize = 25)
+
+    ax1.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    ax1.set_xticks(np.arange(0,31,2), minor = True)
+
+    ax1.tick_params('both', length=4, width=1, which='minor')
+    lgd = ax1.legend(loc = (0.60,0.65),frameon = False)
     for label in lgd.get_texts():
-        label.set_fontsize(20)
+        label.set_fontsize(25)
 
     fig1.tight_layout()
 
+    print x[1]
+    print x[7]
     try:
         fig1.savefig(
-            os.path.join(folder,'QEC_sweep_time_1.png'))
+            os.path.join(folder,'QEC_sweep_time.png'))
         fig1.savefig(
-            os.path.join(folder,'QEC_sweep_time_1.pdf'))
+            os.path.join(folder,'QEC_sweep_time.pdf'))
     except:
         print 'Figure has not been saved.'
 
@@ -7167,6 +7852,121 @@ def QEC_plot_sweep_time():
     # data['y_single'] = y_single
     # data['y_single_err'] = y_single_err
     # pickle.dump(data, open( "timesweep_data.p", "wb" ) )
+
+def plot_prob_timesweep_11():
+    syndrome = '11'
+    
+    parity_time = 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
+    p_list = ['p11','p01','p00','p10']
+    p_dict = QEC_timesweep_sum_probs(no_error = syndrome)
+
+    fig,ax = plt.subplots(figsize = (7,7))
+    color =  [c_green,c_orange,c_red,'r']
+    label_list = ['no error', 'Qubit 1','Qubit 2', 'Qubit 3']
+
+    x = (p_dict['x'][0:-3]+ np.ones(len(p_dict['x'][0:-3]))*parity_time)*1e3
+
+
+
+    pin_no      =0.0796758#0.0856612
+    # pin_no_alt  = 0.093
+    pin_c1      =0.0492344#0.0650188
+    pin_c2      =0.0803633#0.0822674
+    pin_c5      =0.110111#0.11562
+
+    pin_no      =0.0796758#0.0856612
+    # pin_no_alt  = 0.093
+    pin_c1      =0.0642991#0.0650188
+    pin_c2      =0.0827476#0.0822674
+    pin_c5      =0.11351#0.11562
+
+
+    F1 = 0.988
+    F0 = 0.890
+
+    t  = np.linspace(x[0],x[-1],1000)
+    
+    T21 = 9.6
+    T22 = 12.0
+    T25 = 18.2
+
+
+    p1h = 1/2.*(1-np.exp(-(0.5*t/T21)**2))
+    p2h = 1/2.*(1-np.exp(-(0.5*t/T22)**2))
+    p5h = 1/2.*(1-np.exp(-(0.5*t/T25)**2))
+
+    # pavg = (p1h+p2h+p5h)/3.
+
+    # ptot_no = pavg + pin_no-2*pavg*pin_no
+    # ptot_no_alt = pavg + pin_no_alt-2*pavg*pin_no_alt
+    ptot_c1 =p1h+ pin_c1-2*p1h*pin_c1
+    ptot_c2 =p2h+ pin_c2-2*p2h*pin_c2
+    ptot_c5 =p5h+ pin_c5-2*p5h*pin_c5
+
+    # p_no_error = 1-3*ptot_no+3*ptot_no**2
+    # p_no_error_alt = 1-3*ptot_no_alt+3*ptot_no_alt**2
+    # p_c1       = ptot_c1-ptot_c1**2
+    # p_c2       = ptot_c2-ptot_c2**2
+    # p_c5       = ptot_c5-ptot_c5**2
+
+    #correct way to do this 150428
+    p_no_error = 1-ptot_c1-ptot_c2-ptot_c5+ptot_c1*ptot_c2+ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c1 = ptot_c1-ptot_c1*ptot_c2-ptot_c1*ptot_c5+ptot_c2*ptot_c5
+    p_c2 = ptot_c2-ptot_c2*ptot_c1-ptot_c2*ptot_c5+ptot_c1*ptot_c5
+    p_c5 = ptot_c5-ptot_c5*ptot_c1-ptot_c5*ptot_c2+ptot_c1*ptot_c2
+
+    #### For 11 assignment
+    if syndrome == '11':
+        P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+        # P_D_no_error_alt = p_no_error_alt*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+        P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
+        P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
+        P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
+
+
+
+    for jj,p in enumerate(p_list):
+        ax.plot(x,p_dict[p][0:-3],color = color[jj],label = label_list[jj],
+            marker = 'o',ms = 5,markeredgecolor = color[jj],ls = '')
+        print label_list[jj]
+        print x[0]
+        print p_dict[p][0]
+    plt.plot(t,P_D_no_error, color = color[0])
+    # plt.plot(t,P_D_no_error_alt, color = color[0],ls = ':')
+    plt.plot(t,P_D_c1, color = color[2])
+    plt.plot(t,P_D_c2, color = color[1])
+    plt.plot(t,P_D_c5, color = color[3])
+
+    ax.set_xticks(np.arange(0,30,10))
+    ax.set_xticks(np.arange(0,30,5), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.25),minor = True)
+    ax.set_ylim(0,1.0)
+    ax.set_xlim(0,28)
+    ax.set_xlabel('Time (ms)',fontsize = 25)
+    ax.set_ylabel('Occurence',fontsize = 25)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
+    # ax.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    # ax.set_xticks(np.arange(0,29,2), minor = True)
+
+    ax.tick_params('both', length=4, width=1, which='minor')
+    lgd = ax.legend(loc = (0.60,0.65),frameon = False)
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+    fig.tight_layout()  
+
+    ax.hlines([0.301401466364],-1,29,linestyles='dotted', color = c_green)
+    ax.hlines([0.203400846453],-1,29,linestyles='dotted', color = c_red)
+    ax.hlines([0.247598833613],-1,29,linestyles='dotted', color = c_orange)
+    ax.hlines([0.247598857149],-1,29,linestyles='dotted', color = 'r')
+
+    try:
+        fig.savefig(
+            os.path.join(folder,'timesweep_probability_plot_'+syndrome+'.pdf'))
+    except:
+        print 'Figure has not been saved.' 
 
 def QEC_multiple_rounds():
     save_folder = folder
@@ -7221,27 +8021,41 @@ def QEC_multiple_rounds():
     x_fit1, y_fit1, fit_result1,u_fit_result1 = fit_QEC_curve(x1,y_tot1, return_errorbar=True)
     x_fit2, y_fit2, fit_result2,u_fit_result2 = fit_QEC_2_rounds_curve2(x2,y_tot2, return_errorbar=True)
     x_fit3, y_fit3, fit_result3,u_fit_result3 = fit_QEC_3_rounds_curve2(x3,y_tot3, return_errorbar=True)
- 
+    
+    x_fit1, y_fit1, fit_result1,u_fit_result1 = fit_QEC_curve(x1[0:7],y_tot1[0:7], return_errorbar=True)
+    x_fit2, y_fit2, fit_result2,u_fit_result2 = fit_QEC_2_rounds_curve2_11(x2,y_tot2, return_errorbar=True)
+    x_fit3, y_fit3, fit_result3,u_fit_result3 = fit_QEC_3_rounds_curve2_11(x3,y_tot3, return_errorbar=True)
+    
+
+    print '1 round'
+    print fit_result1,u_fit_result1
+    print '2 round'
+    print fit_result2,u_fit_result2
+    print '3 round'
+    print fit_result3,u_fit_result3
+
+    # x_fit1, y_fit1= fit_QEC_curve(x1,y_tot1, return_guess=True)
+
     fig4,ax = plt.subplots(figsize=(10,10))
 
 
     (_,caps,_)=ax.errorbar(x0, (0.5*y_tot0+0.5), yerr= 0.5*y_err_tot0, color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6) 
-    ax.plot(x_fit0, (0.5*y_fit0+0.5), color = c_green, lw = 1,label = '0 rounds, $p_c$='+str(round(fit_result0*100)/100.)+'('+str(int(round(u_fit_result0*100)))+')')
+    ax.plot(x_fit0, (0.5*y_fit0+0.5), color = c_green, lw = 1,label = 'Single qubit')#), $p_c$='+str(round(fit_result0*100)/100.)+'('+str(int(round(u_fit_result0*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
     (_,caps,_)=ax.errorbar(x1, (0.5*y_tot1+0.5), yerr= 0.5*y_err_tot1,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
-    ax.plot(x_fit1, (0.5*y_fit1+0.5), color = c_blue, lw = 1,label = '1 round, $p_c$='+str(round(fit_result1*100)/100.)+'('+str(int(round(u_fit_result1*100)))+')')
+    ax.plot(x_fit1, (0.5*y_fit1+0.5), color = c_blue, lw = 1,label = 'Round C')#), $p_c$='+str(round(fit_result1*100)/100.)+'('+str(int(round(u_fit_result1*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
     (_,caps,_)=ax.errorbar(x2, (0.5*y_tot2+0.5), yerr=0.5*y_err_tot2,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
-    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = c_red, lw = 1,label = '2 rounds, $p_c$='+str(round(fit_result2*100)/100.)+'('+str(int(round(u_fit_result2*100)))+')')
+    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = c_red, lw = 1,label = 'Round B + C')#), $p_c$='+str(round(fit_result2*100)/100.)+'('+str(int(round(u_fit_result2*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
     (_,caps,_)=ax.errorbar(x3, (0.5*y_tot3+0.5), yerr=0.5*y_err_tot3,color = c_orange_2,markeredgecolor = c_orange_2, ls = '',marker = 'o', ms = 7,capsize = 6)
-    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = c_orange_2, lw = 1,label = '3 rounds, $p_c$='+str(round(fit_result3*100)/100.)+'('+str(int(round(u_fit_result3*100)))+')')
+    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = c_orange_2, lw = 1,label = 'Round A + B + C')#), $p_c$='+str(round(fit_result3*100)/100.)+'('+str(int(round(u_fit_result3*100)))+')')
     for cap in caps:
         cap.set_markeredgewidth(1)
 
@@ -7256,15 +8070,15 @@ def QEC_multiple_rounds():
     ax.set_yticks(np.arange(0.5,1.01,0.25))
     # ax.set_yticks(np.arange(0.5,1.01,0.1), minor = True)
 
-    ax.tick_params(axis='x', which='major', labelsize=30)
-    ax.tick_params(axis='y', which='major', labelsize=30)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
     ax.tick_params('both', length=6, width=1, which='major')
     # ax.tick_params('both', length=4, width=1, which='minor')
     # ax.set_title('QEC process fidelities')
     ax.hlines([0.5,1],x0[0]-1,x0[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
     # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
-    ax.set_xlabel('Error probability $p_e$',fontsize=30)
-    ax.set_ylabel('Average state fidelity',fontsize=30)
+    ax.set_xlabel('Error probability $p_e$',fontsize=25)
+    ax.set_ylabel('Average state fidelity',fontsize=25)
 
     mpl.rcParams['axes.linewidth'] = 1.
 
@@ -7274,30 +8088,66 @@ def QEC_multiple_rounds():
     for label in lgd.get_texts():
         label.set_fontsize(20)
 
+    mpl.rcParams['pdf.fonttype'] = 42
 
 
     x, p_R1_11, p_R2_11 = QEC_3rounds_outcome_probability()
     a = axes([.62, .62, .3, .3])
 
-    plot(x, p_R1_11,label = 'No error round 1', color = c_red, marker = 'o',markersize = 5,lw = 0.5,markeredgecolor = c_red)
-    plot(x, p_R2_11,label = 'No error round 2', color = c_orange_2 , marker = 'o',markersize = 5,lw = 0.5,markeredgecolor = c_orange_2 )
+    pin_list      =[0.0924663, 0.0856549]
+    color = [c_red,c_orange_2]
+
+    F1 = 0.988
+    F0 = 0.890
+
+    p_plot = linspace(0,1,1000)
+    p = 1/2.*(1-(1-2*p_plot)**(1/3.))
+
+    for j,pin in enumerate(pin_list):
+        ptot = p + pin-2*p*pin
+
+
+        p_no_error = 1-3*ptot+3*ptot**2
+        p_c1       = ptot-ptot**2
+        p_c2       = ptot-ptot**2
+        p_c5       = ptot-ptot**2
+
+        P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+        # P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
+        # P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
+        # P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
+        plot(p_plot,P_D_no_error,color = color[j])
+
+
+    plot(x, p_R1_11,label = 'In round 1', color = c_red, marker = 'o',markersize = 5,ls = '',markeredgecolor = c_red)
+    plot(x, p_R2_11,label = 'In round 2', color = c_orange_2 , marker = 'o',markersize = 5,ls = '',markeredgecolor = c_orange_2 )
+    
+    print p_R1_11[0]
+    print p_R2_11[0]
+
     lgd = a.legend(loc = 9,frameon=False)
     for label in lgd.get_texts():
-        label.set_fontsize(18)
+        label.set_fontsize(25)
     
     plt.xlim([-0.02,0.52])
-    plt.xlabel('$p_e$',fontsize = 18)
-    plt.ylim([0.24,1.])
-    plt.ylabel('Normalized occurence',fontsize = 18)
+    plt.xlabel('$p_e$',fontsize = 25)
+    plt.ylim([0.25,1.0])
+    plt.ylabel('Normalized \n occurence',fontsize = 25)
 
     plt.xticks(np.arange(0.0,0.52,0.25))
     # plt.xticks(np.arange(0,1.1,0.1), minor = True)
     plt.yticks(np.arange(0.25,1.1,0.25))
     # plt.yticks(np.arange(0,1.1,0.1), minor = True)
-    plt.tick_params(axis='x', which='major', labelsize=18)
-    plt.tick_params(axis='y', which='major', labelsize=18)
+    plt.tick_params(axis='x', which='major', labelsize=25)
+    plt.tick_params(axis='y', which='major', labelsize=25)
     plt.tick_params('both', length=6, width=1, which='major')
     plt.tick_params('both', length=4, width=1, which='minor')
+
+    ax.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    ax.set_xticks(np.arange(0,0.55,0.05), minor = True)
+
+    ax.tick_params('both', length=4, width=1, which='minor')
+
     if save_folder != None:
         try:
             fig4.savefig(
@@ -7309,3 +8159,204 @@ def QEC_multiple_rounds():
 
     plt.show()
     # plt.close('all')
+
+
+def QEC_multiple_rounds_alt_fit():
+    save_folder = folder
+    ### load 0 round data
+
+    single_no_QEC_data_dict_Z_Q1  =  single_qubit_avg_state(state = 'Z',run = 1)
+    single_no_QEC_data_dict_mZ_Q1 =  single_qubit_avg_state(state = 'mZ',run = 1)
+
+    y_Z0         = single_no_QEC_data_dict_Z_Q1['y']
+    y_err_Z0     = single_no_QEC_data_dict_Z_Q1['y_err']
+    y_mZ0        = single_no_QEC_data_dict_mZ_Q1['y']
+    y_err_mZ0    = single_no_QEC_data_dict_mZ_Q1['y_err']
+    x0           = single_no_QEC_data_dict_mZ_Q1['x']
+
+    ### load 1 round data (Majority voting/Toffoli)
+    toff_process_dict = no_QEC_toffoli_fids(run_list = [0,1,2,3],state_list=['Z','mZ'],add_4 = True,do_weighted = True)
+    y_Z1              = toff_process_dict['toff_Zy']
+    y_err_Z1          = toff_process_dict['toff_Zy_err']
+    y_mZ1             = toff_process_dict['toff_mZy']
+    y_err_mZ1         = toff_process_dict['toff_mZy_err']
+    x1                = toff_process_dict['x']
+
+    # load 1 round data (QEC)
+    data_dict_Z       = QEC_state_sum_RO_ZmZ(state = 'Z')
+    data_dict_mZ      = QEC_state_sum_RO_ZmZ(state = 'mZ')
+
+    y_Z1b         = data_dict_Z['y']
+    y_err_Z1b     = data_dict_Z['y_err']
+    y_mZ1b        = data_dict_mZ['y']
+    y_err_mZ1b    = data_dict_mZ['y_err']
+    x1b           = data_dict_mZ['x']
+
+    ### load 2 rounds data
+
+    x2, y_Z2, y_err_Z2, y_mZ2, y_err_mZ2 =  QEC_2rounds_combined_runs(runs=[1,2,3])
+
+    ### load 3 rounds data
+    x3, y_Z3, y_err_Z3, y_mZ3, y_err_mZ3, error_probs =  QEC_3rounds_combined_runs(runs=[1,2])
+
+    ### Averaging over Z and mZ
+    y_tot0  = (y_Z0-y_mZ0)/2; y_err_tot0 = (y_err_Z0**2+y_err_mZ0**2)**0.5/2
+    y_tot1  = (y_Z1-y_mZ1)/2; y_err_tot1 = (y_err_Z1**2+y_err_mZ1**2)**0.5/2
+    y_tot1b = (y_Z1b-y_mZ1b)/2; y_err_tot1b = (y_err_Z1b**2+y_err_mZ1b**2)**0.5/2
+    y_tot2  = (y_Z2-y_mZ2)/2; y_err_tot2 = (y_err_Z2**2+y_err_mZ2**2)**0.5/2
+    y_tot3  = (y_Z3-y_mZ3)/2; y_err_tot3 = (y_err_Z3**2+y_err_mZ3**2)**0.5/2
+
+    print type(y_tot1)
+    print type(y_tot2)
+
+    ### Fitting
+    # x_fit0, y_fit0, fit_result0,u_fit_result0 = fit_QEC_curve(x0,y_tot0, return_errorbar=True)
+    # x_fit1, y_fit1, fit_result1,u_fit_result1 = fit_QEC_curve(x1[0:7],y_tot1[0:7], return_errorbar=True)
+    # x_fit1, y_fit1, fit_result1,u_fit_result1 = fit_QEC_curve(x1,y_tot1, return_errorbar=True)
+    # x_fit2, y_fit2, fit_result2,u_fit_result2 = fit_QEC_2_rounds_curve2(x2,y_tot2, return_errorbar=True)
+    # x_fit3, y_fit3, fit_result3,u_fit_result3 = fit_QEC_3_rounds_curve2(x3,y_tot3, return_errorbar=True)
+    
+    x_fit1, y_fit1, fit_result1,u_fit_result1 = fit_QEC_curve_11(x1,y_tot1, return_errorbar=True)
+    x_fit2, y_fit2, fit_result2,u_fit_result2 = fit_QEC_curve_11_2(x2,y_tot2, return_errorbar=True)
+    x_fit3, y_fit3, fit_result3,u_fit_result3 = fit_QEC_curve_11_3(x3,y_tot3, return_errorbar=True)
+    
+
+    print '1 round'
+    print fit_result1,u_fit_result1
+    print '2 round'
+    print fit_result2,u_fit_result2
+    print '3 round'
+    print fit_result3,u_fit_result3
+
+    # x_fit1, y_fit1= fit_QEC_curve(x1,y_tot1, return_guess=True)
+
+    fig4,ax = plt.subplots(figsize=(10,10))
+
+
+    # (_,caps,_)=ax.errorbar(x0, (0.5*y_tot0+0.5), yerr= 0.5*y_err_tot0, color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6) 
+    # ax.plot(x_fit0, (0.5*y_fit0+0.5), color = c_green, lw = 1,label = 'Single qubit')#), $p_c$='+str(round(fit_result0*100)/100.)+'('+str(int(round(u_fit_result0*100)))+')')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+
+    # (_,caps,_)=ax.errorbar(x1, (0.5*y_tot1+0.5), yerr= 0.5*y_err_tot1,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
+    # ax.plot(x_fit1, (0.5*y_fit1+0.5), color = c_blue, lw = 1,label = 'Round C')#), $p_c$='+str(round(fit_result1*100)/100.)+'('+str(int(round(u_fit_result1*100)))+')')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+
+    # (_,caps,_)=ax.errorbar(x1, y_tot1, yerr= y_err_tot1,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
+    # ax.plot(x_fit1, y_fit1, color = c_blue, lw = 1,label = 'Round C')#), $p_c$='+str(round(fit_result1*100)/100.)+'('+str(int(round(u_fit_result1*100)))+')')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+
+
+    (_,caps,_)=ax.errorbar(x2, (0.5*y_tot2+0.5), yerr=0.5*y_err_tot2,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
+    ax.plot(x_fit2, (0.5*y_fit2+0.5), color = c_red, lw = 1,label = 'Round B + C')#), $p_c$='+str(round(fit_result2*100)/100.)+'('+str(int(round(u_fit_result2*100)))+')')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+
+    (_,caps,_)=ax.errorbar(x3, (0.5*y_tot3+0.5), yerr=0.5*y_err_tot3,color = c_orange_2,markeredgecolor = c_orange_2, ls = '',marker = 'o', ms = 7,capsize = 6)
+    ax.plot(x_fit3, (0.5*y_fit3+0.5), color = c_orange_2, lw = 1,label = 'Round A + B + C')#), $p_c$='+str(round(fit_result3*100)/100.)+'('+str(int(round(u_fit_result3*100)))+')')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+
+    ax.plot([0,0.5,1],[1,0.5,0],color = '0.5',ls = 'dotted')
+    
+    ax.set_ylim(0.48,1.0)
+    ax.set_xlim(-0.01,0.51)
+
+
+    ax.set_xticks(np.arange(0,0.51,0.25))
+    # ax.set_xticks(np.arange(0,0.51,0.1), minor = True)
+    ax.set_yticks(np.arange(0.5,1.01,0.25))
+    # ax.set_yticks(np.arange(0.5,1.01,0.1), minor = True)
+
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
+    ax.tick_params('both', length=6, width=1, which='major')
+    # ax.tick_params('both', length=4, width=1, which='minor')
+    # ax.set_title('QEC process fidelities')
+    ax.hlines([0.5,1],x0[0]-1,x0[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
+    # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
+    ax.set_xlabel('Error probability $p_e$',fontsize=25)
+    ax.set_ylabel('Average state fidelity',fontsize=25)
+
+    mpl.rcParams['axes.linewidth'] = 1.
+
+    fig4.tight_layout()
+
+    lgd = ax.legend(loc = [0.01,0.03],frameon=False)#loc = 2, bbox_to_anchor = (1,1))
+    for label in lgd.get_texts():
+        label.set_fontsize(20)
+
+    mpl.rcParams['pdf.fonttype'] = 42
+
+
+    # x, p_R1_11, p_R2_11 = QEC_3rounds_outcome_probability()
+    # a = axes([.62, .62, .3, .3])
+
+    # pin_list      =[0.0924663, 0.0856549]
+    # color = [c_red,c_orange_2]
+
+    # F1 = 0.988
+    # F0 = 0.890
+
+    # p_plot = linspace(0,1,1000)
+    # p = 1/2.*(1-(1-2*p_plot)**(1/3.))
+
+    # for j,pin in enumerate(pin_list):
+    #     ptot = p + pin-2*p*pin
+
+
+    #     p_no_error = 1-3*ptot+3*ptot**2
+    #     p_c1       = ptot-ptot**2
+    #     p_c2       = ptot-ptot**2
+    #     p_c5       = ptot-ptot**2
+
+    #     P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+    #     # P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
+    #     # P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
+    #     # P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
+    #     plot(p_plot,P_D_no_error,color = color[j])
+
+
+    # plot(x, p_R1_11,label = 'In round 1', color = c_red, marker = 'o',markersize = 5,ls = '',markeredgecolor = c_red)
+    # plot(x, p_R2_11,label = 'In round 2', color = c_orange_2 , marker = 'o',markersize = 5,ls = '',markeredgecolor = c_orange_2 )
+    
+    # print p_R1_11[0]
+    # print p_R2_11[0]
+
+    # lgd = a.legend(loc = 9,frameon=False)
+    # for label in lgd.get_texts():
+    #     label.set_fontsize(25)
+    
+    # plt.xlim([-0.02,0.52])
+    # plt.xlabel('$p_e$',fontsize = 25)
+    # plt.ylim([0.24,1.1])
+    # plt.ylabel('Normalized \n occurence',fontsize = 25)
+
+    # plt.xticks(np.arange(0.0,0.52,0.25))
+    # # plt.xticks(np.arange(0,1.1,0.1), minor = True)
+    # plt.yticks(np.arange(0.25,1.1,0.25))
+    # # plt.yticks(np.arange(0,1.1,0.1), minor = True)
+    # plt.tick_params(axis='x', which='major', labelsize=25)
+    # plt.tick_params(axis='y', which='major', labelsize=25)
+    # plt.tick_params('both', length=6, width=1, which='major')
+    # plt.tick_params('both', length=4, width=1, which='minor')
+
+    # ax.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    # ax.set_xticks(np.arange(0,0.55,0.05), minor = True)
+
+    ax.tick_params('both', length=4, width=1, which='minor')
+
+    if save_folder != None:
+        try:
+            fig4.savefig(
+                os.path.join(save_folder,'Multiple_rounds_Combined11_fitted_single_roundvs2.pdf'))
+            fig4.savefig(
+                os.path.join(save_folder,'Multiple_rounds_Combined11_fitted_single_roundvs2.png'))
+        except:
+            print 'Figure has not been saved.'
+
+    plt.show()
+    # plt.close('all')
+
