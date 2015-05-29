@@ -7,23 +7,38 @@ from analysis.lib.fitting import fit,esr, common
 reload(toolbox)
 
 
-def get_files (newer_than, older_than, contains):
-	a, b, folder_names = toolbox.latest_data (contains=contains, newer_than=newer_than, older_than=older_than, return_all=True)
+def get_files (newer_than, older_than, contains, folder=None):
+	a, b, folder_names = toolbox.latest_data (contains=contains, newer_than=newer_than, older_than=older_than, return_all=True, folder=folder)
+	print folder_names
 	times = []
 	for f in folder_names:
 		times.append (int(f[9:11])*3600 + int(f[11:13])*60 + int(f[13:15]))
 	return folder_names, times
 
+def get_files_in_folder (contains, folder):
+	folder_names = [f for f in os.listdir(folder) if contains in f]
+	times = []
+	for f in folder_names:
+		times.append (int(f[0:2])*3600 + int(f[2:4])*60 + int(f[4:6]))
+	times = np.array(times)
+	times = times-times[0]
+	return folder_names, times
 
 
-def load_data (timestamp):
-	folder_name = toolbox.latest_data (contains=timestamp)
-	all_files = [f for f in os.listdir(folder_name) if timestamp in f]  
+def load_data (folder, timestamp, scan_type):
+
+	all_folders = [f for f in os.listdir(folder) if timestamp in f]
+	curr_fold = os.path.join(folder, all_folders[0])
+	all_files =[ f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
 	file_name = [f for f in all_files if '.hdf5' in f]
+
+	if (scan_type =='piezo'):
+		grp_name = '/piezo_scan'
+		x_name = 'piezo_voltage'
 	
-	f = h5py.File(os.path.join(folder_name, file_name[0]),'r')
-	ls_grp = f['/laserscan']
-	V = ls_grp['V'].value
+	f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
+	ls_grp = f[grp_name]
+	V = ls_grp[x_name].value
 	PD_signal = ls_grp['PD_signal'].value
 	return V, PD_signal
 
@@ -98,13 +113,13 @@ def combine_piezoscans (timestamp_array):
 	ax.set_ylabel ('transmission [a.u.]', fontsize=16)
 	plt.show()
 
-def combine_piezoscans_2D (timestamp_array, y_axis = None):
+def combine_piezoscans_2D (folder, folder_array, y_axis = None, V_lims=None):
 
 	voltages = np.array([])
 	PD_signal = np.array([])
 	i = 0
-	for k in timestamp_array:
-		V, Y = load_data (k)
+	for k in folder_array:
+		V, Y = load_data (folder=folder, timestamp = k, scan_type='piezo')
 		if (i==0):
 			PD_signal = Y
 		else:
@@ -122,8 +137,11 @@ def combine_piezoscans_2D (timestamp_array, y_axis = None):
 	    tick.label.set_fontsize(16) 
 	for tick in ax.yaxis.get_major_ticks():
 	    tick.label.set_fontsize(16) 
+	if V_lims:
+		ax.set_xlim(V_lims)
 	ax.set_xlabel ('piezo voltage [V]', fontsize= 16)
 	ax.set_ylabel ('time [s]', fontsize=16)
+
 
 	plt.show()
 
@@ -148,8 +166,12 @@ def combine_piezoscans_1D (timestamp_array):
 #times = times - min(times)
 #combine_piezoscans_2D (timestamp_array = t_array, y_axis = times)
 
+#a, b = load_data (folder='D:/measuring/data/20150528/roomT_drift_mechExcit/', timestamp='105524', scan_type='piezo')
 
+f_array, t_array = get_files_in_folder (contains='piezo', folder = r'D:/measuring/data/20150528/roomT_noMechExc')
+combine_piezoscans_2D (folder = r'D:/measuring/data/20150528/roomT_noMechExc', folder_array = f_array, y_axis = t_array, V_lims = None)
 
+'''
 V, Y = load_data (timestamp = '112232')
 Vf, freq = load_calibration ()
 freq = freq-min(freq)
@@ -203,3 +225,4 @@ ax.set_xlabel ('freq [GHz]', fontsize= 14)
 ax.set_ylabel ('transmission [a.u.]', fontsize=14)
 
 plt.show()
+'''
