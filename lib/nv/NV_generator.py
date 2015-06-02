@@ -1,5 +1,5 @@
 
-def Generate_NV(Carb_Conc=0.011,N_NV=2,N=25,do_sphere = True):
+def Generate_NV(Carb_Conc=0.011,N_NV=1,N=25,do_sphere = True):
     """
     Takes Carbon Concentration, number of centres (N_NV) and gridsize (N) as inputs
     Returns a list of 2D numpy arrays with hyperfine strengths in Hz (real freq)
