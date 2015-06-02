@@ -311,10 +311,10 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
 
     return x,y, y_err, fit_result
 
-carbonnr = 1
+carbonnr = 2
 
 folder = "/Users/"+os.getlogin()+"/Documents/"
-color_list = ['y','y']
+color_list = ['b','b']
 x_max_list = [100e-3,1200e-3]
 figure_name_list = ['C'+str(carbonnr)+'_T2_ms0','C'+str(carbonnr)+'_T2_ms1']
 spacing = [40e-3]+[500e-3]
@@ -343,8 +343,11 @@ for ii in range(2):
     ax.set_ylim([0,1])
     ax.set_xlim([0,x_max_list[ii]+0.1e-3])
     plt.xticks(xticks)
-    ax.set_xticklabels(xticks)
-    ax.set_xlabel('Free evolution time (s)',fontsize = 20)
+    if ii==1:
+        ax.set_xticklabels(['0','500','1000'])
+    else:
+        ax.set_xticklabels(['0','40','80'])
+    ax.set_xlabel('Free evolution time (ms)',fontsize = 20)
     ax.set_ylabel('Fidelity',fontsize = 20)
     ax.hlines([0.5],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 2)
     ax.set_ylim([0,1])

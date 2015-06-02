@@ -67,12 +67,7 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         timestamp_pos=['20150102_185838']
         timestamp_neg=['20150102_191030']
 
-        
 
-<<<<<<< Updated upstream
-=======
->>>>>>> origin/master
->>>>>>> Stashed changes
     else:
         print "Carbon not measured"
 
@@ -194,9 +189,7 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
 
 
     if Addressed_carbon == 5:
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
+
         timestamp_pos=['20150315_231309']#First
         timestamp_neg=['20150315_220943']#First
         timestamp_neg=['20150317_111643']#No shutter
@@ -217,17 +210,11 @@ def Carbon_T2_analysis(measurement_name = ['adwindata'], ssro_calib_timestamp =N
         timestamp_pos=['20150317_074908']#No shutter
         # timestamp_neg=['20150317_042104']#Shutter
         # timestamp_pos=['20150317_051738']#Shutter
-=======
->>>>>>> Stashed changes
         # timestamp_pos=['20150102_192226']
         # timestamp_neg=['20150102_214323']
         timestamp_neg=['20150310_191115']
         timestamp_pos=['20150310_195806']
         
-<<<<<<< Updated upstream
-=======
->>>>>>> origin/master
->>>>>>> Stashed changes
     else:
         print "Carbon not measured"
    

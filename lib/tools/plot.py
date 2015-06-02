@@ -36,6 +36,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
             ax.plot(res['x'], res['y'], 'o')
     if fit_xvals == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
+
     ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle,color = color, lw=lw )
     
     if print_info and res['success']:
