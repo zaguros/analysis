@@ -146,7 +146,7 @@ folder = r'D:\measuring\data\QEC_data\figs\final figures'
 ''' Paper figures'''
 ###########################
 figure_name_list = ['00_init_12','determinstic_entanglement_12','probabilistic_entanglement_12','00_init_15','determinstic_entanglement_15','probabilistic_entanglement_15']
-# figure_name_list = ['00_init']
+figure_name_list = ['00_init_15']
 # figure_name_list = ['probabilistic_entanglement']
 # figure_name_list = ['determinstic_entanglement_15']
 
@@ -252,6 +252,11 @@ for ii, figure_name in enumerate(figure_name_list):
 		ax.tick_params(axis='y', which='major', labelsize=25)
 		ax.tick_params('both', length=5, width=3, which='major')
 		ax.tick_params('x', length=3, width=1.5, which='minor')		
+		# def autolabel(rects):
+		#     for ii,rect in enumerate(rects):
+		#         height = rect.get_height()
+		#         plt.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%.2f'%y[ii] +'('+ str(int(round(y_err[ii]*100))) +')',
+		#             ha='center', va='bottom')		
 		# autolabel(rects)
 		ax.set_ylabel('Expectation value',fontsize = 30)
 		mpl.rcParams['axes.linewidth'] = 1
@@ -263,6 +268,15 @@ for ii, figure_name in enumerate(figure_name_list):
 		elif '00_init' in figure_name:
 			for ii in [2,5,14]:
 				y_id[ii] = np.sign(y[ii])
+		print 'zz'
+		print y[14]
+		print y_err[14]
+		print 'ZI'
+		print y[2]
+		print y_err[2]
+		print 'IZ'
+		print y[5]
+		print y_err[5]				
 		print y_id
 		ax.bar(x,y_id,align ='center',color = c_red, alpha = 0.2,ecolor = c_red, linewidth = 0)
 		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.pdf'),
