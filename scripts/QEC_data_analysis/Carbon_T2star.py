@@ -48,6 +48,7 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_folder 
     fit_results = []
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
+        print folder
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
         a.get_electron_ROC(ssro_calib_folder)
@@ -98,6 +99,16 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_folder 
             u_phi0 = fit_result['error_dict']['phi']
             A = fit_result['params_dict']['A']
             u_A = fit_result['error_dict']['A']
+            return phi0, u_phi0, A, u_A
+            print 'ok'
+
+        if return_phase == True and return_A == True and return_n == True:
+            phi0 = fit_result['params_dict']['phi']
+            u_phi0 = fit_result['error_dict']['phi']
+            A = fit_result['params_dict']['A']
+            u_A = fit_result['error_dict']['A']
+            n = fit_result['params_dict']['n']
+            u_n = fit_result['error_dict']['n']
             return phi0, u_phi0, A, u_A
             print 'ok'
 

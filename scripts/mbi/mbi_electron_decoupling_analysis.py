@@ -49,7 +49,7 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
 
-            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,2])
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=[0,2])
 
             ## plot data and fit as function of total time
             if plot_fit == True:

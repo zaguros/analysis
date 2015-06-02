@@ -115,6 +115,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     i = len(daydirs)-1
     while len(measdirs) == 0 and i >= 0:
         daydir = daydirs[i]
+        print search_dir, daydir
         all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
         all_measdirs.sort()
         measdirs = []
@@ -123,12 +124,15 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
             # this routine verifies that any output directory is a 'valid' directory
             # (i.e, obeys the regular naming convention)
+
+            # _timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
             _timestamp = daydir + d[:6]
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
                 continue
             timestamp = dstamp+tstamp
+
             if contains in d:              
                 
                 if older_than != None:

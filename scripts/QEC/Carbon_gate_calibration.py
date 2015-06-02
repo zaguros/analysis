@@ -551,10 +551,14 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
         # N_list =  [48,50]
         
     if carbon == 3:
-        tau_list = np.arange(9.668e-6-10e-9, 9.668e-6+10e-9, 2e-9)
-        N_list=[]
-        for i,t in enumerate(tau_list):
-            N_list.extend(np.arange(12, 24, 2))
+        # tau_list = np.arange(9.668e-6-10e-9, 9.668e-6+10e-9, 2e-9)
+        # N_list=[]
+        # for i,t in enumerate(tau_list):
+        #     N_list.extend(np.arange(12, 24, 2))
+        tau_list =   [11.942e-6, 11.942e-6, 11.942e-6, 11.944e-6, 11.944e-6,
+                                             11.944, 11.946e-6, 11.946e-6,11.946e-6]
+                                            
+        N_list =  [12,14,16,12,14,16,12,14,16] 
 
 
     x_tick_labels = []
