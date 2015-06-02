@@ -409,11 +409,11 @@ def fit_init_fidelity_numerical(g_F1, g_A_par_1, g_A_perp_1,  g_F2, g_A_par_2, g
 
 # ssro_calib_folder = 'D:\\measuring\\data\\20141201\\114408_AdwinSSRO_SSROCalibration_111_1_sil18'
 
-# ssro_calib_folder = 'D:\\measuring\\data\\20150108\\233552_AdwinSSRO_SSROCalibration_111_1_sil18'
+ssro_calib_folder = 'D:\\measuring\\data\\20150108\\233552_AdwinSSRO_SSROCalibration_111_1_sil18'
 # ssro_calib_folder = '\\Users\\tim_taminiau\\Documents\\teamdiamond\\data\\20150108\\233552_AdwinSSRO_SSROCalibration_111_1_sil18'
-ssro_calib_folder =  '/Users/tim_taminiau/Documents/teamdiamond/data/20150108/233552_AdwinSSRO_SSROCalibration_111_1_sil18'
+# ssro_calib_folder =  '/Users/tim_taminiau/Documents/teamdiamond/data/20150108/233552_AdwinSSRO_SSROCalibration_111_1_sil18'
 
-carbon_nr = 'C2'
+carbon_nr = 'C5'
 
 # timestamp_dict, folders_dict = get_data_timestamps('20141202_092002', 10, carbon = carbon_nr)
 # timestamp_dict, folders_dict = get_data_timestamps('20141203_212603', 20, carbon = carbon_nr)
@@ -442,6 +442,11 @@ if 1:
     a_C13_RO_no, folder_no = get_and_plot_data_nuc_RO(timestamp_dict['no_pos'],timestamp_dict['no_neg'],ssro_calib_folder)
     print 'finished loading C13 RO data'
 
+    if 1:
+        folder = r'D:\measuring\data\QEC_data\figs\final figures'
+        folder_up = folder
+        folder_down = folder
+        folder_no = folder
 
     ### plot for up initialization
     fig,ax = plt.subplots(figsize=(5,5))
@@ -494,17 +499,18 @@ if 1:
     print 'Down = ' + str(round(a_C13_RO_down.p0[2],5)) + '+/-' + str(round(a_C13_RO_down.u_p0[2],5))
     print 'Average = ' + str(round(average_initialization,5)) + '+/-' + str(round(average_initialization_u,5))
 
-#########################
-### Electron Ramsey data ###
-#########################
-### load electron ramsey data (and plot individual plots)
-print 'loading eRamsey no_init data'
-a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder)
-print 'loading eRamsey up data'
-a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
-print 'loading eRamsey down data'
-a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
-print 'finished loading eRamsey data'
+if 0:
+    #########################
+    ### Electron Ramsey data ###
+    #########################
+    ### load electron ramsey data (and plot individual plots)
+    print 'loading eRamsey no_init data'
+    a_noinit, folder = get_and_plot_data(timestamp_dict['noInit'], ssro_calib_folder)
+    print 'loading eRamsey up data'
+    a_up, folder     = get_and_plot_data(timestamp_dict['up'], ssro_calib_folder)
+    print 'loading eRamsey down data'
+    a_down, folder   = get_and_plot_data(timestamp_dict['down'], ssro_calib_folder)
+    print 'finished loading eRamsey data'
 
     ###########################
     ###  fit data seperately ###
@@ -671,7 +677,7 @@ if 0:
 ''' Numerical'''
 ################
 
-if 1:
+if 0:
     fig = a_up.default_fig(figsize=(10,5))
     ax  = a_up.default_ax(fig)
 
@@ -806,8 +812,11 @@ if 1:
     print 'RO_correction_factor = ' + str(RO_correction_factor) + '+/-' + str(RO_correction_factor_err)
     print 'expected from C13 RO = ' + str(RO_corr_expected) + '+/-' + str(RO_corr_expected_err)
     try:
-        fig.savefig(os.path.join('/Users/tim_taminiau/Physics/Work Python/QEC/Figures','Electron_Ramsey_' + carbon_nr +'.png'))
-        fig.savefig(os.path.join('/Users/tim_taminiau/Physics/Work Python/QEC/Figures','Electron_Ramsey_' + carbon_nr +'.pdf'))
+        # fig.savefig(os.path.join('/Users/tim_taminiau/Physics/Work Python/QEC/Figures','Electron_Ramsey_' + carbon_nr +'.png'))
+        # fig.savefig(os.path.join('/Users/tim_taminiau/Physics/Work Python/QEC/Figures','Electron_Ramsey_' + carbon_nr +'.pdf'))
+        folder = r'D:\measuring\data\QEC_data\figs\final figures'
+        fig.savefig(os.path.join(folder,'Electron_Ramsey_' + carbon_nr +'.png'))
+        fig.savefig(os.path.join(folder,'Electron_Ramsey_' + carbon_nr +'.pdf'))        
     except:
         print 'Figure has not been saved.'
 
