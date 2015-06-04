@@ -695,7 +695,6 @@ class RamseySequence_Simulation (RamseySequence):
 
 
 	def sim_swarm_optim (self):
-		
 		if (self.G+self.F+self.K==0):
 			print 'Simulation parameters G, K, F not set!!'
 		else:			
@@ -752,8 +751,8 @@ class RamseySequence_Simulation (RamseySequence):
 						phase_cappellaro = 0.5*np.angle (self.p_k[ttt+self.points])
 						phase = phase_cappellaro + phase_inc_swarm
 						if self.fpga_round:
-							a = int(phase*256/(2*np.pi))
-							phase = float(a)*2*np.pi/256. 
+							a = int(phase*(2**self.fpga_bit)/(2*np.pi))
+							phase = float(a)*2*np.pi/float(2**self.fpga_bit) 
 						m_res = self.ramsey (theta=phase, t = t[i]*self.t0)					
 						self.bayesian_update (m_n = m_res, phase_n = phase, t_n = 2**(k))
 						self.msmnt_results[r, res_idx] = m_res
@@ -1361,7 +1360,7 @@ class AdaptiveMagnetometry ():
 
 		return B_dict[str(N)]
 	
-	def sweep_field_simulation (self, N, protocol, table_based=False, print_results=False, specific_B=False, fpga_round = False):
+	def sweep_field_simulation (self, N, protocol, table_based=False, print_results=False, specific_B=False, fpga_round = False, fpga_bit = None):
 		self.simulated_data = True		
 		self.analyzed_N.append(N)	
 		
@@ -1407,6 +1406,7 @@ class AdaptiveMagnetometry ():
 			s.fid0 = self.fid0
 			s.fid1 = self.fid1
 			s.fpga_round = fpga_round
+			s.fpga_bit = fpga_bit
 	
 			if protocol == 'cappellaro':
 				s.sim_cappellaro_variable_M()

@@ -167,7 +167,7 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = '', fpga_round=False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = '', fpga_round=False, fpga_bit=None):
 #def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
@@ -183,7 +183,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 		mgnt_exp.verbose=True
 		#mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
 		print 'T2* = ', mgnt_exp.T2
-		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B, fpga_round=fpga_round)
+		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B, fpga_round=fpga_round, fpga_bit = fpga_bit)
 
 		plt.figure()
 		
@@ -485,7 +485,11 @@ def suppl_info_simulations_swarm (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], nam
 
 #suppl_info_simulations_swarm (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
 
-reps = 15
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=3, fid0=1.00,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True)
-#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=3, fid0=1.00,fid1=0.0,reps=reps, error_bars = True, name = '_Round_16', fpga_round=True)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=9,F=3, fid0=0.88,fid1=0.02,reps=reps, error_bars = True, name = '_noRound')
+reps = 3
+#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=3, fid0=1.00,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_4', fpga_round=True, fpga_bit=2)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_16', fpga_round=True, fpga_bit=4)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_64', fpga_round=True, fpga_bit=6)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True, fpga_bit=8)
+
+#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=9,F=3, fid0=0.88,fid1=0.02,reps=reps, error_bars = True, name = '_noRound')
