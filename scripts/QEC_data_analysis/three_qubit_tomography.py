@@ -174,7 +174,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
-		plot_fit = True, color = 'r', plot_type = ''):
+		plot_fit = True, color = 'r', plot_type = '',RO_corr = False):
 		### SSRO calibration
 	if state != '000init':
 		k_range = 21
@@ -240,6 +240,11 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 
 	state_tick_list = x_labels
 
+	if RO_corr == True:
+		y_err = 1/(2.*np.sqrt(y))*y_err
+		y = np.sqrt(y)
+
+
 	if plot_fit ==True :
 		if plot_type != 'compressed': 
 			fig,ax = plt.subplots(figsize=(32,5)) 
@@ -270,6 +275,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			print y_fidelity_err
 
 			y_fid = [abs(y[i])/0.93 for i in [9,18,27]]
+			y_fid = [abs(y[i]) for i in [9,18,27]]
 
 			y_fid_err = [y_err[i] for i in [9,18,27]]
 
@@ -424,9 +430,9 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 		print 'SAVED '+ folder
 		try:
 		    fig.savefig(
-		        os.path.join(folder,state+'tomo_full.png'),bbox_inches='tight')
+		        os.path.join(folder,state+'tomo_full_RO_Corr.png'),bbox_inches='tight')
 		    fig.savefig(
-		        os.path.join(folder,state+'tomo_full.pdf'),bbox_inches='tight')
+		        os.path.join(folder,state+'tomo_full_RO_Corr.pdf'),bbox_inches='tight')
 		except:
 		    print 'Figure has not been saved.'
 
@@ -448,37 +454,37 @@ y_fidelity_err = np.zeros(6)
 
 y_fidelity_cs1[0],y_fidelity_cs2[0],y_fidelity_cs3[0], y_fidelity_cs4[0],y_fidelity_err[0] = BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue, RO_corr= True)
 
 y_fidelity_cs1[1],y_fidelity_cs2[1],y_fidelity_cs3[1], y_fidelity_cs4[1],y_fidelity_err[1] = BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue, RO_corr= True)
 
 y_fidelity_cs1[2],y_fidelity_cs2[2],y_fidelity_cs3[2], y_fidelity_cs4[2],y_fidelity_err[2] = BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141230_064816', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue, RO_corr= True)
 
 y_fidelity_cs1[3],y_fidelity_cs2[3],y_fidelity_cs3[3], y_fidelity_cs4[3],y_fidelity_err[3] = BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141230_064816', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue, RO_corr= True)
 
 y_fidelity_cs1[4],y_fidelity_cs2[4],y_fidelity_cs3[4], y_fidelity_cs4[4],y_fidelity_err[4] = BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue, RO_corr= True)
 
 y_fidelity_cs1[5],y_fidelity_cs2[5],y_fidelity_cs3[5], y_fidelity_cs4[5],y_fidelity_err[5] = BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue, RO_corr= True)
 
-# print sum(y_fidelity_cs1)/6.
-# print sum(y_fidelity_cs2)/6.
-# print sum(y_fidelity_cs3)/6.
-# print sum(y_fidelity_cs4)/6.
-# print sum(y_fidelity_err**2)**0.5/6.
+print sum(y_fidelity_cs1)/6.
+print sum(y_fidelity_cs2)/6.
+print sum(y_fidelity_cs3)/6.
+print sum(y_fidelity_cs4)/6.
+print sum(y_fidelity_err**2)**0.5/6.
 
-BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+# BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue)
 
 
 # BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
