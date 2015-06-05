@@ -2,13 +2,14 @@ from analysis.lib.fitting import fit,esr
 import os
 
 
+
 folder=tb.latest_data('ESR')
 fn=tb.measurement_filename(folder, ext='dat')
 data=np.loadtxt(fn, skiprows=10)
 x=data[:,0]
 y=data[:,1]
 fig=plt.figure(figsize=(6,4))
-ax=subplot(111)
+ax=plt.subplot(111)
 ax.plot(x,y)
 x_f=np.linspace(x[0],x[-1],2000)
 fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, np.max(y),

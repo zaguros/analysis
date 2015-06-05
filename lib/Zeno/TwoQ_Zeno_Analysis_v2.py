@@ -1288,6 +1288,9 @@ def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 		'4' : 14.0,
 		'6' : 16.0,
 		'8' : 16.0,
+		'10' : 18.0,
+		'12' : 18.0,
+		'16' : 18.0
 		}
 
 		evo_time=[2005]
@@ -1379,7 +1382,7 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 					plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = 1)
 					results.append('0 : p = 0')
 				else:
-					fit_result, result_string = fit_State_decay(msmt_list[i],ax,0.415*2,evotime,fid)
+					fit_result, result_string = fit_State_decay(msmt_list[i],ax,0.453*2,evotime,fid)
 					plot.plot_fit1d(fit_result, np.linspace(0.0,evotime[-1],1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = 1)
 					results.append(result_string)
 				print len(results)
@@ -1627,6 +1630,14 @@ def Zeno_3q_state_list(older_than_tstamp=None,msmts_list=['0'],eRO_list=['positi
 		'00p11' :	['XXI','YYI','ZZI','XXX']
 	}
 
+
+	# State_dict = {
+	# 	'00'	:	['XXX'],
+	# 	'00p10' :	['IXX','XXX'],
+	# 	'00p11' :	['XXX']
+	# }
+
+
 	loop_bit = True
 	evo_time=None
 
@@ -1654,7 +1665,8 @@ def Zeno_3q_state_list(older_than_tstamp=None,msmts_list=['0'],eRO_list=['positi
 		ax=plt.subplot()
 		for ii, msmt in enumerate(msmts_list):
 			for kk, label in enumerate(State_dict[state]):
-				plt.errorbar(evo_time_arr[ii][kk],y_arr[ii][kk],y_u_arr[ii][kk],marker='o',label = msmt + ' msmt : '+ label)
+				if label == 'XXX':
+					plt.errorbar(evo_time_arr[ii][kk],y_arr[ii][kk],y_u_arr[ii][kk],fmt='o',label = msmt + ' msmt : '+ label)
 
 		plt.xlabel('Evolution time (ms)')
 		plt.ylabel('Measured Expectation value')
