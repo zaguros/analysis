@@ -187,7 +187,7 @@ def process_2D_scan (folder):
 		f = np.delete(f, ind)
 		y = np.delete(y, ind)
 		if (idx==0):
-			frq = np.linspace (-1200, 200, nr_points)
+			frq = np.linspace (-300, 300, nr_points)
 		interp_funct = interpolate.interp1d(f, y)
 		y_new = interp_funct (frq)
 		scan_data [idx, :] = y_new
@@ -220,7 +220,7 @@ def process_2D_scan (folder):
 #combine_piezoscans_2D (folder = r'D:\measuring\data\20150529\PT_on', folder_array = f_array, y_axis = t_array, V_lims = None)
 #combine_piezoscans_1D (folder = r'D:\measuring\data\20150529\PT_on', folder_array = f_array, time_array = t_array/60.)
 
-process_2D_scan (r'D:\measuring\data\20150601\133402_2Dscan')
+process_2D_scan (r'D:\measuring\data\20150602\134356_2Dscan')
 
 '''
 V, Y = load_data (timestamp = '112232')
