@@ -121,6 +121,39 @@ def calculate_p_lhv(corr_mats):
     print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
     print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
 
+def get_sp_corrs(db,dlt,db_fps, analsysis_params, lt3):
+    st_start_ch0  = analsysis_params['st_start_ch0']
+    st_len        = analsysis_params['st_len'] #50 ns
+    st_len_w2     = st_len
+    p_sep         = analsysis_params['pulse_sep'] #600 ns
+    st_start_ch1  = analsysis_params['st_start_ch1']
+            
+    st_fltr_w1 =  (((st_start_ch0 <= db[:,be._cl_st_w1]) & (db[:,be._cl_st_w1] < (st_start_ch0 + st_len)) & (db[:,be._cl_ch_w1] == 0)) \
+                 | ((st_start_ch1 <= db[:,be._cl_st_w1]) & (db[:,be._cl_st_w1] < (st_start_ch1 + st_len)) & (db[:,be._cl_ch_w1] == 1)) )  
+    st_fltr_w2 =  (((st_start_ch0 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch0 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 0)) \
+                 | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
+
+    no_invalid_mrkr_fltr = (d3[:,be._cl_inv_mrkr]==0) & (d4[:,be._cl_inv_mrkr]==0)
+
+    sp_names=['w1','w2']
+    sp_fltrs = [st_fltr_w1,st_fltr_w2]
+    valid_event_fltr_SP = (db[:,be._cl_type] == 2) | (db[:,be._cl_type] == 3)
+    st_fltr = st_fltr_w1 | st_fltr_w2
+    dt_fltr = True
+    rnd_fltr = (dlt[:,be._cl_noof_rnd_0] + dlt[:,be._cl_noof_rnd_1] == 1 )
+    corr_mats={}
+    for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
+        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr & no_invalid_mrkr_fltr
+        db_fltr = db[fltr]
+        dlt_fltr = dlt[fltr]
+        noof_ev_fltr = np.sum(fltr)
+        p0 = np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0)
+        u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
+        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0)
+        corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr]
+    return corr_mats
+
+
 
 def get_corr_mats(db,d3,d4, db_fps, analsysis_params, bad_time_ranges):
     #Windows & other filtes:
