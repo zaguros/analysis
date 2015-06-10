@@ -4,6 +4,7 @@ import datetime
 import analysis.lib.tools.toolbox as tb
 from analysis.lib.lde import ro_c_err
 from analysis.lib.bell import bell_events as be
+from analysis.lib.math import error
 
    #corr defs
 rnd_corr=[[0,0],[0,1],[1,0],[1,1]] #'RND [LT3,LT4] rnd 00,01,10,11'
@@ -121,19 +122,19 @@ def calculate_p_lhv(corr_mats):
     print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
     print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
 
-def get_sp_corrs(db,dlt,db_fps, analsysis_params, lt3):
-    st_start_ch0  = analsysis_params['st_start_ch0']
-    st_len        = analsysis_params['st_len'] #50 ns
+def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
+    st_start_ch0  = analysis_params['st_start_ch0']
+    st_len        = analysis_params['st_len'] #50 ns
     st_len_w2     = st_len
-    p_sep         = analsysis_params['pulse_sep'] #600 ns
-    st_start_ch1  = analsysis_params['st_start_ch1']
+    p_sep         = analysis_params['pulse_sep'] #600 ns
+    st_start_ch1  = analysis_params['st_start_ch1']
             
     st_fltr_w1 =  (((st_start_ch0 <= db[:,be._cl_st_w1]) & (db[:,be._cl_st_w1] < (st_start_ch0 + st_len)) & (db[:,be._cl_ch_w1] == 0)) \
                  | ((st_start_ch1 <= db[:,be._cl_st_w1]) & (db[:,be._cl_st_w1] < (st_start_ch1 + st_len)) & (db[:,be._cl_ch_w1] == 1)) )  
     st_fltr_w2 =  (((st_start_ch0 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch0 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 0)) \
                  | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
 
-    no_invalid_mrkr_fltr = (d3[:,be._cl_inv_mrkr]==0) & (d4[:,be._cl_inv_mrkr]==0)
+    no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
 
     sp_names=['w1','w2']
     sp_fltrs = [st_fltr_w1,st_fltr_w2]
@@ -147,22 +148,22 @@ def get_sp_corrs(db,dlt,db_fps, analsysis_params, lt3):
         db_fltr = db[fltr]
         dlt_fltr = dlt[fltr]
         noof_ev_fltr = np.sum(fltr)
-        p0 = np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0)
+        p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
         u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
         p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0)
-        corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr]
+        corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr,noof_ev_fltr]
     return corr_mats
 
 
 
-def get_corr_mats(db,d3,d4, db_fps, analsysis_params, bad_time_ranges):
+def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
     #Windows & other filtes:
-    st_start_ch0  = analsysis_params['st_start_ch0']
-    st_len        = analsysis_params['st_len'] #50 ns
-    st_len_w2_00  = analsysis_params['st_len_w2_00']
-    st_len_w2_11  = analsysis_params['st_len_w2_11']
-    p_sep         = analsysis_params['pulse_sep'] #600 ns
-    st_start_ch1  = analsysis_params['st_start_ch1']
+    st_start_ch0  = analysis_params['st_start_ch0']
+    st_len        = analysis_params['st_len'] #50 ns
+    st_len_w2_00  = analysis_params['st_len_w2_00']
+    st_len_w2_11  = analysis_params['st_len_w2_11']
+    p_sep         = analysis_params['pulse_sep'] #600 ns
+    st_start_ch1  = analysis_params['st_start_ch1']
         
     #bad times due to lights on at EWI
     event_times = []
@@ -225,7 +226,7 @@ def get_corr_mats(db,d3,d4, db_fps, analsysis_params, bad_time_ranges):
     
     return corr_mats
 
-def print_ZZ_fidelity(corr_mats, analsysis_params):
+def print_ZZ_fidelity(corr_mats, analysis_params):
     for psi in ['psi_min', 'psi_plus']:
         corr_mat=np.zeros((4,4))
         for k in corr_mats:
@@ -238,8 +239,8 @@ def print_ZZ_fidelity(corr_mats, analsysis_params):
         for i in range(4) : 
             RO_row = corr_mat[i]
             RO_row_corr= RO_correct(RO_row/float(noof_ev_fltr),
-                                    F0A =analsysis_params['F0A'], F1A =analsysis_params['F1A'],
-                                    F0B =analsysis_params['F0B'], F1B =analsysis_params['F1B'] )
+                                    F0A =analysis_params['F0A'], F1A =analysis_params['F1A'],
+                                    F0B =analysis_params['F0B'], F1B =analysis_params['F1B'] )
             for j in range(4):
                 corr_mat_RO_corr[i,j] = RO_row_corr[j]
         Ng_ZZ_RO_corr = corr_mat_RO_corr[0,1] + corr_mat_RO_corr[0,2] +corr_mat_RO_corr[1,0] + corr_mat_RO_corr[1,3] \

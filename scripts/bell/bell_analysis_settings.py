@@ -5,7 +5,7 @@ bs_process_params = {
     'st_start_ch0'            : 5430000,
     'st_len'                  : 250000 ,
     'st_start_ch1'            : 5430000,
-    'pulse_sep'               : 350000 ,
+    'pulse_sep'               : 250000 ,
 
     'ent_marker_channel_bs' : 1,
 
