@@ -347,7 +347,7 @@ All of the functions below underlie the same model as the process fidelity funct
 For these functions we are only interested in the state fidelity of one state.
 Namely a state with X or YZ correlations which decays according to our number of Zeno measurements.
 """
-def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
+def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump,contrast = False):
     '''
 
 
@@ -368,7 +368,7 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
     A0           = fit.Parameter(g_A0, 'A0')
 
         ### Ramsey
-    t2   = fit.Parameter(g_t2, 't2')
+    t   = fit.Parameter(g_t2, 't')
 
     ### Zeno
     p   = fit.Parameter(g_p,'p')
@@ -376,10 +376,10 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
     if take_repump:
         t1   = fit.Parameter(g_t1, 't1')
         repump = fit.Parameter(g_repump,'repump')
-        p0 = [A0,t1,t2,p,repump]
+        p0 = [A0,t1,t,p,repump]
 
     else:
-        p0 = [A0,t2,p]
+        p0 = [A0,t,p]
 
 
     def fitfunc(x):
@@ -390,32 +390,34 @@ def fit_1msmt_state_fid(g_A0, g_t1,g_t2, g_p,g_repump,take_repump):
         ### no hahn echo time...
 
         if take_repump:
-            decay1 = np.exp(-x**2/(2*t2()**2))*(0.125+0.125*repump())
-            decay2 = np.exp((-0.125/(t2()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
+            decay1 = np.exp(-x**2/(2*t()**2))*(0.125+0.125*repump())
+            decay2 = np.exp((-0.125/(t()**2)-0.125/(t1()**2))*x**2)*(1-repump())/4.
 
             Fx = 0.5+p()*(0.125+decay1+decay2+0.125*repump())
-            C  = A0()*2*(Fx-0.5)
-            Fx = C/2. + 0.5
+            Cx  = A0()*2*(Fx-0.5)
+            Fx = Cx/2. + 0.5
 
         # """
         # Taking repumping not into account.
         # """
         else:
             
-            decay = np.exp(- ( x**2 /(2. * (t2()**2) ) ) )
+            decay = np.exp(- ( x**2 /(2. * (t()**2) ) ) )
             Fx = -0.25*decay*(-1.+p())-0.25*(-1.+p())*Hahn + 0.5
             Cx = A0()*2.*(Fx-0.5)
             Fx = Cx/2.+0.5
             # pmix = 1-A0()
             # Fx = 0.75+pmix*(-0.25+0.25*p())-0.25*p()+decay*(0.25+pmix*(-0.25+0.25*p())-0.25*p())
-
-        return Fx
+        if contrast:
+            return Cx
+        else:
+            return Fx
 
     return p0, fitfunc, fitfunc_str
 
 
 
-def fit_2msmt_state_fid(g_A0, g_t, g_p):
+def fit_2msmt_state_fid(g_A0, g_t, g_p,contrast = False):
     '''
 
 
@@ -448,11 +450,15 @@ def fit_2msmt_state_fid(g_A0, g_t, g_p):
         Fx = 0.5+decay*((p()-1.)**2+3.*decay2*(p()-1.)**2)
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
-        return Fx
+
+        if contrast: return Cx
+            
+        else: return Fx
+            
     return p0, fitfunc, fitfunc_str
 
 
-def fit_3msmt_state_fid(g_A0, g_t, g_p):
+def fit_3msmt_state_fid(g_A0, g_t, g_p,contrast = False):
     '''
 
 
@@ -489,12 +495,14 @@ def fit_3msmt_state_fid(g_A0, g_t, g_p):
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
-        return Fx
+        if contrast: return Cx
+            
+        else: return Fx
 
     return p0, fitfunc, fitfunc_str
 
 
-def fit_4msmt_state_fid(g_A0, g_t, g_p):
+def fit_4msmt_state_fid(g_A0, g_t, g_p,contrast = False):
     '''
 
 
@@ -532,11 +540,13 @@ def fit_4msmt_state_fid(g_A0, g_t, g_p):
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
-        return Fx
+        if contrast: return Cx
+            
+        else: return Fx
 
     return p0, fitfunc, fitfunc_str
 
-def fit_5msmt_state_fid(g_A0, g_t, g_p):
+def fit_5msmt_state_fid(g_A0, g_t, g_p,contrast = False):
     '''
 
 
@@ -582,12 +592,14 @@ def fit_5msmt_state_fid(g_A0, g_t, g_p):
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
-        return Fx
+        if contrast: return Cx
+            
+        else: return Fx
 
     return p0, fitfunc, fitfunc_str
 
 
-def fit_6msmt_state_fid(g_A0, g_t, g_p):
+def fit_6msmt_state_fid(g_A0, g_t, g_p,contrast = False):
     '''
 
 
@@ -629,12 +641,14 @@ def fit_6msmt_state_fid(g_A0, g_t, g_p):
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
-        return Fx
+        if contrast: return Cx
+            
+        else: return Fx
 
 
     return p0, fitfunc, fitfunc_str
 
-def fit_8msmt_state_fid(g_A0, g_t, g_p):
+def fit_8msmt_state_fid(g_A0, g_t, g_p,contrast = False):
     '''
 
 
@@ -679,7 +693,9 @@ def fit_8msmt_state_fid(g_A0, g_t, g_p):
 
         Cx = A0()*2.*(Fx-0.5)
         Fx = Cx/2.+0.5
-        return Fx
+        if contrast: return Cx
+            
+        else: return Fx
 
 
     return p0, fitfunc, fitfunc_str
