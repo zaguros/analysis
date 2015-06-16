@@ -31,6 +31,7 @@ def get_files_in_folder (contains, folder):
 def load_data (folder, timestamp, scan_type):
 
 	all_folders = [f for f in os.listdir(folder) if timestamp in f]
+	print all_folders
 	curr_fold = os.path.join(folder, all_folders[0])
 	all_files =[ f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
 	file_name = [f for f in all_files if '.hdf5' in f]
@@ -38,12 +39,15 @@ def load_data (folder, timestamp, scan_type):
 	if (scan_type =='piezo'):
 		grp_name = '/piezo_scan'
 		x_name = 'piezo_voltage'
+	elif (scan_type == 'lr_scan'):
+		grp_name = '/lr_scan'
+		x_name = 'frequency_GHz'
 	
 	f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
 	ls_grp = f[grp_name]
-	V = ls_grp[x_name].value
-	PD_signal = ls_grp['PD_signal'].value
-	return V, PD_signal
+	x = ls_grp[x_name].value
+	y = ls_grp['PD_signal'].value
+	return x, y
 
 def load_calibration (timestamp=''):
 	if (timestamp==''):
@@ -219,8 +223,24 @@ def process_2D_scan (folder):
 #f_array, t_array = get_files_in_folder (contains='piezo', folder = r'D:\measuring\data\20150529\PT_on')
 #combine_piezoscans_2D (folder = r'D:\measuring\data\20150529\PT_on', folder_array = f_array, y_axis = t_array, V_lims = None)
 #combine_piezoscans_1D (folder = r'D:\measuring\data\20150529\PT_on', folder_array = f_array, time_array = t_array/60.)
+def load_lr_scan (folder, timestamp):
+	f, y = load_data (folder = folder, timestamp = timestamp, scan_type = 'lr_scan')
+	f = np.ravel(f)
+	y = np.ravel(y)
 
-process_2D_scan (r'D:\measuring\data\20150602\134356_2Dscan')
+	ind = find (abs(f)>5000)
+	f = np.delete(f, ind)
+	y = np.delete(y, ind)
+	return f, y
+
+folder = 'D:/measuring/data/20150615/'
+f, y = load_lr_scan (folder=folder, timestamp = '124917')
+plt.figure(figsize=(12,5))
+plt.plot (f,y)
+plt.xlim ([-1550, -1450])
+plt.show()
+
+#process_2D_scan (r'D:\measuring\data\201506152\124917_lr_scan_6360_6400')
 
 '''
 V, Y = load_data (timestamp = '112232')

@@ -7,7 +7,7 @@ matplotlib.rc ('xtick', labelsize=15)
 matplotlib.rc ('ytick', labelsize=15)
 
 idx = 4
-fname = r"D:\Research\cavity\room_temperature\NewFile"+str(idx)+".csv"
+fname = r"D:\measuring\data\20150605\oscilloscope_traces\NewFile"+str(idx)+".csv"
 
 t = Trace()
 t.load_trace(filename=fname)
