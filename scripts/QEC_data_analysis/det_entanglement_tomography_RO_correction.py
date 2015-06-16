@@ -7,6 +7,9 @@ import matplotlib as mpl
 from analysis.scripts.QEC import Two_Qubit_Tomography_Postselection as tomo_ps
 reload(tomo_ps)
 from analysis.lib.QEC import ConditionalParity as CP
+from analysis.scripts.QEC_data_analysis.C13_initialization_and_RO_fidelity import C13_RO_fid_dict as C_RO
+reload(C_RO)
+
 
 def append_data(timestamps_1 = [None,None],timestamps_2 = [],timestamps_3 = [],ssro_folder = None, det = False, ms = None):
 	
@@ -141,12 +144,13 @@ folder 							= r'D:\measuring\data\Analyzed figures\Deterministic Entanglement'
 SSRO_timestamp, ssro_folder     = toolbox.latest_data(contains = 'AdwinSSRO', older_than = '20141230_134013',return_timestamp = True)
 figure_name_list 				= ['00_init','deterministic_entanglement','probabilistic_entanglement']
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
-
+if RO_corr == True:
+	folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
 ###########################
 ''' Paper figures'''
 ###########################
 figure_name_list = ['00_init_12','determinstic_entanglement_12','probabilistic_entanglement_12','00_init_15','determinstic_entanglement_15','probabilistic_entanglement_15']
-figure_name_list = ['00_init_12','00_init_15']
+# figure_name_list = ['00_init_15']
 # figure_name_list = ['probabilistic_entanglement']
 # figure_name_list = ['determinstic_entanglement_15']
 
@@ -162,6 +166,9 @@ c_orange_2 = (242/255.,129/255.,35/255.)
 # color_list = ['b',c_green,c_blue,c_red,c_orange_2,'r']
 color_list = [c_green]+2*[c_red]+[c_green]+2*[c_red]
 color_list = 6*[c_red]
+
+RO_corr = True
+
 
 for ii, figure_name in enumerate(figure_name_list):
 	# print figure_name
@@ -205,9 +212,6 @@ for ii, figure_name in enumerate(figure_name_list):
 		ms_list = [None,0,1]
 
 
-	print 'test'
-	print figure_name
-	print ms_list
 	for jj,ms in enumerate(ms_list):
 		hatch_list = ['','/','\\']
 		print 'jj is ' + str(jj)
@@ -219,13 +223,23 @@ for ii, figure_name in enumerate(figure_name_list):
 		if 'probabilistic_entanglement' in figure_name:
 			hatch = '//'
 
-		print ms
-		print hatch
 		x, x_labels, y, y_err = append_data(ms = ms, 
 								timestamps_1 = timestamps_1,timestamps_2 = timestamps_2,timestamps_3 =timestamps_3, 
 								ssro_folder = ssro_folder, det = det)
 		fig,ax = plt.subplots() 
 		state_tick_list = x_labels
+
+		if RO_corr == True:
+			print 'RO CORRECTION'
+			if '12' in figure_name:
+				correction_list, correction_error_list = C_RO.get_C13_correction_C1C2()
+			else:
+				correction_list, correction_error_list = C_RO.get_C13_correction_C5C1()
+
+			for ii, y_i in enumerate(y):
+				y_err[ii] = np.sqrt((1/correction_list[ii])**2*y_err[ii]**2+(y[ii]/correction_list[ii]**2)**2*correction_error_list[ii]**2)
+				y[ii] = y[ii]/correction_list[ii]
+
 
 		x1 = [x[i] for i in np.linspace(0,5,6).astype(int)]
 		y1 = [y[i] for i in np.linspace(0,5,6).astype(int)]
@@ -268,27 +282,19 @@ for ii, figure_name in enumerate(figure_name_list):
 		elif '00_init' in figure_name:
 			for ii in [2,5,14]:
 				y_id[ii] = np.sign(y[ii])
-		print 'zz'
-		print y[14]
-		print y_err[14]
-		print 'ZI'
-		print y[2]
-		print y_err[2]
-		print 'IZ'
-		print y[5]
-		print y_err[5]				
-		print y_id
 		ax.bar(x,y_id,align ='center',color = c_red, alpha = 0.2,ecolor = c_red, linewidth = 0)
 		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.pdf'),
 		format='pdf',bbox_inches='tight')
 		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.png'),
 		format='png',bbox_inches='tight')
+		print
 		print figure_name
 		print 'ms ' +str(ms)
 		if '00' in figure_name:
 			print 'fidelity is '+str(1/4.*(1+y[2]+y[5]+y[-1]))+'+/-'+str(1/4.*(y_err[2]**2+y_err[5]**2+y_err[-1]**2)**0.5)			
 		else:
 			print 'fidelity is '+str(1/4.*(1+abs(y[6])+abs(y[10])+abs(y[-1])))+'+/-'+str(1/4.*(y_err[6]**2+y_err[10]**2+y_err[-1]**2)**0.5)
+		print
 		plt.show()
 
 

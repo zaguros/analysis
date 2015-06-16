@@ -8,10 +8,10 @@ from analysis.scripts.QEC import Two_Qubit_Tomography_Postselection as tomo_ps
 reload(tomo_ps)
 from analysis.lib.QEC import ConditionalParity as CP
 import matplotlib as mpl; reload(mpl)
+from analysis.scripts.QEC_data_analysis.C13_initialization_and_RO_fidelity import C13_RO_fid_dict as C_RO
 
-
-folder = r'D:\measuring\data\Analyzed figures\Three qubit states'
-folder = r'D:\measuring\data\QEC_data\figs\final figures'
+# folder = r'D:\measuring\data\Analyzed figures\Three qubit states'
+folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
 
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
@@ -82,13 +82,6 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	else:
 	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-	    # print ssro_calib_folder
-	### Obtain and analyze data
-		### postive RO data
-
-	# if timestamps[0][0] == 'C': 
-	# 	folder_a = toolbox.latest_data(contains=timestamps[0]+'_positive')
-	# 	folder_b = toolbox.latest_data(contains=timestamps[0]+'_negative')	
 
 	if timestamps[0] == None: 
 		folder_a = toolbox.latest_data(contains='positive' + tag)
@@ -119,30 +112,9 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	x = range(len(y_a)) 
 
 
-	
-	### Combine data
 	y = (y_a - y_b)/2.
 	y_err =  1./2*(y_err_a**2 + y_err_b**2)**0.5 
 	
-	# print folder_a
-	# print folder_b
-
-	# print y_a
-	# print y_b
-	# print y
-
-
-	### Fidelities
-	# F_ZZ 	= (1 + y[2] + y[5] + y[14])/4
-	# F_ZmZ 	= (1 + y[2] - y[5] - y[14])/4
-	# F_ent 	= (1 + y[0] -y[4] -y[8])/4
-	# F_ent 	= (1 + y[0] +y[1] +y[2])/4
-	# print 'Fidelity with ZZ  = ' + str(F_ZZ)
-	# print 'Fidelity with ZmZ  = ' + str(F_ZmZ)
-	# print 'Fidelity with ent = ' + str(F_ent)
-
-	# print 'XY = ' +str( (y[0]**2 + y[1]**2)**0.5)
-
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
@@ -174,8 +146,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
-		plot_fit = True, color = 'r', plot_type = ''):
-		### SSRO calibration
+		plot_fit = True, color = 'r', plot_type = '',RO_corr = False, return_data = False):
 	if state != '000init':
 		k_range = 21
 	else:
@@ -183,8 +154,6 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 
 	for k in range(k_range):
 		
-		# print k 
-		# print 'positive'+ str(k)
 		if k < 9:
 			if k_range >9:
 				timestamp_9, folder_9 = toolbox.latest_data(contains = 'state_' + state +'_positive_'+ str(9), older_than = timestamp,return_timestamp = True)
@@ -197,14 +166,12 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			timestamp_pos, folder_a = toolbox.latest_data(contains = 'state_' + state +'_positive_'+ str(k), older_than = timestamp,return_timestamp = True)
 			timestamp_neg, folder_b = toolbox.latest_data(contains = 'state_' + state +'_negative_'+ str(k), older_than = timestamp,return_timestamp = True)
 
-		
-		# print folder_a
-		# print folder_b
 
 
 		x_labels_t, x_t, y_t, y_err_t  = BarPlotTomoContrast(timestamps = [timestamp_pos,timestamp_neg], measurement_name = ['adwindata'],folder_name ='Tomo',
 								ssro_calib_timestamp =ssro_calib_timestamp, save = False,
 								plot_fit = False, return_data = True)
+		
 		if k == 0:
 			print type(x_labels_t)
 			print list(x_labels_t)
@@ -218,9 +185,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			y.extend(list(y_t))
 			y_err.extend(list(y_err_t))
 	x = range(len(y)) 
-	# x_labels = x_labels_t
-		# print x_labels.tolist
-		# print y.tolist
+
 
 	Tomo = {}
 	Tomo['X_list'] = [9,18,27,50,52,58,62]
@@ -239,6 +204,90 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 	Tomo['mZ_decoded'] = [0,3,6]
 
 	state_tick_list = x_labels
+
+	# if RO_corr == 'Sqrt':
+	# 	print 'do ro correction!'
+	# 	y_err = 1/(2.*np.sqrt(np.abs(y)))*y_err
+	# 	y = np.sqrt(np.abs(y))*sign(y)
+	
+	# if RO_corr == 'MPL':
+	# 	C_C2 = 0.924
+	# 	C_C1 = 0.911
+	# 	C_C5 = 0.924
+	# 	E_C2 = 0.001
+	# 	E_C1 = 0.002
+	# 	E_C5 = 0.001		
+	# 	correction_list = 3*[C_C2]+3*[C_C5]+3*[C_C1]+9*[C_C2*C_C5]+9*[C_C2*C_C1]+9*[C_C5*C_C1]+27*[C_C2*C_C5*C_C1]
+	# 	correction_error_list = (3*[E_C2]+3*[E_C5]+3*[E_C1]+9*[sqrt((C_C5**2*E_C2**2+C_C2**2*E_C5**2))]
+	# 				+9*[sqrt((C_C1**2*E_C2**2+C_C2**2*E_C1**2))]+9*[sqrt((C_C5**2*E_C1**2+C_C1**2*E_C5**2))]
+	# 				+27*[sqrt((C_C5**2*C_C1**2*E_C2**2+C_C5**2*C_C2**2*E_C1**2+C_C1**2*C_C2**2*E_C5**2))])
+		
+	# 	for ii, y_i in enumerate(y):
+	# 		y_err[ii] = np.sqrt((1/correction_list[ii])**2*y_err[ii]**2+(y[ii]/correction_list[ii]**2)**2*correction_error_list[ii]**2)
+	# 		y[ii] = y[ii]/correction_list[ii]
+
+	# if RO_corr == 'AVG':
+	# 	C_C2 = 0.924
+	# 	C_C1 = 0.911
+	# 	C_C5 = 0.924
+	# 	E_C2 = 0.001
+	# 	E_C1 = 0.002
+	# 	E_C5 = 0.001
+	# 	correction_list = 3*[C_C2]+3*[C_C5]+3*[C_C1]+9*[(C_C2+C_C5)/2.]+9*[(C_C2+C_C1)/2.]+9*[(C_C5+C_C1)/2.]+27*[(C_C2+C_C5+C_C1)/3.]
+
+	# 	correction_error_list = 3*[E_C2]+3*[E_C5]+3*[E_C1]+9*[sqrt((E_C2**2+E_C5**2))/2.]+9*[sqrt((E_C2**2+E_C1**2))/2.]+9*[sqrt((E_C5**2+E_C1**2))/2.]+27*[sqrt((E_C1**2+E_C2**2+E_C5**2))/3.]
+		
+	# 	for ii, y_i in enumerate(y):
+	# 		y_err[ii] = np.sqrt((1/correction_list[ii])**2*y_err[ii]**2+(y[ii]/correction_list[ii]**2)**2*correction_error_list[ii]**2)
+	# 		y[ii] = y[ii]/correction_list[ii]
+
+	# if RO_corr == 'Ramsey_MPL':
+	# 	C_C2 = 0.97
+	# 	C_C1 = 0.94
+	# 	C_C5 = 0.93
+	# 	E_C2 = 0.07
+	# 	E_C1 = 0.05
+	# 	E_C5 = 0.05		
+	# 	correction_list = 3*[C_C2]+3*[C_C5]+3*[C_C1]+9*[C_C2*C_C5]+9*[C_C2*C_C1]+9*[C_C5*C_C1]+27*[C_C2*C_C5*C_C1]
+	# 	correction_error_list = (3*[E_C2]+3*[E_C5]+3*[E_C1]+9*[sqrt((C_C5**2*E_C2**2+C_C2**2*E_C5**2))]
+	# 				+9*[sqrt((C_C1**2*E_C2**2+C_C2**2*E_C1**2))]+9*[sqrt((C_C5**2*E_C1**2+C_C1**2*E_C5**2))]
+	# 				+27*[sqrt((C_C5**2*C_C1**2*E_C2**2+C_C5**2*C_C2**2*E_C1**2+C_C1**2*C_C2**2*E_C5**2))])
+	# 	print correction_list
+	# 	for ii, y_i in enumerate(y):
+	# 		y_err[ii] = np.sqrt((1/correction_list[ii])**2*y_err[ii]**2+(y[ii]/correction_list[ii]**2)**2*correction_error_list[ii]**2)
+	# 		y[ii] = y[ii]/correction_list[ii]
+
+	# if RO_corr == 'Ramsey_AVG':
+	# 	C_C2 = 0.97
+	# 	C_C1 = 0.94
+	# 	C_C5 = 0.93
+	# 	E_C2 = 0.07
+	# 	E_C1 = 0.05
+	# 	E_C5 = 0.05
+	# 	correction_list = 3*[C_C2]+3*[C_C5]+3*[C_C1]+9*[(C_C2+C_C5)/2.]+9*[(C_C2+C_C1)/2.]+9*[(C_C5+C_C1)/2.]+27*[(C_C2+C_C5+C_C1)/3.]
+	# 	correction_error_list = 3*[E_C2]+3*[E_C5]+3*[E_C1]+9*[sqrt((E_C2**2+E_C5**2))/2.]+9*[sqrt((E_C2**2+E_C1**2))/2.]+9*[sqrt((E_C5**2+E_C1**2))/2.]+27*[sqrt((E_C1**2+E_C2**2+E_C5**2))/3.]
+		
+	# 	for ii, y_i in enumerate(y):
+	# 		y_err[ii] = np.sqrt((1/correction_list[ii])**2*y_err[ii]**2+(y[ii]/correction_list[ii]**2)**2*correction_error_list[ii]**2)
+	# 		y[ii] = y[ii]/correction_list[ii]
+	print
+	print RO_corr
+	print
+	print
+	if RO_corr == True:
+		print
+		print 'RO CORRECTION111'
+		print 
+		if state == '000init':
+			RO_order = [1,5,2]
+		else:
+			RO_order = [2,5,1]
+
+		correction_list, correction_error_list = C_RO.get_C13_correction(order = RO_order)
+		for ii, y_i in enumerate(y):
+			y_err[ii] = np.sqrt((1/correction_list[ii])**2*y_err[ii]**2+(y[ii]/correction_list[ii]**2)**2*correction_error_list[ii]**2)
+			y[ii] = y[ii]/correction_list[ii]
+
 
 
 	if plot_fit ==True :
@@ -270,7 +319,6 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			print y_fidelity
 			print y_fidelity_err
 
-			y_fid = [abs(y[i])/0.93 for i in [9,18,27]]
 			y_fid = [abs(y[i]) for i in [9,18,27]]
 
 			y_fid_err = [y_err[i] for i in [9,18,27]]
@@ -335,20 +383,21 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			def autolabel(rects):
 			    for ii,rect in enumerate(rects):
 			        height = rect.get_height()
-			        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+			        plt.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%.2f'%y[ii] +'('+ str(int(round(y_err[ii]*100))) +')',
 			            ha='center', va='bottom')
-			autolabel(rects)
+			# autolabel(rects)
 			if save and ax != None:
-				print 'SAVED '+ folder
+				
 				try:
-				    fig.savefig(
-				        os.path.join(folder,state+'tomo_full.png'),bbox_inches='tight')
-				    fig.savefig(
-				        os.path.join(folder,state+'tomo_full.pdf'),bbox_inches='tight')
+					fig.savefig(
+						os.path.join(folder,state+'tomo_full_RO_Corr.png'),bbox_inches='tight')
+					fig.savefig(
+						os.path.join(folder,state+'tomo_full_RO_Corr.pdf'),bbox_inches='tight')
+					print 'SAVED '+ folder
 				except:
 				    print 'Figure has not been saved.'
-			# return y_fidelity, y_fidelity_err
-			return  y_fidelity_cs1, y_fidelity_cs2, y_fidelity_cs3, y_fidelity_cs4, y_fidelity_cs_err
+			return y_fidelity, y_fidelity_err
+			# return  y_fidelity_cs1, y_fidelity_cs2, y_fidelity_cs3, y_fidelity_cs4, y_fidelity_cs_err
 
 		elif plot_type == 'compressed':
 			fig,ax = plt.subplots(figsize=(7,5)) 
@@ -358,7 +407,28 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			plot_list = [0,3,6,9,18,27,53,59,61,62] 
 			# [9,18,27,49,53,59,61]
 			if state == '000init':
-				plot_list = [2,5,8,17,26,35,62]			
+				plot_list = [2,5,8,17,26,35,62]		
+				print 'ZZZ'	
+				print y[62]
+				print y_err[62]
+				print 'ZII'	
+				print y[2]
+				print y_err[2]
+				print 'IZI'	
+				print y[5]
+				print y_err[5]
+				print 'IIZ'	
+				print y[8]
+				print y_err[8]		
+				print 'ZZI'	
+				print y[17]
+				print y_err[17]
+				print 'ZIZ'	
+				print y[26]
+				print y_err[26]
+				print 'IZZ'	
+				print y[35]
+				print y_err[35]																												
 			y_id = np.zeros(len(y))
 			for ii in Tomo[state+'_list']:
 				y_id[ii] = np.sign(y[ii])
@@ -387,6 +457,10 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			print y_fidelity_err
 			ax.bar(x1,y_id_1,align ='center',color = color, alpha = 0.2,ecolor = color, linewidth = 1,edgecolor = color)
 			rects = ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = 'k' ,color = color,alpha = 1,linewidth = 1)
+			print 'relevant y values'
+			print state_tick_list_1
+			print y1
+			print y_err_1
 
 			ax.set_xticks(np.arange(0,len(plot_list),1))
 			# ax.bar(x,y_id,align ='center',color = '0.9')
@@ -394,20 +468,20 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			
 
 			ax.set_ylim(-1,1)
-			if state == '000init':
-				ax.set_ylim(0,1)
+			# if state == '000init':
+			# ax.set_ylim(0,1)
 			ax.set_xlim(-0.5,len(plot_list)-0.5)
 			# ax.set_xticks(x, minor = True)
-			if state != '000init':
-				yticks = np.linspace(-1,1,5)
-			else:
-				yticks = np.linspace(0,1,2)
+			# if state != '000init':
+			yticks = np.linspace(-1,1,5)
+			# else:
+			# yticks = np.linspace(0,1,2)
 			plt.yticks(yticks)
 			# rects.set_linewidth(1.5)
 			# ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 3)
 			ax.tick_params(axis='x', which='major', labelsize=30)
 			ax.tick_params(axis='y', which='major', labelsize=30)
-			# autolabel(rec4s)
+
 			ax.set_ylabel('Expectation value',fontsize = 30)
 			mpl.rcParams['axes.linewidth'] = 1
 			mpl.rcParams['pdf.fonttype'] = 42
@@ -418,17 +492,21 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			def autolabel(rects):
 			    for ii,rect in enumerate(rects):
 			        height = rect.get_height()
-			        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y1[ii],2)) +'('+ str(int(round(y_err_1[ii]*100))) +')',
+			        plt.text(rect.get_x()+rect.get_width()/2., 1.1*height, '%.2f'%y1[ii] +'('+ str(int(round(y_err_1[ii]*100))) +')',
 			            ha='center', va='bottom')
 			# autolabel(rects)
 	ax.tick_params('both', length=3, width=1, which='major')
 	if save and ax != None:
-		print 'SAVED '+ folder
+		print 'Fig SAVED '+ folder
+		print RO_corr
+		print state
+
+		# return y_fid, y_fid_err
 		try:
-		    fig.savefig(
-		        os.path.join(folder,state+'tomo_full.png'),bbox_inches='tight')
-		    fig.savefig(
-		        os.path.join(folder,state+'tomo_full.pdf'),bbox_inches='tight')
+			fig.savefig(
+				os.path.join(folder,state+'Compressed_tomo_'+state+'.png'),bbox_inches='tight')
+			fig.savefig(
+				os.path.join(folder,state+'Compressed_tomo_'+state+'.pdf'),bbox_inches='tight')
 		except:
 		    print 'Figure has not been saved.'
 
@@ -448,63 +526,73 @@ y_fidelity_cs3 = np.zeros(6)
 y_fidelity_cs4 = np.zeros(6)
 y_fidelity_err = np.zeros(6)
 
-y_fidelity_cs1[0],y_fidelity_cs2[0],y_fidelity_cs3[0], y_fidelity_cs4[0],y_fidelity_err[0] = BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
+BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+		plot_fit = True,color = c_blue,RO_corr = True)
 
-y_fidelity_cs1[1],y_fidelity_cs2[1],y_fidelity_cs3[1], y_fidelity_cs4[1],y_fidelity_err[1] = BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+# # y_fidelity_cs1[0],y_fidelity_cs2[0],y_fidelity_cs3[0], y_fidelity_cs4[0],y_fidelity_err[0]
+# y_fidelity_cs1[0],y_fidelity_err[0] = BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, RO_corr= True)
 
-y_fidelity_cs1[2],y_fidelity_cs2[2],y_fidelity_cs3[2], y_fidelity_cs4[2],y_fidelity_err[2] = BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141230_064816', save = True,
-		plot_fit = True,color = c_blue)
+# # y_fidelity_cs1[1],y_fidelity_cs2[1],y_fidelity_cs3[1], y_fidelity_cs4[1],y_fidelity_err[1]
+# y_fidelity_cs1[1],y_fidelity_err[1] = BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, RO_corr= True)
 
-y_fidelity_cs1[3],y_fidelity_cs2[3],y_fidelity_cs3[3], y_fidelity_cs4[3],y_fidelity_err[3] = BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141230_064816', save = True,
-		plot_fit = True,color = c_blue)
+# # y_fidelity_cs1[2],y_fidelity_cs2[2],y_fidelity_cs3[2], y_fidelity_cs4[2],y_fidelity_err[2]
+# y_fidelity_cs1[2],y_fidelity_err[2] = BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141230_064816', save = True,
+# 		plot_fit = True,color = c_blue,  RO_corr= True)
 
-y_fidelity_cs1[4],y_fidelity_cs2[4],y_fidelity_cs3[4], y_fidelity_cs4[4],y_fidelity_err[4] = BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+# # y_fidelity_cs1[3],y_fidelity_cs2[3],y_fidelity_cs3[3], y_fidelity_cs4[3],y_fidelity_err[3]
+# y_fidelity_cs1[3],y_fidelity_err[3] = BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141230_064816', save = True,
+# 		plot_fit = True,color = c_blue,  RO_corr= True)
 
-y_fidelity_cs1[5],y_fidelity_cs2[5],y_fidelity_cs3[5], y_fidelity_cs4[5],y_fidelity_err[5] = BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue)
+# # y_fidelity_cs1[4],y_fidelity_cs2[4],y_fidelity_cs3[4], y_fidelity_cs4[4],y_fidelity_err[4]
+# y_fidelity_cs1[4],y_fidelity_err[4] = BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue,  RO_corr= True)
 
-print sum(y_fidelity_cs1)/6.
-print sum(y_fidelity_cs2)/6.
-print sum(y_fidelity_cs3)/6.
-print sum(y_fidelity_cs4)/6.
-print sum(y_fidelity_err**2)**0.5/6.
+# # y_fidelity_cs1[5],y_fidelity_cs2[5],y_fidelity_cs3[5], y_fidelity_cs4[5],y_fidelity_err[5]
+# y_fidelity_cs1[5],y_fidelity_err[5] = BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, RO_corr= True)
+
+# print sum(y_fidelity_cs1)/6.
+# # print sum(y_fidelity_cs2)/6.
+# # print sum(y_fidelity_cs3)/6.
+# # print sum(y_fidelity_cs4)/6.
+# print sum(y_fidelity_err**2)**0.5/6.
 
 # BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue)
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 
 # BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-# # BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
-# # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# # 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+# BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 # BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141230_064816', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 # BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141230_064816', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-# # BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
+# BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed')
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 plt.show()
