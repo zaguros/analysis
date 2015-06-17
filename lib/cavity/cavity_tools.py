@@ -210,7 +210,7 @@ def combine_piezoscans_2D_interpolate (folder, folder_array, min_V, max_V, time_
 		f.savefig (os.path.join (folder, 'piezo_scan_2Dplot.png'))
 	plt.show()
 
-def track_single_peak (folder, folder_array, time_array):
+def track_single_peak (folder, folder_array, time_array, low_temperature = False):
 
 	center = []
 	std = []
@@ -222,21 +222,24 @@ def track_single_peak (folder, folder_array, time_array):
 		center.append(media)
 		std.append ((np.sum(Y*(V-media)**2))**0.5)
 
-	print len(center)
+	if low_temperature:
+		conv_factor = 5
+	else:
+		conv_factor = 25
 	center = np.asarray (center[:390])
 	std = np.asarray (std[:390])
 	time_array = time_array[:390]
 	f = plt.figure(figsize=(20,5))
-	plt.plot (time_array, 5*center, 'ob')
-	plt.fill_between (time_array, 5*(center-std), 5*(center+std), color='b', alpha=0.2)
+	plt.plot (time_array, conv_factor*center, 'ob')
+	plt.fill_between (time_array, conv_factor*(center-std), conv_factor*(center+std), color='b', alpha=0.2)
 	plt.xlabel('time [seconds]', fontsize =18)
 	plt.ylabel('resonance (cav length) [nm]', fontsize =18)
 
 	plt.show()
 	f = plt.figure(figsize=(20,5))
 	#plt.plot (time_array, center, 'ob')
-	plt.plot (time_array, 5*std, 'ob')
-	plt.plot (time_array, 5*std, 'r')
+	plt.plot (time_array, conv_factor*std, 'ob')
+	plt.plot (time_array, conv_factor*std, 'r')
 	plt.xlabel('time [seconds]', fontsize =18)
 	plt.ylabel('st.dev. (cav length) [nm]', fontsize =18)
 	plt.show()
@@ -249,11 +252,16 @@ def track_single_peak (folder, folder_array, time_array):
 	#plt.plot (time_array, std)
 	#plt.show()
 
-def process_2D_scan (folder):
-	file_name = [f for f in os.listdir(folder) if '.hdf5' in f]
-	idx = 0
+def process_2D_scan (folder, timestamp):
+
+	all_folders = [f for f in os.listdir(folder) if timestamp in f]
+	curr_fold = os.path.join(folder, all_folders[0])
+	print 'Analyzing folder: ', curr_fold
+	file_name = [f for f in os.listdir(curr_fold) if '.hdf5' in f]
+	print os.path.join(curr_fold, file_name[0])
+	idx = 5
 	done = False
-	datafile = h5py.File(os.path.join(folder, file_name[0]),'r')
+	datafile = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
 	nr_points = 300
 	plt.figure(figsize = (12, 8))
 
@@ -261,21 +269,22 @@ def process_2D_scan (folder):
 	piezo_voltage = np.zeros(10)
 
 	while idx<10:
-		#try:
+		print idx
 		curr_grp = datafile[str(idx)]
 		f = curr_grp['frq'].value
 		y = curr_grp['sgnl'].value
 		piezo_voltage[idx] = curr_grp.attrs['pzV']
 		#clean-up wavemeter errors 
-		ind = find (abs(f)>5000)
+		ind = np.where (abs(f)>5000)
 		f = np.delete(f, ind)
 		y = np.delete(y, ind)
-		if (idx==0):
-			frq = np.linspace (-1200, 200, nr_points)
-		interp_funct = interpolate.interp1d(f, y)
-		y_new = interp_funct (frq)
-		scan_data [idx, :] = y_new
-		plt.plot (frq, y_new+0.1*idx, label = str(piezo_voltage[idx])+'V')
+		#if (idx==0):
+		#	frq = np.linspace (-1200, 200, nr_points)
+		#interp_funct = interpolate.interp1d(f, y)
+		#y_new = interp_funct (frq)
+		#scan_data [idx, :] = y_new
+		#plt.plot (frq, y_new+0.1*idx, label = str(piezo_voltage[idx])+'V')
+		plt.plot (f,y+0.1*idx, label = str(piezo_voltage[idx])+'V')
 		idx = idx + 1
 		#except:
 		#	done = True
@@ -284,11 +293,11 @@ def process_2D_scan (folder):
 	plt.legend()
 	plt.show()
 
-	FF, PZ = meshgrid (frq, piezo_voltage)
-	plt.figure (figsize = (12, int(idx/5.)))
-	plt.pcolor (FF, PZ, scan_data)
-	plt.xlabel (' frq [GHz]', fontsize = 15)
-	plt.ylabel ('piezo [V]', fontsize = 15)
-	plt.show()
+	#FF, PZ = meshgrid (frq, piezo_voltage)
+	#plt.figure (figsize = (12, int(idx/5.)))
+	#plt.pcolor (FF, PZ, scan_data)
+	#plt.xlabel (' frq [GHz]', fontsize = 15)
+	#plt.ylabel ('piezo [V]', fontsize = 15)
+	#plt.show()
 
 
