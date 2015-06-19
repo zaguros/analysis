@@ -168,8 +168,10 @@ def combine_piezoscans_1D (folder, folder_array, time_array):
 	for k in folder_array:
 		#print k
 		V, Y = load_data (folder=folder, timestamp = k, scan_type='piezo')
-		ax.plot (V[:], 0.3*Y[:]+(1/60.)*time_array[i], '.', color=colori[i])
-		ax.plot (V[:], 0.3*Y[:]+(1/60.)*time_array[i], color=colori[i])
+		ind  = np.where (Y<0.6)
+		Y[ind] = 0
+		ax.plot (V[:], 0.02*Y[:]+(1/10.)*time_array[i], '.', color=colori[i])
+		ax.plot (V[:], 0.02*Y[:]+(1/10.)*time_array[i], color=colori[i])
 		i= i+1
 	ax.set_xlabel ('piezo voltage [V]', fontsize=20)
 	ax.set_ylabel ('time [min]', fontsize=20)
@@ -217,6 +219,9 @@ def track_single_peak (folder, folder_array, time_array, low_temperature = False
 
 	for k in folder_array:
 		V, Y = load_data (folder=folder, timestamp = k, scan_type='piezo')
+		ind  = np.where (Y<0.6)
+		Y[ind] = 0
+
 		Y = Y/float(np.sum(Y))
 		media = np.sum(Y*V)
 		center.append(media)
@@ -231,7 +236,8 @@ def track_single_peak (folder, folder_array, time_array, low_temperature = False
 	time_array = time_array[:390]
 	f = plt.figure(figsize=(20,5))
 	plt.plot (time_array, conv_factor*center, 'ob')
-	plt.fill_between (time_array, conv_factor*(center-std), conv_factor*(center+std), color='b', alpha=0.2)
+	#plt.fill_between (time_array, conv_factor*(center-std), conv_factor*(center+std), color='b', alpha=0.2)
+	plt.errorbar (x=time_array, y=conv_factor*center, yerr = conv_factor*(std), color='RoyalBlue')
 	plt.xlabel('time [seconds]', fontsize =18)
 	plt.ylabel('resonance (cav length) [nm]', fontsize =18)
 
