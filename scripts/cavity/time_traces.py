@@ -125,7 +125,7 @@ def analize_time_trace(folder, file_name, limits = None, do_save = False, correl
 
 	return x, y, f, yF
 
-def frequency_scan(folder, timestamp, do_save=False):
+def frequency_scan(folder, timestamp, do_save=False, xlimit=None):
 
 	f, y = cavTools.load_data (folder=folder, timestamp=timestamp, scan_type='lr_scan')
 	f = np.ravel(f)
@@ -140,17 +140,21 @@ def frequency_scan(folder, timestamp, do_save=False):
 	plt.axis("tight")
 	#plt.xlim([-2000, -1500])
 
-	#if do_limits:
-	#	plt.ylim ([1, 200])
+	if xlimit:
+		plt.xlim (xlimit)
 	plt.xlabel ('freq [GHz]', fontsize=15)
 	if do_save:
 		f3.savefig (folder+'sum_fft_'+str(idx)+'.png')
 	plt.show()
 
-def track_piezo_scan(folder, contains):
+def track_piezo_scan(folder, contains, threshold, selection = None):
 	fnames, times = cavTools.get_files_in_folder (contains=contains, folder=folder)
 	#cavTools.combine_piezoscans_1D (folder=folder, folder_array=fnames, time_array=times)#, do_save=True)
-	cavTools.track_single_peak (folder=folder, folder_array=fnames[:40], time_array=times[:40], low_temperature = True)#, do_save=True)
+	if selection:
+		cavTools.track_single_peak (folder=folder, folder_array=fnames[selection[0]:selection[1]], time_array=times[selection[0]:selection[1]], conv_factor = 1, threshold=threshold)#, do_save=True)
+	else:
+		cavTools.track_single_peak (folder=folder, folder_array=fnames[:], time_array=times[:], conv_factor = 1, threshold=threshold)#, do_save=True)
+
 
 def plot_single_piezoscan (folder, timestamp, xlimit=None):
 	plt.figure (figsize=(20,5))
@@ -166,19 +170,22 @@ def plot_single_piezoscan (folder, timestamp, xlimit=None):
 def plot_2D_piezo_laser (folder, timestamp):
 	cavTools.process_2D_scan (folder=folder, timestamp=timestamp)
 
-def plot_piezoscan_in_time (folder, contains):
+def plot_piezoscan_in_time (folder, contains, threshold=None, xlimit=None, selection = None):
 	fnames, times = cavTools.get_files_in_folder (contains=contains, folder=folder)
-	cavTools.combine_piezoscans_1D (folder = folder, folder_array = fnames[:40], time_array = times[:40])
+	if selection:
+		cavTools.combine_piezoscans_1D (folder = folder, folder_array = fnames[selection[0]:selection[1]], time_array = times[selection[0]:selection[1]], threshold = threshold, xlimit=xlimit)
+	else:
+		cavTools.combine_piezoscans_1D (folder = folder, folder_array = fnames[:], time_array = times[:], threshold = threshold, xlimit=xlimit)
 
 #frequency_scan()
 
-#folder = r'D:/Research/cavity/low_temperature/20150617/'
-#track_piezo_scan(folder=folder, contains = 'Montana_LP_later_tonight')
+folder = r'D:/Research/cavity/low_temperature/20150617_emptyCav/'
+#track_piezo_scan(folder=folder, contains = '_switchOFFcompr', threshold = 0.6, selection =[1, 40])
 
-#plot_piezoscan_in_time (folder = folder, contains = 'Montana_LP_later_tonight_compressor_off_warming' )
-#plot_single_piezoscan (folder = folder, timestamp = '16224', xlimit=[5.3, 5.8])
+plot_piezoscan_in_time (folder = folder, contains = 'N3_z=270_zoom')#, xlimit = [6,7], selection =[1,40])
+#plot_single_piezoscan (folder = folder, timestamp = '123740')#, xlimit=[6.1, 6.3])
 #folder = r'M:/tnw/ns/qt/Diamond/Projects/Cavities/data/20150611/'
-#frequency_scan (folder=folder, timestamp='145041')
+#frequency_scan (folder=folder, timestamp='165011', xlimit=[-1800, -500])
 #plot_2D_piezo_laser (folder=folder, timestamp='120548')
 
 '''
@@ -187,7 +194,7 @@ folder = r'D:/Research/cavity/low_temperature/20150617/scope_traces/'
 fname = 'U1A027.csv'
 analize_time_trace (folder=folder, file_name=fname, limits = None, correlate = True)#[40, 60])
 '''
-
+'''
 folder = r'O:/'
 fname = 'U1A005.csv'
 t = CVSTrace()
@@ -201,3 +208,4 @@ plt.plot (x*1000,y,'r')
 plt.xlabel ('time [ms]', fontsize=15)
 plt.ylabel ('photodiode signal', fontsize=15)
 plt.show()
+'''

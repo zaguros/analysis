@@ -158,7 +158,7 @@ def combine_piezoscans_2D (folder, folder_array, time_array = None, V_lims=None,
 	plt.show()
 
 
-def combine_piezoscans_1D (folder, folder_array, time_array):
+def combine_piezoscans_1D (folder, folder_array, time_array, threshold = None, xlimit = None):
 	#matplotlib.rc ('xtick', labelsize=20)
 	#matplotlib.rc ('ytick', labelsize=20)
 	colori = cm.gist_earth(np.linspace(0,0.75, len(folder_array)))
@@ -168,13 +168,16 @@ def combine_piezoscans_1D (folder, folder_array, time_array):
 	for k in folder_array:
 		#print k
 		V, Y = load_data (folder=folder, timestamp = k, scan_type='piezo')
-		ind  = np.where (Y<0.6)
-		Y[ind] = 0
+		if threshold:
+			ind  = np.where (Y<threshold)
+			Y[ind] = 0
 		ax.plot (V[:], 0.02*Y[:]+(1/10.)*time_array[i], '.', color=colori[i])
 		ax.plot (V[:], 0.02*Y[:]+(1/10.)*time_array[i], color=colori[i])
 		i= i+1
 	ax.set_xlabel ('piezo voltage [V]', fontsize=20)
 	ax.set_ylabel ('time [min]', fontsize=20)
+	if xlimit:
+		ax.set_xlim(xlimit)
 	#f.savefig ('D:/measuring/low_temp_cavity.png', dpi=300)
 	plt.show()
 
@@ -212,25 +215,22 @@ def combine_piezoscans_2D_interpolate (folder, folder_array, min_V, max_V, time_
 		f.savefig (os.path.join (folder, 'piezo_scan_2Dplot.png'))
 	plt.show()
 
-def track_single_peak (folder, folder_array, time_array, low_temperature = False):
+def track_single_peak (folder, folder_array, time_array, conv_factor = 1, threshold = None):
 
 	center = []
 	std = []
 
 	for k in folder_array:
 		V, Y = load_data (folder=folder, timestamp = k, scan_type='piezo')
-		ind  = np.where (Y<0.6)
-		Y[ind] = 0
+		if threshold:
+			ind  = np.where (Y<threshold)
+			Y[ind] = 0
 
 		Y = Y/float(np.sum(Y))
 		media = np.sum(Y*V)
 		center.append(media)
 		std.append ((np.sum(Y*(V-media)**2))**0.5)
 
-	if low_temperature:
-		conv_factor = 5
-	else:
-		conv_factor = 25
 	center = np.asarray (center[:390])
 	std = np.asarray (std[:390])
 	time_array = time_array[:390]
