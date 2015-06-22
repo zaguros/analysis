@@ -58,9 +58,9 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5443500,
+    'st_start_ch0'             : 5444300,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5443500+600,
+    'st_start_ch1'             : 5444300+1000,
     'st_len_w2_00'             : 9000,
     'st_len_w2_11'             : 18000,
     'pulse_sep'                : bs_process_params['pulse_sep'],

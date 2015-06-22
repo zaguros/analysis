@@ -26,7 +26,7 @@ def RO_correct_err(RO_norm, F0A, F1A, F0B, F1B):
     (N00, N01, N10, N11) = RO_norm
     return np.array(ro_c_err.get_readout_correction_errors(F0a=F0A,F1a=F1A, F0b=F0B, F1b=F1B, dF0a = 0.005,dF1a = 0.005,dF0b = 0.005,dF1b = 0.005,N00=N00, N01=N01,N10=N10, N11=N11))
 
-def RO_correct_single_qubit(p0,u_p0, F0=0.955, F1=0.98):
+def RO_correct_single_qubit(p0,u_p0, F0, F1):
     roc = error.SingleQubitROC()
     roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (F0,0.005,F1,0.005)
     c0, u_c0 = roc.num_eval(p0,u_p0)
@@ -143,6 +143,8 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     dt_fltr = True
     rnd_fltr = (dlt[:,be._cl_noof_rnd_0] + dlt[:,be._cl_noof_rnd_1] == 1 )
     corr_mats={}
+    F0 =analysis_params['F0A'] if lt3 else analysis_params['F0B']
+    F1 =analysis_params['F1A'] if lt3 else analysis_params['F1B']
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
         fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr & no_invalid_mrkr_fltr
         db_fltr = db[fltr]
@@ -150,7 +152,8 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
         noof_ev_fltr = np.sum(fltr)
         p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
         u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
-        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0)
+
+        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0, F0, F1)
         corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr,noof_ev_fltr]
     return corr_mats
 
