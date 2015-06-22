@@ -76,7 +76,7 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -109,7 +109,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     i = len(daydirs)-1
     while len(measdirs) == 0 and i >= 0:
         daydir = daydirs[i]
-        #print search_dir, daydir
+        if VERBOSE:
+            print search_dir, daydir
         all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
         all_measdirs.sort()
 

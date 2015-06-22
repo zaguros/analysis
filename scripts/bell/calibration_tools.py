@@ -88,7 +88,6 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
     x0 = fit.Parameter(x0_guess, 'x0')
     of = fit.Parameter(of_guess, 'of')
     a = fit.Parameter(a_guess, 'a')
-    ax.set_ylim(0.0,0.3)
 
     fitfunc_str = '(1-of) + a (x-x0)**2'
     def fitfunc_parabolic(x):
