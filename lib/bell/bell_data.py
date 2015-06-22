@@ -113,8 +113,7 @@ def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs
 
     return total_ent_events, total_lt3_ssro, total_lt4_ssro, total_ent_events_fps, total_lt3_ssro_fps, total_lt3_ssro_fps, total_lt4_ssro_fps
 
-def process_tpqi_data(bs_fps, bs_params, analysis_fp=None, update_previous_analysis_fp=None):
-    print 'Processing TPQI {} files'.format(len(bs_fps))
+def process_tpqi_data(fps_bs, bs_params, analysis_fp=None, update_previous_analysis_fp=None):
     p_bs = bs_params
 
     if update_previous_analysis_fp!=None:
@@ -126,7 +125,9 @@ def process_tpqi_data(bs_fps, bs_params, analysis_fp=None, update_previous_analy
     else:
         all_coincidences = np.empty((0,be._tpqi_noof_columns), dtype=be._tpqi_dtype)
 
-    for i,fp in enumerate(bs_fps):
+    print 'Processing TPQI {} files'.format(len(fps_bs))
+    
+    for i,fp in enumerate(fps_bs):
         print i,
         coincidences = be.get_coincidences(fp,st_start_ch0 = p_bs['st_start_ch0'], st_start_ch1 = p_bs['st_start_ch1'], st_len = p_bs['st_len'], pulse_sep = p_bs['pulse_sep'])
         all_coincidences = np.vstack((all_coincidences, coincidences))
@@ -137,23 +138,29 @@ def process_tpqi_data(bs_fps, bs_params, analysis_fp=None, update_previous_analy
     return all_coincidences
 
 def process_lt_stats(fps_lt, lt_params, lt3, analysis_fp=None,  update_previous_analysis_fp=None):
-    print 'Processing LT {} files'.format(len(fps_lt))
+
     p_lt = lt_params
     psb_tail_start = p_lt['psb_tail_start_lt3'] if lt3 else p_lt['psb_tail_start_lt4']
     psb_prepulse_start = p_lt['psb_prepulse_start_lt3'] if lt3 else p_lt['psb_prepulse_start_lt4']
 
     if update_previous_analysis_fp!=None:
         f = h5py.File(update_previous_analysis_fp,'r')
-        all_lt_stats = f['analysis']['lt_stats'].value
+        all_lt_stats = f['analysis']['lt3_stats'].value if lt3 else f['analysis']['lt4_stats'].value
         total_lt_fps = f['analysis']['total_lt3_ssro_fps'].value if lt3 else  f['analysis']['total_lt4_ssro_fps'].value
+        noofs_fps = len(fps_lt)
         fps_lt = np.setdiff1d(fps_lt,total_lt_fps)
+        noof_old_fps = noofs_fps - len(fps_lt)
+        all_lt_stats = np.resize(all_lt_stats,(noofs_fps, be._lt_stats_noof_columns))
         f.close()
     else:
         all_lt_stats = np.zeros((len(fps_lt),be._lt_stats_noof_columns), dtype=be._lt_stats_dtype)
-   
+        noof_old_fps = 0
+
+    print 'Processing LT {} files'.format(len(fps_lt))   
+
     for i,fp in enumerate(fps_lt):
         print i,
-        all_lt_stats[i,:]=  be.get_lt_stats(fp, ro_start  = p_lt['ro_start'],  ro_length  = p_lt['ro_length'],  ro_channel  = p_lt['ro_channel'],
+        all_lt_stats[i+noof_old_fps,:]=  be.get_lt_stats(fp, ro_start  = p_lt['ro_start'],  ro_length  = p_lt['ro_length'],  ro_channel  = p_lt['ro_channel'],
                                        rnd_start = p_lt['rnd_start'], rnd_length = p_lt['rnd_length'], 
                                        rnd_0_channel = p_lt['rnd_0_channel'], rnd_1_channel = p_lt['rnd_1_channel'], 
                                        psb_tail_start = psb_tail_start, psb_tail_len = p_lt['psb_tail_len'], pulse_sep = p_lt['pulse_sep'],
@@ -164,8 +171,7 @@ def process_lt_stats(fps_lt, lt_params, lt3, analysis_fp=None,  update_previous_
     print 'Done!'
     return all_lt_stats
 
-def process_bs_hist_stats(bs_fps, bs_params, analysis_fp=None, update_previous_analysis_fp=None):
-    print 'Processing tail {} files'.format(len(bs_fps))
+def process_bs_hist_stats(fps_bs, bs_params, analysis_fp=None, update_previous_analysis_fp=None):
     p_bs = bs_params
 
     if update_previous_analysis_fp!=None:
@@ -173,15 +179,21 @@ def process_bs_hist_stats(bs_fps, bs_params, analysis_fp=None, update_previous_a
         hist_stats = f['analysis']['bs_hist_stats'].value
         total_hist = f['analysis']['bs_total_hist'].value.T 
         total_ent_events_fps = f['analysis']['total_ent_events_fps'].value
+        noofs_fps = len(fps_bs)
         fps_bs = np.setdiff1d(fps_bs,total_ent_events_fps)
+        noof_old_fps = noofs_fps - len(fps_bs)
+        hist_stats = np.resize(hist_stats,(noofs_fps, be._bs_hist_stats_noof_columns))
         f.close()
     else:
-        hist_stats = np.zeros((len(bs_fps), be._bs_hist_stats_noof_columns), dtype=be._bs_hist_stats_dtype)
+        hist_stats = np.zeros((len(fps_bs), be._bs_hist_stats_noof_columns), dtype=be._bs_hist_stats_dtype)
         total_hist = None
-    
-    for i,fp in enumerate(bs_fps):
+        noof_old_fps = 0
+
+    print 'Processing tail {} files'.format(len(fps_bs))
+
+    for i,fp in enumerate(fps_bs):
         print i,
-        hi_0, hi_1, hist_stats[i,:] = be.get_bs_hist_stats(fp, st_start_ch0   = p_bs['st_start_ch0'],   st_start_ch1 = p_bs['st_start_ch1'], st_len = p_bs['st_len'], pulse_sep = p_bs['pulse_sep'],
+        hi_0, hi_1, hist_stats[i+noof_old_fps,:] = be.get_bs_hist_stats(fp, st_start_ch0   = p_bs['st_start_ch0'],   st_start_ch1 = p_bs['st_start_ch1'], st_len = p_bs['st_len'], pulse_sep = p_bs['pulse_sep'],
                                               st_pulse_start = p_bs['st_pulse_start'], st_pulse_len = p_bs['st_pulse_len'], hist_binsize_ps =p_bs['hist_binsize_ps'] )
         if total_hist == None:
             total_hist = np.vstack((hi_0,hi_1))
@@ -195,21 +207,26 @@ def process_bs_hist_stats(bs_fps, bs_params, analysis_fp=None, update_previous_a
     return total_hist.T,hist_stats
 
 def process_afterpulsing_data(fps_bs, afterpulsing_params, analysis_fp=None, update_previous_analysis_fp=None):
-    print 'Processing afterpulsing {} files'.format(len(fps_bs))
     p_ap = afterpulsing_params
     
     if update_previous_analysis_fp!=None:
         f = h5py.File(update_previous_analysis_fp,'r')
         all_afterpulsing = f['analysis']['afterpulsing'].value
         total_ent_events_fps = f['analysis']['total_ent_events_fps'].value
+        noofs_fps = len(fps_bs)
         fps_bs = np.setdiff1d(fps_bs,total_ent_events_fps)
+        noof_old_fps = noofs_fps - len(fps_bs)
+        all_afterpulsing = np.resize(all_afterpulsing,(noofs_fps, be._bs_afterpulsing_noof_columns))
         f.close()
     else:
         all_afterpulsing = np.zeros((len(fps_bs),be._bs_afterpulsing_noof_columns), dtype=be._bs_afterpulsing_dtype)
+        noof_old_fps = 0
+    
+    print 'Processing afterpulsing {} files'.format(len(fps_bs))
 
     for i,fp in enumerate(fps_bs):
         print i,
-        all_afterpulsing[i] = be.get_bs_afterpulsing(fp, first_st_start = p_ap['first_st_start'], first_st_len = p_ap['first_st_len'], after_st_start = p_ap['after_pulse_st_start'], after_st_len = p_ap['after_pulse_st_len'])
+        all_afterpulsing[i] += be.get_bs_afterpulsing(fp, first_st_start = p_ap['first_st_start'], first_st_len = p_ap['first_st_len'], after_st_start = p_ap['after_pulse_st_start'], after_st_len = p_ap['after_pulse_st_len'])
     
     if analysis_fp!=None:
         tb.set_analysis_data(analysis_fp, 'afterpulsing', data=all_afterpulsing, attributes=[], permissions='a')
