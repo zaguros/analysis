@@ -43,18 +43,20 @@ class CVSTrace():
 			y = []
 			for row in row_list:
 				try:
-					y.append( float(row[1]))
+					if (ind>15):
+						y.append( float(row[1]))
 				except:
 					print 'no value'
-				if (ind<15):
-					print ind, row
+				#if (ind<15):
+					#print ind, str(row[0])
 				if (ind==8):
 					self.h_res = float(row[1])
 				if (ind==7):
 					self.sampling_rate = float(row[1])
 				ind = ind+1
 		self.trace = np.asarray(y)
-		self.x_axis = np.ones(len(self.trace))*self.h_res
+		self.x_axis = np.arange(len(self.trace))*self.h_res
+		print 'File loaded. Resolution: ', self.h_res*1e9, 'ns. Sampling rate: ', self.sampling_rate
 
 	def plot_trace (self):
 		plt.figure(figsize = (10,6))
