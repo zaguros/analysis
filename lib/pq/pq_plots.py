@@ -19,13 +19,14 @@ def _plot_photon_hist(ax, h, b, log=True, **kw):
     _h[_h<=1e-1] = 1e-1
     _h = np.append(_h, _h[-1])
            
-    ax.plot(b, _h, drawstyle='steps-post', label=label)
+    ax.plot(b/1000., _h, drawstyle='steps-post', label=label)
     if log:
         ax.set_yscale('log')
-    ax.set_xlabel('time (ps)')
+    ax.set_xlabel('time (ns)')
     ax.set_ylabel('events')
     ax.set_ylim(bottom=0.1)
-    ax.set_xlim(min(b), max(b))
+    ax.set_xlim(min(b/1000.), max(b/1000.))
+    ax.grid(True)
 
 def plot_photon_hist(pqf, **kw):    
     ret = kw.pop('ret', 'subplots')

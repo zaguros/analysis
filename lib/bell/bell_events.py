@@ -229,7 +229,7 @@ def get_entanglement_event_list(fp_bs,
         print 'Found {} entanglement markers in {}'.format(len(ent_sn),fp_bs)
 
     marker_sn_fltr = np.in1d(sn_bs,ent_sn)
-    pulse_st_fltr = (st_pulse_start <= st_bs ) & (st_bs < st_pulse_start+st_pulse_len) & (sp_bs == 0) & (ch_bs == 0)
+    pulse_st_fltr = (st_pulse_start <= st_bs ) & (st_bs < st_pulse_start+st_pulse_len) & (sp_bs == 0) & (ch_bs == 1)
     sn = sn_bs[marker_sn_fltr]
     st = st_bs[marker_sn_fltr]
     ch = ch_bs[marker_sn_fltr]

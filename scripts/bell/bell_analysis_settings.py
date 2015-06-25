@@ -9,7 +9,7 @@ bs_process_params = {
 
     'ent_marker_channel_bs' : 1,
 
-    'st_pulse_start'          : 5438000,
+    'st_pulse_start'          : 5439000, #for ch 1
     'st_pulse_len'            : 4000,
     'pulse_max_sn_diff'       : 3000000, #3 million syncs ~ 60 secs
 
@@ -58,9 +58,9 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5444300,
+    'st_start_ch0'             : 5444000,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5444300+1000,
+    'st_start_ch1'             : 5444000+1000,
     'st_len_w2_00'             : 1000,
     'st_len_w2_11'             : 15000,
     'pulse_sep'                : bs_process_params['pulse_sep'],

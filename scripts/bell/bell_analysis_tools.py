@@ -159,7 +159,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
 
 
 
-def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
+def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=True):
     #Windows & other filtes:
     st_start_ch0  = analysis_params['st_start_ch0']
     st_len        = analysis_params['st_len'] #50 ns
@@ -178,7 +178,8 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
         event_times.append(event_time)
         for bad_time_range in bad_time_ranges:
             bad_time_fltr[i] = (bad_time_fltr[i]) and ((event_time <=  bad_time_range[0]) or (event_time >  bad_time_range[1]))
-    print 'Events in bad time ranges: {}/{}'.format(len(db)-np.sum(bad_time_fltr), len(db))
+    if VERBOSE:
+        print 'Events in bad time ranges: {}/{}'.format(len(db)-np.sum(bad_time_fltr), len(db))
 
     #invalid data marker filter & BS invalid event filter
     no_invalid_mrkr_fltr = (d3[:,be._cl_inv_mrkr]==0) & (d4[:,be._cl_inv_mrkr]==0)
@@ -210,8 +211,36 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
                      | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
         st_fltr = st_fltr_w1 & st_fltr_w2
 
-        fltr = st_fltr & psi_fltr  & valid_event_fltr  & rnd_fltr & no_invalid_mrkr_fltr & psb_tail_fltr & bad_time_fltr
-            
+        fltr = psi_fltr & valid_event_fltr
+        
+        noof_ev_fltr = np.sum(fltr) 
+        fltr = fltr & st_fltr
+        if VERBOSE:
+            print '-'*40
+            print 'Sync time filter {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+        
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & no_invalid_mrkr_fltr  
+        if VERBOSE:
+            print 'no_invalid_mrkr_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & rnd_fltr  
+        if VERBOSE:
+            print 'rnd_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & psb_tail_fltr  
+        if VERBOSE:
+            print 'psb_tail_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & bad_time_fltr  
+        if VERBOSE:
+            print 'bad_time_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        
         db_fltr = db[fltr]
         d3_fltr = d3[fltr]
         d4_fltr = d4[fltr]
