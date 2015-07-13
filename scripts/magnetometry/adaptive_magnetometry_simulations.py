@@ -47,18 +47,34 @@ def simulate_sql (B=3*12.5e6/4.):
 
 	set_magnetic_field = B
 	print set_magnetic_field
-	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=51, tau0=10e-9,)
+	s = magnetometry.RamseySequence_Simulation (N_msmnts = 1, reps=101, tau0=10e-9,)
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96000e-6
 	s.fid0 = 0.87
 	s.fid1 = 0.025
 	s.B_max = 1/(4*s.t0)
+	s.n_points = 1000
 
+	print 'Simulating data...\n'
 	s.sim_SQL(phase_deg=90)
+	print 'Done!'
+	print 'Plotting normal results...'
+	print 'Size results matrix: ', np.shape(s.msmnt_results)
 	s.convert_to_dict()
 	beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 	plt.show()
+
+	for i in [200, 500, 1000]:
+		print 'Reshaping msmnt result into G = ', i
+		print 'Plotting...'
+		s.reshape_SQL(G=i)
+		print 'Size results matrix: ', np.shape(s.msmnt_results)
+		print 'Size phase matrix: ', np.shape(s.msmnt_phases)
+		print 'Size time array: ', np.shape(s.msmnt_times)
+		s.convert_to_dict()
+		beta_py, p_py, av_exp_py,H_py, m_py, s_py = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
+		plt.show()
 
 
 def simulate_berry (do_adaptive):
@@ -82,7 +98,7 @@ def simulate_berry (do_adaptive):
 
 def test_swarm_opt ():
 
-	F = 2
+	F = 3
 	G = 5
 	K = 8
 	set_magnetic_field = 12.5e6/2.
@@ -90,8 +106,8 @@ def test_swarm_opt ():
 
 	s.setup_simulation (magnetic_field_hz = set_magnetic_field, G=G,F=F,K=K)
 	s.T2 = 96e-6
-	s.fid0 = .87
-	s.fid1 = 0.02
+	s.fid0 = .88
+	s.fid1 = 0.007
 
 	s.sim_swarm_optim()
 	s.convert_to_dict()
@@ -151,7 +167,7 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = '', fpga_round=False, fpga_bit=None):
 #def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
@@ -159,38 +175,39 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 11, nr_points_per_period=7)
-	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
+	mgnt_exp.set_exp_params( T2 = 5000e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
 		mgnt_exp.verbose=True
 		#mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
-		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B)
+		print 'T2* = ', mgnt_exp.T2
+		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B, fpga_round=fpga_round, fpga_bit = fpga_bit)
 
 		plt.figure()
 		
 		mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
-	mgnt_exp.save()
+	mgnt_exp.save(name=name)
 
 
-def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False):
+def simulate_sweep_field_SQL (fid0, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False):
 #def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
 	print '############### Simulate #####################'
-	N=K+1
-	mgnt_exp = magnetometry.magnetometrySQL(tau0=0.5*20e-9)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=11)
+	N=1
+	mgnt_exp = magnetometry.magnetometrySQL(tau0=0.5*20e-9, max_G = 3000)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 1, nr_points_per_period=3)
 	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
-	for g in [10, 100, 200, 300, 400, 500, 1000]:
-		mgnt_exp.verbose=True
-		mgnt_exp.sweep_field_simulation (G=g ,print_results=print_results, specific_B=specific_B)
-		plt.figure()
+	mgnt_exp.G = 100
+	mgnt_exp.verbose=True
+	mgnt_exp.sweep_field_simulation_SQL (print_results=print_results, specific_B=specific_B)
+	plt.figure()
 		
-		mgnt_exp.plot_msqe_dictionary(y_log=True)
+	mgnt_exp.plot_msqe_dictionary(y_log=True)
 	mgnt_exp.plot_sensitivity_scaling()
 	mgnt_exp.save()
 
@@ -433,32 +450,22 @@ def overnight_simulations_15dec2014():
 			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False, N1_sweep=False)
 '''
 
-'''
 
-fid0=0.87
-fid1=0.02
-reps=11
-simulate_sweep_field_variable_M (G=3,K=9,F=0 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=0 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=1 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=3 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=3 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=4 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
-simulate_sweep_field_variable_M (G=3,K=9,F=5 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False)
-'''
-simulate_sql(B= -20e6)
-simulate_sql(B= -15e6)
-simulate_sql(B= -5e6)
-simulate_sql(B= 0)
-simulate_sql(B= 7e6)
-simulate_sql(B= 17e6)
+def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
+	fid1=0.02
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
+def suppl_info_simulations_nn_adptv (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], name=''):
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
 
+def suppl_info_simulations_swarm (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], name=''):
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name = name)
 
 #mgnt_MNp1_WRONG_lessreps=analyze_saved_simulations('20141105_112326',G=2,F=1,K=7)
 
@@ -466,3 +473,23 @@ simulate_sql(B= 17e6)
 
 #test_swarm_opt()
 #simulate_sweep_field_variable_M(G=5,F=2,K=9,fid0=0.87, protocol='swarm_optimization', fid1=0.02,print_results=False,reps=21, error_bars = True, specific_B=False)
+
+#simulate_sweep_field_SQL (fid0=0.87, fid1=0.02,print_results=False,reps=501, error_bars = True, specific_B=False)
+#simulate_sql()
+
+#suppl_info_simulations_adptv (G=5, fid0=1., sweep_f = [3,4,5])
+#suppl_info_simulations_adptv (G=5, fid0=0.88, sweep_f = [0,1,2,3,4,5])
+#suppl_info_simulations_nn_adptv (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
+
+#suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
+
+#suppl_info_simulations_swarm (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
+
+reps = 3
+#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=3, fid0=1.00,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_4', fpga_round=True, fpga_bit=2)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_16', fpga_round=True, fpga_bit=4)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_64', fpga_round=True, fpga_bit=6)
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True, fpga_bit=8)
+
+#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=9,F=3, fid0=0.88,fid1=0.02,reps=reps, error_bars = True, name = '_noRound')

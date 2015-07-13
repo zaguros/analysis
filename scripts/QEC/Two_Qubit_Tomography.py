@@ -18,19 +18,27 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	if ssro_calib_timestamp == None: 
 	    ssro_calib_folder = toolbox.latest_data('SSRO')
 	else:
-	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
+		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
+		print ssro_calib_folder
+	# <<<<<<< HEAD
+	    # ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+	# =======
+		
+
 
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()
 	a.get_readout_results(name='adwindata')
 	a.get_electron_ROC(ssro_calib_folder)
-
+	# a.p0 = a.normalized_ssro
+	# a.u_p0 = a.u_normalized_ssro
 	x_labels = a.sweep_pts.reshape(-1)
 	y= ((a.p0.reshape(-1))-0.5)*2
 	x = range(len(y)) 
 	y_err = 2*a.u_p0.reshape(-1)
-
+	print 'y', y
+	print 'err', y_err
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
@@ -86,7 +94,9 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		folder_b = toolbox.latest_data(contains='negative' + tag)
 	elif len(timestamps)==1:		
 		folder_b = toolbox.data_from_time(timestamps[0])      
-		folder_a = toolbox.latest_data(contains = 'positive', older_than = timestamps[0])   
+		print folder_b
+		folder_a = toolbox.latest_data(contains = 'pos', older_than = timestamps[0])   
+		print folder_a
 	else:
 		folder_a = toolbox.data_from_time(timestamps[0])      
 		folder_b = toolbox.data_from_time(timestamps[1])     	   
@@ -140,6 +150,8 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		ax.set_xticks(x)
 		ax.set_xticklabels(x_labels.tolist())
 		ax.set_ylim(-1.1,1.1)
+		print 'test'
+		print folder_a
 		ax.set_title(str(folder_a)+'/'+str(timestamps[0]))
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
@@ -218,6 +230,86 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 		        height = rect.get_height()
 		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
 		            ha='center', va='bottom')
+		autolabel(rects)
+
+	if save and ax != None:
+		try:
+		    fig.savefig(
+		        os.path.join(folder_a,'tomo.png'))
+		except:
+		    print 'Figure has not been saved.'
+
+
+def BarPlotTomoContrastFull_mult_msmts(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo', older_than = None, newer_than = None, ssro_calib_timestamp =None, save = True, plot_fit = True):
+	### SSRO calibration
+
+	Tomo_str_list = []
+	Tomo_basis_list = ([
+	            ['X','I'],['Y','I'],['Z','I'],
+	            ['I','X'],['I','Y'],['I','Z'],
+	            ['X','X'],['X','Y'],['X','Z'],
+	            ['Y','X'],['Y','Y'],['Y','Z'],
+	            ['Z','X'],['Z','Y'],['Z','Z']])
+
+	for BP in Tomo_basis_list:
+		Tomo_str_list.append(''.join([str(s) for s in BP]))
+
+
+	for k, BP in enumerate(Tomo_str_list):
+		print 'Tomo' + BP +'_ROpositive_'
+		timestamp_pos, folder_a = toolbox.latest_data(contains = 'sweep_phase_FET0.305s_auto_C1&2_Tomo' + BP +'_ROpositive_', older_than = older_than, newer_than = newer_than, return_timestamp = True)
+		timestamp_neg, folder_b = toolbox.latest_data(contains = 'sweep_phase_FET0.305s_auto_C1&2_Tomo' + BP +'_ROnegative_', older_than = older_than, newer_than = newer_than, return_timestamp = True)
+
+		x_labels_t, x_t, y_t, y_err_t  = BarPlotTomoContrast(timestamps = [timestamp_pos,timestamp_neg], measurement_name = ['adwindata'],
+								ssro_calib_timestamp =None, save = False,
+								plot_fit = False, return_data = True)
+		if k == 0:
+			print type(x_labels_t)
+			print list(x_labels_t)
+			x_labels = list(x_labels_t)
+			x = list(x_t)
+			y = list(y_t)
+			y_err = list(y_err_t)
+		else:
+			x_labels.extend(list(x_labels_t))
+			x.extend(list(x_t))
+			y.extend(list(y_t))
+			y_err.extend(list(y_err_t))
+	
+	x = range(len(y)) 
+	# print x_labels.tolist
+	# print y.tolist
+
+	squared = 0.
+	fidel = 1.
+	for ii in x:
+		if y[ii]>0.2:
+			print x_labels[ii]
+			print y[ii]
+			fidel += y[ii]
+			squared += y_err[ii]**2
+			print y_err[ii]
+
+	print 'rooterror', squared**0.5
+	print 'fidelity' , fidel / 4.
+	if plot_fit ==True: 
+		fig,ax = plt.subplots(figsize=(10,5)) 
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		y2 = [0,0,0,0,0,0,1,0,0,0,0,1,0,1,0]
+		rects2 = ax.bar(x,y2,align ='center', alpha=0.2 )
+		ax.set_xticks(x)
+		ax.set_xticklabels(x_labels,fontsize=20)
+		ax.tick_params(axis='y', which='major', labelsize=20)
+		ax.set_ylim(-1.1,1.1)
+		ax.set_title(str(folder_a)+'/'+str(timestamp_neg))
+		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted', linewidth=2)
+
+			# print values on bar plot
+		def autolabel(rects):
+		    for ii,rect in enumerate(rects):
+		        height = rect.get_height()
+		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+		            ha='center', va='bottom', fontsize=12)
 		autolabel(rects)
 
 	if save and ax != None:

@@ -52,9 +52,14 @@ def compare_swarm_opt ():
     colours = ['b', 'r', 'k']
     pt.compare_multiple_plots (timestamps=t_stamps, labels=labels, title = 'compare protocols', colours=colours)
 
-
+def compare_binary_discretization ():
+    t_stamps = ['20150521_112404', '20150521_124048', '20150521_140258','20150521_152328']
+    labels = ['2 bits', '4 bits', '6 bits', '8 bits']
+    colours = ['g', 'b', 'r', 'k']
+    pt.compare_multiple_plots (timestamps=t_stamps, labels=labels, title = 'Compare discretization', colours=colours)
 
 #compare_G5_variableF_imperfRO()
 #compare_G5_variableF_perfRO()
 #compare_cappellaro_varG()
-compare_swarm_opt()
+#compare_swarm_opt()
+compare_binary_discretization()

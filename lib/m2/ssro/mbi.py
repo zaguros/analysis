@@ -242,7 +242,7 @@ class MBIAnalysis(m2.M2Analysis):
         figsize=kw.get('figsize',(6,4))
         markersize = kw.get('markersize',6)
         capsize = kw.get('capsize',3)
-
+        print 'labels', labels
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
             self.sweep_name = 'sweep parameter'
@@ -262,6 +262,7 @@ class MBIAnalysis(m2.M2Analysis):
         if mode != 'correlations':
             for i in range(self.readouts):
                 if not self.result_corrected:
+                    print "Loud noises"
                     ax.errorbar(self.sweep_pts, self.normalized_ssro[:,i], fmt='o-',
                         yerr=self.u_normalized_ssro[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                 else:
