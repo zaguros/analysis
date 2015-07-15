@@ -35,6 +35,20 @@ def compare_capp_modCapp_supplInfo ():
     colours = ['RoyalBlue', 'crimson']
     pt.compare_multiple_plots (timestamps=t_stamps, labels=labels, title = 'G=3, F=5', colours=colours, do_save=True)
 
+def plot_RT_contrast ():
+	R = np.arange (50000)+1
+	a0 = 0.031*R
+	a1 = 0.021*R
+	C = 1./(1+(2*(a0+a1))/((a0-a1)**2))**0.5
+
+	matplotlib.rc ('xtick', labelsize=20)
+	matplotlib.rc ('ytick', labelsize=20)
+	f1 = plt.figure (figsize=(10,6))
+	plt.semilogx (R, C, linewidth =3)
+	plt.xlabel ('read-out repetitions', fontsize=20)
+	plt.ylabel ('contrast C', fontsize=20)
+	plt.savefig ('D:/measuring/fig_S5.svg')
+	plt.show()
 
 def compare_cappellaro_G2_fid1():
 	t_stamps = []
@@ -128,13 +142,14 @@ def compare_room_temperature ():
 	f1.savefig (r"D:\measuring\compare_sens_roomTemperature_nT.pdf")
 	plt.show()
 
+plot_RT_contrast()
 
 #compare_room_temperature()
 #def plot_fig_S1 ():
 
-pr1 = 'nnAdptv'
-pr2 = 'swarmOpt'
-sens_dict = compare_protocols (protocol_array = [pr1, pr1], N=10, G=5, fid=['0.88', '0.88'], name=['_noT2_symmRO', '_noT2'])
+#pr1 = 'nnAdptv'
+#pr2 = 'swarmOpt'
+#sens_dict = compare_protocols (protocol_array = [pr1, pr1], N=10, G=5, fid=['0.88', '0.88'], name=['_noT2_symmRO', '_noT2'])
 
 #pr1 = 'modCapp'
 #pr2 = 'nnAdptv'

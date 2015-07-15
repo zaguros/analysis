@@ -243,6 +243,11 @@ class SSROAnalysis(m2.M2Analysis):
         meanfid = (_fid0[:,1]+_fid1[:,1])*0.5
         meanfiderr = np.sqrt( (0.5*_fid0[:,2])**2 + (0.5*_fid1[:,2])**2 )
 
+        print 'SSRO calibration : ', self.timestamp
+        print 'max. F = ({:.2f} +/- {:.2f})% at t={:.0f} us'.format(F_max*100., F_max_err*100., t_max)
+        print '\tms_0 = ({:.2f} +/- {:.2f})%'.format(fid0[maxidx]*100, fid0_err[maxidx]*100)
+        print '\tms_1 = ({:.2f} +/- {:.2f})%'.format(fid1[maxidx]*100, fid1_err[maxidx]*100)
+
         try:
             del g['time']
             del g['mean_fidelity']

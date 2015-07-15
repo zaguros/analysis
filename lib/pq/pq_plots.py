@@ -19,13 +19,14 @@ def _plot_photon_hist(ax, h, b, log=True, **kw):
     _h[_h<=1e-1] = 1e-1
     _h = np.append(_h, _h[-1])
            
-    ax.plot(b, _h, drawstyle='steps-post', label=label)
+    ax.plot(b/1000., _h, drawstyle='steps-post', label=label)
     if log:
         ax.set_yscale('log')
-    ax.set_xlabel('time (ps)')
+    ax.set_xlabel('time (ns)')
     ax.set_ylabel('events')
     ax.set_ylim(bottom=0.1)
-    ax.set_xlim(min(b), max(b))
+    ax.set_xlim(min(b/1000.), max(b/1000.))
+    ax.grid(True)
 
 def plot_photon_hist(pqf, **kw):    
     ret = kw.pop('ret', 'subplots')
@@ -63,12 +64,24 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
 
+    ax0.legend()
+    ax1.legend()
+
     fp = pq_tools.fp_from_pqf(pqf)
 
     fig.suptitle(tb.get_msmt_header(fp) + ' -- Photon histogram, comparison w/ filter')
         
     if ret=='subplots':
         return fig, (ax0, ax1)
+
+
+def plot_marker_filter_comparison(pqf,mrkr_chan = 2,**kw):
+
+    # get the PLU marked photons first
+    is_ph_ch0, is_ph_ch1 = pq_tools.get_photons(pqf)
+    is_ph = is_ph_ch0 | is_ph_ch1
+    is_ph_with_PLU_mrkr = is_ph & pq_tools.filter_marker(pqf, mrkr_chan)
+    plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
 
 
 #def plot_tail(fp, **kw):
@@ -115,7 +128,7 @@ def plot_PLU_filter(pqf,chan = 2):
 
     # first window
     fig, (ax0, ax1) = plot_photon_hist_filter_comparison(
-        fp, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
+        pqf, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
         binedges=settings.PHOTONHIST_BINEDGES)
 
     ax0.axvline(settings.CH0_START, color='k', linestyle='--')
@@ -132,7 +145,7 @@ def plot_PLU_filter(pqf,chan = 2):
 
     # second window
     fig, (ax0, ax1) = plot_photon_hist_filter_comparison(
-        fp, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
+        pqf, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
         binedges=settings.PHOTONHIST_BINEDGES + settings.PIPULSESEP)
 
     ax0.axvline(settings.CH0_START+settings.PIPULSESEP, color='k', linestyle='--')

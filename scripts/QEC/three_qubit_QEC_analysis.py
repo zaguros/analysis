@@ -9,7 +9,7 @@ import matplotlib.cm as cm
 import matplotlib as mpl; reload(mpl)
 from pylab import *
 from analysis.scripts.QEC_data_analysis.C13_initialization_and_RO_fidelity import C13_RO_fid_dict as C_RO
-
+reload(C_RO)
 reload (CP)
 import h5py
 import csv
@@ -39,7 +39,7 @@ RO_corr_3qb = 1.
 #     correction_error = [E_C1, E_C5, E_C2]+4*[1/3.*np.sqrt(E_C1**2+E_C5**2+E_C2**2)]
 # if RO_corr == 'dict':
 
-RO_correction = True
+RO_correction = False
 
 from matplotlib import pyplot as plt
 script_name = 'three_qubit_QEC_analysis.py'
@@ -1956,14 +1956,15 @@ def QEC_sum_data_single_state_RO_single_error_sign(run = 1, no_error = '00',stat
         elif load_set == False:
             QEC_dict[str(error_sign)][el_RO] , folder = QEC_create_data_dict_single_error_single_elRO(older_than = older_than, RO = RO, state = state,
                                                                                                 len_k = 6, sym = no_error,error_sign = error_sign, el_RO = el_RO, sweep_time = sweep_time)
-            # RO CORRECTION
-            state_correction_list, error_state_correction_list = C_RO.get_C13_correction_state(order = [1,5,2], state = state)
-            RO_Corr = state_correction_list[RO]
-            RO_Corr_err = error_state_correction_list[RO]
-            if RO_correction == True:
-                for ii,item in enumerate(c_list):
-                    QEC_dict[str(error_sign)][el_RO][u_list[ii]] = np.sqrt((1/RO_Corr)**2*QEC_dict[str(error_sign)][el_RO][u_list[ii]]**2+(QEC_dict[str(error_sign)][el_RO][c_list[ii]]/RO_Corr**2)**2*RO_Corr_err**2)
-                    QEC_dict[str(error_sign)][el_RO][c_list[ii]] = QEC_dict[str(error_sign)][el_RO][c_list[ii]]/RO_Corr  
+        # RO CORRECTION
+        state_correction_list, error_state_correction_list = C_RO.get_C13_correction_state(order = [1,5,2], state = state)
+        RO_Corr = state_correction_list[RO]
+        RO_Corr_err = error_state_correction_list[RO]
+        if RO_correction == True:
+            print 'YES RO CORRECTION111'
+            for ii,item in enumerate(c_list):
+                QEC_dict[str(error_sign)][el_RO][u_list[ii]] = np.sqrt((1/RO_Corr)**2*QEC_dict[str(error_sign)][el_RO][u_list[ii]]**2+(QEC_dict[str(error_sign)][el_RO][c_list[ii]]/RO_Corr**2)**2*RO_Corr_err**2)
+                QEC_dict[str(error_sign)][el_RO][c_list[ii]] = QEC_dict[str(error_sign)][el_RO][c_list[ii]]/RO_Corr  
 
     for v in range(len(y_list)):
         QEC_data_dict[y_list[v]] = {}
@@ -2201,14 +2202,13 @@ def no_QEC_sum_data_single_state_RO(run_list = [0,1,2],add_4 =False,idle = False
             QEC_dict['y_err'] = QEC_temp_dict['y_err']
             
             # RO CORRECTION: later because this is a more messy analysis script
-            state_correction_list, error_state_correction_list = C_RO.get_C13_correction_state(order = [1,5,2], state = state)
-            RO_Corr = state_correction_list[RO]
-            RO_Corr_err = error_state_correction_list[RO]
-            if RO_correction == True:
-                for ii,item in enumerate(c_list):
-                    QEC_dict['y_err'] = np.sqrt((1/RO_Corr)**2*QEC_dict[str(error_sign)][el_RO][u_list[ii]]**2+(QEC_dict[str(error_sign)][el_RO][c_list[ii]]/RO_Corr**2)**2*RO_Corr_err**2)
-                    QEC_dict['y'] = QEC_dict[str(error_sign)][el_RO][c_list[ii]]/RO_Corr  
-        
+        state_correction_list, error_state_correction_list = C_RO.get_C13_correction_state(order = [1,5,2], state = state)
+        RO_Corr = state_correction_list[RO]
+        RO_Corr_err = error_state_correction_list[RO]
+        if RO_correction == True:    
+            QEC_dict['y_err'] = np.sqrt((1/RO_Corr)**2*QEC_dict['y_err']**2+(QEC_dict['y']/RO_Corr**2)**2*RO_Corr_err**2)
+            QEC_dict['y'] = QEC_dict['y']/RO_Corr  
+
         QEC_dict['x'] = QEC_temp_dict['x']
     
     return QEC_dict
@@ -7398,7 +7398,8 @@ def QEC_compare_syndromes():
 
 
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
-
+if RO_correction == True:
+    folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
 
 c_green = (9/255.,232/255.,94/255.)
 c_grey = (64/255.,78/255.,77/255.)#(240/255.,242/255.,166/255.)
@@ -7657,7 +7658,7 @@ def QEC_plot_process_fids_11_vs_idle_full():
 
     y_idle = process_dict_idle['dec_'+'avg'+'_y']
     y_idle_err = process_dict_idle['dec_'+'avg'+'_y_err']
-    x_fit_idle, y_fit_idle, p_c, p_c_err= fit_QEC_process_curve(x,y_idle,return_errorbar = True)    
+    x_fit_idle, y_fit_idle, p_c_2, p_c_err_2= fit_QEC_process_curve(x,y_idle,return_errorbar = True)    
     ax.plot(x_fit_idle, y_fit_idle, color = c_grey,ls = '-', lw=1,label =  'Encoded state, idling')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
@@ -7665,14 +7666,14 @@ def QEC_plot_process_fids_11_vs_idle_full():
 
     y = process_dict['dec_'+'avg'+'_y']
     y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+    x_fit, y_fit, p_c_3, p_c_err_3 = fit_QEC_process_curve_11(x,y,return_errorbar = True)
     ax.plot(x_fit, y_fit, color = c_red, lw=1,label =  'QEC, optimized read-out')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
         cap.set_markeredgewidth(1)
     y = process_dict['dec_'+'avg'+'_y_new']
     y_err = process_dict['dec_'+'avg'+'_y_err']
-    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+    x_fit, y_fit, p_c_4, p_c_err_4 = fit_QEC_process_curve_11(x,y,return_errorbar = True)
     ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1,label =  'No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
     for cap in caps:
@@ -7713,7 +7714,8 @@ def QEC_plot_process_fids_11_vs_idle_full():
     if RO_correction == False:
         rectangle = plt.Rectangle((0.08, 0.5), 0.19, 0.15,edgecolor = '0.6', fill = None, lw = 2 )
     else:
-        rectangle = plt.Rectangle((0.08, 0.55), 0.19, 0.15,edgecolor = '0.6', fill = None, lw = 2 )
+        # rectangle = plt.Rectangle((0.08, 0.5), 0.19, 0.15,edgecolor = '0.6', fill = None, lw = 2 )
+        rectangle = plt.Rectangle((0.08, 0.5), 0.19, 0.2,edgecolor = '0.6', fill = None, lw = 2 )
 
     plt.gca().add_patch(rectangle)
 
@@ -7751,8 +7753,10 @@ def QEC_plot_process_fids_11_vs_idle_full():
         plt.ylim([0.5,0.65])
         plt.yticks([0.5,0.6])
     else:
-        plt.ylim([0.55,0.7])
-        plt.yticks([0.6,0.7])
+        plt.ylim([0.5,0.7])
+        plt.yticks([0.5,0.6,0.7])
+        # plt.ylim([0.5,0.65])
+        # plt.yticks([0.5,0.6])        
     plt.xticks([0.1,0.2,0.3])
     
     # plt.ylabel('Process fidelity',fontsize = 25)
@@ -7763,7 +7767,12 @@ def QEC_plot_process_fids_11_vs_idle_full():
     # plt.yticks(np.arange(0,1.1,0.1), minor = True)
     plt.tick_params(axis='x', which='major', labelsize=25)
     plt.tick_params(axis='y', which='major', labelsize=25)
-
+    print ' Encoded'
+    print p_c_2, p_c_err_2
+    print ' QEC'
+    print p_c_3, p_c_err_3
+    print ' No Feedback'
+    print p_c_4, p_c_err_4
     try:
         fig.savefig(
             os.path.join(folder,'11_vs_idle_full_curve_2.png'))
@@ -7895,26 +7904,31 @@ def QEC_plot_sweep_time():
 
     x = x*1000.
 
-    fit_data_QEC = loadtxt('QEC.txt')
-    fit_data_parity = loadtxt('parity.txt')
+    if RO_correction == False:
+        fit_data_QEC = loadtxt('QEC.txt')
+        fit_data_parity = loadtxt('parity.txt')
+
+    elif RO_correction == True:
+        fit_data_QEC = loadtxt('QEC_corrected.txt')
+        fit_data_parity = loadtxt('parity_corrected.txt')
 
     y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
     y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
     (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
-                color = c_red,markeredgecolor = c_red, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '2 rounds')
+                color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '2 rounds')
     for cap in caps:
         cap.set_markeredgewidth(1)
-    # ax1.plot(fit_data_QEC[:,0][6:55],(fit_data_QEC[:,1][6:55]+1)/2.,color = c_red, ls = '-', lw = 1)
+    ax1.plot(fit_data_QEC[:,0][6:55],(fit_data_QEC[:,1][6:55]+1)/2.,color = c_red, ls = '-', lw = 1)
 
     y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
     y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
     x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
     x = x*1000.
     (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
-                color = c_red,markeredgecolor = c_red, ls = '--',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
+                color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
     for cap in caps:
         cap.set_markeredgewidth(1)
-    # ax1.plot(fit_data_parity[:,0][6:55],(fit_data_parity[:,1][6:55]+1)/2.,color = c_red, ls = '-.', lw = 1)
+    ax1.plot(fit_data_parity[:,0][6:55],(fit_data_parity[:,1][6:55]+1)/2.,color = c_red, ls = '--', lw = 1)
 
 
 
@@ -7934,11 +7948,11 @@ def QEC_plot_sweep_time():
 
     ax1.hlines([0.5],x[0]-10,x[-1]+10,linestyles='dotted',color = '0.5', lw = 0.5)
     if RO_correction == False:
-        ax1.vlines([x[1],x[7]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
-        plt.axvspan(x[1],x[7], facecolor='y', alpha=0.1)
+        ax1.vlines([x_enc[2],x[8]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+        plt.axvspan(x_enc[2],x[8], facecolor='y', alpha=0.1)
     elif RO_correction == True:
-        ax1.vlines([5.633,18.92],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
-        plt.axvspan(5.633,18.92, facecolor='y', alpha=0.1)
+        ax1.vlines([x_enc[2],x[8]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+        plt.axvspan(x_enc[2],x[8], facecolor='y', alpha=0.1)
     # plt.axvspan(-1,x[1], facecolor='k', alpha=0.05)
     # plt.axvspan(x[7],35, facecolor='k', alpha=0.05)
     ax1.set_ylim(0.48,1.0)
@@ -7956,8 +7970,8 @@ def QEC_plot_sweep_time():
 
     fig1.tight_layout()
 
-    print x[1]
-    print x[7]
+    print x_enc[2]
+    print x[8]
     try:
         fig1.savefig(
             os.path.join(folder,'QEC_sweep_time.png'))
@@ -7966,6 +7980,7 @@ def QEC_plot_sweep_time():
     except:
         print 'Figure has not been saved.'
 
+    # print y_toff_QEC
     # data = {}
     # data['x_QEC'] = x
     # data['y_toff_QEC'] = y_toff_QEC
