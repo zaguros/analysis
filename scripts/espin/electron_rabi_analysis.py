@@ -14,16 +14,24 @@ reload(sequence)
 
 from analysis.lib.tools import plot
 
-timestamp = None#'20140408125318'
-guess_frq = 1./0.025
+pulse_shape = 'Square'
 
-guess_amp = 1
-guess_of = 1
+
+timestamp = None #'20150407144111' #'20150403163852'#None#'20140408125318'
+guess_frq = 1./5000.
+
+guess_amp = 0.5
+guess_of = 0.5
 # guess_slope = 0.
 guess_phi = 0.
-guess_k = 0.
+guess_k = 1/2000.
+fixed = [2]
 
 mbi_analysis = False
+
+# ylim = (-0.05, 0.1)
+ylim = (-.05, 1.05)
+
 
 o = fit.Parameter(guess_of, 'o')
 f = fit.Parameter(guess_frq, 'f')
@@ -37,21 +45,24 @@ fitfunc_str = ''
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
-    folder = toolbox.latest_data('ElectronRabi')
+    if pulse_shape == 'Hermite':
+        folder = toolbox.latest_data('ElectronRabiHermite')
+    elif pulse_shape == 'Square':
+        folder = toolbox.latest_data('ElectronRabi')
 
 if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('adwindata')
     a.get_electron_ROC()
-    ax = a.plot_results_vs_sweepparam(ret='ax', name = 'adwindata')
+    ax = a.plot_results_vs_sweepparam(ret='ax', name = 'adwindata' )
 
 else:
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
     a.get_electron_ROC()
-    ax = a.plot_result_vs_sweepparam(ret='ax')
+    ax = a.plot_result_vs_sweepparam(ret='ax', ylim = ylim)
 
 x = a.sweep_pts
 y = a.p0
@@ -66,11 +77,11 @@ fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'
 def fitfunc(x):
     return (o()-A()) + A() * np.exp(-(k()*x)**2) * np.cos(2*np.pi*(f()*x - phi()))
 
-fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[2,4],
+fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=fixed,
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
-        plot_data=False)
-
+       plot_data=False)
+# ax.set_ylim([0.,0.25])
 print "pi pulse = {:.5f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)

@@ -18,7 +18,7 @@ import analysis.lib.qec.nuclear_spin_characterisation as SC #used for simulating
 import analysis.lib.qec.hyperfine_params as hyperfine_params; reload(hyperfine_params)
 
 reload(toolbox)
-
+reload(ssro)
 
 def get_data(name_contains, input_timestamp = None, input_id = None, ssro_calib_folder = ''):
 	'''
@@ -42,8 +42,8 @@ def get_data(name_contains, input_timestamp = None, input_id = None, ssro_calib_
 		timestamp, folder = toolbox.latest_data(name_contains, return_timestamp = True)
 	a = mbi.MBIAnalysis(folder)
 
-	print 'DATA FOLDER & SSRO FOLDER:'
-	print folder
+	#print 'DATA FOLDER & SSRO FOLDER:'
+	#print folder
 
 	#ax = a.plot_results_vs_sweepparam(ret='ax', )
 
@@ -88,8 +88,8 @@ def get_data_multiple_msmts(name_contains, nr_ids, input_timestamp = None, ssro_
 		timestamp, folder = toolbox.latest_data(contains = name_contains, return_timestamp = True)
 		a = mbi.MBIAnalysis(folder)
 
-	print 'DATA FOLDER & SSRO FOLDER:'
-	print folder
+	#print 'DATA FOLDER & SSRO FOLDER:'
+	#print folder
 
 	# Retrieve data & reshape
 	# x, y & yerr data are collected in lists & concatenated into 1 array afterwards
@@ -101,13 +101,16 @@ def get_data_multiple_msmts(name_contains, nr_ids, input_timestamp = None, ssro_
 	# Retrieve sweep data 
 	for ID in range(nr_ids):
 		name = 'measurement'+ str(ID)
-		print name
+		#print name
 		adwingrp = a.adwingrp(name = name)
 		a.adgrp = adwingrp
 		sweep = a.adgrp.attrs['sweep_pts']
 		x.append(sweep.reshape(-1)[:])
+	
 		a.get_readout_results(name = name)
+	
 		a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
+
 		data = a.p0.reshape(-1)[:]
 		y.append(data)
 		data_err = a.u_p0.reshape(-1)[:]

@@ -20,6 +20,7 @@ def get_SSRO_calibration(folder, readout_time):
         fp = folder
     else:
         fp = os.path.join(folder, 'analysis.hdf5')
+        #print fp
     
     f = h5py.File(fp, 'r')
 

@@ -60,7 +60,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
-    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + phi/360) ) + a'
+    fitfunc_str = 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a'
 
     f = fit.Parameter(g_f, 'f')
     a = fit.Parameter(g_a, 'a')
@@ -74,6 +74,33 @@ def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
         return a() + A()*np.exp(-(x/t())**2) * np.cos(2*np.pi*( f()*x + phi()/360.))
 
     return p0, fitfunc, fitfunc_str
+
+def fit_gaussian_decaying_2cos(g_avg, g_C, g_t, g_A, g_f_a, g_phi_a, g_B, g_f_b, g_phi_b, *arg):
+    """ Fits Gaussian decaying sum of two cosines.
+    To be used for e.g. dynamicaldecoupling.Carbon_Ramsey_noDD"""
+
+    fitfunc_str = 'avg + C * exp(-(x/t)**2) [ A*cos(2pi * (fa*x + phi_a/360) )+ B*cos(2pi * (f_b*x + phi_b/360)))/2 ]'
+
+    avg = fit.Parameter(g_avg, 'avg')
+
+    C = fit.Parameter(g_C, 'C')
+    t   = fit.Parameter(g_t, 't')
+
+    A = fit.Parameter(g_A, 'A')
+    f_a = fit.Parameter(g_f_a, 'f_a')
+    phi_a = fit.Parameter(g_phi_a, 'phi_a')
+
+    B = fit.Parameter(g_B, 'B')
+    f_b = fit.Parameter(g_f_b, 'f_b')
+    phi_b = fit.Parameter(g_phi_b, 'phi_b')
+
+    p0 = [avg,C, t, A,f_a,phi_a,B,f_b,phi_b] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+    def fitfunc(x):
+        return avg() + C() * np.exp(-(x/t())**2) * ( A()*np.cos(2*np.pi*( f_a()*x + phi_a()/360.)) + B() * np.cos(2*np.pi*( f_b()*x + phi_b()/360.)) )/2.0
+
+    return p0, fitfunc, fitfunc_str
+
 
 def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, g_o ,*arg):
     ''' quite a specific function, for electron nuclear control, maybe place somewhere else '''
