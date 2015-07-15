@@ -229,7 +229,7 @@ def get_entanglement_event_list(fp_bs,
         print 'Found {} entanglement markers in {}'.format(len(ent_sn),fp_bs)
 
     marker_sn_fltr = np.in1d(sn_bs,ent_sn)
-    pulse_st_fltr = (st_pulse_start <= st_bs ) & (st_bs < st_pulse_start+st_pulse_len) & (sp_bs == 0)
+    pulse_st_fltr = (st_pulse_start <= st_bs ) & (st_bs < st_pulse_start+st_pulse_len) & (sp_bs == 0) & (ch_bs == 1)
     sn = sn_bs[marker_sn_fltr]
     st = st_bs[marker_sn_fltr]
     ch = ch_bs[marker_sn_fltr]
@@ -248,7 +248,7 @@ def get_entanglement_event_list(fp_bs,
         fltr_ent = (sn==cur_sn)
         
         pulse_sn_diffs = (cur_sn - sn_bs.astype(np.int64)) 
-        pulse_sn_fltr = (pulse_sn_diffs > 0) & (pulse_sn_diffs<3000000)#3 million ~ 60 secs
+        pulse_sn_fltr = (pulse_sn_diffs > 0) & (pulse_sn_diffs<pulse_max_sn_diff)#3 million ~ 60 secs
         ent_event_list[i,_cl_pulse_cts]= np.sum(pulse_sn_fltr & pulse_st_fltr)
 
         ent_event_list[i,_cl_sn]    = cur_sn   
@@ -399,10 +399,10 @@ def get_lt_stats(fp, ro_start, ro_length, ro_channel,
                                                                            psb_tail_start,psb_tail_len, pulse_sep,
                                                                            ro_start, ro_length, ro_channel,
                                                                            rnd_start, rnd_length, rnd_0_channel)
-    p_w1_ro0_rnd1, p_w2_ro0_rnd1, noof_w1_rnd1, noof_w2_rnd1  = sp_corr_rnd(sn,sp,ch,st, 
-                             psb_tail_start,psb_tail_len, pulse_sep,
-                             ro_start, ro_length, ro_channel,
-                             rnd_start, rnd_length, rnd_1_channel)
+    p_w1_ro0_rnd1, p_w2_ro0_rnd1, noof_w1_rnd1, noof_w2_rnd1 = sp_corr_rnd(sn,sp,ch,st, 
+                                                                           psb_tail_start,psb_tail_len, pulse_sep,
+                                                                           ro_start, ro_length, ro_channel,
+                                                                           rnd_start, rnd_length, rnd_1_channel)
     noof_w1 = noof_w1_rnd0 + noof_w1_rnd1
     noof_w2 = noof_w2_rnd0 + noof_w2_rnd1
 
