@@ -23,6 +23,10 @@ NK 2014
 #############################################
 
 "Global variables"
+
+#############################################
+
+
 color_list = ['b','g','r','m','y','black','brown','c','orange','0.75']
 
 font = {'family' : 'sans-serif',
@@ -36,7 +40,11 @@ fit_lw = 1.5
 
 results_folder = r'D:\measuring\data\Zeno_results' ### for final plots
 
-timetrace_keylist = ['evotime','fid','fid_u']
+timetrace_keylist = ['evotime','fid','fid_u'] ### XXXXXXX don't change!!!
+### needed for saving the data and evaluating it with Paper_data_evalution.py
+
+
+CarbonRO_correction = True ### or False. Your choice.
 
 ############################################
 
@@ -224,6 +232,15 @@ def fit_State_decay(msmts,ax,A0,evotime,fid, t = 8.25):
 
 	elif msmts == '8':
 		p0, fitfunc,fitfunc_str = Zfits.fit_8msmt_state_fid(A0,t, p)
+
+	elif msmts == '10':
+		p0, fitfunc,fitfunc_str = Zfits.fit_10msmt_state_fid(A0,t, p)
+
+	elif msmts == '12':
+		p0, fitfunc,fitfunc_str = Zfits.fit_12msmt_state_fid(A0,t, p)
+
+	elif msmts == '16':
+		p0, fitfunc,fitfunc_str = Zfits.fit_16msmt_state_fid(A0,t, p)
 		if False:
 			ax.plot(np.linspace(0.,120.0,201), fitfunc(np.linspace(0.,120.0,201)), ':', lw=fit_lw)
 
@@ -345,13 +362,13 @@ def fit_pheno_State_decay(msmts,ax,A0,evotime,fid, t = 8.25,contrast = False):
 	# print 't2 ', t2
 
 
-	if msmts == '0':
+	if msmts == '0'or msmts == '00':
 		if contrast:
 			p0, fitfunc, fitfunc_str = common.fit_gauss(0.0, 0.43, 0., t)
 		else:
 			p0, fitfunc, fitfunc_str = common.fit_gauss(0.5, 0.43, 0., t)
 
-	elif msmts == '1':
+	elif msmts == '1'or msmts == '01':
 		### we usually do not take repumping errors into account for this fit.
 		### therefore t1 is disregarded.
 		p0, fitfunc,fitfunc_str = Zfits.fit_1msmt_state_fid(A0,t1,t2, p,repump,False,contrast = contrast)
@@ -360,25 +377,37 @@ def fit_pheno_State_decay(msmts,ax,A0,evotime,fid, t = 8.25,contrast = False):
 		if False:
 			ax.plot(np.linspace(0.,120.0,201), fitfunc(np.linspace(0.,120.0,201)), ':', lw=fit_lw)
 
-	elif msmts == '2':
+	elif msmts == '2'or msmts == '02':
 		p0, fitfunc,fitfunc_str = Zfits.fit_2msmt_state_fid(A0,t, p,contrast = contrast)
 
-	elif msmts == '3':
+	elif msmts == '3'or msmts == '03':
 		p0, fitfunc,fitfunc_str = Zfits.fit_3msmt_state_fid(A0,t, p,contrast = contrast)
 
-	elif msmts == '4':
+	elif msmts == '4'or msmts == '04':
 		p0, fitfunc,fitfunc_str = Zfits.fit_4msmt_state_fid(A0,t, p,contrast = contrast)
 
-	elif msmts == '5':
+	elif msmts == '5'or msmts == '05':
 		p0, fitfunc,fitfunc_str = Zfits.fit_5msmt_state_fid(A0,t, p,contrast = contrast)
 
-	elif msmts == '6':
+	elif msmts == '6'or msmts == '06':
 		p0, fitfunc,fitfunc_str = Zfits.fit_6msmt_state_fid(A0,t, p,contrast = contrast)
 
-	elif msmts == '8':
+	elif msmts == '8'or msmts == '08':
 		p0, fitfunc,fitfunc_str = Zfits.fit_8msmt_state_fid(A0,t, p,contrast = contrast)
+
+	elif msmts == '10':
+		p0, fitfunc,fitfunc_str = Zfits.fit_10msmt_state_fid(A0,t, p,contrast = contrast)
+
 		if False:
 			ax.plot(np.linspace(0.,120.0,201), fitfunc(np.linspace(0.,120.0,201)), ':', lw=fit_lw)
+
+	elif msmts == '12':
+		p0, fitfunc,fitfunc_str = Zfits.fit_12msmt_state_fid(A0,t, p,contrast = contrast)
+
+	elif msmts == '16':
+		p0, fitfunc,fitfunc_str = Zfits.fit_16msmt_state_fid(A0,t, p,contrast = contrast)
+
+		
 
 	### msmts = 0 is an exception
 	fixed = [0,1]
@@ -478,6 +507,131 @@ def fit_pheno_process_decay(msmts,ax,A0,evotime,fid,decoded_bit,offset0 = 0.415,
 	return fit_result, result_string
 
 
+
+########################
+
+""" Carbon RO correction """
+
+########################
+
+def OneCarbonErrorpropagation(c_val,c_u,n_pop,n_pop_u):
+	ret_val = np.sqrt(c_val/n_pop) ## value
+	ret_u = 0.5*np.sqrt(c_u**2/(c_val*n_pop)+(n_pop_u**2)*c_val/n_pop**3) ## uncertainty
+
+	return ret_val , ret_u
+
+def TwoCarbonErrorpropagation(c12,c12_u,c1,c1_u,c2,c2_u,n_pop,n_pop_u):
+	ret_val = np.sqrt(c12/(n_pop*c1*c2))	## value
+
+
+	u_denominator = c1**2 * c2**2 * n_pop **2
+	
+	u_nominator = c1**2 * c2**2 * n_pop**2 * c12_u**2 + \
+				c12**2 * (c1**2 * n_pop**2 * c2_u**2 + \
+					c2**2 * (n_pop*c1_u**2 + c1**2 * n_pop_u**2))
+	
+	ret_u = np.sqrt(u_nominator)/u_denominator ## uncertainty
+
+	return ret_val , ret_u
+
+
+def ThreeCarbonError(c123,c123_u,c1,c1_u,c2,c2_u,c3,c3_u,n_pop,n_pop_u):
+	ret_val = np.sqrt(c123/(n_pop*c1*c2*c3))
+
+	u_denominator = c1**2 * c2**2 * c3**2 * n_pop**2
+
+	u_nominator = u_denominator * c123_u**2 + c123**2 * (c1**2 * c3**2 * n_pop**2 * c2_u**2 + \
+				c2**2 *(n_pop**2 * (c3**2 * c1_u**2 + c1**2 * c3_u**2) + \
+				c1**2 * c3**2 * n_pop_u**2))
+
+	ret_u = np.sqrt(u_nominator)/u_denominator
+
+	return ret_val, ret_u
+
+
+
+def calc_ro_correction(dict_val,dict_err,carbon_list = [1,2,5]):
+
+	SolveDict = {}
+	SolveDict['values'] = {}
+	SolveDict['error'] = {}
+
+	n_pop = dict_val['nitrogen']
+	n_pop_u = dict_err['nitrogen']
+
+	### go through all single carbon cases.
+	for c in carbon_list:
+		SolveDict['values'][str(c)],SolveDict['error'][str(c)] = OneCarbonErrorpropagation(dict_val[str(c)],dict_err[str(c)],n_pop,n_pop_u)
+
+	### with these values compute the RO correction for two carbon values.
+
+	for c in carbon_list:
+		carbon_cross = cp.deepcopy(carbon_list)
+		carbon_cross.remove(c)
+
+		c1 = carbon_cross[0]
+		c2 = carbon_cross[1]
+		key_string = str(c1)+str(c2)
+
+		SolveDict['values'][key_string], SolveDict['error'][key_string] = TwoCarbonErrorpropagation(
+																						dict_val[key_string],
+																						dict_err[key_string],
+																						SolveDict['values'][str(c1)],
+																						SolveDict['error'][str(c1)],
+																						SolveDict['values'][str(c2)],
+																						SolveDict['error'][str(c2)],
+																						n_pop,
+																						n_pop_u)
+
+	### calculate the three carbon case
+
+	key_string = ''.join(str(c) for c in carbon_list)
+	print key_string
+	SolveDict['values'][key_string], SolveDict['error'][key_string] = ThreeCarbonError(
+																						dict_val[key_string],
+																						dict_err[key_string],
+																						SolveDict['values'][key_string[0]],
+																						SolveDict['error'][key_string[0]],
+																						SolveDict['values'][key_string[1]],
+																						SolveDict['error'][key_string[1]],
+																						SolveDict['values'][key_string[2]],
+																						SolveDict['error'][key_string[2]],
+																						n_pop,
+																						n_pop_u)
+	
+	#### print the RO correction values
+	return SolveDict
+
+#### these values have been obtained via tomography/DESR measurements. see onenote 2015-06-09 NK.
+
+
+### the derived notebook is used in the function Zeno_get_2Q_values
+
+Dict = {'values' : {} , 'error' : {}}
+
+Dict['values']['1']	=	0.859854829704
+Dict['values']['2']	=	0.846657530075
+Dict['values']['5']	=	0.88986599665
+Dict['values']['12']	=	0.734843046401
+Dict['values']['15']	=	0.784368785197
+Dict['values']['25']	=	0.747335160652
+Dict['values']['125']	=	0.666209837064
+Dict['values']['nitrogen'] = 0.963484593103#0.956397901621
+Dict['error']['1']	=	0.00621794744892
+Dict['error']['2']	=	0.00775792880472
+Dict['error']['5']	=	0.00735657065159
+Dict['error']['12']	=	0.00565949773662
+Dict['error']['15']	=	0.00217798138803
+Dict['error']['25']	=	0.00219162359014
+Dict['error']['125']	=	0.0089820755304
+Dict['error']['nitrogen'] = 0.0149696842867#0.018270745207
+
+
+CarbonRO_Dict = calc_ro_correction(Dict['values'],Dict['error'])
+
+print CarbonRO_Dict
+
+
 ########################
 
 """ Data acquisition """
@@ -489,7 +643,8 @@ def get_Zeno_data(electron_RO=['positive'],
 				state='Z',ROBasis='IX',previous_evo=None, older_than=None,
 				ssro_timestamp=None,
 				single_qubit=False,
-				subtract_drive_time = False):
+				subtract_drive_time = False,
+				return_drive_time = False):
 	"""
 	this function finds timestamps according to an input which specifies the folder name
 	Input: 	electron_RO 		is a list with e.g. positive or negative. 
@@ -543,12 +698,15 @@ def get_Zeno_data(electron_RO=['positive'],
 	
 
 	else: #if the searched data does not exist --> dummy results. evotime has to be larger than previous_evo
+
 		x_labels,y,y_err,evotime= 'II',0,0,[2001]
+
 
 	if evotime[0] < previous_evo or previous_evo==None:
 		loop_bit = True
 		
 	else:
+		print 'wrong time assignment'
 		x_labels,y,y_err,evotime= 'II',0,0,[2001]
 
 
@@ -597,42 +755,84 @@ def get_Zeno_data(electron_RO=['positive'],
 		evo_was_zero=True
 
 	### subtract the average drive time from the evolution time
+	### 20150626 addendum, we only take the driving time of the qubits involved in the expectation value.
+	subtract = 0
 	if subtract_drive_time:
+
 		Datafile=h5py.File(folder+folder[26:] + '.hdf5','r')
 
 		first_dict_layer =  Datafile[Datafile.keys()[0]]
-
+		c_list = first_dict_layer.attrs['carbon_list']
 		parduration = first_dict_layer.attrs['parity_duration']
-		no_of_carbons = len(first_dict_layer.attrs['carbon_list'])
+		no_of_carbons = float(len(c_list))
 		repumper = first_dict_layer.attrs['Repump_duration']
 		no_of_msmts = first_dict_layer.attrs['Nr_Zeno_parity_msmts']
 
+
+
+		c_RO_list = [] ### will be filled with the carbons we perform tomography (X and Y valyes count) on.
+
+		for index, t in enumerate(first_dict_layer.attrs['Tomography Bases']):
+			
+			if t in 'XY': c_RO_list.append(c_list[index]) ### this carbon was analysed.
+
+
+		### we only did Z measurements (or <Identity> which would not make any sense)
+		if c_RO_list == []:
+			for index, t in enumerate(first_dict_layer.attrs['Tomography Bases']):
+				if t in 'Z': c_RO_list.append(c_list[index])
+
+
+
+		# summed_drive_time = 0
+		
+		# for c in c_RO_list:
+		# 	### add gate times for each carbon
+		# 	tau = first_dict_layer.attrs['C' + str(c) + '_Ren_tau'][0]
+		# 	C_N = first_dict_layer.attrs['C' + str(c) + '_Ren_N'][0]
+
+		#	summed_drive_time += 2*tau*C_N*no_of_msmts
 
 		if no_of_msmts != 0: ### in this case parity_duration should also be !=0. otherwise division by 0.
 			subtract = (parduration-repumper*no_of_msmts)*1e3
 			subtract = subtract/no_of_carbons ## subtract AVERAGE driving time of the carbons.
 			evotime = [x-subtract for x in evotime]
+		else:
+			subtract = 0
 		Datafile.close()
+		# print 'summed drive time ',summed_drive_time/len(c_RO_list)
+		# print 'subtract ',subtract
 
-
-		
-
-
-	#determine the older timestamp (for the two eRO possiblities) and return that one.
+	#determine the older timestamp (for the two eRO possiblities) and return that one. Check also whether or not to subtract the driving time.
 	if loop_bit:
 		if len(electron_RO)==1:
 			if electron_RO[0]=='negative':
-				return timestamp,loop_bit,x_labels,-1*y,y_err,evotime,folder,evo_was_zero
+				if return_drive_time:
+					return timestamp,loop_bit,x_labels,-1*y,y_err,evotime,folder,evo_was_zero, subtract
+				else:
+					return timestamp,loop_bit,x_labels,-1*y,y_err,evotime,folder,evo_was_zero
+			else:
+				if return_drive_time:
+					return timestamp,loop_bit,x_labels,y,y_err,evotime,folder,evo_was_zero, subtract
+				else:
+					return timestamp,loop_bit,x_labels,y,y_err,evotime,folder,evo_was_zero
+
+		elif toolbox.is_older(timestamp,timestamp2):
+			if return_drive_time:
+				return timestamp,loop_bit,x_labels,y,y_err,evotime,folder,evo_was_zero,subtract
 			else:
 				return timestamp,loop_bit,x_labels,y,y_err,evotime,folder,evo_was_zero
 
-		elif toolbox.is_older(timestamp,timestamp2):
-			return timestamp,loop_bit,x_labels,y,y_err,evotime,folder,evo_was_zero
-
 		else: 
-			return timestamp2,loop_bit,x_labels,y,y_err,evotime,folder2,evo_was_zero
+			if return_drive_time:
+				return timestamp2,loop_bit,x_labels,y,y_err,evotime,folder2,evo_was_zero,subtract
+			else:
+				return timestamp2,loop_bit,x_labels,y,y_err,evotime,folder2,evo_was_zero
 	else:
-		return older_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(older_than),evo_was_zero
+		if return_drive_time:
+			return older_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(older_than),evo_was_zero,subtract
+		else:
+			return older_than,loop_bit,x_labels,y,y_err,evotime,toolbox.data_from_time(older_than),evo_was_zero
 
 
 def analyze_tests(older_than=None,newer_than=None,ssro_timestamp=None,N=1,q3test = False):
@@ -745,6 +945,44 @@ def Zeno_get_2Q_values(timestamp=None, folder=None,folder_name='Zeno',
 	evo_time = a.sweep_pts.reshape(-1)
 	y = ((a.p0.reshape(-1))-0.5)*2
 	y_err = 2*a.u_p0.reshape(-1)
+
+	if CarbonRO_correction:
+		c_list = [] ### we will fill this up with the carbons which were read out
+
+		Datafile=h5py.File(folder+folder[26:] + '.hdf5','r')
+
+		first_dict_layer =  Datafile[Datafile.keys()[0]]
+
+		carbons = first_dict_layer.attrs['carbon_list']
+		tomos = first_dict_layer.attrs['Tomography Bases']
+
+		#### sort carbons ascendingly. (makes it easier for the dictionary keys.)
+		tomos = tomos[np.argsort(carbons)]
+		carbons  =np.sort(carbons)
+		
+		for kk,t in enumerate(tomos):
+			if t != 'I':
+				c_list.append(carbons[kk])
+
+		correction_key = ''
+		for c in c_list:
+			correction_key += str(c)
+
+
+		### extract RO correection
+		RO_corr =  CarbonRO_Dict['values'][correction_key]
+		RO_corr_u = CarbonRO_Dict['error'][correction_key]
+		
+		### apply RO correction
+		# print y_err
+		y = y/RO_corr
+		y_err = np.sqrt(RO_corr**2*y_err**2+RO_corr_u**2*y**2)/RO_corr**2
+
+		# print y_err
+
+		Datafile.close()
+
+
 
 	return evo_time,y,y_err
 
@@ -915,19 +1153,30 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive','n
 	else:
 		return evo_time_arr,fid_arr,fid_u_arr,older_than_tstamp,folder,RODict[str(decoded_bit)][state]
 
-def Zeno_proc_fidelity(msmts='0',
-								eRO_list=['positive','negative'],
-								older_than_tstamp=None,
-								plot_results=True,decoded_bit='2',
-								ssro_timestamp=None, single_qubit=False,
-								subtract_drive_time = False):
+def Zeno_proc_fidelity(msmts='0',older_than_tstamp=None,**kw):
 	"""
 	Plots the process fidelity for a decoded qubit as a function of time
 
-	If plot_Results = False:
+	If plot_results = False:
 		Returns the AVERAGE state fidelity!
 	"""	
+
+	ssro_timestamp 			= 	kw.pop('ssro_timestamp', None)
+	plot_results 			= 	kw.pop('plot_results', True)
+	single_qubit 			= 	kw.pop('single_qubit',False)
+
+	decoded_bit 			= 	kw.pop('decoded_bit','2')
+	eRO_list				=	kw.pop('eRO_list',['positive','negative'])
+
+	subtract_drive_time 	= 	kw.pop('subtract_drive_time', False)
+	only_entangled 			= 	kw.pop('only_entangled',False)
+
+
 	state_list=['X','mX','Y','mY','Z','mZ']
+
+	if only_entangled: #### consider only entangled state. 
+	###Only makes sense if used as a subroutine where it returns 0.5+ <XXX>/2. where XXX is a chosen observable.
+		state_list = ['X','mX','Y','mY']
 
 	if decoded_bit == '4':
 		state_list = ['X','mX']
@@ -1457,105 +1706,6 @@ def Zen_Compare_Runs(msmt='0',older_timestamp_list=[None],eRO_list=['positive'],
 	### if no plot then return the results.
 	else: return evotime_arr[0], fid_arr, fid_u_arr,folder
 
-# def ShowResults():
-# 	### this is a static function (no input parameters)
-# 	### combines two sets (see older_timestamp_lists) of zeno measurements and plots them in a graph.
-# 	### extendible for more than two measurement sets given that the evolution times stay the same.
-# 	### saves a pickle file which contains the measured values as a dictionary.
-# 	### the specification of 'None' for SSRO timestamps slets the analyi
-# 	evo0,fid0,fid_u0,folder = Zen_Compare_Runs(msmt='0',older_timestamp_list=['20150404_175544','20150403_230000'],eRO_list=['positive','negative'],
-# 	  						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-# 	evo1,fid1,fid_u1,folder = Zen_Compare_Runs(msmt='1',older_timestamp_list=['20150404_175544','20150330_161704'],eRO_list=['positive','negative'],
-# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-# 	evo2,fid2,fid_u2,folder = Zen_Compare_Runs(msmt='2',older_timestamp_list=['20150404_175544','20150330_161704'],eRO_list=['positive','negative'],
-# 	  						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-# 	evo3,fid3,fid_u3,folder = Zen_Compare_Runs(msmt='3',older_timestamp_list=['20150404_175544','20150330_233000'],eRO_list=['positive','negative'],
-# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-# 	evo4,fid4,fid_u4,folder = Zen_Compare_Runs(msmt='4',older_timestamp_list=['20150404_175544','20150330_233000'],eRO_list=['positive','negative'],
-# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-
-# 	evo5,fid5,fid_u5,folder = Zen_Compare_Runs(msmt='5',older_timestamp_list=['20150414_090000','20150414_023527'],eRO_list=['positive','negative'],
-# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-# 	evo6,fid6,fid_u6,folder = Zen_Compare_Runs(msmt='6',older_timestamp_list=['20150414_090000','20150414_023527'],eRO_list=['positive','negative'],
-# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
-
-# 	######################################
-# 	### get the single qubit results. Beware, the function Zeno_proc_fidelity returns average state fidelities.
-
-# 	evo_single, fid_single_avg, fid_u_single_avg, tstamp, folder = Zeno_proc_fidelity(older_than_tstamp='20150405_043659',
-# 																		msmts='0',eRO_list=['positive','negative'],
-# 																		ssro_timestamp=None,decoded_bit='2', plot_results = False, 
-# 																		single_qubit = True)
-
-# 	fid_single_proc = (3*fid_single_avg-1)/2.
-# 	fid_u_single_proc = 1.5*fid_u_single_avg
-
-# 	evo_single = evo_single*1000 ### rescale from seconds to ms.
-
-# 	###########################
-
-
-# 	fid_arr = [fid0,fid1,fid2,fid3,fid4,fid5,fid6]
-# 	fid_u_arr = [fid_u0,fid_u1,fid_u2,fid_u3,fid_u4,fid_u5,fid_u6]
-# 	evo_arr = [evo0,evo1,evo2,evo3,evo4,evo5,evo6]
-
-# 	### This loop fuses the measurement runs
-# 	for i in range(len(fid_arr)):
-# 		f_new = []
-# 		f_u_new = []
-# 		for j,fids in enumerate(fid_arr[i]):
-
-# 			if j == 0:
-# 				f_new = [fid/len(fid_arr[i]) for kk,fid in enumerate(fids)]
-# 				f_u_new = [fid_u**2 for kk,fid_u in enumerate(fid_u_arr[i][j])]
-# 			else:
-# 				### add up fidelities
-# 				f_new = [f_new[kk]+fid/len(fid_arr[i]) for kk,fid in enumerate(fids)]
-# 				### start constructing the error bars. It is now a sum of squared errors.
-# 				f_u_new = [f_u_new[kk]+fid_u**2 for kk,fid_u in enumerate(fid_u_arr[i][j])]
-# 		### Finally, take the square root for the error entries and devide by the number of traces taken into account
-# 		f_u_new = [np.sqrt(f_u_new[kk])/len(fid_arr[i]) for kk in range(len(f_u_new))]
-
-# 		### overwrite the entries in fid_arr and fid_u_arr in order to make them ready for plotting.
-# 		fid_arr[i] = f_new
-# 		fid_u_arr[i] = f_u_new
-
-# 	### start to plot the results
-# 	fig=plt.figure()
-# 	ax=plt.subplot()
-
-
-# 	for ii in range(len(fid_arr)):
-
-# 		plt.errorbar(evo_arr[ii],fid_arr[ii],fid_u_arr[ii],marker='o',markersize=4,label=str(ii))
-	
-# 	plt.xlabel('Evolution time (ms)')
-# 	plt.ylabel('Process fidelity')
-# 	plt.title('Process fidelity averaged over ' + str(2) + ' Zeno sets')
-# 	plt.legend()
-
-# 	print 'Plots are saved in:'
-# 	print folder
-# 	plt.savefig(os.path.join(folder,'ZenoRuns_averaged'+'.pdf'),format='pdf')
-# 	plt.savefig(os.path.join(folder,'ZenoRuns_averaged'+'.png'),format='png')
-# 	plt.show()
-# 	plt.close('all')
-
-# 	#### construct a pickle container out of the data
-# 	### we start off with a dictionary
-# 	pickle_dict = {'0':[evo_arr[0],fid_arr[0],fid_u_arr[0]],
-# 					'1':[evo_arr[1],fid_arr[1],fid_u_arr[1]],
-# 					'2':[evo_arr[2],fid_arr[2],fid_u_arr[2]],
-# 					'3':[evo_arr[3],fid_arr[3],fid_u_arr[3]],
-# 					'4':[evo_arr[4],fid_arr[4],fid_u_arr[4]],
-# 					'5':[evo_arr[5],fid_arr[5],fid_u_arr[5]],
-# 					'6':[evo_arr[6],fid_arr[6],fid_u_arr[6]],
-# 					'single':[evo_single,fid_single_proc,fid_u_single_proc]}
-	
-# 	### dump to file.			
-# 	fileOut = open("Zeno_data.p","wb")
-# 	pickle.dump(pickle_dict,fileOut)
-# 	fileOut.close
 
 def Zeno_XX_list(older_than_tstamp=None,
 						msmt_list=['0'],eRO_list=['positive','negative'],decoded_bit='3',ssro_timestamp=None,
@@ -1887,7 +2037,7 @@ def Zeno_YY_list(older_than_tstamp=None,
 
 def Zeno_2qubit_list(older_than_tstamp=None,
 						msmt_list=['0'],eRO_list=['positive','negative'],ssro_timestamp=None,plot_results=True,
-						subtract_drive_time = False):
+						subtract_drive_time = False,only_entangled = True):
 
 	"""
 	Plots the 2-qubit state fidelity (averaged over all input states)
@@ -1898,83 +2048,107 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 	fid_arr,fid=[],[]
 	fid_u_arr,fid_u=[],[]
 	evotime_arr,evotime=[],[]
-	if len(msmt_list)==0:
-		print 'nothing to do here'
-
-	else:
-		#RODict={'1':Tomo1Dict,'2':Tomo2Dict,'3':Tomo3Dict, '2qubit': Tomo2qubitDict} --> dictionaries used in the state fidelity routine.
-
-		decode_list = ['2','3','2qubit'] ### this list is needed to choose the corresponding read-out values from the state fidelity routine
-
-		### Zeno_proc_fidelity returns average fidelities which get calculated from expectation values via F = 0.5+<observable>/2
-		### need to be calculated backwards and obtain the fidelity from all 3 expectation values.
-		### <obervable> = 2*(F-0.5)
-
-		for ii in range(len(msmt_list)):
-			for mm, decode in enumerate(decode_list):
-				evotime,fid_int,fid_u_int,tstamp,folder,state_dict = Zeno_proc_fidelity(older_than_tstamp=older_than_tstamp,
-										eRO_list=eRO_list, msmts=msmt_list[ii],ssro_timestamp=ssro_timestamp,decoded_bit=decode,
-										plot_results=False, subtract_drive_time = subtract_drive_time)
-				if mm == 0:
-					fid = 2*(fid_int-0.5)
-					print fid
-					fid_u = (2*fid_u_int)**2/16 ### errors are summed quadratically and divided by 4**2 = 16
-
-				else:
-					fid = np.add(fid,2*(fid_int-0.5)) ### add absolute value of the expectation values
-					fid_u = np.add(fid_u,(2*fid_u_int)**2/9) ### add statistical errors together.
 
 
-			#######################
-			# calculate the 2qubit state fidelity from the accumulated average contrast values:
-			#####################
+	#RODict={'1':Tomo1Dict,'2':Tomo2Dict,'3':Tomo3Dict, '2qubit': Tomo2qubitDict} --> dictionaries used in the state fidelity routine.
 
-			fid = 0.25*fid+0.25
+	decode_list = ['2','3','2qubit'] ### this list is needed to choose the corresponding read-out values from the state fidelity routine
 
-			evotime_arr.append(np.sort(evotime))
-			fid_arr.append(fid[np.argsort(evotime)])
-			fid_u_arr.append(np.sqrt(fid_u[np.argsort(evotime)])) ### need to take sqrt for the errors.
+	### Zeno_proc_fidelity returns average fidelities which get calculated from expectation values via F = 0.5+<observable>/2
+	### need to be calculated backwards and obtain the fidelity from all 3 expectation values.
+	### <obervable> = 2*(F-0.5)
+
+	for ii in range(len(msmt_list)):
+		for mm, decode in enumerate(decode_list):
+			evotime,fid_int,fid_u_int,tstamp,folder,state_dict = Zeno_proc_fidelity(older_than_tstamp=older_than_tstamp,
+									eRO_list=eRO_list, msmts=msmt_list[ii],ssro_timestamp=ssro_timestamp,decoded_bit=decode,
+									plot_results=False, subtract_drive_time = subtract_drive_time,only_entangled = only_entangled)
+			if mm == 0:
+				fid = 2*(fid_int-0.5)
+				print fid
+				fid_u = (2*fid_u_int)**2/16 ### errors are summed quadratically and divided by 4**2 = 16
+
+			else:
+				fid = np.add(fid,2*(fid_int-0.5)) ### add absolute value of the expectation values together
+				fid_u = np.add(fid_u,(2*fid_u_int)**2/16) ### add statistical errors together.
+
+
+		#######################
+		# calculate the 2qubit state fidelity from the accumulated average contrast values:
+		#####################
+
+		fid = 0.25*fid+0.25
+
+		evotime_arr.append(np.sort(evotime))
+		fid_arr.append(fid[np.argsort(evotime)])
+		fid_u_arr.append(np.sqrt(fid_u[np.argsort(evotime)])) ### need to take sqrt for the errors.
+	
+	### rescale evolution times to ms if it is given in seconds.
+
+	for kk, timings in enumerate(evotime_arr):
+		new_evo = []
+		for jj in timings:
+			if jj > 1.0:
+				new_evo.append(jj)
+			else:
+				new_evo.append(jj*1e3)
+
+		evotime_arr[kk] = np.array(new_evo)
+
+	if len(eRO_list)==1:
+		RO_String=eRO_list[0]
+	else: RO_String = 'contrast'
+
+	if plot_results:
+		fig=plt.figure()
+		ax=plt.subplot()
 		
-		### rescale evolution times to ms if it is given in seconds.
+		########################
+		#### TODO fitting!!!####
+		########################
 
-		for kk, timings in enumerate(evotime_arr):
-			new_evo = []
-			for jj in timings:
-				if jj > 1.0:
-					new_evo.append(jj)
-				else:
-					new_evo.append(jj*1e3)
+		result = ['0']*len(msmt_list) ### prepare the result strings.
 
-			evotime_arr[kk] = np.array(new_evo)
 
-		if len(eRO_list)==1:
-			RO_String=eRO_list[0]
-		else: RO_String = 'contrast'
+		#### prepare fit parameters. They depend on the bit you decode to.
 
-		if plot_results:
-			fig=plt.figure()
-			ax=plt.subplot()
-			
-			########################
-			#### TODO fitting!!!####
-			########################
 
-			for i in range(len(msmt_list)):
-				plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],fmt='o',markersize=4,label=str(msmt_list[i])+ ' msmts')
+		### first guesses
+		amp0 = 0.502
+		offset0 = 0.35
+		t = 8.34
 
-			plt.xlabel('Evolution time (ms)')
-			plt.ylabel('Average state fidelity')
-			plt.title('Average state fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
-			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+		
+		for ii,msmts in enumerate(msmt_list):
+			fit_result, result[ii] = fit_pheno_process_decay(msmts,ax,amp0,evotime_arr[ii],fid_arr[ii],'2', offset0 = offset0, t=t)
 
-			print 'Plots are saved in:'
-			print folder
-			plt.savefig(os.path.join(folder,'Zeno_2qubit_fidelity_'+RO_String+'.pdf'),format='pdf')
-			plt.savefig(os.path.join(folder,'Zeno_2qubit_fidelity_'+RO_String+'.png'),format='png')
-			plt.show()
-			plt.close('all')
-		else: 
-			return evotime_arr,fid_arr,fid_u_arr,folder
+			plot.plot_fit1d(fit_result, np.linspace(0.0,110.0,1001), ax=ax, plot_data=False,color = color_list[ii],add_txt = False, lw =fit_lw)
+
+			if msmts == '0':
+				result[ii] = ' p = 0'
+				### update parameters:
+				amp0 = fit_result['params_dict']['A']
+				offset0 = fit_result['params_dict']['a']
+				t = fit_result['params_dict']['sigma']
+
+		for i in range(len(msmt_list)):
+			plt.errorbar(evotime_arr[i],fid_arr[i],fid_u_arr[i],fmt='o',markersize=4,label=str(msmt_list[i]) + ' : p = ' + result[i],color=color_list[i])
+
+		plt.xlabel('Evolution time (ms)')
+		plt.ylabel('Average state fidelity')
+		plt.title('Average state fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
+		plt.legend()#bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+		plt.xlim([-2,60])
+		plt.ylim([0.28,0.86])
+
+		print 'Plots are saved in:'
+		print folder
+		plt.savefig(os.path.join(folder,'Zeno_2qubit_fidelity_'+RO_String+'.pdf'),format='pdf')
+		plt.savefig(os.path.join(folder,'Zeno_2qubit_fidelity_'+RO_String+'.png'),format='png')
+		plt.show()
+		plt.close('all')
+	else: 
+		return evotime_arr,fid_arr,fid_u_arr,folder
 
 def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 									 	state='X',
@@ -2015,21 +2189,21 @@ def	Zeno_SingleQubit(older_than_tstamp=None,msmts='0',eRO_list=['positive'],
 
 		evo_time=[2005]
 		while loop_bit:
-			older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder,evo_was_zero=get_Zeno_data(electron_RO=eRO_list,
+			older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder,evo_was_zero,subtracted_time=get_Zeno_data(electron_RO=eRO_list,
 																						state=state,
 																						older_than=older_than_tstamp,
 																						previous_evo=evo_time[0],
 																						msmts=msmts,
 																						ssro_timestamp=ssro_timestamp,
 																						ROBasis=RO_dict[state], 
-																						subtract_drive_time = subtract_drive_time)
+																						subtract_drive_time = subtract_drive_time, return_drive_time = subtract_drive_time)
 			#loop_bit is true as long as new data was found.
 			if loop_bit:
 				y_arr=np.concatenate((y_arr,y))
 				y_err_arr=np.concatenate((y_err_arr,y_err))
 				evo_time_arr=np.concatenate((evo_time_arr,evo_time))
 				# if an evolution time of zero was reached --> stop the evaluation.
-				if evo_was_zero or evotime_dict[msmts] in evo_time:
+				if evo_was_zero or evotime_dict[msmts] in (evo_time+subtracted_time):
 					loop_bit=False
 
 
@@ -2141,13 +2315,13 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 
 						amp0 = fit_result0['params_dict']['A']*2 ### fitted amplitudes of the expectation value for mZ and Z
 						fit_result, result_string = fit_pheno_State_decay(msmt_list[i],ax,amp0,evotime,fid,contrast = False)
-						result_string =str(round(fit_result['params_dict']['t'],2)) + ' +- ' + str(round(fit_result['error_dict']['t'],2))
-						plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = fit_lw)
+						result_string =str(round(abs(fit_result['params_dict']['t']),2)) + ' +- ' + str(round(fit_result['error_dict']['t'],2))
+						plot.plot_fit1d(fit_result, np.linspace(0.0,evotime[-1],1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = fit_lw)
 						resultsSTR.append(result_string)
 
 
-						results.append(fit_result['params_dict']['t'])
-						results_u.append(fit_result['error_dict']['t'])
+						results.append(abs(fit_result['params_dict']['t']))
+						results_u.append(abs(fit_result['error_dict']['t']))
 
 
 					plt.errorbar(evotime,fid,fid_u,fmt='o',label=str(msmt_list[i])+ ' : ' + str(resultsSTR[i]),color = color_list[i])
@@ -2183,7 +2357,10 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 				plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',label=str(msmt_list[i]),color=color_list[i])
 			
 			### fill up data dictionary
-			pickle_dict[str(msmt_list[i])] = make_pickle_dict(evotime,fid,fid_u,timetrace_keylist)
+			if len(msmt_list[i]) == 1:
+				pickle_dict['0'+str(msmt_list[i])] = make_pickle_dict(evotime,fid,fid_u,timetrace_keylist)
+			else:
+				pickle_dict[str(msmt_list[i])] = make_pickle_dict(evotime,fid,fid_u,timetrace_keylist)
 
 		### fitting routine.
 		
@@ -2196,8 +2373,8 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 		if plot_title == '':
 			plt.title('State_'+state+'_stop_'+str(tstamp)+'_'+RO_String)
 		else: plt.title(plot_title)
-		# plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-		plt.legend()
+		plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+		# plt.legend()
 
 		print 'Plots are saved in:'
 		print folder
@@ -2368,15 +2545,17 @@ def Zeno_3q_state_expectation(older_than_tstamp=None,msmts='0',eRO_list=['positi
 	ii=0
 
 	evo_time=[2005]
+	drive_time = 0.
 	while loop_bit:
-		older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder,evo_was_zero=get_Zeno_data(electron_RO=eRO_list,
+		older_than_tstamp,loop_bit,x_labels,y,y_err,evo_time,folder,evo_was_zero,drive_time=get_Zeno_data(electron_RO=eRO_list,
 																					state=state,
 																					older_than=older_than_tstamp,
-																					previous_evo=evo_time[0],
+																					previous_evo=evo_time[0]+drive_time,
 																					msmts=msmts,
 																					ssro_timestamp=ssro_timestamp,ROBasis=RO_basis,
 																					single_qubit=False,
-																					subtract_drive_time = subtract_drive_time)
+																					subtract_drive_time = subtract_drive_time,
+																					return_drive_time = True)
 		#loop_bit is true as long as new data was found.
 		if loop_bit:
 			y_arr=np.concatenate((y_arr,y))
@@ -2678,7 +2857,7 @@ def Zeno_3q_logicalFidelity_list(older_than_tstamp=None,msmts_list=['0'],eRO_lis
 						if msmt == '0':
 
 							fit_result, result_string = fit_pheno_process_decay(msmt,ax,0.43,fid_evo_arr[kk][ii],fid_arr[kk][ii],decoded_bit='2')
-							plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk*len(state_list)+ii],add_txt = False, lw = fit_lw)
+							plot.plot_fit1d(fit_result, np.linspace(0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk*len(state_list)+ii],add_txt = False, lw = fit_lw)
 
 							amp_dict[state] = fit_result['params_dict']['A']
 							off_dict[state] = fit_result['params_dict']['a']
@@ -2690,10 +2869,9 @@ def Zeno_3q_logicalFidelity_list(older_than_tstamp=None,msmts_list=['0'],eRO_lis
 
 						else:
 
-
 							fit_result, result_string = fit_pheno_process_decay(msmt,ax,amp_dict[state],fid_evo_arr[kk][ii],fid_arr[kk][ii],decoded_bit='2',offset0=off_dict[state])
 							result_string =str(round(fit_result['params_dict']['t'],2)) + ' +- ' + str(round(fit_result['error_dict']['t'],2))
-							plot.plot_fit1d(fit_result, np.linspace(0.0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk*len(state_list)+ii],add_txt = False, lw = fit_lw)
+							plot.plot_fit1d(fit_result, np.linspace(0,120.0,1001), ax=ax, plot_data=False,color = color_list[kk*len(state_list)+ii],add_txt = False, lw = fit_lw)
 							
 
 							p1 = fit_result['params_dict']['t']
@@ -2894,7 +3072,8 @@ def Zeno_3q_logicalFidelity_list(older_than_tstamp=None,msmts_list=['0'],eRO_lis
 
 		plt.xlabel('Number of Measurements')
 		plt.ylabel('Normalized coherence time')
-		plt.xlim(-0.5,2.5)
+		plt.ylim(0,1.8)
+		plt.xlim(-0.5,4.5)
 
 		## put legend in place
 		if len(state_list)*len(msmts_list) < 4:
@@ -3041,3 +3220,102 @@ def coherence_scaling():
 
 
 
+# def ShowResults():
+# 	### this is a static function (no input parameters)
+# 	### combines two sets (see older_timestamp_lists) of zeno measurements and plots them in a graph.
+# 	### extendible for more than two measurement sets given that the evolution times stay the same.
+# 	### saves a pickle file which contains the measured values as a dictionary.
+# 	### the specification of 'None' for SSRO timestamps slets the analyi
+# 	evo0,fid0,fid_u0,folder = Zen_Compare_Runs(msmt='0',older_timestamp_list=['20150404_175544','20150403_230000'],eRO_list=['positive','negative'],
+# 	  						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+# 	evo1,fid1,fid_u1,folder = Zen_Compare_Runs(msmt='1',older_timestamp_list=['20150404_175544','20150330_161704'],eRO_list=['positive','negative'],
+# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+# 	evo2,fid2,fid_u2,folder = Zen_Compare_Runs(msmt='2',older_timestamp_list=['20150404_175544','20150330_161704'],eRO_list=['positive','negative'],
+# 	  						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+# 	evo3,fid3,fid_u3,folder = Zen_Compare_Runs(msmt='3',older_timestamp_list=['20150404_175544','20150330_233000'],eRO_list=['positive','negative'],
+# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+# 	evo4,fid4,fid_u4,folder = Zen_Compare_Runs(msmt='4',older_timestamp_list=['20150404_175544','20150330_233000'],eRO_list=['positive','negative'],
+# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+
+# 	evo5,fid5,fid_u5,folder = Zen_Compare_Runs(msmt='5',older_timestamp_list=['20150414_090000','20150414_023527'],eRO_list=['positive','negative'],
+# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+# 	evo6,fid6,fid_u6,folder = Zen_Compare_Runs(msmt='6',older_timestamp_list=['20150414_090000','20150414_023527'],eRO_list=['positive','negative'],
+# 	 						decoded_bit='2',ssro_timestamp_list=[None,None],plot_results=False)
+
+# 	######################################
+# 	### get the single qubit results. Beware, the function Zeno_proc_fidelity returns average state fidelities.
+
+# 	evo_single, fid_single_avg, fid_u_single_avg, tstamp, folder = Zeno_proc_fidelity(older_than_tstamp='20150405_043659',
+# 																		msmts='0',eRO_list=['positive','negative'],
+# 																		ssro_timestamp=None,decoded_bit='2', plot_results = False, 
+# 																		single_qubit = True)
+
+# 	fid_single_proc = (3*fid_single_avg-1)/2.
+# 	fid_u_single_proc = 1.5*fid_u_single_avg
+
+# 	evo_single = evo_single*1000 ### rescale from seconds to ms.
+
+# 	###########################
+
+
+# 	fid_arr = [fid0,fid1,fid2,fid3,fid4,fid5,fid6]
+# 	fid_u_arr = [fid_u0,fid_u1,fid_u2,fid_u3,fid_u4,fid_u5,fid_u6]
+# 	evo_arr = [evo0,evo1,evo2,evo3,evo4,evo5,evo6]
+
+# 	### This loop fuses the measurement runs
+# 	for i in range(len(fid_arr)):
+# 		f_new = []
+# 		f_u_new = []
+# 		for j,fids in enumerate(fid_arr[i]):
+
+# 			if j == 0:
+# 				f_new = [fid/len(fid_arr[i]) for kk,fid in enumerate(fids)]
+# 				f_u_new = [fid_u**2 for kk,fid_u in enumerate(fid_u_arr[i][j])]
+# 			else:
+# 				### add up fidelities
+# 				f_new = [f_new[kk]+fid/len(fid_arr[i]) for kk,fid in enumerate(fids)]
+# 				### start constructing the error bars. It is now a sum of squared errors.
+# 				f_u_new = [f_u_new[kk]+fid_u**2 for kk,fid_u in enumerate(fid_u_arr[i][j])]
+# 		### Finally, take the square root for the error entries and devide by the number of traces taken into account
+# 		f_u_new = [np.sqrt(f_u_new[kk])/len(fid_arr[i]) for kk in range(len(f_u_new))]
+
+# 		### overwrite the entries in fid_arr and fid_u_arr in order to make them ready for plotting.
+# 		fid_arr[i] = f_new
+# 		fid_u_arr[i] = f_u_new
+
+# 	### start to plot the results
+# 	fig=plt.figure()
+# 	ax=plt.subplot()
+
+
+# 	for ii in range(len(fid_arr)):
+
+# 		plt.errorbar(evo_arr[ii],fid_arr[ii],fid_u_arr[ii],marker='o',markersize=4,label=str(ii))
+	
+# 	plt.xlabel('Evolution time (ms)')
+# 	plt.ylabel('Process fidelity')
+# 	plt.title('Process fidelity averaged over ' + str(2) + ' Zeno sets')
+# 	plt.legend()
+
+# 	print 'Plots are saved in:'
+# 	print folder
+# 	plt.savefig(os.path.join(folder,'ZenoRuns_averaged'+'.pdf'),format='pdf')
+# 	plt.savefig(os.path.join(folder,'ZenoRuns_averaged'+'.png'),format='png')
+# 	plt.show()
+# 	plt.close('all')
+
+# 	#### construct a pickle container out of the data
+# 	### we start off with a dictionary
+# 	pickle_dict = {'0':[evo_arr[0],fid_arr[0],fid_u_arr[0]],
+# 					'1':[evo_arr[1],fid_arr[1],fid_u_arr[1]],
+# 					'2':[evo_arr[2],fid_arr[2],fid_u_arr[2]],
+# 					'3':[evo_arr[3],fid_arr[3],fid_u_arr[3]],
+# 					'4':[evo_arr[4],fid_arr[4],fid_u_arr[4]],
+# 					'5':[evo_arr[5],fid_arr[5],fid_u_arr[5]],
+# 					'6':[evo_arr[6],fid_arr[6],fid_u_arr[6]],
+# 					'single':[evo_single,fid_single_proc,fid_u_single_proc]}
+	
+# 	### dump to file.			
+# 	fileOut = open("Zeno_data.p","wb")
+# 	pickle.dump(pickle_dict,fileOut)
+# 	fileOut.close

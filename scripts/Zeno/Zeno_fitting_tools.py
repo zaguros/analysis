@@ -2,6 +2,7 @@
 Fitting tools for the Zeno experiment.
 """
 import numpy as np
+import scipy as sp
 import os
 from analysis.lib.tools import toolbox; reload(toolbox)
 from analysis.lib.tools import plot; reload(plot)
@@ -699,6 +700,152 @@ def fit_8msmt_state_fid(g_A0, g_t, g_p,contrast = False):
 
 
     return p0, fitfunc, fitfunc_str
+
+
+def fit_10msmt_state_fid(g_A0, g_t, g_p,contrast = False):
+    '''
+
+
+    g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
+    g_p         -  Probability for faulty parity measurement
+    g_t         -  Decay of Ramsey. Fixed.
+
+    The function should take the data set for 10 Zeno-measurements and fit the state fidelity with a prederived function. 
+    That depends on one parameter. The Probability of the parity measurement to mix the state.
+    '''
+
+    fitfunc_str = '''analyitcal solution'''
+
+    ### Parameters
+
+    A0           = fit.Parameter(g_A0, 'A0')
+
+
+    ### Ramsey (decay time divided by sqrt(2).)
+    t   = fit.Parameter(g_t, 't')
+
+    ### Zeno
+    p   = fit.Parameter(g_p,'p')
+
+    p0 = [A0,t,p]
+
+    def fitfunc(x):
+
+        N = 10
+        Coefficients = []
+        for k in range(N+1):
+            Coefficients.append(sp.special.binom(N+1,k)*np.exp(-(((N+1-2*k)*x/(N+1)/t())**2)/2.)/2**(N+1))
+
+
+        Cx = A0()*(1-p())**N*(np.sum(Coefficients,axis = 0)) # WATCH OUT, need to sepcify axis (the axis of coefficients.)
+
+        Fx = Cx/2.+0.5
+
+
+
+        if contrast: return Cx
+            
+        else: return Fx
+
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_12msmt_state_fid(g_A0, g_t, g_p,contrast = False):
+    '''
+
+
+    g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
+    g_p         -  Probability for faulty parity measurement
+    g_t         -  Decay of Ramsey. Fixed.
+
+    The function should take the data set for 12 Zeno-measurements and fit the state fidelity with a prederived function. 
+    That depends on one parameter. The Probability of the parity measurement to mix the state.
+    '''
+
+    fitfunc_str = '''analyitcal solution'''
+
+    ### Parameters
+
+    A0           = fit.Parameter(g_A0, 'A0')
+
+
+    ### Ramsey (decay time divided by sqrt(2).)
+    t   = fit.Parameter(g_t, 't')
+
+    ### Zeno
+    p   = fit.Parameter(g_p,'p')
+
+    p0 = [A0,t,p]
+
+    def fitfunc(x):
+
+        N = 12
+        Coefficients = []
+        for k in range(N+1):
+            Coefficients.append(sp.special.binom(N+1,k)*np.exp(-(((N+1-2*k)*x/(N+1)/t())**2)/2.)/2**(N+1))
+
+
+        Cx = A0()*(1-p())**N*(np.sum(Coefficients,axis = 0)) # WATCH OUT, need to sepcify axis (the axis of coefficients.)
+
+        Fx = Cx/2.+0.5
+
+
+        if contrast: return Cx
+            
+        else: return Fx
+
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_16msmt_state_fid(g_A0, g_t, g_p,contrast = False):
+    '''
+
+
+    g_A0        -  Amplitude derived from the 0 msmt case. Fixed.
+    g_p         -  Probability for faulty parity measurement
+    g_t         -  Decay of Ramsey. Fixed.
+
+    The function should take the data set for 16 Zeno-measurements and fit the state fidelity with a prederived function. 
+    That depends on one parameter. The Probability of the parity measurement to mix the state.
+    '''
+
+    fitfunc_str = '''analyitcal solution'''
+
+    ### Parameters
+
+    A0           = fit.Parameter(g_A0, 'A0')
+
+
+    ### Ramsey (decay time divided by sqrt(2).)
+    t   = fit.Parameter(g_t, 't')
+
+    ### Zeno
+    p   = fit.Parameter(g_p,'p')
+
+    p0 = [A0,t,p]
+
+    def fitfunc(x):
+
+        N = 16
+        Coefficients = []
+        for k in range(N+1):
+            Coefficients.append(sp.special.binom(N+1,k)*np.exp(-(((N+1-2*k)*x/(N+1)/t())**2)/2.)/2**(N+1))        
+
+        Cx = A0()*(1-p())**N*(np.sum(Coefficients,axis = 0)) # WATCH OUT, need to sepcify axis (the axis of coefficients.)
+
+        Fx = Cx/2.+0.5
+
+
+        if contrast: return Cx
+            
+        else: return Fx
+
+
+    return p0, fitfunc, fitfunc_str
+
+
+
 
 def fit_X_state_fid(msmts,g_A0, g_p):
     '''

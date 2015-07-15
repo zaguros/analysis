@@ -15,7 +15,7 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
-import matplotlib
+import matplotlib as mpl
 import copy as cp
 import Zeno_fitting_tools as Zfits
 import analysis.lib.Zeno.TwoQ_Zeno_Analysis_v2 as ZAnalysis
@@ -38,11 +38,16 @@ datafolder = 'ZenData\ '[:-1] ### folder of all the pickle/data files.
 
 timetrace_keylist = ['evotime','fid','fid_u'] ### used in most pickle dictionaries.
 
-### Plot styling goes here. TODO: MAKE FANCY!
+### Plot styling goes here. 
+mpl.rcParams['axes.linewidth'] = 1.8
+mpl.rcParams['xtick.major.width'] = 1.8
+mpl.rcParams['ytick.major.width'] = 1.8
+mpl.rcParams['font.size'] = 16
+mpl.rcParams['legend.fontsize'] = 14
 
-font = {'family' : 'sans-serif',
-    'weight' : 'normal',
-    'size'   : 12}
+# font = {'family' : 'sans-serif',
+#     'weight' : 'normal',
+#     'size'   : 30}
 
 fit_lw = 2
 bar_width = 0.5
@@ -96,7 +101,7 @@ class data_object(object):
 
 		self.save_folder = r'D:/measuring/data/Zeno_results' ### standard folder for saving plots.
 
-		self.fancy = False ### needs to be changed later for final plots.
+		self.fancy = True ### needs to be changed later for final plots.
 		self.plot_title = ''
 
 
@@ -104,7 +109,7 @@ class data_object(object):
 
 		self.fit_offset = 0.5
 		self.use_fixed = True
-
+		self.use_averaged = False
 
 		self.state_key_endings = ['X','Y','Z','0','1']
 		self.state_key_start = -1
@@ -114,15 +119,21 @@ class data_object(object):
 
 
 	def acquire_fit_val(self,key,xval):
+		if self.use_averaged:
+			fitfunc = self.pickle_dict[key]['state_dict_averaged']['X']['fit']['fitfunc']
+		else:
+			self.pickle_dict[key]['fit']['fitfunc']
+
+
 		if type(xval) == list:
 			ret_list = []
 			for x in xval:
-				ret_list.append(self.pickle_dict[key]['fit']['fitfunc'](x))
+				ret_list.append(fitfunc(x))
 
 			return ret_list
 
 		else:
-			return self.pickle_dict[key]['fit']['fitfunc'](xval)
+			return fitfunc(xval)
 
 
 	def return_fidelity_from_theory(self,key,time):
@@ -133,7 +144,17 @@ class data_object(object):
 
 	def perform_physical_model_fit(self,key, plotting = False, ax = None):
 
-		data = self.pickle_dict[key]
+		if type(key) != list:
+			key = [key]
+
+		if len(key) == 1:
+			data = self.pickle_dict[key[0]]
+		elif self.use_averaged:
+			data = self.pickle_dict[key[0]]['state_dict_averaged'][key[1]]
+		else:
+			data = self.pickle_dict[key[0]][key[1]]
+
+
 
 		evotime = data[timetrace_keylist[0]]
 		fid = data[timetrace_keylist[1]]
@@ -141,14 +162,14 @@ class data_object(object):
 
 
 		### find the position in the data dictionary
-		i = self.find_index(key)
+		i = self.find_index(key[0])
 
 
 
 		### fit everything to a physical model!
-		print 'this is the ', key
+		print 'this is the keylist ', key
 
-		if key == '0' or key == 'single_qubit':
+		if key[0] == '0' or key[0] == 'single_qubit':
 			t = 8.25
 			p0, fitfunc, fitfunc_str = common.fit_gauss(self.fit_offset, 0.43, 0., t)
 			fixed = [0,1]
@@ -158,34 +179,40 @@ class data_object(object):
 			fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
 
 			if plotting:
-				plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = fit_lw)
+				plot.plot_fit1d(fit_result, np.linspace(0,200,1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = fit_lw)
 
-			self.results.append(key + ' : T = ' + str(round(fit_result['params'][-1],2)) + ' +- ' + str(round(fit_result['error'][-1],2)))
+			self.results.append(key[0] + ' : T = ' + str(round(fit_result['params'][-1],2)) + ' +- ' + str(round(fit_result['error'][-1],2)))
 
-			if key == '0':
+			if key[0] == '0':
 				self.t = fit_result['params_dict']['sigma'] ### use t for the following fits with multiple measurements.
 				self.A = fit_result['params_dict']['A']
 				if self.process_fidelities:
 					self.fit_offset = fit_result['params_dict']['a']
 			# print fit_result
 
-			# print 'hiiiiiiiii'
 
 		else:
 			if '0' not in self.pickle_dict.keys(): ### in exceptional cases there might be no 0 measurements reference
 				self.t = 8.25
 
 			if not self.process_fidelities and not self.contrast: ### logical decision for state fidelities.
-				fit_result, result_string = ZAnalysis.fit_State_decay(key,ax,self.A*2,evotime,fid, t = self.t)
+				fit_result, result_string = ZAnalysis.fit_State_decay(key[0],ax,self.A*2,evotime,fid, t = self.t)
 
 			if self.process_fidelities:
-				fit_result, result_string = ZAnalysis.fit_process_decay(key,ax,self.A,evotime,fid,'2',offset0 = self.fit_offset, t = self.t)
+				fit_result, result_string = ZAnalysis.fit_process_decay(key[0],ax,self.A,evotime,fid,'2',offset0 = self.fit_offset, t = self.t)
 
 			if plotting:
-				plot.plot_fit1d(fit_result, np.linspace(0.0,evotime[-1],1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = fit_lw)
-			self.results.append(key+' : p = ' + result_string)
+				plot.plot_fit1d(fit_result, np.linspace(0.0,200,1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = fit_lw)
+			self.results.append(key[0]+' : p = ' + result_string)
 
-		self.pickle_dict[key]['fit'] = fit_result
+		if len(key) == 1:
+			self.pickle_dict[key[0]]['fit'] = fit_result
+		elif self.use_averaged:
+			self.pickle_dict[key[0]]['state_dict_averaged']['fit'] = fit_result
+		else:
+			self.pickle_dict[key[0]][key[1]] = fit_result
+
+		
 
 	
 	def perform_phenom_fit(self,key,plotting = False, ax = None):
@@ -215,7 +242,7 @@ class data_object(object):
 		fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
 
 		if plotting:
-			plot.plot_fit1d(fit_result, np.linspace(0,evotime[-1],201), ax=ax, plot_data=False,color = color_list[ii],add_txt = False, lw = fit_lw)
+			plot.plot_fit1d(fit_result, np.linspace(0,200,201), ax=ax, plot_data=False,color = color_list[ii],add_txt = False, lw = fit_lw)
 
 		p1 = abs(round(fit_result['params'][3-len(fixed)],3))
 		p1_u = round(fit_result['error'][3-len(fixed)],3)
@@ -230,25 +257,34 @@ class data_object(object):
 
 
 
-	def perform_semi_pheno_model_fit(self,key, plotting = False, ax = None):
+	def perform_semi_pheno_model_fit(self,key, plotting = False, ax = None, xlim = None):
 
 		if len(key) == 1:
 			data = self.pickle_dict[key[0]]
+		elif self.use_averaged:
+			data = self.pickle_dict[key[0]]['state_dict_averaged'][key[1]]
 		else:
 			data = self.pickle_dict[key[0]][key[1]]
+
 		evotime = data[timetrace_keylist[0]]
 		fid = data[timetrace_keylist[1]]
 		fid_u = data[timetrace_keylist[2]]
 
+
+		if xlim != None:
+			last_plot_point = xlim[-1]
+		else:
+			last_plot_point = evotime[-1]
 		### find the position in the data dictionary
 		i = self.find_index(key[0])
 
 		# print 'this is the ', key
-		print key
-		if key[0] == '0' or key[0] == 'single_qubit':
+
+		if key[0] == '0' or key[0] == 'single_qubit' or key[0] == '00':
 			t = 8.25
 			p0, fitfunc, fitfunc_str = common.fit_gauss(self.fit_offset, 0.43, 0., t)
 			fixed = [0,1]
+
 			if self.process_fidelities:
 				fixed = [1]
 
@@ -259,11 +295,14 @@ class data_object(object):
 			fit_result = fit.fit1d(evotime,fid, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
 			if plotting:
-				plot.plot_fit1d(fit_result, np.linspace(evotime[0],evotime[-1],1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = fit_lw)
+				plot.plot_fit1d(fit_result, np.linspace(0.0,200,1001), ax=ax,color = color_list[i], plot_data=False,add_txt = False, lw = fit_lw)
+			if key[0] == 'single_qubit':
+				label_begin = '1Q'
+			else: label_begin = key[0]
 
-			self.results.append(key[0] + ' : T = ' + str(round(fit_result['params'][-1],2)) + ' +- ' + str(round(fit_result['error'][-1],2)))
+			self.results.append(label_begin + ' : T = ' + str(round(abs(fit_result['params'][-1]),2)) + ' +- ' + str(round(abs(fit_result['error'][-1]),2)))
 
-			if key[0] == '0':
+			if key[0] == '0' or key[0] == '00':
 				self.t = fit_result['params_dict']['sigma'] ### use t for the following fits with multiple measurements.
 				self.A = fit_result['params_dict']['A']
 				if self.process_fidelities:
@@ -284,15 +323,17 @@ class data_object(object):
 				fit_result, result_string = ZAnalysis.fit_pheno_State_decay(key[0],ax,self.A,evotime,fid,t = self.t,contrast = self.contrast)
 
 			if plotting:
-				plot.plot_fit1d(fit_result, np.linspace(0.0,evotime[-1],1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = fit_lw)
+				plot.plot_fit1d(fit_result, np.linspace(0.0,200,1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = fit_lw)
 			
-			print fit_result['params_dict']
-			result_string = str(round(fit_result['params_dict']['t'],2)) + ' +- ' + str(round(fit_result['error_dict']['t'],2))
+			# print fit_result['params_dict']
+			result_string = str(round(abs(fit_result['params_dict']['t']),2)) + ' +- ' + str(round(fit_result['error_dict']['t'],2))
 			self.results.append(key[0]+' : T = ' + result_string)
 
 		# print 'uncertainty ', p1_u;
 		if len(key) == 1:
 			self.pickle_dict[key[0]]['fit'] = fit_result
+		elif self.use_averaged:
+			self.pickle_dict[key[0]]['state_dict_averaged'][key[1]]['fit'] = fit_result
 		else:
 			self.pickle_dict[key[0]][key[1]]['fit'] = fit_result
 
@@ -318,8 +359,11 @@ class data_object(object):
 							ylim 				= None, 
 							xlim 				= None,
 							legend 				= True,
-							plot_states			= False):
+							plot_states			= False,**kw):
 		
+		xticks = kw.pop('xticks',None)
+		yticks = kw.pop('yticks',None)
+
 		save_name = 'timetrace'
 
 
@@ -346,9 +390,14 @@ class data_object(object):
 
 
 			if plot_states:
+				if self.use_averaged:
+					data = data['state_dict_averaged']
+
 
 				for key2 , state_data in data.iteritems():
 					if key2[self.state_key_start:] in self.state_key_endings:
+						print key2
+						print state_data.keys()
 
 						### get state fidelities!
 						key0 = key
@@ -367,17 +416,17 @@ class data_object(object):
 
 						if self.physical_model_fit:
 							
-							self.perform_physical_model_fit(key,plotting = True, ax=ax)
+							self.perform_physical_model_fit([key0,key],plotting = True, ax=ax)
 
 						elif self.pheno_physical_mode_fit:
 
-							self.perform_semi_pheno_model_fit([key0,key],plotting = True,ax=ax)
+							self.perform_semi_pheno_model_fit([key0,key],plotting = True,ax=ax, xlim = xlim)
 
 						else:
 
 							self.perform_phenom_fit([key0,key],plotting = True, ax=ax)
 					
-						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt='o',label=str(self.results[i]),color=color_list[i])
+						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt='o',label=key0,color=color_list[i])
 
 					else:
 						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',color=color_list[i],label = key)
@@ -402,7 +451,7 @@ class data_object(object):
 						self.perform_phenom_fit([key],plotting = True, ax=ax)
 				
 
-					plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt='o',label=str(self.results[i]),color=color_list[i])
+					plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt='o',label=key,color=color_list[i])
 
 				else:
 					plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker='o',color=color_list[i],label = key)
@@ -445,7 +494,16 @@ class data_object(object):
 		plt.ylabel(ylabel)
 		
 		if legend:
-			plt.legend()
+			#plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+			plt.legend(frameon = False,ncol = 2,numpoints = 1)
+
+
+		if xticks != None:
+			plt.xticks(xticks)
+
+		if yticks != None:
+			plt.yticks(yticks)
+
 
 		plt.title(self.plot_title)
 
@@ -455,7 +513,7 @@ class data_object(object):
 		plt.show()
 		plt.close('all')
 
-	def plot_msmt_slices(self,x_values,save_plot=False):
+	def plot_msmt_slices(self,x_values,save_plot=False,state = 'X',**kw):
 		""" 
 		takes a list of times 
 		plots this list and compares theory with experiment.
@@ -464,13 +522,20 @@ class data_object(object):
 		the timing of that data is then given in the legend.
 		"""
 
+		yticks = kw.pop('yticks',None)
+
+
 
 		fig = plt.figure()
 		ax = plt.subplot()
 		x_axis_ticks = []
 
-		for key, data in self.pickle_dict.iteritems():
+		for key in sorted(self.pickle_dict.keys()):#self.pickle_dict.iteritems():
 
+			if self.use_averaged:
+				data = self.pickle_dict[key]['state_dict_averaged'][state]
+			else:
+				data = self.pickle_dict[key]
 			evotime = data['evotime']
 
 			final_x_vals = []
@@ -507,6 +572,9 @@ class data_object(object):
 
 		if self.contrast:
 			ylabel = 'Contrast'
+
+		if yticks != None:
+			plt.yticks(yticks)
 
 
 		plt.ylabel(ylabel)
@@ -552,23 +620,43 @@ class data_object(object):
 
 		Obviously only works for data involving process fidelities.
 		"""
-		timetrace_keylist
+		# timetrace_keylist
 		for key, data in self.pickle_dict.iteritems():
-			if key in ['0','1','2','3','4','5','6']:
-				state_dict_averaged = {'X': {},'Y':{},'Z':{}}
+			if key in ['0','1','2','3','4','5','6','00','02','04','08','10','12','16']:
+				state_dict_averaged = {}
 				state_dict = data['state_dict']
 				
 				i = 0
+				j = 0
+				k = 0
+
 				for key2 in sorted(state_dict.keys()):
 					
-					if i < 3:
+					if i == 0 and 'X' in key2:
+						state_dict_averaged['X'] = {}
 						state_dict_averaged[key2[-1]] = cp.deepcopy(state_dict[key2])
+						i = 1
+
+					elif j == 0 and 'Y' in key2:
+						state_dict_averaged['Y'] = {}
+						state_dict_averaged[key2[-1]] = cp.deepcopy(state_dict[key2])
+						j = 1
+
+					elif k == 0 and 'Z' in key2:
+						state_dict_averaged['Z'] = {}
+						state_dict_averaged[key2[-1]] = cp.deepcopy(state_dict[key2])
+						k = 1
+
 					else:
 						### average the two states.
 						state_dict_averaged[key2[-1]][timetrace_keylist[1]] = [(state_dict[key2][timetrace_keylist[1]][kk]+fid)/2 for kk,fid in enumerate(state_dict_averaged[key2[-1]][timetrace_keylist[1]])]
-						state_dict_averaged[key2[-1]][timetrace_keylist[2]] = [(np.sqrt(state_dict[key2][timetrace_keylist[2]][kk]**2+fid_u**2)/4) for kk,fid_u in enumerate(state_dict_averaged[key2[-1]][timetrace_keylist[2]])]
+						state_dict_averaged[key2[-1]][timetrace_keylist[2]] = [(np.sqrt(state_dict[key2][timetrace_keylist[2]][kk]**2+fid_u**2)/2) for kk,fid_u in enumerate(state_dict_averaged[key2[-1]][timetrace_keylist[2]])]
 
-					i+=1
+					# i+=1
+
+			self.pickle_dict[key]['state_dict_averaged'] = {}
+			self.pickle_dict[key]['state_dict_averaged'] = state_dict_averaged
+
 
 
 
@@ -586,20 +674,87 @@ def X_preservation():
 	pickle_dict = open_data(filename)
 
 
-	THE_DATA = data_object("Fig1A",pickle_dict)
+	#### do some after processing
+	data_dict = {}
+
+	for key in pickle_dict.keys():
+		data_dict[key] = {}
+		data_dict[key]['state_dict'] = {}
+		data_dict[key]['state_dict']['X'] = pickle_dict[key]
+
+	# THE_DATA = data_object("Fig1A",pickle_dict)
+	# THE_DATA.set_do_fit(True)
+	# THE_DATA.physical_model_fit = False
+	# THE_DATA.pheno_physical_mode_fit = True
+
+	# THE_DATA.plot_timetrace(save_plot=True)
+	
+
+	# # THE_DATA.plot_msmt_slices([8],save_plot=True)
+	# THE_DATA.plot_msmt_slices([45],save_plot=True)
+
+
+	filename = 'mX_preservation.p'
+	pickle_dict = open_data(filename)
+	# print pickle_dict
+
+	for key in pickle_dict.keys():
+		data_dict[key]['state_dict']['mX'] = pickle_dict[key]
+
+
+	# print data_dict.keys()
+
+	
+	THE_DATA = data_object("Fig1A",data_dict)
+	THE_DATA.average_state_dicts()
+	THE_DATA.use_averaged = True
+	# print data_dict['10']['state_dict_averaged']
 	THE_DATA.set_do_fit(True)
 	THE_DATA.physical_model_fit = False
 	THE_DATA.pheno_physical_mode_fit = True
 
-	THE_DATA.plot_timetrace(save_plot=True)
-	
+	THE_DATA.plot_timetrace(save_plot=True,plot_states = True,xlim=[0,100],xticks=[0,40,80],yticks=[0.5,0.75,1])
+
+	THE_DATA.plot_msmt_slices([40],save_plot = False,yticks=[0.5,0.75])
 
 	# THE_DATA.plot_msmt_slices([8],save_plot=True)
-	THE_DATA.plot_msmt_slices([45],save_plot=True)
+	# THE_DATA.plot_msmt_slices([45],save_plot=True)
 
 
 	# THE_DATA.physical_model_fit = False
 	# THE_DATA.plot_state_timetrace(save_plot=False)
+	
+
+	### extract coherence times.
+	x_axis = []
+	results = []
+	results_u = []
+	for k in sorted(pickle_dict.keys()):
+
+		print k
+
+		try:
+			res = abs(THE_DATA.pickle_dict[k]['state_dict_averaged']['X']['fit']['params_dict']['t'])
+			res_u = THE_DATA.pickle_dict[k]['state_dict_averaged']['X']['fit']['error_dict']['t']
+
+		except:
+			res = abs(THE_DATA.pickle_dict[k]['state_dict_averaged']['X']['fit']['params_dict']['sigma'])
+			res_u = THE_DATA.pickle_dict[k]['state_dict_averaged']['X']['fit']['error_dict']['sigma']
+		
+		x_axis.append(int(k))
+		results.append(res)
+		results_u.append(res_u)
+
+	results_norm, results_u_norm = ZAnalysis.normalize_and_plot_coherence(x_axis,results,results_u)
+
+	coherence_dict = {	'msmts' 	: x_axis,
+						'results'	: results_norm,
+						'results_u'	: results_u_norm}
+
+	ZAnalysis.save_data(coherence_dict,"Zeno_1Q_scaling_"+'class_bit'+".p")
+
+
+
 
 ######################
 ######################
@@ -615,15 +770,20 @@ def Q1_proc_fid():
 	filename = 'FIG1B_1Q_proc_fid.p'
 	pickle_dict = open_data(filename)
 
+	print pickle_dict['1'].keys()
 
 	THE_DATA = data_object("Fig1B",pickle_dict,proc_fid=True)
 
-	THE_DATA.plot_timetrace(save_plot=True,add_horizontal_line=0.5,xlim=[0,50],ylim=[0.4,0.55],legend=False)
+
+
+	THE_DATA.plot_timetrace(save_plot=True,add_horizontal_line=0.5,xlim=[0,50],ylim=[0.4,0.55],legend=False,xticks=[0,25,50],yticks=[0.4,0.5])
 	
 
-	THE_DATA.plot_timetrace(save_plot=True,plot_states = True)
+	THE_DATA.plot_timetrace(save_plot=True,plot_states = True,xticks=[0,25,50],yticks=[0.4,0.6,0.8,1])
 
 	THE_DATA.average_state_dicts()
+
+
 ######################
 ######################
 ##					##
@@ -640,7 +800,7 @@ def Q2_vs_Q1():
 	filename = 'FIG2A_evenmsmts.p'
 	pickle_dict = open_data(filename)
 
-	data_even = data_object("Fig2A",pickle_dict, proc_fid = True)
+	data_even = data_object("Fig2A_even",pickle_dict, proc_fid = True)
 
 	### prepare fitting
 
@@ -651,7 +811,7 @@ def Q2_vs_Q1():
 
 	### plot & fit
 
-	data_even.plot_timetrace(save_plot  = False, legend = True)
+	data_even.plot_timetrace(save_plot  = True, legend = True,xlim=[0,60],xticks=[0,30,60],yticks=[0.4,0.7,1])
 
 	data_even.average_state_dicts()
 
@@ -665,14 +825,14 @@ def Q2_vs_Q1():
 	pickle_dict = open_data(filename)
 
 
-	data_odd = data_object("Fig2A",pickle_dict, proc_fid = True)
+	data_odd = data_object("Fig2A_odd",pickle_dict, proc_fid = True)
 
 	# data_even.use_fixed = False ### use if yopu want to fit to a gaussian
 	data_odd.set_do_fit(True)
 	data_odd.physical_model_fit = False
 	data_odd.pheno_physical_mode_fit = True
 
-	data_odd.plot_timetrace(save_plot  = False, legend = True)
+	data_odd.plot_timetrace(save_plot  = True, legend = True,xlim=[0,60],xticks=[0,30,60],yticks=[0.4,0.7,1])
 
 
 ######################
@@ -701,8 +861,8 @@ def Protecting_XX():
 	THE_DATA.set_do_fit(True)
 
 
-	THE_DATA.plot_title = r'Decay of $\langle XX \rangle $ averaged over three states'
-	THE_DATA.plot_timetrace(save_plot = False, legend = True)
+	THE_DATA.plot_title = r'$\langle XX \rangle $ averaged over six states'
+	THE_DATA.plot_timetrace(save_plot = True, legend = True,xlim=[0,60],xticks=[0,30,60],yticks=[0.0,0.4,0.8])
 
 
 ######################
@@ -731,32 +891,35 @@ def Protecting_XXX():
 
 	THE_DATA.set_do_fit(True)
 	THE_DATA.physical_model_fit = False
+	THE_DATA.pheno_physical_mode_fit = True
 	THE_DATA.fit_offset = 0.25
 	THE_DATA.use_fixed = False
+	THE_DATA.process_fidelities = True
 
 	### Do the fits.
 	THE_DATA.plot_title = 'Logical state fidelity '+r'$|00\rangle_L$'
 	THE_DATA.state_key_endings = ['00']
-	THE_DATA.plot_timetrace(save_plot = False, plot_states = True)
+	THE_DATA.name = 'Fig3AB_00'
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.2,0.5,0.8])
 
-
+	THE_DATA.name = 'Fig3AB_X0'
 	THE_DATA.plot_title = 'Logical state fidelity '+r'$|X0\rangle_L$'
 	THE_DATA.state_key_endings = ['00p10']
-	THE_DATA.plot_timetrace(save_plot = False, plot_states = True)
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.3,0.6,0.9])
 
-
+	THE_DATA.name = 'Fig3AB_00p11'
 	THE_DATA.plot_title = 'Logical state fidelity '+r'$|\Phi^+ \rangle_L$'
 	THE_DATA.state_key_endings = ['00p11']
-	THE_DATA.plot_timetrace(save_plot = False, plot_states = True)
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.2,0.5,0.8])
 
-
-
+	THE_DATA.name = 'Fig3AB_xxx'
+	THE_DATA.process_fidelities = False
 	THE_DATA.contrast = True ### sets a different label for plotting.
 	THE_DATA.physical_model_fit = False
 	THE_DATA.pheno_physical_mode_fit = True
-	THE_DATA.plot_title = r'Decay of $\langle XXX \rangle $ averaged over three states'
+	THE_DATA.plot_title = r'$\langle XXX \rangle $ averaged over three states'
 	THE_DATA.state_key_endings = ['xxx']
-	THE_DATA.plot_timetrace(save_plot = False, plot_states = True)
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.0,0.4,0.8])
 
 
 
@@ -772,7 +935,8 @@ def Protecting_XXX():
 
 
 def coherence_scaling(theory = False):
-	scaling_parameters = [1,0,2.142,0,2.8374,0,3.3893,0,3.8631]
+	### only used if theory == True
+	scaling_parameters = [1,0,2.142,0,2.8374,0,3.3893,0,3.8631,0,4.28478,0,4.66859,0,5.02315,0,5.3543]
 
 
 	data2Q = []
@@ -783,7 +947,8 @@ def coherence_scaling(theory = False):
 	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_XX.p", "rb" ) ))
 	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_YY.p", "rb" ) ))
 
-	data1Q = pickle.load( open( "ZenData\Zeno_1Q_scaling_X.p", "rb" ) )
+	# data1Q = pickle.load( open( "ZenData\Zeno_1Q_scaling_mX.p", "rb" ) )
+	data1Q = pickle.load( open( "ZenData\Zeno_1Q_scaling_class_bit.p", "rb" ) )
 
 	data3Q = pickle.load( open( "ZenData\Zeno_3Q_scaling.p", "rb" ) )
 
@@ -808,7 +973,7 @@ def coherence_scaling(theory = False):
 	Q2_data['msmts'] = data2Q[0]['msmts']
 
 
-	
+	print Q2_data['results']
 
 
 	### combine the decay of all logical two qubit states for the 3 qubit experiments.
@@ -827,7 +992,8 @@ def coherence_scaling(theory = False):
 	Q3_data['msmts'] = data3Q['msmts'][0]
 
 	
-	
+	# print data1Q['results']
+
 
 	if theory:
 		for ii,msmts in enumerate(data1Q['msmts']):
@@ -887,7 +1053,7 @@ def coherence_scaling(theory = False):
 	f = np.vectorize(f)
 
 	if theory:
-		plt.plot(np.linspace(0,15,1001),f(np.linspace(0,15,1001)), label = "Theory")
+		plt.plot(np.linspace(0,19,1001),f(np.linspace(0,19,1001)), label = "Theory")
 
 	plt.xlabel('Number of Measurements')
 	
@@ -895,12 +1061,20 @@ def coherence_scaling(theory = False):
 	# ax.set_xscale('log')
 	if theory:
 		plt.ylabel('Normalized coherence time')
-		plt.xlim(-0.2,9)
-		plt.ylim(0.9,5)
+		plt.xlim(-0.2,18)
+		plt.ylim(0.9,6)
 	else:
 		plt.ylabel(r'$T/T(N=0)$')
-		plt.xlim(-0.2,9)
+		plt.xlim(-0.2,18)
 		plt.ylim(0.8,1.4)
-	plt.legend(loc=2,prop={'size':10},bbox_to_anchor=(1.05, 1)) #,
+	plt.legend(loc=4,prop={'size':10},frameon=False,numpoints = 1) #,
+
+
+
+	save_folder = r'D:/measuring/data/Zeno_results'
+	plt.savefig(os.path.join(save_folder,'Fig4_coherence_scaling'+'.pdf'),format='pdf')
+	plt.savefig(os.path.join(save_folder,'Fig4_coherence_scaling'+'.png'),format='png')
+
+
 	plt.show()
 	plt.close('all')
