@@ -205,7 +205,7 @@ class SequenceAnalysis(m2.M2Analysis):
             ax.set_ylabel(r'$F(|0\rangle)$')
 
         #if self.result_corrected:
-        ax.set_ylim(ylim)
+        #ax.set_ylim(-0.05, 1.05)
         if save:
             fig.savefig(
                 os.path.join(self.folder, 'ssro_result_vs_sweepparam.png'),

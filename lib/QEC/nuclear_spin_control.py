@@ -151,7 +151,7 @@ def nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp):
 def Ren_gate(carbon_nr, B_field=304.22, phase=0):
     '''create a Ren gate for given carbon number'''
 
-    number_of_pulses = 16# mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N'][0]
     tau = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
     print number_of_pulses
     print tau

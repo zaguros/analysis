@@ -5,325 +5,25 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
-from analysis.scripts.Quantum_Memory import Simple_Decoupling_Analysis as sda
-reload(sda)
 reload(common)
+reload(mbi)
 
-
-def Carbon_RamseynoDD_stitch_fit2cos(data_stamps, 
-    g_avg = 0.5,
-    g_A = 0.25,
-    g_f_a = 1. / 1400.,
-    g_phi_a = 0,
-    g_B = 0.25,
-    g_f_b = 1./35.,
-    g_phi_b = 0.,
-    plot_fit = False, do_print = False, fixed = [2], show_guess = True,
-    return_results = True,
-    close_plot = False,
-    title = 'Carbon'):
-    """
-    Function to combine multiple separate nuclear Ramsey measurements without DD, as specified by free evolution times.
-    Fits sum of two cosines to resulting data.
-    Input:
-    - 'data_stamps': dictionary with keys '[(min evol time)-(max evol time)]' and entry 'ssro-calib_folder'
-    Optional inputs:
-    - g_avg: guess of average signal
-    - g_A: guess of first cosine amplitude
-    - g_f_a: guess of first cosine freq
-    - g_phi_a: guess of first cosine phase
-    - g_B: guess of second cosine amplitude
-    - g_f_b: guess of second cosine freq
-    - g_phi_b: guess of second cosine phase
-    """
-
-    # retrieve data
-
-    free_evolution_times = []
-    signal = []
-    d_signal = []
-    folder = []
-    all_stitchting_points = []
-    fit_results = []
-
-    times = data_stamps.keys() # element of folder name, i.e. '_t=[min t, max t]'
-    for counter, time in enumerate(times):
-        print 'time = ', time
-        title = '_t=' + time
-        timestamp, folder = toolbox.latest_data(title, return_timestamp = True)
-        print 'title %s gives folder: %s' % (title, folder)
-        ssro_calib_folder = data_stamps[time] 
-        a = mbi.MBIAnalysis(folder)
-        a.get_sweep_pts()
-        a.get_readout_results(name='adwindata')
-        a.get_electron_ROC(ssro_calib_folder)
-        # ax = a.plot_results_vs_sweepparam(ret='ax')
-
-        x = a.sweep_pts.reshape(-1)[:]
-        y = a.p0.reshape(-1)[:]
-        yerr = a.u_p0[:,0]
-
-        free_evolution_times.append(x)
-        signal.append(y)
-        d_signal.append(yerr)
-
-    # Concatenate
-    free_evolution_times = np.hstack(free_evolution_times)
-    signal = np.hstack(signal)
-    print 'max = ', free_evolution_times[np.argmax(signal)]
-    d_signal = np.hstack(d_signal)
-
-    # Plot data
-    fig = plt.figure()
-    ax = plt.subplot(111)
-    plt.errorbar(free_evolution_times, signal, yerr = d_signal, fmt = 'o')
-    plt.xlabel('Free evolution time (us)')
-    plt.ylabel('F(|0>)')
-    # Fit sum of cosines
-    p0, fitfunc, fitfunc_str = common.fit_sum_2cos(g_avg, g_A, g_f_a, g_phi_a, g_B, g_f_b, g_phi_b)
-
-    if show_guess:
-        ax.plot(np.linspace(free_evolution_times[0],free_evolution_times[-1],201), fitfunc(np.linspace(free_evolution_times[0],free_evolution_times[-1],201)), ':', lw=2)
-
-    fit_result = fit.fit1d(free_evolution_times,signal, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
-
-    print 'fitfunction: ' + fitfunc_str
-
-    ## plot data and fit as function of total time
-    if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(free_evolution_times[0],free_evolution_times[-1],1001), ax=ax, plot_data=False)
-        ax.set_title(timestamp)
-
-    fit_results.append(fit_result)
-    if title == None:
-        title = 'analyzed_result'
-
-    print 'STORING FIGURE IN PATH: ', folder
-    plt.savefig(os.path.join(folder, title + '.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(folder, title + '.png'),
-    format='png')
-    if close_plot == True:
-        plt.close()
-
-    if return_results == True:
-        return fit_results
-
-def Carbon_RamseynoDD_stitch_fitgausscos(data_stamps, 
-    g_f = 1. /35.,
-    g_a = 0.5,
-    g_A = 0.5,
-    g_phi = 0,
-    g_t = 10000,
-    plot_fit = False, do_print = False, fixed = [], show_guess = True,
-    return_results = True,
-    close_plot = False,
-    title = 'Carbon'):
-    """
-    Same as 'Carbon_RamseynoDD_stitch_fit2cos', except now it fits a Gaussian decaying cosine to resulting data.
-    ( 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a' )
-    Input:
-    - 'data_stamps': dictionary with keys '[(min evol time)-(max evol time)]' and entry 'ssro-calib_folder'
-    Optional inputs:
-    - g_avg: guess of average signal
-    - g_A: guess of first cosine amplitude
-    - g_f_a: guess of first cosine freq
-    - g_phi_a: guess of first cosine phase
-    - g_B: guess of second cosine amplitude
-    - g_f_b: guess of second cosine freq
-    - g_phi_b: guess of second cosine phase
-    """
-
-    # retrieve data
-
-    free_evolution_times = []
-    signal = []
-    d_signal = []
-    folder = []
-    all_stitchting_points = []
-    fit_results = []
-
-    times = data_stamps.keys() # element of folder name, i.e. '_t=[min t, max t]'
-    for counter, time in enumerate(times):
-        print 'time = ', time
-        title = '_t=' + time
-        timestamp, folder = toolbox.latest_data(title, return_timestamp = True)
-        print 'title %s gives folder: %s' % (title, folder)
-        ssro_calib_folder = data_stamps[time] 
-        a = mbi.MBIAnalysis(folder)
-        a.get_sweep_pts()
-        a.get_readout_results(name='adwindata')
-        a.get_electron_ROC(ssro_calib_folder)
-        # ax = a.plot_results_vs_sweepparam(ret='ax')
-
-        x = a.sweep_pts.reshape(-1)[:]
-        y = a.p0.reshape(-1)[:]
-        yerr = a.u_p0[:,0]
-
-        free_evolution_times.append(x)
-        signal.append(y)
-        d_signal.append(yerr)
-
-    # Concatenate
-    free_evolution_times = np.hstack(free_evolution_times)
-    signal = np.hstack(signal)
-    print 'max = ', free_evolution_times[np.argmax(signal)]
-    d_signal = np.hstack(d_signal)
-
-    # Plot data
-    fig = plt.figure()
-    ax = plt.subplot(111)
-    plt.errorbar(free_evolution_times, signal, yerr = d_signal, fmt = 'o')
-    plt.xlabel('Free evolution time (us)')
-    plt.ylabel('F(|0>)')
-
-    # Fit sum of cosines
-    p0, fitfunc, fitfunc_str = common.fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t)
-
-    if show_guess:
-        ax.plot(np.linspace(free_evolution_times[0],free_evolution_times[-1],201), fitfunc(np.linspace(free_evolution_times[0],free_evolution_times[-1],201)), ':', lw=2)
-
-    fit_result = fit.fit1d(free_evolution_times,signal, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
-
-    print 'fitfunction: ' + fitfunc_str
-
-    ## plot data and fit as function of total time
-    if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(free_evolution_times[0],free_evolution_times[-1],1001), ax=ax, plot_data=False)
-        ax.set_title(timestamp)
-
-    fit_results.append(fit_result)
-    if title == None:
-        title = 'analyzed_result'
-
-    print 'STORING FIGURE IN PATH: ', folder
-    plt.savefig(os.path.join(folder, title + '.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(folder, title + '.png'),
-    format='png')
-    if close_plot == True:
-        plt.close()
-
-    if return_results == True:
-        return fit_results
-
-def Carbon_RamseynoDD_stitch_fitgauss2cos(data_stamps, 
-    g_avg = 0.5,
-    g_C = 0.5,
-    g_t = 10000,
-    g_A = 0.25,
-    g_f_a = 1. / 1400.,
-    g_phi_a = 0,
-    g_B = 0.25,
-    g_f_b = 1./35.,
-    g_phi_b = 0.,
-    plot_fit = False, do_print = False, fixed = [], show_guess = True,
-    return_results = True,
-    close_plot = False,
-    title = 'Carbon'):
-    """
-    Same as 'Carbon_RamseynoDD_stitch_fit2cos', except now it fits a Gaussian decaying SUM OF 2 COSINES to resulting data.
-    ( 'avg + C *exp(-(x/t)**2) * [ A*cos(2pi * (fa*x + phi_a/360) )+ B*cos(2pi * (f_b*x + phi_b/360)))/2 ]'
-    Input:
-    - 'data_stamps': dictionary with keys '[(min evol time)-(max evol time)]' and entry 'ssro-calib_folder'
-    Optional inputs:
-    - g_avg: guess of average signal
-    - g_A: guess of first cosine amplitude
-    - g_f_a: guess of first cosine freq
-    - g_phi_a: guess of first cosine phase
-    - g_B: guess of second cosine amplitude
-    - g_f_b: guess of second cosine freq
-    - g_phi_b: guess of second cosine phase
-    """
-
-    # retrieve data
-
-    free_evolution_times = []
-    signal = []
-    d_signal = []
-    folder = []
-    all_stitchting_points = []
-    fit_results = []
-
-    times = data_stamps.keys() # element of folder name, i.e. '_t=[min t, max t]'
-    for counter, time in enumerate(times):
-        print 'time = ', time
-        title = '_t=' + time
-        timestamp, folder = toolbox.latest_data(title, return_timestamp = True)
-        print 'title %s gives folder: %s' % (title, folder)
-        ssro_calib_folder = data_stamps[time] 
-        a = mbi.MBIAnalysis(folder)
-        a.get_sweep_pts()
-        a.get_readout_results(name='adwindata')
-        a.get_electron_ROC(ssro_calib_folder)
-        # ax = a.plot_results_vs_sweepparam(ret='ax')
-
-        x = a.sweep_pts.reshape(-1)[:]
-        y = a.p0.reshape(-1)[:]
-        yerr = a.u_p0[:,0]
-
-        free_evolution_times.append(x)
-        signal.append(y)
-        d_signal.append(yerr)
-
-    # Concatenate
-    free_evolution_times = np.hstack(free_evolution_times)
-    signal = np.hstack(signal)
-    print 'max = ', free_evolution_times[np.argmax(signal)]
-    d_signal = np.hstack(d_signal)
-
-    # Plot data
-    fig = plt.figure()
-    ax = plt.subplot(111)
-    plt.errorbar(free_evolution_times, signal, yerr = d_signal, fmt = 'o')
-    plt.xlabel('Free evolution time (us)')
-    plt.ylabel('F(|0>)')
-
-    # Fit sum of cosines
-    p0, fitfunc, fitfunc_str = common.fit_gaussian_decaying_2cos(g_avg, g_C, g_t, g_A, g_f_a, g_phi_a, g_B, g_f_b, g_phi_b)
-
-    if show_guess:
-        ax.plot(np.linspace(free_evolution_times[0],free_evolution_times[-1],201), fitfunc(np.linspace(free_evolution_times[0],free_evolution_times[-1],201)), ':', lw=2)
-
-    fit_result = fit.fit1d(free_evolution_times,signal, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
-
-    print 'fitfunction: ' + fitfunc_str
-
-    ## plot data and fit as function of total time
-    if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(free_evolution_times[0],free_evolution_times[-1],1001), ax=ax, plot_data=False)
-        ax.set_title(timestamp)
-
-    fit_results.append(fit_result)
-    if title == None:
-        title = 'analyzed_result'
-
-    print 'STORING FIGURE IN PATH: ', folder
-    plt.savefig(os.path.join(folder, title + '.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(folder, title + '.png'),
-    format='png')
-    if close_plot == True:
-        plt.close()
-
-    if return_results == True:
-        return fit_results
 
 def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
-    frequency = 1, 
-    offset = 0.5, 
-    x0 = 0,  
-    amplitude = 0.5,  
-    decay_constant = 200, 
-    phase =-500, 
-    exponent = 2, 
-    plot_fit = False, do_print = False, fixed = [], show_guess = False,
-    return_phase = False,
-    return_freq = False,
-    return_A = False,
-    return_results = True,
-    close_plot = False,
-    title = 'Carbon'):
+            frequency = 1, 
+            offset = 0.5, 
+            x0 = 0,  
+            amplitude = 0.5,  
+            decay_constant = 200, 
+            phase =0, 
+            exponent = 2, 
+            plot_fit = False, do_print = False, fixed = [2], show_guess = True,
+            return_phase = False,
+            return_freq = False,
+            return_amp = False,
+            return_results = True,
+            close_plot = False,
+            title = 'Carbon'):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -384,28 +84,160 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
         if close_plot == True:
             plt.close()
 
+        # for item in fit_result['params_dict']:
+        #     print item
+
         if return_freq == True:
             f0 = fit_result['params_dict']['f']
             u_f0 = fit_result['error_dict']['f']
             return f0, u_f0
 
-        if return_phase == True:
+        if return_phase == True and return_amp == False:
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
             return phi0, u_phi0
 
-        if return_phase == True and return_A == True:
+        if return_phase == True and return_amp == True:
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
             A = fit_result['params_dict']['A']
             u_A = fit_result['error_dict']['A']
             return phi0, u_phi0, A, u_A
-            print 'ok'
+
+        if return_amp == True:
+            A = fit_result['params_dict']['A']
+            u_A = fit_result['error_dict']['A']
+            return A, u_A
 
     if return_results == True:
         return fit_results
 
+def Carbon_Ramsey_mult_msmts(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
+            frequency = 1, 
+            offset = 0.5, 
+            x0 = 0,  
+            amplitude = 0.5,  
+            decay_constant = 200, 
+            phase =0, 
+            exponent = 2, 
+            plot_fit = False, do_print = False, fixed = [2], show_guess = True,
+            return_phase = False,
+            return_freq = False,
+            return_amp = False,
+            return_results = True,
+            close_plot = False,
+            partstr = 'part',
+            title = 'Carbon'):
+    ''' 
+    Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
+    Inputs:
+    timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
+    measurement_name: list of measurement names
+    List of parameters (order important for 'fixed') 
+    offset, amplitude, decay_constant,exponent,frequency ,phase 
+    '''
 
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        folder = toolbox.latest_data(title)
+        if partstr in folder:
+            numberstart = folder.find(partstr)+len(partstr)
+            numberofparts = int(folder[numberstart:len(folder)])
+            basis_str = folder[folder.rfind('\\')+7:numberstart]
+        else:
+            numberofparts = 1
+
+    if ssro_calib_timestamp == None: 
+        ssro_calib_folder = toolbox.latest_data('SSRO')
+
+    else:
+        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+        ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+        print ssro_calib_folder
+
+    fit_results = []
+    for kk in range(numberofparts):
+        if partstr in folder:
+            folder = toolbox.latest_data(basis_str+str(kk+1))
+        else:
+            folder = toolbox.latest_data(basis_str)
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name='adwindata')
+        a.get_electron_ROC(ssro_calib_folder)
+        ax = a.plot_results_vs_sweepparam(ret='ax')
+
+        if kk == 0:
+            cum_sweep_pts = a.sweep_pts
+            cum_p0 = a.p0
+            cum_u_p0 = a.u_p0
+            cum_pts = a.pts
+        else:
+            cum_sweep_pts = np.concatenate((cum_sweep_pts, a.sweep_pts))
+            cum_p0 = np.concatenate((cum_p0, a.p0))
+            cum_u_p0 = np.concatenate((cum_u_p0, a.u_p0))
+            cum_pts += a.pts
+
+    a.pts   = cum_pts
+    a.sweep_pts = cum_sweep_pts
+    a.p0    = cum_p0
+    a.u_p0  = cum_u_p0
+
+    sorting_order=a.sweep_pts.argsort()
+    a.sweep_pts.sort()
+    a.p0=a.p0[sorting_order]
+    a.u_p0=a.u_p0[sorting_order]
+
+    ax=a.plot_results_vs_sweepparam(ret='ax')
+
+    x = a.sweep_pts.reshape(-1)[:]
+    y = a.p0.reshape(-1)[:]
+
+    ax.plot(x,y)
+
+    p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
+            x0, decay_constant,exponent,frequency ,phase )
+
+    #plot the initial guess
+    if show_guess:
+        ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+
+    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+
+    ## plot data and fit as function of total time
+    if plot_fit == True:
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
+
+    fit_results.append(fit_result)
+    if title == None:
+        title = 'analyzed_result'
+    plt.savefig(os.path.join(folder, title + '.pdf'),
+    format='pdf')
+    plt.savefig(os.path.join(folder, title + '.png'),
+    format='png')
+    if close_plot == True:
+        plt.close()
+
+    if return_freq == True:
+        f0 = fit_result['params_dict']['f']
+        u_f0 = fit_result['error_dict']['f']
+        return f0, u_f0
+
+    if return_phase == True and return_amp == False:
+        phi0 = fit_result['params_dict']['phi']
+        u_phi0 = fit_result['error_dict']['phi']
+        return phi0, u_phi0
+
+    if return_phase == True and return_amp == True:
+        phi0 = fit_result['params_dict']['phi']
+        u_phi0 = fit_result['error_dict']['phi']
+        A = fit_result['params_dict']['A']
+        u_A = fit_result['error_dict']['A']
+        return phi0, u_phi0, A, u_A
+
+    if return_results == True:
+        return fit_results
 
 def Carbon_Ramsey_Crosstalk(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
             frequency = 1, 
@@ -419,6 +251,7 @@ def Carbon_Ramsey_Crosstalk(timestamp=None, measurement_name = ['adwindata'], ss
             return_phase = False,
             return_freq = False,
             return_results = True,
+            return_amp = False,
             close_plot = False,
             title = None):
     ''' 
@@ -508,7 +341,11 @@ def Carbon_Ramsey_Crosstalk(timestamp=None, measurement_name = ['adwindata'], ss
         if return_phase == True:
             phi0 = fit_result['params_dict']['phi']
             u_phi0 = fit_result['error_dict']['phi']
-            return phi0, u_phi0
+            Amp = fit_result['params_dict']['A']
+            if return_amp == True:    
+                return phi0, u_phi0, Amp
+            else:
+                return phi0, u_phi0
 
     if return_results == True:
         return fit_results

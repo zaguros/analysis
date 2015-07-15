@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = None#'120943'#'171251'#None #'190948' #
+timestamp = '20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
 
 guess_offset = 1
 guess_A_min1 = 0.2
@@ -41,6 +41,7 @@ def fitfunc(x):
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
+    print folder
 
 else:
     #folder = toolbox.latest_data('PostInitDarkESR')
@@ -51,8 +52,8 @@ a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='adwindata')
 
-a.get_electron_ROC()
-ax = a.plot_results_vs_sweepparam(ret='ax',name='adwindata')
+a.get_electron_ROC(ssro_calib_folder = r'D:\measuring\data\20141209\093215_AdwinSSRO_SSROCalibration_111_1_sil18')
+ax = a.plot_results_vs_sweepparam(ret='ax',name='ssro')
 x = a.sweep_pts
 y = a.p0.reshape(-1)
 wrong_population = None
@@ -77,11 +78,15 @@ else:
     plot.plot_fit1d(fit_result, linspace(min(x), max(x), 1000), plot_data=False, ax=ax)
     
     Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
+    Norm_error=np.sqrt((fit_result['error'][0]**2+fit_result['error'][1]**2+fit_result['error'][2]**2))
+
     Population_left=fit_result['params'][0]/Norm
+    Population_left_error = np.sqrt((1/Norm)**2*fit_result['error'][0]**2+(fit_result['params'][0]/Norm**2)**2*Norm_error**2)
     Population_middle=fit_result['params'][2]/Norm
     Population_right=fit_result['params'][1]/Norm
     
     ax.set_ylim(-0.05,1.1)
+
 
     plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
             format='pdf')
@@ -105,6 +110,7 @@ else:
 
 print '############################'
 print 'Population left ' , Population_left
+print 'population left error ',  Population_left_error
 print 'Population middle ' , Population_middle
 print 'Population right ' , Population_right
 print '#############################'

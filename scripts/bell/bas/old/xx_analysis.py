@@ -1,4 +1,4 @@
-f=h5py.File(r'D:\measuring\data\2014-11-Entanglement_XX_data\20141125162505_total_events.hdf5','r')
+f=h5py.File(r'D:\measuring\data\2014-11-Entanglement_XX_data\20141126091637_total_events.hdf5','r')
 db=f['analysis']['total_ent_events'].value
 d3=f['analysis']['total_lt3_ssro'].value
 d4=f['analysis']['total_lt4_ssro'].value
@@ -16,14 +16,17 @@ t_2			= 7
 
 sn_ma = 0
 sn_ro = 1
-no_ph_ro=2
+noof_ph_ro=2
 st_ma = 3
+noof_rnd = 4
+noof_rnd_0 = 5
+noof_rnd_1 = 6
 
 noof_ev=len(db)
 print 'noof events {}'.format(noof_ev)
 #sanity checks
-ro_ms0_lt3=np.sum(d3[:,no_ph_ro]>0)/float(noof_ev)
-ro_ms0_lt4=np.sum(d4[:,no_ph_ro]>0)/float(noof_ev)
+ro_ms0_lt3=np.sum(d3[:,noof_ph_ro]>0)/float(noof_ev)
+ro_ms0_lt4=np.sum(d4[:,noof_ph_ro]>0)/float(noof_ev)
 print 'RO ms=0 LT3: {:.2f}%, RO ms=0 LT4: {:.2f}% '.format(ro_ms0_lt3*100,ro_ms0_lt4*100 )
 
 #rnd_0_lt3=np.sum(d[:,rnd_lt3]==0)/float(noof_ev)
@@ -80,8 +83,8 @@ for k,x in enumerate(X):
 			for j,ro in enumerate(ro_corr):
 				corr_mat[i,j] = np.sum((0 == rnd[0]) \
 									 & (0 == rnd[1]) \
-									 & ((d3_fltr[:,no_ph_ro]>0) == ro[0]) \
-									 & ((d4_fltr[:,no_ph_ro]>0) == ro[1]))
+									 & ((d3_fltr[:,noof_ph_ro]>0) == ro[0]) \
+									 & ((d4_fltr[:,noof_ph_ro]>0) == ro[1]))
 				#print 'rnd: {}, ro {}, N {}'.format(rnd,ro,corr_mat[i,j])
 			Es[i] = (corr_mat[i,0] - corr_mat[i,1] - corr_mat[i,2] + corr_mat[i,3])/float(np.sum(corr_mat[i,:]))
 
