@@ -10,11 +10,11 @@ hf = module_hyperfine_params.hyperfine_params
 
 
 def load_mult_dat(timestamp, 
-			number_of_msmts,
-			x_axis_start 		= 2.0,
-			x_axis_step 		= 1.0,
-			x_axis_pts_per_msmnt= 101,	 
-			ssro_calib_folder	=''):
+      number_of_msmts,
+      x_axis_start    = 2.0,
+      x_axis_step     = 1.0,
+      x_axis_pts_per_msmnt= 101,   
+      ssro_calib_folder =''):
    ''' 
    function to load and combine multiple msmts. 
    '''
@@ -43,19 +43,45 @@ def load_mult_dat(timestamp,
 
    return a, folder
 
+# def get_hyperfine_params(ms = 'plus', carbon_spins = 'all'):
+  
+#   if carbon_spins == 'all':
+
+#     HF_perp = []
+#     HF_par  = []
+
+#     for kk in range(len(hf)):
+#       carbon_string     = 'C' + str(kk+1) 
+#       HF_perp.append(hf[carbon_string]['perp'])
+#       if ms == 'plus':
+#         HF_par.append(hf[carbon_string]['par'])
+#       elif ms == 'min':
+#         HF_par.append(-1*hf[carbon_string]['par'])
+  
+#   return HF_perp, HF_par
+
 def get_hyperfine_params(ms = 'plus', carbon_spins = 'all'):
-	
-	if carbon_spins == 'all':
+    
+    HF_perp = []
+    HF_par 	= []
 
-		HF_perp = []
-		HF_par 	= []
+    if carbon_spins == 'all':
+      for kk in range(len(hf)):
+        carbon_string     = 'C' + str(kk+1) 
+        HF_perp.append(hf[carbon_string]['perp'])
+        if ms == 'plus':
+          HF_par.append(hf[carbon_string]['par'])
+        elif ms == 'min':
+          HF_par.append(-1*hf[carbon_string]['par'])
 
-		for kk in range(len(hf)):
-			carbon_string 		= 'C' + str(kk+1) 
-			HF_perp.append(hf[carbon_string]['perp'])
-			if ms == 'plus':
-				HF_par.append(hf[carbon_string]['par'])
-			elif ms == 'min':
-				HF_par.append(-1*hf[carbon_string]['par'])
-	
-	return HF_perp, HF_par
+    else:
+      for carbon in carbon_spins:
+        carbon_string     = 'C' + str(carbon) 
+        HF_perp.append(hf[carbon_string]['perp'])
+        if ms == 'plus':
+          HF_par.append(hf[carbon_string]['par'])
+        elif ms == 'min':
+          HF_par.append(-1*hf[carbon_string]['par'])
+
+
+    return HF_perp, HF_par
