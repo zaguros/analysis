@@ -39,7 +39,7 @@ RO_corr_3qb = 1.
 #     correction_error = [E_C1, E_C5, E_C2]+4*[1/3.*np.sqrt(E_C1**2+E_C5**2+E_C2**2)]
 # if RO_corr == 'dict':
 
-RO_correction = False
+RO_correction = True
 
 from matplotlib import pyplot as plt
 script_name = 'three_qubit_QEC_analysis.py'
@@ -7414,7 +7414,7 @@ c_orange_2 = (242/255.,129/255.,35/255.)
 # c_red = (112/255.,22/255.,60/255.)
 # c_orange = (242/255.,129/255.,35/255.)
 
-def QEC_plot_process_fids_final():
+def QEC_plot_process_fids_final(dec_to='avg'):
     syndrome_list = ['00','01','10','11']
     process_dict = QEC_process_fids_sum_all(syndrome_list = syndrome_list)
     toff_process_dict = no_QEC_toffoli_fids()
@@ -7431,8 +7431,8 @@ def QEC_plot_process_fids_final():
 
     fig,ax = plt.subplots(figsize = (10,10))
     mpl.rcParams['pdf.fonttype'] = 42
-    y = single_process_dict['dec_'+'avg'+'_y']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
+    y = single_process_dict['dec_'+dec_to+'_y']
+    y_err = process_dict['dec_'+dec_to+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
     ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=1, label =  'Single qubit')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
@@ -7441,8 +7441,8 @@ def QEC_plot_process_fids_final():
 
     pc_1, pc_err_1 = p_c, p_c_err
 
-    y = no_process_dict['dec_'+'avg'+'_y']
-    y_err = no_process_dict['dec_'+'avg'+'_y_err']
+    y = no_process_dict['dec_'+dec_to+'_y']
+    y_err = no_process_dict['dec_'+dec_to+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
     ax.plot(x_fit, y_fit, color = c_blue,ls = '-', lw=1, label =  'Encoded state')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
@@ -7450,8 +7450,8 @@ def QEC_plot_process_fids_final():
         cap.set_markeredgewidth(1)
     pc_2, pc_err_2 = p_c, p_c_err
 
-    y = process_dict['dec_'+'avg'+'_y']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
+    y = process_dict['dec_'+dec_to+'_y']
+    y_err = process_dict['dec_'+dec_to+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
     ax.plot(x_fit, y_fit, color = c_red, lw=1, label =  'QEC, symmetrized read-out')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
@@ -7459,8 +7459,8 @@ def QEC_plot_process_fids_final():
         cap.set_markeredgewidth(1)
     pc_3, pc_err_3 = p_c, p_c_err
 
-    y = process_dict['dec_'+'avg'+'_y_new']
-    y_err = process_dict['dec_'+'avg'+'_y_err']
+    y = process_dict['dec_'+dec_to+'_y_new']
+    y_err = process_dict['dec_'+dec_to+'_y_err']
     x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
     ax.plot(x_fit, y_fit, color = c_red,ls = '-.', lw=1, label =  'No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
     (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
@@ -7925,10 +7925,10 @@ def QEC_plot_sweep_time():
     x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
     x = x*1000.
     (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
-                color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
+                color = c_grey,markeredgecolor = c_grey, ls = '',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
     for cap in caps:
         cap.set_markeredgewidth(1)
-    ax1.plot(fit_data_parity[:,0][6:55],(fit_data_parity[:,1][6:55]+1)/2.,color = c_red, ls = '--', lw = 1)
+    ax1.plot(fit_data_parity[:,0][6:55],(fit_data_parity[:,1][6:55]+1)/2.,color = c_grey, ls = '--', lw = 1)
 
 
 
@@ -8503,3 +8503,654 @@ def QEC_multiple_rounds_alt_fit():
     plt.show()
     # plt.close('all')
 
+
+def QEC_plot_sweep_time_simulation():
+    no_error_list = ['11']
+    parity_time =90e-6+2*150e-6# 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
+
+    color = ['r','g','b']
+    dataset_dict_full = {}
+    no_QEC_data_dict = {}
+    QEC_single_data_dict = {}
+
+    fig1, ax1 = plt.subplots(figsize=(10,10))
+
+    for RO in [0,1,2,6]:
+        print RO
+        dataset_dict_full[RO] = {}
+        no_QEC_data_dict[RO] = {}
+        QEC_single_data_dict[RO] = {}
+        for state in ['Z','mZ']:
+                print RO
+                print state
+                dataset_dict_full[RO][state] = QEC_sweep_time_sum_error_syns(state = state,RO = RO,run_list = no_error_list)
+                no_QEC_data_dict[RO][state] =  no_QEC_data_single_state_RO_single_error_sign(sweep_time = True,idle = False,state = state,RO = RO, load_set = True,error_sign = 0)
+                if RO != 6:
+                    QEC_single_data_dict[RO][state] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
+                    data_list = [dataset_dict_full,no_QEC_data_dict,QEC_single_data_dict]
+        # average Z and mZ data
+        dataset_dict_full[RO]['x'] = dataset_dict_full[RO]['Z']['x']
+        dataset_dict_full[RO]['y'] = 1/2.*(dataset_dict_full[RO]['Z']['y']-dataset_dict_full[RO]['mZ']['y'])
+        dataset_dict_full[RO]['y_no_corr'] = 1/2.*(dataset_dict_full[RO]['Z']['y_no_corr']-dataset_dict_full[RO]['mZ']['y_no_corr'])
+        dataset_dict_full[RO]['y_err']= 1/2.*(dataset_dict_full[RO]['Z']['y_err']**2+dataset_dict_full[RO]['mZ']['y_err']**2)**0.5
+
+        no_QEC_data_dict[RO]['x'] = no_QEC_data_dict[RO]['Z']['x']
+        no_QEC_data_dict[RO]['y'] = 1/2.*(no_QEC_data_dict[RO]['Z']['y']-no_QEC_data_dict[RO]['mZ']['y'])
+        no_QEC_data_dict[RO]['y_err']= 1/2.*(no_QEC_data_dict[RO]['Z']['y_err']**2+no_QEC_data_dict[RO]['mZ']['y_err']**2)**0.5
+
+        if RO !=6:
+            QEC_single_data_dict[RO]['x'] = QEC_single_data_dict[RO]['Z']['x']
+            QEC_single_data_dict[RO]['y'] = 1/2.*(QEC_single_data_dict[RO]['Z']['y']-QEC_single_data_dict[RO]['mZ']['y'])
+            QEC_single_data_dict[RO]['y_err']= 1/2.*(QEC_single_data_dict[RO]['Z']['y_err']**2+QEC_single_data_dict[RO]['mZ']['y_err']**2)**0.5
+
+    # add best single qubit
+    x_single = QEC_single_data_dict[1]['x']
+    y_single = QEC_single_data_dict[1]['y']
+    y_single_err = QEC_single_data_dict[1]['y_err']
+    x_single = x_single*1000.
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_single[0:-4],y_single[0:-4],return_errorbar = True)
+    
+    (_,caps,_) = ax1.errorbar(x_single[0:-4],1/2.*(y_single[0:-4]+1),yerr=1/2.*y_single_err[0:-4],
+                color = c_green,markeredgecolor = c_green, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Best qubit')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    ax1.plot(x_temp,1/2.*(1+y_temp),color = c_green,ls = '-',lw = 1)
+
+    y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
+    y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
+    x_enc = no_QEC_data_dict[0]['x']
+    x_enc = x_enc*1000.
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_enc[0:-1],y_toff_encode[0:-1],return_errorbar = True)
+    
+    (_,caps,_) = ax1.errorbar(x_enc[0:-1],1/2.*(y_toff_encode[0:-1]+1),yerr=1/2.*y_toff_encode_err[0:-1],
+                color = c_blue,markeredgecolor = c_blue, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '1 round')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    ax1.plot(x_temp,1/2.*(1+y_temp),color = c_blue,ls = '-',lw = 1)
+
+    x = dataset_dict_full[RO]['x']+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
+
+    # x = dataset_dict_full[RO]['x']#+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
+
+    x = x*1000.
+
+    if RO_correction == False:
+        fit_data_QEC = loadtxt('QEC.txt')
+        fit_data_parity = loadtxt('parity.txt')
+
+    elif RO_correction == True:
+        fit_data_QEC = loadtxt('QEC_corrected.txt')
+        fit_data_parity = loadtxt('parity_corrected.txt')
+
+    y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
+    y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
+                color = c_red,markeredgecolor = c_red, ls = '-',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '2 rounds')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    # parity_time = parity_time*1000.
+    # ax1.plot(fit_data_QEC[:,0][6:55]- np.ones(len(fit_data_parity[:,0][6:55]))*parity_time,(fit_data_QEC[:,1][6:55]+1)/2.,color = c_red, ls = '-', lw = 1)
+
+
+    y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
+    y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    x = dataset_dict_full[6]['x'] + np.ones(len(dataset_dict_full[6]['x']))*parity_time
+    x = x*1000.
+
+    (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
+                color = c_red,markeredgecolor = c_red, ls = '--',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
+    for cap in caps:
+        cap.set_markeredgewidth(1)
+    # ax1.plot(fit_data_parity[:,0][6:55]- np.ones(len(fit_data_parity[:,0][6:55]))*parity_time,(fit_data_parity[:,1][6:55]+1)/2.,color = c_red, ls = '--', lw = 1)
+
+
+
+    # print T
+    # print T_err
+
+
+
+    print T
+    print T_err
+
+    ax1.set_xticks(np.arange(0,36,10))
+    ax1.set_yticks(np.arange(0.5,1.1,0.25))
+
+    ax1.tick_params(axis='x', which='major', labelsize=25)
+    ax1.tick_params(axis='y', which='major', labelsize=25)
+
+    # ax1.hlines([0.5],x[0]-10,x[-1]+10,linestyles='dotted',color = '0.5', lw = 0.5)
+    # if RO_correction == False:
+    #     ax1.vlines([x_enc[2],x[8]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+    #     plt.axvspan(x_enc[2],x[8], facecolor='y', alpha=0.1)
+    # elif RO_correction == True:
+    #     ax1.vlines([x_enc[2],x[8]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+    #     plt.axvspan(x_enc[2],x[8], facecolor='y', alpha=0.1)
+    # plt.axvspan(-1,x[1], facecolor='k', alpha=0.05)
+    # plt.axvspan(x[7],35, facecolor='k', alpha=0.05)
+    ax1.set_ylim(0.48,1.0)
+    ax1.set_xlim(-1,30)
+    ax1.set_xlabel('Time (ms)',fontsize = 25)
+    ax1.set_ylabel('Average state fidelity',fontsize = 25)
+
+    ax1.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    ax1.set_xticks(np.arange(0,31,2), minor = True)
+
+    ax1.tick_params('both', length=4, width=1, which='minor')
+    lgd = ax1.legend(loc = 1,frameon = False)
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+    fig1.tight_layout()
+
+    print x_enc[2]
+    print x[8]
+    print folder
+    try:
+        fig1.savefig(
+            os.path.join(folder,'QEC_sweep_time_no_offset.png'))
+        fig1.savefig(
+            os.path.join(folder,'QEC_sweep_time_no_offset.pdf'))
+    except:
+        print 'Figure has not been saved.'
+
+
+def sweep_time_process_simulation():
+    run = 3
+    no_error = '11'
+
+
+
+
+    ###QEC
+    dataset_dict = {}
+    for state in ['Z','mZ','Y','mY', 'X','mX']:
+        dataset_dict[state] = {}
+        if state == 'X' or state == 'mX':
+            RO_list = [6]
+        if state == 'Y' or state == 'mY':
+            RO_list = [4,5,6]
+        if state == 'Z' or state == 'mZ':
+            RO_list = [0,1,2]
+        for RO in RO_list:
+            dataset_dict[state]['Tomo_'+str(RO)] = {}
+
+            dataset_dict[state]['Tomo_'+str(RO)] = QEC_sum_data_single_state_RO(run = run, no_error = no_error,state = state,RO = RO)
+            dataset_dict[state]['Tomo_'+str(RO)]['y_new'] =undo_correction_single_state_RO(run = run, no_error = no_error,state = state,RO = RO)
+
+    Y_fidelity  = (-1/3.*(dataset_dict['Y']['Tomo_'+str(4)]['y'][0]+dataset_dict['Y']['Tomo_'+str(5)]['y'][0]+dataset_dict['Y']['Tomo_'+str(6)]['y'][0])+1)/2.
+    mY_fidelity  = (1/3.*(dataset_dict['mY']['Tomo_'+str(4)]['y'][0]+dataset_dict['mY']['Tomo_'+str(5)]['y'][0]+dataset_dict['mY']['Tomo_'+str(6)]['y'][0])+1)/2.
+
+    X_fidelity  = (dataset_dict['X']['Tomo_'+str(6)]['y'][0]+1)/2.
+    mX_fidelity  = (-dataset_dict['mX']['Tomo_'+str(6)]['y'][0]+1)/2.
+
+    Z_fidelity  = (1/3.*(dataset_dict['Z']['Tomo_'+str(0)]['y'][0]+dataset_dict['Z']['Tomo_'+str(1)]['y'][0]+dataset_dict['Z']['Tomo_'+str(2)]['y'][0])+1)/2.
+    mZ_fidelity  = (-1/3.*(dataset_dict['mZ']['Tomo_'+str(0)]['y'][0]+dataset_dict['mZ']['Tomo_'+str(1)]['y'][0]+dataset_dict['mZ']['Tomo_'+str(2)]['y'][0])+1)/2.
+
+    ##single qubit
+
+    single_qubit_data_dict = {}
+    for state in ['Z','mZ','Y','mY', 'X','mX']:
+        single_qubit_data_dict[state] = single_qubit_no_QEC_data_single_state_RO(state = state,Qubit = 2, load_set = True)
+
+
+    Y_fidelity_single = 1/2.*(-1*single_qubit_data_dict['Y']['y'][0]+1)
+    mY_fidelity_single = 1/2.*(single_qubit_data_dict['mY']['y'][0]+1)
+    X_fidelity_single = 1/2.*(single_qubit_data_dict['X']['y'][0]+1)
+    mX_fidelity_single = 1/2.*(-1*single_qubit_data_dict['mX']['y'][0]+1)
+    Z_fidelity_single = 1/2.*(single_qubit_data_dict['Z']['y'][0]+1)
+    mZ_fidelity_single = 1/2.*(-1*single_qubit_data_dict['mZ']['y'][0]+1)    
+
+
+    #only encode
+
+    dataset_dict = {}
+    for state in ['Z','mZ','Y','mY', 'X','mX']:
+        dataset_dict[state] = {}
+        if state == 'X' or state == 'mX':
+            RO_list = [6]
+        if state == 'Y' or state == 'mY':
+            RO_list = [4,5,6]
+        if state == 'Z' or state == 'mZ':
+            RO_list = [0,1,2]
+        for RO in RO_list:
+            dataset_dict[state]['Tomo_'+str(RO)] = {}
+
+            dataset_dict[state]['Tomo_'+str(RO)] = dataset_dict[state]['Tomo_'+str(RO)] = no_QEC_data_single_state_RO(idle = False,run = 0,state = state,RO = RO,load_set = True)
+            
+
+    Y_fidelity_encode  = (-1/3.*(dataset_dict['Y']['Tomo_'+str(4)]['y'][0]+dataset_dict['Y']['Tomo_'+str(5)]['y'][0]+dataset_dict['Y']['Tomo_'+str(6)]['y'][0])+1)/2.
+    mY_fidelity_encode  = (1/3.*(dataset_dict['mY']['Tomo_'+str(4)]['y'][0]+dataset_dict['mY']['Tomo_'+str(5)]['y'][0]+dataset_dict['mY']['Tomo_'+str(6)]['y'][0])+1)/2.
+
+    X_fidelity_encode  = (dataset_dict['X']['Tomo_'+str(6)]['y'][0]+1)/2.
+    mX_fidelity_encode  = (-dataset_dict['mX']['Tomo_'+str(6)]['y'][0]+1)/2.
+
+    Z_fidelity_encode  = (1/3.*(dataset_dict['Z']['Tomo_'+str(0)]['y'][0]+dataset_dict['Z']['Tomo_'+str(1)]['y'][0]+dataset_dict['Z']['Tomo_'+str(2)]['y'][0])+1)/2.
+    mZ_fidelity_encode  = (-1/3.*(dataset_dict['mZ']['Tomo_'+str(0)]['y'][0]+dataset_dict['mZ']['Tomo_'+str(1)]['y'][0]+dataset_dict['mZ']['Tomo_'+str(2)]['y'][0])+1)/2.
+
+
+
+
+    no_error_list = ['11']
+    parity_time = 2*(4.996e-6*34 +11.312e-6*48) +2*(13.616e-6*34+4.996e-6*34) + 2* 150e-6
+
+    color = ['r','g','b']
+    dataset_dict_full = {}
+    no_QEC_data_dict = {}
+    QEC_single_data_dict = {}
+
+    fig1, ax1 = plt.subplots(figsize=(10,10))
+
+    for RO in [0,1,2,6]:
+        print RO
+        dataset_dict_full[RO] = {}
+        no_QEC_data_dict[RO] = {}
+        QEC_single_data_dict[RO] = {}
+        for state in ['Z','mZ']:
+                print RO
+                print state
+                dataset_dict_full[RO][state] = QEC_sweep_time_sum_error_syns(state = state,RO = RO,run_list = no_error_list)
+                no_QEC_data_dict[RO][state] =  no_QEC_data_single_state_RO_single_error_sign(sweep_time = True,idle = False,state = state,RO = RO, load_set = True,error_sign = 0)
+                if RO != 6:
+                    QEC_single_data_dict[RO][state] =  single_qubit_no_QEC_data_single_state_RO_single_error_sign(state = state,sweep_time = True, error_sign = -1, Qubit = RO+1, load_set = True)
+                    data_list = [dataset_dict_full,no_QEC_data_dict,QEC_single_data_dict]
+        
+        # average Z and mZ data
+
+        dataset_dict_full[RO]['x'] = dataset_dict_full[RO]['Z']['x']
+        dataset_dict_full[RO]['y'] = 1/2.*(dataset_dict_full[RO]['Z']['y']-dataset_dict_full[RO]['mZ']['y'])
+        dataset_dict_full[RO]['y_no_corr'] = 1/2.*(dataset_dict_full[RO]['Z']['y_no_corr']-dataset_dict_full[RO]['mZ']['y_no_corr'])
+        dataset_dict_full[RO]['y_err']= 1/2.*(dataset_dict_full[RO]['Z']['y_err']**2+dataset_dict_full[RO]['mZ']['y_err']**2)**0.5
+
+        no_QEC_data_dict[RO]['x'] = no_QEC_data_dict[RO]['Z']['x']
+        no_QEC_data_dict[RO]['y'] = 1/2.*(no_QEC_data_dict[RO]['Z']['y']-no_QEC_data_dict[RO]['mZ']['y'])
+        no_QEC_data_dict[RO]['y_err']= 1/2.*(no_QEC_data_dict[RO]['Z']['y_err']**2+no_QEC_data_dict[RO]['mZ']['y_err']**2)**0.5
+
+        if RO !=6:
+            QEC_single_data_dict[RO]['x'] = QEC_single_data_dict[RO]['Z']['x']
+            QEC_single_data_dict[RO]['y'] = 1/2.*(QEC_single_data_dict[RO]['Z']['y']-QEC_single_data_dict[RO]['mZ']['y'])
+            QEC_single_data_dict[RO]['y_err']= 1/2.*(QEC_single_data_dict[RO]['Z']['y_err']**2+QEC_single_data_dict[RO]['mZ']['y_err']**2)**0.5
+
+    # add best single qubit
+    x_single = QEC_single_data_dict[1]['x']
+    y_single = QEC_single_data_dict[1]['y']
+    y_single_err = QEC_single_data_dict[1]['y_err']
+    x_single = x_single*1000.
+    x_temp, y_temp,T, T_err = fit_timesweep_single(x_single[0:-4],y_single[0:-4],return_errorbar = True)
+
+
+    # (_,caps,_) = ax1.errorbar(x_single[0:-4],1/2.*(y_single[0:-4]+1),yerr=1/2.*y_single_err[0:-4],
+    #             color = c_green,markeredgecolor = c_green, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = 'Best qubit')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+    # ax1.plot(x_temp,1/2.*(1+y_temp),color = c_green,ls = '-',lw = 1)
+
+    y_toff_encode = 1/2.*(no_QEC_data_dict[0]['y']+no_QEC_data_dict[1]['y']+no_QEC_data_dict[2]['y']-no_QEC_data_dict[6]['y'])
+    y_toff_encode_err = 1/2.*(no_QEC_data_dict[0]['y_err']**2+no_QEC_data_dict[1]['y_err']**2+no_QEC_data_dict[2]['y_err']**2+no_QEC_data_dict[6]['y_err']**2)**0.5
+    x_enc = no_QEC_data_dict[0]['x']
+    x_enc = x_enc*1000.
+    # x_temp, y_temp,T, T_err = fit_timesweep_single(x_enc[0:-1],y_toff_encode[0:-1],return_errorbar = True)
+    
+    # (_,caps,_) = ax1.errorbar(x_enc[0:-1],1/2.*(y_toff_encode[0:-1]+1),yerr=1/2.*y_toff_encode_err[0:-1],
+    #             color = c_blue,markeredgecolor = c_blue, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '1 round')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+    # ax1.plot(x_temp,1/2.*(1+y_temp),color = c_blue,ls = '-',lw = 1)
+
+    x = dataset_dict_full[RO]['x']+ np.ones(len(dataset_dict_full[RO]['x']))*parity_time
+
+    x = x*1000.
+
+    if RO_correction == False:
+        fit_data_QEC = loadtxt('QEC.txt')
+        fit_data_parity = loadtxt('parity.txt')
+
+    elif RO_correction == True:
+        fit_data_QEC = loadtxt('QEC_corrected.txt')
+        fit_data_parity = loadtxt('parity_corrected.txt')
+
+    y_toff_QEC = 1/2.*(dataset_dict_full[0]['y']+dataset_dict_full[1]['y']+dataset_dict_full[2]['y']-dataset_dict_full[6]['y'])
+    y_toff_QEC_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    # (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_QEC[0:-3]),yerr=1/2.*y_toff_QEC_err[0:-3],
+    #             color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = 'o', ms = 7,capsize = 6, label = '2 rounds')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+    # ax1.plot(fit_data_QEC[:,0][6:55],(fit_data_QEC[:,1][6:55]+1)/2.,color = c_red, ls = '-', lw = 1)
+
+    # Z_fidelity = 1/2.*(y_toff_QEC[0]+1)
+    # mZ_fidelity = 1/2.*(y_toff_QEC[0]+1)
+
+    # alt_y_toff_QEC = y_toff_QEC/y_toff_QEC[0]*((Z_fidelity+Z_fidelity)-1)
+
+    # ax1.plot(x[0:-3],1/2.*(1+alt_y_toff_QEC[0:-3]),color = 'k', ls = '-', lw = 1)
+
+    Z_fidelity = 1/2.*(y_toff_QEC[0]+1)
+    mZ_fidelity = 1/2.*(y_toff_QEC[0]+1)
+
+    Z_toff_y = y_toff_QEC/y_toff_QEC[0]*((Z_fidelity+Z_fidelity)-1)
+
+    Y_toff_y = y_toff_QEC/y_toff_QEC[0]*((Y_fidelity+Y_fidelity)-1)
+
+    X_toff_y = np.ones(len(y_toff_QEC))*((X_fidelity+X_fidelity)-1)
+
+
+    F_p_toff_timesweep = (X_toff_y+Y_toff_y+Z_toff_y+1)/4.
+
+    ax1.plot(x[0:-3],F_p_toff_timesweep[0:-3], color = 'r', ls = '-', lw = 1,label = 'Error-corrected logical qubit')
+
+
+    y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
+    y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
+    x = x*1000.
+
+
+    Z_fidelity = 1/2.*(y_toff_parity[0]+1)
+    mZ_fidelity = 1/2.*(y_toff_parity[0]+1)
+
+    Z_toff_y = y_toff_parity/y_toff_parity[0]*((Z_fidelity+Z_fidelity)-1)
+
+    Y_toff_y = y_toff_parity/y_toff_parity[0]*((Y_fidelity+Y_fidelity)-1)
+
+    X_toff_y = np.ones(len(y_toff_parity))*((X_fidelity+X_fidelity)-1)
+
+
+    F_p_toff_timesweep = (X_toff_y+Y_toff_y+Z_toff_y+1)/4.
+
+    ax1.plot(x[0:-3],F_p_toff_timesweep[0:-3], color = 'r', ls = '--', lw = 1, label = 'No feedback')
+
+
+
+    Z_single_y = y_single/y_single[0]*((Z_fidelity_single+Z_fidelity_single)-1)
+
+    Y_single_y = y_single/y_single[0]*((Y_fidelity_single+Y_fidelity_single)-1)
+
+    X_single_y = np.ones(len(y_single))*((X_fidelity_single+X_fidelity_single)-1)
+
+
+    F_p_single_timesweep = (X_single_y+Y_single_y+Z_single_y+1)/4.
+
+    ax1.plot(x_single[0:-4],F_p_single_timesweep[0:-4], color = 'g', ls = '-', lw = 1,label = 'Best qubit')
+
+
+    Z_fidelity_encode = 1/2.*(y_toff_encode[0]+1)
+    mZ_fidelity_encode = 1/2.*(y_toff_encode[0]+1)
+
+    Z_encode_y = y_toff_encode/y_toff_encode[0]*((Z_fidelity_encode+Z_fidelity_encode)-1)
+
+    Y_encode_y = y_toff_encode/y_toff_encode[0]*((Y_fidelity_encode+Y_fidelity_encode)-1)
+
+    X_encode_y = np.ones(len(y_toff_encode))*((X_fidelity_encode+X_fidelity_encode)-1)
+
+
+    F_p_encode_timesweep = (X_encode_y+Y_encode_y+Z_encode_y+1)/4.
+
+    ax1.plot(x_enc[0:-1],F_p_encode_timesweep[0:-1], color = 'b', ls = '-', lw = 1,label = 'Logical qubit')
+
+
+    # ax1.plot(x[0:-3],1/2.*(1+Z_toff_y[0:-3]),color = 'y', ls = '-', lw = 1)
+    # ax1.plot(x[0:-3],1/2.*(1+Y_toff_y[0:-3]),color = 'g', ls = '-', lw = 1)
+    # ax1.plot(x[0:-3],1/2.*(1+X_toff_y[0:-3]),color = 'b', ls = '-', lw = 1)
+
+    # y_toff_parity = 1/2.*(dataset_dict_full[0]['y_no_corr']+dataset_dict_full[1]['y_no_corr']+dataset_dict_full[2]['y_no_corr']-dataset_dict_full[6]['y_no_corr'])
+    # y_toff_parity_err = 1/2.*(dataset_dict_full[0]['y_err']**2+dataset_dict_full[1]['y_err']**2+dataset_dict_full[2]['y_err']**2+dataset_dict_full[6]['y_err']**2)**0.5
+    # x = dataset_dict_full[6]['x']+ np.ones(len(dataset_dict_full[6]['x']))*parity_time
+    # x = x*1000.
+    # (_,caps,_) = ax1.errorbar(x[0:-3],1/2.*(1+y_toff_parity[0:-3]),yerr=1/2.*y_toff_parity_err[0:-3],
+    #             color = c_red,markeredgecolor = c_red, ls = '',lw = 1,marker = '*', ms = 9,capsize = 6, label = 'No feedback')
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+    # ax1.plot(fit_data_parity[:,0][6:55],(fit_data_parity[:,1][6:55]+1)/2.,color = c_red, ls = '--', lw = 1)
+
+
+
+    # print T
+    # print T_err
+
+
+
+    print T
+    print T_err
+
+    ax1.set_xticks(np.arange(0,36,10))
+    ax1.set_yticks(np.arange(0.5,1.1,0.25))
+
+    ax1.tick_params(axis='x', which='major', labelsize=25)
+    ax1.tick_params(axis='y', which='major', labelsize=25)
+
+    # ax1.hlines([0.5],x[0]-10,x[-1]+10,linestyles='dotted',color = '0.5', lw = 0.5)
+    # if RO_correction == False:
+    #     ax1.vlines([x_enc[2],x[8]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+    #     plt.axvspan(x_enc[2],x[8], facecolor='y', alpha=0.1)
+    # elif RO_correction == True:
+    #     ax1.vlines([x_enc[2],x[8]],-0.1,1.5,color = '0.5',lw = 1,linestyles = 'dashed')
+    #     plt.axvspan(x_enc[2],x[8], facecolor='y', alpha=0.1)
+    # plt.axvspan(-1,x[1], facecolor='k', alpha=0.05)
+    # plt.axvspan(x[7],35, facecolor='k', alpha=0.05)
+    ax1.set_ylim(0.4,1.0)
+    ax1.set_xlim(-1,30)
+    ax1.set_xlabel('Time (ms)',fontsize = 25)
+    ax1.set_ylabel('Process Fidelity',fontsize = 25)
+
+    ax1.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    ax1.set_xticks(np.arange(0,31,2), minor = True)
+
+    ax1.tick_params('both', length=4, width=1, which='minor')
+    lgd = ax1.legend(loc = 1,frameon = False)
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+    fig1.tight_layout()
+
+    try:
+        fig1.savefig(
+            os.path.join(folder,'Simulate_Fp_sweeptime.png'))
+        fig1.savefig(
+            os.path.join(folder,'Simulate_Fp_sweeptime.pdf'))
+    except:
+        print 'Figure has not been saved.'    
+
+def QEC_plot_process_fids_final_compare_decode():
+    syndrome_list = ['00','01','10','11']
+    process_dict = QEC_process_fids_sum_all(syndrome_list = syndrome_list)
+    toff_process_dict = no_QEC_toffoli_fids()
+    x = process_dict['x']
+
+    t_list = ['1','2','3','avg']
+    color_list = ['c','r','b','g']
+
+    style_list = ['-.',':','--','-']
+    
+    no_process_dict = no_QEC_process_fids(run = 0)
+    single_process_dict = single_Qubit_no_QEC_process_fids()
+    process_dict_idle = no_QEC_process_fids(idle = True)
+    toff_dict_idle = no_QEC_toffoli_fids(idle = True)
+
+    fig,ax = plt.subplots(figsize = (10,10))
+    for i, dec_to in enumerate(t_list):
+
+        # fig,ax = plt.subplots(figsize = (10,10))
+        mpl.rcParams['pdf.fonttype'] = 42
+        y = single_process_dict['dec_'+dec_to+'_y']
+        y_err = process_dict['dec_'+dec_to+'_y_err']
+        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, color = c_green,ls = style_list[i], lw=1, label =  'decode to ' + dec_to+ ', Single qubit')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+
+        pc_1, pc_err_1 = p_c, p_c_err
+
+        y = no_process_dict['dec_'+dec_to+'_y']
+        y_err = no_process_dict['dec_'+dec_to+'_y_err']
+        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, color = c_blue,ls = style_list[i], lw=1, label =  'decode to ' + dec_to+ ', Encoded state')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_blue,markeredgecolor = c_blue, ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+        pc_2, pc_err_2 = p_c, p_c_err
+
+        y = process_dict['dec_'+dec_to+'_y']
+        y_err = process_dict['dec_'+dec_to+'_y_err']
+        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, color = c_red, lw=1,ls = style_list[i], label =  'decode to ' + dec_to+ ', QEC, symmetrized read-out')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+        pc_3, pc_err_3 = p_c, p_c_err
+
+        y = process_dict['dec_'+dec_to+'_y_new']
+        y_err = process_dict['dec_'+dec_to+'_y_err']
+        x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, color = c_red,ls = style_list[i], lw=1, label =  'decode to ' + dec_to+ ', No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+        pc_4, pc_err_4 = p_c, p_c_err
+
+    print ' Single qubit'
+    print pc_1, pc_err_1
+    print ' Encoded'
+    print pc_2, pc_err_2
+    print ' QEC'
+    print pc_3, pc_err_3
+    print ' No Feedback'
+    print pc_4, pc_err_4
+
+
+
+
+
+
+    ax.set_ylim(-0,1)
+    ax.set_xlim(-0.01,1.01)
+
+    # ax.set_xticks([0,0.25,1])
+    # ax.set_yticks([0,0.25,1])
+
+    ax.set_xticks(np.arange(0,1.1,0.5))
+    ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
+    ax.tick_params('both', length=6, width=1, which='major')
+    ax.tick_params('both', length=4, width=1, which='minor')
+    # ax.set_title('QEC process fidelities')
+    # ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw = 0.5)
+    # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw = 0.5)
+    ax.set_xlabel('Error probability',fontsize=25)
+    ax.set_ylabel('Process fidelity',fontsize=25)
+
+    mpl.rcParams['axes.linewidth'] = 1.
+
+
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    # Put a legend to the right of the current axis
+
+    lgd = ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+
+
+
+    try:
+        fig.savefig(
+            os.path.join(folder,'compare_decoding.png'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+        fig.savefig(
+            os.path.join(folder,'compare_decoding.pdf'),bbox_extra_artists = (lgd,),bbox_inches='tight')
+    except:
+        print 'Figure has not been saved.'           
+
+def QEC_plot_process_fids_11_vs_idle_compare_decode():
+    fig,ax = plt.subplots(figsize= (10,10))
+    mpl.rcParams['pdf.fonttype'] = 42
+    process_dict = QEC_process_fids_sum_runs(run_list = [3],no_error = '11')
+
+    x = process_dict['x']
+    process_dict_idle = no_QEC_process_fids(idle = True, run = 0)
+
+    single_process_dict = single_Qubit_no_QEC_process_fids()
+
+    t_list = ['1','2','3','avg']
+
+
+    style_list = ['-.',':','--','-']
+    
+
+
+    fig,ax = plt.subplots(figsize = (10,10))
+    for i, dec_to in enumerate(t_list):
+
+        y_idle = process_dict_idle['dec_'+dec_to+'_y']
+        y_idle_err = process_dict_idle['dec_'+dec_to+'_y_err']
+        x_fit_idle, y_fit_idle, p_c_2, p_c_err_2= fit_QEC_process_curve(x,y_idle,return_errorbar = True)    
+        ax.plot(x_fit_idle, y_fit_idle, color = c_grey,ls = style_list[i], lw=1,label = 'dec to '+dec_to+ ' Encoded state, idling')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y_idle,yerr=y_idle_err,color = c_grey,markeredgecolor = c_grey, ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+
+        y = process_dict['dec_'+dec_to+'_y']
+        y_err = process_dict['dec_'+dec_to+'_y_err']
+        x_fit, y_fit, p_c_3, p_c_err_3 = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, color = c_red, lw=1,ls= style_list[i],label = 'dec to '+dec_to+ ' QEC, optimized read-out')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red,ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+        y = process_dict['dec_'+dec_to+'_y_new']
+        y_err = process_dict['dec_'+dec_to+'_y_err']
+        x_fit, y_fit, p_c_4, p_c_err_4 = fit_QEC_process_curve_11(x,y,return_errorbar = True)
+        ax.plot(x_fit, y_fit, color = c_red,ls = style_list[i], lw=1,label = 'dec to '+dec_to+ ' No QEC')#, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+        (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_red,markeredgecolor = c_red, ls = '',marker = 'o', ms = 7,capsize = 6)
+        for cap in caps:
+            cap.set_markeredgewidth(1)
+        
+
+
+    # y = single_process_dict['dec_'+'avg'+'_y']
+    # y_err = process_dict['dec_'+'avg'+'_y_err']
+    # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    # ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=2,label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    # (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
+    # for cap in caps:
+    #     cap.set_markeredgewidth(1)
+
+    ax.set_ylim(-0,1)
+    ax.set_xlim(-0.01,1.01)
+
+    ax.set_xticks(np.arange(0,1.1,0.5))
+    ax.set_xticks(np.arange(0,1.1,0.1), minor = True)
+    ax.set_yticks(np.arange(0,1.1,0.5))
+    ax.set_yticks(np.arange(0,1.1,0.1), minor = True)
+    ax.tick_params(axis='x', which='major', labelsize=25)
+    ax.tick_params(axis='y', which='major', labelsize=25)
+    ax.tick_params('both', length=6, width=1, which='major')
+    ax.tick_params('both', length=4, width=1, which='minor')
+    # ax.set_title('QEC process fidelities')
+    # ax.hlines([0.25,0.5],x[0]-1,x[-1]+1,linestyles='dotted', color = '0.5',lw 2 .5)
+    # ax.vlines([0.5],-0.1,1.1,linestyles='dotted', color = '0.5',lw 2 .5)
+    ax.set_xlabel('Error probability',fontsize=25)
+    ax.set_ylabel('Process fidelity',fontsize=25)
+
+    mpl.rcParams['axes.linewidth'] = 1
+
+    # Shrink current axis by 20%
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    # Put a legend to the right of the current axis
+
+    lgd = ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    for label in lgd.get_texts():
+        label.set_fontsize(25)
+ 
+    try:
+        fig.savefig(
+            os.path.join(folder,'11_vs_idle_full_curve_compare_decoding.png'))
+        fig.savefig(
+            os.path.join(folder,'11_vs_idle_full_curve_compare_decoding.pdf'))
+    except:
+        print 'Figure has not been saved.'
