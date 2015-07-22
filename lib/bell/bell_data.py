@@ -93,6 +93,8 @@ def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs
             print 'BS markers: {}, LT3 markers: {}, LT4 markers: {}'.format(len(ent_event_list),len(lt3_ssro_list),len(lt4_ssro_list))
             if not ignore_unequal_markers:
                 continue
+        if len(ent_event_list) > 100:
+            print 'Measurement with filepath {} has more than 100 events'.format(fp_bs)
         total_ent_events = np.vstack((total_ent_events, ent_event_list))
         total_lt3_ssro   = np.vstack((total_lt3_ssro, lt3_ssro_list))
         total_lt4_ssro   = np.vstack((total_lt4_ssro, lt4_ssro_list))

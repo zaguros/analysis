@@ -555,10 +555,10 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
         # N_list=[]
         # for i,t in enumerate(tau_list):
         #     N_list.extend(np.arange(12, 24, 2))
-        tau_list =   [11.942e-6, 11.942e-6, 11.942e-6, 11.944e-6, 11.944e-6,
-                                             11.944, 11.946e-6, 11.946e-6,11.946e-6]
+        tau_list = [11.942e-6, 11.942e-6, 11.942e-6, 11.944e-6, 11.944e-6
+                                    , 11.944e-6, 11.946e-6, 11.946e-6,11.946e-6]
                                             
-        N_list =  [12,14,16,12,14,16,12,14,16] 
+        N_list =  [12,14,16,12,14,16,12,14,16]
 
 
     x_tick_labels = []
@@ -571,7 +571,7 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
     # ssro_calib_folder = 'D:\\measuring\data\\20141203\\041410_AdwinSSRO_SSROCalibration_111_1_sil18'
 
     for ii in range(len(tau_list)):
-        if carbon == 3:
+        if carbon == 99:
             for jj,Nj in enumerate(np.arange(12, 24, 2)):
                 folder_positive = toolbox.latest_data(contains = '_positive_tau'+str(tau_list[ii])+'_N'+str(Nj), older_than=older_than)
                 folder_negative = toolbox.latest_data(contains = '_negative_tau'+str(tau_list[ii])+'_N'+str(Nj), older_than=older_than)
@@ -623,7 +623,7 @@ def Carbon_gate_optimization_routine(older_than=None, measurement_name = ['adwin
     # print len(np.arange(12, 24, 2))
     # print y_all
 
-    if carbon == 3:
+    if carbon == 99:
         fig = a.default_fig(figsize=(7.5,5))
         ax2 = a.default_ax(fig)
         ax2.axhspan(0,1,fill=False,ls='dotted')
