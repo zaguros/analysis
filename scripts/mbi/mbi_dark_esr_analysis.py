@@ -14,7 +14,7 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = '20141209_101038' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
+timestamp = '20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
 
 guess_offset = 1.0
 guess_A_min1 = 0.3
@@ -83,6 +83,7 @@ else:
     Population_middle=fit_result['params'][2]/Norm
     Population_right=fit_result['params'][1]/Norm
     ax.set_ylim(-0.05,1.1)
+
 
     plt.savefig(os.path.join(folder, 'mbi_darkesr_analysis.pdf'),
             format='pdf')
