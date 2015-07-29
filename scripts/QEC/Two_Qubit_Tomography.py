@@ -29,7 +29,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()
-	a.get_readout_results(name='adwindata')
+	a.get_readout_results(name=measurement_name[0])
 	a.get_electron_ROC(ssro_calib_folder)
 	# a.p0 = a.normalized_ssro
 	# a.u_p0 = a.u_normalized_ssro
@@ -148,7 +148,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
 		ax.set_xticks(x)
-		ax.set_xticklabels(x_labels.tolist())
+		ax.set_xticklabels(x_labels.tolist()) ## if you want rotated labels: ,rotation=90
 		ax.set_ylim(-1.1,1.1)
 		print 'test'
 		print folder_a

@@ -14,13 +14,13 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = '20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
+timestamp = None#'20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
 
 guess_offset = 1.0
 guess_A_min1 = 0.3
 guess_A_plus1 = 0.3
 guess_A_0 = 0.3
-guess_x0 = 1746.666
+guess_x0 = 4009#1746.666
 guess_sigma = 0.250
 guess_Nsplit = 2.182
 

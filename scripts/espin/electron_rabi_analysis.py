@@ -16,7 +16,7 @@ from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
 
-guess_frq = 1./3.
+guess_frq = 1./1.6
 
 
 guess_amp = 1
@@ -25,7 +25,7 @@ guess_of = 0
 guess_phi = 0.
 guess_k = 0.
 
-mbi_analysis = True
+mbi_analysis = False
 
 o = fit.Parameter(guess_of, 'o')
 f = fit.Parameter(guess_frq, 'f')
@@ -40,6 +40,8 @@ if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
 else:
     folder = toolbox.latest_data('ElectronRabi')
+
+print folder
 
 if mbi_analysis:
     a = mbi.MBIAnalysis(folder)
@@ -56,8 +58,8 @@ else:
     ax = a.plot_result_vs_sweepparam(ret='ax')
 
 x = a.sweep_pts
-y = a.p0
-
+y = np.array(a.p0)
+y = y.flatten()
 
 # fit_result = fit.fit1d(x, y, rabi.fit_rabi_multiple_detunings,
 #         guess_amp, guess_yof, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
@@ -67,6 +69,8 @@ fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'
 
 def fitfunc(x):
     return (o()-A()) + A() * np.exp(-(k()*x)**2) * np.cos(2*np.pi*(f()*x - phi()))
+
+# print len(x),x,[item for sublist in x for item in sublist]
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[4],
         do_print=True, ret=True)
