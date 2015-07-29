@@ -8,6 +8,9 @@ from analysis.lib.fitting import fit, common
 
 color_list = ['b','g','y','r','brown','s']
 
+def get_tstamp_from_folder(folder):
+	return folder[18:18+15]
+
 def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
 
 	data_dict = {
@@ -75,7 +78,7 @@ def Sweep_repetitions(older_than = None,
 		for t in ['X','Y']:
 			search_string = folder_name+ro+'_Tomo_'+t+'_'+'C'+carbon
 			folder_dict[t].append(toolbox.latest_data(contains = search_string,older_than = older_than,raise_exc = False))
-	
+
 
 	if ssro_calib_timestamp == None: 
 	    ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -92,12 +95,25 @@ def Sweep_repetitions(older_than = None,
 
 	if folder_name == 'Memory_Sweep_repump_time_':
 		plot_label = 'average repump time'
+		
 	elif folder_name == 'Memory_NoOf_Repetitions_':
 		plot_label = 'Number of repetitions'
+
+	elif folder_name == 'Memory_Sweep_repump_duration':
+		plot_label = 'repump duration'
+
+	elif folder_name == 'Memory_sweep_timing_':
+		x_labels = np.array(x_labels)*1e6
+		plot_label = 'Waiting time (us)'
+
+	else:
+		plot_label = folder_name
+		
+
 	if plot_result:
 		fig = plt.figure()
 		ax = plt.subplot()
-		plt.plot(x_labels,folder_dict['res'],marker='o',label='C'+carbon)
+		plt.errorbar(x_labels,folder_dict['res'],folder_dict['res_u'],marker='o',label='C'+carbon)
 
 
 		plt.xlabel(plot_label)
@@ -110,13 +126,14 @@ def Sweep_repetitions(older_than = None,
 		plt.close('all')
 
 	else:
-		return x_labels, np.array(folder_dict['res']),np.array(folder_dict['res_u']),folder_dict[t][0]
+		return np.array(x_labels), np.array(folder_dict['res']),np.array(folder_dict['res_u']),folder_dict[t][0]
 
 def Sweep_Rep_List(carbons = ['1','2'],older_than = None,ssro_calib_timestamp = None,**kw):
 
 
 	## other key word arguments
 	fit_results = kw.pop('fit_results',True)
+	sequence_length = kw.pop('sequence_length',None)
 
 
 	x_arr = []
@@ -131,6 +148,10 @@ def Sweep_Rep_List(carbons = ['1','2'],older_than = None,ssro_calib_timestamp = 
 		x_arr.append(x)
 		y_arr.append(y)
 		y_u_arr.append(y_u)
+	### convert to time instead of repetitions:
+	if sequence_length != None:
+		x_arr = [x*sequence_length for x in x_arr]
+	
 	fig = plt.figure()
 	ax = plt.subplot()
 	for x,y,y_u,carbon,jj in zip(x_arr,y_arr,y_u_arr,carbons,range(len(x_arr))):
@@ -138,10 +159,12 @@ def Sweep_Rep_List(carbons = ['1','2'],older_than = None,ssro_calib_timestamp = 
 			A0 = y[0]
 			offset = 0
 			decay = 50
+			if sequence_length != None:
+				decay = decay*sequence_length
 			x0 = 0
 			p0,fitfunc,fitfunc_str = common.fit_exp_decay_shifted_with_offset(offset,A0,decay,x0)
 
-			fixed = [3]
+			fixed = [0,3]
 
 			fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = fixed)
 			plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax,color = color_list[jj], plot_data=False,add_txt = False, lw = 2)
@@ -150,20 +173,30 @@ def Sweep_Rep_List(carbons = ['1','2'],older_than = None,ssro_calib_timestamp = 
 
 
 	plt.xlabel('Repump repetitions')
+
+	if sequence_length != None:
+		plt.xlabel('elapsed time (us)')
+	
 	plt.ylabel('Bloch vector length')
-	plt.title('Dephasing for C'+carbon)
+	plt.title(get_tstamp_from_folder(folder) + ' Dephasing for C'+carbon)
 	plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 	plt.savefig(os.path.join(folder,'CarbonDephasing.pdf'),format='pdf')
 	plt.savefig(os.path.join(folder,'CarbonDephasing.png'),format='png')
 	plt.show()
 	plt.close('all')
-	print 'Results are saved in ', folder
+
 
 
 def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None,**kw):
 
 	fit_results = kw.pop('fit_results',True)
 	folder_name = kw.pop('folder_name','Memory_NoOf_Repetitions_')
+
+	### fit parameters
+	freq = kw.pop('freq',1/170.)
+	offset = kw.pop('offfset',0.)
+	decay = kw.pop('decay',200)
+	fixed = kw.pop('fixed',[1])
 	print folder_name
 
 
@@ -202,14 +235,11 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None,**kw)
 	ax = plt.subplot()
 	for y,y_u,jj in zip([npX,npY],[npX_u,npY_u],range(2)):
 		if fit_results:
-			freq = 1/170.
 			A0 = max(y)
-			offset = 0
-			decay = 170
 			phi0 = 0
 			p0,fitfunc,fitfunc_str = common.fit_decaying_cos(freq,offset,A0,phi0,decay)
 
-			fixed = [1]
+			# fixed = [1]
 
 			fit_result = fit.fit1d(x_labels,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = fixed)
 			plot.plot_fit1d(fit_result, np.linspace(x_labels[0],x_labels[-1],1001), ax=ax,color = color_list[jj], plot_data=False,add_txt = False, lw = 2)
@@ -221,11 +251,62 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None,**kw)
 
 	plt.xlabel('Repump repetitions')
 	plt.ylabel('Contrast')
-	plt.title('Dephasing for C'+carbon)
+	plt.title(get_tstamp_from_folder(folder) + ' Dephasing for C'+carbon)
 	plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 	plt.savefig(os.path.join(folder,'CarbonDephasing_osci.pdf'),format='pdf')
 	plt.savefig(os.path.join(folder,'CarbonDephasing_osci.png'),format='png')
 	plt.show()
 	plt.close('all')
-	print 'Results are saved in ', folder
+	print 'Results are saved in ', folder[18:18+15]
 
+def get_PosNeg_data(name,**kw):
+
+	ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
+	older_than = kw.pop('older_than',None)
+
+	data_dict = {
+	'folders' : [],
+	'sweep_pts': [],
+	'res' : [],
+	'res_u' : []
+	}
+
+
+	for ro in ['positive','negative']:
+		search_string = ro+name
+		data_dict['folders'].append(toolbox.latest_data(contains = search_string,older_than = older_than,raise_exc = False))
+
+
+	if ssro_calib_timestamp == None: 
+	    ssro_calib_folder = toolbox.latest_data('SSRO')
+	else:
+		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
+		# print ssro_calib_folder
+	for i,f in enumerate(data_dict['folders']):
+		a = mbi.MBIAnalysis(f)
+		a.get_sweep_pts()
+		a.get_readout_results(name='adwindata')
+		a.get_electron_ROC(ssro_calib_folder)
+
+		
+
+		x_labels = a.sweep_pts.reshape(-1)
+		if i == 0:
+			data_dict['res'] = ((a.p0.reshape(-1))-0.5)*2
+			data_dict['res_u'] = 2*a.u_p0.reshape(-1)
+		else:
+			y = ((a.p0.reshape(-1))-0.5)*2
+			y_u = 2*a.u_p0.reshape(-1)
+			data_dict['res'] = [y0/2-y[ii]/2 for ii,y0 in enumerate(data_dict['res'])]
+			data_dict['res_u'] = [np.sqrt(y0**2+y_u[ii]**2)/2 for ii,y0 in enumerate(data_dict['res_u'])]
+
+
+	return x_labels,data_dict['res'],data_dict['res_u'],data_dict['folders'][0]
+
+def plot_data(x,y,**kw):
+
+	y_u = kw.pop('y_u',None)
+	if y_u != None:
+		plt.errorbar(x,y,y_u)
+	else: plt.plot(x,y)
