@@ -1,7 +1,6 @@
 import numpy as np
 import h5py
 from analysis.lib.m2 import m2
-from analysis.lib.fitting import fit, common
 
 #cl is short for column
 _bs_dtype = np.uint64
@@ -136,9 +135,7 @@ def get_ssro_result_list(fp_lt,
         i+=1
     pqf_lt.close()
 
-    if i ==1:
-        print 'WARNING, file {} has no LT data'.format(fp_lt)
-    elif not elements_unique(marker_sns):
+    if not elements_unique(marker_sns):
         raise Exception('File {} has multiple entanglement markers in one sync'.format(fp_lt))
     if VERBOSE:
         print 'Found {} entanglement markers in {}-{}'.format(len(marker_sns),fp_lt, i)
@@ -210,22 +207,6 @@ def get_ssro_result_list(fp_lt,
 
     return ssro_result_list
 
-def fit_pulse(st,p_guess,p_len):
-    y,x=np.histogram(st, bins=p_len)
-    x=x[1:]
-    f = common.fit_gauss
-    args=[0.,.1,(p_guess+p_len/2.),p_len/4.]
-    fitres = fit.fit1d(x, y, f, *args, fixed = [],
-                   do_print = False, ret = True, VERBOSE=False)
-    #if fitres['success']:
-        #x0=int(fitres['params_dict']['x0'])
-    #else:
-    try: 
-        x0=int(fitres['params_dict']['x0'])
-    except:
-        x0=0
-    return x0
-
 
 def get_entanglement_event_list(fp_bs,
                                 st_start_ch0, st_start_ch1, st_len, pulse_sep,
@@ -270,9 +251,8 @@ def get_entanglement_event_list(fp_bs,
         
         pulse_sn_diffs = (cur_sn - sn_bs.astype(np.int64)) 
         pulse_sn_fltr = (pulse_sn_diffs > 0) & (pulse_sn_diffs<pulse_max_sn_diff)#3 million ~ 60 secs
-
-        ent_event_list[i,_cl_pulse_cts_ch0]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch0)#fit_pulse(st_bs[pulse_sn_fltr & pulse_st_fltr_ch0],st_pulse_start_ch0,st_pulse_len)
-        ent_event_list[i,_cl_pulse_cts_ch1]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch1)#fit_pulse(st_bs[pulse_sn_fltr & pulse_st_fltr_ch1],st_pulse_start_ch1,st_pulse_len)
+        ent_event_list[i,_cl_pulse_cts_ch0]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch0)
+        ent_event_list[i,_cl_pulse_cts_ch1]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch1)
 
         ent_event_list[i,_cl_sn]    = cur_sn   
 
