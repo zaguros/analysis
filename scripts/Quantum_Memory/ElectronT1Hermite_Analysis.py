@@ -89,3 +89,4 @@ def fit_exp(x, y,
 
 	if save:
 		plt.savefig(os.path.join(folder, 'Calibrate_Pi_analysis_fit.png'))
+	return fit_result	

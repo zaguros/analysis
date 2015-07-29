@@ -14,11 +14,11 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 from analysis.lib.m2.ssro import  sequence, mbi 
 
-import analysis.lib.qec.nuclear_spin_characterisation as SC #used for simulating FP response of spins
-import analysis.lib.qec.hyperfine_params as hyperfine_params; reload(hyperfine_params)
+import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating FP response of spins
+import analysis.lib.QEC.hyperfine_params as hyperfine_params; reload(hyperfine_params)
 
 reload(toolbox)
-reload(ssro)
+
 
 def get_data(name_contains, input_timestamp = None, input_id = None, ssro_calib_folder = ''):
 	'''
