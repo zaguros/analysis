@@ -11,15 +11,21 @@ rnd_corr=[[0,0],[0,1],[1,0],[1,1]] #'RND [LT3,LT4] rnd 00,01,10,11'
 ro_corr =[[1,1],[1,0],[0,1],[0,0]] #'RO [LT3,LT4] ms  00, 01, 10, 11'
 
 def correlator_error(N00,N01,N10,N11):
-    return 2*np.sqrt((N00**3*(N01+N10)+N00**2*(2*N01*N10+3*(N01+N10)*N11)+N11*((N01+N10)**3+2*N01*N10*N11+(N01+N10)*N11**2)+N00*((N01+N10)**3+2*(N01**2+4*N01*N10+N10**2)*N11+3*(N01+N10)*N11**2))/(N00+N01+N10+N11)**5)
+    n=float(N00+N01+N10+N11)
+    p_est=(N00+N11)/n
+    return 2*np.sqrt(p_est*(1-p_est)/n) #Wald method 68% confidence interval (z=1) for binomial parameter estimation. Factor 2 comes from E=2p-1
+    #this one was bs. #return 2*np.sqrt((N00**3*(N01+N10)+N00**2*(2*N01*N10+3*(N01+N10)*N11)+N11*((N01+N10)**3+2*N01*N10*N11+(N01+N10)*N11**2)+N00*((N01+N10)**3+2*(N01**2+4*N01*N10+N10**2)*N11+3*(N01+N10)*N11**2))/(N00+N01+N10+N11)**5)
 
-def RO_correct(RO_norm, F0A, F1A, F0B, F1B):
+def RO_correct(RO_norm, F0A, F1A, F0B, F1B, reverse=False):
     RO_norm =np.asmatrix(RO_norm)
     U = np.matrix([[F0A*F0B,         F0A*(1-F1B),     F0B*(1-F1A),     (1-F1A)*(1-F1B)],
                    [F0A*(1-F0B),     F0A*F1B,         (1-F1A)*(1-F0B), F1B*(1-F1A)],
                    [F0B*(1-F0A),     (1-F0A)*(1-F1B), F1A*F0B,         F1A*(1-F1B)],
                    [(1-F0A)*(1-F0B), F1B*(1-F0A),     F1A*(1-F0B),     F1A*F1B]])
-    Uinv=U.I
+    if reverse:
+        Uinv = U
+    else:
+        Uinv=U.I
     return np.matrix.dot(Uinv,RO_norm.T)
 
 def RO_correct_err(RO_norm, F0A, F1A, F0B, F1B):
@@ -93,7 +99,7 @@ def C_val(x,y,a,b,psi):#expects binary inputs.
         #print 'else', x,y,a,b, (a+b+1)%2
         return (a+b+1)%2
 
-def calculate_p_lhv(corr_mats):
+def calculate_p_lhv(corr_mats, VERBOSE=True):
     K = 0
     N = 0
     Kxx = 0
@@ -115,12 +121,15 @@ def calculate_p_lhv(corr_mats):
                     Kzz+=k
                     Nzz+=n
                     
-    print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
+    
     from scipy.stats import binom
     p_lhv = 1- binom.cdf(K, N, 3./4)
-    print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
-    print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
-    print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
+    if VERBOSE:
+        print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
+        print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
+        print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
+        print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
+    return K,N,Kxx,Nxx,Kzz,Nzz,p_lhv
 
 def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     st_start_ch0  = analysis_params['st_start_ch0']
@@ -239,7 +248,12 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=Tr
         if VERBOSE:
             print 'bad_time_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
 
-        noof_ev_fltr = np.sum(fltr)
+        #noof_ev_fltr = np.sum(fltr)
+        #if VERBOSE:
+        #    lt_valid_fltr = (d3[:,be._cl_sn_ma] > 0) & (d4[:,be._cl_sn_ma] > 0)
+        #    noof_lt_inv = noof_ev_fltr - np.sum(fltr & lt_valid_fltr)
+        #    print 'LT invalid events {} : {}/{}'.format(psi_name,noof_lt_inv,noof_ev_fltr)
+
         
         db_fltr = db[fltr]
         d3_fltr = d3[fltr]
@@ -295,7 +309,7 @@ def print_ZZ_fidelity(corr_mats, analysis_params):
 
 
 
-def print_XX_fidelity(corr_mats, analsysis_params):
+def print_XX_fidelity(corr_mats, analysis_params):
     for psi in ['psi_min', 'psi_plus']:
         corr_mat=np.zeros((4,4))
         for k in corr_mats:
@@ -308,8 +322,8 @@ def print_XX_fidelity(corr_mats, analsysis_params):
         for i in range(4) : 
             RO_row = corr_mat[i]
             RO_row_corr= RO_correct(RO_row/float(noof_ev_fltr),
-                                    F0A =analsysis_params['F0A'], F1A =analsysis_params['F1A'],
-                                    F0B =analsysis_params['F0B'], F1B =analsysis_params['F1B'] )
+                                    F0A =analysis_params['F0A'], F1A =analysis_params['F1A'],
+                                    F0B =analysis_params['F0B'], F1B =analysis_params['F1B'] )
             for j in range(4):
                 corr_mat_RO_corr[i,j] = RO_row_corr[j]
         
