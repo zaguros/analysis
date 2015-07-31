@@ -30,27 +30,6 @@ def get_lt_fps(fps_bs, lt3_folder, lt4_folder):
 
     return fps_lt3, fps_lt4
 
-def collect_lt_data(bs_folder, lt3_source_folder, lt4_source_folder, measurement_pattern):
-    fps_bs = tb.get_all_msmt_filepaths(bs_folder, pattern=measurement_pattern)
-    print 'Found {} filepaths'.format(len(fps_bs))
-    target_folder = os.path.split(bs_folder)[0]
-    fps_lt3, fps_lt4 = get_lt_fps(fps_bs, lt3_source_folder, lt4_source_folder)
-    skipped_fps=[]
-    for target_name, fps in zip(['LT3','LT4'],[fps_lt3,fps_lt4]):
-        print 'copying {} files'.format(target_name)    
-        for i,fp in enumerate(fps):
-            print i,
-            src_folder = os.path.split(fp)[0]
-            folder,dst_folder = os.path.split(src_folder)
-            date_folder = os.path.split(folder)[1]
-            try:
-                shutil.copytree(src_folder,os.path.join(target_folder,target_name,date_folder,dst_folder))
-            except WindowsError:
-                print 'Error copying fp {}'.format(fp)
-                skipped_fps.append(fp)
-
-    return skipped_fps
-
 def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs_params, lt_params,
                        analysis_fp=None, update_previous_analysis_fp=None, ignore_unequal_markers=False, 
                        process_lt3=True, process_lt4=True, VERBOSE=False):

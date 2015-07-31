@@ -168,7 +168,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
 
 
 
-def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=True):
+def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_psi_name='psi_min', VERBOSE=True):
     #Windows & other filtes:
     st_start_ch0  = analysis_params['st_start_ch0']
     st_len        = analysis_params['st_len'] #50 ns
@@ -204,7 +204,7 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=Tr
     psi_plus_11_fltr = (db[:,be._cl_ch_w1] == 1) & (db[:,be._cl_ch_w2] == 1)
     psi_filters = [psi_plus_00_fltr,psi_min_01_fltr,psi_min_10_fltr,psi_plus_11_fltr]
     psi_names = ['psi_plus_00','psi_min_01','psi_min_10','psi_plus_11']
-
+    ret_fltr = False
     corr_mats={}
     for psi_name,psi_fltr in zip(psi_names,psi_filters):
         if 'psi_min' in psi_name:
@@ -269,8 +269,10 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=Tr
                                      & ((d3_fltr[:,be._cl_noof_ph_ro] > 0) == ro[0] ) \
                                      & ((d4_fltr[:,be._cl_noof_ph_ro] > 0) == ro[1]))
         corr_mats[psi_name] = corr_mat
+        if ret_fltr_psi_name in psi_name:
+            ret_fltr = ret_fltr | fltr
     
-    return corr_mats
+    return corr_mats, ret_fltr
 
 def print_ZZ_fidelity(corr_mats, analysis_params):
     for psi in ['psi_min', 'psi_plus']:
@@ -356,5 +358,8 @@ def print_XX_fidelity(corr_mats, analysis_params):
 def plot_title(fp):
     return os.path.splitext(os.path.split(fp)[1])[0]
 
+def save_fp(folder,analysis_fp):
+    return os.path.join(folder,plot_title(analysis_fp))
+
 def save_figure(name, ax,output_folder,analysis_fp):
-    ax.figure.savefig(os.path.join(output_folder,plot_title(analysis_fp)+'_'+name+'.jpg'))
+    ax.figure.savefig(save_fp(output_folder,analysis_fp)+'_'+name+'.jpg')
