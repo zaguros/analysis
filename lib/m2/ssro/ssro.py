@@ -15,12 +15,10 @@ from analysis.lib.m2 import m2
 
 # some general tools
 def get_SSRO_calibration(folder, readout_time):
-    
     if 'analysis.hdf5' in str(folder):
         fp = folder
     else:
         fp = os.path.join(folder, 'analysis.hdf5')
-    
     f = h5py.File(fp, 'r')
 
     times = f['fidelity/time'].value

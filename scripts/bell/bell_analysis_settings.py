@@ -59,7 +59,7 @@ lt_process_params = {
 analysis_params = {
 
     'st_start_ch0'             : 5427000,
-    'st_len'                   : 50000 ,
+    'st_len'                   : 55000 ,
     'st_start_ch1'             : 5427000-800,
     'st_len_w2_00'             : 9000,
     'st_len_w2_11'             : 18000,

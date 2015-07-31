@@ -46,5 +46,5 @@ def plot_sim_vs_Bx(spin_list=['C1'],Bx_list = [-0.7,0,0.7],B_Field = 304.12, N =
 		ax.set_xlabel('tau (us)')
 		plt.legend(loc=4)
 
-plot_sim_vs_Bx(spin_list=['C10'],Bx_list = [-7,-1.5,0,1.5,7],B_Field = 304.12, N =32)
+plot_sim_vs_Bx(spin_list=['C1'],Bx_list = [-7,-1.5,0,1.5,7],B_Field = 304.12, N =32)
 # ['C1','C3','C10']

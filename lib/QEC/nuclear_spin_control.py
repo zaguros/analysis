@@ -2,7 +2,7 @@
 under dynamical decoupling gates. By THT '''
 
 import numpy as np
-import qutip
+# import qutip
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm

@@ -13,7 +13,8 @@ from matplotlib import pyplot as plt
 from analysis.lib.tools import toolbox
 reload(toolbox)
 
-import fingerprint_funcs as fp_funcs; reload(fp_funcs)
+# import fingerprint_funcs as fp_funcs; reload(fp_funcs)
+from analysis.scripts.QEC_data_analysis.fingerprints import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
 
 def fingerprint(disp_sim_spin = True,n_sim_spins = 2,xrange = [0,20],return_data = False):
@@ -101,3 +102,6 @@ def load_mult_dat(timestamp, number_of_msmts, ssro_calib_folder=''):
    a.u_p0  = cum_u_p0
 
    return a, folder
+
+
+fingerprint()
