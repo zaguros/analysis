@@ -11,22 +11,28 @@ rnd_corr=[[0,0],[0,1],[1,0],[1,1]] #'RND [LT3,LT4] rnd 00,01,10,11'
 ro_corr =[[1,1],[1,0],[0,1],[0,0]] #'RO [LT3,LT4] ms  00, 01, 10, 11'
 
 def correlator_error(N00,N01,N10,N11):
-    return 2*np.sqrt((N00**3*(N01+N10)+N00**2*(2*N01*N10+3*(N01+N10)*N11)+N11*((N01+N10)**3+2*N01*N10*N11+(N01+N10)*N11**2)+N00*((N01+N10)**3+2*(N01**2+4*N01*N10+N10**2)*N11+3*(N01+N10)*N11**2))/(N00+N01+N10+N11)**5)
+    n=float(N00+N01+N10+N11)
+    p_est=(N00+N11)/n
+    return 2*np.sqrt(p_est*(1-p_est)/n) #Wald method 68% confidence interval (z=1) for binomial parameter estimation. Factor 2 comes from E=2p-1
+    #this one was bs. #return 2*np.sqrt((N00**3*(N01+N10)+N00**2*(2*N01*N10+3*(N01+N10)*N11)+N11*((N01+N10)**3+2*N01*N10*N11+(N01+N10)*N11**2)+N00*((N01+N10)**3+2*(N01**2+4*N01*N10+N10**2)*N11+3*(N01+N10)*N11**2))/(N00+N01+N10+N11)**5)
 
-def RO_correct(RO_norm, F0A, F1A, F0B, F1B):
+def RO_correct(RO_norm, F0A, F1A, F0B, F1B, reverse=False):
     RO_norm =np.asmatrix(RO_norm)
     U = np.matrix([[F0A*F0B,         F0A*(1-F1B),     F0B*(1-F1A),     (1-F1A)*(1-F1B)],
                    [F0A*(1-F0B),     F0A*F1B,         (1-F1A)*(1-F0B), F1B*(1-F1A)],
                    [F0B*(1-F0A),     (1-F0A)*(1-F1B), F1A*F0B,         F1A*(1-F1B)],
                    [(1-F0A)*(1-F0B), F1B*(1-F0A),     F1A*(1-F0B),     F1A*F1B]])
-    Uinv=U.I
+    if reverse:
+        Uinv = U
+    else:
+        Uinv=U.I
     return np.matrix.dot(Uinv,RO_norm.T)
 
 def RO_correct_err(RO_norm, F0A, F1A, F0B, F1B):
     (N00, N01, N10, N11) = RO_norm
     return np.array(ro_c_err.get_readout_correction_errors(F0a=F0A,F1a=F1A, F0b=F0B, F1b=F1B, dF0a = 0.005,dF1a = 0.005,dF0b = 0.005,dF1b = 0.005,N00=N00, N01=N01,N10=N10, N11=N11))
 
-def RO_correct_single_qubit(p0,u_p0, F0=0.955, F1=0.98):
+def RO_correct_single_qubit(p0,u_p0, F0, F1):
     roc = error.SingleQubitROC()
     roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (F0,0.005,F1,0.005)
     c0, u_c0 = roc.num_eval(p0,u_p0)
@@ -93,7 +99,7 @@ def C_val(x,y,a,b,psi):#expects binary inputs.
         #print 'else', x,y,a,b, (a+b+1)%2
         return (a+b+1)%2
 
-def calculate_p_lhv(corr_mats):
+def calculate_p_lhv(corr_mats, VERBOSE=True):
     K = 0
     N = 0
     Kxx = 0
@@ -115,12 +121,15 @@ def calculate_p_lhv(corr_mats):
                     Kzz+=k
                     Nzz+=n
                     
-    print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
+    
     from scipy.stats import binom
     p_lhv = 1- binom.cdf(K, N, 3./4)
-    print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
-    print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
-    print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
+    if VERBOSE:
+        print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
+        print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
+        print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
+        print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
+    return K,N,Kxx,Nxx,Kzz,Nzz,p_lhv
 
 def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     st_start_ch0  = analysis_params['st_start_ch0']
@@ -143,6 +152,8 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     dt_fltr = True
     rnd_fltr = (dlt[:,be._cl_noof_rnd_0] + dlt[:,be._cl_noof_rnd_1] == 1 )
     corr_mats={}
+    F0 =analysis_params['F0A'] if lt3 else analysis_params['F0B']
+    F1 =analysis_params['F1A'] if lt3 else analysis_params['F1B']
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
         fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr #& no_invalid_mrkr_fltr
         db_fltr = db[fltr]
@@ -152,13 +163,14 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
             print psi_name, 'noof events: ', noof_ev_fltr
         p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
         u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
-        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0)
+
+        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0, F0, F1)
         corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr,noof_ev_fltr]
     return corr_mats
 
 
 
-def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
+def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=True):
     #Windows & other filtes:
     st_start_ch0  = analysis_params['st_start_ch0']
     st_len        = analysis_params['st_len'] #50 ns
@@ -177,7 +189,8 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
         event_times.append(event_time)
         for bad_time_range in bad_time_ranges:
             bad_time_fltr[i] = (bad_time_fltr[i]) and ((event_time <=  bad_time_range[0]) or (event_time >  bad_time_range[1]))
-    print 'Events in bad time ranges: {}/{}'.format(len(db)-np.sum(bad_time_fltr), len(db))
+    if VERBOSE:
+        print 'Events in bad time ranges: {}/{}'.format(len(db)-np.sum(bad_time_fltr), len(db))
 
     #invalid data marker filter & BS invalid event filter
     no_invalid_mrkr_fltr = (d3[:,be._cl_inv_mrkr]==0) & (d4[:,be._cl_inv_mrkr]==0)
@@ -209,8 +222,41 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges):
                      | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
         st_fltr = st_fltr_w1 & st_fltr_w2
 
-        fltr = st_fltr & psi_fltr  & valid_event_fltr  & rnd_fltr & no_invalid_mrkr_fltr & psb_tail_fltr & bad_time_fltr
-            
+        fltr = psi_fltr & valid_event_fltr
+        
+        noof_ev_fltr = np.sum(fltr) 
+        fltr = fltr & st_fltr
+        if VERBOSE:
+            print '-'*40
+            print 'Sync time filter {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+        
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & no_invalid_mrkr_fltr  
+        if VERBOSE:
+            print 'no_invalid_mrkr_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & rnd_fltr  
+        if VERBOSE:
+            print 'rnd_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & psb_tail_fltr  
+        if VERBOSE:
+            print 'psb_tail_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        noof_ev_fltr = np.sum(fltr)
+        fltr = fltr & bad_time_fltr  
+        if VERBOSE:
+            print 'bad_time_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
+
+        #noof_ev_fltr = np.sum(fltr)
+        #if VERBOSE:
+        #    lt_valid_fltr = (d3[:,be._cl_sn_ma] > 0) & (d4[:,be._cl_sn_ma] > 0)
+        #    noof_lt_inv = noof_ev_fltr - np.sum(fltr & lt_valid_fltr)
+        #    print 'LT invalid events {} : {}/{}'.format(psi_name,noof_lt_inv,noof_ev_fltr)
+
+        
         db_fltr = db[fltr]
         d3_fltr = d3[fltr]
         d4_fltr = d4[fltr]
@@ -263,4 +309,54 @@ def print_ZZ_fidelity(corr_mats, analysis_params):
         print 'Corrected fidelity: {:.2f}%'.format(Fid_corr*100)
 
 
+
+
+def print_XX_fidelity(corr_mats, analysis_params):
+    for psi in ['psi_min', 'psi_plus']:
+        corr_mat=np.zeros((4,4))
+        for k in corr_mats:
+            if psi in k:
+                corr_mat+=corr_mats[k]
+        noof_ev_fltr = int(np.sum(corr_mat))
+
         
+        corr_mat_RO_corr=np.zeros((4,4))
+        for i in range(4) : 
+            RO_row = corr_mat[i]
+            RO_row_corr= RO_correct(RO_row/float(noof_ev_fltr),
+                                    F0A =analysis_params['F0A'], F1A =analysis_params['F1A'],
+                                    F0B =analysis_params['F0B'], F1B =analysis_params['F1B'] )
+            for j in range(4):
+                corr_mat_RO_corr[i,j] = RO_row_corr[j]
+        
+        RO_corr = np.zeros(4)
+        RO_corr[0] = corr_mat_RO_corr[0,0] + corr_mat_RO_corr[1,1] +corr_mat_RO_corr[2,1] + corr_mat_RO_corr[3,0]
+        RO_corr[1] = corr_mat_RO_corr[0,1] + corr_mat_RO_corr[1,0] +corr_mat_RO_corr[2,0] + corr_mat_RO_corr[3,1]
+        RO_corr[2] = corr_mat_RO_corr[0,2] + corr_mat_RO_corr[1,3] +corr_mat_RO_corr[2,3] + corr_mat_RO_corr[3,2]
+        RO_corr[3] = corr_mat_RO_corr[0,3] + corr_mat_RO_corr[1,2] +corr_mat_RO_corr[2,1] + corr_mat_RO_corr[3,3]
+
+        if psi == 'psi_min' :
+            Ng_XX = corr_mat[0,1] + corr_mat[0,2] +corr_mat[1,0] + corr_mat[1,3] + corr_mat[2,0] + corr_mat[2,3] + corr_mat[3,1] + corr_mat[3,2]
+            Ng_XX_RO_corr = corr_mat_RO_corr[0,1] + corr_mat_RO_corr[0,2] +corr_mat_RO_corr[1,0] + corr_mat_RO_corr[1,3] \
+                        + corr_mat_RO_corr[2,0] + corr_mat_RO_corr[2,3] + corr_mat_RO_corr[3,1] + corr_mat_RO_corr[3,2]
+        else : 
+            Ng_XX = corr_mat[0,0] + corr_mat[0,3] +corr_mat[1,1] + corr_mat[1,2] + corr_mat[2,1] + corr_mat[2,2] + corr_mat[3,0] + corr_mat[3,3]
+            Ng_XX_RO_corr = corr_mat_RO_corr[0,0] + corr_mat_RO_corr[0,3] +corr_mat_RO_corr[1,1] + corr_mat_RO_corr[1,2] \
+                        + corr_mat_RO_corr[2,1] + corr_mat_RO_corr[2,2] + corr_mat_RO_corr[3,0] + corr_mat_RO_corr[3,3]
+
+        Fid = Ng_XX/noof_ev_fltr
+        dFid = np.sqrt(Fid*(1-Fid)/noof_ev_fltr)
+        Fid_corr= Ng_XX_RO_corr
+        
+        print '-'*40
+        print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
+        print 'Fidelity: {:.2f}% +- {:.1f}%'.format(Fid*100,dFid*100)
+        print 'Corrected fidelity: {:.2f}%'.format(Fid_corr*100)
+
+
+
+def plot_title(fp):
+    return os.path.splitext(os.path.split(fp)[1])[0]
+
+def save_figure(name, ax,output_folder,analysis_fp):
+    ax.figure.savefig(os.path.join(output_folder,plot_title(analysis_fp)+'_'+name+'.jpg'))

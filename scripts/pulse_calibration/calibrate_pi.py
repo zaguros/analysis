@@ -11,50 +11,61 @@ from analysis.lib.fitting import fit, rabi
 from analysis.lib.tools import plot
 from analysis.lib.math import error
 
-import analysis.scripts.pulse_calibration.calibration_funcs as funcs
+import analysis.scripts.pulse_calibration.calibration_funcs as funcs; reload(funcs)
 
-### parameters
-timestamp = None
-angle = '_pi_o'
-msmt_type = 'mbi'
-# guess_x0 = 0.480
-guess_x0 = 0.470
-guess_of = 0
-guess_a = 0
 
-### script
-if timestamp != None:
-    folder = toolbox.data_from_time(timestamp)
-else:
-    folder = toolbox.latest_data(angle)
+def analyse_pulse_calibration(angle='_pi_1'):
+    ### parameters
+    timestamp = None
+    if angle == '_pi_1':
+        guess_x0 = 0.41
+    elif angle == '_pi_o':
+        guess_x0 = 0.43
+    elif angle == '_pi_p1':
+        guess_x0 = 0.74        
+    else:
+        guess_x0=0.5
+    msmt_type = 'mbi'
 
-if msmt_type == 'sequence':
-    a = sequence.SequenceAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results('ssro')
-    a.get_electron_ROC()
-    ax = a.plot_result_vs_sweepparam(ret='ax')
 
-    x = a.sweep_pts
-    y = a.p0
+    guess_of = 0.973
+    guess_a = 0.
 
-elif msmt_type == 'mbi':
-    a = mbi.MBIAnalysis(folder)
-    a.get_sweep_pts()
-    a.get_readout_results(name='adwindata')
-    a.get_electron_ROC()
-    ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax')
-    ax.set_ylim(-0.1,1)
+    ### script
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        folder = toolbox.latest_data(angle)
 
-    x = a.sweep_pts.reshape(-1)[:]
-    y = a.p0.reshape(-1)[:]
+    if msmt_type == 'sequence':
+        a = sequence.SequenceAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results('ssro')
+        a.get_electron_ROC()
+        ax = a.plot_result_vs_sweepparam(ret='ax')
 
-else:
-    raise Exception('Unknown msmt type')
+        x = a.sweep_pts
+        y = a.p0
 
-res = funcs.calibrate_pulse_amplitude(x, y, ax, guess_x0, guess_of, guess_a)
-plt.savefig(os.path.join(folder, 'pulse_calibration.pdf'),
-        format='pdf')
-plt.savefig(os.path.join(folder, 'pulse_calibration.png'),
-        format='png')
+    elif msmt_type == 'mbi':
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name='adwindata')
+        a.get_electron_ROC()
+        ax = a.plot_results_vs_sweepparam(name='adwindata', ret='ax')
+        ax.set_ylim(-0.1,1)
 
+        x = a.sweep_pts.reshape(-1)[:]
+        y = a.p0.reshape(-1)[:]
+
+    else:
+        raise Exception('Unknown msmt type')
+
+    res = funcs.calibrate_pulse_amplitude(x, y, ax, guess_x0, guess_of, guess_a)
+    plt.savefig(os.path.join(folder, 'pulse_calibration.pdf'),
+            format='pdf')
+    plt.savefig(os.path.join(folder, 'pulse_calibration.png'),
+            format='png')
+
+if __name__ == '__main__':
+    analyse_pulse_calibration(angle='_pi_1')
