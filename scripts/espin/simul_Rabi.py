@@ -80,3 +80,5 @@ def sweep_pulse_duration(pulse_duration_max=2000e-9, Rabi_freq = 2e6, pts = 1000
 	ax.tick_params(labelsize=14)
 
 	ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
+	#ax.set_ylim([0.,.05])
+	ax.set_ylim([0.6,0.8])
