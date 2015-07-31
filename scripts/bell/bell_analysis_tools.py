@@ -122,7 +122,7 @@ def calculate_p_lhv(corr_mats):
     print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
     print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
 
-def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
+def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     st_start_ch0  = analysis_params['st_start_ch0']
     st_len        = analysis_params['st_len'] #50 ns
     st_len_w2     = st_len
@@ -134,7 +134,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     st_fltr_w2 =  (((st_start_ch0 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch0 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 0)) \
                  | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
 
-    no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
+    #no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
 
     sp_names=['w1','w2']
     sp_fltrs = [st_fltr_w1,st_fltr_w2]
@@ -144,10 +144,12 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     rnd_fltr = (dlt[:,be._cl_noof_rnd_0] + dlt[:,be._cl_noof_rnd_1] == 1 )
     corr_mats={}
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
-        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr & no_invalid_mrkr_fltr
+        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr #& no_invalid_mrkr_fltr
         db_fltr = db[fltr]
         dlt_fltr = dlt[fltr]
         noof_ev_fltr = np.sum(fltr)
+        if VERBOSE:
+            print psi_name, 'noof events: ', noof_ev_fltr
         p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
         u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
         p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0)
