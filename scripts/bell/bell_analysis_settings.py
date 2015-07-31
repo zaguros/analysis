@@ -9,9 +9,10 @@ bs_process_params = {
 
     'ent_marker_channel_bs' : 1,
 
-    'st_pulse_start'          : 5438000,
-    'st_pulse_len'            : 4000,
-    'pulse_max_sn_diff'       : 3000000, #3 million syncs ~ 60 secs
+    'st_pulse_start_ch0'      : 5443000,
+    'st_pulse_start_ch1'      : 5444000, #for ch 1
+    'st_pulse_len'            : 5000,
+    'pulse_max_sn_diff'       : 6000000, #6 million syncs ~ 120 secs
 
     'hist_binsize_ps'		  : 100, #ps 
     
