@@ -134,7 +134,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     st_fltr_w2 =  (((st_start_ch0 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch0 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 0)) \
                  | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
 
-    no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
+    #no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
 
     sp_names=['w1','w2']
     sp_fltrs = [st_fltr_w1,st_fltr_w2]
@@ -146,7 +146,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     F0 =analysis_params['F0A'] if lt3 else analysis_params['F0B']
     F1 =analysis_params['F1A'] if lt3 else analysis_params['F1B']
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
-        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr & no_invalid_mrkr_fltr
+        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr #& no_invalid_mrkr_fltr
         db_fltr = db[fltr]
         dlt_fltr = dlt[fltr]
         noof_ev_fltr = np.sum(fltr)

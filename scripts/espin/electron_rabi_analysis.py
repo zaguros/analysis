@@ -16,7 +16,7 @@ from analysis.lib.tools import plot
 
 timestamp = None#'20140408125318'
 
-guess_frq = 1./3.
+guess_frq = 1./90.
 
 
 guess_amp = 1
@@ -74,6 +74,8 @@ plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
         plot_data=False)
 
 print "pi pulse = {:.5f} ".format(1/f()/2.) + a.sweep_name
+
+
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)
 plt.savefig(os.path.join(folder, 'electronrabi_analysis_fit.png'))
