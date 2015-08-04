@@ -49,9 +49,9 @@ def merge_dicts(*dict_args):
         result.update(dictionary)
     return result
 
-def print_correlators(corr_mats):
+def print_correlators(corr_mats, VERBOSE=True, psis=['psi_min', 'psi_plus']):
     # print the results:
-    for psi in ['psi_min', 'psi_plus']:
+    for psi in psis:
         corr_mat=np.zeros((4,4))
         for k in corr_mats:
             if psi in k:
@@ -72,21 +72,22 @@ def print_correlators(corr_mats):
             expected_Es= (0.42,-0.42,0.67,0.67)
             CHSH  = Es[0] - Es[1] + Es[2] + Es[3]
         dCHSH = np.sqrt(dEs[0]**2 + dEs[1]**2 + dEs[2]**2 + dEs[3]**2)
-        
-        print '-'*40
-        print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
-        print 'RO ms   00, 01, 10, 11'
-        print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
-        print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
-        print 'RND10', corr_mat[2], '  0,     +3pi/4'
-        print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
+        if VERBOSE:
+            print '-'*40
+            print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
+            print 'RO ms   00, 01, 10, 11'
+            print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
+            print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
+            print 'RND10', corr_mat[2], '  0,     +3pi/4'
+            print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
 
-        print ' E (RND00  RND01  RND10  RND11 )'
-        print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) expected'.format(*expected_Es)
-        print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) measured'.format(*Es)
-        print '+/-( {:.2f},  {:.2f},  {:.2f},  {:.2f} )'.format(*dEs)
+            print ' E (RND00  RND01  RND10  RND11 )'
+            print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) expected'.format(*expected_Es)
+            print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) measured'.format(*Es)
+            print '+/-( {:.2f},  {:.2f},  {:.2f},  {:.2f} )'.format(*dEs)
 
-        print 'CHSH : {:.2f} +- {:.2f}'.format(CHSH, dCHSH)
+            print 'CHSH : {:.2f} +- {:.2f}'.format(CHSH, dCHSH)
+    return CHSH, dCHSH, Es, dEs
 
 def C_val(x,y,a,b,psi):#expects binary inputs.
     if ('psi_min' in psi) and (x==0) and (y==0):
@@ -123,13 +124,16 @@ def calculate_p_lhv(corr_mats, VERBOSE=True):
                     
     
     from scipy.stats import binom
-    p_lhv = 1- binom.cdf(K, N, 3./4)
+    tau = 1e-25
+    eps = 1e-5
+    p_lhv = 1-(0.5-eps)**2*(1-12*tau*(1+tau))#eps and tau correspond to the bias and the predictability.
+    p_val = 1- binom.cdf(K-1, N, p_lhv)
     if VERBOSE:
         print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
-        print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
+        print 'Probability of LHV model: {:.1f}%'.format(p_val*100)
         print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
         print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
-    return K,N,Kxx,Nxx,Kzz,Nzz,p_lhv
+    return K,N,Kxx,Nxx,Kzz,Nzz,p_val
 
 def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     st_start_ch0  = analysis_params['st_start_ch0']
