@@ -65,7 +65,7 @@ analysis_params = {
     'st_len_w2_00'             : 9000,
     'st_len_w2_11'             : 18000,
     'pulse_sep'                : bs_process_params['pulse_sep'],
-    'st_pulse_start'           : bs_process_params['st_pulse_start'],
+    'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
     'hist_binsize_ps'		  : 100, #ps 
 
