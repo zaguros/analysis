@@ -103,6 +103,7 @@ def get_Zeno_data(electron_RO=['positive'],
 									older_than=older_than,
 									newer_than=None,
 									raise_exc=False)
+		
 
 		evotime,y,y_err= Zeno_get_2Q_values(timestamp,ssro_calib_timestamp=ssro_timestamp)
 
@@ -1385,8 +1386,8 @@ def Zeno_1Q_msmt_list(older_than_tstamp=None,
 					fit_result, result_string = fit_State_decay(msmt_list[i],ax,0.453*2,evotime,fid)
 					plot.plot_fit1d(fit_result, np.linspace(0.0,evotime[-1],1001), ax=ax, plot_data=False,color = color_list[i],add_txt = False, lw = 1)
 					results.append(result_string)
-				print len(results)
-				print i
+				# print len(results)
+				# print i
 				plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt='o',label=str(msmt_list[i])+': '+results[i])
 
 			else:
@@ -1566,8 +1567,8 @@ def Zeno_3q_state(older_than_tstamp=None,msmts='0',eRO_list=['positive','negativ
 	"""
 
 	State_dict = {
-		'00'	:	['XIX','IXX','XXX'],
-		'00p10' :	['IZZ','IXX','XXX'],
+		'00'	:	['XIX','IXX','XXI','XXX'],
+		'00p10' :	['IZZ','IYY','IXX','XXX'],
 		'00p11' :	['XXI','YYI','ZZI','XXX']
 	}
 

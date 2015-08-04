@@ -4,6 +4,7 @@ import numpy as np
 import h5py
 import analysis.lib.tools.toolbox as tb
 from analysis.lib.bell import bell_events as be
+import shutil
 
 def get_latest_analysis_fp(folder, pattern='total_events'):
     fns_srt=np.sort(os.listdir(folder))[::-1]
@@ -28,7 +29,6 @@ def get_lt_fps(fps_bs, lt3_folder, lt4_folder):
         fps_lt4.append(tb.get_msmt_fp(lt4_m_folder))
 
     return fps_lt3, fps_lt4
-
 
 def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs_params, lt_params,
                        analysis_fp=None, update_previous_analysis_fp=None, ignore_unequal_markers=False, 
@@ -59,11 +59,13 @@ def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs
 
     p_bs = bs_params
     p_lt = lt_params
+
     for i,fp_bs,fp_lt3,fp_lt4 in zip(range(len(fps_bs)),fps_bs,fps_lt3,fps_lt4):
         print i,
+
         ent_event_list = be.get_entanglement_event_list(fp_bs,
                                                         st_start_ch0   = p_bs['st_start_ch0'],   st_start_ch1 = p_bs['st_start_ch1'], st_len = p_bs['st_len'], pulse_sep = p_bs['pulse_sep'],
-                                                        st_pulse_start = p_bs['st_pulse_start'], st_pulse_len = p_bs['st_pulse_len'], pulse_max_sn_diff = p_bs['pulse_max_sn_diff'],
+                                                        st_pulse_start_ch0 = p_bs['st_pulse_start_ch0'],st_pulse_start_ch1 = p_bs['st_pulse_start_ch1'], st_pulse_len = p_bs['st_pulse_len'], pulse_max_sn_diff = p_bs['pulse_max_sn_diff'],
                                                         ent_marker_channel_bs = p_bs['ent_marker_channel_bs'],
                                                         VERBOSE=VERBOSE)
 
@@ -89,11 +91,40 @@ def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs
         #lt4_ssro_list = be.get_ssro_result_list_adwin(fp_lt4, ssro_result_list=lt4_ssro_list)
         
         if (len(ent_event_list) != len(lt3_ssro_list)) or (len(ent_event_list) != len(lt4_ssro_list)):
-            print 'WARNING: measurement with filepath {} ignored. Number of markers is unequal'.format(fp_bs)
+            print 'WARNING: measurement with filepath {}: Number of markers is unequal'.format(fp_bs)
             print 'BS markers: {}, LT3 markers: {}, LT4 markers: {}'.format(len(ent_event_list),len(lt3_ssro_list),len(lt4_ssro_list))
+            minlen=min((len(ent_event_list),len(lt3_ssro_list),len(lt4_ssro_list)))
+            maxlen=max((len(ent_event_list),len(lt3_ssro_list),len(lt4_ssro_list)))
+            if VERBOSE:
+                print ent_event_list[:,be._cl_sn], lt3_ssro_list[:,be._cl_sn_ma], lt4_ssro_list[:,be._cl_sn_ma]
             if not ignore_unequal_markers:
+                print 'File ignored'
                 continue
-        if len(ent_event_list) > 100:
+            elif ignore_unequal_markers == 'fix_last':
+                print 'trying to fix unequal markers by discarding last'
+                
+                if maxlen - minlen >1:
+                    print 'Fix failed, number of markers too different: {}!'.format(maxlen - minlen)
+                    continue
+                if minlen == 0:
+                    continue
+                ent_event_list = ent_event_list[:minlen,:]
+                lt3_ssro_list = lt3_ssro_list[:minlen,:]
+                lt4_ssro_list = lt4_ssro_list[:minlen,:]
+                if abs(int(ent_event_list[-1,be._cl_sn])-int(lt4_ssro_list[-1,be._cl_sn_ma]))>250 or \
+                    abs(int(ent_event_list[-1,be._cl_sn])-int(lt3_ssro_list[-1,be._cl_sn_ma]/250.*251))>250:
+                    print 'Fix failed, last marker sync number too different:\n \
+                                            BS: {}, LT3 (/250*251): {}. LT4: {}'.format(ent_event_list[-1,be._cl_sn],
+                                                                                        int(lt3_ssro_list[-1,be._cl_sn_ma]/250.*251),
+                                                                                        lt4_ssro_list[-1,be._cl_sn_ma])
+                print 'Fix suceeded'
+            elif ignore_unequal_markers == 'append_zeros':
+                print 'Appending empty events for missing markers'
+                ent_event_list=  np.vstack((ent_event_list, np.zeros((maxlen-len(ent_event_list),be._bs_noof_columns), dtype=be._bs_dtype)))
+                lt3_ssro_list =  np.vstack((lt3_ssro_list, np.zeros((maxlen-len(lt3_ssro_list),be._lt_noof_columns), dtype=be._lt_dtype)))
+                lt4_ssro_list =  np.vstack((lt4_ssro_list, np.zeros((maxlen-len(lt4_ssro_list),be._lt_noof_columns), dtype=be._lt_dtype)))
+
+        if len(ent_event_list) > 50:
             print 'Measurement with filepath {} has more than 100 events'.format(fp_bs)
         total_ent_events = np.vstack((total_ent_events, ent_event_list))
         total_lt3_ssro   = np.vstack((total_lt3_ssro, lt3_ssro_list))

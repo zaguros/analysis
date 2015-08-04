@@ -15,12 +15,10 @@ from analysis.lib.m2 import m2
 
 # some general tools
 def get_SSRO_calibration(folder, readout_time):
-    
     if 'analysis.hdf5' in str(folder):
         fp = folder
     else:
         fp = os.path.join(folder, 'analysis.hdf5')
-    
     f = h5py.File(fp, 'r')
 
     times = f['fidelity/time'].value
@@ -74,6 +72,8 @@ class SSROAnalysis(m2.M2Analysis):
         if not 'cpsh' in f:
                 f.create_group('cpsh')
         g = f['/cpsh']
+        if name in g:
+            del g[name]
         g[name]=  cpsh
         f.close()
         if plot:

@@ -4,5 +4,8 @@ from analysis.lib.bell import bell_data
 reload(bell_data)
 from analysis.scripts.bell import bell_analysis_settings as settings
 reload(settings)
+from analysis.scripts.bell import bad_time_ranges
+reload(bad_time_ranges)
 from analysis.scripts.bell import bell_analysis_tools as btools
 reload(btools)
+import imp

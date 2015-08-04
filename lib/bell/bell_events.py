@@ -1,10 +1,11 @@
 import numpy as np
 import h5py
 from analysis.lib.m2 import m2
+from analysis.lib.fitting import fit, common
 
 #cl is short for column
 _bs_dtype = np.uint64
-_bs_noof_columns = 9
+_bs_noof_columns = 10
 _cl_sn          = 0 
 _cl_type        = 1 #type of entanglement event: 1 is valid double click event, 2 is w1 click event, 3 is w2 click event, 4 is invalid event
 _cl_ch_w1       = 2 
@@ -13,7 +14,8 @@ _cl_st_w1       = 4
 _cl_st_w2       = 5 
 _cl_tt_w1       = 6
 _cl_tt_w2       = 7
-_cl_pulse_cts   = 8
+_cl_pulse_cts_ch0 = 8
+_cl_pulse_cts_ch1 = 9
 
 _lt_dtype = np.uint64
 _lt_noof_columns = 17
@@ -134,7 +136,9 @@ def get_ssro_result_list(fp_lt,
         i+=1
     pqf_lt.close()
 
-    if not elements_unique(marker_sns):
+    if i ==1:
+        print 'WARNING, file {} has no LT data'.format(fp_lt)
+    elif not elements_unique(marker_sns):
         raise Exception('File {} has multiple entanglement markers in one sync'.format(fp_lt))
     if VERBOSE:
         print 'Found {} entanglement markers in {}-{}'.format(len(marker_sns),fp_lt, i)
@@ -206,10 +210,26 @@ def get_ssro_result_list(fp_lt,
 
     return ssro_result_list
 
+def fit_pulse(st,p_guess,p_len):
+    y,x=np.histogram(st, bins=p_len)
+    x=x[1:]
+    f = common.fit_gauss
+    args=[0.,.1,(p_guess+p_len/2.),p_len/4.]
+    fitres = fit.fit1d(x, y, f, *args, fixed = [],
+                   do_print = False, ret = True, VERBOSE=False)
+    #if fitres['success']:
+        #x0=int(fitres['params_dict']['x0'])
+    #else:
+    try: 
+        x0=int(fitres['params_dict']['x0'])
+    except:
+        x0=0
+    return x0
+
 
 def get_entanglement_event_list(fp_bs,
                                 st_start_ch0, st_start_ch1, st_len, pulse_sep,
-                                st_pulse_start, st_pulse_len, pulse_max_sn_diff,
+                                st_pulse_start_ch0, st_pulse_start_ch1, st_pulse_len, pulse_max_sn_diff,
                                 ent_marker_channel_bs,
                                 VERBOSE=False):
     
@@ -229,7 +249,8 @@ def get_entanglement_event_list(fp_bs,
         print 'Found {} entanglement markers in {}'.format(len(ent_sn),fp_bs)
 
     marker_sn_fltr = np.in1d(sn_bs,ent_sn)
-    pulse_st_fltr = (st_pulse_start <= st_bs ) & (st_bs < st_pulse_start+st_pulse_len) & (sp_bs == 0) & (ch_bs == 1)
+    pulse_st_fltr_ch0 = (st_pulse_start_ch0 <= st_bs ) & (st_bs < st_pulse_start_ch0+st_pulse_len) & (sp_bs == 0) & (ch_bs == 0)
+    pulse_st_fltr_ch1 = (st_pulse_start_ch1 <= st_bs ) & (st_bs < st_pulse_start_ch1+st_pulse_len) & (sp_bs == 0) & (ch_bs == 1)
     sn = sn_bs[marker_sn_fltr]
     st = st_bs[marker_sn_fltr]
     ch = ch_bs[marker_sn_fltr]
@@ -249,7 +270,9 @@ def get_entanglement_event_list(fp_bs,
         
         pulse_sn_diffs = (cur_sn - sn_bs.astype(np.int64)) 
         pulse_sn_fltr = (pulse_sn_diffs > 0) & (pulse_sn_diffs<pulse_max_sn_diff)#3 million ~ 60 secs
-        ent_event_list[i,_cl_pulse_cts]= np.sum(pulse_sn_fltr & pulse_st_fltr)
+
+        ent_event_list[i,_cl_pulse_cts_ch0]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch0)#fit_pulse(st_bs[pulse_sn_fltr & pulse_st_fltr_ch0],st_pulse_start_ch0,st_pulse_len)
+        ent_event_list[i,_cl_pulse_cts_ch1]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch1)#fit_pulse(st_bs[pulse_sn_fltr & pulse_st_fltr_ch1],st_pulse_start_ch1,st_pulse_len)
 
         ent_event_list[i,_cl_sn]    = cur_sn   
 
