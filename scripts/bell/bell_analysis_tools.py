@@ -100,6 +100,13 @@ def C_val(x,y,a,b,psi):#expects binary inputs.
         #print 'else', x,y,a,b, (a+b+1)%2
         return (a+b+1)%2
 
+def get_p_val(K,N):
+    from scipy.stats import binom
+    tau = 1e-25
+    eps = 1e-5
+    p_lhv = 1-(0.5-eps)**2*(1-12*tau*(1+tau))#eps and tau correspond to the bias and the predictability.
+    return 1-binom.cdf(K-1, N, p_lhv)
+
 def calculate_p_lhv(corr_mats, VERBOSE=True):
     K = 0
     N = 0
@@ -120,14 +127,8 @@ def calculate_p_lhv(corr_mats, VERBOSE=True):
                     Nxx+=n
                 elif rnd[0] == 1: #LT3 did no pi/2 pulse
                     Kzz+=k
-                    Nzz+=n
-                    
-    
-    from scipy.stats import binom
-    tau = 1e-25
-    eps = 1e-5
-    p_lhv = 1-(0.5-eps)**2*(1-12*tau*(1+tau))#eps and tau correspond to the bias and the predictability.
-    p_val = 1- binom.cdf(K-1, N, p_lhv)
+                    Nzz+=n      
+    p_val = get_pval(K,N)
     if VERBOSE:
         print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
         print 'Probability of LHV model: {:.1f}%'.format(p_val*100)
