@@ -291,8 +291,7 @@ def get_msmt_name(pqf):
 
     if type(pqf) == h5py._hl.files.File: 
         for k in pqf.keys():
-            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
-                f.close()
+            if pqf.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
                 return k
 
         raise Exception('Cannot find the name of the measurement.')
