@@ -127,11 +127,11 @@ def append_data(timestamps_1 = [None,None],timestamps_2 = [],timestamps_3 = [],s
 		print np.average(p1)
 	# print 1/2.*(a.p0+b.p0)
 
-	# if ms ==1:
-	# 	sign = [1,1,1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1]
-	# 	print len(sign)
-	# 	print len(y_total)
-	# 	y_total = [y_total[i]*sign[i] for i in range(len(y_total))]	
+	if ms ==1:
+		sign = [1,1,1,-1,1,-1,-1,1,-1,-1,1,-1,-1,1,-1]
+		print len(sign)
+		print len(y_total)
+		y_total = [y_total[i]*sign[i] for i in range(len(y_total))]	
 
 	x_total= range(len(y_total))
 	return x_total, x_labels_total, y_total,y_err_total
@@ -143,16 +143,17 @@ def append_data(timestamps_1 = [None,None],timestamps_2 = [],timestamps_3 = [],s
 folder 							= r'D:\measuring\data\Analyzed figures\Deterministic Entanglement'
 SSRO_timestamp, ssro_folder     = toolbox.latest_data(contains = 'AdwinSSRO', older_than = '20141230_134013',return_timestamp = True)
 figure_name_list 				= ['00_init','deterministic_entanglement','probabilistic_entanglement']
-folder = r'D:\measuring\data\QEC_data\figs\final figures'
-if RO_corr == True:
-	folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
+folder = r'D:\measuring\data\QEC_data\figs\Tim_pres'
+# if RO_corr == True:
+# 	folder = r'D:\measuring\data\QEC_data\figs\Tim_pres'
 ###########################
 ''' Paper figures'''
 ###########################
-figure_name_list = ['00_init_12','determinstic_entanglement_12','probabilistic_entanglement_12','00_init_15','determinstic_entanglement_15','probabilistic_entanglement_15']
+# figure_name_list = ['00_init_12','determinstic_entanglement_12','probabilistic_entanglement_12','00_init_15','determinstic_entanglement_15','probabilistic_entanglement_15']
+# figure_name_list = ['00_init_15','determinstic_entanglement_15']
 # figure_name_list = ['00_init_15']
 # figure_name_list = ['probabilistic_entanglement']
-# figure_name_list = ['determinstic_entanglement_15']
+figure_name_list = ['determinstic_entanglement_15']
 
 ### Carbons 5 and 1
 c_grey = (240/255.,242/255.,166/255.)
@@ -179,6 +180,7 @@ for ii, figure_name in enumerate(figure_name_list):
 		timestamps_3 = []
 		det = False
 		ms_list = [None]
+		e_color = 'k'
 
 	elif figure_name == 'probabilistic_entanglement_12':
 		timestamps_1 = ['20150102_162737','20150102_163437']
@@ -186,37 +188,44 @@ for ii, figure_name in enumerate(figure_name_list):
 		timestamps_3 = []	
 		det = False
 		ms_list = [None]
+		e_color = 'k'
 	elif figure_name == 'determinstic_entanglement_12':
 		timestamps_1 = ['20141230_161531','20141230_161851']
 		timestamps_2 = ['20141230_160309','20141230_160842']	
 		timestamps_3 = []	
 		det = True
 		ms_list = [None,0,1]
+		e_color = 'k'
 	if figure_name == '00_init_15':
 		timestamps_1 = ['20141230_180459','20141230_181258']
 		timestamps_2 = []
 		timestamps_3 = []
 		det = False
 		ms_list = [None]
+		e_color = 'k'
 	elif figure_name == 'probabilistic_entanglement_15':
 		timestamps_1 = ['20150102_161207','20150102_161932']
 		timestamps_2 = ['20150102_154713','20150102_155914']
 		timestamps_3 = []	
 		det = False
 		ms_list = [None]
+		e_color = 'k'
 	elif figure_name == 'determinstic_entanglement_15':
 		timestamps_1 = ['20141230_183900','20141230_184242']
 		timestamps_2 = ['20141230_182409','20141230_182754']	
 		timestamps_3 = ['20141230_183209','20141230_183420']		
 		det = True
 		ms_list = [None,0,1]
+		e_color = 'k'
 
 
 	for jj,ms in enumerate(ms_list):
 		hatch_list = ['','/','\\']
+		e_color_list = ['k','b','r']
 		print 'jj is ' + str(jj)
 		if jj >0:
 			hatch = hatch_list[jj]
+			e_color = e_color_list[jj]
 		else:
 			hatch = ''
 					# print 'test'
@@ -248,13 +257,26 @@ for ii, figure_name in enumerate(figure_name_list):
 		y2 = [y[i] for i in np.linspace(6,14,9).astype(int)]
 		y_err_2 = [y_err[i] for i in np.linspace(6,14,9).astype(int)]
 
-		ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = 'k' ,edgecolor ='k',color = c_color,alpha = 1,linewidth = 1,hatch = hatch)
-		ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = 'k' ,edgecolor ='k',color = c_color,alpha = 1,linewidth = 1,hatch = hatch)
+		# ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = 'k' ,edgecolor ='k',color = c_color,alpha = 1,linewidth = 1,hatch = hatch)
+		# ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = 'k' ,edgecolor ='k',color = c_color,alpha = 1,linewidth = 1,hatch = hatch)
+		
+		ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor =e_color ,edgecolor =e_color,color = c_grey,alpha = 0.7,linewidth =2)#,hatch = hatch)
+		ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = e_color ,edgecolor =e_color,color = c_grey,alpha = 1,linewidth = 2)#,hatch = hatch)	
+		ax.set_xticks(x, minor = True)
+		if 'init' in figure_name: 
+			ax.set_xticks([2,5,14])
+			state_tick_list = ['ZI','IZ','ZZ']
+		else:
+			ax.set_xticks([6,10,14])
+			state_tick_list = ['XX','YY','ZZ']
+		# ax.set_xticks(x)
+
+
 		# ax.set_xticks(x, minor = True)
 		# ax.set_xticks([2,5,14])
-		# ax.set_xticklabels(state_tick_list)
-		ax.set_xticks(x)
-		ax.set_xticklabels(state_tick_list, rotation = 'vertical')
+		ax.set_xticklabels(state_tick_list)
+		# ax.set_xticks(x)
+		# ax.set_xticklabels(state_tick_list, rotation = 'vertical')
 		
 		ax.set_ylim(-1,1)
 		ax.set_xlim([x[0]-0.6,x[-1]+0.6])
@@ -282,10 +304,10 @@ for ii, figure_name in enumerate(figure_name_list):
 		elif '00_init' in figure_name:
 			for ii in [2,5,14]:
 				y_id[ii] = np.sign(y[ii])
-		ax.bar(x,y_id,align ='center',color = c_red, alpha = 0.2,ecolor = c_red, linewidth = 0)
-		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.pdf'),
+		ax.bar(x,y_id,align ='center',color = c_grey, alpha = 0.2,ecolor = c_grey, linewidth = 0)
+		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + 'noFB.pdf'),
 		format='pdf',bbox_inches='tight')
-		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.png'),
+		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + 'noFB.png'),
 		format='png',bbox_inches='tight')
 		print
 		print figure_name
@@ -295,82 +317,82 @@ for ii, figure_name in enumerate(figure_name_list):
 		else:
 			print 'fidelity is '+str(1/4.*(1+abs(y[6])+abs(y[10])+abs(y[-1])))+'+/-'+str(1/4.*(y_err[6]**2+y_err[10]**2+y_err[-1]**2)**0.5)
 		print
-		plt.show()
+		plt.show(block =False)
 
 
-###########################
-''' Presentation figures'''
-###########################
-if 0:
-	for ii, figure_name in enumerate(figure_name_list):
-		print figure_name
+# ###########################
+# ''' Presentation figures'''
+# ###########################
+# if 1:
+# 	for ii, figure_name in enumerate(figure_name_list):
+# 		print figure_name
 
-		### Carbons 5 and 1
-		if figure_name == '00_init':
-			timestamps_1 = ['20141230_180459','20141230_181258']
-			timestamps_2 = []
-			timestamps_3 = []
-			det = False
-		elif figure_name == 'probabilistic_entanglement':
-			timestamps_1 = ['20150102_161207','20150102_161932']
-			timestamps_2 = ['20150102_154713','20150102_155914']
-			timestamps_3 = []	
-			det = False
-		elif figure_name == 'determinstic_entanglement':
-			timestamps_1 = ['20141230_183900','20141230_184242']
-			timestamps_2 = ['20141230_182409','20141230_182754']	
-			timestamps_3 = ['20141230_183209','20141230_183420']
-			det = True
+# 		### Carbons 5 and 1
+# 		if figure_name == '00_init':
+# 			timestamps_1 = ['20141230_180459','20141230_181258']
+# 			timestamps_2 = []
+# 			timestamps_3 = []
+# 			det = False
+# 		elif figure_name == 'probabilistic_entanglement':
+# 			timestamps_1 = ['20150102_161207','20150102_161932']
+# 			timestamps_2 = ['20150102_154713','20150102_155914']
+# 			timestamps_3 = []	
+# 			det = False
+# 		elif figure_name == 'determinstic_entanglement':
+# 			timestamps_1 = ['20141230_183900','20141230_184242']
+# 			timestamps_2 = ['20141230_182409','20141230_182754']	
+# 			timestamps_3 = ['20141230_183209','20141230_183420']
+# 			det = True
 
-		### Carbons 2 and 1
-		#for supplement?
+# 		### Carbons 2 and 1
+# 		#for supplement?
 
-		ms_list = [None,0,1]
-		hatch_list = ['','+','O']
-	for jj,ms in enumerate(ms_list):
-		if jj >0:
-			hatch = hatch_list[jj]
-		else:
-			hatch = ''
-		fig,ax = plt.subplots(figsize = (15,10)) 
-		x, x_labels, y, y_err = append_data(ms = ms, timestamps_1 = timestamps_1,timestamps_2 = timestamps_2,timestamps_3 =timestamps_3, ssro_folder = ssro_folder, det = det)
-		state_tick_list = [x_labels.tolist()[i] for i in [2,5,14]]
-		x1 = [x[i] for i in np.linspace(0,5,6).astype(int)]
-		y1 = [y[i] for i in np.linspace(0,5,6).astype(int)]
-		y_err_1 = [y_err[i] for i in np.linspace(0,5,6).astype(int)]
-		x2 = [x[i] for i in np.linspace(6,14,9).astype(int)]
-		y2 = [y[i] for i in np.linspace(6,14,9).astype(int)]
-		y_err_2 = [y_err[i] for i in np.linspace(6,14,9).astype(int)]
+# 		ms_list = [None,0,1]
+# 		hatch_list = ['','+','O']
+# 	for jj,ms in enumerate(ms_list):
+# 		if jj >0:
+# 			hatch = hatch_list[jj]
+# 		else:
+# 			hatch = ''
+# 		fig,ax = plt.subplots(figsize = (15,10)) 
+# 		x, x_labels, y, y_err = append_data(ms = ms, timestamps_1 = timestamps_1,timestamps_2 = timestamps_2,timestamps_3 =timestamps_3, ssro_folder = ssro_folder, det = det)
+# 		state_tick_list = [x_labels.tolist()[i] for i in [2,5,14]]
+# 		x1 = [x[i] for i in np.linspace(0,5,6).astype(int)]
+# 		y1 = [y[i] for i in np.linspace(0,5,6).astype(int)]
+# 		y_err_1 = [y_err[i] for i in np.linspace(0,5,6).astype(int)]
+# 		x2 = [x[i] for i in np.linspace(6,14,9).astype(int)]
+# 		y2 = [y[i] for i in np.linspace(6,14,9).astype(int)]
+# 		y_err_2 = [y_err[i] for i in np.linspace(6,14,9).astype(int)]
 
-		ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = c_color ,edgecolor =c_color,color = c_color,alpha = 0.7,linewidth = 1,hatch = hatch)
-		ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = c_color ,edgecolor =c_color,color = c_color,alpha = 1,linewidth = 1,hatch = hatch)	
-		# ax.set_xticks(x, minor = True)
-		# ax.set_xticks([2,5,14])
-		ax.set_xticks(x)
+# 		ax.bar(x1,y1,yerr=y_err_1,align ='center',ecolor = c_color ,edgecolor =c_color,color = c_color,alpha = 0.7,linewidth = 1,hatch = hatch)
+# 		ax.bar(x2,y2,yerr=y_err_2,align ='center',ecolor = c_color ,edgecolor =c_color,color = c_color,alpha = 1,linewidth = 1,hatch = hatch)	
+# 		# ax.set_xticks(x, minor = True)
+# 		# ax.set_xticks([2,5,14])
+# 		ax.set_xticks(x)
 
-		# ax.set_xticklabels(state_tick_list)
-		ax.set_xticklabels(x_labels)
-		ax.set_xticks(x, minor = True)
-		ax.set_ylim(-1,1)
-		ax.set_xlim([x[0]-0.6,x[-1]+0.6])
-		yticks = np.linspace(-1,1,3)
-		ax.set_yticks(np.arange(-1,1.1,0.2),minor = True)
-		plt.yticks(yticks)
+# 		# ax.set_xticklabels(state_tick_list)
+# 		ax.set_xticklabels(x_labels)
+# 		ax.set_xticks(x, minor = True)
+# 		ax.set_ylim(-1,1)
+# 		ax.set_xlim([x[0]-0.6,x[-1]+0.6])
+# 		yticks = np.linspace(-1,1,3)
+# 		ax.set_yticks(np.arange(-1,1.1,0.2),minor = True)
+# 		plt.yticks(yticks)
 
-		# rects.set_linewidth(1.5)
-		ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 1,color = '0.5')
-		ax.tick_params(axis='x', which='major', labelsize=30)
-		ax.tick_params(axis='y', which='major', labelsize=30)
-		ax.tick_params('both', length=5, width=3, which='major')
-		ax.tick_params('y', length=3, width=1.5, which='minor')		
-		# autolabel(rects)
-		ax.set_ylabel('Contrast',fontsize = 30)
-		mpl.rcParams['axes.linewidth'] = 1
-		ax.tick_params('both', length=4, width=1, which='major')
-		plt.savefig(os.path.join(folder, figure_name+'_'+timestamps_1[0] + '.pdf'),
-		format='pdf',bbox_inches='tight')
-		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.png'),
-		format='png',bbox_inches='tight')
+# 		# rects.set_linewidth(1.5)
+# 		ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 1,color = '0.5')
+# 		ax.tick_params(axis='x', which='major', labelsize=30)
+# 		ax.tick_params(axis='y', which='major', labelsize=30)
+# 		ax.tick_params('both', length=5, width=3, which='major')
+# 		ax.tick_params('y', length=3, width=1.5, which='minor')		
+# 		# autolabel(rects)
+# 		ax.set_ylabel('Contrast',fontsize = 30)
+# 		mpl.rcParams['axes.linewidth'] = 1
+# 		ax.tick_params('both', length=4, width=1, which='major')
+# 		plt.savefig(os.path.join(folder, figure_name+'_'+timestamps_1[0] + '.pdf'),
+# 		format='pdf',bbox_inches='tight')
+# 		plt.savefig(os.path.join(folder, figure_name+'_ms_'+str(ms)+'_'+timestamps_1[0] + '.png'),
+# 		format='png',bbox_inches='tight')
 
-	# tomo_ps.BarPlotTomoContrast(timestamps=['20141230_161531','20141230_161851'], measurement_name = ['adwindata'],folder_name ='Tomo',
-	#         post_select = False, ssro_calib_timestamp ='20141230_134012')
+# 	# tomo_ps.BarPlotTomoContrast(timestamps=['20141230_161531','20141230_161851'], measurement_name = ['adwindata'],folder_name ='Tomo',
+# 	#         post_select = False, ssro_calib_timestamp ='20141230_134012')

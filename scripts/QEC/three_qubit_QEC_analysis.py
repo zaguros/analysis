@@ -7400,6 +7400,7 @@ def QEC_compare_syndromes():
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
 if RO_correction == True:
     folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
+    folder = r'D:\measuring\data\QEC_data\figs\Tim_pres'
 
 c_green = (9/255.,232/255.,94/255.)
 c_grey = (64/255.,78/255.,77/255.)#(240/255.,242/255.,166/255.)
@@ -7681,13 +7682,13 @@ def QEC_plot_process_fids_11_vs_idle_full():
     
 
 
-    # y = single_process_dict['dec_'+'avg'+'_y']
-    # y_err = process_dict['dec_'+'avg'+'_y_err']
-    # x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
-    # ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=2,label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
-    # (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
-    # for cap in caps:
-    #     cap.set_markeredgewidth(1)
+    y = single_process_dict['dec_'+'avg'+'_y']
+    y_err = process_dict['dec_'+'avg'+'_y_err']
+    x_fit, y_fit, p_c, p_c_err = fit_QEC_process_curve(x,y,return_errorbar = True)
+    ax.plot(x_fit, y_fit, color = c_green,ls = '-', lw=2,label =  'Single qubit, $p_c$='+str(round(p_c*100)/100.)+'('+str(int(round(p_c_err*100)))+')')
+    (_,caps,_)=ax.errorbar(x,y,yerr=y_err,color = c_green,markeredgecolor = c_green, ls = '',marker = 'o', ms = 7,capsize = 6)
+    for cap in caps:
+        cap.set_markeredgewidth(1)
 
     ax.set_ylim(-0,1)
     ax.set_xlim(-0.01,1.01)
@@ -7708,9 +7709,9 @@ def QEC_plot_process_fids_11_vs_idle_full():
 
     mpl.rcParams['axes.linewidth'] = 1
 
-    lgd = ax.legend(loc = 3,frameon = False)
-    for label in lgd.get_texts():
-        label.set_fontsize(25)
+    # lgd = ax.legend(loc = 3,frameon = False)
+    # for label in lgd.get_texts():
+    #     label.set_fontsize(25)
     if RO_correction == False:
         rectangle = plt.Rectangle((0.08, 0.5), 0.19, 0.15,edgecolor = '0.6', fill = None, lw = 2 )
     else:
@@ -7723,7 +7724,7 @@ def QEC_plot_process_fids_11_vs_idle_full():
     ###### INSET ################
     #############################
 
-    a = axes([.515, .520, .35, .35])
+    a = axes([.520, .520, .35, .35])
     process_dict = QEC_process_fids_sum_runs(run_list = [5,6,7],no_error = '11')
     
     x = process_dict['x']
@@ -7775,9 +7776,9 @@ def QEC_plot_process_fids_11_vs_idle_full():
     print p_c_4, p_c_err_4
     try:
         fig.savefig(
-            os.path.join(folder,'11_vs_idle_full_curve_2.png'))
+            os.path.join(folder,'11_vs_idle_full_curve_3.png'))
         fig.savefig(
-            os.path.join(folder,'11_vs_idle_full_curve_2.pdf'))
+            os.path.join(folder,'11_vs_idle_full_curve_3.pdf'))
     except:
         print 'Figure has not been saved.'
 
@@ -7964,19 +7965,19 @@ def QEC_plot_sweep_time():
     ax1.set_xticks(np.arange(0,31,2), minor = True)
 
     ax1.tick_params('both', length=4, width=1, which='minor')
-    lgd = ax1.legend(loc = 1,frameon = False)
-    for label in lgd.get_texts():
-        label.set_fontsize(25)
+    # lgd = ax1.legend(loc = 1,frameon = False)
+    # for label in lgd.get_texts():
+    #     label.set_fontsize(25)
 
     fig1.tight_layout()
 
-    print x_enc[2]
-    print x[8]
+    # print x_enc[2]
+    # print x[8]
     try:
         fig1.savefig(
-            os.path.join(folder,'QEC_sweep_time.png'))
+            os.path.join(folder,'QEC_sweep_time_5.png'))
         fig1.savefig(
-            os.path.join(folder,'QEC_sweep_time.pdf'))
+            os.path.join(folder,'QEC_sweep_time_5.pdf'))
     except:
         print 'Figure has not been saved.'
 
@@ -8227,80 +8228,80 @@ def QEC_multiple_rounds():
 
     fig4.tight_layout()
 
-    lgd = ax.legend(loc = [0.01,0.03],frameon=False)#loc = 2, bbox_to_anchor = (1,1))
-    for label in lgd.get_texts():
-        label.set_fontsize(20)
+    # lgd = ax.legend(loc = [0.01,0.03],frameon=False)#loc = 2, bbox_to_anchor = (1,1))
+    # for label in lgd.get_texts():
+    #     label.set_fontsize(20)
 
     mpl.rcParams['pdf.fonttype'] = 42
 
 
-    x, p_R1_11, p_R2_11 = QEC_3rounds_outcome_probability()
-    a = axes([.62, .62, .3, .3])
+    # x, p_R1_11, p_R2_11 = QEC_3rounds_outcome_probability()
+    # a = axes([.62, .62, .3, .3])
 
-    pin_list      =[0.0924663, 0.0856549]
-    color = [c_red,c_orange_2]
+    # pin_list      =[0.0924663, 0.0856549]
+    # color = [c_red,c_orange_2]
 
-    F1 = 0.988
-    F0 = 0.890
+    # F1 = 0.988
+    # F0 = 0.890
 
-    p_plot = linspace(0,1,1000)
-    p = 1/2.*(1-(1-2*p_plot)**(1/3.))
+    # p_plot = linspace(0,1,1000)
+    # p = 1/2.*(1-(1-2*p_plot)**(1/3.))
 
-    for j,pin in enumerate(pin_list):
-        ptot = p + pin-2*p*pin
-
-
-        p_no_error = 1-3*ptot+3*ptot**2
-        p_c1       = ptot-ptot**2
-        p_c2       = ptot-ptot**2
-        p_c5       = ptot-ptot**2
-
-        P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
-        # P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
-        # P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
-        # P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
-        plot(p_plot,P_D_no_error,color = color[j])
+    # for j,pin in enumerate(pin_list):
+    #     ptot = p + pin-2*p*pin
 
 
-    plot(x, p_R1_11,label = 'In round 1', color = c_red, marker = 'o',markersize = 5,ls = '',markeredgecolor = c_red)
-    plot(x, p_R2_11,label = 'In round 2', color = c_orange_2 , marker = 'o',markersize = 5,ls = '',markeredgecolor = c_orange_2 )
+    #     p_no_error = 1-3*ptot+3*ptot**2
+    #     p_c1       = ptot-ptot**2
+    #     p_c2       = ptot-ptot**2
+    #     p_c5       = ptot-ptot**2
+
+    #     P_D_no_error = p_no_error*F1**2 + p_c1*(1-F0)**2 + (p_c2+p_c5)*F1*(1-F0)
+    #     # P_D_c1 = p_no_error*(1-F1)**2 + p_c1*F0**2 + (p_c2+p_c5)*F0*(1-F1)
+    #     # P_D_c2 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c2)*F1*F0+ (p_c5)*(1-F1)*(1-F0)
+    #     # P_D_c5 = p_no_error*F1*(1-F1) + p_c1*(1-F0)*F0 + (p_c5)*F1*F0+ (p_c2)*(1-F1)*(1-F0)
+    #     plot(p_plot,P_D_no_error,color = color[j])
+
+
+    # plot(x, p_R1_11,label = 'In round 1', color = c_red, marker = 'o',markersize = 5,ls = '',markeredgecolor = c_red)
+    # plot(x, p_R2_11,label = 'In round 2', color = c_orange_2 , marker = 'o',markersize = 5,ls = '',markeredgecolor = c_orange_2 )
     
-    print p_R1_11[0]
-    print p_R2_11[0]
+    # print p_R1_11[0]
+    # print p_R2_11[0]
 
-    lgd = a.legend(loc = 9,frameon=False)
-    for label in lgd.get_texts():
-        label.set_fontsize(25)
+    # lgd = a.legend(loc = 9,frameon=False)
+    # for label in lgd.get_texts():
+    #     label.set_fontsize(25)
     
-    plt.xlim([-0.02,0.52])
-    plt.xlabel('$p_e$',fontsize = 25)
-    plt.ylim([0.25,1.0])
-    plt.ylabel('Normalized \n occurence',fontsize = 25)
+    # plt.xlim([-0.02,0.52])
+    # plt.xlabel('$p_e$',fontsize = 25)
+    # plt.ylim([0.25,1.0])
+    # plt.ylabel('Normalized \n occurence',fontsize = 25)
 
-    plt.xticks(np.arange(0.0,0.52,0.25))
-    # plt.xticks(np.arange(0,1.1,0.1), minor = True)
-    plt.yticks(np.arange(0.25,1.1,0.25))
-    # plt.yticks(np.arange(0,1.1,0.1), minor = True)
-    plt.tick_params(axis='x', which='major', labelsize=25)
-    plt.tick_params(axis='y', which='major', labelsize=25)
-    plt.tick_params('both', length=6, width=1, which='major')
-    plt.tick_params('both', length=4, width=1, which='minor')
+    # plt.xticks(np.arange(0.0,0.52,0.25))
+    # # plt.xticks(np.arange(0,1.1,0.1), minor = True)
+    # plt.yticks(np.arange(0.25,1.1,0.25))
+    # # plt.yticks(np.arange(0,1.1,0.1), minor = True)
+    # plt.tick_params(axis='x', which='major', labelsize=25)
+    # plt.tick_params(axis='y', which='major', labelsize=25)
+    # plt.tick_params('both', length=6, width=1, which='major')
+    # plt.tick_params('both', length=4, width=1, which='minor')
 
-    ax.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
-    ax.set_xticks(np.arange(0,0.55,0.05), minor = True)
+    # ax.set_yticks(np.arange(0.5,1.05,0.05), minor = True)
+    # ax.set_xticks(np.arange(0,0.55,0.05), minor = True)
 
-    ax.tick_params('both', length=4, width=1, which='minor')
+    # ax.tick_params('both', length=4, width=1, which='minor')
 
     if save_folder != None:
         try:
             fig4.savefig(
-                os.path.join(save_folder,'Multiple_rounds_Combined11.pdf'))
+                os.path.join(save_folder,'Multiple_rounds_Combined11_3.pdf'))
             fig4.savefig(
-                os.path.join(save_folder,'Multiple_rounds_Combined11.png'))
+                os.path.join(save_folder,'Multiple_rounds_Combined11_3.png'))
         except:
             print 'Figure has not been saved.'
 
-    plt.show()
+    plt.show(block = False)
     # plt.close('all')
 
 

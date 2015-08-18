@@ -88,14 +88,14 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
           ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
 
 
-      plt.legend(loc=4)
+      lgd = plt.legend(loc=4)
       plt.show(block = False)
 
       print folder
       plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_contrast.pdf'),
-          format='pdf')
+          format='pdf',bbox_extra_artists = (lgd,),bbox_inches='tight')
       plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_contrast.png'),
-          format='png')
+          format='png',bbox_extra_artists = (lgd,),bbox_inches='tight')
 
     if return_data == True:
       return x, (y+1)/2.
@@ -154,14 +154,14 @@ def fingerprint_single(disp_sim_spin = True,n_sim_spins = 2,xrange = [0,20],tag 
         ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
 
 
-    plt.legend(loc=4)
+    lgd = plt.legend(loc=4)
     plt.show(block = False)
 
     print folder
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf'),
-        format='pdf')
+        format='pdf',bbox_extra_artists = (lgd,),bbox_inches='tight')
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
-        format='png')
+        format='png',bbox_extra_artists = (lgd,),bbox_inches='tight')
 
     if return_data == True:
       return a.sweep_pts, a.p0
@@ -243,13 +243,13 @@ def fingerprint(disp_sim_spin = True,n_sim_spins = 2,step_size= 10e-3, xrange = 
         ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
 
 
-    plt.legend(loc=4)
+    lgd = plt.legend(loc=4)
 
     print folder
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf'),
-        format='pdf')
+        format='pdf',bbox_extra_artists = (lgd,),bbox_inches='tight')
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
-        format='png')
+        format='png',bbox_extra_artists = (lgd,),bbox_inches='tight')
 
     if return_data == True:
       return a.sweep_pts, a.p0
@@ -281,7 +281,7 @@ def load_mult_dat(timestamp, number_of_msmts,older_than = '', ssro_calib_folder=
    return a, folder
 
 
-def plot_all(disp_sim_spin = True, n_sim_spins = 8,load_data = True):
+def plot_all(disp_sim_spin = True,xrange  = [2.5,52.5], n_sim_spins = 8,load_data = True):
   if load_data == False:
     data = {}
     data['x_64'] , data['y_64'] = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*4e-3,
@@ -326,9 +326,9 @@ def plot_all(disp_sim_spin = True, n_sim_spins = 8,load_data = True):
   ###############
   ## Plotting ###
   ###############
-  xrange = [2.5,30.0]
+  xrange = xrange
 
-  fig = plt.figure(1,figsize=(20,35))
+  fig = plt.figure(figsize=(10,35))
   ax4 = plt.subplot(511)
   ax8 = plt.subplot(512, sharex=ax4)
   ax16 = plt.subplot(513, sharex=ax4)
@@ -346,11 +346,11 @@ def plot_all(disp_sim_spin = True, n_sim_spins = 8,load_data = True):
     
 
 
-  ax4.plot(data['x_4'], data['y_4'], '.-k', lw=0.4,marker = 'o', ms = 2,label = 'data') #N = 16
-  ax8.plot(data['x_8'], data['y_8'], '.-k', lw=0.4,marker = 'o', ms = 2,label = 'data8') #N = 16
-  ax16.plot(data['x_16'], data['y_16'], '.-k', lw=0.4,marker = 'o', ms = 2,label = 'data16') #N = 16
-  ax32.plot(data['x_32'], data['y_32'], '.-k', lw=0.4,marker = 'o', ms = 2,label = 'data32') #N = 16
-  ax64.plot(data['x_64'], data['y_64'], '.-k', lw=0.4,marker = 'o', ms = 2,label = 'data64') #N = 16
+  ax4.plot(data['x_4'], data['y_4'], '.-k', lw=0.4,marker = 'o', ms = 0.5,label = 'data') #N = 16
+  ax8.plot(data['x_8'], data['y_8'], '.-k', lw=0.4,marker = 'o', ms = 0.5,label = 'data8') #N = 16
+  ax16.plot(data['x_16'], data['y_16'], '.-k', lw=0.4,marker = 'o', ms = 0.5,label = 'data16') #N = 16
+  ax32.plot(data['x_32'], data['y_32'], '.-k', lw=0.4,marker = 'o', ms = 0.5,label = 'data32') #N = 16
+  ax64.plot(data['x_64'], data['y_64'], '.-k', lw=0.4,marker = 'o', ms = 0.5,label = 'data64') #N = 16
 
           
 
@@ -387,22 +387,22 @@ def plot_all(disp_sim_spin = True, n_sim_spins = 8,load_data = True):
     plt.setp(ax8.get_xticklabels(), visible=False)
     plt.setp(ax16.get_xticklabels(), visible=False)
     plt.setp(ax32.get_xticklabels(), visible=False)
-    ax4.legend(bbox_to_anchor=(1.01,-0.5),loc='lower left',borderaxespad = 0.)
-  # plt.legend(loc=4)
+    lgd = ax4.legend(bbox_to_anchor=(1.01,-0.5),loc='lower left',borderaxespad = 0.)
+  # lgd = plt.legend(loc=4)
   plt.show(block = False)
 
 
   
 
   folder = r'D:\measuring\data\LT2_Data\Fingerprinting'
-  plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_all_msp1_small.pdf'),
-      format='pdf')
-  plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_all_msp1_small.png'),
-      format='png')
+  plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_all_msp1.pdf'),
+      format='pdf',bbox_extra_artists = (lgd,),bbox_inches='tight')
+  plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_all_msp1.png'),
+      format='png',bbox_extra_artists = (lgd,),bbox_inches='tight')
 
 
 if 1:
-  plot_all()
+  plot_all(xrange  = [10,15])
 
 if 0:
 

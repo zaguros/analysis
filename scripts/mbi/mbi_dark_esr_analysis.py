@@ -14,15 +14,15 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = None#'20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
+timestamp = '20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
 
-guess_offset = 1.0
-guess_A_min1 = 0.3
-guess_A_plus1 = 0.3
-guess_A_0 = 0.3
-guess_x0 = 4009#1746.666
-guess_sigma = 0.250
-guess_Nsplit = 2.182
+guess_offset = 1
+guess_A_min1 = 0.2
+guess_A_plus1 = 0.2
+guess_A_0 = 0.6
+guess_x0 = 2845
+guess_sigma = .02
+guess_Nsplit = 2.179
 
 
 ### fitfunction
@@ -46,6 +46,7 @@ if timestamp != None:
 else:
     #folder = toolbox.latest_data('PostInitDarkESR')
     folder = toolbox.latest_data('DESR')
+
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
@@ -73,8 +74,9 @@ else:
     # try fitting
 
     fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma, Nsplit],
-            fitfunc = fitfunc, do_print=True, ret=True, fixed=[6])
+            fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
     plot.plot_fit1d(fit_result, linspace(min(x), max(x), 1000), plot_data=False, ax=ax)
+    
     Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
     Norm_error=np.sqrt((fit_result['error'][0]**2+fit_result['error'][1]**2+fit_result['error'][2]**2))
 
@@ -82,6 +84,7 @@ else:
     Population_left_error = np.sqrt((1/Norm)**2*fit_result['error'][0]**2+(fit_result['params'][0]/Norm**2)**2*Norm_error**2)
     Population_middle=fit_result['params'][2]/Norm
     Population_right=fit_result['params'][1]/Norm
+    
     ax.set_ylim(-0.05,1.1)
 
 

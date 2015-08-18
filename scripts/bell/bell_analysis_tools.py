@@ -49,9 +49,9 @@ def merge_dicts(*dict_args):
         result.update(dictionary)
     return result
 
-def print_correlators(corr_mats):
+def print_correlators(corr_mats, VERBOSE=True, psis=['psi_min', 'psi_plus']):
     # print the results:
-    for psi in ['psi_min', 'psi_plus']:
+    for psi in psis:
         corr_mat=np.zeros((4,4))
         for k in corr_mats:
             if psi in k:
@@ -72,21 +72,22 @@ def print_correlators(corr_mats):
             expected_Es= (0.42,-0.42,0.67,0.67)
             CHSH  = Es[0] - Es[1] + Es[2] + Es[3]
         dCHSH = np.sqrt(dEs[0]**2 + dEs[1]**2 + dEs[2]**2 + dEs[3]**2)
-        
-        print '-'*40
-        print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
-        print 'RO ms   00, 01, 10, 11'
-        print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
-        print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
-        print 'RND10', corr_mat[2], '  0,     +3pi/4'
-        print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
+        if VERBOSE:
+            print '-'*40
+            print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
+            print 'RO ms   00, 01, 10, 11'
+            print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
+            print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
+            print 'RND10', corr_mat[2], '  0,     +3pi/4'
+            print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
 
-        print ' E (RND00  RND01  RND10  RND11 )'
-        print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) expected'.format(*expected_Es)
-        print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) measured'.format(*Es)
-        print '+/-( {:.2f},  {:.2f},  {:.2f},  {:.2f} )'.format(*dEs)
+            print ' E (RND00  RND01  RND10  RND11 )'
+            print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) expected'.format(*expected_Es)
+            print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) measured'.format(*Es)
+            print '+/-( {:.2f},  {:.2f},  {:.2f},  {:.2f} )'.format(*dEs)
 
-        print 'CHSH : {:.2f} +- {:.2f}'.format(CHSH, dCHSH)
+            print 'CHSH : {:.2f} +- {:.2f}'.format(CHSH, dCHSH)
+    return CHSH, dCHSH, Es, dEs
 
 def C_val(x,y,a,b,psi):#expects binary inputs.
     if ('psi_min' in psi) and (x==0) and (y==0):
@@ -98,6 +99,13 @@ def C_val(x,y,a,b,psi):#expects binary inputs.
     else:
         #print 'else', x,y,a,b, (a+b+1)%2
         return (a+b+1)%2
+
+def get_p_val(K,N):
+    from scipy.stats import binom
+    tau = 1e-25
+    eps = 1e-5
+    p_lhv = 1-(0.5-eps)**2*(1-12*tau*(1+tau))#eps and tau correspond to the bias and the predictability.
+    return 1-binom.cdf(K-1, N, p_lhv)
 
 def calculate_p_lhv(corr_mats, VERBOSE=True):
     K = 0
@@ -119,19 +127,16 @@ def calculate_p_lhv(corr_mats, VERBOSE=True):
                     Nxx+=n
                 elif rnd[0] == 1: #LT3 did no pi/2 pulse
                     Kzz+=k
-                    Nzz+=n
-                    
-    
-    from scipy.stats import binom
-    p_lhv = 1- binom.cdf(K, N, 3./4)
+                    Nzz+=n      
+    p_val = get_pval(K,N)
     if VERBOSE:
         print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
-        print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
+        print 'Probability of LHV model: {:.1f}%'.format(p_val*100)
         print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
         print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
-    return K,N,Kxx,Nxx,Kzz,Nzz,p_lhv
+    return K,N,Kxx,Nxx,Kzz,Nzz,p_val
 
-def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
+def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     st_start_ch0  = analysis_params['st_start_ch0']
     st_len        = analysis_params['st_len'] #50 ns
     st_len_w2     = st_len
@@ -143,7 +148,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     st_fltr_w2 =  (((st_start_ch0 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch0 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 0)) \
                  | ((st_start_ch1 + p_sep <= db[:,be._cl_st_w2]) & (db[:,be._cl_st_w2] < (st_start_ch1 + p_sep + st_len_w2)) & (db[:,be._cl_ch_w2] == 1)) )   
 
-    no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
+    #no_invalid_mrkr_fltr = (dlt[:,be._cl_inv_mrkr]==0)
 
     sp_names=['w1','w2']
     sp_fltrs = [st_fltr_w1,st_fltr_w2]
@@ -155,10 +160,12 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
     F0 =analysis_params['F0A'] if lt3 else analysis_params['F0B']
     F1 =analysis_params['F1A'] if lt3 else analysis_params['F1B']
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
-        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr & no_invalid_mrkr_fltr
+        fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr #& no_invalid_mrkr_fltr
         db_fltr = db[fltr]
         dlt_fltr = dlt[fltr]
         noof_ev_fltr = np.sum(fltr)
+        if VERBOSE:
+            print psi_name, 'noof events: ', noof_ev_fltr
         p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
         u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
 
@@ -168,7 +175,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3):
 
 
 
-def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=True):
+def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_psi_name='psi_min', VERBOSE=True):
     #Windows & other filtes:
     st_start_ch0  = analysis_params['st_start_ch0']
     st_len        = analysis_params['st_len'] #50 ns
@@ -204,7 +211,7 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=Tr
     psi_plus_11_fltr = (db[:,be._cl_ch_w1] == 1) & (db[:,be._cl_ch_w2] == 1)
     psi_filters = [psi_plus_00_fltr,psi_min_01_fltr,psi_min_10_fltr,psi_plus_11_fltr]
     psi_names = ['psi_plus_00','psi_min_01','psi_min_10','psi_plus_11']
-
+    ret_fltr = False
     corr_mats={}
     for psi_name,psi_fltr in zip(psi_names,psi_filters):
         if 'psi_min' in psi_name:
@@ -269,8 +276,10 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, VERBOSE=Tr
                                      & ((d3_fltr[:,be._cl_noof_ph_ro] > 0) == ro[0] ) \
                                      & ((d4_fltr[:,be._cl_noof_ph_ro] > 0) == ro[1]))
         corr_mats[psi_name] = corr_mat
+        if ret_fltr_psi_name in psi_name:
+            ret_fltr = ret_fltr | fltr
     
-    return corr_mats
+    return corr_mats, ret_fltr
 
 def print_ZZ_fidelity(corr_mats, analysis_params):
     for psi in ['psi_min', 'psi_plus']:
@@ -356,5 +365,8 @@ def print_XX_fidelity(corr_mats, analysis_params):
 def plot_title(fp):
     return os.path.splitext(os.path.split(fp)[1])[0]
 
+def save_fp(folder,analysis_fp):
+    return os.path.join(folder,plot_title(analysis_fp))
+
 def save_figure(name, ax,output_folder,analysis_fp):
-    ax.figure.savefig(os.path.join(output_folder,plot_title(analysis_fp)+'_'+name+'.jpg'))
+    ax.figure.savefig(save_fp(output_folder,analysis_fp)+'_'+name+'.jpg')
