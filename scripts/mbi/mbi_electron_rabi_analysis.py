@@ -15,7 +15,7 @@ from analysis.lib.math import error
 # fit_startup = False
 
 timestamp = None # '20141016_134144'#'214152'#None#'170356'#None #'20130907183620' # None
-guess_frq = 1./300.
+guess_frq = 1./400.
 guess_amp = 1
 guess_k = 0.
 guess_phi = 0.
@@ -24,8 +24,10 @@ guess_o = 1.
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
+    print folder
 else:
     folder = toolbox.latest_data('Rabi')
+    print folder
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
