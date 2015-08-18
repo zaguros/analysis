@@ -14,7 +14,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
     '''
 
     def get_readout_results(self, name='',post_select = False,post_select_QEC = False,
-                                post_select_multiple_rounds = False, post_select_GHZ = True,orientation_correct=False):
+                                post_select_multiple_rounds = False, post_select_GHZ = False,orientation_correct=False):
         '''
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
