@@ -34,6 +34,7 @@ def get_raw_data(carbon,**kw):
 
 	if ssro_tstamp == None:
 		ssro_calib_folder = toolbox.latest_data(contains = 'SSRO')
+		print ssro_calib_folder
 
 	search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)
 	search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)
@@ -86,7 +87,7 @@ def get_gate_fidelity(carbon,**kw):
 	ssro_tstamp = kw.pop('ssro_tstamp',None)
 
 	gates,x,y,x_u,y_u,folder_pos = get_raw_data(carbon,older_than = older_than,ssro_tstamp = ssro_tstamp)
-
+	print folder_pos
 	b,b_u = get_bloch_length(x,y,x_u,y_u)
 
 	# print gates

@@ -158,7 +158,7 @@ def simple_plot_contrast_concatenate(older_than = None,tag_list = [], measuremen
 		y = np.absolute(y)
 
 	if do_plot ==True: 
-		fig,ax = plt.subplots(figsize=(10,10)) 
+		fig,ax = plt.subplots(figsize=(4,4)) 
 		rects = ax.errorbar(x,y,yerr=y_err )
 		ax.set_xticks(x)
 		# ax.set_xticklabels(x_labels)
@@ -167,7 +167,7 @@ def simple_plot_contrast_concatenate(older_than = None,tag_list = [], measuremen
 			ax.set_ylim(-0.1,1.1)
 		ax.set_xlabel(xlabel)
 		ax.set_ylabel(ylabel)
-		ax.set_title(str(folder_a)+'/'+str(timestamp_neg))
+		ax.set_title(str(folder_a)[18:])
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
 
