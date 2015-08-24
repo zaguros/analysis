@@ -94,7 +94,7 @@ def get_debug_data(folder,folder_timestamp,RO_correct=True,ssro_calib_timestamp=
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
             ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'#GHZ_'+tomo_bases
 
-        #print ssro_calib_folder
+        print ssro_calib_folder
         a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
 
         #take the [0,0] part of the arrays right now; no sweep_pts
@@ -193,7 +193,7 @@ def plot_sweep_orientations_GHZ_data(plot=True, save = True, plot_single=True, t
 
     p = np.zeros([len(data_labels),8])
     y = np.zeros([len(data_labels),8])
-    y_err = np.zeros([len(data_labels),8])
+    y_err = np.zeros([len(data_labels) ,8])
 
     x_labels = ('1,1,1', '1,1,-1' , '1,-1,1', '1,-1,-1','-1,1,1', '-1,1,-1' , '-1,-1,1', '-1,-1,-1')
     print 'looking for filename containing '+extra_tag+tomo_bases+'_'
@@ -229,7 +229,7 @@ def plot_singlerun_GHZ_data(timestamp=None, plot=True, save = True):
 
     do_plot(folder,timestamp,'GHZ_results',p,y,y_err,x_labels,x)
 
-def plot_debug_GHZ_data(plot=True, save = True,tomo_bases="ZZI",plot_single=True):
+def plot_debug_GHZ_data(plot=True, save = True,tomo_bases="ZZI",plot_single=True,extra_tag=''):
     p = np.zeros([4,2])
     y = np.zeros([4,2])
     y_err = np.zeros([4,2])
@@ -238,13 +238,11 @@ def plot_debug_GHZ_data(plot=True, save = True,tomo_bases="ZZI",plot_single=True
     data_labels = ['pp','pn','np','nn']
 
     for k,label in enumerate(data_labels):
-        timestamp,folder = toolbox.latest_data(contains='tomo'+tomo_bases+'_'+label,return_timestamp=True)
+        timestamp,folder = toolbox.latest_data(contains=extra_tag+'tomo'+tomo_bases+'_'+label,return_timestamp=True)
         print folder
         p[k],y[k],y_err[k] = get_debug_data(folder,timestamp,RO_correct=True,tomo_bases=tomo_bases)
         if plot_single:
             do_plot(folder,timestamp,'GHZ_debug_results',p[k],y[k],y_err[k],x_labels,range(len(y[k])),show_plot=False,tomo_bases=tomo_bases)
-
-    print(p,y,y_err)
 
     p_avg = np.mean(p, axis = 0)
     y_avg = np.mean(y, axis = 0)
@@ -293,7 +291,7 @@ def plot_sweepphases_GHZ_data(timestamps=[None,None], plot=True, save = True,plo
 
     plt.show()
 
-def plot_full_tomo(bases= ["XXX"], plot=True):
+def plot_full_tomo(bases= ["XXX"], plot=True,extra_tag=''):
     
     p = np.zeros([len(bases),8])
     y = np.zeros([len(bases),8])
@@ -302,12 +300,12 @@ def plot_full_tomo(bases= ["XXX"], plot=True):
     basis_labels=bases
 
     for k,tomo_basis in enumerate(bases):
-        folder,timestamp,p[k],y[k],y_err[k]=plot_sweep_orientations_GHZ_data(plot=False,tomo_bases=tomo_basis,show_plot=False,return_data=True)
+        folder,timestamp,p[k],y[k],y_err[k]=plot_sweep_orientations_GHZ_data(plot=False,tomo_bases=tomo_basis,extra_tag=extra_tag,plot_single=False,return_data=True)
 
     for l,outcomes in enumerate(outcome_labels):
         do_plot(folder,timestamp,'tomography'+outcomes,p[:,l],y[:,l],y_err[:,l],basis_labels,range(len(bases)),show_plot=plot,title=outcomes,width=len(basis_labels)*0.7,ylabel='exp. value')
 
-def plot_nonzero_tomo(bases= ["XXX","XYY","YXY","YYX","ZZI","ZIZ","IZZ"], plot=True,plot_single=True):
+def plot_nonzero_tomo(bases= ["XXX","XYY","YXY","YYX","ZZI","ZIZ","IZZ"], plot=True,plot_single=True,postselect=False):
     
     p = np.zeros([8,len(bases)])
     y = np.zeros([8,len(bases)])
@@ -316,7 +314,29 @@ def plot_nonzero_tomo(bases= ["XXX","XYY","YXY","YYX","ZZI","ZIZ","IZZ"], plot=T
     basis_labels=bases
 
     for k,tomo_basis in enumerate(bases):
-        folder,timestamp,p[:,k],y[:,k],y_err[:,k]=plot_sweep_orientations_GHZ_data(plot=plot_single,tomo_bases=tomo_basis,extra_tag='_tomo_',return_data=True)
+        folder,timestamp,p[:,k],y[:,k],y_err[:,k]=plot_sweep_orientations_GHZ_data(plot=plot_single,tomo_bases=tomo_basis,extra_tag='unbranched_tomo_',return_data=True)
+        if postselect:
+            if tomo_basis == 'XXX':
+                ps = [0,3,5,6]                
+            elif tomo_basis == 'XYY':
+                ps = [0,1,2,3]
+            elif tomo_basis == 'YXY':
+                ps = [0,1,4,5]
+            elif tomo_basis == 'YYX':
+                ps = [0,2,4,6]
+            elif tomo_basis == 'ZZI':
+                ps = [2,3,4,5]
+            elif tomo_basis == 'ZIZ':
+                ps = [1,3,4,6]
+            elif tomo_basis == 'IZZ':
+                ps = [1,2,5,6]
+            elif tomo_basis == 'ZXI':
+                ps = [2,3,4,5]
+            elif tomo_basis == 'XZI':
+                ps = [2,3,4,5]
+            for i in ps:
+                y[i,k]=-1*y[i,k]
+          
 
     p_avg = np.sum(p,axis=0)
     y_avg = np.sum(y*p,axis=0)
