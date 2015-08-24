@@ -363,6 +363,7 @@ class data_object(object):
 		
 		xticks = kw.pop('xticks',None)
 		yticks = kw.pop('yticks',None)
+		ylabel = kw.pop('ylabel',None)
 
 		save_name = 'timetrace'
 
@@ -478,18 +479,19 @@ class data_object(object):
 		### plot
 		plt.xlabel('Evolution time (ms)')
 		
-		if self.process_fidelities:
-			ylabel = 'Process fidelity'
-			save_name +='_proc'
+		if ylabel == None:
+			if self.process_fidelities:
+				ylabel = 'Process fidelity'
+				save_name +='_proc'
 
-		if not self.contrast and not self.process_fidelities or plot_states:
-			ylabel = 'State fidelity'
-			save_name +='_states'
+			if not self.contrast and not self.process_fidelities or plot_states:
+				ylabel = 'State fidelity'
+				save_name +='_states'
 
 
-		if self.contrast:
-			ylabel = 'Expectation value'
-			save_name += '_contrast'
+			if self.contrast:
+				ylabel = 'Expectation value'
+				save_name += '_contrast'
 
 		plt.ylabel(ylabel)
 		
@@ -523,6 +525,7 @@ class data_object(object):
 		"""
 
 		yticks = kw.pop('yticks',None)
+		ylim = kw.pop('ylim',None)
 
 
 
@@ -575,8 +578,10 @@ class data_object(object):
 
 		if yticks != None:
 			plt.yticks(yticks)
+		if ylim != None:
+			plt.ylim(ylim)
 
-
+		plt.tick_params(axis='x',which='both',top='off')
 		plt.ylabel(ylabel)
 		plt.xticks(range(len(self.pickle_dict.keys())),x_axis_ticks)
 		if save_plot:
@@ -592,9 +597,9 @@ class data_object(object):
 		"""
 
 		if self.fancy:
-			plt.savefig(os.path.join(self.save_folder,self.name+' '+plot_type+'.pdf'),format='pdf')
+			plt.savefig(os.path.join(self.save_folder,self.name+' '+plot_type+'.pdf'),format='pdf',bbox_inches = 'tight',pad_inches=0.2)
 		else:
-			plt.savefig(os.path.join(self.save_folder,self.name+' '+plot_type+'.png'),format='png')
+			plt.savefig(os.path.join(self.save_folder,self.name+' '+plot_type+'.png'),format='png',bbox_inches = 'tight',pad_inches=0.3)
 
 
 	def find_index(self,key):
@@ -715,7 +720,7 @@ def X_preservation():
 
 	THE_DATA.plot_timetrace(save_plot=True,plot_states = True,xlim=[0,100],xticks=[0,40,80],yticks=[0.5,0.75,1])
 
-	THE_DATA.plot_msmt_slices([40],save_plot = False,yticks=[0.5,0.75])
+	THE_DATA.plot_msmt_slices([40],save_plot = True,yticks=[0.5,0.75],ylim=[0.45,0.75])
 
 	# THE_DATA.plot_msmt_slices([8],save_plot=True)
 	# THE_DATA.plot_msmt_slices([45],save_plot=True)
@@ -851,7 +856,7 @@ def Protecting_XX():
 
 	THE_DATA = data_object("Fig2B",pickle_dict)
 
-	THE_DATA.contrast = True
+	THE_DATA.contrast = False
 	THE_DATA.use_fixed = False
 
 	# THE_DATA.fit_offset = 0.0 ### force the gaussian to decay to 0.
@@ -864,6 +869,26 @@ def Protecting_XX():
 	THE_DATA.plot_title = r'$\langle XX \rangle $ averaged over six states'
 	THE_DATA.plot_timetrace(save_plot = True, legend = True,xlim=[0,60],xticks=[0,30,60],yticks=[0.0,0.4,0.8])
 
+def TwoQFidelity():
+	filename = 'FIG2B_2Qfid_preservation.p'
+
+	pickle_dict = open_data(filename)
+
+	THE_DATA = data_object("Fig2B",pickle_dict, proc_fid = True)
+
+	THE_DATA.physical_model_fit = False
+	THE_DATA.pheno_physical_mode_fit = True
+	THE_DATA.set_do_fit(True)
+
+
+	THE_DATA.plot_title = r''
+	THE_DATA.plot_timetrace(save_plot 	= True, 
+							legend 		= True,
+							xlim		= [0,60],
+							ylim		= [0.28,0.9],
+							xticks 		= [0,30,60],
+							yticks 		= [0.3,0.6,0.9],
+							ylabel 		= 'Average state fidelity')
 
 ######################
 ######################
@@ -897,20 +922,20 @@ def Protecting_XXX():
 	THE_DATA.process_fidelities = True
 
 	### Do the fits.
-	THE_DATA.plot_title = 'Logical state fidelity '+r'$|00\rangle_L$'
+	THE_DATA.plot_title = r'$|00\rangle_L$'
 	THE_DATA.state_key_endings = ['00']
 	THE_DATA.name = 'Fig3AB_00'
-	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.2,0.5,0.8])
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,60],ylim=[0.2,0.9],xticks=[0,25,50],yticks=[0.2,0.5,0.8])
 
 	THE_DATA.name = 'Fig3AB_X0'
-	THE_DATA.plot_title = 'Logical state fidelity '+r'$|X0\rangle_L$'
+	THE_DATA.plot_title = r'$|X0\rangle_L$'
 	THE_DATA.state_key_endings = ['00p10']
-	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.3,0.6,0.9])
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,60],ylim=[0.2,0.9],xticks=[0,25,50],yticks=[0.2,0.5,0.8])
 
 	THE_DATA.name = 'Fig3AB_00p11'
-	THE_DATA.plot_title = 'Logical state fidelity '+r'$|\Phi^+ \rangle_L$'
+	THE_DATA.plot_title = r'$|\Phi^+ \rangle_L$'
 	THE_DATA.state_key_endings = ['00p11']
-	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,90],xticks=[0,30,60,90],yticks=[0.2,0.5,0.8])
+	THE_DATA.plot_timetrace(save_plot = True, plot_states = True,xlim=[0,60],ylim=[0.2,0.9],xticks=[0,25,50],yticks=[0.2,0.5,0.8])
 
 	THE_DATA.name = 'Fig3AB_xxx'
 	THE_DATA.process_fidelities = False

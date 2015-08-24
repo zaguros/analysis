@@ -1031,6 +1031,8 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive','n
 	    'Z':'XX',
 	    'mZ':'XX'}
 
+
+	### when analysing YY correlations.
 	Tomo4Dict={'X':'YY','mX':'YY',
 	    'Y':'XX',
 	    'mY':'XX',
@@ -1050,10 +1052,10 @@ def Zeno_state_fidelity(older_than_tstamp=None,msmts='0',eRO_list=['positive','n
 		### choose orthogonal bases to see the effect of a detuning
 		if single_qubit_ort:
 			Tomo1Dict={'X':'ZI','mX':'ZI',
-			    'Y':'YI',
-			    'mY':'YI',
-			    'Z':'XI',
-			    'mZ':'XI'}
+			    'Y':'XI',
+			    'mY':'XI',
+			    'Z':'YI',
+			    'mZ':'YI'}
 			Tomo2Dict={'X':'IZ','mX':'IZ',
 			    'Y':'IX',
 			    'mY':'IX',
@@ -1259,6 +1261,8 @@ def Zeno_proc_fidelity(msmts='0',older_than_tstamp=None,**kw):
 		plt.close('all')
 
 	else:
+		print 'msmts and dec_bit', msmts, decoded_bit
+		print 'avg. Fids: ' + ', '.join('{0:.2f}'.format(v) for v in avg_fid)
 		return evo_time,avg_fid,avg_fid_u,tstamp,folder,state_dict
 
 def Zeno_proc_list(older_than_tstamp=None,
@@ -2038,7 +2042,7 @@ def Zeno_YY_list(older_than_tstamp=None,
 
 def Zeno_2qubit_list(older_than_tstamp=None,
 						msmt_list=['0'],eRO_list=['positive','negative'],ssro_timestamp=None,plot_results=True,
-						subtract_drive_time = False,only_entangled = True):
+						subtract_drive_time = False,only_entangled = True,**kw):
 
 	"""
 	Plots the 2-qubit state fidelity (averaged over all input states)
@@ -2046,10 +2050,16 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 	Gets the values from the process fidelity routine. (This routine returns average fidelities.)
 
 	"""
+
+	### keyword args
+	results_save = kw.pop('results_save',False)
+
+
+	## init lists and dics.
 	fid_arr,fid=[],[]
 	fid_u_arr,fid_u=[],[]
 	evotime_arr,evotime=[],[]
-
+	pickle_dict = {}
 
 	#RODict={'1':Tomo1Dict,'2':Tomo2Dict,'3':Tomo3Dict, '2qubit': Tomo2qubitDict} --> dictionaries used in the state fidelity routine.
 
@@ -2066,7 +2076,7 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 									plot_results=False, subtract_drive_time = subtract_drive_time,only_entangled = only_entangled)
 			if mm == 0:
 				fid = 2*(fid_int-0.5)
-				print fid
+				# print fid
 				fid_u = (2*fid_u_int)**2/16 ### errors are summed quadratically and divided by 4**2 = 16
 
 			else:
@@ -2077,12 +2087,18 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 		#######################
 		# calculate the 2qubit state fidelity from the accumulated average contrast values:
 		#####################
-
 		fid = 0.25*fid+0.25
+
+
 
 		evotime_arr.append(np.sort(evotime))
 		fid_arr.append(fid[np.argsort(evotime)])
 		fid_u_arr.append(np.sqrt(fid_u[np.argsort(evotime)])) ### need to take sqrt for the errors.
+
+		### make pickle dictionary
+		pickle_dict[msmt_list[ii]] = make_pickle_dict(evotime_arr[ii],(np.array(fid_arr[ii])),np.array(fid_u_arr[ii]),timetrace_keylist)
+		pickle_dict[msmt_list[ii]]['state_dict'] = {}
+		pickle_dict[msmt_list[ii]]['state_dict'] = state_dict
 	
 	### rescale evolution times to ms if it is given in seconds.
 
@@ -2139,7 +2155,7 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 		plt.ylabel('Average state fidelity')
 		plt.title('Average state fidelity'+'_stop_'+str(tstamp)+'_'+RO_String)
 		plt.legend()#bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-		plt.xlim([-2,60])
+		plt.xlim([-2,100])
 		plt.ylim([0.28,0.86])
 
 		print 'Plots are saved in:'
@@ -2148,6 +2164,9 @@ def Zeno_2qubit_list(older_than_tstamp=None,
 		plt.savefig(os.path.join(folder,'Zeno_2qubit_fidelity_'+RO_String+'.png'),format='png')
 		plt.show()
 		plt.close('all')
+
+		if results_save:
+			save_data(pickle_dict,"FIG2B_2Qfid_preservation"+".p")
 	else: 
 		return evotime_arr,fid_arr,fid_u_arr,folder
 
