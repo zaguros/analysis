@@ -1,8 +1,8 @@
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
-from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
+from analysis.lib.math import error
 import numpy as np
 
 #NOTE: Function could be moved to analysis.lib.m2.ssro folder when complete and checked for errors.
@@ -14,7 +14,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
     '''
 
     def get_readout_results(self, name='',post_select = False,post_select_QEC = False,
-                                post_select_multiple_rounds = False):
+                                post_select_multiple_rounds = False, post_select_GHZ = False,orientation_correct=False):
         '''
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -25,6 +25,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
         if post_select                  is true, select on the true or false condition (single parity measurement)
         if post_select_QEC              is true, select on the syndrome outcome (two parity measurements)
         if post_select_multiple_rounds  is true, select on the syndrome outcome (4 parity measurements)
+        if post_select_GHZ              is true, select on the first 3 measurement rounds
         else                            use the original get_readout_results from the MBI class
  
         '''
@@ -44,6 +45,15 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             ### Step 0 extract data from hdf5 file
             self.parity_result = adwingrp['parity_RO_results'].value 
             self.ssro_results  = adwingrp['ssro_results'].value       
+
+            if orientation_correct:
+                orientation_a = adwingrp.attrs['Parity_A_RO_orientation']
+                orientation_b = adwingrp.attrs['Tomo_RO_orientation']
+                self.orientations = (orientation_a,orientation_b)
+
+                #take into account the orientations of the first measurement for the postselection
+                if orientation_a == 'negative':
+                    self.parity_result = (1-self.parity_result)
 
             ### Step 1 Multiply results with post selection parameter
             ssro_results_0 = self.parity_result     * self.ssro_results
@@ -301,12 +311,125 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.p1011 = ( parity_result_1011/float(len(self.ssro_results)/self.pts))
             self.p1111 = ((parity_result_1111)/float(len(self.ssro_results)/self.pts))
                        
-            
+        elif post_select_GHZ == True:
+            self.post_select = True
+            self.result_corrected = False
+
+            adwingrp = self.adwingrp(name)
+            self.adgrp = adwingrp
+
+            self.pts        = adwingrp.attrs['sweep_length']
+            self.reps       = adwingrp.attrs['reps_per_ROsequence']
+            self.readouts   = adwingrp.attrs['nr_of_ROsequences']
+
+            orientation_a = adwingrp.attrs['Parity_xyy_RO_orientation']
+            orientation_b = adwingrp.attrs['Parity_yxy_RO_orientation']
+            orientation_c = adwingrp.attrs['Parity_yyx_RO_orientation']
+            orientation_d = adwingrp.attrs['Tomo_RO_orientation']
+            self.orientations = (orientation_a,orientation_b,orientation_c,orientation_d)
+
+            ### Step 0 extract data from hdf5 file
+            self.parity_result = adwingrp['parity_RO_results'].value
+            self.ssro_results = adwingrp['ssro_results'].value 
+
+            #######take into account the readout orientations???
+            parity_a_result = self.parity_result[0::3]  ### The three parity outcomes are stored sequentially in an array 
+            parity_b_result = self.parity_result[1::3] 
+            parity_c_result = self.parity_result[2::3]  
+            parity_d_result = self.ssro_results 
+
+            #take into account the orientations of the first three measurements for the postselection
+            if orientation_a == 'negative':
+                parity_a_result = (1-parity_a_result)
+            if orientation_b == 'negative':
+                parity_b_result = (1-parity_b_result)
+            if orientation_c == 'negative':
+                parity_c_result = (1-parity_c_result)
+                        # if orientation_d == 'negative':
+            #     parity_d_result = (1-parity_d_result)
+
+            ### number of times the first 3 parity mmt outcomes occurred
+            parity_result_000 = (parity_a_result*     parity_b_result*     parity_c_result     ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_001 = (parity_a_result*     parity_b_result*     (1-parity_c_result) ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_010 = (parity_a_result*     (1-parity_b_result)* parity_c_result     ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_011 = (parity_a_result*     (1-parity_b_result)* (1-parity_c_result) ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_100 = ((1-parity_a_result)* parity_b_result*     parity_c_result     ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_101 = ((1-parity_a_result)* parity_b_result*     (1-parity_c_result) ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_110 = ((1-parity_a_result)* (1-parity_b_result)* parity_c_result     ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            parity_result_111 = ((1-parity_a_result)* (1-parity_b_result)* (1-parity_c_result) ).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+
+            ssro_result_000 = (parity_a_result     *parity_b_result     *parity_c_result     *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_001 = (parity_a_result     *parity_b_result     *(1-parity_c_result) *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_010 = (parity_a_result     *(1-parity_b_result) *parity_c_result     *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_011 = (parity_a_result     *(1-parity_b_result) *(1-parity_c_result) *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_100 = ((1-parity_a_result) *parity_b_result     *parity_c_result     *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_101 = ((1-parity_a_result) *parity_b_result     *(1-parity_c_result) *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_110 = ((1-parity_a_result) *(1-parity_b_result) *parity_c_result     *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            ssro_result_111 = ((1-parity_a_result) *(1-parity_b_result) *(1-parity_c_result) *parity_d_result).reshape((-1,self.pts,self.readouts)).sum(axis=0)
+
+            if parity_result_000 != 0:
+                self.normalized_ssro_000 = ssro_result_000/(parity_result_000).astype('float')
+                self.u_normalized_ssro_000 = ((self.normalized_ssro_000*(1-self.normalized_ssro_000))/(parity_result_000))**(0.5)
+            else:
+                self.normalized_ssro_000 = np.array([[0.]])
+                self.u_normalized_ssro_000 = np.array([[1.]])
+            if parity_result_001 != 0:
+                self.normalized_ssro_001 = ssro_result_001/(parity_result_001).astype('float')
+                self.u_normalized_ssro_001 = ((self.normalized_ssro_001*(1-self.normalized_ssro_001))/(parity_result_001))**(0.5)
+            else:
+                self.normalized_ssro_001 = np.array([[0.]])
+                self.u_normalized_ssro_001 = np.array([[1.]])
+            if parity_result_010 != 0:
+                self.normalized_ssro_010 = ssro_result_010/(parity_result_010).astype('float')
+                self.u_normalized_ssro_010 = ((self.normalized_ssro_010*(1-self.normalized_ssro_010))/(parity_result_010))**(0.5)
+            else:
+                self.normalized_ssro_010 = np.array([[0.]])
+                self.u_normalized_ssro_010 = np.array([[1.]])
+            if parity_result_011 != 0:
+                self.normalized_ssro_011 = ssro_result_011/(parity_result_011).astype('float')
+                self.u_normalized_ssro_011 = ((self.normalized_ssro_011*(1-self.normalized_ssro_011))/(parity_result_011))**(0.5)
+            else:
+                self.normalized_ssro_011 = np.array([[0.]])
+                self.u_normalized_ssro_011 = np.array([[1.]])
+            if parity_result_100 != 0:
+                self.normalized_ssro_100 = ssro_result_100/(parity_result_100).astype('float')
+                self.u_normalized_ssro_100 = ((self.normalized_ssro_100*(1-self.normalized_ssro_100))/(parity_result_100))**(0.5)
+            else:
+                self.normalized_ssro_100 = np.array([[0.]])
+                self.u_normalized_ssro_100 = np.array([[1.]])
+            if parity_result_101 != 0:
+                self.normalized_ssro_101 = ssro_result_101/(parity_result_101).astype('float')
+                self.u_normalized_ssro_101 = ((self.normalized_ssro_101*(1-self.normalized_ssro_101))/(parity_result_101))**(0.5)
+            else:
+                self.normalized_ssro_101 = np.array([[0.]])
+                self.u_normalized_ssro_101 = np.array([[1.]])
+            if parity_result_110 != 0:
+                self.normalized_ssro_110 = ssro_result_110/(parity_result_110).astype('float')
+                self.u_normalized_ssro_110 = ((self.normalized_ssro_110*(1-self.normalized_ssro_110))/(parity_result_110))**(0.5)
+            else:
+                self.normalized_ssro_110 = np.array([[0.]])
+                self.u_normalized_ssro_110 = np.array([[1.]])
+            if parity_result_111 != 0:
+                self.normalized_ssro_111 = ssro_result_111/(parity_result_111).astype('float')
+                self.u_normalized_ssro_111 = ((self.normalized_ssro_111*(1-self.normalized_ssro_111))/(parity_result_111))**(0.5)
+            else:
+                self.normalized_ssro_111 = np.array([[0.]])
+                self.u_normalized_ssro_111 = np.array([[1.]])
+ 
+            self.p000 = (parity_result_000/float(len(self.ssro_results)/self.pts))
+            self.p001 = (parity_result_001/float(len(self.ssro_results)/self.pts))
+            self.p010 = (parity_result_010/float(len(self.ssro_results)/self.pts))
+            self.p011 = (parity_result_011/float(len(self.ssro_results)/self.pts))
+            self.p100 = (parity_result_100/float(len(self.ssro_results)/self.pts))
+            self.p101 = (parity_result_101/float(len(self.ssro_results)/self.pts))
+            self.p110 = (parity_result_110/float(len(self.ssro_results)/self.pts))
+            self.p111 = (parity_result_111/float(len(self.ssro_results)/self.pts))
+
         else:
             mbi.MBIAnalysis.get_readout_results(self,name) #NOTE: super cannot be used as this is an "old style class"
             self.post_select = False
 
-    def get_electron_ROC(self, ssro_calib_folder='',post_select_QEC = False, post_select_multiple_rounds = False):
+    def get_electron_ROC(self, ssro_calib_folder='',post_select_QEC = False, post_select_multiple_rounds = False, post_select_GHZ = False):
         '''
         Performs Readout Correction, needs to be updated to correct for post selected results and apply error-bars correctly.
         '''
@@ -470,6 +593,71 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
                 self.u_p0_1011[:,i] = u_p0_1011
                 self.p0_1111[:,i]   = p0_1111
                 self.u_p0_1111[:,i] = u_p0_1111
+
+        elif post_select_GHZ == True and self.post_select==True:
+            if ssro_calib_folder == '':
+                ssro_calib_folder = toolbox.latest_data('SSRO')
+            
+            self.p0_000 = np.zeros(self.normalized_ssro_000.shape)
+            self.u_p0_000 = np.zeros(self.normalized_ssro_000.shape)
+            self.p0_001 = np.zeros(self.normalized_ssro_001.shape)
+            self.u_p0_001 = np.zeros(self.normalized_ssro_001.shape)
+            self.p0_010 = np.zeros(self.normalized_ssro_010.shape)
+            self.u_p0_010 = np.zeros(self.normalized_ssro_010.shape)
+            self.p0_011 = np.zeros(self.normalized_ssro_011.shape)
+            self.u_p0_011 = np.zeros(self.normalized_ssro_011.shape)
+            self.p0_100 = np.zeros(self.normalized_ssro_100.shape)
+            self.u_p0_100 = np.zeros(self.normalized_ssro_100.shape)
+            self.p0_101 = np.zeros(self.normalized_ssro_101.shape)
+            self.u_p0_101 = np.zeros(self.normalized_ssro_101.shape)
+            self.p0_110 = np.zeros(self.normalized_ssro_110.shape)
+            self.u_p0_110 = np.zeros(self.normalized_ssro_110.shape)
+            self.p0_111 = np.zeros(self.normalized_ssro_111.shape)
+            self.u_p0_111 = np.zeros(self.normalized_ssro_111.shape)
+            
+            ro_durations = self.g.attrs['E_RO_durations']
+
+            roc = error.SingleQubitROC()
+
+            for i in range(len(self.normalized_ssro_000[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                    ssro.get_SSRO_calibration(ssro_calib_folder,
+                            ro_durations[i])
+                p0_000, u_p0_000 = roc.num_eval(self.normalized_ssro_000[:,i],
+                        self.u_normalized_ssro_000[:,i])
+                p0_001, u_p0_001 = roc.num_eval(self.normalized_ssro_001[:,i],
+                        self.u_normalized_ssro_001[:,i])
+                p0_010, u_p0_010 = roc.num_eval(self.normalized_ssro_010[:,i],
+                        self.u_normalized_ssro_010[:,i])
+                p0_011, u_p0_011 = roc.num_eval(self.normalized_ssro_011[:,i],
+                        self.u_normalized_ssro_011[:,i])
+                p0_100, u_p0_100 = roc.num_eval(self.normalized_ssro_100[:,i],
+                        self.u_normalized_ssro_100[:,i])
+                p0_101, u_p0_101 = roc.num_eval(self.normalized_ssro_101[:,i],
+                        self.u_normalized_ssro_101[:,i])
+                p0_110, u_p0_110 = roc.num_eval(self.normalized_ssro_110[:,i],
+                        self.u_normalized_ssro_110[:,i])
+                p0_111, u_p0_111 = roc.num_eval(self.normalized_ssro_111[:,i],
+                        self.u_normalized_ssro_111[:,i])
+
+                self.p0_000[:,i]   = p0_000
+                self.u_p0_000[:,i]   = u_p0_000
+                self.p0_001[:,i]   = p0_001
+                self.u_p0_001[:,i]   = u_p0_001
+                self.p0_010[:,i]   = p0_010
+                self.u_p0_010[:,i]   = u_p0_010
+                self.p0_011[:,i]   = p0_011
+                self.u_p0_011[:,i]   = u_p0_011
+                self.p0_100[:,i]   = p0_100
+                self.u_p0_100[:,i]   = u_p0_100
+                self.p0_101[:,i]   = p0_101
+                self.u_p0_101[:,i]   = u_p0_101
+                self.p0_110[:,i]   = p0_110
+                self.u_p0_110[:,i]   = u_p0_110
+                self.p0_111[:,i]   = p0_111
+                self.u_p0_111[:,i]   = u_p0_111
+
+            self.result_corrected = True
 
         elif self.post_select == True:
             if ssro_calib_folder == '':

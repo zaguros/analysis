@@ -146,7 +146,7 @@ folder = r'D:\measuring\data\QEC_data\figs\final figures'
 ''' Paper figures'''
 ###########################
 figure_name_list = ['00_init_12','determinstic_entanglement_12','probabilistic_entanglement_12','00_init_15','determinstic_entanglement_15','probabilistic_entanglement_15']
-figure_name_list = ['00_init_15']
+figure_name_list = ['00_init_12','00_init_15']
 # figure_name_list = ['probabilistic_entanglement']
 # figure_name_list = ['determinstic_entanglement_15']
 

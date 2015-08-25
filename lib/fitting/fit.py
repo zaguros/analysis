@@ -44,6 +44,7 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     do_print = kw.pop('do_print', False)
     ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
+    VERBOSE= kw.pop('VERBOSE',False)
     # err_y = kw.pop ('err_y', None)
 	#if False :
 	#    if (len(err_y) != len(y)):
@@ -89,8 +90,9 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
         success = False
-        print 'ERROR: Fit did not converge !'
-        print 'reason: ',mesg
+        if VERBOSE:
+            print 'ERROR: Fit did not converge !'
+            print 'reason: ',mesg
         #return False
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)

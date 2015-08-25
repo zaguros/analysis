@@ -194,9 +194,9 @@ def analyse_pi2_pulse(**kw):
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
         if folder==None:
-            folder = toolbox.latest_data(timestamp) 
+            timestamp, folder = toolbox.latest_data(timestamp, return_timestamp = True) 
     else:
-        folder = toolbox.latest_data('Pi2')
+        timestamp, folder = toolbox.latest_data('Pi2', return_timestamp = True)
     
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
@@ -245,6 +245,8 @@ def analyse_pi2_pulse(**kw):
             ax2.axvline(x0(), c='k', lw=2)
             ax2.axhline(0.5, c='k', lw=2)
             ax2.set_title('X marks the spot')
+
+    plt.suptitle(timestamp)
     
     fig.savefig(os.path.join(folder, 'pi2_calibration.png'))
 

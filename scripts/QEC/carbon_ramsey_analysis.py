@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from analysis.lib.tools import toolbox
-from analysis.lib.tools import plot
+from analysis.lib.tools import plot; reload(plot)
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
@@ -127,6 +127,7 @@ def Carbon_Ramsey_mult_msmts(timestamp=None, measurement_name = ['adwindata'], s
             return_results = True,
             close_plot = False,
             partstr = 'part',
+            contains=[],
             title = 'Carbon'):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
@@ -157,11 +158,15 @@ def Carbon_Ramsey_mult_msmts(timestamp=None, measurement_name = ['adwindata'], s
         print ssro_calib_folder
 
     fit_results = []
-    for kk in range(numberofparts):
+    #for kk in range(numberofparts):
+    for kk,cnts in enumerate(contains):    
+        '''
         if partstr in folder:
             folder = toolbox.latest_data(basis_str+str(kk+1))
         else:
             folder = toolbox.latest_data(basis_str)
+        '''
+        folder = toolbox.latest_data(cnts)    
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results(name='adwindata')
@@ -410,7 +415,8 @@ def Carbon_Ramsey_Crosstalk_no_fit(older_than=None, crosstalk = None,measurement
 
       
 
-def Carbon_Ramsey_DD_freq(older_than = None,  carbon = 1,
+def Carbon_Ramsey_DD_freq(older_than = None,  
+            carbon = 1,
             frequency = 1, 
             offset = 0.5, 
             x0 = 0,  
@@ -428,7 +434,9 @@ def Carbon_Ramsey_DD_freq(older_than = None,  carbon = 1,
     folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon), older_than = older_than)
     folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
     folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
-    
+    print folder1
+    print folder2
+    print folder3
     a1 = mbi.MBIAnalysis(folder1)
     a1.get_sweep_pts()
     a1.get_readout_results(name='adwindata')
@@ -443,6 +451,10 @@ def Carbon_Ramsey_DD_freq(older_than = None,  carbon = 1,
     a3.get_sweep_pts()
     a3.get_readout_results(name='adwindata')
     a3.get_electron_ROC()
+
+    #a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
+    #a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
+    #a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts]
 
     a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
     a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
@@ -462,11 +474,13 @@ def Carbon_Ramsey_DD_freq(older_than = None,  carbon = 1,
         ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
+    # print fit_result
+
     print 'fitfunction: '+fitfunc_str
 
     ## plot data and fit as function of total time
     if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,print_info = True,add_txt =True)
 
    
     title = 'DD freq ramsey C' +str(carbon)

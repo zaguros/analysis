@@ -27,7 +27,7 @@ def Carbon_T1(timestamp=None, measurement_name = 'adwindata', ssro_calib_timesta
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('Hahn')
+        folder = toolbox.latest_data('ElectronRepump')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO')

@@ -230,7 +230,7 @@ def get_total_SSRO_events(pqf, RO_start, RO_length, marker_chan, chan_rnd_0, cha
     _a = get_attributes(pqf)
 
     # Gets the number of blocks in the data
-    num_blocks = tb.get_num_blocks(pqf)
+    num_blocks = Analysis.get_num_blocks(pqf)
    
     if VERBOSE or (num_blocks > 1):
         print 'The total number of blocks is:', num_blocks
@@ -286,7 +286,7 @@ def get_total_SSRO_events_quick(pqf, RO_start, RO_length, marker_chan, sync_time
     _a = {'Columns': columns}
 
     # Gets the number of blocks for the data
-    num_blocks = tb.get_num_blocks(pqf)
+    num_blocks = Analysis.get_num_blocks(pqf)
 
     if VERBOSE:
         print 'The total number of blocks is:', num_blocks

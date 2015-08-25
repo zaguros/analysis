@@ -13,10 +13,10 @@ nm_per_step         = 73
 radius              = 5.
 thickness           = 4.
 strength_constant   = 1.3
-ZFS                 = 2.877480e9
+ZFS                 = 2.877623e9
 g_factor            = 2.8025e6
-current_f_msm1      = 2.024921e9
-current_f_msp1      = 3.730069e9
+current_f_msm1      = 1.746666e9
+current_f_msp1      = 4.008589e9
 current_B_field     = abs(ZFS-current_f_msp1)/g_factor
 
 ### Simple conversions
