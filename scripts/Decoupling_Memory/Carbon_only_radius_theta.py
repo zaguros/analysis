@@ -8,7 +8,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import random
-
+from math import floor, log10
 
 '''Physical paramaters'''
 mu0 =  4.*np.pi * 1e-7 #H/m
@@ -54,75 +54,6 @@ for key in C2C_coupling.keys():
     C2C_coupling[key[::-1]]=C2C_coupling[key]
 
 '''
-Params from direct lse fit with all couplings using spherical coords
-2.33622845e+00, 0  
-1.90304163e+00, 1 
-3.37275975e+00, 2
-3.75054067e+00, 3
-9.57081994e-10, 4   
-8.14123619e-10, 5
-8.15924330e-10, 6 
-8.53931253e-10, 7 
-9.54104871e-10, 8
-4.31040653e-01, 9 
-1.98412389e+00, 10 
-2.26961959e+00, 11
-1.28021462e+00, 12
-2.99796147e+00  13
-
-coor1 = (p[4],p[9],0.)
-coor2 = (p[5],p[10],p[0])
-coor3 = (p[6],p[11],p[1])
-coor5 = (p[7],p[12],p[2])
-coor6 = (p[8],p[13],p[3])
-'''
-carbon_loc = {}
-carbon_loc['C1'] = {'r':9.57081994e-10, 't': 4.31040653e-01, 'phi':0.}
-carbon_loc['C2'] = {'r':8.14123619e-10, 't': 1.98412389e+00, 'phi':2.33622845e+00}
-carbon_loc['C3'] = {'r':8.15924330e-10, 't': 2.26961959e+00, 'phi':1.90304163e+00}
-carbon_loc['C5'] = {'r':8.53931253e-10, 't': 1.28021462e+00, 'phi':3.37275975e+00}
-carbon_loc['C6'] = {'r':9.54104871e-10, 't': 2.99796147e+00, 'phi':3.75054067e+00}
-
-'''
-Params from direct lse fit with all couplings using spherical coords
-Fit with restricted distance 36 versus others
-
-2.41146096e+00, 0 
-4.62429732e+00, 1
-1.29873381e+00, 2
-3.79587030e+00, 3  
-9.67775615e-10, 4 
-8.03116512e-10, 5
-8.40394777e-10, 6 
-8.47432924e-10, 7 
-9.29346019e-10, 8
-4.26587693e-01, 9 
-1.97855172e+00, 10 
-2.30770483e+00, 11
-1.28851108e+00, 12
-2.96316091e+00, 13
-
-coor1 = (p[4],p[9],0.)
-coor2 = (p[5],p[10],p[0])
-coor3 = (p[6],p[11],p[1])
-coor5 = (p[7],p[12],p[2])
-coor6 = (p[8],p[13],p[3])
-'''
-carbon_loc = {}
-carbon_loc['C1'] = {'r':9.67775615e-10, 't': 4.26587693e-01, 'phi':0.}
-carbon_loc['C2'] = {'r':8.03116512e-10, 't': 1.97855172e+00, 'phi':2.41146096e+00}
-carbon_loc['C3'] = {'r':8.40394777e-10, 't': 2.30770483e+00, 'phi':4.62429732e+00}
-carbon_loc['C5'] = {'r':8.47432924e-10, 't': 1.28851108e+00, 'phi':1.29873381e+00}
-carbon_loc['C6'] = {'r':9.29346019e-10, 't': 2.96316091e+00, 'phi':3.79587030e+00}
-
-
-
-
-
-
-
-
-'''
 26 = 1.892987 +- 0.024541 #1
 13 = 2.308485 +- 0.065680 #2
 16 = 1.148795 +- 0.009923 #3
@@ -165,12 +96,10 @@ def hyperfine_fit(x,*args):
     gamma_e = 1.760859708e11
     hbar = 1.05457173e-34
     prefactor = (mu0 * gamma_e*gamma_c * hbar) / (8.*np.pi**2. * x[0]**3)
-    Apar = prefactor * (1. - 3. * np.cos(x[1]) **2.)
+    Apar = -1.*prefactor * (1. - 3. * np.cos(x[1]) **2.)
     Aper = prefactor * 3. * np.cos(x[1])*np.sin(x[1])
     return (Apar - args[0] + Aper - args[1])**2.
 
-def distance_in_spher(r1,r2):
-    return (r1[0]**2+r2[0]**2 -2.*r1[0]*r2[0]*(np.sin(r1[1])*np.sin(r2[1])*np.cos(r1[2]-r2[2])+np.cos(r1[1])*np.cos(r2[1])))**0.5
 
 
 # def hyperfine_gradient(x):
@@ -194,6 +123,45 @@ def distance_in_spher(r1,r2):
 #     Apar = prefactor * (1. - 3. * np.cos(x[1]) **2.)
 #     return Apar + 36.0e3
 
+def un2str(x, xe, precision=1):
+    """pretty print nominal value and uncertainty
+
+    x  - nominal value
+    xe - uncertainty
+    precision - number of significant digits in uncertainty
+
+    returns shortest string representation of `x +- xe` either as
+        x.xx(ee)e+xx
+    or as
+        xxx.xx(ee)"""
+    # base 10 exponents
+    x_exp = int(floor(log10(x)))
+    xe_exp = int(floor(log10(xe)))
+
+    # uncertainty
+    un_exp = xe_exp-precision+1
+    un_int = round(xe*10**(-un_exp))
+
+    # nominal value
+    no_exp = un_exp
+    no_int = round(x*10**(-no_exp))
+
+    # format - nom(unc)exp
+    fieldw = x_exp - no_exp
+    fmt = '%%.%df' % fieldw
+    result1 = (fmt + '(%.0f)e%d') % (no_int*10**(-fieldw), un_int, x_exp)
+
+    # format - nom(unc)
+    fieldw = max(0, -no_exp)
+    fmt = '%%.%df' % fieldw
+    result2 = (fmt + '(%.0f)') % (no_int*10**no_exp, un_int*10**max(0, un_exp))
+
+    # return shortest representation
+    if len(result2) <= len(result1):
+        return result2
+    else:
+        return result1
+
 def hyperfine_pars(x, *args):
     #For use with fsolve
     mu0 =  4.*np.pi * 1e-7
@@ -201,9 +169,12 @@ def hyperfine_pars(x, *args):
     gamma_e = 1.760859708e11
     hbar = 1.05457173e-34
     prefactor = (mu0 * gamma_e*gamma_c * hbar) / (8.*np.pi**2. * x[0]**3)
-    Apar = 1.*prefactor * (1. - 3. * np.cos(x[1]) **2.)
+    Apar = prefactor * (1. - 3. * np.cos(x[1]) **2.)
     Aper = abs(prefactor * 3. * np.cos(x[1])*np.sin(x[1]))
-    return (Apar - args[0]),(Aper - args[1])
+    if x[1] > np.pi/2 or x[1] < 0.:
+        return 10e6, 10e6
+    else:
+        return (Apar - args[0]),(Aper - args[1])
 
 def calc_C2C_coupling(r1,r2):
     mu0 =  4.*np.pi * 1e-7 #H/m
@@ -218,19 +189,76 @@ def calc_C2C_coupling(r1,r2):
     return abs( (mu0 * gamma_c**2. * hbar) / (8.*np.pi**2. * distance**3.) * (1. - 3. * cos2) )
 
 
-
+print '--------------------------------------'
 
 for key in carbon_params.keys():
-    xFinal= optimize.fsolve(hyperfine_pars,(1e-9,0.45*np.pi),args=(carbon_params[key]['par'],carbon_params[key]['perp']),full_output=True)
+    xFinal = optimize.fsolve(hyperfine_pars,(1e-9,0.45*np.pi),args=(carbon_params[key]['par'],carbon_params[key]['perp']),full_output=True)
+    carbon_params[key]['r'] = xFinal[0][0]
+    carbon_params[key]['theta'] = xFinal[0][1]
+
+for key in carbon_params.keys():
+    N=4000
+    
+    # 8.40492391655 +- 0.057774044025
+    # 0.832657232678 +- 0.0105415427013
+
+    HFpar_normal = np.random.normal(carbon_params[key]['par'],1e3,N)
+    HFper_normal = np.random.normal(carbon_params[key]['perp'],1e3,N)
+
+    Radii = np.zeros_like(HFper_normal)
+    Thetas = np.zeros_like(HFper_normal)
+    # print Radii
+    # print HFper_normal
+    for i1, HFpar in enumerate(HFpar_normal):
+        xFinal = optimize.fsolve(hyperfine_pars,(1e-9,0.45*np.pi),args=(HFpar,HFper_normal[i1]),full_output=True)
+        # print i1, xFinal[0][0]
+        # print i1, xFinal
+        Radii[i1] = xFinal[0][0]
+        Thetas[i1] = xFinal[0][1]
+
+    xFinal = optimize.fsolve(hyperfine_pars,(1e-9,0.45*np.pi),args=(carbon_params[key]['par'],carbon_params[key]['perp']),full_output=True)
+
+    print key
+    print 
+    print 'Actual values', 
+    print xFinal[0][0], 180.*xFinal[0][1]/np.pi
+    print 
+    print 'Hyperfine'
+    print 'Actual', (carbon_params[key]['par'],carbon_params[key]['perp']), 'Measured', get_hyperfine(np.mean(Radii),np.mean(Thetas))
+    print 
+    print 'Fit values'
+    print 1e10*np.mean(Radii), '+-', 1e10*np.std(Radii)
+    print np.mean(Thetas), '+-', np.std(Thetas)
+    Thetas = Thetas*180./np.pi
+    print np.mean(Thetas), '+-', np.std(Thetas)
+    print 
+    print 'Nice Format'
+    print un2str(np.mean(Radii),np.std(Radii),1)
+    print un2str(np.mean(Thetas),np.std(Thetas),1)
+
+
+
+    print '--------------------------------------'
+    # plt.hist(Radii)
+    # plt.hist(Thetas)
+
+    # sssj
     # x = optimize.fmin_l_bfgs_b(hyperfine_pars_single_f, np.array([xFinal[0][0],xFinal[0][1]]),
     #     fprime=hyperfine_pars_single_fprime,args=(carbon_params[key]['par'],carbon_params[key]['perp']))
-    print xFinal[0]
-    print sum(xFinal[1]['fvec'])
-    print (carbon_params[key]['par'],carbon_params[key]['perp'])
-    xFinal[0][0]
-    carbon_params[key]['r'] = xFinal[0][0]
-    carbon_params[key]['theta']= xFinal[0][1]
-    print get_hyperfine(xFinal[0][0],xFinal[0][1])
+    # print xFinal[0]
+    # print xFinal
+
+    # print sum(xFinal[1]['fvec'])
+    # print (carbon_params[key]['par'],carbon_params[key]['perp'])
+    # xFinal[0][0]
+    # carbon_params[key]['r'] = xFinal[0][0]
+    # carbon_params[key]['theta']= xFinal[0][1]
+    # print get_hyperfine(xFinal[0][0],xFinal[0][1])
+
+# for key in carbon_params.keys():
+#     xFinal= optimize.fsolve(hyperfine_pars,(1e-9,0.45*np.pi),args=(carbon_params[key]['par'],carbon_params[key]['perp']),full_output=True)
+
+
 
 def calcal_fsolve_func(x, *args):
     coor1 = (args[1],args[6],args[0])
@@ -305,12 +333,7 @@ def carcar_resid_func2(p, y):
     Per5 = y[16]-Aper_pars((coor5[0],coor5[1]))
     Per6 = y[17]-Aper_pars((coor6[0],coor6[1]))
 
-
     if np.any(phi> 2.*np.pi) or np.any(phi < 0) or phi[0]>np.pi or np.any(r<0.) or np.any(r>5e-9) or np.any(theta < 0) or np.any(theta > np.pi) or theta[0] > np.pi/2.:
-        return np.ones((18,))*1e6
-    elif np.any(distance_in_spher(coor3,coor6) > np.array([distance_in_spher(coor1,coor2),distance_in_spher(coor1,coor3),distance_in_spher(coor1,coor5),
-        distance_in_spher(coor1,coor6),distance_in_spher(coor2,coor3),distance_in_spher(coor2,coor5),distance_in_spher(coor2,coor6),distance_in_spher(coor3,coor5),
-        distance_in_spher(coor5,coor6)])):
         return np.ones((18,))*1e6
     else:
         return np.array([C12,C13,C15,C16,C25,C26,C35,C36,Par1,Par2,Par3,Par5,Par6,Per1,Per2,Per3,Per5,Per6])
@@ -358,101 +381,16 @@ def head_func(args2):
         if np.any(p > 2.*np.pi) or np.any(p < 0) or p[0]>np.pi:
             return np.ones((8,))*1e6
         else:
-            return np.abs(np.array([C12,C13,C15,C16,C25,C26,C35,C36]))
+            return np.array([C12,C13,C15,C16,C25,C26,C35,C36])
     return carcar_curvefit_func
 
-random.seed()
-print 'Start'
-p1 = 0.
-r1 = carbon_params['C1']['r']
-r2 = carbon_params['C2']['r']
-r3 = carbon_params['C3']['r']
-r5 = carbon_params['C5']['r']
-r6 = carbon_params['C6']['r']
-t1 = carbon_params['C1']['theta']
-
-diglist= [
-[0, 0, 0, 0],
-[0, 0, 0, 1],
-[0, 0, 1, 0],
-[0, 0, 1, 1],
-[0, 1, 0, 0],
-[0, 1, 0, 1],
-[0, 1, 1, 0],
-[0, 1, 1, 1],
-[1, 0, 0, 0],
-[1, 0, 0, 1],
-[1, 0, 1, 0],
-[1, 0, 1, 1],
-[1, 1, 0, 0],
-[1, 1, 0, 1],
-[1, 1, 1, 0],
-[1, 1, 1, 1]]
-
-coupling_array =np.array([0.825097,2.308485,1.229432,1.148795,0.454692,1.892987,0.566582,2.351193,\
-    -3.60,2.12,-1.20,2.47,-4.87,2.50,4.30,5.00,2.60,1.20])
-
-# coupling_array =np.array([0.825097,2.308485,1.229432,1.148795,0.454692,1.892987,0.566582,2.351193,\
-#     -3.60,2.12,-1.20,2.47,-4.87,2.50,4.30,5.00,2.60,1.20])
-if False:
-    for diglist1 in diglist:
-        if diglist1[0] == 0:
-            t2 = carbon_params['C2']['theta']
-        else:
-            t2 = np.pi-carbon_params['C2']['theta']
-            
-        if diglist1[1] == 0:
-            t3 = carbon_params['C3']['theta']
-        else:
-            t3 = np.pi-carbon_params['C3']['theta']
-                
-        if diglist1[2] == 0:
-            t5 = carbon_params['C5']['theta']
-        else:
-            t5 = np.pi-carbon_params['C5']['theta']
-                    
-        if diglist1[3] == 0:
-            t6 = carbon_params['C6']['theta']
-        else:
-            t6 = np.pi-carbon_params['C6']['theta']
-        print diglist1
-        args2 = np.array([p1,r1,r2,r3,r5,r6,t1,t2,t3,t5,t6])
-        # xdata = args2[:8]
-        Antwoord = 10e4
-        timeschange = 0
-        result = None
-
-        for aa in range(50000): #10000
-            try:
-                x0 = (random.uniform(0.,np.pi),random.uniform(0.,2.*np.pi),random.uniform(0.,2.*np.pi),random.uniform(0.,2.*np.pi))
-                # print x0
-                # res= optimize.curve_fit(head_func(args2),xdata,coupling_array,p0=x0,full_output=True,maxfev=1000)
-                res= optimize.leastsq(carcar_resid_func,x0,args=(coupling_array,args2),full_output=True)
-
-                # print res
-                # print res[0]
-                if np.sum(np.abs(res[2]['fvec'])) < Antwoord:
-                    print aa
-                    print res[0]
-                    timeschange += 1
-                    Antwoord = np.sum(np.abs(res[2]['fvec']))
-                    result = res
-            except:
-                pass
-            
-        print '============'
-        print Antwoord
-        print timeschange
-        print result
-        print '============'
-                        # print sum(xFinal[1]['fvec'])
 
 if False: 
     # xdata = args2[:8]
     Antwoord = 10e4
     timeschange = 0
     result = None
-    for aa in range(100000):
+    for aa in range(200000):
         try:
             x0 = (random.uniform(0.,np.pi),random.uniform(0.,2.*np.pi),random.uniform(0.,2.*np.pi),random.uniform(0.,2.*np.pi), \
                 1e-9,1e-9,1e-9,1e-9,1e-9,random.uniform(0.,np.pi/2.),random.uniform(0.,np.pi),random.uniform(0.,np.pi),random.uniform(0.,np.pi),random.uniform(0.,np.pi))
@@ -484,35 +422,6 @@ if False:
                         # print sum(xFinal[1]['fvec'])
 
 # dfafesfa
-def hyperfine_pars_single_f(x, *args):
-    mu0 =  4.*np.pi * 1e-7
-    gamma_c = 0.67262e8
-    gamma_e = 1.760859708e11
-    hbar = 1.05457173e-34
-    prefactor = (mu0 * gamma_e*gamma_c * hbar) / (8.*np.pi**2. * x[0]**3)
-    Apar = prefactor * (1. - 3. * np.cos(x[1]) **2.)
-    Aper = prefactor * 3. * np.cos(x[1])*np.sin(x[1])
-    return Apar - args[0] + Aper - args[1]
-
-def hyperfine_pars_single_fprime(x,*args):
-    mu0 =  4.*np.pi * 1e-7
-    gamma_c = 0.67262e8
-    gamma_e = 1.760859708e11
-    hbar = 1.05457173e-34
-    prefactor = (mu0 * gamma_e*gamma_c * hbar) / (8.*np.pi**2.)
-    fprime_r = prefactor * -3./(x[0]**4.) * ((1.-3.*np.cos(x[1])**2.) + (3. * np.cos(x[1])*np.sin(x[1])))
-    fprime_t = prefactor * 1./(x[0]**3.) * (3. * np.cos(2*x[1]) + 6.* np.cos(x[1])*np.sin(x[1]) )
-    return np.array([fprime_r,fprime_t])
-
-def hyperfine_pars_curve_fit(x):
-    mu0 =  4.*np.pi * 1e-7
-    gamma_c = 0.67262e8
-    gamma_e = 1.760859708e11
-    hbar = 1.05457173e-34
-    prefactor = (mu0 * gamma_e*gamma_c * hbar) / (8.*np.pi**2. * x[0]**3)
-    Apar = prefactor * (1. - 3. * np.cos(x[1]) **2.)
-    Aper = prefactor * 3. * np.cos(x[1])*np.sin(x[1])
-    return np.array([Apar,Aper])
 
 # key = 'C1'
 # x,f,d = fmin_l_bfgs_b(hyperfine_fit,x0=np.array([1e-10,0.45*np.pi]),
@@ -567,6 +476,8 @@ def cart2spher(x,y,z):
 	phi = np.arctan(y / x)
 	return r, theta, phi
 
+def distance_in_spher(r1,r2):
+    return (r1[0]**2+r2[0]**2 -2.*r1[0]*r2[0]*(np.sin(r1[1])*np.sin(r2[1])*np.cos(r1[2]-r2[2])+np.cos(r1[1])*np.cos(r2[1])))**0.5
 
 
 
@@ -630,11 +541,6 @@ def plot_carbon(ax,carbon_nr,phi,posneg='both'):
 		ax.scatter([x], [y], [z], c=color, marker='o', label=C_str, s=np.pi * (6 * np.ones((3,)))**2)
         # ax.scatter([x], [y], [z], c='w', marker='o', label=C_str, s=np.pi * (4 * np.ones((3,)))**2, linewidths=0)
 
-def plot_carbon_using_all_values(ax,carbon_nr):
-    C_str= 'C' + str(carbon_nr)
-    x,y,z = spher2cart(carbon_loc[C_str]['r']*1e9,carbon_loc[C_str]['t'],carbon_loc[C_str]['phi'])
-    color = carbon_params[C_str]['cl']
-    ax.scatter([x],[y],[z],c=color, marker='o', label=C_str, s=np.pi * (6 * np.ones((3,)))**2)
 	# C_str= 'C' + str(carbon_nr)
 	# theta = carbon_params[C_str]['theta']
 	# r = carbon_params[C_str]['r']*1e9
@@ -648,12 +554,12 @@ def plot_carbon_using_all_values(ax,carbon_nr):
 	# 	x,y,z = spher2cart(r, theta, phi)
 	# 	ax.plot(x, y, z, color= color, label=C_str)
 
-def func_for_fit(x):
-    C1 = (9.99213002471048e-10,0.5275582194172149,0)
-    C2 = (x[0],x[1],x[2])
-    C3 = (x[3],x[4],x[5])
+# def func_for_fit(x):
+#     C1 = (9.99213002471048e-10,0.5275582194172149,0)
+#     C2 = (x[0],x[1],x[2])
+#     C3 = (x[3],x[4],x[5])
 
-    return C1
+#     return C1
 
 
 # for key in carbon_params.keys():
@@ -808,22 +714,18 @@ ax.set_zlabel('Z (nm)', fontsize = fontsize)
 ax.scatter([0.], [0.], [0.], c='r', marker='o', label='NV',s=np.pi * (6 * np.ones((3,)))**2,linewidths=1)
 # for carbon in [1,3,5]:
 for carbon in [1,2,3,5,6]:
-    plot_hf_circle(ax,carbon)
-    plot_carbon_using_all_values(ax,carbon)
+	plot_hf_circle(ax,carbon)
 
 # for carbon in [3,5]:
 #     plot_hf_circle2(ax,carbon)
-ax.view_init(elev=20)
 ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
 ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
 ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-
-
 # plot_carbon(ax,1,0,posneg='pos')
-# plot_carbon(ax,2,1.59338699, posneg='neg')
-# plot_carbon(ax,3,5.86822245, posneg='pos')
-# plot_carbon(ax,5,2.09068309, posneg='neg')
-# plot_carbon(ax,6,0.41499673, posneg='neg')
+# plot_carbon(ax,2,1.35526965, posneg='pos')
+# plot_carbon(ax,3,4.57317311, posneg='neg')
+# plot_carbon(ax,5,1.2760995, posneg='pos')
+# plot_carbon(ax,6,3.88420822, posneg='neg')
 ax.legend()
 
 plt.show()
