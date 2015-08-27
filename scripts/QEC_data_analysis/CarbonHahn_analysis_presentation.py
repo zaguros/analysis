@@ -336,9 +336,10 @@ for ii in range(2):
     ax.set_ylim([0,1])
     yticks = np.linspace(0,1,3)
     plt.yticks(yticks)
-    ax.tick_params(axis='x', which='major', labelsize=25)
-    ax.tick_params(axis='y', which='major', labelsize=25)
+    ax.tick_params(axis='x', which='major', labelsize=20)
+    ax.tick_params(axis='y', which='major', labelsize=20)
     mpl.rcParams['axes.linewidth'] = 2
     ax.tick_params('both', length=4, width=2, which='major')
     plt.savefig(os.path.join(folder, figure_name + '.pdf'),format='pdf',bbox_inches='tight')
     plt.savefig(os.path.join(folder, figure_name + '.png'),format='png',bbox_inches='tight')
+    plt.show()
