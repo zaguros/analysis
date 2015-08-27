@@ -93,7 +93,22 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             parity_a_result = self.parity_result[0::2]  ### The two parity outcomes are stored sequentially in an array 
             parity_b_result = self.parity_result[1::2] 
             
+            if orientation_correct:
+                orientation_a = adwingrp.attrs['Parity_A_RO_orientation']
+                orientation_b = adwingrp.attrs['Parity_B_RO_orientation']
+                orientation_c = adwingrp.attrs['Tomo_RO_orientation']
+                self.orientations = (orientation_a,orientation_b,orientation_c)
 
+                #take into account the orientations of the first measurement for the postselection
+                if orientation_a == 'negative':
+                    parity_a_result = (1-parity_a_result)
+                if orientation_b == 'negative':
+                    parity_b_result = (1-parity_b_result)
+             
+            self.a_list = adwingrp.attrs['Parity_A_RO_list']
+            self.b_list = adwingrp.attrs['Parity_B_RO_list']
+            self.c_list = adwingrp.attrs['Tomo_RO_list']
+       
             ### Step 1 Multiply results with post selection parameter
             ssro_results_00 = parity_a_result*parity_b_result*self.ssro_results
             ssro_results_01 = parity_a_result*(1-parity_b_result)*self.ssro_results

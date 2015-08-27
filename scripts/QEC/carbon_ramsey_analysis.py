@@ -434,9 +434,12 @@ def Carbon_Ramsey_DD_freq(older_than = None,
     folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon), older_than = older_than)
     folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
     folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
+    folder4 = toolbox.latest_data(contains = 'evo_times_4_C' + str(carbon), older_than = older_than)
+
     print folder1
     print folder2
     print folder3
+    print folder4
     a1 = mbi.MBIAnalysis(folder1)
     a1.get_sweep_pts()
     a1.get_readout_results(name='adwindata')
@@ -452,13 +455,18 @@ def Carbon_Ramsey_DD_freq(older_than = None,
     a3.get_readout_results(name='adwindata')
     a3.get_electron_ROC()
 
+    a4 = mbi.MBIAnalysis(folder4)
+    a4.get_sweep_pts()
+    a4.get_readout_results(name='adwindata')
+    a4.get_electron_ROC()
+
     #a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
     #a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
     #a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts]
 
-    a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
-    a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
-    a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts]
+    a1.p0           = np.r_[a1.p0,a2.p0,a3.p0,a4.p0]
+    a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0,a4.u_p0]
+    a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts,a4.sweep_pts]
 
     x = a1.sweep_pts.reshape(-1)[:]
     y = a1.p0.reshape(-1)[:]
