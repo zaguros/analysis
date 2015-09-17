@@ -175,8 +175,8 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	N=K+1
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
-	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
-	mgnt_exp.set_exp_params( T2 = 5000e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 41, nr_points_per_period=21)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -485,11 +485,16 @@ def suppl_info_simulations_swarm (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], nam
 
 #suppl_info_simulations_swarm (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
 
-reps = 3
+reps = 17
 #simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=3, fid0=1.00,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_4', fpga_round=True, fpga_bit=2)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_16', fpga_round=True, fpga_bit=4)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_64', fpga_round=True, fpga_bit=6)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True, fpga_bit=8)
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=2, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=11,F=3, fid0=0.87,fid1=0.05,reps=reps, error_bars = True, name = '_refRep')
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=4, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=5, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=6, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=7, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=8, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+#simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=5,K=12,F=9, fid0=0.87,fid1=0.02,reps=reps, error_bars = True, name = '_refRep')
+
 
 #simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=9,F=3, fid0=0.88,fid1=0.02,reps=reps, error_bars = True, name = '_noRound')
