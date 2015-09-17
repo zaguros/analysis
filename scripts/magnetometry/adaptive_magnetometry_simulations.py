@@ -176,7 +176,7 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
 	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
-	mgnt_exp.set_exp_params( T2 = 5000e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
@@ -487,6 +487,6 @@ def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
 #suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [5])
 
 #suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
-
-suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_low_fid1')
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=12,F=2, fid0=0.88,fid1=1-0.98,reps=31, error_bars = True, name = 'SIM_SWARM_G5F2_Fig4a')
+#suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_low_fid1')
 

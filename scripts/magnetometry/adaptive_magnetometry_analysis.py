@@ -286,7 +286,7 @@ def check_adwin_realtime_plots (N, M, outcomes = [], do_plot=True, do_print = Fa
 #analyze_single_instance(label='182445_adptv_estimation_det=0.0MHz_N = 1_M=(100, 0)_rtAdwin__p0b0_non_adptv',compare_to_simulations=False)
 #l=['N = 2','N = 3','N = 4','N = 5','N = 6','N = 7']
 
-analyze_sweep_field(F=2,G=5,nr_periods=1,phase_update=False,swarm_opt = True, CR_after_threshold=10)#,newer_than='20150106_194034',older_than=None)
+#analyze_sweep_field(F=2,G=5,nr_periods=1,phase_update=False,swarm_opt = True, CR_after_threshold=10)#,newer_than='20150106_194034',older_than=None)
 
 #for n,label in enumerate(l):
 #	print label

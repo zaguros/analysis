@@ -50,65 +50,105 @@ def analyze_data():
     # in analyzed data folder: 20150106_221250_adaptive_magnetometry_N=14G=5F=2_fid0=0.87.hdf5
     N14_G5_F2_swarm=analyze_sweep_field(F=2,G=5,nr_periods=1,phase_update=False,swarm_opt = True, CR_after_threshold=10,newer_than='20150106_145501',older_than='20150106_213944')
 
-def analyze_saved_simulations (timestamp,error_bars=False,include_overhead=False):
+def analyze_saved_simulations (timestamp,error_bars=False):
     mgnt_exp = magnetometry.AdaptiveMagnetometry(N=14, tau0=20e-9)
-    mgnt_exp.error_bars=error_bars
-    mgnt_exp.load_analysis (timestamp=timestamp)
-    mgnt_exp.calculate_scaling(include_overhead=include_overhead)
+    try:
+        mgnt_exp.load_analyzed_scaling(timestamp=timestamp)
+    except:
+        print 'Could not load analyzed scaling'
+        mgnt_exp.load_analysis (timestamp=timestamp)
+    
+        if mgnt_exp.sensitivity == None:
+            mgnt_exp.error_bars=error_bars
+            mgnt_exp.calculate_scaling()
+            mgnt_exp.save_analyzed_dict (timestamp=timestamp)
     return mgnt_exp
 
 
-def add_scaling_plot(timestamp, ax, exp_data, label, marker_settings, color_nr,timestamp_sim=None,N_max=None,include_overhead=False):
+def add_scaling_plot(timestamp, ax, exp_data, label, marker_settings, color_nr,timestamp_sim=None,N_max=None,include_overhead=False,do_print_min_S=False):
     #adds a scaling plot to axis 'ax', loading from analyzed data with a given 'timestamp'
     #exp_data=boolena, if 'True' then data is plotted with markers and errorbars are calculated, 
     #otherwise it is considered a simulation, and plotted like a line
     #label, string for legend
-    data_file = analyze_saved_simulations (timestamp=timestamp, error_bars=exp_data,include_overhead=include_overhead)
     
-    if N_max:
-        Nm=N_max
-    else:
-        Nm=len(data_file.total_time)
-    print data_file.err_sensitivity[Nm-1:Nm]
+    
+    
     #ax.errorbar(data_file.total_time[Nm-1:Nm]*1e6, data_file.sensitivity[Nm-1:Nm],yerr=data_file.err_sensitivity[Nm-1:Nm],fmt=marker_settings,color=plots.colors[color_nr], label=label)    
+    if timestamp_sim:
+        sim_file = analyze_saved_simulations (timestamp=timestamp_sim, error_bars=False)
+        if N_max:
+            Nm=N_max
+        else:
+            Nm=len(sim_file.total_time)
+        print sim_file.err_sensitivity[Nm-1:Nm]
         
+        print 'Len simulation', len(sim_file.total_time[0:Nm])
+        if include_overhead:
+            t=sim_file.total_time_overhead[0:Nm]
+            s=sim_file.sensitivity_overhead[0:Nm]
+        else:
+            t=sim_file.total_time[0:Nm]
+            s=sim_file.sensitivity[0:Nm]
+        if label:
+            ax.plot (t, s, '-',color=plots.colors[color_nr], label=label,linewidth=1)
+        else:
+            ax.plot (t, s, '-',color=plots.colors[color_nr],linewidth=1)
+        tau0=sim_file.t0
     if exp_data: 
+        data_file = analyze_saved_simulations (timestamp=timestamp, error_bars=exp_data)
+        if N_max:
+            Nm=N_max
+        else:
+            Nm=len(data_file.total_time)
+        print data_file.err_sensitivity[Nm-1:Nm]
+        if include_overhead:
+            t=data_file.total_time_overhead[0:Nm]
+            s=data_file.sensitivity_overhead[0:Nm]
+            s_err=data_file.err_sensitivity_overhead[0:Nm]
+        else:
+            t=data_file.total_time[0:Nm]
+            s=data_file.sensitivity[0:Nm]
+            s_err=data_file.err_sensitivity[0:Nm]
         #ax.fill_between (data_file.total_time[0:Nm], data_file.sensitivity[0:Nm]-data_file.err_sensitivity[0:Nm], data_file.sensitivity[0:Nm]+data_file.err_sensitivity[0:Nm], rasterized=True,color=plots.colors[color_nr+1], alpha=0.5)
         if label:
-            (_, caps, _)=ax.errorbar(data_file.total_time[0:Nm], data_file.sensitivity[0:Nm], yerr=data_file.err_sensitivity[0:Nm],fmt=marker_settings,elinewidth=1.5,color=plots.colors[color_nr], label=label)
+            (_, caps, _)=ax.errorbar(t, s, yerr=s_err,fmt=marker_settings,elinewidth=1.5,color=plots.colors[color_nr], label=label)
         else:
-            (_, caps, _)=ax.errorbar(data_file.total_time[0:Nm], data_file.sensitivity[0:Nm], yerr=data_file.err_sensitivity[0:Nm], fmt=marker_settings,elinewidth=1.5,color=plots.colors[color_nr])    
-    for cap in caps:
-        cap.set_markeredgewidth(1.5)
+            (_, caps, _)=ax.errorbar(t, s, yerr=s_err, fmt=marker_settings,elinewidth=1.5,color=plots.colors[color_nr])    
+        print 'Len data', len(data_file.total_time[0:Nm])
+        for cap in caps:
+            cap.set_markeredgewidth(1.5)
     
-    if timestamp_sim:
-        sim_file = analyze_saved_simulations (timestamp=timestamp_sim, error_bars=False,include_overhead=include_overhead)
-        if label:
-            ax.plot (sim_file.total_time[0:Nm], sim_file.sensitivity[0:Nm], '-',color=plots.colors[color_nr], label=label,linewidth=1.5)
-        else:
-            ax.plot (sim_file.total_time[0:Nm], sim_file.sensitivity[0:Nm], '-',color=plots.colors[color_nr],linewidth=1.5)
-    
+    else:
+        data_file=sim_file
     tau0=data_file.t0
-    ymin=1e18*min(data_file.sensitivity[0:Nm])/((2*np.pi*gamma_e*tau0)**2)
-    ymin_err=1e18*min(data_file.err_sensitivity[0:Nm])/((2*np.pi*gamma_e*tau0)**2)
-    print '######################'
-    print label
-    print 'Minimum Sensitivity^2 is ', ymin,'+-', ymin_err,' nT^2/Hz'
-    #print 'full y', 1e18*data_file.sensitivity[0:Nm]/((2*np.pi*gamma_e*tau0)**2)
-    #print 'y err', 1e18*data_file.err_sensitivity[0:Nm]/((2*np.pi*gamma_e*tau0)**2)
-    #print '1/x', 1/data_file.total_time[0:Nm]
-    frq=1/data_file.total_time[0:Nm]
-    frq21Hz=np.abs(frq - 21).argmin()
-    #print 'index of min 21 Hz', frq21Hz
-    S21Hz=1e18*data_file.sensitivity[frq21Hz]/((2*np.pi*gamma_e*tau0)**2)
-    errS21Hz=1e18*data_file.err_sensitivity[frq21Hz]/((2*np.pi*gamma_e*tau0)**2)
-    print '@ rep rate', frq[frq21Hz] ,' Hz' , '(Closest to 21 Hz)'
-    print 'Sensitivity^2 is ',S21Hz   , '+-', errS21Hz,'nT^2/Hz'
-    print 'Sensitivity^2 is ', 1e-6*S21Hz  , '+-', 1e-6*errS21Hz,'uT^2/Hz'
-    print 'or'
-    print 'Sensitivity is ',sqrt(S21Hz)   , '+-', sqrt(errS21Hz),'nT/sqrt(Hz)'
-    print 'Sensitivity is ', sqrt(1e-6*S21Hz)  , '+-', sqrt(1e-6*errS21Hz),'uT/sqrt(Hz)'
-    print '######################'
+    
+    if do_print_min_S:
+        ymin=1e18*min(s)/((2*np.pi*gamma_e*tau0)**2)
+        print '######################'
+        print label
+        if exp_data:
+            ymin_err=1e18*min(s_err)/((2*np.pi*gamma_e*tau0)**2) 
+            frq=1/np.array(t)
+            print 'Minimum Sensitivity^2 is ', ymin,'+-', ymin_err,' nT^2/Hz'
+        else:
+            frq=1/np.array(t)
+            print 'Minimum Sensitivity^2 is ', ymin
+        #print 'full y', 1e18*data_file.sensitivity[0:Nm]/((2*np.pi*gamma_e*tau0)**2)
+        #print 'y err', 1e18*data_file.err_sensitivity[0:Nm]/((2*np.pi*gamma_e*tau0)**2)
+        #print '1/x', 1/data_file.total_time[0:Nm]
+
+        
+        frq21Hz=np.abs(frq - 21).argmin()
+        #print 'index of min 21 Hz', frq21Hz
+        S21Hz=1e18*s[frq21Hz]/((2*np.pi*gamma_e*tau0)**2)
+        errS21Hz=1e18*s[frq21Hz]/((2*np.pi*gamma_e*tau0)**2)
+        print '@ rep rate', frq[frq21Hz] ,' Hz' , '(Closest to 21 Hz)'
+        print 'Sensitivity^2 is ',S21Hz   , '+-', errS21Hz,'nT^2/Hz'
+        print 'Sensitivity^2 is ', 1e-6*S21Hz  , '+-', 1e-6*errS21Hz,'uT^2/Hz'
+        print 'or'
+        print 'Sensitivity is ',sqrt(S21Hz)   , '+-', sqrt(errS21Hz),'nT/sqrt(Hz)'
+        print 'Sensitivity is ', sqrt(1e-6*S21Hz)  , '+-', sqrt(1e-6*errS21Hz),'uT/sqrt(Hz)'
+        print '######################'
 
 
     
@@ -122,7 +162,7 @@ def add_sensitivity_plot(timestamp, ax, exp_data, marker_settings, timestamp_sim
     #exp_data=boolena, if 'True' then data is plotted with markers and errorbars are calculated, 
     #otherwise it is considered a simulation, and plotted like a line
     #label, string for legend
-    data_file = analyze_saved_simulations (timestamp=timestamp, error_bars=exp_data,include_overhead=include_overhead)
+    data_file = analyze_saved_simulations (timestamp=timestamp, error_bars=exp_data)
     
     if N_max:
         Nm=N_max
@@ -156,11 +196,11 @@ def fig4a_plot(do_save=True):
     ax1,tau0 = add_scaling_plot (timestamp = '20141215_200053', exp_data=True, ax=ax1, label = 'Limited-adaptive (G=5 F=2)', marker_settings='o', color_nr=2,timestamp_sim='20150420_195041')#'20150420_171446')#'20141118_195110' )
 
     # Berry non adapt G5 F2
-    ax1,tau0 = add_scaling_plot (timestamp = '20141215_203241', exp_data=True, ax=ax1, label = 'Non-adaptive (G=5,F=2)', marker_settings='v', color_nr=4,N_max=9,timestamp_sim='20141118_192523')
+    ax1,tau0 = add_scaling_plot (timestamp = '20141215_203241', exp_data=True, ax=ax1, label = 'Non-adaptive (G=5,F=2)', marker_settings='v', color_nr=4,N_max=9,timestamp_sim='20150520_112916')
     # Berry non adapt G5 F7
-    ax1,tau0 = add_scaling_plot (timestamp = '20141215_194843', exp_data=True, ax=ax1, label = 'Non-adaptive (G=5 F=7)', marker_settings='v', color_nr=0,timestamp_sim='20141118_135425',N_max=12)
+    ax1,tau0 = add_scaling_plot (timestamp = '20141215_194843', exp_data=True, ax=ax1, label = 'Non-adaptive (G=5 F=7)', marker_settings='v', color_nr=0,timestamp_sim='20150520_121913',N_max=12)#'20141118_135425',N_max=12)
     # Swarm G5 F2
-    ax1,tau0 = add_scaling_plot (timestamp = '20150106_221250', exp_data=True, ax=ax1, label = 'Adaptive (G=5,F=2)', marker_settings='^',color_nr=6,timestamp_sim=None)
+    ax1,tau0 = add_scaling_plot (timestamp = '20150106_221250', exp_data=True, ax=ax1, label = 'Adaptive (G=5,F=2)', marker_settings='^',color_nr=6,timestamp_sim='20150520_135237')
     T=np.linspace(1e-7,1e-3,2001)/tau0
     ax1.plot(T*tau0,tau0*np.pi**2/T,'k--')
     ax1.set_xscale('log')
@@ -168,7 +208,7 @@ def fig4a_plot(do_save=True):
     ax1.set_xlabel ('Total phase accumulation time T (s)')
     #ax.set_ylabel ('sensitivity [$\mu$T$^2$*Hz$^{-1}$]', fontsize=15)
     ax1.set_ylabel ('$V_H$ T (rad$^2$ Hz$^{-1}$)')
-    ax1.legend(loc=3)
+    #ax1.legend(loc=3)
 
     y1_max=1e-6
     y1_min=1e-10
@@ -180,7 +220,7 @@ def fig4a_plot(do_save=True):
     ax2.set_yscale('log')
     #ax2,tau0 = add_sensitivity_plot (timestamp = '20141215_203241', exp_data=True, ax=ax2,  marker_settings='.', color_nr=2,N_max=1)#,timestamp_sim='20141118_192523')
     ax2.set_ylim([1e18*y1_min/((2*np.pi*gamma_e*tau0)**2),1e18*y1_max /((2*np.pi*gamma_e*tau0)**2)])
-    ax2.set_ylabel('Sensitiviy$^2$ ($nT^2$ $Hz^{-1}$)')
+    ax2.set_ylabel('$\eta^2$ ($nT^2$ $Hz^{-1}$)')
 
 
     plt.show()
@@ -260,7 +300,7 @@ def fig4b_plot(do_save=True):
 def fig4c_plot(do_save=True):
     f = plt.figure(figsize=(3.5,2))
     ax1 = f.add_subplot(1,1,1)
-    x1_max=1e0
+    x1_max=2e-1
     x1_min=1e-3
     y1_max=1e-2
     y1_min=1e-8
@@ -279,11 +319,25 @@ def fig4c_plot(do_save=True):
     ax1.set_xlim([x1_min,x1_max])
     # V2-2015-01-11
     #ax1,tau0 = add_scaling_plot (timestamp = '20141215_200053', exp_data=True, ax=ax1, label = 'Cappellaro', marker_settings='o', color_nr=0,timestamp_sim='20141118_195110',include_overhead=True )
-
+    #ax1,tau0 = add_scaling_plot (timestamp = '20150520_114903', exp_data=False, ax=ax1, label = 'test1', marker_settings='^', color_nr=20,timestamp_sim='20150520_114903',include_overhead=True)
+    
+    # Actual data
+    ax1,tau0 = add_scaling_plot (timestamp = '20150828_141902', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=0)', marker_settings='^', color_nr=20,timestamp_sim='20150828_141902',include_overhead=True,N_max=12)
+    #ax1,tau0 = add_scaling_plot (timestamp = '20150828_143626', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=1)', marker_settings='-', color_nr=21,timestamp_sim='20150828_143626',include_overhead=True,N_max=12)
+    ax1,tau0 = add_scaling_plot (timestamp = '20150828_155445', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=2)', marker_settings='-', color_nr=22,timestamp_sim='20150828_155445',include_overhead=True,N_max=12)
+    #ax1,tau0 = add_scaling_plot (timestamp = '20150828_173005', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=3)', marker_settings='-', color_nr=23,timestamp_sim='20150828_173005',include_overhead=True,N_max=12)
+    ax1,tau0 = add_scaling_plot (timestamp = '20150828_130536', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=4)', marker_settings='-', color_nr=24,timestamp_sim='20150828_130536',include_overhead=True,N_max=12)
+    ax1,tau0 = add_scaling_plot (timestamp = '20150828_134141', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=5)', marker_settings='-', color_nr=25,timestamp_sim='20150828_134141',include_overhead=True,N_max=12)
+    #ax1,tau0 = add_scaling_plot (timestamp = '20150828_141933', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=6)', marker_settings='-', color_nr=26,timestamp_sim='20150828_141933',include_overhead=True,N_max=12)
+    #ax1,tau0 = add_scaling_plot (timestamp = '20150828_155526', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=8)', marker_settings='-', color_nr=28,timestamp_sim='20150828_155526',include_overhead=True,N_max=12)
+    ax1,tau0 = add_scaling_plot (timestamp = '20150828_164639', exp_data=False, ax=ax1, label = 'Non-Adaptive (G=5, F=9)', marker_settings='-', color_nr=29,timestamp_sim='20150828_164639',include_overhead=True,N_max=12)
+    
+   
     # Berry non adapt G5 F7
-    ax1,tau0 = add_scaling_plot (timestamp = '20141215_194843', exp_data=True, ax=ax1, label = 'Non-adaptive (G=5, F=7)', marker_settings='v', color_nr=0,timestamp_sim='20141118_135425',include_overhead=True,N_max=12)
+    ax1,tau0 = add_scaling_plot (timestamp = '20141215_194843', exp_data=True, ax=ax1, label = 'Non-adaptive (G=5, F=7)', marker_settings='v', color_nr=27,timestamp_sim='20150520_121913',include_overhead=True,N_max=12)
     # Swarm G5 F2
-    ax1,tau0 = add_scaling_plot (timestamp = '20150106_221250', exp_data=True, ax=ax1, label = 'Adaptive (G=5, F=2)', marker_settings='^', color_nr=6,timestamp_sim=None,include_overhead=True)
+    ax1,tau0 = add_scaling_plot (timestamp = '20150106_221250', exp_data=True, ax=ax1, label = 'Adaptive (G=5, F=2)', marker_settings='^', color_nr=6,timestamp_sim='20150520_135237',include_overhead=True)
+    
 
     ax1.set_xscale('log')
     ax1.set_yscale('log')
@@ -300,7 +354,7 @@ def fig4c_plot(do_save=True):
     ax2.set_yscale('log')
     #ax2,tau0 = add_sensitivity_plot (timestamp = '20141215_203241', exp_data=True, ax=ax2,  marker_settings='.', color_nr=2,N_max=1)#,timestamp_sim='20141118_192523')
     ax2.set_ylim([1e18*y1_min/((2*np.pi*gamma_e*tau0)**2),1e18*y1_max /((2*np.pi*gamma_e*tau0)**2)])
-    ax2.set_ylabel('Sensitiviy$^2$ ($nT^2$ $Hz^{-1}$)')
+    ax2.set_ylabel('$\eta^2$ ($nT^2$ $Hz^{-1}$)')
     
     ax3 = ax1.twiny()
     ax3.set_xscale('log')
@@ -315,7 +369,7 @@ def fig4c_plot(do_save=True):
 
     plt.show()
     if do_save:
-        f.savefig(r'M:\tnw\ns\qt\Diamond\Eigenpapers\15-Adaptive DC Magnetometry\Figures\Fig4c.pdf', bbox_inches='tight')    
+        f.savefig(r'M:\tnw\ns\qt\Diamond\Eigenpapers\15-Adaptive DC magnetometry\01_NNano_submission\figures\Fig4c_compare_all_sims_with_t2.pdf', bbox_inches='tight')    
 
 def failed_CR_checks(do_save=True):
     perc_cr_failed=np.arange(0)
@@ -354,9 +408,9 @@ def failed_CR_checks(do_save=True):
     if do_save:
         f.savefig(r'M:\tnw\ns\qt\Diamond\Eigenpapers\15-Adaptive DC Magnetometry\Figures\Failed_CR_checks_averaged_per_datapoint.pdf', bbox_inches='tight')   
     
-fig4a_plot(do_save=False)
+#fig4a_plot(do_save=True)
 #fig4b_plot(do_save=False)
-#fig4c_plot(do_save=True)
+fig4c_plot(do_save=True)
 #failed_CR_checks(do_save=True)
 
 

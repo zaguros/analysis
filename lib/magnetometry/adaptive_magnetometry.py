@@ -717,9 +717,12 @@ class RamseySequence_Simulation (RamseySequence):
 			tau = 2**(k_array)
 			self.reset_rep_counter()
 
-			file_old = 'D:/measuring/analysis/scripts/magnetometry/swarm_optimization/phases_G'+str(self.G)+'_F'+str(self.F)+'/swarm_opt_G='+str(self.G)+'_F='+str(self.F)+'_K='+str(self.K)+'.npz'
+			# Only for simulations on my computer. set back to D:/measuring/analysis...  - MB
+			file_old = 'D:/machielblok/Desktop/PhD/qtlab/analysis/scripts/magnetometry/swarm_optimization/phases_G'+str(self.G)+'_F'+str(self.F)+'/swarm_opt_G='+str(self.G)+'_F='+str(self.F)+'_K='+str(self.K)+'.npz'
 			round_fid = int(round(self.fid0*100))
-			file_new = 'D:/measuring/analysis/scripts/magnetometry/swarm_optimization/incr_fid'+str(round_fid)+'_G'+str(self.G)+'/incr_fid'+str(round_fid)+'_G'+str(self.G)+'F'+str(self.F)+'_K='+str(self.K)+'.npz'
+			file_new = 'D:/machielblok/Desktop/PhD/qtlab/analysis/scripts/magnetometry/swarm_optimization/incr_fid'+str(round_fid)+'_G'+str(self.G)+'/incr_fid'+str(round_fid)+'_G'+str(self.G)+'F'+str(self.F)+'_K='+str(self.K)+'.npz'
+			
+
 			if os.path.exists (file_new):
 				swarm_incr_file = file_new
 			elif os.path.exists (file_old):
@@ -1535,6 +1538,7 @@ class AdaptiveMagnetometry ():
 		print 'Calculating scaling ... '
 		self.scaling_variance=[]
 		self.total_time=[]
+		self.total_time_overhead=[]
 		self.std_H = []
 		self.scaling_nT_sqrtHz = []
 		self.std_nT_sqrtHz = []
@@ -1574,25 +1578,30 @@ class AdaptiveMagnetometry ():
 					#print T_overhead
 				
 				if include_overhead:
-					self.total_time.append((T_phase_sens+T_overhead))
-				else:
-					self.total_time.append(T_phase_sens)
+					print 'PAY ATTENTION!!!'
+					print 'The include overhead function is deprecated'
+					print 'values with and without overhead are now saved separated!!!'
+					print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 				
+				self.total_time.append(T_phase_sens)
+				self.total_time_overhead.append((T_phase_sens+T_overhead))
 			#print np.array(self.total_time)/self.t0
 		self.total_time = np.array(self.total_time)
 		self.scaling_variance=np.array(self.scaling_variance)
 		self.sensitivity = (self.scaling_variance*self.total_time)#/((2*np.pi*self.gamma_e*self.t0)**2)
-		
+		self.sensitivity_overhead = (self.scaling_variance*self.total_time_overhead)
 		#self.sensitivity_nT_sqrtHz=self.scaling_nT_sqrtHz*self.total_time
 		if self.error_bars:
 			self.std_H  = np.array(self.std_H)
 			self.err_sensitivity = self.std_H*self.total_time
+			self.err_sensitivity_overhead=self.std_H*self.total_time_overhead
 			#print self.err_sensitivity
 			print self.sensitivity
 			#self.err_sensitivity_nT_sqrtHz = self.std_nT_sqrtHz*self.total_time
 		else:
 			self.std_H  = self.sensitivity*0
 			self.err_sensitivity = self.sensitivity*0
+			self.err_sensitivity_overhead = self.sensitivity*0
 
 	def plot_sensitivity_scaling (self, do_fit = True, save_plot=False):
 		if (self.scaling_variance == []):
@@ -1883,11 +1892,67 @@ class AdaptiveMagnetometry ():
 				except:
 					nr_discarded_elements=None	
 				self.results_dict[str(curr_n)] =  {'B_field':B_field,'ave_exp':ave_exp, 'msqe':msqe, 'F':self.F,'G':self.G,'estimated_phase_values':estimated_phase_values,'nr_discarded_elements':nr_discarded_elements}
+		try:
+			scaling_grp=f['/scaling_for_plot']
+			self.sensitivity=scaling_grp['sensitivity'].value
+			self.err_sensitivity=scaling_grp['err_sensitivity'].value
+			self.total_time=scaling_grp['total_time'].value
+
+			self.sensitivity_overhead=scaling_grp['sensitivity_overhead'].value
+			self.err_sensitivity_overhead=scaling_grp['err_sensitivity_overhead'].value
+			self.total_time_overhead=scaling_grp['total_time_overhead'].value
+		except:
+			self.sensitivity=None
+			self.err_sensitivity=None
+			self.total_time=None
+			self.sensitivity_overhead=None
+			self.err_sensitivity_overhead=None
+			self.total_time_overhead=None
+			print 'Data/Sim scaling not yet analyzed'
 		#for k in scaling_grp.keys():
 		#	self.scaling_grp[k]=scaling_grp[k].value
 		f.close()
+	def load_analyzed_scaling(self,timestamp):
+		name = toolbox.file_in_folder(folder=self.folder, timestamp = timestamp)
+		print name
+		f = h5py.File(os.path.join(self.folder, name),'r')
+		self.t0 = f.attrs ['tau0']
+		try:
+			scaling_grp=f['/scaling_for_plot']
+			self.sensitivity=scaling_grp['sensitivity'].value
+			self.err_sensitivity=scaling_grp['err_sensitivity'].value
+			self.total_time=scaling_grp['total_time'].value
 
-
+			self.sensitivity_overhead=scaling_grp['sensitivity_overhead'].value
+			self.err_sensitivity_overhead=scaling_grp['err_sensitivity_overhead'].value
+			self.total_time_overhead=scaling_grp['total_time_overhead'].value
+		except:
+			self.sensitivity=None
+			self.err_sensitivity=None
+			self.total_time=None
+			self.sensitivity_overhead=None
+			self.err_sensitivity_overhead=None
+			self.total_time_overhead=None
+			print 'Data/Sim scaling not yet analyzed'
+		f.close()
+	def save_analyzed_dict(self,timestamp):
+		name = toolbox.file_in_folder(folder=self.folder, timestamp = timestamp)
+		filename=os.path.join(self.folder, name)
+		f = h5py.File(filename,'r+')
+		try:
+			scaling = f.create_group('scaling_for_plot')
+		except:
+			del f['scaling_for_plot']
+			scaling = f.create_group('scaling_for_plot')
+		
+		scaling.create_dataset ('total_time', data = self.total_time)
+		scaling.create_dataset ('sensitivity', data = self.sensitivity)
+		scaling.create_dataset ('err_sensitivity', data = self.err_sensitivity)
+		
+		scaling.create_dataset ('total_time_overhead', data = self.total_time_overhead)
+		scaling.create_dataset ('sensitivity_overhead', data = self.sensitivity_overhead)
+		scaling.create_dataset ('err_sensitivity_overhead', data = self.err_sensitivity_overhead)
+		f.close()	
 class magnetometrySQL(AdaptiveMagnetometry):
 
 	def __init__(self, tau0, max_G):
@@ -1959,7 +2024,6 @@ class magnetometrySQL(AdaptiveMagnetometry):
 		for i in np.arange(len(G)):
 			list_estim_phases.append([])
 			self.analyzed_N.append(G[i])	
-
 
 
 		ind = 0

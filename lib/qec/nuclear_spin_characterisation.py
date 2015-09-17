@@ -71,7 +71,7 @@ M    ------
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
 
 
-    print 'tau larmor = %s' %tau_larmor
+    #print 'tau larmor = %s' %tau_larmor
 
     if np.size(tau)!=1:
         M=np.zeros([np.size(HFs_par),np.size(tau)])
