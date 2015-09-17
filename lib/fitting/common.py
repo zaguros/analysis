@@ -4,7 +4,7 @@ import numpy as np
 import fit
 #=======
 #import analysis.lib.fitting.fit as fit
-
+print 'reloaded'
 
 ### common fitfunctions
 def fit_cos(g_f, g_a, g_A, g_phi, *arg):
@@ -51,7 +51,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     A = fit.Parameter(g_A, 'A')
     phi = fit.Parameter(g_phi, 'phi')
     t   = fit.Parameter(g_t, 't')
-    print 'guessed frequency is '+str(g_f)
+    # print 'guessed frequency is '+str(g_f)
     p0 = [f, a, A,phi,t]
 
     def fitfunc(x):
@@ -60,7 +60,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
-    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + phi/360) ) + a'
+    fitfunc_str = 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a'
 
     f = fit.Parameter(g_f, 'f')
     a = fit.Parameter(g_a, 'a')
@@ -74,6 +74,33 @@ def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
         return a() + A()*np.exp(-(x/t())**2) * np.cos(2*np.pi*( f()*x + phi()/360.))
 
     return p0, fitfunc, fitfunc_str
+
+def fit_gaussian_decaying_2cos(g_avg, g_C, g_t, g_A, g_f_a, g_phi_a, g_B, g_f_b, g_phi_b, *arg):
+    """ Fits Gaussian decaying sum of two cosines.
+    To be used for e.g. dynamicaldecoupling.Carbon_Ramsey_noDD"""
+
+    fitfunc_str = 'avg + C * exp(-(x/t)**2) [ A*cos(2pi * (fa*x + phi_a/360) )+ B*cos(2pi * (f_b*x + phi_b/360)))/2 ]'
+
+    avg = fit.Parameter(g_avg, 'avg')
+
+    C = fit.Parameter(g_C, 'C')
+    t   = fit.Parameter(g_t, 't')
+
+    A = fit.Parameter(g_A, 'A')
+    f_a = fit.Parameter(g_f_a, 'f_a')
+    phi_a = fit.Parameter(g_phi_a, 'phi_a')
+
+    B = fit.Parameter(g_B, 'B')
+    f_b = fit.Parameter(g_f_b, 'f_b')
+    phi_b = fit.Parameter(g_phi_b, 'phi_b')
+
+    p0 = [avg,C, t, A,f_a,phi_a,B,f_b,phi_b] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+    def fitfunc(x):
+        return avg() + C() * np.exp(-(x/t())**2) * ( A()*np.cos(2*np.pi*( f_a()*x + phi_a()/360.)) + B() * np.cos(2*np.pi*( f_b()*x + phi_b()/360.)) )/2.0
+
+    return p0, fitfunc, fitfunc_str
+
 
 def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, g_o ,*arg):
     ''' quite a specific function, for electron nuclear control, maybe place somewhere else '''
@@ -223,18 +250,37 @@ def fit_saturation_with_offset_linslope(g_a, g_b, g_A, g_xsat, *arg):
 
     return p0, fitfunc, fitfunc_str
 
-def fit_poly(indices, *arg):
+def fit_poly(*arg):
     fitfunc_str = 'sum_n ( a[n] * x**n )'
 
     idx = 0
     p0 = []
-    for i,a in enumerate(indices):
+    for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
+        idx = i
 
     def fitfunc(x):
         val = 0
-        for i in range(len(indices)):
+        for i in range(idx):
             val += p0[i]() * x**i
+        return val
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_poly_shifted(g_x0,*arg):
+    fitfunc_str = 'sum_n ( a[n] * (x-x0)**n )'
+
+    idx = 0
+    p0 = []
+    x0 = fit.Parameter(g_x0, 'x0')
+    p0.append(x0)   
+    for i,a in enumerate(arg):
+        p0.append(fit.Parameter(a, 'a%d'%i))
+        idx = i
+    def fitfunc(x):
+        val = 0
+        for i in range(idx):
+            val += p0[i+1]() * (x-x0())**i
         return val
 
     return p0, fitfunc, fitfunc_str
@@ -280,6 +326,20 @@ def fit_gauss(g_a, g_A, g_x0, g_sigma):
 
     def fitfunc(x):
         return a() + A() * np.exp(-(x-x0())**2/(2*sigma()**2))
+    return p0, fitfunc, fitfunc_str
+def fit_gauss_pos(g_a, g_A, g_x0, g_sigma):
+### i think there should be a factor 2 infront of the sigma
+    fitfunc_str = 'a + |A| * exp(-(x-x0)**2/(2*sigma**2))'
+
+    a = fit.Parameter(g_a, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    A = fit.Parameter(g_A, 'A')
+    sigma = fit.Parameter(g_sigma, 'sigma')
+
+    p0 = [a, x0, A, sigma]
+
+    def fitfunc(x):
+        return a() + np.abs(A()) * np.exp(-(x-x0())**2/(2*sigma()**2))
     return p0, fitfunc, fitfunc_str
 
 def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
@@ -397,7 +457,7 @@ def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
     # NOTE: Order of arguments has changed to remain consistent with fitting params order
     # NOTE: removed g_x0=0 as a default argument. This should be handed explicitly to the function to prevent confusion
     # Fits with a general exponential modulated by a cosine
-    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
+    fitfunc_str = 'a + |A| * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
 
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
@@ -410,7 +470,7 @@ def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
 
     p0 = [a, A, x0, T, n,f,phi]
     def fitfunc(x):
-        return a() + A() * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
+        return a() + np.abs(A()) * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
     return p0, fitfunc, fitfunc_str
 
 def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
@@ -440,4 +500,27 @@ def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
 
 
 
+def fit_hyperbola(g_a,g_n,g_o):
+    fitfunc_str = 'a/(x**n)=o'
 
+    a = fit.Parameter(g_a, 'a')
+    n = fit.Parameter(g_n, 'n')
+    o = fit.Parameter(g_o, 'o')
+    p0 = [a,n,o]
+    def fitfunc(x):
+        return a()/(x**n())+o()
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_dephasing(g_a,g_tau,g_o):
+    fitfunc_str = '-a/(ln(1+e**(-2*pi*x**2*tau**2))-ln(2))'
+
+    a = fit.Parameter(g_a, 'a')
+    tau = fit.Parameter(g_tau, 'tau')
+    o = fit.Parameter(g_o, 'o')
+    p0 = [a,tau,o]
+    def fitfunc(x):
+        return o()-a()*1./np.log((1.+np.exp(-0.5*((2*np.pi)*x*tau())**2.))/2.)
+
+    return p0, fitfunc, fitfunc_str

@@ -88,7 +88,6 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
     x0 = fit.Parameter(x0_guess, 'x0')
     of = fit.Parameter(of_guess, 'of')
     a = fit.Parameter(a_guess, 'a')
-    ax.set_ylim(0.0,0.3)
 
     fitfunc_str = '(1-of) + a (x-x0)**2'
     def fitfunc_parabolic(x):
@@ -98,6 +97,7 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
         fitfunc_str=fitfunc_str, do_print=do_print, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False, **kw)
+        
         
     return fit_result
 
@@ -111,9 +111,11 @@ def plot_result(folder=None, ax = None, ret=True):
     a.get_readout_results(name='ssro')
     a.get_electron_ROC()
     a.plot_result_vs_sweepparam(ax=ax, name='ssro')
-
+    print a.normalized_ssro
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
+    print 'min x = ', x[np.argmin(y)]
+    print 'min y =', np.amin(y)
     ax.set_title(a.timestamp)
     if ret:
     	return a, ax, x, y

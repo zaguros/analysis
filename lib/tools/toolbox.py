@@ -76,7 +76,7 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -105,13 +105,20 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     daydirs.sort()
 
+    # MAB 15-4-15 Added for weird file mac is automatically creating
+    try:
+        daydirs.remove('.DS_Store')
+    except ValueError:
+        pass
+
     measdirs = []
     i = len(daydirs)-1
     while len(measdirs) == 0 and i >= 0:
         daydir = daydirs[i]
+        if VERBOSE:
+            print search_dir, daydir
         all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
         all_measdirs.sort()
-
         measdirs = []
 
         for d in all_measdirs:
@@ -138,7 +145,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 measdirs.append(d)
 
         i -= 1
-
+    print len(measdirs)
     if len(measdirs) == 0:
         if raise_exc == True:
             raise Exception('No fitting data found containing {}.'.format(contains))
@@ -189,7 +196,7 @@ def data_from_time(timestamp, folder = None):
         return None
 
 
-def data_from_label (label, folder = None):
+def data_from_label(label, folder = None):
     
     if (folder != None):
         datadir = folder
@@ -289,8 +296,7 @@ def get_msmt_name(pqf):
 
     if type(pqf) == h5py._hl.files.File: 
         for k in pqf.keys():
-            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
-                f.close()
+            if pqf.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
                 return k
 
         raise Exception('Cannot find the name of the measurement.')
@@ -495,105 +501,3 @@ def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = '
         f.close()
         raise
 
-def has_data(pqf, name, subgroup=None):
-    """
-    Checks if data with a specific name is in the keys of the main folder
-    give filepath and name
-    """
-    if type(pqf) == h5py._hl.files.File:
-        if name in pqf.keys():
-            return True
-        else:
-            return False
-    elif type(pqf) == str:
-        try:
-            f = h5py.File(pqf, 'r')
-        except:
-            return False
-
-        if name in f.keys():
-            f.close()
-            return True
-        else:
-            f.close()
-            return False
-    else:
-        print "Neither filepath nor file enetered in function please check:", pqf
-        raise
-
-def get_num_blocks(pqf):
-    """
-    Returns the number of blocks in a file (the number of the time a PQ_channel-xx block is created)
-    It return the number xx
-    """
-
-    list_of_block_numbers = []
-
-    if type(pqf) == h5py._hl.files.File: 
-        for k in pqf.keys():
-            if 'PQ_channel-' in k:
-                Block_name =  str(k)
-                Block_number = int(Block_name.strip('PQ_channel-'))
-                list_of_block_numbers.append(Block_number)
-
-    elif type(pqf) == str:
-
-        f = h5py.File(pqf, 'r')
-        for k in f.keys():
-            if 'PQ_channel-' in k:
-                Block_name =  str(k)
-                Block_number = int(Block_name.strip('PQ_channel-'))
-                list_of_block_numbers.append(Block_number)
-
-        f.close()
-
-    else:
-        print "Neither filepath nor file enetered in function please check:", pqf
-        raise
-
-    if len(list_of_block_numbers) > 0:
-        num_blocks = max(list_of_block_numbers)
-    else: 
-        num_blocks = 0
-
-    return num_blocks
-
-def get_num_blocks_2(pqf):
-    """
-    Returns the number of blocks in a file (the number of the time a PQ_channel-xx block is created)
-    It return the number xx
-    """
-
-    list_of_block_numbers = []
-
-    if type(pqf) == h5py._hl.files.File: 
-
-        keys = pqf.keys()
-
-    elif type(pqf) == str:
-
-        f = h5py.File(pqf, 'r')
-        keys = f.keys()
-        f.close()
-
-    else:
-        print "Neither filepath nor file enetered in function please check:", pqf
-        raise
-
-    for i in range(1000):
-        num_min = (i) * 10
-        min_pq = 'PQ_channel-' + str(num_min)
-        num_max = (i+1) * 10
-        max_pq = 'PQ_channel-' + str(num_max)
-        if (min_pq in keys) and not (max_pq in keys):
-            for j in range(10):
-                num_min_new = num_min + j
-                min_pq_new = 'PQ_channel-' + str(num_min_new)
-                num_max_new = num_min + j + 1
-                max_pq_new = 'PQ_channel-' + str(num_max_new)
-                if (min_pq_new in keys) and not (max_pq_new in keys):
-                    return num_min_new
-                else:
-                    continue
-        else:
-            continue

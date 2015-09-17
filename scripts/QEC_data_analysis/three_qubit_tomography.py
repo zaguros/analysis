@@ -240,6 +240,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 
 	state_tick_list = x_labels
 
+
 	if plot_fit ==True :
 		if plot_type != 'compressed': 
 			fig,ax = plt.subplots(figsize=(32,5)) 
@@ -326,7 +327,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			# ax.hlines([0],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 3)
 			ax.tick_params(axis='x', which='major', labelsize=20)
 			ax.tick_params(axis='y', which='major', labelsize=30)
-			# autolabel(rec4s)
+			# autolabel(rects)
 			ax.set_ylabel('Expectation value',fontsize = 30)
 			mpl.rcParams['axes.linewidth'] = 1
 			mpl.rcParams['pdf.fonttype'] = 42
@@ -336,7 +337,7 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 			        height = rect.get_height()
 			        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
 			            ha='center', va='bottom')
-			# autolabel(rects)
+			autolabel(rects)
 			if save and ax != None:
 				print 'SAVED '+ folder
 				try:

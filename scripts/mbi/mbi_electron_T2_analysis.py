@@ -14,13 +14,13 @@ from analysis.lib.math import error
 
 # fit_startup = False
 
-timestamp = None #'20130907183620' # None
-guess_frq = 1./200.
+timestamp = None#'20150404123117'# '20150403184301'#one#'20150403165700' #'20130907183620' # None
+guess_frq = 0#/200.
 guess_amp = 0.5
-guess_k = 0.
-guess_phi = 0.
+guess_Tdec = 1/0.18
+guess_phi = 180.
 guess_o = 1.
-
+plot_total_free_evolution_time = False
 ### script
 if timestamp != None:
     folder = toolbox.data_from_time(timestamp)
@@ -29,8 +29,14 @@ else:
 
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
+print a.sweep_pts
 a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
+
+if plot_total_free_evolution_time:
+    a.sweep_name='Total free evolution time (ms)'
+    #print a.g.attrs['Number_of_pulses'][0]
+    a.sweep_pts=a.g.attrs['Number_of_pulses'][0]*2*a.sweep_pts*1e-3
 ax = a.plot_results_vs_sweepparam(ret='ax', )
 
 t_shift = 0
@@ -39,23 +45,24 @@ t_shift = 0
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
-
+print x
+print y
 o = fit.Parameter(guess_o, 'o')
 f = fit.Parameter(guess_frq, 'f')
 A = fit.Parameter(guess_amp, 'A')
 phi = fit.Parameter(guess_phi, 'phi')
-k = fit.Parameter(guess_k, 'k')
-p0 = [f, A]
+Tdec = fit.Parameter(guess_Tdec, 'Tdec')
+p0 = [f, A,o,phi,Tdec]
 fitfunc_str = ''
 
 def fitfunc(x) : 
-    return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
+    return (o()-A()) + A() * exp(-(x/float(Tdec()))**1) * cos(2*pi*(f()*x - phi()))
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
-        fitfunc_str=fitfunc_str, do_print=True, ret=True)
+        fitfunc_str=fitfunc_str, do_print=True, ret=True,fixed=[0])
 
-plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
-        plot_data=False)
+#plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
+#        plot_data=False)
 
 plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.pdf'),
         format='pdf')

@@ -29,9 +29,10 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()
-	a.get_readout_results(name='adwindata')
+	a.get_readout_results(name=measurement_name[0])
 	a.get_electron_ROC(ssro_calib_folder)
-
+	# a.p0 = a.normalized_ssro
+	# a.u_p0 = a.u_normalized_ssro
 	x_labels = a.sweep_pts.reshape(-1)
 	y= ((a.p0.reshape(-1))-0.5)*2
 	x = range(len(y)) 
@@ -147,7 +148,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
 		ax.set_xticks(x)
-		ax.set_xticklabels(x_labels.tolist())
+		ax.set_xticklabels(x_labels.tolist()) ## if you want rotated labels: ,rotation=90
 		ax.set_ylim(-1.1,1.1)
 		print 'test'
 		print folder_a
@@ -258,7 +259,8 @@ def BarPlotTomoContrastFull_mult_msmts(timestamp = None, measurement_name = ['ad
 		print 'Tomo' + BP +'_ROpositive_'
 		timestamp_pos, folder_a = toolbox.latest_data(contains = 'sweep_phase_FET0.305s_auto_C1&2_Tomo' + BP +'_ROpositive_', older_than = older_than, newer_than = newer_than, return_timestamp = True)
 		timestamp_neg, folder_b = toolbox.latest_data(contains = 'sweep_phase_FET0.305s_auto_C1&2_Tomo' + BP +'_ROnegative_', older_than = older_than, newer_than = newer_than, return_timestamp = True)
-
+		print folder_a
+		print folder_b
 		x_labels_t, x_t, y_t, y_err_t  = BarPlotTomoContrast(timestamps = [timestamp_pos,timestamp_neg], measurement_name = ['adwindata'],
 								ssro_calib_timestamp =None, save = False,
 								plot_fit = False, return_data = True)
@@ -292,17 +294,20 @@ def BarPlotTomoContrastFull_mult_msmts(timestamp = None, measurement_name = ['ad
 	print 'rooterror', squared**0.5
 	print 'fidelity' , fidel / 4.
 	if plot_fit ==True: 
-		fig,ax = plt.subplots(figsize=(10,5)) 
+		fig,ax = plt.subplots(figsize=(7,5)) 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
-		y2 = [0,0,0,0,0,0,1,0,0,0,0,1,0,1,0]
+		print y
+		y2 = [0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,1.,0.]
+
 		rects2 = ax.bar(x,y2,align ='center', alpha=0.2 )
 		ax.set_xticks(x)
-		ax.set_xticklabels(x_labels,fontsize=20)
-		ax.tick_params(axis='y', which='major', labelsize=20)
+		ax.set_xticklabels(x_labels,fontsize=15,rotation='vertical')
+		ax.tick_params(axis='y', which='major', labelsize=15)
 		ax.set_ylim(-1.1,1.1)
-		ax.set_title(str(folder_a)+'/'+str(timestamp_neg))
+		# ax.set_title(str(folder_a)+'/'+str(timestamp_neg))
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted', linewidth=2)
-
+		ax.set_ylabel('Expectation value', fontsize=15)
+		# plt.savefig(r'D:\Dropbox\QEC LT\Decoupling memory\00_Thesis_plots\Tomo12tight.pdf',bbox_inches='tight')
 			# print values on bar plot
 		def autolabel(rects):
 		    for ii,rect in enumerate(rects):

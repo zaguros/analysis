@@ -165,3 +165,27 @@ def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N,g_phi1,g_phi2,g_ph
         return a() + prd*mod
 
     return p0, fitfunc, fitfunc_str
+
+def fit_gaussian_decaying_cos_withoffset(g_avg, g_A, g_t, g_a, g_f, g_phi, g_b):
+    '''
+    Fits cosine with offset modulated by Gaussian decay
+    Useful to fit e.g. electron Ramsey without nitrogen MBI
+    '''
+    fitfunc_str = 'A *exp(-(x/t)**2) * (a * cos(2pi * (f*x + phi/360) ) + b)'
+
+    avg = fit.Parameter(g_avg, 'avg')
+    A = fit.Parameter(g_A, 'A')
+    t = fit.Parameter(g_t, 't')
+    a = fit.Parameter(g_a, 'a')
+    f = fit.Parameter(g_f, 'f')
+    phi = fit.Parameter(g_phi, 'phi')
+    b = fit.Parameter(g_b, 'b')
+    
+    print 'guessed frequency is '+str(g_f)
+    
+    p0 = [avg, A, t, a, f, phi, b]
+
+    def fitfunc(x):
+        return avg() + A()*exp(-(x/t())**2) * ( a() * cos(2*pi*( f()*x + phi()/360.)) + b() )
+
+    return p0, fitfunc, fitfunc_str
