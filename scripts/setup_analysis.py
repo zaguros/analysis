@@ -15,6 +15,7 @@ from analysis.lib.pq import pq_tools, pq_plots
 from analysis.lib.math import readout_correction as roc
 from analysis.lib.math import error
 from analysis.lib.fitting import fit, common
+from analysis.lib.tools import plot
 reload(m2)
 reload(tb)
 reload(ssro)

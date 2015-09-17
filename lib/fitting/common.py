@@ -51,7 +51,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     A = fit.Parameter(g_A, 'A')
     phi = fit.Parameter(g_phi, 'phi')
     t   = fit.Parameter(g_t, 't')
-    print 'guessed frequency is '+str(g_f)
+    # print 'guessed frequency is '+str(g_f)
     p0 = [f, a, A,phi,t]
 
     def fitfunc(x):
@@ -500,4 +500,27 @@ def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
 
 
 
+def fit_hyperbola(g_a,g_n,g_o):
+    fitfunc_str = 'a/(x**n)=o'
 
+    a = fit.Parameter(g_a, 'a')
+    n = fit.Parameter(g_n, 'n')
+    o = fit.Parameter(g_o, 'o')
+    p0 = [a,n,o]
+    def fitfunc(x):
+        return a()/(x**n())+o()
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_dephasing(g_a,g_tau,g_o):
+    fitfunc_str = '-a/(ln(1+e**(-2*pi*x**2*tau**2))-ln(2))'
+
+    a = fit.Parameter(g_a, 'a')
+    tau = fit.Parameter(g_tau, 'tau')
+    o = fit.Parameter(g_o, 'o')
+    p0 = [a,tau,o]
+    def fitfunc(x):
+        return o()-a()*1./np.log((1.+np.exp(-0.5*((2*np.pi)*x*tau())**2.))/2.)
+
+    return p0, fitfunc, fitfunc_str

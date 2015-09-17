@@ -67,6 +67,16 @@ def Carbon_control_sweep_N(timestamp=None,contains=None, ssro_calib_folder = Non
         if plot_fit == True:
             plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False,print_info = True)
 
+
+        y_fit = fit_result['fitfunc'](np.arange(0,60,1))
+
+        for i, y in enumerate(abs(y_fit-0.5)):
+            if y == min(abs(y_fit-0.5)):
+                x_opt = i
+
+
+        ax.text(5,0.9,'pulses for pi/2: ' +str(x_opt))
+
         fit_results.append(fit_result)
         print folder
         plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),

@@ -72,6 +72,8 @@ class SSROAnalysis(m2.M2Analysis):
         if not 'cpsh' in f:
                 f.create_group('cpsh')
         g = f['/cpsh']
+        if name in g:
+            del g[name]
         g[name]=  cpsh
         f.close()
         if plot:
