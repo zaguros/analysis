@@ -18,7 +18,7 @@ pulse_shape = 'Square'
 
 
 timestamp = None #'20150407144111' #'20150403163852'#None#'20140408125318'
-guess_frq = 1./200.
+guess_frq = 1./4000.
 
 guess_amp = 0.5
 guess_of = 0.5
@@ -81,7 +81,7 @@ fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=fixed,
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
        plot_data=False)
-# ax.set_ylim([0.,0.25])
+ax.set_ylim([0.,1.05])
 print "pi pulse = {:.5f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)

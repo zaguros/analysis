@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from analysis.lib.tools import toolbox
-from analysis.lib.tools import plot; reload(plot)
+from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
@@ -434,9 +434,8 @@ def Carbon_Ramsey_DD_freq(older_than = None,
     folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon), older_than = older_than)
     folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
     folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
-    print folder1
-    print folder2
-    print folder3
+    
+    
     a1 = mbi.MBIAnalysis(folder1)
     a1.get_sweep_pts()
     a1.get_readout_results(name='adwindata')
@@ -451,14 +450,41 @@ def Carbon_Ramsey_DD_freq(older_than = None,
     a3.get_sweep_pts()
     a3.get_readout_results(name='adwindata')
     a3.get_electron_ROC()
+    '''
+    folder4 = toolbox.latest_data(contains = 'evo_times_4_C' + str(carbon), older_than = older_than)
+    folder5 = toolbox.latest_data(contains = 'evo_times_5_C' + str(carbon), older_than = older_than)
+    folder6 = toolbox.latest_data(contains = 'evo_times_6_C' + str(carbon), older_than = older_than)
+    folder7 = toolbox.latest_data(contains = 'evo_times_7_C' + str(carbon), older_than = older_than)
+    
+    a4 = mbi.MBIAnalysis(folder4)
+    a4.get_sweep_pts()
+    a4.get_readout_results(name='adwindata')
+    a4.get_electron_ROC()
 
-    #a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
-    #a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
-    #a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts]
+    a5 = mbi.MBIAnalysis(folder5)
+    a5.get_sweep_pts()
+    a5.get_readout_results(name='adwindata')
+    a5.get_electron_ROC()
+
+    a6 = mbi.MBIAnalysis(folder6)
+    a6.get_sweep_pts()
+    a6.get_readout_results(name='adwindata')
+    a6.get_electron_ROC()
+
+    a7 = mbi.MBIAnalysis(folder7)
+    a7.get_sweep_pts()
+    a7.get_readout_results(name='adwindata')
+    a7.get_electron_ROC()
+    
+    a1.p0           = np.r_[a1.p0,a2.p0,a3.p0,a4.p0,a5.p0,a6.p0,a7.p0]
+    a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0,a4.u_p0,a5.u_p0,a6.u_p0,a7.u_p0]
+    a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts,a4.sweep_pts,a5.sweep_pts,a6.sweep_pts,a7.sweep_pts]
+    '''
 
     a1.p0           = np.r_[a1.p0,a2.p0,a3.p0]
     a1.u_p0         = np.r_[a1.u_p0,a2.u_p0,a3.u_p0]
     a1.sweep_pts     = np.r_[a1.sweep_pts,a2.sweep_pts,a3.sweep_pts]
+    
 
     x = a1.sweep_pts.reshape(-1)[:]
     y = a1.p0.reshape(-1)[:]
@@ -474,13 +500,11 @@ def Carbon_Ramsey_DD_freq(older_than = None,
         ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
 
-    # print fit_result
-
     print 'fitfunction: '+fitfunc_str
 
     ## plot data and fit as function of total time
     if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,print_info = True,add_txt =True)
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
 
    
     title = 'DD freq ramsey C' +str(carbon)

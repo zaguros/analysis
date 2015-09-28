@@ -101,7 +101,7 @@ def fit_ramsey_hyperfinelines_fixed(g_tau, g_A, g_a,g_det,g_hf,g_phi1,g_phi2,g_p
     return p0, fitfunc, fitfunc_str
 
 
-def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
+def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N,g_phi1,g_phi2,g_phi3, *arg):
     """
     fitfunction for a gaussian decay,
         y(x) = a + A*exp(-(x/tau)**2)* \sum_n cos(2*pi*f_n x)
@@ -121,10 +121,10 @@ def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
     a = fit.Parameter(g_a, 'a')
     det = fit.Parameter(g_det, 'det')
     hf_N = fit.Parameter(g_hf_N, 'hf_N')
-    #phi1 = fit.Parameter(g_phi1, 'phi1')
-    #phi2 = fit.Parameter(g_phi2, 'phi2')
-    #phi3 = fit.Parameter(g_phi3, 'phi3')
-    p0 = [tau, A, a,det,hf_N]
+    phi1 = fit.Parameter(g_phi1, 'phi1')
+    phi2 = fit.Parameter(g_phi2, 'phi2')
+    phi3 = fit.Parameter(g_phi3, 'phi3')
+    p0 = [tau, A, a,det,hf_N,phi1,phi2,phi3]
     fitfunc_str = 'a+A*exp(-(x/tau)**2)*(cos(2*pi*det)+cos(2*pi*(det+hf_N))+cos(2*pi*(det-hf_N))'
 
 
@@ -153,15 +153,15 @@ def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
         #return a() + A()*exp(-(x/tau())**2) * (cos(2*pi*det()*x+cos(2*pi*(det()-hf_N())*x+cos(2*pi*(det()+hf_N())*x)/3.
         prd = exp(-(x/tau())**2)
         mod = 0
-        
+        phi=[phi1(),phi2(),phi3()]
         if no_hf_C == 0 :
             for j in range(-1,2,1):
                 mod += A() * (cos(2*pi*(det()+j*hf_N())*x))
         else:
             for i in range(no_hf_C):
                 for j in range(-1,2,1):
-                    mod += A() * (cos(2*pi*(det()+j*hf_N() +1/2.*hf_C[i]())*x))
-                    mod += A() * (cos(2*pi*(det()+j*hf_N() -1/2.*hf_C[i]())*x))
+                    mod += A() * (cos(2*pi*(det()+j*hf_N() +1/2.*hf_C[i]())*x+phi[j+1]))
+                    mod += A() * (cos(2*pi*(det()+j*hf_N() -1/2.*hf_C[i]())*x+phi[j+1]))
         return a() + prd*mod
 
     return p0, fitfunc, fitfunc_str

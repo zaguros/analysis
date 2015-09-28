@@ -70,7 +70,7 @@ def get_raw_data(carbon,**kw):
 		if 'X' in pt:
 			x_arr = np.append(x_arr,val)
 			x_u_arr = np.append(x_u_arr,val_u)
-			gates = np.append(gates,pt[1:])
+			gates = np.append(gates,'N = '+str(pt[2:4])+',\ntau = '+str(pt[5:]))
 		elif 'Y' in pt:
 			y_arr = np.append(y_arr,val)
 			y_u_arr = np.append(y_u_arr,val_u)
@@ -90,8 +90,6 @@ def get_gate_fidelity(carbon,**kw):
 	print folder_pos
 	b,b_u = get_bloch_length(x,y,x_u,y_u)
 
-	# print gates
-	# print b_u
 	best_b = np.amax(b)
 	best_b_ind = np.argmax(b)
 
@@ -101,12 +99,19 @@ def get_gate_fidelity(carbon,**kw):
 	fig = plt.figure()
 	ax = plt.subplot()
 
-	plt.errorbar(np.array(range(len(gates))),b,b_u,marker='o')
+	rects= ax.bar(np.arange(len(gates)),b,yerr=b_u,align='center')
+	ax.set_xticks(np.arange(len(gates)))
+	ax.set_xticks(np.array(range(len(gates))))
 	ax.set_xticklabels(gates, rotation=90)
 	plt.xlabel('Gate configuration')
 	plt.ylabel('Bloch vector length')
+
+	for ii,rect in enumerate(rects):
+		plt.text(rect.get_x()+rect.get_width()/2., 0.4*rect.get_height(), 'F='+str(round(b[ii],3))+' $\pm$ '+str(round(b_u[ii],3)),
+			ha='center', va='bottom',rotation='vertical',color='white')
+
+	plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png')
 	plt.show()
-	plt.savefig(os.path.join(folder_pos, 'Sweep_gates.pdf'), format='pdf')
 	plt.close('all')
 
 
