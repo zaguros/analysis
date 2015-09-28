@@ -14,7 +14,7 @@ from math import floor, log10
 if os.name == 'posix':
         DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
 else:
-    DBdir = r'D:/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+    DBdir = r'D:/jcramer3/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
 
 reload(common)
 reload(mbi)
@@ -471,7 +471,7 @@ def DD_scaling_elec(msmts,
         ax2.spines[axis].set_linewidth(2)
     plt.savefig(DBdir +'scaling.pdf', bbox_inches='tight')
     plt.show()
-# DD_scaling_elec(Elec_Michiel)
+DD_scaling_elec(Elec_Michiel)
 
 if os.name == 'posix':
         DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/QEC LT/Decoupling memory/XYdata/'
@@ -896,7 +896,7 @@ def DD_scaling(msmts,
     
     plt.show()
 
-DD_scaling(C2_XYauto_msmts)
+# DD_scaling(C2_XYauto_msmts)
 
 
 

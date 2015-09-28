@@ -60,11 +60,15 @@ def load_mult_dat(timestamp,
   
 #   return HF_perp, HF_par
 
-def get_hyperfine_params(ms = 'plus', carbon_spins = 'all'):
+def get_hyperfine_params(ms = 'plus', carbon_spins = 'all',NV = None):
     
     HF_perp = []
     HF_par 	= []
-
+    print 'NV' + str(NV)
+    if NV =='Hans':
+      hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
+    else: 
+      hf = module_hyperfine_params.hyperfine_params
     if carbon_spins == 'all':
       for kk in range(len(hf)):
         carbon_string     = 'C' + str(kk+1) 

@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
-def fingerprint(disp_sim_spin = True):
+def fingerprint(disp_sim_spin = True,xlim =None):
     
     ###################
     ## Data location ##
@@ -43,7 +43,10 @@ def fingerprint(disp_sim_spin = True):
 
     fig = a.default_fig(figsize=(35,5))
     ax = a.default_ax(fig)
-    ax.set_xlim(0,50)
+    if xlim == None:
+        ax.set_xlim(0,40)
+    else:
+        ax.set_xlim(xlim)
     start, end = ax.get_xlim()
     ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 

@@ -3,6 +3,7 @@ import os
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
+from analysis.lib.fitting import fit
 
 def simple_plot(timestamp = None, measurement_name = ['adwindata'],folder_name ='CarbonPiCal',
 		ssro_calib_timestamp =None, save = True,
@@ -120,11 +121,11 @@ def simple_plot_contrast(timestamps = [None,None], tag = '', measurement_name = 
 	if return_data == True:
 		return  x, y, y_err
 
-def simple_plot_contrast_concatenate(older_than = None,tag_list = [], measurement_name = ['adwindata'],
+def simple_plot_contrast_concatenate(older_than = None,tag_list = [], do_fit = False,measurement_name = ['adwindata'],
 		ssro_calib_timestamp =None, save = True,
 		do_plot = True,absolute_y = False,
 		xlabel = 'time', ylabel = 'Contrast',
-		):
+		**kw):
 		### SSRO calibration
 
 	for k in range(len(tag_list)):
@@ -159,7 +160,10 @@ def simple_plot_contrast_concatenate(older_than = None,tag_list = [], measuremen
 
 	if do_plot ==True: 
 		fig,ax = plt.subplots(figsize=(4,4)) 
-		rects = ax.errorbar(x,y,yerr=y_err )
+		if do_fit == False:
+			rects = ax.errorbar(x,y,yerr=y_err )
+		else: 
+			ax.errorbar(x,y,yerr = y_err, marker = 'o',ls = '')
 		ax.set_xticks(x)
 		# ax.set_xticklabels(x_labels)
 		ax.set_ylim(-1.1,1.1)
@@ -170,6 +174,21 @@ def simple_plot_contrast_concatenate(older_than = None,tag_list = [], measuremen
 		ax.set_title(str(folder_a)[18:])
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
+		if do_fit == True:
+		    o = fit.Parameter(kw.pop('guess_o',0), 'o')
+		    f = fit.Parameter(kw.pop('guess_freq',1/10.), 'f')
+		    A = fit.Parameter(kw.pop('guess_amp',1), 'A')
+		    phi = fit.Parameter(kw.pop('guess_phi',0), 'phi')
+		    k = fit.Parameter(kw.pop('guess_k',10.), 'k')
+		    p0 = [A,o,f,phi,k]
+		    fitfunc_str = ''
+		    
+
+		    def fitfunc(x):
+		        return (o()-A()) + A() * np.exp(-(k()*x)**2) * np.cos(2*np.pi*(f()*x - phi()))
+
+		    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=[1,3],
+		            do_print=True, ret=True)
 
 	if save and ax != None:
 		try:
@@ -177,4 +196,5 @@ def simple_plot_contrast_concatenate(older_than = None,tag_list = [], measuremen
 		        os.path.join(folder_a,'fullplot.png'))
 		except:
 		    print 'Figure has not been saved.'
+
 
