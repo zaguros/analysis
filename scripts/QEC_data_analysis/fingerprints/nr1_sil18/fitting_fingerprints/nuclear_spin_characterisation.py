@@ -70,6 +70,9 @@ M    ------
     omega_larmor = 2*np.pi*gamma_c*B_field #radial frequency
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
 
+    print omega_larmor/(2*np.pi)
+    print HFs_par[1]*2*np.pi
+    print HFs_orth[1]*2*np.pi
 
     print 'tau larmor = %s' %tau_larmor
 

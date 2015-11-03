@@ -369,7 +369,7 @@ def DD_scaling_elec(msmts,
 
     ax.hlines([1.],min_x,max_x,linestyles='dotted', linewidth = 2)
     ax.set_xlim(min_x,max_x)
-    ax.set_ylim(0.4,1.1)
+    ax.set_ylim(0.4,1.02)
     ax.set_xlabel('Free evolution time (ms)',fontsize = 20)
     ax.set_ylabel('Fidelity',fontsize = 20)
     ax.tick_params(axis='x', which='major', labelsize=20)

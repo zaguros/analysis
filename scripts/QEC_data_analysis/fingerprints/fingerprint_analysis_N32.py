@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params)
 hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
 
-import fingerprint_funcs as fp_funcs; reload(fp_funcs)
+from analysis.scripts.QEC_data_analysis.fingerprints import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
 
 def fingerprint(disp_sim_spin = True,x_range = [0,20],n_sim_spins= 13):
@@ -27,7 +27,7 @@ def fingerprint(disp_sim_spin = True,x_range = [0,20],n_sim_spins= 13):
     if disp_sim_spin == True:
             # HF_par = [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par'], hf['C13']['par']]
             # HF_perp = [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp'], hf['C13']['perp']]
-            HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'plus')
+            HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'plus', NV = 'Hans')
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file
@@ -93,6 +93,8 @@ def fingerprint(disp_sim_spin = True,x_range = [0,20],n_sim_spins= 13):
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
         format='png')
 
+
+    plt.show(block = False)
     # fig = a.default_fig(figsize=(35,5))
     # ax = a.default_ax(fig)
     # # ax.set_xlim(15.0,15.5)

@@ -110,7 +110,7 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
           ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
 
 
-      # lgd = plt.legend(loc=4)
+      lgd = plt.legend(loc=4)
       plt.show(block = False)
       print folder
       print 'contrast_150924.pdf'
@@ -476,8 +476,8 @@ if 1:
 
   x_32 , y_32 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
           step_size = 10e-3,
-          xrange = [10,18],
+          xrange = [30.5,42.5],
           tag_p = 'mx111_1_sil18_32pulses',tag_n = 'px111_1_sil18_32pulses', 
           tag_p2 = 'Hermite_Fingerprint_msm1_111_1_sil18_32-x',tag_n2 = 'Hermite_Fingerprint_msm1_111_1_sil18_32x', 
-          older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True,figsize=(30,5), save_folder = r'D:\measuring\data\LT2_Data\Fingerprinting',
-           load_from_data = True, Nr_of_pulses = 32)
+          older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True,figsize=(20,5), save_folder = r'D:\measuring\data\LT2_Data\Fingerprinting',
+           load_from_data = False, Nr_of_pulses = 32)

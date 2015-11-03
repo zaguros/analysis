@@ -1,11 +1,11 @@
 import pickle
 import numpy as np
 import os
-
+from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
 import analysis.scripts.QEC_data_analysis.fingerprints.nr1_sil18.fitting_fingerprints.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params) 
-import analysis.scripts.QEC_data_analysis.fingerprints.nr1_sil18.fitting_fingerprints.nuclear_spin_characterisation as SC
+import analysis.scripts.QEC_data_analysis.fingerprints.nr1_sil18.fitting_fingerprints.nuclear_spin_characterisation as SC; reload(SC)
 
 hf = module_hyperfine_params.hyperfine_params
 
@@ -59,7 +59,7 @@ def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
 
 	# x = data['x']
 	# y = data['y']
-	x,y = np.loadtxt('sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.txt')
+	# x,y = np.loadtxt('sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.txt')
 
 
 	fig,ax = plt.subplots(figsize=figsize)
@@ -70,7 +70,7 @@ def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
 
 	ax.set_ylim(-1.05,1.05)
 
-	ax.plot(x, y, '.-k', lw=0.4,label = 'data') #N = 16
+	# ax.plot(x, y, '.-k', lw=0.4,label = 'data') #N = 16
 	ax.set_xlabel('tau (us)')
 	ax.set_ylabel('Contrast')
 
@@ -84,8 +84,12 @@ def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
 	plt.show(block = False)
 
 
-for ms in ['plus','min']:
-	for Nr_of_pulses in [4,8,16,32,64]:
+# for ms in ['plus','min']:
+# 	for Nr_of_pulses in [4,8,16,32,64]:
 
-		fingerprint_plot(disp_sim_spin = True,n_sim_spins = 8,
-		xrange = [0,20],figsize=(35,5), Nr_of_pulses = Nr_of_pulses, ms = ms)
+# 		fingerprint_plot(disp_sim_spin = True,n_sim_spins = 8,
+# 		xrange = [8,15],figsize=(35,5), Nr_of_pulses = Nr_of_pulses, ms = ms)
+
+
+fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
+		xrange = [8,15],figsize=(35,5), Nr_of_pulses = 32, ms = 'min')		
