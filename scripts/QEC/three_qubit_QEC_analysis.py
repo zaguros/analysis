@@ -5202,11 +5202,12 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
         folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1], older_than = older_than)
 
 
+        # print folder_p
+        # print folder_n
+
         data_p = load_QEC_data(folder_p, ssro_calib_folder, post_select = True)
         data_n = load_QEC_data(folder_n, ssro_calib_folder, post_select = True)
 
-        # print folder_p
-        # print folder_n
 
 
         y = y + [abs(((data_p['c0'] - data_n['c0'])/2.)[0])]
