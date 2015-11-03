@@ -81,6 +81,7 @@ M    ------
         HF_par = HF_par*2*np.pi #Convert to radial frequency
         HF_orth = HFs_orth[i]*2*np.pi #convert to radial frequency
         omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
+
         alpha = omega_tilde*tau
         beta = omega_larmor*tau
         mx = HF_orth/omega_tilde
