@@ -264,7 +264,7 @@ def load_QEC_data(folder, ssro_calib_folder, post_select = True, nr_of_parity_ms
 
     a = CP.ConditionalParityAnalysis(folder)
     a.get_sweep_pts()
-    a.get_readout_results(name='adwindata', post_select_QEC = False)
+    a.get_readout_results(name='adwindata', post_select_QEC = False, post_select = False)
     print ssro_calib_folder
     a.get_electron_ROC(ssro_calib_folder)
 
@@ -5197,9 +5197,12 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
         # folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
         # folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
 
+     
+        folder_p = toolbox.latest_data(contains = 'positive_RO'+state_RO[1], older_than = older_than)
+        folder_n = toolbox.latest_data(contains = 'negative_RO'+state_RO[1], older_than = older_than)
 
-        folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1], older_than = older_than)
-        folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1], older_than = older_than)
+        print folder_p
+        print folder_n
 
 
         # print folder_p
@@ -5273,6 +5276,7 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
     print p_00[0][0] + p_01[0][0] + p_10[0][0] +p_11[0][0]
     print p_00[1][0] + p_01[1][0] + p_10[1][0] +p_11[1][0]
     print p_00[2][0] + p_01[2][0] + p_10[2][0] +p_11[2][0]
+    plt.show()
     # print p_00[3][0] + p_01[3][0] + p_10[3][0] +p_11[3][0]
 
 
