@@ -4,7 +4,7 @@ import numpy as np
 import fit
 #=======
 #import analysis.lib.fitting.fit as fit
-
+print 'reloaded'
 
 ### common fitfunctions
 def fit_cos(g_f, g_a, g_A, g_phi, *arg):
@@ -327,6 +327,20 @@ def fit_gauss(g_a, g_A, g_x0, g_sigma):
     def fitfunc(x):
         return a() + A() * np.exp(-(x-x0())**2/(2*sigma()**2))
     return p0, fitfunc, fitfunc_str
+def fit_gauss_pos(g_a, g_A, g_x0, g_sigma):
+### i think there should be a factor 2 infront of the sigma
+    fitfunc_str = 'a + |A| * exp(-(x-x0)**2/(2*sigma**2))'
+
+    a = fit.Parameter(g_a, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    A = fit.Parameter(g_A, 'A')
+    sigma = fit.Parameter(g_sigma, 'sigma')
+
+    p0 = [a, x0, A, sigma]
+
+    def fitfunc(x):
+        return a() + np.abs(A()) * np.exp(-(x-x0())**2/(2*sigma()**2))
+    return p0, fitfunc, fitfunc_str
 
 def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
     fitfunc_str = 'a + A * exp(-((x-x0)/T )**n)'
@@ -443,7 +457,7 @@ def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
     # NOTE: Order of arguments has changed to remain consistent with fitting params order
     # NOTE: removed g_x0=0 as a default argument. This should be handed explicitly to the function to prevent confusion
     # Fits with a general exponential modulated by a cosine
-    fitfunc_str = 'a + A * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
+    fitfunc_str = 'a + |A| * exp(-((x-x0)/T )**n*cos(2pi *(f*x+phi/360) )'
 
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
@@ -456,7 +470,7 @@ def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
 
     p0 = [a, A, x0, T, n,f,phi]
     def fitfunc(x):
-        return a() + A() * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
+        return a() + np.abs(A()) * np.exp(-((x-x0())/T())**n())*np.cos(2*np.pi*( f()*x + phi()/360.))
     return p0, fitfunc, fitfunc_str
 
 def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):

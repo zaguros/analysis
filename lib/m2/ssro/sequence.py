@@ -6,6 +6,7 @@ import logging
 from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.m2.ssro import ssro
+from analysis.lib.m2.ssro import ssro as ssro_calib
 from analysis.lib.math import error
 from analysis.lib.m2 import m2
 from analysis.lib.tools import toolbox
@@ -222,32 +223,45 @@ class SequenceAnalysis(m2.M2Analysis):
 
 class MagnetometrySequenceAnalysis(SequenceAnalysis):
 
-    def get_magnetometry_phase_calibration(self, name=''):
+    def get_magnetometry_phase_calibration(self, name='',ssro_calib_folder=''):
 
         self.result_corrected = False
-
         adwingrp = self.adwingrp(name)        
         self.reps = adwingrp['completed_reps'].value-1
         RO_clicks = adwingrp['RO_data'].value
         phase = adwingrp['set_phase'].value
+        times=self.g.attrs['ramsey_time']
 
         phase_values = np.unique(phase)
         self.ssro_results = np.zeros(len(phase_values))
-        
+
         
         for j in phase_values:
             self.ssro_results [np.min(np.where(phase==j))] = np.sum(RO_clicks[np.where(phase==j)])
-        
-        self.sweep_pts = phase_values
+            
+        if len(self.ssro_results)==1:
+            self.sweep_pts = self.g.attrs['sweep_pts']
+            phase=np.array(list(np.arange(len(self.sweep_pts)))*int((self.reps+1)/float(len(self.sweep_pts))))
+       
+            phase_values = np.unique(phase)
+            self.ssro_results = np.zeros(len(phase_values))
+            
+            for j in phase_values:
+
+                self.ssro_results [np.min(np.where(phase==j))] = np.sum(RO_clicks[np.where(phase==j)])
+
+        #self.sweep_pts = times
         #print 'len phases',len(phases)
         #print phases
         #print phase_values
+
         self.normalized_ssro = self.ssro_results*len(self.ssro_results)/(float(self.reps))
         self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)))**0.5  #this is quite ugly, maybe replace?
 
-        ssro_calib_folder = ''#kw.pop('ssro_calib_folder', toolbox.latest_data('SSROCalibration'))
+        
         if ssro_calib_folder == '':
                 ssro_calib_folder = toolbox.latest_data('SSROCalibration')
+                print ssro_calib_folder
         self.p0 = self.normalized_ssro
         self.u_p0 = self.u_normalized_ssro
         
@@ -331,7 +345,7 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
             self.T2_mult_t0 = self.g.attrs['T2']
         except:
             self.T2_mult_t0 = 46    
-        print self.T2_mult_t0
+        #print self.T2_mult_t0
 
         try:
             timer_data = np.array(adwingrp['timer'].value)
@@ -363,14 +377,14 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         n_points = len(self.sweep_pts)
         rows = int(self.reps/float(len(self.sweep_pts)))
         cols = len(self.sweep_pts)
-        print 'self reps',self.reps
+        #print 'self reps',self.reps
 
         if self.do_add_phase==1:
             m_sweeps=self.N*self.G + self.N*self.F*(self.N-1)/2
             rows_addphase = int(len(RO_clicks)/float(m_sweeps))
             self.reps=rows_addphase
             cols_addphase = m_sweeps
-            print 'rows: ',rows_addphase, 'cols: ', cols_addphase, 'm_sweeps: ', m_sweeps, 'reps:', self.reps
+            #print 'rows: ',rows_addphase, 'cols: ', cols_addphase, 'm_sweeps: ', m_sweeps, 'reps:', self.reps
 
             RO_clicks = RO_clicks[:rows_addphase*cols_addphase]
             self.clicks = np.squeeze(np.reshape(RO_clicks, (rows_addphase, cols_addphase)))
@@ -405,7 +419,7 @@ class MagnetometrySequenceAnalysis(SequenceAnalysis):
         if ssro:
             self.normalized_ssro = np.sum(self.clicks, axis=0)/(float(self.reps/n_points))
             self.u_normalized_ssro = (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps/n_points)))**0.5  
-            
+
 
 
 
