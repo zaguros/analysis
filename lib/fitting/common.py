@@ -151,6 +151,30 @@ def fit_exp_decay_with_offset(g_a, g_A, g_tau, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_exp_decay_with_offset_linslope(g_a, g_A, g_tau,g_b, *arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-x/tau) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+
+    """
+    fitfunc_str = 'A * exp(-x/tau) + a + b*x'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    tau = fit.Parameter(g_tau, 'tau')
+    b = fit.Parameter(g_b, 'b')
+    p0 = [a, A, tau,b]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-x/tau())+x*b()
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_double_exp_decay_with_offset(g_a, g_A, g_tau, g_A2, g_tau2, *arg):
     """
     fitfunction for an exponential decay,
