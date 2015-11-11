@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import datetime
+import h5py
 import analysis.lib.tools.toolbox as tb
 from analysis.lib.lde import ro_c_err
 from analysis.lib.bell import bell_events as be
@@ -32,11 +33,10 @@ def RO_correct_err(RO_norm, F0A, F1A, F0B, F1B):
     (N00, N01, N10, N11) = RO_norm
     return np.array(ro_c_err.get_readout_correction_errors(F0a=F0A,F1a=F1A, F0b=F0B, F1b=F1B, dF0a = 0.005,dF1a = 0.005,dF0b = 0.005,dF1b = 0.005,N00=N00, N01=N01,N10=N10, N11=N11))
 
-def RO_correct_single_qubit(p0,u_p0, F0, F1):
+def RO_correct_single_qubit(p0, u_p0, F0, F1, u_F0 , u_F1):
     roc = error.SingleQubitROC()
-    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (F0,0.005,F1,0.005)
-    c0, u_c0 = roc.num_eval(p0,u_p0)
-    return c0,u_c0 
+    roc.F0, roc.u_F0, roc.F1, roc.u_F1 = (F0,u_F0,F1,u_F1)
+    return roc.num_eval(p0,u_p0)
 
 
 def merge_dicts(*dict_args):
@@ -49,9 +49,9 @@ def merge_dicts(*dict_args):
         result.update(dictionary)
     return result
 
-def print_correlators(corr_mats):
+def print_correlators(corr_mats, VERBOSE=True, psis=['psi_min', 'psi_plus']):
     # print the results:
-    for psi in ['psi_min', 'psi_plus']:
+    for psi in psis:
         corr_mat=np.zeros((4,4))
         for k in corr_mats:
             if psi in k:
@@ -72,32 +72,31 @@ def print_correlators(corr_mats):
             expected_Es= (0.42,-0.42,0.67,0.67)
             CHSH  = Es[0] - Es[1] + Es[2] + Es[3]
         dCHSH = np.sqrt(dEs[0]**2 + dEs[1]**2 + dEs[2]**2 + dEs[3]**2)
-        
-        print '-'*40
-        print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
-        print 'RO ms   00, 01, 10, 11'
-        print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
-        print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
-        print 'RND10', corr_mat[2], '  0,     +3pi/4'
-        print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
+        if VERBOSE:
+            print '-'*40
+            print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
+            print 'RO ms   00, 01, 10, 11'
+            print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
+            print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
+            print 'RND10', corr_mat[2], '  0,     +3pi/4'
+            print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
 
-        print ' E (RND00  RND01  RND10  RND11 )'
-        print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) expected'.format(*expected_Es)
-        print '   ({:+.2f}, {:+.2f}, {:+.2f}, {:+.2f}) measured'.format(*Es)
-        print '+/-( {:.2f},  {:.2f},  {:.2f},  {:.2f} )'.format(*dEs)
+            print ' E (RND00  RND01  RND10  RND11 )'
+            print '   ({:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}) expected'.format(*expected_Es)
+            print '   ({:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}) measured'.format(*Es)
+            print '+/-( {:.3f},  {:.3f},  {:.3f},  {:.3f} )'.format(*dEs)
 
-        print 'CHSH : {:.2f} +- {:.2f}'.format(CHSH, dCHSH)
+            print 'CHSH : {:.3f} +- {:.3f}'.format(CHSH, dCHSH)
+    return CHSH, dCHSH, Es, dEs
 
-def C_val(x,y,a,b,psi):#expects binary inputs.
-    if ('psi_min' in psi) and (x==0) and (y==0):
-        #print 'psi_min', x,y,a,b,(a+b)%2
-        return (a+b)%2
-    elif ('psi_plus' in psi) and (x==0) and (y==1):
-        #print 'psi_plus', x,y,a,b,(a+b)%2
-        return (a+b)%2
-    else:
-        #print 'else', x,y,a,b, (a+b+1)%2
-        return (a+b+1)%2
+def C_val(a,b,x,y,psi):#expects a,b,psi in {0,1} and x,y in {+1,-1}
+        return ((-1)**(a*(b+psi))*x*y+1)/2
+    
+def get_p_val(K,N):
+    from scipy.stats import binom
+    tau = 5.4e-6*2
+    p_lhv = 3./4+3*(tau+tau**2) #1-(0.5-eps)**2*(1-12*tau*(1+tau))#eps and tau correspond to the bias and the predictability.
+    return 1-binom.cdf(K-1, N, p_lhv)
 
 def calculate_p_lhv(corr_mats, VERBOSE=True):
     K = 0
@@ -109,7 +108,7 @@ def calculate_p_lhv(corr_mats, VERBOSE=True):
     for i,rnd in enumerate(rnd_corr):
         for j,ro in enumerate(ro_corr):
             for psi in corr_mats:
-                C=C_val(rnd[0], rnd[1], ro[0], ro[1], psi)
+                C=C_val(rnd[0]+1, rnd[1], 2*ro[0]-1, 2*ro[1]-1, 'psi_min' in psi)
                 k=(C==1)*corr_mats[psi][i,j]
                 n=corr_mats[psi][i,j]
                 K+=k
@@ -119,17 +118,14 @@ def calculate_p_lhv(corr_mats, VERBOSE=True):
                     Nxx+=n
                 elif rnd[0] == 1: #LT3 did no pi/2 pulse
                     Kzz+=k
-                    Nzz+=n
-                    
-    
-    from scipy.stats import binom
-    p_lhv = 1- binom.cdf(K, N, 3./4)
+                    Nzz+=n      
+    p_val = get_p_val(K,N)
     if VERBOSE:
         print 'All: {}/{} = {:.2f}'.format(K, N, K/N)
-        print 'Probability of LHV model: {:.1f}%'.format(p_lhv*100)
+        print 'Probability of LHV model: {:.4f}%'.format(p_val*100)
         print 'XX: {}/{} = {:.2f}'.format(Kxx, Nxx, Kxx/Nxx)
         print 'ZZ: {}/{} = {:.2f}'.format(Kzz, Nzz, Kzz/Nzz)
-    return K,N,Kxx,Nxx,Kzz,Nzz,p_lhv
+    return K,N,Kxx,Nxx,Kzz,Nzz,p_val
 
 def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     st_start_ch0  = analysis_params['st_start_ch0']
@@ -152,8 +148,6 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     dt_fltr = True
     rnd_fltr = (dlt[:,be._cl_noof_rnd_0] + dlt[:,be._cl_noof_rnd_1] == 1 )
     corr_mats={}
-    F0 =analysis_params['F0A'] if lt3 else analysis_params['F0B']
-    F1 =analysis_params['F1A'] if lt3 else analysis_params['F1B']
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
         fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr #& no_invalid_mrkr_fltr
         db_fltr = db[fltr]
@@ -180,6 +174,9 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_p
     st_len_w2_11  = analysis_params['st_len_w2_11']
     p_sep         = analysis_params['pulse_sep'] #600 ns
     st_start_ch1  = analysis_params['st_start_ch1']
+    ro_start      = analysis_params['ro_start']
+    ro_length     = analysis_params['ro_length']
+    max_inv_distance = analysis_params['invalid_marker_max_sn_diff']
         
     #bad times due to lights on at EWI
     event_times = []
@@ -195,11 +192,12 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_p
         print 'Events in bad time ranges: {}/{}'.format(len(db)-np.sum(bad_time_fltr), len(db))
 
     #invalid data marker filter & BS invalid event filter
-    no_invalid_mrkr_fltr = (d3[:,be._cl_inv_mrkr]==0) & (d4[:,be._cl_inv_mrkr]==0)
+    no_invalid_mrkr_fltr =  (((d3[:,be._cl_last_inv_mrkr]==0) | (d3[:,be._cl_last_inv_mrkr]>=max_inv_distance)) \
+                          & ((d4[:,be._cl_last_inv_mrkr]==0) | (d4[:,be._cl_last_inv_mrkr]>=max_inv_distance)))
     valid_event_fltr = db[:,be._cl_type] == 1
     rnd_fltr = (d3[:,be._cl_noof_rnd_0] + d3[:,be._cl_noof_rnd_1] == 1 ) \
                  & (d4[:,be._cl_noof_rnd_0] + d4[:,be._cl_noof_rnd_1] == 1 ) 
-    psb_tail_fltr = (d3[:,be._cl_noof_ph_tail] == 0) & (d4[:,be._cl_noof_ph_tail] == 0)
+    psb_tail_fltr = (d3[:,be._cl_first_tail_st] == 0) & (d4[:,be._cl_first_tail_st] == 0)
 
     #BS event channels
     psi_plus_00_fltr = (db[:,be._cl_ch_w1] == 0) & (db[:,be._cl_ch_w2] == 0)
@@ -240,6 +238,7 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_p
         noof_ev_fltr = np.sum(fltr)
         fltr = fltr & rnd_fltr  
         if VERBOSE:
+            print np.sum(np.logical_not(rnd_fltr))
             print 'rnd_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
 
         noof_ev_fltr = np.sum(fltr)
@@ -252,11 +251,11 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_p
         if VERBOSE:
             print 'bad_time_fltr {} : {}/{}'.format(psi_name,np.sum(fltr),noof_ev_fltr)
 
-        #noof_ev_fltr = np.sum(fltr)
-        #if VERBOSE:
-        #    lt_valid_fltr = (d3[:,be._cl_sn_ma] > 0) & (d4[:,be._cl_sn_ma] > 0)
-        #    noof_lt_inv = noof_ev_fltr - np.sum(fltr & lt_valid_fltr)
-        #    print 'LT invalid events {} : {}/{}'.format(psi_name,noof_lt_inv,noof_ev_fltr)
+        noof_ev_fltr = np.sum(fltr)
+        if VERBOSE:
+            lt_valid_fltr = (d3[:,be._cl_sn_ma] > 0) & (d4[:,be._cl_sn_ma] > 0)
+            noof_lt_inv = noof_ev_fltr - np.sum(fltr & lt_valid_fltr)
+            print 'LT invalid events {} : {}/{}'.format(psi_name,noof_lt_inv,noof_ev_fltr)
 
         
         db_fltr = db[fltr]
@@ -268,10 +267,12 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_p
 
         for i,rnd in enumerate(rnd_corr):
             for j,ro in enumerate(ro_corr):
-                corr_mat[i,j] =np.sum( ( d3_fltr[:,be._cl_noof_rnd_1]      == rnd[0]) \
-                                     & ( d4_fltr[:,be._cl_noof_rnd_1]      == rnd[1]) \
-                                     & ((d3_fltr[:,be._cl_noof_ph_ro] > 0) == ro[0] ) \
-                                     & ((d4_fltr[:,be._cl_noof_ph_ro] > 0) == ro[1]))
+                corr_mat[i,j] =np.sum( 
+                                       (d3_fltr[:,be._cl_noof_rnd_1]      == rnd[0]) \
+                                     & (d4_fltr[:,be._cl_noof_rnd_1]      == rnd[1]) \
+                                     & (((d3_fltr[:,be._cl_first_ph_st] > ro_start) & (d3_fltr[:,be._cl_first_ph_st] < ro_start+ro_length)) == ro[0] )\
+                                     & (((d4_fltr[:,be._cl_first_ph_st] > ro_start) & (d4_fltr[:,be._cl_first_ph_st] < ro_start+ro_length)) == ro[1])
+                                     )
         corr_mats[psi_name] = corr_mat
         if ret_fltr_psi_name in psi_name:
             ret_fltr = ret_fltr | fltr
@@ -367,3 +368,34 @@ def save_fp(folder,analysis_fp):
 
 def save_figure(name, ax,output_folder,analysis_fp):
     ax.figure.savefig(save_fp(output_folder,analysis_fp)+'_'+name+'.jpg')
+
+def sweep_analysis_param(analysis_fp,settings,bad_time_ranges,sweep_params,xmin,xmax,pts, relative):
+
+    f = h5py.File(analysis_fp,'r')
+    db_fps=f['analysis']['total_ent_events_fps'].value
+    db = f['analysis']['total_ent_events'].value
+    d3 = f['analysis']['total_lt3_ssro'].value
+    d4 = f['analysis']['total_lt4_ssro'].value
+    f.close()
+    X=np.linspace(xmin,xmax,pts)
+    S=np.zeros(pts)
+    dS=np.zeros(pts)
+    Ns=np.zeros(pts)
+    Ks=np.zeros(pts)
+    P=np.zeros(pts)
+    for i,x in enumerate(X):
+        ap=settings.analysis_params.copy()
+        #ap['st_start_ch0']=x
+        #ap['st_start_ch1']=x-900
+        for sweep_param in sweep_params:
+            ap[sweep_param] = ap[sweep_param] + x if relative else x
+        corr_mats, _tmp = get_corr_mats(db,d3,d4,db_fps, ap, bad_time_ranges, VERBOSE=False)
+        K,N,Kxx,Nxx,Kzz,Nzz,p_val = calculate_p_lhv(corr_mats, VERBOSE=False)
+        CHSH, dCHSH, Es, dEs = print_correlators(corr_mats, VERBOSE=False, psis=['psi_min'])
+        S[i]  = CHSH
+        dS[i] = dCHSH
+        Ns[i] = N
+        Ks[i] = K
+        P[i]  = p_val
+
+    return X, S, dS, P, Ns, Ks

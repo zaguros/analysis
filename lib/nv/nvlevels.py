@@ -10,7 +10,7 @@ def get_levels(**kw):
     Returns an array with the ES energies as a function of strain Ex, 
     also returned
     """
-    Ex=kw.pop('strainvals', np.linspace(0,20,50))
+    Ex=kw.pop('strainvals', np.linspace(0,8,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
 def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.],transitions=True):
