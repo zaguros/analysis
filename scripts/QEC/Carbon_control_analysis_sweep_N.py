@@ -11,7 +11,7 @@ reload(plot)
 def Carbon_control_sweep_N(timestamp=None,contains=None, ssro_calib_folder = None, measurement_name = ['adwindata'], 
     frequency = [1], amplitude = [0.5],  decay_constant = [200],phase =[0], offset = 0.5,
     fitfunc_type = 'single', plot_fit = False, do_print = False, show_guess = True,
-    yaxis = [-0.5,1.05], fixed=[2,6]):
+    yaxis = [-0.5,1.05], fixed=[2,6],plot_nice = False):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
@@ -41,6 +41,7 @@ def Carbon_control_sweep_N(timestamp=None,contains=None, ssro_calib_folder = Non
 
         x = a.sweep_pts.reshape(-1)[:]
         y = a.p0.reshape(-1)[:]
+        y_err = a.u_p0.reshape(-1)[:]
 
         if len(frequency) == 1:
 
@@ -67,6 +68,16 @@ def Carbon_control_sweep_N(timestamp=None,contains=None, ssro_calib_folder = Non
         if plot_fit == True:
             plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False,print_info = True)
 
+
+        y_fit = fit_result['fitfunc'](np.arange(0,60,1))
+
+        for i, j in enumerate(abs(y_fit-0.5)):
+            if j == min(abs(y_fit-0.5)):
+                x_opt = i
+
+
+        ax.text(5,0.9,'pulses for pi/2: ' +str(x_opt))
+
         fit_results.append(fit_result)
         print folder
         plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
@@ -81,6 +92,29 @@ def Carbon_control_sweep_N(timestamp=None,contains=None, ssro_calib_folder = Non
         # N_pi2 = round(period/2*.25)*2.0
         # # print 'Pi pulse: %s pulses' %N_pi
         # print 'Pi2 pulse: %s pulses' %N_pi2
+
+        if plot_nice:
+            fig,ax = plt.subplots(figsize = (7,5)) 
+            ax2 = ax.twiny()
+            one_cnot = 1/(4*fit_result['params_dict']['f'])
+            print 'one cnot'
+            print one_cnot
+
+            ax.errorbar(x,y,yerr=y_err,marker = 'o',ls = '',color = 'b')
+            ax.plot(np.linspace(x[0],x[-1],10000),fit_result['fitfunc'](np.linspace(x[0],x[-1],10000)),lw = 2, color = 'b')
+            ax.set_xlim(x[0]-3,x[-1]+3)
+            ax.set_yticks([0,0.5,1])
+            ax.set_ylim(0,1)
+            ax.set_xlabel('Number of pulses (N)')
+            ax.set_ylabel(r'$F(|0\rangle)$')
+            print np.arange(0,250,one_cnot)
+            ax2.set_xticks(np.arange(0,250,one_cnot))
+            ax2.set_xticklabels(np.arange(0,8,1))
+            ax2.set_xlabel('Number of gates')
+            plt.savefig(os.path.join(folder, 'nice_result.pdf'),
+            format='pdf')
+            plt.savefig(os.path.join(folder, 'nice_result.png'),
+            format='png')            
     return fit_result
 
 def Carbon_control_sweep_N_zoomtau(tau_array = None, timestamp_array = None, measurement_name = ['adwindata'], 

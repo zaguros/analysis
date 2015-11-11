@@ -46,6 +46,8 @@ sweep_direction = 'right',
     print folder
     print y[21]
     k = len(y)
+    # min_dip_depth = np.amin(y)
+    # min_index = np.argmin(y)
     print 'min_dip_depth = ' + str(min_dip_depth)
     
     ### Option to make the dip search sweep towards left or right, usefull in case of N polarization

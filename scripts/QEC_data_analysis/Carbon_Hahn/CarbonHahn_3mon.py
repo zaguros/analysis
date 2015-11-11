@@ -290,7 +290,7 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
     ## plot data and fit as function of total time
 
     if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
+        plot.plot_fit1d(fit_result, np.linspace(0.,x[-1],1001), ax=ax, plot_data=False)
 
     fit_results.append(fit_result)
 
@@ -311,10 +311,10 @@ def Carbon_T2_analysis_ms1(measurement_name = ['adwindata'], ssro_calib_timestam
 
     return x,y, y_err, fit_result
 
-carbonnr = 1
+carbonnr = 2
 
 folder = "/Users/"+os.getlogin()+"/Documents/"
-color_list = ['y','y']
+color_list = ['b','b']
 x_max_list = [100e-3,1200e-3]
 figure_name_list = ['C'+str(carbonnr)+'_T2_ms0','C'+str(carbonnr)+'_T2_ms1']
 spacing = [40e-3]+[500e-3]
@@ -335,7 +335,7 @@ for ii in range(2):
     fig,ax = plt.subplots()
 
 
-    plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False,add_txt = False,linewidth =2, linestyle = '-',color = '0.25')
+    plot.plot_fit1d(fit_result, np.linspace(0.,x[-1],1001), ax=ax, plot_data=False,add_txt = False,linewidth =2, linestyle = '-',color = '0.25')
 
     errlines = ax.errorbar(x,y,yerr = y_err, color = 'b',ls = '', marker = 'o',markersize = 8,capsize=5, lw = 2)
     # set(errlines, linewidth=6)
@@ -343,7 +343,10 @@ for ii in range(2):
     ax.set_ylim([0,1])
     ax.set_xlim([0,x_max_list[ii]+0.1e-3])
     plt.xticks(xticks)
-    ax.set_xticklabels(xticks)
+    if ii==1:
+        ax.set_xticklabels(['0','0.5','1'])
+    else:
+        ax.set_xticklabels(['0','0.04','0.08'])
     ax.set_xlabel('Free evolution time (s)',fontsize = 20)
     ax.set_ylabel('Fidelity',fontsize = 20)
     ax.hlines([0.5],x[0]-1,x[-1]+1,linestyles='dotted',linewidth = 2)

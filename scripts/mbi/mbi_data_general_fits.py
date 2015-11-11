@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 reload(common)
 reload(mbi)
 
-def exp_sin(timestamp=None, measurement_name = ['adwindata'],
+def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
             offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
             frequency = [1], phase =[0],
             fixed = [], ylim = [-0.5, 1.05],
@@ -21,7 +21,7 @@ def exp_sin(timestamp=None, measurement_name = ['adwindata'],
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('')
+        folder = toolbox.latest_data(contains)
 
 
     fit_results = []
