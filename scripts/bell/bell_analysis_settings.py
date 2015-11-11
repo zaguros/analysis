@@ -59,13 +59,13 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5427000,
+    'st_start_ch0'             : 5425500,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5427000-800,
+    'st_start_ch1'             : 5425500-650,
     'st_len_w2_00'             : 9000,
     'st_len_w2_11'             : 18000,
     'pulse_sep'                : bs_process_params['pulse_sep'],
-    'st_pulse_start'           : bs_process_params['st_pulse_start'],
+    'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
     'hist_binsize_ps'		  : 100, #ps 
 

@@ -161,8 +161,10 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
         noof_ev_fltr = np.sum(fltr)
         if VERBOSE:
             print psi_name, 'noof events: ', noof_ev_fltr
-        p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
-        u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
+        if noof_ev_fltr > 0:
+            p0 = float(np.sum(dlt_fltr[:,be._cl_noof_ph_ro]>0))/noof_ev_fltr
+            u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
+        else: p0, u_p0=0,0
 
         p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0, F0, F1)
         corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr,noof_ev_fltr]
