@@ -9,7 +9,8 @@ bs_process_params = {
 
     'ent_marker_channel_bs' : 1,
 
-    'st_pulse_start'          : 5438000,
+    'st_pulse_start_ch0'      : 5438000,
+    'st_pulse_start_ch1'      : 5438000,
     'st_pulse_len'            : 4000,
     'pulse_max_sn_diff'       : 3000000, #3 million syncs ~ 60 secs
 
@@ -58,13 +59,13 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5427000,
+    'st_start_ch0'             : 5426000,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5427000-800,
+    'st_start_ch1'             : 5426000-650,
     'st_len_w2_00'             : 9000,
     'st_len_w2_11'             : 18000,
     'pulse_sep'                : bs_process_params['pulse_sep'],
-    'st_pulse_start'           : bs_process_params['st_pulse_start'],
+    'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
     'hist_binsize_ps'		  : 100, #ps 
 
