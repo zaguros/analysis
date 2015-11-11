@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from analysis.lib.tools import toolbox
-from analysis.lib.m2.ssro import mbi
+from analysis.lib.m2.ssro import mbi; reload(mbi)
 from matplotlib import pyplot as plt
 
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
@@ -37,8 +37,8 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	y= ((a.p0.reshape(-1))-0.5)*2
 	x = range(len(y)) 
 	y_err = 2*a.u_p0.reshape(-1)
-	print 'y', y
-	print 'err', y_err
+	# print 'y', y
+	# print 'err', y_err
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
@@ -69,7 +69,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 
 def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
-		plot_fit = True, return_data = False) :
+		plot_fit = True, return_data = False,older_than = None) :
 	'''
 	Function that makes a bar plot with errorbars of MBI type data that has been measured with a positive
 	and negative RO.
@@ -90,8 +90,8 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	# 	folder_b = toolbox.latest_data(contains=timestamps[0]+'_negative')	
 
 	if timestamps[0] == None: 
-		folder_a = toolbox.latest_data(contains='positive' + tag)
-		folder_b = toolbox.latest_data(contains='negative' + tag)
+		folder_a = toolbox.latest_data(contains='positive' + tag,older_than = older_than)
+		folder_b = toolbox.latest_data(contains='negative' + tag,older_than = older_than)
 	elif len(timestamps)==1:		
 		folder_b = toolbox.data_from_time(timestamps[0])      
 		print folder_b

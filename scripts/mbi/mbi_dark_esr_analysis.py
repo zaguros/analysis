@@ -14,13 +14,13 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = '20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
+timestamp = None#'20151102_125238'#'20150613_093116' # '20150324_213946'#  '120943'#'171251'#None #'190948' #
 
 guess_offset = 1
 guess_A_min1 = 0.2
 guess_A_plus1 = 0.2
 guess_A_0 = 0.6
-guess_x0 = 2845
+guess_x0 = 1742
 guess_sigma = .02
 guess_Nsplit = 2.179
 
@@ -74,8 +74,13 @@ else:
     # try fitting
 
     fit_result = fit.fit1d(x, y, None, p0 = [A_min1, A_plus1, A_0, o, x0, sigma, Nsplit],
-            fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
-    plot.plot_fit1d(fit_result, linspace(min(x), max(x), 1000), plot_data=False, ax=ax)
+            fitfunc = fitfunc, do_print=True, ret=True, fixed=[], VERBOSE = True)
+
+
+
+    plot.plot_fit1d(fit_result, linspace(min(x), max(x), 1000), plot_data=False, ax=ax, do_print = True)
+
+    # print fit_result
     
     Norm=(fit_result['params'][0]+fit_result['params'][1]+fit_result['params'][2])
     Norm_error=np.sqrt((fit_result['error'][0]**2+fit_result['error'][1]**2+fit_result['error'][2]**2))

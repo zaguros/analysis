@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from analysis.lib.tools import toolbox
 
 import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params)
-hf = module_hyperfine_params.hyperfine_params
+hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
 
 
 def fingerprint(disp_sim_spin = True,n_sim_spins = 13,xrange = [0,20],):

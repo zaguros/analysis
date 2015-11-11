@@ -30,31 +30,10 @@ def get_lt_fps(fps_bs, lt3_folder, lt4_folder):
 
     return fps_lt3, fps_lt4
 
-def collect_lt_data(bs_folder, lt3_source_folder, lt4_source_folder, measurement_pattern):
-    fps_bs = tb.get_all_msmt_filepaths(bs_folder, pattern=measurement_pattern)
-    print 'Found {} filepaths'.format(len(fps_bs))
-    target_folder = os.path.split(bs_folder)[0]
-    fps_lt3, fps_lt4 = get_lt_fps(fps_bs, lt3_source_folder, lt4_source_folder)
-    skipped_fps=[]
-    for target_name, fps in zip(['LT3','LT4'],[fps_lt3,fps_lt4]):
-        print 'copying {} files'.format(target_name)    
-        for i,fp in enumerate(fps):
-            print i,
-            src_folder = os.path.split(fp)[0]
-            folder,dst_folder = os.path.split(src_folder)
-            date_folder = os.path.split(folder)[1]
-            try:
-                shutil.copytree(src_folder,os.path.join(target_folder,target_name,date_folder,dst_folder))
-            except WindowsError:
-                print 'Error copying fp {}'.format(fp)
-                skipped_fps.append(fp)
-
-    return skipped_fps
-
-def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs_params, lt_params,
+def process_bell_data(fps_bs, lt3_folder, lt4_folder, bs_params, lt_params,
                        analysis_fp=None, update_previous_analysis_fp=None, ignore_unequal_markers=False, 
                        process_lt3=True, process_lt4=True, VERBOSE=False):
-    fps_bs = tb.get_all_msmt_filepaths(bs_folder, pattern=measurement_pattern)
+    
     print 'Found {} filepaths'.format(len(fps_bs))
     
     if update_previous_analysis_fp!=None:
@@ -97,7 +76,7 @@ def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs
                                                  psb_tail_start = p_lt['psb_tail_start_lt3'], psb_tail_len = p_lt['psb_tail_len'], pulse_sep = p_bs['pulse_sep'], 
                                                  ent_marker_channel_lt = p_lt['ent_marker_channel_lt3'], ent_marker_lt_timebin_limit = p_lt['ent_marker_lt_timebin_limit'],
                                                  sn_diff_marker_ent_early = p_lt['sn_diff_marker_ent_early'], sn_diff_marker_ent_late = p_lt['sn_diff_marker_ent_late'],
-                                                 invalid_marker_channel_lt = p_lt['invalid_marker_channel_lt'],invalid_marker_max_sn_diff = p_lt['invalid_marker_max_sn_diff'],
+                                                 invalid_marker_channel_lt = p_lt['invalid_marker_channel_lt'],
                                                  VERBOSE = VERBOSE) if process_lt3 else np.zeros((len(ent_event_list),be._lt_noof_columns))
         #lt3_ssro_list  = be.get_ssro_result_list_adwin(fp_lt3, ssro_result_list=lt3_ssro_list)
         lt4_ssro_list  = be.get_ssro_result_list(fp_lt4,
@@ -107,7 +86,7 @@ def process_bell_data(bs_folder, lt3_folder, lt4_folder, measurement_pattern, bs
                                                  psb_tail_start = p_lt['psb_tail_start_lt4'], psb_tail_len = p_lt['psb_tail_len'], pulse_sep = p_bs['pulse_sep'],
                                                  ent_marker_channel_lt = p_lt['ent_marker_channel_lt4'], ent_marker_lt_timebin_limit = p_lt['ent_marker_lt_timebin_limit'],
                                                  sn_diff_marker_ent_early = p_lt['sn_diff_marker_ent_early'], sn_diff_marker_ent_late = p_lt['sn_diff_marker_ent_late'],
-                                                 invalid_marker_channel_lt = p_lt['invalid_marker_channel_lt'], invalid_marker_max_sn_diff = p_lt['invalid_marker_max_sn_diff'],
+                                                 invalid_marker_channel_lt = p_lt['invalid_marker_channel_lt'],
                                                  VERBOSE = VERBOSE) if process_lt4 else np.zeros((len(ent_event_list),be._lt_noof_columns))
         #lt4_ssro_list = be.get_ssro_result_list_adwin(fp_lt4, ssro_result_list=lt4_ssro_list)
         

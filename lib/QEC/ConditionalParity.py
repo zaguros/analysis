@@ -14,7 +14,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
     '''
 
     def get_readout_results(self, name='',post_select = False,post_select_QEC = False,
-                                post_select_multiple_rounds = False, post_select_GHZ = True,orientation_correct=False):
+                                post_select_multiple_rounds = False, post_select_GHZ = False,orientation_correct=False):
         '''
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -32,6 +32,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
 
         if post_select == True:
             
+
             self.post_select        = True
             self.result_corrected   = False
 
@@ -93,7 +94,22 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             parity_a_result = self.parity_result[0::2]  ### The two parity outcomes are stored sequentially in an array 
             parity_b_result = self.parity_result[1::2] 
             
+            if orientation_correct:
+                orientation_a = adwingrp.attrs['Parity_A_RO_orientation']
+                orientation_b = adwingrp.attrs['Parity_B_RO_orientation']
+                orientation_c = adwingrp.attrs['Tomo_RO_orientation']
+                self.orientations = (orientation_a,orientation_b,orientation_c)
 
+                #take into account the orientations of the first measurement for the postselection
+                if orientation_a == 'negative':
+                    parity_a_result = (1-parity_a_result)
+                if orientation_b == 'negative':
+                    parity_b_result = (1-parity_b_result)
+             
+                self.a_list = adwingrp.attrs['Parity_A_RO_list']
+                self.b_list = adwingrp.attrs['Parity_B_RO_list']
+                self.c_list = adwingrp.attrs['Tomo_RO_list']
+           
             ### Step 1 Multiply results with post selection parameter
             ssro_results_00 = parity_a_result*parity_b_result*self.ssro_results
             ssro_results_01 = parity_a_result*(1-parity_b_result)*self.ssro_results
@@ -429,7 +445,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             mbi.MBIAnalysis.get_readout_results(self,name) #NOTE: super cannot be used as this is an "old style class"
             self.post_select = False
 
-    def get_electron_ROC(self, ssro_calib_folder='',post_select_QEC = False, post_select_multiple_rounds = False, post_select_GHZ = False):
+    def get_electron_ROC(self, ssro_calib_folder='',post_select_QEC = False, post_select_multiple_rounds = False, post_select_GHZ = False,post_select = True):
         '''
         Performs Readout Correction, needs to be updated to correct for post selected results and apply error-bars correctly.
         '''

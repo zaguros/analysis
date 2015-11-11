@@ -167,7 +167,7 @@ def simulate_nonadaptive ():
 	beta, p, err,a,b = s.mean_square_error(set_value=set_magnetic_field, do_plot=True)
 
 
-def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = '', fpga_round=False, fpga_bit=None):
+def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_results=False,reps=101, error_bars = True, specific_B=False, name = ''):
 #def simulate_sweep_field_variable_M(G,F,K,fid0, do_adaptive, fid1=0.02,print_results=False,reps=101, phase_update=False, error_bars = True, always_recalculate_phase=False,specific_B=False):
 
 	#try:
@@ -176,14 +176,14 @@ def simulate_sweep_field_variable_M(G,F,K,fid0, protocol, fid1=0.02,print_result
 	mgnt_exp = magnetometry.AdaptiveMagnetometry(N=N, tau0=20e-9)
 	mgnt_exp.set_protocol (G=G,K=K,F=F)
 	mgnt_exp.set_sweep_params (reps =reps, nr_periods = 21, nr_points_per_period=15)
-	mgnt_exp.set_exp_params( T2 = 5000e-6, fid0 = fid0, fid1 = fid1)
+	mgnt_exp.set_exp_params( T2 = 96e-6, fid0 = fid0, fid1 = fid1)
 	mgnt_exp.error_bars = error_bars
 	for n in np.arange(N-1)+2:
 		mgnt_exp.set_protocol (G=G,K=n-1,F=F)
 		mgnt_exp.verbose=True
 		#mgnt_exp.sweep_field_simulation (N=n,do_adaptive=do_adaptive,print_results=print_results, phase_update=phase_update, always_recalculate_phase=always_recalculate_phase,specific_B=specific_B)
 		print 'T2* = ', mgnt_exp.T2
-		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B, fpga_round=fpga_round, fpga_bit = fpga_bit)
+		mgnt_exp.sweep_field_simulation (N=n, protocol = protocol ,print_results=print_results, specific_B=specific_B)
 
 		plt.figure()
 		
@@ -398,7 +398,10 @@ def simulate_adwin (N,M):
 	plt.show()
 
 
-
+fid0=0.87
+fid1=0.02
+reps=201
+#simulate_sweep_field_variable_M (G=5,K=13,F=2 , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= False)
 
 
 
@@ -437,7 +440,7 @@ plt.show()
 #simulate_adwin(N=8, M= 20)
 #test_adwin_sims(N=7, M=5, outcomes=[3,0,4,4,0,4,4], do_plot=False, do_print = True)
 #simulate_cappellaro()
-
+'''
 '''
 def overnight_simulations_15dec2014():
 	fid0=0.87
@@ -449,20 +452,22 @@ def overnight_simulations_15dec2014():
 			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=False, error_bars = True, do_adaptive=True, always_recalculate_phase= True, N1_sweep=False)
 			simulate_sweep_field_variable_M (G=g,K=9,F=f , fid0=fid0,fid1=fid1,print_results=False,reps=reps, phase_update=True, error_bars = True, do_adaptive=False, always_recalculate_phase= False, N1_sweep=False)
 '''
+'''
 
+def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
+	fid1=0.15
+	reps=31
+	for fff in sweep_f:
+		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
 
-def suppl_info_simulations_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
+def suppl_info_simulations_nn_adptv (G, fid0, sweep_f=[0,1,2,3,4,5]):
 	fid1=0.02
 	reps=31
 	for fff in sweep_f:
-		simulate_sweep_field_variable_M (protocol = 'modified_cappellaro',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
+		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True)
 
-def suppl_info_simulations_nn_adptv (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], name=''):
-	reps=31
-	for fff in sweep_f:
-		simulate_sweep_field_variable_M (protocol = 'non_adaptive',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name=name)
-
-def suppl_info_simulations_swarm (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], name=''):
+def suppl_info_simulations_swarm (G, fid0, sweep_f=[0,1,2,3,4,5], name=''):
+	fid1=0.02
 	reps=31
 	for fff in sweep_f:
 		simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=G,K=9,F=fff, fid0=fid0,fid1=fid1,reps=reps, error_bars = True, name = name)
@@ -479,17 +484,9 @@ def suppl_info_simulations_swarm (G, fid0, fid1=0.02, sweep_f=[0,1,2,3,4,5], nam
 
 #suppl_info_simulations_adptv (G=5, fid0=1., sweep_f = [3,4,5])
 #suppl_info_simulations_adptv (G=5, fid0=0.88, sweep_f = [0,1,2,3,4,5])
-#suppl_info_simulations_nn_adptv (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
+#suppl_info_simulations_nn_adptv (G=5, fid0=0.88, sweep_f = [5])
 
 #suppl_info_simulations_swarm (G=5, fid0=0.75, sweep_f = [0,1,2,3,4,5])
+simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=12,F=2, fid0=0.88,fid1=1-0.98,reps=31, error_bars = True, name = 'SIM_SWARM_G5F2_Fig4a')
+#suppl_info_simulations_adptv (G=5, fid0=0.65, sweep_f = [0,1,2,3,4,5,6,7,8,9], name = '_low_fid1')
 
-#suppl_info_simulations_swarm (G=5, fid0=0.94, fid1=0.06, sweep_f = [0,1,2,3,4,5], name = '_noT2_symmRO')
-
-reps = 3
-#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=3, fid0=1.00,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_4', fpga_round=True, fpga_bit=2)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_16', fpga_round=True, fpga_bit=4)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_64', fpga_round=True, fpga_bit=6)
-simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=13,F=2, fid0=0.88,fid1=0.0,reps=reps, error_bars = True, name = '_Round_256', fpga_round=True, fpga_bit=8)
-
-#simulate_sweep_field_variable_M (protocol = 'swarm_optimization',G=5,K=9,F=3, fid0=0.88,fid1=0.02,reps=reps, error_bars = True, name = '_noRound')

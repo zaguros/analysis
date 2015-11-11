@@ -18,10 +18,10 @@ pulse_shape = 'Square'
 
 
 timestamp = None #'20150407144111' #'20150403163852'#None#'20140408125318'
-guess_frq = 1./200.
+guess_frq = 1./6.
 
-guess_amp = 0.5
-guess_of = 0.5
+guess_amp = 0.2
+guess_of = 0.7
 # guess_slope = 0.
 guess_phi = 0.
 guess_k = 1/2000.
@@ -69,7 +69,7 @@ y = a.p0
 
 
 # fit_result = fit.fit1d(x, y, rabi.fit_rabi_multiple_detunings,
-#         guess_amp, guess_yof, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
+#         guess_amp, guess_of, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
 #         do_print=True, ret=True)
 
 fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'

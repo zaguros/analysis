@@ -364,16 +364,20 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             fltr = np.ones(len(self.sync_nrs), dtype=np.bool)
         reps_per_sweep = len(np.unique(self.sync_nrs[fltr & (self.sweep_idxs == 2*sweep_index+ms)]))
         #print sweep_index, reps_per_sweep, float(reps_per_sweep)/ len(np.unique(self.sync_nrs[self.sweep_idxs == 2*sweep_index+ms]))
+        #print 'start = ', start
+        #print 'length = ', length
         st_fltr = (start  <= self.sync_time_ns) &  (self.sync_time_ns< (start + length))
         vsync=self.sync_nrs[np.where(self.is_ph & st_fltr & (self.sweep_idxs == 2*sweep_index+ms) & fltr)]
-        cpsh = float(len(vsync))/reps_per_sweep
+        mcpsh = float(len(vsync))/reps_per_sweep
+        
+        #print 'vsync = ', vsync
         if ms == 0:
             #print len(np.unique(vsync))
-            return float(len(np.unique(vsync)))/reps_per_sweep,cpsh
+            return float(len(np.unique(vsync)))/reps_per_sweep,mcpsh
         elif ms == 1:
             #print 'len vsync',len(vsync)
             #print 'unique vsync',len(np.unique(vsync))
-            return float(reps_per_sweep-len(np.unique(vsync)))/reps_per_sweep,cpsh
+            return float(reps_per_sweep-len(np.unique(vsync)))/reps_per_sweep,mcpsh
         
     def _get_RO_window(self, ms, sweep_index):
         if ms == 0:
@@ -539,7 +543,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         #                                                                               f0[ii]*100.,u_f0[ii]*100.,
         #                                                                               f1[ii]*100.,u_f1[ii]*100.,
         #                                                                               mf[ii]*100.,u_mf[ii]*100.)
-
+        print _tmp
         if save:
             dat0 = np.vstack((x, f0, u_f0)).T
             dat1 = np.vstack((x, f1, u_f1)).T
@@ -561,6 +565,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             g.attrs['max RO time']= len0
             g.attrs['sweep_value']= self.sweep_pts[sweep_index*2]
             g.attrs['sweep_name'] = self.sweep_name
+
             f.close()
 
             self.save_fig_incremental_filename(fig,'mean fidelity-{}'.format(sweep_index)+name)
@@ -592,6 +597,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         u_mf=np.zeros(self.sweep_length/2)
         mcpsh0 = np.zeros(self.sweep_length/2)
         mcpsh1 = np.zeros(self.sweep_length/2)
+ 
         for i in range(self.sweep_length/2):
             #print i
             start0, length = self._get_RO_window(0,i)
@@ -605,6 +611,7 @@ class FastSSROAnalysis(PQSequenceAnalysis):
             mf[i] = (f0[i]+f1[i])/2.
             u_mf[i] = np.sqrt( (0.5*u_f0[i])**2 + (0.5*u_f1[i])**2 )
             #etc
+   
         x=self.sweep_pts[::2]
         #print len(x), len(f0)
         #print x, f0 ax.errorbar(time, fid0, fmt='.', yerr=fid0_err, label='ms=0')
@@ -668,6 +675,7 @@ class FastSSROAnalysisIntegrated(FastSSROAnalysis):
 def analyze_tail(folder, name='ssro', cr=False, roc=True):
     a = TailAnalysis(folder)
     a.get_sweep_pts()
+    print a.sweep_pts
     a.get_readout_results(name)
     if cr:
         a.get_cr_results(name)
@@ -683,6 +691,7 @@ def analyze_tail(folder, name='ssro', cr=False, roc=True):
 
 
 def fast_ssro_calib(folder='', name='ssro',cr=True, RO_length_ns=3500, plot_sweep_index='max'):
+    print folder
     if folder=='':
         folder=toolbox.latest_data('FastSSRO')
     a = FastSSROAnalysis(folder)
@@ -698,6 +707,7 @@ def fast_ssro_calib(folder='', name='ssro',cr=True, RO_length_ns=3500, plot_swee
     if plot_sweep_index != 'max':
         swp_idx = plot_sweep_index
     a.ssro_plots(sweep_index = swp_idx, RO_length_ns=RO_length_ns, plot_points=500)
+    a.plot_histogram(channel=0)
     a.finish()
 
 def get_analysed_fast_ssro_calibration(folder, readout_time=None, sweep_index=None):
