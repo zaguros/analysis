@@ -61,6 +61,12 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     _plot_photon_hist(ax1, h1, b1, label='unfiltered', **kw)
     _plot_photon_hist(ax1, h1f, b1f, label='filtered', **kw)
     
+
+    if kw.get('plot_threshold_ch0', 0) !=0:
+        ax0.vlines([kw.get('plot_threshold_ch0', 0)],0,1000,color = 'r')
+    if kw.get('plot_threshold_ch1', 0) !=0:
+        ax1.vlines([kw.get('plot_threshold_ch1', 0)],0,1000,color='r')
+
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
 
