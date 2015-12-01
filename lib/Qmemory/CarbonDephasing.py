@@ -251,6 +251,7 @@ def extract_coupling_strength(folder_dict):
         #calculate Delta_f w.r.t. to f_0
 
         coupling = np.abs(np.abs(coupling)-f_0)
+        print 'Coupling ', coupling
 
         return folder_dict, coupling, folder
 
@@ -792,16 +793,18 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
         plt.ylabel('p(m$_s$=$\pm1$)')
 
         if timestamp != None:
-            timestamp, folder = toolbox.data_from_time(timestamp, return_timestamp=True)
+            folder = toolbox.data_from_time(timestamp)
         elif powers != [0]:
-            timestamp, folder = toolbox.latest_data('ElectronRepump_'+str(powers[sweep_elem]), older_than=older_than, return_timestamp=True)
+            folder = toolbox.latest_data('ElectronRepump_'+str(powers[sweep_elem]), older_than=older_than)
         else:
-            timestamp, folder = toolbox.latest_data('ElectronRepump', older_than=older_than, return_timestamp=True)
+            folder = toolbox.latest_data('ElectronRepump', older_than=older_than)
+        print 'folder is ', folder
         plt.title(folder)
         fit_results = []
         
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
+        CR_after_check = None
         a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
         a.get_electron_ROC(ssro_calib_folder)
 
@@ -812,7 +815,7 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
         if log_plot:
              # 0])+str(c_list[1]+'_repump_power'+str(sweep      plt.ylim(0.005,1.05)
             ax.set_yscale("log", nonposy='clip')
-            plt.ylim(0.0005,1.05)
+            plt.ylim(0.0001,1.05)
             plt.xlim(-10,np.amax(x))
         else:
             plt.ylim(0.0,1.05)
@@ -842,7 +845,7 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
 
 def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
             exclude_first_n_points = 0.,
-            offset = 0., x0 = 0, older_than= None,
+            offset = 0., x0 = 0, older_than= None, newer_than=0, binwidth_ns = None,
             amplitude = 0.8, decay_constant_one = 0.2, decay_constant_two = 0.6, x_offs = 0,
             plot_results = True, do_T2correct=False,
             plot_fit = True, do_print = False, fixed = [2], show_guess = True,
@@ -861,7 +864,7 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
 
     fitted_tau, fitted_tau2 = [],[]
     fitted_tau_err, fitted_tau2_err = [],[]
-    x, y = [], []
+
     #p0, fitfunc, fitfunc_str = [], [], []
     fig = plt.figure()
     ax = plt.subplot()
@@ -869,34 +872,65 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
     plt.ylabel('p(m$_s$=$\pm1$)')
     plt.ylim(0.01,1.05)
     ax.set_yscale("log", nonposy='clip')
-    plt.xlim(0.,1. *1000)
+    plt.xlim(0.,2500)
     
 
-    for count in np.arange(len(timestamp)):
-
+    for count in np.arange(len(older_than)):
+        x, y, y_u = [], [], []
+        print 'older than ', older_than[count], ' and newer_than ', newer_than[count]
         fit_results = []
-        folder = toolbox.data_from_time(timestamp[count])
+        #folder = toolbox.data_from_time(timestamp[count])
+        folder_list = toolbox.latest_data('ElectronRepump', older_than=older_than[count], newer_than=newer_than[count], return_all=True)
+        folder_list_ext = []
+        for av_elem in folder_list[2]:
+            folder_list_ext.append(toolbox.latest_data(av_elem))
+        print 'folder is ', folder_list_ext
+        
+        folder = folder_list_ext[0]
+
         if ssro_calib_timestamp == None :
-            ssro_calib_folder = toolbox.latest_data('SSRO', older_than=timestamp[count])
+            ssro_calib_folder = toolbox.latest_data('SSRO', older_than=older_than[count])
         else:
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
             ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
         print 'Using SSRO timestamp ', ssro_calib_folder
             
-        a = mbi.MBIAnalysis(folder)
-        a.get_sweep_pts()
-        a.get_readout_results(name='adwindata', CR_after_check = CR_after_check)
-        a.get_electron_ROC(ssro_calib_folder)
-        x = 1000*a.sweep_pts.reshape(-1)[exclude_first_n_points[count]:]
-        x = x - x[0]
-        y = 1-a.p0.reshape(-1)[exclude_first_n_points[count]:]
-        y_u = a.u_p0.reshape(-1)[exclude_first_n_points[count]:]
-        #print a.sweep_pts
-        #print a.normalized_ssro[:,0]
+        for elem in np.arange(len(folder_list_ext)):
+            #print folder_list_ext[elem]
+            a = mbi.MBIAnalysis(folder_list_ext[elem])
+            a.get_sweep_pts()
+            a.get_readout_results(name='adwindata', CR_after_check = CR_after_check)
+            a.get_electron_ROC(ssro_calib_folder)
+
+            x_list = 1000*a.sweep_pts.reshape(-1)[exclude_first_n_points[count]:]
+            x = np.append(x, x_list - x_list[0])  #shifts the graph such that it starts at t=0
+            y = np.append(y,1-a.p0.reshape(-1)[exclude_first_n_points[count]:])
+            y_u = np.append(y_u,a.u_p0.reshape(-1)[exclude_first_n_points[count]:])
+            #print 'lengths are: x ', len(x), ' y ', len(y), ' y_u ', len(y_u)
+
+        sortedx = np.argsort(x)
+        y = y[sortedx]
+        y_u = y_u[sortedx]
+        x = x[sortedx]
+
+        binned_x, binned_y, binned_yu, temp_y, temp_yu= [],[],[],[],[]
+
+        if binwidth_ns[count] != None:
+            last_x = 0
+            for x_count in np.arange(len(x)):    
+                if np.floor(x[x_count] / binwidth_ns[count]) > last_x and len(temp_y)>0:
+                    binned_x.append(last_x * binwidth_ns[count])
+                    binned_y.append(np.sum(temp_y)/len(temp_y))
+                    binned_yu.append(np.sqrt(np.sum(np.square(temp_yu)))/len(temp_yu))
+                    last_x += 1
+                    temp_y, temp_yu = [],[]
+                else: 
+                    temp_y.append(y[x_count])
+                    temp_yu.append(y_u[x_count])
 
         #plt.errorbar(a.sweep_pts[exclude_first_n_points[count]:], 1-a.p0[exclude_first_n_points[count]:,0], yerr = a.u_p0[exclude_first_n_points[count]:,0], fmt = 'o',color = colors[count], label = '')
-        plt.errorbar(x,y, yerr = y_u, fmt = 'o', color = colors[count], label = '')
-
+        #print x, y, y_u
+        plt.errorbar(binned_x, binned_y, yerr = binned_yu, fmt = 'o', color = colors[count], label = '')
 
         #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
         p0, fitfunc, fitfunc_str = common.fit_repumping( 
@@ -905,11 +939,10 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
         # p0, fitfunc, fitfunc_str = common.fit_double_exp_decay_with_x_offset(np.array(offset[count]), np.array(amplitude[count]), 
         #          np.array(decay_constant_one[count]), np.array(decay_constant_two[count]), np.array(x_offs[count]))
 
-        if plot_results:
-            if show_guess:
-                ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+        if plot_results and show_guess:
+            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True, fixed=fixed[count])
+        fit_result = fit.fit1d( x, y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True, fixed=fixed[count])
 
         ## plot data and fit as function of total time
         if plot_fit == True:

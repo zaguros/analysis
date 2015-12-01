@@ -5198,8 +5198,8 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
         # folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1]+'_k1_sign1_'+state_RO[0], older_than = older_than)
 
      
-        folder_p = toolbox.latest_data(contains = 'positive_RO'+state_RO[1], older_than = older_than)
-        folder_n = toolbox.latest_data(contains = 'negative_RO'+state_RO[1], older_than = older_than)
+        folder_p = toolbox.latest_data(contains = 'positive_test_RO'+state_RO[1], older_than = older_than)
+        folder_n = toolbox.latest_data(contains = 'negative_test_RO'+state_RO[1], older_than = older_than)
 
         print folder_p
         print folder_n
@@ -5249,36 +5249,58 @@ def plot_test_run_QEC(older_than = None,state_RO_list = ['X6','Y4','Y5','Y6','Z0
 
     autolabel(rects)
 
-    fig,ax = plt.subplots()
-    ax.set_title(str(folder_p)+'/'+ '\n post_selected')
-    ax.errorbar(x, y_00, yerr=u_y_00, label = '00',color = 'k', fmt='o' )
-    ax.errorbar(x, y_01, yerr=u_y_01, label = '01',color = 'c', fmt='o' )
-    ax.errorbar(x, y_10, yerr=u_y_10, label = '10',color = 'g', fmt='o' )
-    ax.errorbar(x, y_11, yerr=u_y_11, label = '11',color = 'r', fmt='o' )
-    ax.set_xlim(x[0]-0.5,x[-1]+0.5)
-    ax.set_xticks(x)
-    ax.set_xticklabels(x_ticks)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    fig1,ax1 = plt.subplots()
+    ax1.set_title(str(folder_p)+'/'+ '\n post_selected')
+    ax1.errorbar(x, y_00, yerr=u_y_00, label = '00',color = 'k', fmt='o' )
+    ax1.errorbar(x, y_01, yerr=u_y_01, label = '01',color = 'c', fmt='o' )
+    ax1.errorbar(x, y_10, yerr=u_y_10, label = '10',color = 'g', fmt='o' )
+    ax1.errorbar(x, y_11, yerr=u_y_11, label = '11',color = 'r', fmt='o' )
+    ax1.set_xlim(x[0]-0.5,x[-1]+0.5)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(x_ticks)
+    ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-    fig,ax = plt.subplots()
-    ax.set_title(str(folder_p)+'/'+ '\n probabilities')
-    ax.plot(x,p_00, 'co', label = 'p00')
-    ax.plot(x,p_01, 'ko', label = 'p01')
-    ax.plot(x,p_10, 'mo', label = 'p10')
-    ax.plot(x,p_11, 'bo', label = 'p11')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    ax.set_xlabel('error probability')
-    ax.set_ylabel('outcome probability')
-    ax.set_xlim(x[0]-0.5,x[-1]+0.5)
-    ax.set_xticks(x)
-    ax.set_xticklabels(x_ticks)
+    fig2,ax2 = plt.subplots()
+    ax2.set_title(str(folder_p)+'/'+ '\n probabilities')
+    ax2.plot(x,p_00, 'co', label = 'p00')
+    ax2.plot(x,p_01, 'ko', label = 'p01')
+    ax2.plot(x,p_10, 'mo', label = 'p10')
+    ax2.plot(x,p_11, 'bo', label = 'p11')
+    ax2.legend(bbox_to_anchor=(1.05, 1), loc=2, borderax2espad=0.)
+    ax2.set_xlabel('error probability')
+    ax2.set_ylabel('outcome probability')
+    ax2.set_xlim(x[0]-0.5,x[-1]+0.5)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(x_ticks)
 
     print p_00[0][0] + p_01[0][0] + p_10[0][0] +p_11[0][0]
     print p_00[1][0] + p_01[1][0] + p_10[1][0] +p_11[1][0]
     print p_00[2][0] + p_01[2][0] + p_10[2][0] +p_11[2][0]
     plt.show()
     # print p_00[3][0] + p_01[3][0] + p_10[3][0] +p_11[3][0]
+    try:
+        fig.savefig(
+            os.path.join(folder_n,'bar_plots.png'))
+        fig.savefig(
+            os.path.join(folder_n,'bar_plots.pdf'))
+    except:
+        print 'Figure has not been saved.'
 
+    try:
+        fig1.savefig(
+            os.path.join(folder_n,'post_selected.png'))
+        fig1.savefig(
+            os.path.join(folder_n,'post_selected.pdf'))
+    except:
+        print 'Figure has not been saved.'
+
+    try:
+        fig2.savefig(
+            os.path.join(folder_n,'probabilities.png'))
+        fig2.savefig(
+            os.path.join(folder_n,'probabilities.pdf'))
+    except:
+        print 'Figure has not been saved.'
 
 
 
