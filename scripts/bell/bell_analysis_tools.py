@@ -148,6 +148,12 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
     dt_fltr = True
     rnd_fltr = (dlt[:,be._cl_noof_rnd_0] + dlt[:,be._cl_noof_rnd_1] == 1 )
     corr_mats={}
+
+    ### reinserted because stuff broke: norbert
+    F0 =analysis_params['F0A'] if lt3 else analysis_params['F0B']
+    F1 =analysis_params['F1A'] if lt3 else analysis_params['F1B']
+    print 'I changed stuff in get_sp_corrs!!! Norbert'
+
     for psi_name,psi_fltr in zip(sp_names,sp_fltrs):
         fltr = valid_event_fltr_SP & rnd_fltr & psi_fltr #& no_invalid_mrkr_fltr
         db_fltr = db[fltr]
@@ -160,7 +166,7 @@ def get_sp_corrs(db,dlt,db_fps, analysis_params, lt3, VERBOSE=False):
             u_p0 = np.sqrt(p0*(1-p0)/noof_ev_fltr)
         else: p0, u_p0=0,0
 
-        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0, F0, F1)
+        p0_corr, u_p0_corr = RO_correct_single_qubit(p0,u_p0, F0, F1,0.005,0.005)###XXXXXXXXXXXXXXXX
         corr_mats[psi_name] = [p0,u_p0,p0_corr,u_p0_corr,noof_ev_fltr]
     return corr_mats
 
