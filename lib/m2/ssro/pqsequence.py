@@ -242,6 +242,65 @@ class TailAnalysis(PQSequenceAnalysis):
         if ret == 'fig':
             return fig
 
+
+
+    def fit_double_exponential(self, name='', save=True, log_plot=True, offset=0, **kw):  
+        ret = kw.get('ret', None)
+        ax = kw.get('ax', None)
+        indices = kw.pop('indices',range(self.sweep_length))
+
+        if ax == None:
+            fig = self.default_fig(figsize=(6,4))
+            ax = self.default_ax(fig)
+        else:
+            save = False
+        xx=self.tail_hist_b[:-1]
+        
+        for i in indices:
+            
+            yy=self.tail_hist_h[i]+offset*i
+            if log_plot:
+                ax.semilogy(xx,yy,'-')
+            else:
+                ax.plot(xx,yy)
+
+
+            guess_xo = 50.
+            guess_tau = 50.
+            guess_tau2 = 300.
+            guess_o = 50.
+            guess_A = 500.
+            guess_AA = 500.
+            AA=fit.Parameter(guess_A, 'A')
+            A=fit.Parameter(guess_AA, 'AA')
+            o=fit.Parameter(guess_o, 'o')
+            xo = fit.Parameter(guess_xo, 'xo')
+            tau = fit.Parameter(guess_tau, 'tau')
+            tau2 = fit.Parameter(guess_tau2, 'tau2')
+            p0 = [A, AA, o, xo, tau, tau2]
+            #print p0
+
+            def fitfunc(x):
+                #return o() + A() *np.exp(-(x-xo())/tau())
+                return o() + A() * np.exp(-((x-xo())/tau())) + AA()*np.exp(-((x-xo())/tau2()))
+            fit_result = fit.fit1d(xx, yy, None, p0=p0, fitfunc=fitfunc, fixed=[], do_print=True, ret=True)
+            x_fit=np.linspace(xx[0],xx[-1],500)
+            y_fit=fit_result['fitfunc'](x_fit)
+            ax.plot(x_fit,y_fit,color='k')
+
+
+
+        ax.set_xlabel('Time after sync [ns]')
+        ax.set_ylabel('Counts')
+
+        if save:
+            self.save_fig_incremental_filename(fig,'plot_tail_hist_all')
+        
+        if ret == 'ax':
+            return ax
+        if ret == 'fig':
+            return fig
+
 class TailAnalysisIntegrated(TailAnalysis):  
 
     def get_sweep_idxs(self,  noof_syncs_per_sweep_pt=1):
@@ -647,8 +706,8 @@ def fast_ssro_calib(folder='', name='ssro',cr=True, RO_length_ns=3500, plot_swee
     swp_idx=a.plot_fidelity_cpsh_vs_sweep(RO_length_ns=RO_length_ns, ret = 'max_sweep_index')
     if plot_sweep_index != 'max':
         swp_idx = plot_sweep_index
-    a.ssro_plots(sweep_index = swp_idx, RO_length_ns=RO_length_ns)
-    #a.plot_histogram(channel=0)
+    a.ssro_plots(sweep_index = swp_idx, RO_length_ns=RO_length_ns, plot_points=500)
+    a.plot_histogram(channel=0)
     a.finish()
 
 def get_analysed_fast_ssro_calibration(folder, readout_time=None, sweep_index=None):
