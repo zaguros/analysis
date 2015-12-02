@@ -99,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-
+def deleted_by_accident_by_someone():
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -3032,6 +3032,128 @@ def general_measurement():
     print
     print 'prob.'
     print norm_1**2
+
+def QZ():
+    ''' fucntion to test if entanglement is generated in quantum zeno with two qubits'''
+    XX = qutip.tensor(X,X)
+    YY = qutip.tensor(Y,Y)
+    ZZ = qutip.tensor(Z,Z)
+    II = qutip.tensor(Id,Id)
+    rot_zz = qutip.tensor((-1j*sz*np.pi/5).expm(), (-1j*sz*np.pi/5).expm())
+    rot_yy = qutip.tensor((-1j*sy*np.pi/5).expm(), (-1j*sy*np.pi/5).expm())
+
+    rho_init = qutip.tensor(rho0, rho0)
+    print_matrix(rho_init)
+
+    rho_1 = rot_yy*rho_init*rot_yy.dag()
+    rho_2 = 0.5*(II*rho_1*II + ZZ*rho_1*ZZ.dag())
+    # rho2 = 0.5*(II*rho1*II + YY*rho1*YY.dag())
+    
+
+    for kk in range(1):
+
+        rho_1 = rot_yy*rho_2*rot_yy.dag()
+        rho_2 = 0.5*(II*rho_1*II + ZZ*rho_1*ZZ.dag())
+  
+    print_matrix(rho_1)
+    print_matrix(rho_2)
+
+def QZ2():
+    '''more test fucntions for QZ'''
+    XX = qutip.tensor(2*sx,2*sx)
+    YY = qutip.tensor(2*sy,2*sy)
+    ZZ = qutip.tensor(2*sz,2*sz)
+    II = qutip.tensor(Id,Id)
+
+    H = qutip.tensor(2*sz,Id) + qutip.tensor(Id,2*sz) + qutip.tensor(Id,2*sx)
+    H = qutip.tensor(Id,2*sx)
+    H = qutip.tensor(2*sz)
+    print 'Hamiltonian'
+    print_matrix(H)
+
+    print 'Projector'
+    P = (II + XX)/2 
+    P = Id/2+sz
+    print_matrix(P)
+
+    print 'Zeno Hamiltonian'
+    Hz = P*H*P.dag()
+    print_matrix(Hz)
+
+    print 'evolution operator'
+    print (-1j*Hz).expm()
+
+def QZ3():
+    XX = qutip.tensor(2*sx,2*sx)
+    II = qutip.tensor(Id,Id)
+
+    P = II+XX
+    Q = II-XX
+
+    # P = 
+
+    print_matrix(P)
+    print_matrix(Q)
+
+    J = Q - P
+    print_matrix(J) 
+
+def test_projectors():
+
+    rho00 = qutip.tensor(rho0,rho0)
+    rho10 = qutip.tensor(rho1,rho0)
+    rho01 = qutip.tensor(rho0,rho1)
+    rho11 = qutip.tensor(rho1,rho1)
+
+    rhoxx = qutip.tensor(rhox,rhox)
+    rho10 = qutip.tensor(rho1,rho0)
+    rho01 = qutip.tensor(rho0,rho1)
+    rhomxmx = qutip.tensor(rhomx,rhomx)
+
+    II = qutip.tensor(Id,Id)
+    IX = qutip.tensor(Id,2*sx)
+
+    ZZ = qutip.tensor(2*sz,2*sz)
+    XX = qutip.tensor(2*sx,2*sx)
+
+    # print 'projector0'
+    # P0  = ket0*bra0
+    # P0b = Id/2 + sz
+    # print_matrix(P0)
+    # print_matrix(P0b)
+
+    # print 'projector1'
+    # P1 = ket1*bra1
+    # # P1 = Id - P0
+    # print_matrix(P1)
+
+    # print 'projectorZZ'
+    # PZZ = rho00 + rho11
+    # PZZ = (II + ZZ)/2
+    # print_matrix(PZZ)
+
+    # print 'projectorZZm'
+    # PZZm = rho01 + rho10
+    # PZZm = II - PZZ
+    # print_matrix(PZZm)
+
+    print 'projectorIX'
+    PIX = qutip.tensor(rhox,Id)
+    # PIX = (II+XI)/2
+    print_matrix(PIX)
+
+    # print 'projectorXX'
+    # PXX = rhoxx + rhomxmx
+    # PXX = (II+XX)/2
+    # print_matrix(PXX)
+
+    print 'hamiltonian'
+    H = qutip.tensor(2*sz,Id) + qutip.tensor(Id,2*sz)
+    print_matrix(H)
+    # print_matrix(PXX)
+    H_zeno = PIX*H*PIX.dag()
+    print_matrix(H_zeno)
+
 
 
 
