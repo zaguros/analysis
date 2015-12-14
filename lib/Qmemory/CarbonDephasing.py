@@ -1,5 +1,6 @@
 import numpy as np
-import os,h5py
+import os
+import h5py
 from analysis.lib.tools import toolbox; reload(toolbox)
 from analysis.lib.m2.ssro import mbi
 reload(mbi)
@@ -251,7 +252,7 @@ def extract_coupling_strength(folder_dict):
         #calculate Delta_f w.r.t. to f_0
 
         coupling = np.abs(np.abs(coupling)-f_0)
-        print 'Coupling ', coupling
+        #print 'Coupling ', coupling
 
         return folder_dict, coupling, folder
 
@@ -277,7 +278,7 @@ def Sweep_repetitions(older_than = None,
     fitGauss = kw.get('fitGauss', False)
     if fitGauss:
         offset = folder_dict['sweep_pts'][np.argmax(folder_dict['res'])]
-    print 'A0 ', A0, ' offset ', offset
+    #print 'A0 ', A0, ' offset ', offset
     
     if fitGauss:
         #a() + A() * np.exp(-(x-x0())**2/(2*sigma()**2))
@@ -311,6 +312,7 @@ def Sweep_Rep_List( carbons = ['1','2'],
     fit_results = kw.pop('fit_results',True)
     sequence_length = kw.pop('sequence_length',None)
     logicstate_list = kw.pop('logicstate_list',len(carbons)*['X']) ## can be list such as ['X','mX'], used for DFS measurements.
+    colors = kw.pop('colors', color_list)
 
     x_arr = []
     y_arr = []
@@ -355,13 +357,13 @@ def Sweep_Rep_List( carbons = ['1','2'],
             fixed = [0,3]
 
             fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = fixed)
-            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax,color = color_list[jj], plot_data=False,add_txt = False, lw = 2)
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax,color = colors[jj], plot_data=False,add_txt = False, lw = 2)
 
         label_txt = 'C'+carbon
         if len(carbon)!=1:
             label_txt = label_txt+'_'+logicstate
 
-        plt.errorbar(x,y,y_u,marker='o',color = color_list[jj],label=label_txt)
+        plt.errorbar(x,y,y_u,marker='o',color = colors[jj],label=label_txt)
 
 
     plt.xlabel('Number of repetitions')
@@ -383,27 +385,31 @@ def coupling_vs_repetitions(c_identifiers,**kw):
 
     is_X_measurement = kw.get('is_X_measurement', True)
     older_than = kw.get('older_than',None)
-    s = 0
-    for c in c_identifiers:
-        s += len(c)
-    x = np.zeros(s)
-    y = np.zeros(s)
-    y_u = np.zeros(s)
 
+    x, y, y_u = [],[],[]
     ## acquire data
-    ii = 0
+    threshold = 0.
     for carbon in c_identifiers:
         if len(carbon) > 1:
             for logicstate in ['X','mX']:
-                x[ii],y[ii],y_u[ii],folder,fit_result = Sweep_repetitions(carbon = carbon,logicstate = logicstate,return_fits=True,plot_result = False,**kw)
-                ii +=1
+                x_temp,y_temp,y_u_temp,folder,fit_result = Sweep_repetitions(carbon = carbon,logicstate = logicstate,return_fits=True,plot_result = False,**kw)
+                if fit_result['params_dict']['A'] > threshold:
+                    x.append(x_temp)
+                    y.append(y_temp)
+                    y_u.append(y_u_temp)
+                else:
+                    print 'Low initial amplitude ', folder, 'A0 is ', fit_result['params_dict']['A']
         else:
-            x[ii],y[ii],y_u[ii],folder,fit_result = Sweep_repetitions(carbon = carbon,return_fits=True,plot_result = False,**kw)
-            ii +=1
+            x_temp,y_temp,y_u_temp,folder,fit_result = Sweep_repetitions(carbon = carbon,return_fits=True,plot_result = False,**kw)
+            x.append(x_temp)
+            y.append(y_temp)
+            y_u.append(y_u_temp)
+
         if fit_result['reduced_chisq']>0.005:
             print 'Bad fit in ', folder, 'Xi_square is ', fit_result['reduced_chisq']
 
-    return x,y,y_u,folder
+
+    return 1e-3*np.array(np.sort(x)), np.array(y)[np.argsort(np.array(x))], np.array(y_u)[np.argsort(np.array(x))], folder
 
 def repump_power_vs_repetitions(c_identifier, repump_powers=[0], **kw):
 
@@ -682,7 +688,6 @@ def Z_decay_vs_perp_coupling(c_idents,**kw):
 
                 ## add data to arrays
                 if len(x) == 0:
-
                     x = np.array(x2)
                     y1 = np.array(y2)
                     y_u = np.array(y_u2)
@@ -794,7 +799,7 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
 
         if timestamp != None:
             folder = toolbox.data_from_time(timestamp)
-        elif powers != [0]:
+        elif len(powers) >1:
             folder = toolbox.latest_data('ElectronRepump_'+str(powers[sweep_elem]), older_than=older_than)
         else:
             folder = toolbox.latest_data('ElectronRepump', older_than=older_than)
@@ -837,11 +842,16 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
         
         fit_results.append(fit_result)
+        fitted_tau.append(fit_result['params_dict']['tau'])
+        fitted_tau2.append(fit_result['params_dict']['tau2'])
+        fitted_tau_err.append(fit_result['error_dict']['tau'])
+        fitted_tau2_err.append(fit_result['error_dict']['tau2'])
 
         if plot_results:
             plt.savefig(os.path.join(folder, 'analyzed_result.pdf'), format='pdf')
             plt.savefig(os.path.join(folder, 'analyzed_result.png'), format='png')
-    return fit_result
+    #return fit_results
+    return fitted_tau, fitted_tau_err, fitted_tau2, fitted_tau2_err
 
 def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
             exclude_first_n_points = 0.,
@@ -849,30 +859,22 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
             amplitude = 0.8, decay_constant_one = 0.2, decay_constant_two = 0.6, x_offs = 0,
             plot_results = True, do_T2correct=False,
             plot_fit = True, do_print = False, fixed = [2], show_guess = True,
-            powers = [0], colors=['b']):
+            powers = [0], colors=['b'], cutoff_ns = [3500]):
    
-    ''' 
-    Inputs:
-    timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
-    measurement_name: list of measurement names
-    List of parameters (order important for 'fixed') 
-    offset, amplitude, decay_constant,exponent,frequency ,phase 
-    '''
     figwidthPRL=3.+3./8.
     golden_ratio = 1.62
     figsize=(figwidthPRL,figwidthPRL/golden_ratio)
 
-    fitted_tau, fitted_tau2 = [],[]
-    fitted_tau_err, fitted_tau2_err = [],[]
+    fitted_tau, fitted_tau2, fitted_tau_err, fitted_tau2_err = [],[],[],[]
 
     #p0, fitfunc, fitfunc_str = [], [], []
     fig = plt.figure()
     ax = plt.subplot()
     plt.xlabel('time (ns)')
-    plt.ylabel('p(m$_s$=$\pm1$)')
-    plt.ylim(0.01,1.05)
+    plt.ylabel('1-p(0)')
+    plt.ylim(0.03,1.05)
     ax.set_yscale("log", nonposy='clip')
-    plt.xlim(0.,2500)
+    plt.xlim(0.,2000)
     
 
     for count in np.arange(len(older_than)):
@@ -884,9 +886,10 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
         folder_list_ext = []
         for av_elem in folder_list[2]:
             folder_list_ext.append(toolbox.latest_data(av_elem))
-        print 'folder is ', folder_list_ext
+        #print 'folder is ', folder_list_ext
         
         folder = folder_list_ext[0]
+        print 'I found ', len(folder_list[2]), ' files:'
 
         if ssro_calib_timestamp == None :
             ssro_calib_folder = toolbox.latest_data('SSRO', older_than=older_than[count])
@@ -930,7 +933,15 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
 
         #plt.errorbar(a.sweep_pts[exclude_first_n_points[count]:], 1-a.p0[exclude_first_n_points[count]:,0], yerr = a.u_p0[exclude_first_n_points[count]:,0], fmt = 'o',color = colors[count], label = '')
         #print x, y, y_u
-        plt.errorbar(binned_x, binned_y, yerr = binned_yu, fmt = 'o', color = colors[count], label = '')
+        #print 'x ', binned_x, ' cutoff ', cutoff_ns[count]
+        elements_to_cut = np.nonzero( binned_x > np.array(cutoff_ns[count]) )[0]
+        if elements_to_cut != []:
+            print 'cut index ', elements_to_cut[0]
+            binned_x = binned_x[0:elements_to_cut[0]]
+            binned_y = binned_y[0:elements_to_cut[0]]
+            binned_yu = binned_yu[0:elements_to_cut[0]]
+
+        plt.errorbar(binned_x, binned_y, yerr = binned_yu, fmt = '', ls= '', color = colors[count], label = '', elinewidth=2)
 
         #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
         p0, fitfunc, fitfunc_str = common.fit_repumping( 
@@ -940,17 +951,24 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
         #          np.array(decay_constant_one[count]), np.array(decay_constant_two[count]), np.array(x_offs[count]))
 
         if plot_results and show_guess:
-            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+            ax.plot(np.linspace(binned_x[0],binned_x[-1],201), fitfunc(np.linspace(binned_x[0],binned_x[-1],201)), ':', lw=2)
 
-        fit_result = fit.fit1d( x, y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True, fixed=fixed[count])
+        fit_result = fit.fit1d( binned_x, binned_y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True, fixed=fixed[count])
 
         ## plot data and fit as function of total time
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001),color='b',log=True, 
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001),color = colors[count],log=True, 
                 ax=ax, plot_data=False, legend=None, add_txt=False)
 
         fit_results.append(fit_result['params_dict'])
+        
+        fitted_tau.append(fit_result['params_dict']['tau'])
+        fitted_tau_err.append(fit_result['error_dict']['tau'])
+        fitted_tau2.append(fit_result['params_dict']['tau2'])
+        fitted_tau2_err.append(fit_result['error_dict']['tau'])
+        
         print fit_result['params_dict'], fit_result['error_dict']
+
 
         #fitted_tau.append(fit_result['params_dict']['tau'])
         #fitted_tau_err.append(fit_result['error_dict']['tau'])
@@ -962,8 +980,238 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
         plt.savefig(os.path.join(save_figure_to, 'Fig2.pdf'), format='pdf')
         plt.savefig(os.path.join(save_figure_to, 'Fig2.png'), format='png')
 
-    return fitted_tau, fitted_tau_err
+    print 'tau ', fitted_tau, ' tau err ', fitted_tau_err, ' tau2 ', fitted_tau2, ' tau2 err ', fitted_tau2_err
 
 # def analyze_avg_repump_time(carbons = ['2','3'],folder_name = 'Memory_Sweep_repump_time_',fit_results = False,older_than = older_than):
 #     CD.Sweep_Rep_List(carbons = carbons, folder_name = folder_name, fit_results = False, older_than = older_than)
 
+def coupling_vs_rep_paper_plot(c_idents = ['1'], do_Z=False, older_than_list= None, labels = [], styles=['ko'], fit_colors = [], LogPlot=True, update_data=True, lastdata = None, do_T2correct=False, **kw):
+    arraylength=0
+    for c_ident_count in c_idents:  # add one for singles and two (pm configuration) for DFS
+        arraylength += len(c_ident_count)
+
+    singles_idents = []
+    for singels_elem in c_idents:
+        if len(singels_elem)==1:
+            singles_idents.append(singels_elem)
+
+    fig = plt.figure()
+    ax = plt.subplot()
+    x, y, y_u = np.zeros( (len(older_than_list),arraylength) ), np.zeros( (len(older_than_list),arraylength) ), np.zeros( (len(older_than_list),arraylength) )
+    singles_x, singles_y, singles_y_u = np.zeros( (len(older_than_list),len(singles_idents)) ), np.zeros( (len(older_than_list),len(singles_idents)) ), np.zeros( (len(older_than_list),len(singles_idents)) )
+
+
+    plt.xlabel('Coupling strength (kHz)')   
+    plt.ylabel('Fitted decay constant')
+    plt.title('')
+
+    if LogPlot:
+        plt.ylim([10,2000])
+        plt.xlim([0,90])
+        #ax.set_xscale("log", nonposy='clip')
+        ax.set_yscale("log", nonposy='clip')
+    else:
+        plt.ylim([0,1000])
+
+    for count in np.arange(len(older_than_list)):
+        if update_data or lastdata == None:
+            print 'processing timestamps before ', older_than_list[count]
+            x[count], y[count], y_u[count], folder_temp = coupling_vs_rep_update_data(c_idents=c_idents, older_than = older_than_list[count] , do_Z = do_Z, do_T2correct=do_T2correct)
+            singles_x[count], singles_y[count], singles_y_u[count], folder_temp = coupling_vs_rep_update_data(c_idents=singles_idents, older_than = older_than_list[count], do_Z = do_Z, do_T2correct=do_T2correct)
+        else:
+            x, y, y_u, singles_x, singles_y, singles_y_u = lastdata
+
+        plt.errorbar(x[count],y[count],y_u[count], fmt = 'o', color=fit_colors[count], linewidth=2, markeredgewidth = 1, markeredgecolor = fit_colors[count], label = labels[count], markersize=4)
+        plt.plot(singles_x[count], singles_y[count], 'o', mfc='white', color = fit_colors[count], markeredgecolor = fit_colors[count], markersize=4)
+        p0,fitfunc,fitfunc_str = common.fit_dephasing_coupl(1,0.00028,22)
+        #p0,fitfunc,fitfunc_str =fitlib.fit_dephasing_constant_offset(1,0.0005,0)
+        #p0,fitfunc,fitfunc_str =fitlib.fit_dephasing_tau(1,0.001,0)
+        if False:  # Show Guess
+            ax.plot(np.linspace(2,90,201), fitfunc(np.linspace(2,90,201)), ':', lw=2)
+            print 'fitfun value ', fitfunc(np.linspace(2,90,21))
+        if count < len(fit_colors):
+            fit_result = fit.fit1d(x[count], y[count], None, p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = [0])
+            plot.plot_fit1d(fit_result, np.linspace(0,100,1001), ax=ax, color = fit_colors[count], plot_data=False, add_txt = False, lw = 2)
+    if True:  # Show Guess
+        print 'Plotting Guess'
+        guess_values= kw.get('fit_guess',(1,0.000275,0))
+        p0,fitfunc,fitfunc_str = common.fit_dephasing_coupl(guess_values[0],guess_values[1],guess_values[2])
+        ax.plot(np.linspace(2,90,201), fitfunc(np.linspace(2,90,201)), ':', lw=2, color = 'r')
+        print 'fitfun value ', fitfunc(np.linspace(2,90,21))
+    #plt.legend(loc=1)#bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    save_figure_to = 'D:\measuring\QMem_plots'
+    #save_figure_to = 'K:\ns\qt\Diamond\Eigenpapers\15-WeaklyCoupledQuantumMemory\Figures'
+    print 'saving to: ', save_figure_to
+    plt.savefig(os.path.join(save_figure_to, 'Fig4b.pdf'), format='pdf')
+    plt.savefig(os.path.join(save_figure_to, 'Fig4b.png'), format='png')
+    
+    plt.show()
+    plt.close('all')
+
+    return x, y, y_u, singles_x, singles_y, singles_y_u
+
+def decay_vs_rep_paper_plot( carbons = ['1','2'],
+        older_than = None, 
+        do_T2correct = False,
+        folder_name = 'Repetitions_', 
+        ssro_calib_timestamp = None,**kw):
+
+    ## other key word arguments
+    x_max = kw.pop('x_max', None)
+    fig_name = kw.pop('fig_name', 'Fig')
+    logicstate_list = kw.pop('logicstate_list',len(carbons)*['X']) ## can be list such as ['X','mX'], used for DFS measurements.
+    colors = kw.pop('colors', color_list)
+
+    x_arr, y_arr, y_u_arr = [],[],[]
+    for c,logicstate in zip(carbons,logicstate_list):
+        folder_dict= extract_data_from_sweep(older_than = older_than,
+            folder_name =folder_name, carbon = c,
+            ssro_calib_timestamp =ssro_calib_timestamp,
+            logicstate = logicstate,
+            do_T2correct=do_T2correct, **kw)
+        x_arr.append(folder_dict['sweep_pts'])
+        y_arr.append(folder_dict['res'])
+        y_u_arr.append(folder_dict['res_u'])
+    
+    fig = plt.figure()
+    ax = plt.subplot()
+    is_X_measurement = kw.get('is_X_measurement', True)
+    if is_X_measurement:
+        for key in ['XX','X']:
+            if folder_dict[key] != []:
+                folder = folder_dict[key][0]
+    else:
+        for key in ['ZZ','Z']:
+            if folder_dict[key] != []:
+                folder = folder_dict[key][0]
+
+    for x,y,y_u,carbon,logicstate,jj in zip(x_arr,y_arr,y_u_arr,carbons,logicstate_list,range(len(x_arr))):
+        A0, offset, decay, x0 = y[0], 0, 50, 0
+        p0,fitfunc,fitfunc_str = common.fit_exp_decay_shifted_with_offset(offset,A0,decay,x0)
+        fixed = [0,3]
+        fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = False, ret = True, fixed = fixed)
+        if x_max == None:
+            x_max = 2 * x[-1]
+        plot.plot_fit1d(fit_result, np.linspace( 0*x[0], x_max, 1001), ax=ax,color = colors[jj], plot_data=False,add_txt = False, lw = 2)
+        plt.errorbar(x,y,y_u, fmt='o',lw=1,color = colors[jj])
+
+    plt.ylim(0.07,1.0)
+    ax.set_yscale("log", nonposy='clip')
+    plt.errorbar( np.linspace(0, x_max, num=5),np.linspace(1./3., 1./3., num=5), None, fmt = '--y', lw=2)
+
+    plt.xlabel('Number of repetitions')
+    plt.xlim(0, x_max)
+    plt.ylabel('Bloch vector length')
+    plt.title('')
+
+    save_figure_to = 'D:\measuring\QMem_plots'
+    #save_figure_to = 'K:\ns\qt\Diamond\Eigenpapers\15-WeaklyCoupledQuantumMemory\Figures'
+    print 'saving to: ', save_figure_to
+    plt.savefig(os.path.join(save_figure_to, fig_name+'.pdf'), format='pdf')
+    plt.savefig(os.path.join(save_figure_to, fig_name+'.png'), format='png')
+    plt.show()
+    plt.close('all')
+
+def avg_repump_time_paper_plot( carbons = ['1','2'],
+        older_than = None, 
+        do_T2correct = False,
+        folder_name = 'Repetitions_', 
+        ssro_calib_timestamp = None,**kw):
+
+    ## other key word arguments
+    x_max = kw.pop('x_max', None)
+    fig_name = kw.pop('fig_name', 'Fig')
+    fit_results = kw.pop('fit_results',True)
+    sequence_length = kw.pop('sequence_length',None)
+    logicstate_list = kw.pop('logicstate_list',len(carbons)*['X']) ## can be list such as ['X','mX'], used for DFS measurements.
+    colors = kw.pop('colors', color_list)
+
+    x_arr, y_arr, y_u_arr = [], [], []
+    
+    for c,logicstate in zip(carbons,logicstate_list):
+        folder_dict= extract_data_from_sweep(older_than = older_than,
+            folder_name =folder_name, carbon = c,
+            ssro_calib_timestamp =ssro_calib_timestamp,
+            logicstate = logicstate,
+            do_T2correct=do_T2correct, **kw)
+        x_arr.append(folder_dict['sweep_pts'])
+        y_arr.append(folder_dict['res'])
+        y_u_arr.append(folder_dict['res_u'])
+    ### convert to time instead of repetitions:
+    if sequence_length != None:
+        x_arr = [x*sequence_length for x in x_arr]
+    
+    fig = plt.figure()
+    ax = plt.subplot()
+
+    is_X_measurement = kw.get('is_X_measurement', True)
+    if is_X_measurement:
+        for key in ['XX','X']:
+            if folder_dict[key] != []:
+                folder = folder_dict[key][0]
+    else:
+        for key in ['ZZ','Z']:
+            if folder_dict[key] != []:
+                folder = folder_dict[key][0]
+
+    for x,y,y_u,carbon,logicstate,jj in zip(x_arr,y_arr,y_u_arr,carbons,logicstate_list,range(len(x_arr))):
+
+        if fit_results:
+            A0, offset, decay, x0 = 1, 0., 0.5, 0.5
+            if sequence_length != None:
+                decay = decay*sequence_length
+            #p0,fitfunc,fitfunc_str = common.fit_exp_decay_shifted_with_offset(offset,A0,decay,x0)
+            p0,fitfunc,fitfunc_str = common.fit_gauss(offset,A0,x0,decay)
+            fixed = [0]
+
+            fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = False, ret = True, fixed = fixed)
+            print fit_result['params_dict']['x0'], ' +- ', fit_result['error_dict']['x0'] 
+            if x_max == None:
+                x_max = 1.1* x[-1]
+            plot.plot_fit1d(fit_result, np.linspace( 1.05*x[0], 1.05*x[-1], 1001), ax=ax,color = colors[jj], plot_data=False,add_txt = False, lw = 2)
+
+        label_txt = 'C'+carbon
+        if len(carbon)!=1:
+            label_txt = label_txt+'_'+logicstate
+
+        plt.errorbar(x,y,y_u, fmt='o',lw=1,color = colors[jj],label=label_txt)
+
+    plt.ylim(0.0,0.55)
+    plt.xlim(1.05*x[0], 1.05*x[-1])
+
+    #plt.errorbar( np.linspace(0, x_max, num=5),np.linspace(1./3., 1./3., num=5), None, fmt = '--y', lw=2)
+
+
+    plt.xlabel('delay')
+    #plt.xlim(0, x_max)
+
+
+    plt.ylabel('Bloch vector length')
+    plt.title('')
+    #plt.legend()#bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    save_figure_to = 'D:\measuring\QMem_plots'
+    #save_figure_to = 'K:\ns\qt\Diamond\Eigenpapers\15-WeaklyCoupledQuantumMemory\Figures'
+    print 'saving to: ', save_figure_to
+    plt.savefig(os.path.join(save_figure_to, fig_name+'.pdf'), format='pdf')
+    plt.savefig(os.path.join(save_figure_to, fig_name+'.png'), format='png')
+    plt.show()
+    plt.close('all')
+
+def coupling_vs_rep_update_data( c_idents=['1'], older_than=None, do_Z = False, do_T2correct=False):
+    ## get Z decays
+    if do_Z:
+        Z_fits,Z_fits_u = Z_decay_vs_perp_coupling(c_idents,older_than=older_than,return_vals = True)
+    
+    ### get bloch vector decay
+    x,y,y_u,folder = coupling_vs_repetitions(c_idents,older_than = older_than,
+                                                folder_name = 'Memory_NoOfRepetitions_', do_T2correct=do_T2correct)
+    #print 'update done!!'
+    
+    if do_Z == False:
+        return x,y,y_u,folder
+    
+    else:
+        Z_fits = Z_fits[np.argsort(x)]
+        Z_fits_u = Z_fits_u[np.argsort(x)]
+        x = np.sort(x*1e-3)
+        return x,y,y_u,Z_fits,Z_fits_u,folder
