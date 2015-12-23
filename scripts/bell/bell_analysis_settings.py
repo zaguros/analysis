@@ -2,16 +2,17 @@ import datetime
 
 bs_process_params = {
 
-    'st_start_ch0'            : 5430000,
+    'st_start_ch0'            : 5420000,
     'st_len'                  : 250000 ,
-    'st_start_ch1'            : 5430000,
+    'st_start_ch1'            : 5420000,
     'pulse_sep'               : 250000 ,
 
     'ent_marker_channel_bs' : 1,
 
-    'st_pulse_start'          : 5438000,
-    'st_pulse_len'            : 4000,
-    'pulse_max_sn_diff'       : 3000000, #3 million syncs ~ 60 secs
+    'st_pulse_start_ch0'      : 5443000,
+    'st_pulse_start_ch1'      : 5444000, #for ch 1
+    'st_pulse_len'            : 5000,
+    'pulse_max_sn_diff'       : 6000000, #6 million syncs ~ 120 secs
 
     'hist_binsize_ps'		  : 100, #ps 
     
@@ -58,13 +59,13 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5443500,
+    'st_start_ch0'             : 5426000,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5443500+600,
+    'st_start_ch1'             : 5426000-650,
     'st_len_w2_00'             : 9000,
     'st_len_w2_11'             : 18000,
     'pulse_sep'                : bs_process_params['pulse_sep'],
-    'st_pulse_start'           : bs_process_params['st_pulse_start'],
+    'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
     'hist_binsize_ps'		  : 100, #ps 
 
@@ -77,17 +78,3 @@ analysis_params = {
     #XX_lock F0A=0.9380, F1A=0.9908, F0B=0.9096, F1B=0.9976):
     #ZZ F0A=0.9550, F1A=0.9786, F0B=0.9376, F1B=0.9952):
     #XXlotr F0A=0.96, F1A=0.99, F0B=0.943, F1B=0.995):
-#Beam splitter light on on webcam
-bad_time_ranges = [[datetime.datetime(2015,3,4,10,0,33),datetime.datetime(2015,3,4,10,14,4)],
-                   [datetime.datetime(2015,3,9,15,50,49),datetime.datetime(2015,3,9,16,4,3)],
-                   [datetime.datetime(2015,3,10,11,13,6),datetime.datetime(2015,3,10,11,19,22)],
-                   [datetime.datetime(2015,3,11,8,13,31),datetime.datetime(2015,3,11,8,18,57)],
-                   [datetime.datetime(2015,3,11,17,32,42),datetime.datetime(2015,3,11,17,56,4)],
-                   [datetime.datetime(2015,3,12,12,55,24),datetime.datetime(2015,3,12,12,57,22)],
-                   [datetime.datetime(2015,3,19,12,31,54),datetime.datetime(2015,3,19,12,43,26)],
-                   [datetime.datetime(2015,3,25,5,51),datetime.datetime(2015,3,25,7,0)],
-                   [datetime.datetime(2015,3,26,7,48,54),datetime.datetime(2015,3,26,7,49,13)],
-                   [datetime.datetime(2015,3,26,14,56,58),datetime.datetime(2015,3,26,15,8,43)],
-                   [datetime.datetime(2015,4,23,14,31,8),datetime.datetime(2015,4,23,14,36,22)],
-                   [datetime.datetime(2015,4,24,11,14,54),datetime.datetime(2015,4,24,11,23,31)],
-                   ]

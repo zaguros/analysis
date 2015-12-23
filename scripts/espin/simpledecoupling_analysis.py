@@ -19,8 +19,8 @@ def electron_T2_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 1/2.
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('DD')
-
+        folder = toolbox.latest_data('Decoupling')
+    print folder
     fit_results = []
     for k in range(0,len(measurement_name)):
         a = sequence.SequenceAnalysis(folder)

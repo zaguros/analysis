@@ -1,10 +1,11 @@
 import numpy as np
 import h5py
 from analysis.lib.m2 import m2
+from analysis.lib.fitting import fit, common
 
 #cl is short for column
 _bs_dtype = np.uint64
-_bs_noof_columns = 9
+_bs_noof_columns = 10
 _cl_sn          = 0 
 _cl_type        = 1 #type of entanglement event: 1 is valid double click event, 2 is w1 click event, 3 is w2 click event, 4 is invalid event
 _cl_ch_w1       = 2 
@@ -13,7 +14,8 @@ _cl_st_w1       = 4
 _cl_st_w2       = 5 
 _cl_tt_w1       = 6
 _cl_tt_w2       = 7
-_cl_pulse_cts   = 8
+_cl_pulse_cts_ch0 = 8
+_cl_pulse_cts_ch1 = 9
 
 _lt_dtype = np.uint64
 _lt_noof_columns = 17
@@ -26,11 +28,11 @@ _cl_noof_rnd_0  = 5
 _cl_noof_rnd_1  = 6
 _cl_cr_after    = 7
 _cl_ro_after    = 8
-_cl_inv_mrkr    = 9
+_cl_last_inv_mrkr= 9
 _cl_tt_ma       = 10
-_cl_tt_rnd      = 11
+_cl_st_rnd      = 11
 _cl_first_ph_st = 12
-_cl_noof_ph_tail = 13
+_cl_first_tail_st = 13
 _cl_noof_rnd_0_prev  = 14
 _cl_noof_rnd_1_prev  = 15
 _cl_noof_ph_ro_prev  = 16
@@ -105,7 +107,7 @@ def get_ssro_result_list(fp_lt,
                             rnd_start, rnd_length, rnd_channel, rnd_0_channel, rnd_1_channel,
                             psb_tail_start,psb_tail_len, pulse_sep,
                             ent_marker_channel_lt, ent_marker_lt_timebin_limit, sn_diff_marker_ent_early, sn_diff_marker_ent_late,
-                            invalid_marker_channel_lt, invalid_marker_max_sn_diff,
+                            invalid_marker_channel_lt,
                             VERBOSE=False):
 
     pqf_lt  = h5py.File(fp_lt,  'r')
@@ -134,7 +136,9 @@ def get_ssro_result_list(fp_lt,
         i+=1
     pqf_lt.close()
 
-    if not elements_unique(marker_sns):
+    if i ==1:
+        print 'WARNING, file {} has no LT data'.format(fp_lt)
+    elif not elements_unique(marker_sns):
         raise Exception('File {} has multiple entanglement markers in one sync'.format(fp_lt))
     if VERBOSE:
         print 'Found {} entanglement markers in {}-{}'.format(len(marker_sns),fp_lt, i)
@@ -175,7 +179,7 @@ def get_ssro_result_list(fp_lt,
         fltr_ro_photon_prev = ( sn == ent_sn-1) & fltr_ro
         
         if np.sum(fltr_rnd0_ev | fltr_rnd1_ev )==1:
-            rnd_ma_tt =  tt[fltr_rnd0_ev | fltr_rnd1_ev]
+            rnd_ma_st =  st[fltr_rnd0_ev | fltr_rnd1_ev]
         else:
             rnd_ma_tt = 0
 
@@ -184,21 +188,31 @@ def get_ssro_result_list(fp_lt,
         else:
             first_ph_st = 0
 
-        
-        fltr_invalid_ev = (diff_invalid_ev > 0) & (diff_invalid_ev <= invalid_marker_max_sn_diff)
+        if np.sum(diff_invalid_ev>0) > 0:
+            last_inv_mrkr = np.min(diff_invalid_ev[diff_invalid_ev>0]) 
+        else:
+            last_inv_mrkr = 0
 
-        ssro_result_list[i,_cl_sn_ma]       = cur_sn
-        ssro_result_list[i,_cl_sn_ro]       = ent_sn
-        ssro_result_list[i,_cl_noof_ph_ro]  = np.sum(fltr_ro_photon)
-        ssro_result_list[i,_cl_st_ma]       = cur_ent_marker_st
-        ssro_result_list[i,_cl_noof_rnd]    = np.sum(fltr_rnd_click)
-        ssro_result_list[i,_cl_noof_rnd_0]  = np.sum(fltr_rnd0_ev)
-        ssro_result_list[i,_cl_noof_rnd_1]  = np.sum(fltr_rnd1_ev)
-        ssro_result_list[i,_cl_inv_mrkr]    = np.sum(fltr_invalid_ev)
-        ssro_result_list[i,_cl_tt_ma]       = cur_ent_marker_tt
-        ssro_result_list[i,_cl_tt_rnd]      = rnd_ma_tt
-        ssro_result_list[i,_cl_first_ph_st] = first_ph_st
-        ssro_result_list[i,_cl_noof_ph_tail]= np.sum(fltr_tail_photon)
+        if np.sum(fltr_tail_photon) >0:
+            first_tail_st = st[fltr_tail_photon][0]
+        else:
+           first_tail_st = 0
+
+        
+        #fltr_invalid_ev = (diff_invalid_ev > 0) & (diff_invalid_ev <= invalid_marker_max_sn_diff)
+
+        ssro_result_list[i,_cl_sn_ma]          = cur_sn
+        ssro_result_list[i,_cl_sn_ro]          = ent_sn
+        ssro_result_list[i,_cl_noof_ph_ro]     = np.sum(fltr_ro_photon)
+        ssro_result_list[i,_cl_st_ma]          = cur_ent_marker_st
+        ssro_result_list[i,_cl_noof_rnd]       = np.sum(fltr_rnd_click)
+        ssro_result_list[i,_cl_noof_rnd_0]     = np.sum(fltr_rnd0_ev)
+        ssro_result_list[i,_cl_noof_rnd_1]     = np.sum(fltr_rnd1_ev)
+        ssro_result_list[i,_cl_last_inv_mrkr]  = last_inv_mrkr
+        ssro_result_list[i,_cl_tt_ma]          = cur_ent_marker_tt
+        ssro_result_list[i,_cl_st_rnd]         = rnd_ma_st
+        ssro_result_list[i,_cl_first_ph_st]    = first_ph_st
+        ssro_result_list[i,_cl_first_tail_st]  = first_tail_st
         ssro_result_list[i,_cl_noof_rnd_0_prev]= np.sum(fltr_rnd0_prev)
         ssro_result_list[i,_cl_noof_rnd_1_prev]= np.sum(fltr_rnd1_prev)
         ssro_result_list[i,_cl_noof_ph_ro_prev]= np.sum(fltr_ro_photon_prev)
@@ -206,10 +220,26 @@ def get_ssro_result_list(fp_lt,
 
     return ssro_result_list
 
+def fit_pulse(st,p_guess,p_len):
+    y,x=np.histogram(st, bins=p_len)
+    x=x[1:]
+    f = common.fit_gauss
+    args=[0.,.1,(p_guess+p_len/2.),p_len/4.]
+    fitres = fit.fit1d(x, y, f, *args, fixed = [],
+                   do_print = False, ret = True, VERBOSE=False)
+    #if fitres['success']:
+        #x0=int(fitres['params_dict']['x0'])
+    #else:
+    try: 
+        x0=int(fitres['params_dict']['x0'])
+    except:
+        x0=0
+    return x0
+
 
 def get_entanglement_event_list(fp_bs,
                                 st_start_ch0, st_start_ch1, st_len, pulse_sep,
-                                st_pulse_start, st_pulse_len, pulse_max_sn_diff,
+                                st_pulse_start_ch0, st_pulse_start_ch1, st_pulse_len, pulse_max_sn_diff,
                                 ent_marker_channel_bs,
                                 VERBOSE=False):
     
@@ -229,7 +259,8 @@ def get_entanglement_event_list(fp_bs,
         print 'Found {} entanglement markers in {}'.format(len(ent_sn),fp_bs)
 
     marker_sn_fltr = np.in1d(sn_bs,ent_sn)
-    pulse_st_fltr = (st_pulse_start <= st_bs ) & (st_bs < st_pulse_start+st_pulse_len) & (sp_bs == 0)
+    pulse_st_fltr_ch0 = (st_pulse_start_ch0 <= st_bs ) & (st_bs < st_pulse_start_ch0+st_pulse_len) & (sp_bs == 0) & (ch_bs == 0)
+    pulse_st_fltr_ch1 = (st_pulse_start_ch1 <= st_bs ) & (st_bs < st_pulse_start_ch1+st_pulse_len) & (sp_bs == 0) & (ch_bs == 1)
     sn = sn_bs[marker_sn_fltr]
     st = st_bs[marker_sn_fltr]
     ch = ch_bs[marker_sn_fltr]
@@ -248,8 +279,10 @@ def get_entanglement_event_list(fp_bs,
         fltr_ent = (sn==cur_sn)
         
         pulse_sn_diffs = (cur_sn - sn_bs.astype(np.int64)) 
-        pulse_sn_fltr = (pulse_sn_diffs > 0) & (pulse_sn_diffs<3000000)#3 million ~ 60 secs
-        ent_event_list[i,_cl_pulse_cts]= np.sum(pulse_sn_fltr & pulse_st_fltr)
+        pulse_sn_fltr = (pulse_sn_diffs > 0) & (pulse_sn_diffs<pulse_max_sn_diff)#3 million ~ 60 secs
+
+        ent_event_list[i,_cl_pulse_cts_ch0]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch0)#fit_pulse(st_bs[pulse_sn_fltr & pulse_st_fltr_ch0],st_pulse_start_ch0,st_pulse_len)
+        ent_event_list[i,_cl_pulse_cts_ch1]= np.sum(pulse_sn_fltr & pulse_st_fltr_ch1)#fit_pulse(st_bs[pulse_sn_fltr & pulse_st_fltr_ch1],st_pulse_start_ch1,st_pulse_len)
 
         ent_event_list[i,_cl_sn]    = cur_sn   
 
@@ -399,10 +432,10 @@ def get_lt_stats(fp, ro_start, ro_length, ro_channel,
                                                                            psb_tail_start,psb_tail_len, pulse_sep,
                                                                            ro_start, ro_length, ro_channel,
                                                                            rnd_start, rnd_length, rnd_0_channel)
-    p_w1_ro0_rnd1, p_w2_ro0_rnd1, noof_w1_rnd1, noof_w2_rnd1  = sp_corr_rnd(sn,sp,ch,st, 
-                             psb_tail_start,psb_tail_len, pulse_sep,
-                             ro_start, ro_length, ro_channel,
-                             rnd_start, rnd_length, rnd_1_channel)
+    p_w1_ro0_rnd1, p_w2_ro0_rnd1, noof_w1_rnd1, noof_w2_rnd1 = sp_corr_rnd(sn,sp,ch,st, 
+                                                                           psb_tail_start,psb_tail_len, pulse_sep,
+                                                                           ro_start, ro_length, ro_channel,
+                                                                           rnd_start, rnd_length, rnd_1_channel)
     noof_w1 = noof_w1_rnd0 + noof_w1_rnd1
     noof_w2 = noof_w2_rnd0 + noof_w2_rnd1
 

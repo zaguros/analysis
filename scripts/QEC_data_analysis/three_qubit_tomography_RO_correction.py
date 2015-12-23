@@ -12,6 +12,7 @@ from analysis.scripts.QEC_data_analysis.C13_initialization_and_RO_fidelity impor
 
 # folder = r'D:\measuring\data\Analyzed figures\Three qubit states'
 folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
+folder = r'D:\measuring\data\QEC_data\figs\Tim_pres'
 
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
@@ -526,9 +527,9 @@ y_fidelity_cs3 = np.zeros(6)
 y_fidelity_cs4 = np.zeros(6)
 y_fidelity_err = np.zeros(6)
 
-BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue,RO_corr = True)
+# BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue,RO_corr = True)
 
 # # y_fidelity_cs1[0],y_fidelity_cs2[0],y_fidelity_cs3[0], y_fidelity_cs4[0],y_fidelity_err[0]
 # y_fidelity_cs1[0],y_fidelity_err[0] = BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
@@ -571,9 +572,9 @@ BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measur
 # 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 
-# BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
-# 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
+		ssro_calib_timestamp ='20141225_150151', save = True,
+		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
@@ -583,16 +584,16 @@ BarPlotTomoContrastFull(timestamp = '20141225_190000', state = '000init', measur
 # 		ssro_calib_timestamp ='20141230_064816', save = True,
 # 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-# BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
-# 		ssro_calib_timestamp ='20141230_064816', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
+		ssro_calib_timestamp ='20141230_064816', save = True,
+		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-# BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
-# 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
+		ssro_calib_timestamp ='20141225_150151', save = True,
+		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,
 # 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-plt.show()
+plt.show(block = False)

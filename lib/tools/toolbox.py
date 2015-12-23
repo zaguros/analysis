@@ -105,6 +105,12 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     daydirs.sort()
 
+    # MAB 15-4-15 Added for weird file mac is automatically creating
+    try:
+        daydirs.remove('.DS_Store')
+    except ValueError:
+        pass
+
     measdirs = []
     i = len(daydirs)-1
     while len(measdirs) == 0 and i >= 0:
@@ -113,7 +119,6 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
             print search_dir, daydir
         all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
         all_measdirs.sort()
-
         measdirs = []
 
         for d in all_measdirs:
@@ -140,7 +145,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 measdirs.append(d)
 
         i -= 1
-
+    # print len(measdirs) # commented out. Produces a lot of print statements when analysing many folders. NK
     if len(measdirs) == 0:
         if raise_exc == True:
             raise Exception('No fitting data found containing {}.'.format(contains))
@@ -291,8 +296,7 @@ def get_msmt_name(pqf):
 
     if type(pqf) == h5py._hl.files.File: 
         for k in pqf.keys():
-            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
-                f.close()
+            if pqf.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
                 return k
 
         raise Exception('Cannot find the name of the measurement.')

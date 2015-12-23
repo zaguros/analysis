@@ -36,13 +36,14 @@ if timestamp != None:
     print folder
 else:
     folder = toolbox.latest_data('Ramsey')
-
+print folder
 a = mbi.MBIAnalysis(folder)
 a.get_sweep_pts()
 a.get_readout_results(name='adwindata')
 a.get_electron_ROC()
 ax = a.plot_results_vs_sweepparam(ret='ax', name='adwindata' )
 ax.set_ylim([-0.4,1.05])
+'''
 fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_gaussian_decay,
         guess_tau, guess_a, (guess_f1, guess_A1, guess_phi1),
         (guess_f2, guess_A2, guess_phi2),
@@ -51,7 +52,7 @@ fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_gaussian
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
         plot_data=False)
-
+'''
 plt.savefig(os.path.join(folder, 'electronramsey_analysis.pdf'),
         format='pdf')
 plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),

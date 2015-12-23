@@ -15,13 +15,14 @@ from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
-    def get_readout_results(self, name=''):
+    def get_readout_results(self, name='',CR_after_check = False):
         """
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
             a given sweep point and readout in a sequence)
         self.normalized_ssro contains the normalized result (i.e., probability
             for getting a photon)
+        CR_after_check: erases certain results from the SSRO results based on the CR check after the sequence.
         """
         self.result_corrected = False
 
@@ -39,10 +40,31 @@ class MBIAnalysis(m2.M2Analysis):
         else:
             results = adwingrp['ssro_results'].value
 
-        self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
-        self.normalized_ssro = self.ssro_results/float(self.reps)
-        self.u_normalized_ssro = \
-            (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
+        if CR_after_check:
+
+            CR_after = adwingrp['CR_after'].value
+            reps_list = np.ones(self.pts)*self.reps
+
+            ### loop over the results of CR check after and eliminate those where ionization was apparent.
+            ### there is probably a faster way to do this. np.search?
+            for ii,CR in enumerate(CR_after):
+                if CR < 2:
+                    reps_list[(ii-1)%self.pts] -= 1
+                    results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
+
+
+            reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
+
+
+            self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
+            self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
+        
+        else:
+            self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
+            self.normalized_ssro = self.ssro_results/float(self.reps)
+            self.u_normalized_ssro = \
+                (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
 
     def get_correlations(self, name=''):
         """
@@ -102,8 +124,15 @@ class MBIAnalysis(m2.M2Analysis):
             self.normalized_correlations*(1.-self.normalized_correlations)/self.reps)**0.5
 
     def get_sweep_pts(self):
+        #print self.g.attrs.keys()
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
+
+    def get_sequence_length(self):
+        self.repump_wait = self.g.attrs['repump_wait']
+        self.fast_repump_duration = self.g.attrs['fast_repump_duration']
+        #self.sequence_length = np.product(self.average_repump_time, self.fast_repump_duration)
+
 
     def get_electron_ROC(self, ssro_calib_folder=''):
         if ssro_calib_folder == '':
@@ -242,7 +271,8 @@ class MBIAnalysis(m2.M2Analysis):
         figsize=kw.get('figsize',(6,4))
         markersize = kw.get('markersize',6)
         capsize = kw.get('capsize',3)
-        print 'labels', labels
+        if labels != None:
+            print 'labels', labels
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(self.pts) + 1
             self.sweep_name = 'sweep parameter'

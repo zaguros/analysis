@@ -4,7 +4,7 @@ import numpy as np
 import fit
 #=======
 #import analysis.lib.fitting.fit as fit
-
+print 'reloaded'
 
 ### common fitfunctions
 def fit_cos(g_f, g_a, g_A, g_phi, *arg):
@@ -51,7 +51,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     A = fit.Parameter(g_A, 'A')
     phi = fit.Parameter(g_phi, 'phi')
     t   = fit.Parameter(g_t, 't')
-    print 'guessed frequency is '+str(g_f)
+    # print 'guessed frequency is '+str(g_f)
     p0 = [f, a, A,phi,t]
 
     def fitfunc(x):
@@ -60,7 +60,7 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
-    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + phi/360) ) + a'
+    fitfunc_str = 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a'
 
     f = fit.Parameter(g_f, 'f')
     a = fit.Parameter(g_a, 'a')
@@ -74,6 +74,33 @@ def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
         return a() + A()*np.exp(-(x/t())**2) * np.cos(2*np.pi*( f()*x + phi()/360.))
 
     return p0, fitfunc, fitfunc_str
+
+def fit_gaussian_decaying_2cos(g_avg, g_C, g_t, g_A, g_f_a, g_phi_a, g_B, g_f_b, g_phi_b, *arg):
+    """ Fits Gaussian decaying sum of two cosines.
+    To be used for e.g. dynamicaldecoupling.Carbon_Ramsey_noDD"""
+
+    fitfunc_str = 'avg + C * exp(-(x/t)**2) [ A*cos(2pi * (fa*x + phi_a/360) )+ B*cos(2pi * (f_b*x + phi_b/360)))/2 ]'
+
+    avg = fit.Parameter(g_avg, 'avg')
+
+    C = fit.Parameter(g_C, 'C')
+    t   = fit.Parameter(g_t, 't')
+
+    A = fit.Parameter(g_A, 'A')
+    f_a = fit.Parameter(g_f_a, 'f_a')
+    phi_a = fit.Parameter(g_phi_a, 'phi_a')
+
+    B = fit.Parameter(g_B, 'B')
+    f_b = fit.Parameter(g_f_b, 'f_b')
+    phi_b = fit.Parameter(g_phi_b, 'phi_b')
+
+    p0 = [avg,C, t, A,f_a,phi_a,B,f_b,phi_b] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+    def fitfunc(x):
+        return avg() + C() * np.exp(-(x/t())**2) * ( A()*np.cos(2*np.pi*( f_a()*x + phi_a()/360.)) + B() * np.cos(2*np.pi*( f_b()*x + phi_b()/360.)) )/2.0
+
+    return p0, fitfunc, fitfunc_str
+
 
 def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, g_o ,*arg):
     ''' quite a specific function, for electron nuclear control, maybe place somewhere else '''
@@ -124,6 +151,30 @@ def fit_exp_decay_with_offset(g_a, g_A, g_tau, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_exp_decay_with_offset_linslope(g_a, g_A, g_tau,g_b, *arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-x/tau) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+
+    """
+    fitfunc_str = 'A * exp(-x/tau) + a + b*x'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    tau = fit.Parameter(g_tau, 'tau')
+    b = fit.Parameter(g_b, 'b')
+    p0 = [a, A, tau,b]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-x/tau())+x*b()
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_double_exp_decay_with_offset(g_a, g_A, g_tau, g_A2, g_tau2, *arg):
     """
     fitfunction for an exponential decay,
@@ -150,6 +201,7 @@ def fit_double_exp_decay_with_offset(g_a, g_A, g_tau, g_A2, g_tau2, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+
 def fit_exp_decay_shifted_with_offset(g_a, g_A, g_tau, g_x0, *arg):
     """
     fitfunction for an exponential decay,
@@ -167,7 +219,6 @@ def fit_exp_decay_shifted_with_offset(g_a, g_A, g_tau, g_x0, *arg):
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
     tau = fit.Parameter(g_tau, 'tau')
-
     x0 = fit.Parameter(g_x0, 'x0')
     p0 = [a, A, tau, x0]
 
@@ -299,6 +350,20 @@ def fit_gauss(g_a, g_A, g_x0, g_sigma):
 
     def fitfunc(x):
         return a() + A() * np.exp(-(x-x0())**2/(2*sigma()**2))
+    return p0, fitfunc, fitfunc_str
+def fit_gauss_pos(g_a, g_A, g_x0, g_sigma):
+### i think there should be a factor 2 infront of the sigma
+    fitfunc_str = 'a + |A| * exp(-(x-x0)**2/(2*sigma**2))'
+
+    a = fit.Parameter(g_a, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    A = fit.Parameter(g_A, 'A')
+    sigma = fit.Parameter(g_sigma, 'sigma')
+
+    p0 = [a, x0, A, sigma]
+
+    def fitfunc(x):
+        return a() + np.abs(A()) * np.exp(-(x-x0())**2/(2*sigma()**2))
     return p0, fitfunc, fitfunc_str
 
 def fit_general_exponential(g_a, g_A, g_x0, g_T, g_n):
@@ -456,7 +521,78 @@ def fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi):
     return p0, fitfunc, fitfunc_str
 
 
+def fit_hyperbola(g_a,g_n,g_o):
+    fitfunc_str = 'a/(x**n)=o'
+
+    a = fit.Parameter(g_a, 'a')
+    n = fit.Parameter(g_n, 'n')
+    o = fit.Parameter(g_o, 'o')
+    p0 = [a,n,o]
+    def fitfunc(x):
+        return a()/(x**n())+o()
+
+    return p0, fitfunc, fitfunc_str
 
 
+def fit_dephasing_coupl(g_a,g_tau,g_coup_offs):
+    fitfunc_str = '-a/(ln2-ln(1+e**(-0.5* (2*pi*(x+coup_off)*tau)**2)))'
 
+    a = fit.Parameter(g_a, 'a')
+    tau = fit.Parameter(g_tau, 'tau')
+    coup_offs = fit.Parameter(g_coup_offs, 'coup_offs')
+    p0 = [a,tau,coup_offs]
+    def fitfunc(coup):
+        #return o()-a()/np.log((1.+np.exp(-0.5*(2*np.pi*x*tau())**2.))/2.)
+        return a()/(np.log(2)-np.log(1+np.exp(-0.5*(2 *np.pi*(coup_offs()+coup)*tau())**2)))
 
+    return p0, fitfunc, fitfunc_str
+
+def fit_dephasing_tau(g_a,g_coup,g_tau_offs):
+    fitfunc_str = '-a/(ln2-ln(1+e**(-0.5* (2*pi*coup*(tau+tau_offs))**2)))'
+
+    a = fit.Parameter(g_a, 'a')
+    coup = fit.Parameter(g_coup, 'coup')
+    tau_offs = fit.Parameter(g_tau_offs, 'tau_offs')
+    p0 = [a,coup,tau_offs]
+    def fitfunc(tau):
+        return a()/(np.log(2)-np.log(1+np.exp(-0.5*(2 *np.pi*coup()*(tau+tau_offs()))**2.)))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_dephasing_constant_offset(g_a,g_coup,g_offs):
+    fitfunc_str = '-a/(ln2-ln(1+e**(-0.5* (2*pi*coup*tau+offs)**2)))'
+
+    a = fit.Parameter(g_a, 'a')
+    coup = fit.Parameter(g_coup, 'coup')
+    offs = fit.Parameter(g_offs, 'offs')
+    p0 = [a, coup, offs]
+    def fitfunc(x):
+        return a()/(np.log(2.)-np.log(1.+np.exp(- 0.5*( offs() + x*2*np.pi*coup() )**2.)))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_repumping(g_a, g_A, g_tau, g_tau2, g_offs_x, *arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+        g_tau2 : decay constant 2
+        g_offs_x : x offset
+    """
+    fitfunc_str = 'A * exp(-(x-offs_x)/tau)+ A2 * exp(-(x-offs_x)/tau2) + a'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    tau = fit.Parameter(g_tau, 'tau')
+    tau2 = fit.Parameter(g_tau2, 'tau2')
+    offs_x = fit.Parameter(g_offs_x, 'offs_x')
+    p0 = [a, A, tau, tau2, offs_x]
+
+    def fitfunc(x):
+        return a() + A() * np.exp( -(x-offs_x()) / tau()) + (1-A()) * np.exp(-(x-offs_x())/tau2())
+
+    return p0, fitfunc, fitfunc_str
