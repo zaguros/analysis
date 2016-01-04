@@ -12,7 +12,7 @@ import string
 import analysis.lib.QEC.hyperfine_params as hf ### used for perp_coupling vs ZZ
 
 color_list = ['b','g','y','r','brown','m','c']
-CR_after_check = True ### discard events with ionization for data analysis? (this relies on the CR check after the SSRO.)
+CR_after_check = False ### discard events with ionization for data analysis? (this relies on the CR check after the SSRO.)
 
 def get_from_hdf5(folder,key_list):
     # gets a msmt_parameter from an hdf5 file
@@ -46,7 +46,7 @@ def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
         for i,f in enumerate(folder_dict[t]):
             a = mbi.MBIAnalysis(f)
             a.get_sweep_pts()
-            a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
+            a.get_readout_results(name='adwindata',CR_after_check = False)
             a.get_electron_ROC(ssro_calib_folder)
             a.get_sequence_length()
 
@@ -752,15 +752,13 @@ def Z_decay_vs_perp_coupling(c_idents,**kw):
     plt.show()
     plt.close('all')
 
-
 def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
             exclude_first_n_points = 0.,
             offset = 0., x0 = 0, older_than= None,
             amplitude = 1., x_offs=0,   
             decay_constant_one = 0.2, decay_constant_two = 0.6, 
             plot_results = True, do_T2correct=False, log_plot=True,
-            plot_fit = True, do_print = False, fixed = [2], show_guess = True,
-            powers = [0]):
+            plot_fit = True, do_print = False, fixed = [2], show_guess = True, **kw):
    
     ''' 
     Inputs:
@@ -772,83 +770,116 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
     figsize=(6,4.7)
     fitted_tau, fitted_tau2 = [],[] 
     fitted_tau_err, fitted_tau2_err = [],[]
+    fit_results = []
+
+    nf_powers = kw.get('nf_powers', [-1])
+    repumper_powers = kw.get('repumper_powers', [-1])
+    invert = kw.get('invert', 'check_fn')
+    readout_bases = kw.get('ro_bases', [0,-1])
     
-    if timestamp != None:
+    if timestamp != None:  #evaluate particular file
         folder = toolbox.data_from_time(timestamp)
-        powers=[0]
+        nf_powers=[-1]
 
     if ssro_calib_timestamp == None:
         ssro_calib_folder = toolbox.latest_data('SSRO', older_than=older_than)
-        if older_than != None:
-            print 'Using SSRO timestamp ', ssro_calib_folder
+        print 'Using SSRO timestamp ', ssro_calib_folder
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
         print 'Using SSRO timestamp ', ssro_calib_folder
 
-    for sweep_elem in range(len(powers)):
+    for sweep_elem in range(len(nf_powers)):
         fig = plt.figure()
         ax = plt.subplot()
         plt.xlabel('time (ns)')
         plt.ylabel('p(m$_s$=$\pm1$)')
+        folderlist = [] 
+        for readout_elem in readout_bases:  
+            if timestamp != None:
+                folderlist = [toolbox.data_from_time(timestamp)]
+            elif nf_powers == [-1]:
+                folderlist = [toolbox.latest_data('ElectronRepump', older_than=older_than)]
+            else:
+                if readout_elem==-1:
+                    add_to_msmt_name = 'm1RO_'
+                elif readout_elem==1:
+                    add_to_msmt_name = 'p1RO_'
+                else:
+                    add_to_msmt_name = '0RO_'
+                searchstring = 'ElectronRepump_'+str(nf_powers[sweep_elem]*1e9)+'nW_'+str(repumper_powers[sweep_elem]*1e9)+'nW_'+add_to_msmt_name
+                try:
+                    new_folder = toolbox.latest_data(searchstring, older_than=older_than)
+                    folderlist.append(new_folder)
+                except:
+                    print 'No file found for readout in ', readout_elem
+        print folderlist
 
-        if timestamp != None:
-            folder = toolbox.data_from_time(timestamp)
-        elif powers != [0]:
-            folder = toolbox.latest_data('ElectronRepump_'+str(powers[sweep_elem]), older_than=older_than)
-        else:
-            folder = toolbox.latest_data('ElectronRepump', older_than=older_than)
-        print 'folder is ', folder
-        plt.title(folder)
-        fit_results = []
-        
-        a = mbi.MBIAnalysis(folder)
-        a.get_sweep_pts()
-        CR_after_check = None
-        a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
-        a.get_electron_ROC(ssro_calib_folder)
+        for folder in folderlist:
+            print 'folder is ', folder
+            plt.title(folder) 
+            a = mbi.MBIAnalysis(folder)
+            a.get_sweep_pts()
+            CR_after_check = None
+            a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
+            a.get_electron_ROC(ssro_calib_folder)
+            x = 1000* a.sweep_pts.reshape(-1)[exclude_first_n_points:]
 
-        x = 1000* a.sweep_pts.reshape(-1)[exclude_first_n_points:]
-        y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
-        y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
+            if invert == 'check_fn':
+                do_invert = True if '0RO' in folder else False 
+            else:
+                do_invert = invert        
+            if do_invert:
+                print 'inverting ', folder 
+                y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
+            else: 
+                y = a.p0.reshape(-1)[exclude_first_n_points:]
+            y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
 
-        if log_plot:
-             # 0])+str(c_list[1]+'_repump_power'+str(sweep      plt.ylim(0.005,1.05)
-            ax.set_yscale("log", nonposy='clip')
-            plt.ylim(0.0001,1.05)
-            plt.xlim(-10,np.amax(x))
-        else:
-            plt.ylim(0.0,1.05)
-            plt.xlim(-10,np.amax(x))
+            if log_plot:
+                 # 0])+str(c_list[1]+'_repump_power'+str(sweep      plt.ylim(0.005,1.05)
+                ax.set_yscale("log", nonposy='clip')
+                plt.ylim(0.0001,1.05)
+                plt.xlim(-10,np.amax(x))
+            else:
+                plt.ylim(0.0,1.05)
+                plt.xlim(-10,np.amax(x))
 
+            plot_color = 'r' if '0RO' in folder else 'b' if 'p1RO' in folder else 'k'
+            plt.errorbar(x,y, yerr = y_u, fmt = 'o', color = plot_color , label = 'x')
+            #plt.legend(bbox_to_anchor=(1.05, 1), loc=3, borderaxespad=0.)
+            #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
+            p0, fitfunc, fitfunc_str = common.fit_repumping( offset, amplitude, decay_constant_one,
+                decay_constant_two, x_offs )
 
-        plt.errorbar(x,y, yerr = y_u, fmt = 'o', color = 'k', label = 'x')
-        #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
-        p0, fitfunc, fitfunc_str = common.fit_repumping( offset, amplitude, decay_constant_one,
-            decay_constant_two, x_offs )
+            if plot_results and show_guess:
+                ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-        if plot_results and show_guess:
-            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True, fixed=fixed)
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
+            ## plot data and fit as function of total time
+            if plot_fit == True:
+                plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), color = plot_color, ax=ax, plot_data=False)
+            
+            try:
+                fitted_tau.append(fit_result['params_dict']['tau']) 
+                fitted_tau2.append(fit_result['params_dict']['tau2']) 
+                fitted_tau_err.append(fit_result['error_dict']['tau'])
+                fitted_tau2_err.append(fit_result['error_dict']['tau2'])
+            except:
+                print 'fit didnt succeed'
 
-        ## plot data and fit as function of total time
-        if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
-        
-        fit_results.append(fit_result)
-
-        if plot_results:
-            plt.savefig(os.path.join(folder, 'analyzed_result.pdf'), format='pdf')
-            plt.savefig(os.path.join(folder, 'analyzed_result.png'), format='png')
-    return fit_result
+            if plot_results:
+                plt.savefig(os.path.join(folder, 'analyzed_result.pdf'), format='pdf')
+                plt.savefig(os.path.join(folder, 'analyzed_result.png'), format='png')
+    return fitted_tau, fitted_tau2, fitted_tau_err, fitted_tau2_err
 
 def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
             exclude_first_n_points = 0.,
             offset = 0., x0 = 0, older_than= None, newer_than=0, binwidth_ns = None,
             amplitude = 0.8, decay_constant_one = 0.2, decay_constant_two = 0.6, x_offs = 0,
             plot_results = True, do_T2correct=False,
-            plot_fit = True, do_print = False, fixed = [2], show_guess = True,
+            plot_fit = True, do_print = False, fixed = [2], show_guess = True, invert = [True],
             powers = [0], colors=['b']):
    
     ''' 
@@ -904,7 +935,10 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
 
             x_list = 1000*a.sweep_pts.reshape(-1)[exclude_first_n_points[count]:]
             x = np.append(x, x_list - x_list[0])  #shifts the graph such that it starts at t=0
-            y = np.append(y,1-a.p0.reshape(-1)[exclude_first_n_points[count]:])
+            if invert[count]:
+                y = np.append(y,1-a.p0.reshape(-1)[exclude_first_n_points[count]:])
+            else:
+                y = np.append(y,a.p0.reshape(-1)[exclude_first_n_points[count]:])
             y_u = np.append(y_u,a.u_p0.reshape(-1)[exclude_first_n_points[count]:])
             #print 'lengths are: x ', len(x), ' y ', len(y), ' y_u ', len(y_u)
 
@@ -927,6 +961,10 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
                 else: 
                     temp_y.append(y[x_count])
                     temp_yu.append(y_u[x_count])
+        else:
+            binned_x = x
+            binned_y = y
+            binned_yu = y_u
 
         #plt.errorbar(a.sweep_pts[exclude_first_n_points[count]:], 1-a.p0[exclude_first_n_points[count]:,0], yerr = a.u_p0[exclude_first_n_points[count]:,0], fmt = 'o',color = colors[count], label = '')
         #print x, y, y_u
@@ -946,11 +984,11 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
 
         ## plot data and fit as function of total time
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001),color='b',log=True, 
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001),color=colors[count],log=True, 
                 ax=ax, plot_data=False, legend=None, add_txt=False)
 
-        fit_results.append(fit_result['params_dict'])
-        print fit_result['params_dict'], fit_result['error_dict']
+        fit_results.append(fit_result['params_dict']['tau'])
+        #print fit_result['params_dict'], fit_result['error_dict']
 
         #fitted_tau.append(fit_result['params_dict']['tau'])
         #fitted_tau_err.append(fit_result['error_dict']['tau'])
@@ -962,7 +1000,7 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
         plt.savefig(os.path.join(save_figure_to, 'Fig2.pdf'), format='pdf')
         plt.savefig(os.path.join(save_figure_to, 'Fig2.png'), format='png')
 
-    return fitted_tau, fitted_tau_err
+    return fit_results
 
 # def analyze_avg_repump_time(carbons = ['2','3'],folder_name = 'Memory_Sweep_repump_time_',fit_results = False,older_than = older_than):
 #     CD.Sweep_Rep_List(carbons = carbons, folder_name = folder_name, fit_results = False, older_than = older_than)
