@@ -1032,11 +1032,17 @@ def coupling_vs_rep_paper_plot(c_idents = ['1'], do_Z=False, older_than_list= No
         if count < len(fit_colors):
             fit_result = fit.fit1d(x[count], y[count], None, p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = [0])
             plot.plot_fit1d(fit_result, np.linspace(0,100,1001), ax=ax, color = fit_colors[count], plot_data=False, add_txt = False, lw = 2)
-    if True:  # Show Guess
+    if True:  # Show Guess from repump time
         print 'Plotting Guess'
         guess_values= kw.get('fit_guess',(1,0.000275,0))
         p0,fitfunc,fitfunc_str = common.fit_dephasing_coupl(guess_values[0],guess_values[1],guess_values[2])
         ax.plot(np.linspace(2,90,201), fitfunc(np.linspace(2,90,201)), ':', lw=2, color = 'r')
+        print 'fitfun value ', fitfunc(np.linspace(2,90,21))
+    if True:  # Show Guess from avg repump time
+        print 'Plotting Guess'
+        guess_values= kw.get('fit_guess_art',(1,0.000275,0))
+        p0,fitfunc,fitfunc_str = common.fit_dephasing_coupl(guess_values[0],guess_values[1],guess_values[2])
+        ax.plot(np.linspace(2,90,201), fitfunc(np.linspace(2,90,201)), '--', lw=2, color = 'r')
         print 'fitfun value ', fitfunc(np.linspace(2,90,21))
     #plt.legend(loc=1)#bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     save_figure_to = 'D:\measuring\QMem_plots'
@@ -1176,13 +1182,13 @@ def avg_repump_time_paper_plot( carbons = ['1','2'],
 
         plt.errorbar(x,y,y_u, fmt='o',lw=1,color = colors[jj],label=label_txt)
 
-    plt.ylim(0.0,0.55)
+    plt.ylim(0.0,0.65)
     plt.xlim(1.05*x[0], 1.05*x[-1])
 
     #plt.errorbar( np.linspace(0, x_max, num=5),np.linspace(1./3., 1./3., num=5), None, fmt = '--y', lw=2)
 
 
-    plt.xlabel('delay')
+    plt.xlabel('$t_{avg} (\mu s)$')
     #plt.xlim(0, x_max)
 
 
