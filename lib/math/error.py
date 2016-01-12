@@ -104,7 +104,7 @@ class SingleQubitROC:
         self.F0 = 1.
         self.F1 = 1.
         self.u_F0 = 0.
-        self.u_F1 = 0.        
+        self.u_F1 = 0.    
 
     def _setup(self):
         self._F0, self._F1 = sympy.symbols('F0 F1')
@@ -124,14 +124,72 @@ class SingleQubitROC:
     
     
     def num_eval(self, p0, u_p0=None):
-        self._setup()
-
+        if not hasattr(self,'p0_formula'):
+            self._setup()
         self.p0_formula.values[self._F0] = self.F0
         self.p0_formula.values[self._F1] = self.F1
         self.p0_formula.uncertainties[self._F0] = self.u_F0
         self.p0_formula.uncertainties[self._F1] = self.u_F1
         
         return self.p0_formula.num_eval(self._p0, p0, u_p0)
+
+class SingleQubitMLE_ROC:
+
+    def __init__(self):
+        self.F0 = 1.
+        self.F1 = 1.
+        self.u_F0 = 0.
+        self.u_F1 = 0.
+
+    def num_eval(self, N0, N, pts=1000, conf=0.68):
+        N1=N-N0
+        p = np.linspace(0,1,1000)
+        if self.u_F0 > 0.:
+            Fs0 = [self.F0,self.F0+self.u_F0,self.F0-self.u_F0]
+            Fs1 = [self.F1,self.F1+self.u_F1,self.F1-self.u_F1]
+        else:
+            Fs0 = [self.F0]
+            Fs1 = [self.F1]
+        p_mle=[]
+        p_lb=[]
+        p_ub=[]
+        for F0,F1 in zip(Fs0,Fs1):
+            likelihood = (F1*(1-p)+(1-F0)*p)**N1*((1-F1)*(1-p)+F0*p)**N0
+            likelihood_norm = likelihood/np.sum(likelihood)
+            p_mle.append(p[np.argmax(likelihood)])
+            p_lb.append(p[np.where(np.cumsum(likelihood_norm)>(1-conf)/2.)[0][0]])
+            p_ub.append(p[np.where(np.cumsum(likelihood_norm)>(1-(1-conf)/2.))[0][0]])
+        return p_mle[0], np.min(p_lb), np.max(p_ub)
+
+#class TwoQubitMLE_ROC: #incomplete.
+#    
+#    def __init__(self):
+#        self.F0A = 1.
+#        self.F1A = 1.
+#        self.u_F0A = 0.
+#        self.u_F1A = 0.
+#        self.F0B = 1.
+#        self.F1B = 1.
+#        self.u_F0B = 0.
+#        self.u_F1B = 0.
+#        self.p00,self.p01,self.p10 = np.mgrid[0:1:pts*1j,0:1:pts*1j,0:1:pts*1j]
+#
+#
+#    def num_eval(self, N00, N01, N10, N11, pts=1000, conf=0.68):
+#        
+#        p00,p01,p10 = self.p00,self.p01,self.p10
+#        F0a,F0b,F1a,F1b = self.F0A, self.F0B, self.F1A, self.F1B
+#        likelihood= (F0a*F0b*p00+F0a*(1-F1b)*p01+(1-F1a)*(1-F1b)*(1-p00-p01-p10)+F0b*(1-F1a)*p10)**N00*\
+#                    (F0a*(1-F0b)*p00+F0a*F1b*p01+(1-F1a)*F1b*(1-p00-p01-p10)+(1-F0b)*(1-F1a)*p10)**N01*\
+#                    ((1-F0a)*F0b*p00+(1-F0a)*(1-F1b)*p01+F1a*(1-F1b)*(1-p00-p01-p10)+F0b*F1a*p10)**N10*\
+#                    ((1-F0a)*(1-F0b)*p00+(1-F0a)*F1b*p01+F1a*F1b*(1-p00-p01-p10)+(1-F0b)*F1a*p10)**N11
+#
+#    
+#    if reverse:
+#        Uinv = U
+#    else:
+#        Uinv=U.I
+#    return np.matrix.dot(Uinv,RO_norm.T)
 
 
 def simple_demo():

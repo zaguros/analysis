@@ -59,15 +59,18 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5427000,
+    'st_start_ch0'             : 5426000,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5427000-800,
-    'st_len_w2_00'             : 9000,
-    'st_len_w2_11'             : 18000,
+    'st_start_ch1'             : 5426000-900,
+    'st_len_w2_00'             : 4000,
+    'st_len_w2_11'             : 2500,
     'pulse_sep'                : bs_process_params['pulse_sep'],
     'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
-    'hist_binsize_ps'		  : 100, #ps 
+    'hist_binsize_ps'		   : 100, #ps 
+    'ro_start'                 : 10620,
+    'ro_length'                : 3700,
+    'invalid_marker_max_sn_diff': 251,
 
     'F0A' : 0.9550,
     'F1A' : 0.9786,
@@ -78,17 +81,3 @@ analysis_params = {
     #XX_lock F0A=0.9380, F1A=0.9908, F0B=0.9096, F1B=0.9976):
     #ZZ F0A=0.9550, F1A=0.9786, F0B=0.9376, F1B=0.9952):
     #XXlotr F0A=0.96, F1A=0.99, F0B=0.943, F1B=0.995):
-#Beam splitter light on on webcam
-bad_time_ranges = [[datetime.datetime(2015,3,4,10,0,33),datetime.datetime(2015,3,4,10,14,4)],
-                   [datetime.datetime(2015,3,9,15,50,49),datetime.datetime(2015,3,9,16,4,3)],
-                   [datetime.datetime(2015,3,10,11,13,6),datetime.datetime(2015,3,10,11,19,22)],
-                   [datetime.datetime(2015,3,11,8,13,31),datetime.datetime(2015,3,11,8,18,57)],
-                   [datetime.datetime(2015,3,11,17,32,42),datetime.datetime(2015,3,11,17,56,4)],
-                   [datetime.datetime(2015,3,12,12,55,24),datetime.datetime(2015,3,12,12,57,22)],
-                   [datetime.datetime(2015,3,19,12,31,54),datetime.datetime(2015,3,19,12,43,26)],
-                   [datetime.datetime(2015,3,25,5,51),datetime.datetime(2015,3,25,7,0)],
-                   [datetime.datetime(2015,3,26,7,48,54),datetime.datetime(2015,3,26,7,49,13)],
-                   [datetime.datetime(2015,3,26,14,56,58),datetime.datetime(2015,3,26,15,8,43)],
-                   [datetime.datetime(2015,4,23,14,31,8),datetime.datetime(2015,4,23,14,36,22)],
-                   [datetime.datetime(2015,4,24,11,14,54),datetime.datetime(2015,4,24,11,23,31)],
-                   ]
