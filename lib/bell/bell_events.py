@@ -183,7 +183,7 @@ def get_ssro_result_list(fp_lt,
         else:
             rnd_ma_tt = 0
 
-        if np.sum(fltr_ro_photon)>0:
+        if np.sum(fltr_ro_photon) > 0:
             first_ph_st = st[fltr_ro_photon][0]
         else:
             first_ph_st = 0
@@ -196,7 +196,7 @@ def get_ssro_result_list(fp_lt,
         if np.sum(fltr_tail_photon) >0:
             first_tail_st = st[fltr_tail_photon][0]
         else:
-           first_tail_st = 0
+            first_tail_st = 0
 
         
         #fltr_invalid_ev = (diff_invalid_ev > 0) & (diff_invalid_ev <= invalid_marker_max_sn_diff)
