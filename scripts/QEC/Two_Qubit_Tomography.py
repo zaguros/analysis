@@ -5,13 +5,16 @@ from analysis.lib.m2.ssro import mbi; reload(mbi)
 from matplotlib import pyplot as plt
 
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp =None, save = True,
+		ssro_calib_timestamp =None, save = True,tag = '',
 		plot_fit = True) :
 	'''
 	Function that makes a bar plot with errorbars of MBI type data 
 	'''
 	if timestamp == None:
-	    timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
+		if tag != '':
+			timestamp,folder = toolbox.latest_data(contains=tag,return_timestamp=True)
+		else:
+			timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
 	else: 
 	    folder = toolbox.data_from_time(timestamp) 
 
@@ -24,8 +27,6 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	# <<<<<<< HEAD
 	    # ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
 	# =======
-		
-
 
 	a = mbi.MBIAnalysis(folder)
 	a.get_sweep_pts()
