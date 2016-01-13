@@ -274,7 +274,7 @@ def get_corr_mats(db,d3,d4, db_fps, analysis_params, bad_time_ranges, ret_fltr_p
         for i,rnd in enumerate(rnd_corr):
             for j,ro in enumerate(ro_corr):
                 corr_mat[i,j] =np.sum( 
-                                       (d3_fltr[:,be._cl_noof_rnd_1]      == rnd[0]) \
+                                       (d3_fltr[:,be._cl_noof_rnd_0]      == rnd[0]) \
                                      & (d4_fltr[:,be._cl_noof_rnd_1]      == rnd[1]) \
                                      & (((d3_fltr[:,be._cl_first_ph_st] > ro_start) & (d3_fltr[:,be._cl_first_ph_st] < ro_start+ro_length)) == ro[0] )\
                                      & (((d4_fltr[:,be._cl_first_ph_st] > ro_start) & (d4_fltr[:,be._cl_first_ph_st] < ro_start+ro_length)) == ro[1])
@@ -347,13 +347,13 @@ def print_XX_fidelity(corr_mats, analysis_params):
         RO_corr[3] = corr_mat_RO_corr[0,3] + corr_mat_RO_corr[1,2] +corr_mat_RO_corr[2,1] + corr_mat_RO_corr[3,3]
 
         if psi == 'psi_min' :
-            Ng_XX = corr_mat[0,1] + corr_mat[0,2] +corr_mat[1,0] + corr_mat[1,3] + corr_mat[2,0] + corr_mat[2,3] + corr_mat[3,1] + corr_mat[3,2]
-            Ng_XX_RO_corr = corr_mat_RO_corr[0,1] + corr_mat_RO_corr[0,2] +corr_mat_RO_corr[1,0] + corr_mat_RO_corr[1,3] \
-                        + corr_mat_RO_corr[2,0] + corr_mat_RO_corr[2,3] + corr_mat_RO_corr[3,1] + corr_mat_RO_corr[3,2]
-        else : 
             Ng_XX = corr_mat[0,0] + corr_mat[0,3] +corr_mat[1,1] + corr_mat[1,2] + corr_mat[2,1] + corr_mat[2,2] + corr_mat[3,0] + corr_mat[3,3]
             Ng_XX_RO_corr = corr_mat_RO_corr[0,0] + corr_mat_RO_corr[0,3] +corr_mat_RO_corr[1,1] + corr_mat_RO_corr[1,2] \
                         + corr_mat_RO_corr[2,1] + corr_mat_RO_corr[2,2] + corr_mat_RO_corr[3,0] + corr_mat_RO_corr[3,3]
+        else : 
+            Ng_XX = corr_mat[0,1] + corr_mat[0,2] +corr_mat[1,0] + corr_mat[1,3] + corr_mat[2,0] + corr_mat[2,3] + corr_mat[3,1] + corr_mat[3,2]
+            Ng_XX_RO_corr = corr_mat_RO_corr[0,1] + corr_mat_RO_corr[0,2] +corr_mat_RO_corr[1,0] + corr_mat_RO_corr[1,3] \
+                        + corr_mat_RO_corr[2,0] + corr_mat_RO_corr[2,3] + corr_mat_RO_corr[3,1] + corr_mat_RO_corr[3,2]
 
         Fid = Ng_XX/noof_ev_fltr
         dFid = np.sqrt(Fid*(1-Fid)/noof_ev_fltr)

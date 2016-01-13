@@ -59,15 +59,18 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5425300,
+    'st_start_ch0'             : 5426000,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5425300-200,
-    'st_len_w2_00'             : 9000,
-    'st_len_w2_11'             : 18000,
+    'st_start_ch1'             : 5426000-900,
+    'st_len_w2_00'             : 4000,
+    'st_len_w2_11'             : 2500,
     'pulse_sep'                : bs_process_params['pulse_sep'],
     'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
-    'hist_binsize_ps'		  : 100, #ps 
+    'hist_binsize_ps'		   : 100, #ps 
+    'ro_start'                 : 10620,
+    'ro_length'                : 3700,
+    'invalid_marker_max_sn_diff': 251,
 
     'F0A' : 0.9550,
     'F1A' : 0.9786,
