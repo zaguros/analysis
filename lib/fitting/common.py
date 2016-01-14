@@ -124,7 +124,7 @@ def fit_double_decaying_cos(g_f1, g_A1, g_phi1, g_t1, g_f2, g_A2, g_phi2, g_t2, 
     p0 = [f1, A1, phi1, t1, f2, A2, phi2, t2,o]
 
     def fitfunc(x):
-        return (1 - A1() + A1()*np.exp(-x/t1()) * np.cos(2*np.pi*( f1()*x + phi1()/360.)))*(1-A2() + A2()*np.exp(-x/t2()) * np.cos(2*np.pi*( f2()*x + phi2()/360.)))/2+o()
+        return ( 1 - A1() + A1()*np.exp(-x/t1()) * np.cos(2*np.pi*( f1()*x + phi1()/360.)))*(1-A2() + A2()*np.exp(-x/t2()) * np.cos(2*np.pi*( f2()*x + phi2()/360.)))/2+o()
 
     return p0, fitfunc, fitfunc_str
 

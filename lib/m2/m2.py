@@ -24,7 +24,7 @@ class M2Analysis:
         for k in self.f.keys():
             if type(self.f[k])==h5py.Group:
                 self.name = k
-                #print k
+                # print k
         self.g = self.f[self.name]      
 
         self.measurementstring = os.path.split(self.folder)[1]
