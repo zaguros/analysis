@@ -596,3 +596,30 @@ def fit_repumping(g_a, g_A, g_tau, g_tau2, g_offs_x, *arg):
         return a() + A() * np.exp( -(x-offs_x()) / tau()) + (1-A()) * np.exp(-(x-offs_x())/tau2())
 
     return p0, fitfunc, fitfunc_str
+
+def fit_repumping_p1(g_a, g_A1, g_A2, g_tau, g_tau2, g_offs_x, *arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+        g_tau2 : decay constant 2
+        g_offs_x : x offset
+    """
+    fitfunc_str = 'A * exp(-(x-offs_x)/tau)+ A2 * exp(-(x-offs_x)/tau2) + a'
+
+    a = fit.Parameter(g_a, 'a')
+    A1 = fit.Parameter(g_A1, 'A1')
+    A2 = fit.Parameter(g_A2, 'A2')
+    tau = fit.Parameter(g_tau, 'tau')
+    tau2 = fit.Parameter(g_tau2, 'tau2')
+    offs_x = fit.Parameter(g_offs_x, 'offs_x')
+    p0 = [a, A1, A2, tau, tau2, offs_x]
+
+    def fitfunc(x):
+        return a() - A1() * np.exp( -(x-offs_x()) / tau()) + A2() * np.exp(-(x-offs_x())/tau2())
+
+    return p0, fitfunc, fitfunc_str
