@@ -442,7 +442,7 @@ def plot_full_tomo(bases= ["XXX"], plot=True,extra_tag=''):
     basis_labels=bases
 
     for k,tomo_basis in enumerate(bases):
-        folder,timestamp,p[k],y[k],y_err[k],title=plot_sweep_orientations_GHZ_data(plot=True,orientations=1,tomo_bases=tomo_basis,extra_tag=extra_tag,plot_single=True,return_data=True)
+        folder,timestamp,p[k],y[k],y_err[k],title=plot_sweep_orientations_GHZ_data(plot=True,tomo_bases=tomo_basis,extra_tag=extra_tag,plot_single=True,return_data=True)
 
     for l,outcomes in enumerate(outcome_labels):
         do_plot(folder,timestamp,'tomography'+outcomes,p[:,l],y[:,l],y_err[:,l],basis_labels,range(len(bases)),show_plot=plot,title=outcomes,width=len(basis_labels)*0.7,ylabel='exp. value')

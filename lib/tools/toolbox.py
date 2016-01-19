@@ -145,7 +145,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 measdirs.append(d)
 
         i -= 1
-    #print len(measdirs)
+    # print len(measdirs)
+    # print len(measdirs) # commented out. Produces a lot of print statements when analysing many folders. NK
     if len(measdirs) == 0:
         if raise_exc == True:
             raise Exception('No fitting data found containing {}.'.format(contains))

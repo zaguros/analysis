@@ -11,7 +11,7 @@ import matplotlib.cm as cm
 from matplotlib import pyplot as plt
 
 import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params) 
-hf = module_hyperfine_params.hyperfine_params
+hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
 
 import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 

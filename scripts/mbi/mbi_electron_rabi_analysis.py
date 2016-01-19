@@ -14,9 +14,9 @@ from analysis.lib.math import error
 
 # fit_startup = False
 
-timestamp = None # '20141016_134144'#'214152'#None#'170356'#None #'20130907183620' # None
-guess_frq = 1./400.
-guess_amp = 1
+timestamp = '20150811_093120' # '20141016_134144'#'214152'#None#'170356'#None #'20130907183620' # None
+guess_frq = 1./250.
+guess_amp = 0.5
 guess_k = 0.
 guess_phi = 0.
 guess_o = 1.
@@ -51,7 +51,7 @@ p0 = [f, A,o]
 fitfunc_str = ''
 
 def fitfunc(x) :
-    return (o()-A()) + A() * exp(-k()*x) * cos(2*pi*(f()*x - phi()))
+    return (o()-A()) + A() * np.exp(-k()*x) * np.cos(2*np.pi*(f()*x - phi()))
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc,
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
@@ -65,7 +65,7 @@ plt.savefig(os.path.join(folder, 'mbi_erabi_analysis.png'),
         format='png')
 
 
-
+plt.show(block = False)
 
 # print 'The pulse length shift is:' + str(t_shift)
 

@@ -101,6 +101,7 @@ def get_gate_fidelity(carbon,**kw):
 
 	rects= ax.bar(np.arange(len(gates)),b,yerr=b_u,align='center')
 	ax.set_xticks(np.arange(len(gates)))
+	ax.set_xticks(np.array(range(len(gates))))
 	ax.set_xticklabels(gates, rotation=90)
 	plt.xlabel('Gate configuration')
 	plt.ylabel('Bloch vector length')

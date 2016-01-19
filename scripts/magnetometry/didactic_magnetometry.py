@@ -67,8 +67,8 @@ class Didactic(magnetometry.RamseySequence_Simulation):
 				self.inc_rep()
 
 
-s = Didactic(N_msmnts = 4, tau0=20e-9, reps=1)
-s.setup_simulation (magnetic_field_hz = 5e6, G=1,F=0,K=3)
+s = Didactic(N_msmnts = 9, tau0=20e-9, reps=101)
+s.setup_simulation (magnetic_field_hz = -20e6, G=10,F=5,K=8)
 s.fid0=1
 s.fid1=0
 s.didactic_cappellaro()

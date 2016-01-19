@@ -15,12 +15,12 @@ reload(plot)
 timestamp =None#'20150409204752' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.828#2.926
+guess_x0 = 2.816e9#2.926
 
 guess_splitN = 2.19e-3
 guess_splitC = .150e-3 #12.78
 guess_splitC2 = .0250e-3 #12.78
-guess_width = .05e-3
+guess_width = .5e-3
 guess_splitB = 0*0.0008
 
 # guess_splitC = .8e-3 #12.78
@@ -37,7 +37,7 @@ guess_A_0 = 0.3
 #guess_sigma = 0.435e-3
 guess_Nsplit = guess_splitN
 
-def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.82 , **kw):
+def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_depth = 0.9 , **kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
@@ -73,7 +73,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
             print 'k'+str(k)
             print len(y)
             guess_x0 = x[k]+ guess_splitB #convert to GHz and go to middle dip
-            guess_ctr=guess_x0 #+ guess_Nsplit
+            guess_ctr=guess_x0 + guess_Nsplit
             print 'guess_ctr= '+str(guess_x0)
 
     ### fitfunction
@@ -130,7 +130,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
                 # (2, guess_splitC),
                 # (2, guess_splitC2),
                 #(2, guess_splitB),
-                #(3, guess_splitN),
+                (3, guess_splitN),
                 do_print=True, ret=True, fixed=[0])
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
         
@@ -141,7 +141,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     ax.set_xlabel('MW frq (GHz)')
     ax.set_ylabel(r'fidelity wrt. $|0\rangle$')
     ax.set_title(a.timestamp+'\n'+a.measurementstring)
-    #ax.set_ylim([0,0.05])
+    ax.set_ylim([0,1.05])
     plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
             format='png')
     #ret='f0'
