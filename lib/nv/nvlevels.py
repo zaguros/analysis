@@ -145,8 +145,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
                    [Ex, Ey, 0, 0, 0, Ez]])
     Vb = np.matrix([[0,  1j*(g_es_par*Bz + lambdaA2*Bz), 1j*(g_es_ort*By)/w2,  1j*(g_es_ort*Bx)/w2, 0, 0],
                     [-1j*(g_es_par*Bz + lambdaA2*Bz), 0, 1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2, 0, 0],
-                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 0, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
-                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2,  0,    0,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
+                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 -1j*lambdaA2*Bz, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
+                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2,  0,    1j*lambdaA2*Bz,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
                     [0, 0, -1j*(g_es_ort*By)/w2, 1j*(g_es_ort*Bx)/w2,  0, 1j*(g_es_par*Bz - lambdaA2*Bz)],
                     [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
