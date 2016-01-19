@@ -14,12 +14,17 @@ from analysis.lib.tools import plot
 from analysis.lib.math import error
 
 ### settings
-timestamp = '20150614_001010' ### one can use this timestamp as starting point.
-analysis_length = 39
+timestamp = '20150613_093117'#'20150609_231010' ### one can use this timestamp as starting point.
+ssro_calib_timestamp = '20150610_174113'
+analysis_length = 38
 average_data = True
 analysis_type = 'double_lorentz' #### possibilities 'peseudo-voigt' 'gauss' 'lorentz' 'double_gauss', 'double_lorentz'
 
 show_guess = False
+
+
+ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
 
 folder_list = []
 
@@ -37,8 +42,8 @@ for i in range(analysis_length):
 
 guess_offset = 1.00
 guess_A_min1 = 0.07
-guess_A_plus1 = 0.02
-guess_A_0 = 0.02
+guess_A_plus1 = 0.002
+guess_A_0 = 0.002
 guess_x0 = 1746.668427
 guess_sigma = 0.250/2.
 guess_Nsplit = 2.195435#2.182 #
@@ -156,7 +161,7 @@ for kk,folder in enumerate(folder_list):
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results(name='adwindata')
-    a.get_electron_ROC()
+    a.get_electron_ROC(ssro_calib_folder)
     cum_pts += a.pts
 
     if kk == 0:

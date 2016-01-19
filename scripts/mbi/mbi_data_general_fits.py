@@ -76,3 +76,5 @@ def exp_sin(timestamp=None, measurement_name = ['adwindata'],
 
         plt.show()
     return fit_results
+
+
