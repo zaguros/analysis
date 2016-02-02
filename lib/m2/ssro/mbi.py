@@ -124,7 +124,8 @@ class MBIAnalysis(m2.M2Analysis):
             self.normalized_correlations*(1.-self.normalized_correlations)/self.reps)**0.5
 
     def get_sweep_pts(self):
-        #print self.g.attrs.keys()
+
+        # print self.g.attrs.keys()
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
 

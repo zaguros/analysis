@@ -17,6 +17,8 @@ def get_lt_fps(fps_bs, lt3_folder, lt4_folder):
     fps_lt3 = []
     fps_lt4 = []
     for fp_bs in fps_bs:
+        if not 'Bell_BS' in fp_bs:
+            raise Exception('File'+ fp_bs+' not a BS file?')
         bs_m_folder = os.path.split(fp_bs)[0] 
         bs_m_time = tb.get_datetime_from_folder(bs_m_folder)
         bs_m_name = tb.get_measurement_name_from_folder(bs_m_folder)[8:]
@@ -117,6 +119,7 @@ def process_bell_data(fps_bs, lt3_folder, lt4_folder, bs_params, lt_params,
                                             BS: {}, LT3 (/250*251): {}. LT4: {}'.format(ent_event_list[-1,be._cl_sn],
                                                                                         int(lt3_ssro_list[-1,be._cl_sn_ma]/250.*251),
                                                                                         lt4_ssro_list[-1,be._cl_sn_ma])
+                    continue
                 print 'Fix suceeded'
             elif ignore_unequal_markers == 'append_zeros':
                 print 'Appending empty events for missing markers'
