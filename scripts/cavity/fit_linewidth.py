@@ -38,18 +38,16 @@ max value for the Voltage can be chosen in order to make the plots clearer.
 
 
 ''' Enter your data '''
-date = '20151221'
+date = '20160126'
 save_data = True
 
-''' Fitting yes/no '''
-fixed = [0]
-
 ''' Select the time stamps you want to include or remove'''
-time_start = 172207
-time_stop = 172727#132933
-remove = ['172009']
-labda = 637. #nm
-threshold = 0.015#0.008#0.015
+time_start = 123331    #161322#172207#231234
+time_stop = 123334#161341#145900#150629#172727#231357
+remove = []#['225951','225948']
+
+#pick a threshold for the peak detection
+threshold = 0.01#0.008#0.015
 
 
 ''' Switch for if you want to set the x-limits of the piezo-scans. 
@@ -74,8 +72,8 @@ For all the timestamps in the folder, only the timestamp will be selected from t
 timestamps are taken into account.
 '''
 
-folder = 'D:/measuring/data/' + date + '/'
-all_folders = [f for f in os.listdir(folder) if f[0] in '1234567890']
+folder = 'D:/measuring/data/20160126/'
+all_folders = [f for f in os.listdir(folder) if f[0] in '1233314740']
 all_folders.sort()
 
 all_timestamp = [item[0:6] for item in all_folders]
@@ -102,7 +100,12 @@ timestamp = [all_timestamp[i] for i in range(len(all_timestamp)) if int(all_time
 
 # fitting.bla_fine_laser_plots(date = date, timestamp = timestamp, folder = folder, measurement_type = measurement_type, f_min = f_min, f_max = f_max, set_range_f = False, save_data = False)
 
-#fitting.fit_fine_laser_plots(date = date, timestamp = timestamp, folder = folder,  f_min = f_min, f_max = f_max, set_range_f = set_range_f, save_data = save_data, threshold=threshold)
-#fitting.fit_piezo_plots(date = date, timestamp = timestamp, folder = folder, V_min = V_min, V_max = V_max, set_range_V = set_range_V, save_data = save_data, threshold = threshold)
 
-fitting.fit_birefringence(date = date, timestamp = timestamp, folder = folder, V_min = V_min, V_max = V_max, set_range_V = set_range_V, save_data = save_data, threshold = threshold)
+
+
+#fitting.fit_fine_laser_plots(date = date, timestamp = timestamp, folder = folder,  f_min = f_min, f_max = f_max, set_range_f = set_range_f, save_data = save_data, threshold=threshold)
+fitting.fit_piezo_plots(date = date, timestamp = timestamp, folder = folder, V_min = V_min, V_max = V_max, 
+    set_range_V = set_range_V, save_data = save_data, threshold = threshold,show_plots=False)
+
+# fitting.fit_birefringence(date = date, timestamp = timestamp, folder = folder, V_min = V_min, 
+#     V_max = V_max, set_range_V = set_range_V, save_data = save_data, threshold = threshold,show_plots=True)
