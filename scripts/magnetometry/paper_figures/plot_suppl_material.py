@@ -142,7 +142,7 @@ def compare_room_temperature ():
 	f1.savefig (r"D:\measuring\compare_sens_roomTemperature_nT.pdf")
 	plt.show()
 
-plot_RT_contrast()
+#plot_RT_contrast()
 
 #compare_room_temperature()
 #def plot_fig_S1 ():
@@ -152,8 +152,8 @@ plot_RT_contrast()
 #sens_dict = compare_protocols (protocol_array = [pr1, pr1], N=10, G=5, fid=['0.88', '0.88'], name=['_noT2_symmRO', '_noT2'])
 
 #pr1 = 'modCapp'
-#pr2 = 'nnAdptv'
-#compare_protocols (protocol_array = [pr1, pr2], N=10, G=5, fid=['1.0', '1.0'], name='_incl_T2', add_HL_plot=True, y_lim=[1e-10, 1e-5])
+pr2 = 'nnAdptv'
+compare_protocols (protocol_array = [pr2], N=10, G=3, fid=['0.87'], name='_no_T2', add_HL_plot=True, y_lim=[1e-10, 1e-5])
 #compare_protocols (protocol_array = [pr1, pr2], N=10, G=5, fid=['0.75', '0.75'], name='_incl_T2', add_HL_plot=True, y_lim=[1e-10, 1e-5])
 
 #compare_capp_modCapp_supplInfo ()
