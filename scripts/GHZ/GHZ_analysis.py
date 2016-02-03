@@ -327,7 +327,7 @@ def plot_sweep_orientations_GHZ_data(plot=True, save = True, plot_single=True, t
         data_labels = ['pp','pn','np','nn']
 
     elif orientations==1:
-        data_labels = ['pppp','pppn']
+        data_labels = ['pppp','nnnn']
 
     #print data_labels
 

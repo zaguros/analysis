@@ -105,42 +105,60 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     daydirs.sort()
 
+    # MAB 15-4-15 Added for weird file mac is automatically creating
+    try:
+        daydirs.remove('.DS_Store')
+    except ValueError:
+        pass
+
     measdirs = []
+    valid_folders = []
+    end_search = False
     i = len(daydirs)-1
-    while len(measdirs) == 0 and i >= 0:
+
+    while i >= 0 and not end_search:  #Go through all days, starting from the latest one
         daydir = daydirs[i]
         if VERBOSE:
-            print search_dir, daydir
+            print 'search dir: ', search_dir, ' day dir: ', daydir, ' break? ', end_search
         all_measdirs = [d for d in os.listdir(os.path.join(search_dir, daydir))]
-        all_measdirs.sort()
+        all_measdirs.sort() # get a sorted list of all measurements on that day
 
-        measdirs = []
-
-        for d in all_measdirs:
-
+        for d in all_measdirs[::-1]:
             # this routine verifies that any output directory is a 'valid' directory
-            # (i.e, obeys the regular naming convention)
-
             # _timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
             _timestamp = daydir + d[:6]
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
+                print 'Timestamp not valid: ', dstamp,tstamp
                 continue
             timestamp = dstamp+tstamp
 
-            if contains in d:              
-                
+            if contains in d:    # file matching the name search found. Does it match the date constraints?
+                if VERBOSE:
+                    print 'contains ', contains, ' d ', d 
+                    print ' break? ', end_search, ' return all? ', return_all           
                 if older_than != None:
                     if not is_older(timestamp, older_than):
-                        continue
+                        continue    # go to next measurement directory
                 if newer_than != None:
-                    if not is_older(newer_than,timestamp):
+                    if is_older(timestamp, newer_than):
+                        if VERBOSE:
+                            print 'Now I get to files which are too old'
+                        end_search = True
                         continue
-                measdirs.append(d)
+                measdirs.append(d) # if no continue command has been set, the file is valid.
+                valid_folders.append(os.path.join(os.path.join(search_dir, daydir), d))
+                if not return_all:
+                    end_search = True
+                if VERBOSE:
+                    print 'Found a file. older than: ', older_than, ', timestamp: ', timestamp, ' Stop? ', end_search
+            if end_search:
+                break  # stop for loop
+        i -= 1   #go to next day
 
-        i -= 1
-
+    if VERBOSE:
+        print 'measdirs length: ', len(measdirs)
     if len(measdirs) == 0:
         if raise_exc == True:
             raise Exception('No fitting data found containing {}.'.format(contains))
@@ -149,11 +167,13 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     else:
         measdirs.sort()
         if return_all:
-            return search_dir,daydir,measdirs
+            return valid_folders
+            #return search_dir,daydir,measdirs
         measdir = measdirs[-1]
         if return_timestamp == False:
             return os.path.join(search_dir,daydir,measdir)
-        else: return str(daydir)+str(measdir[:6]) , os.path.join(search_dir,daydir,measdir)
+        else: 
+            return str(daydir)+str(measdir[:6]) , os.path.join(search_dir,daydir,measdir)
 
 def data_from_time(timestamp, folder = None):
     '''
@@ -291,8 +311,7 @@ def get_msmt_name(pqf):
 
     if type(pqf) == h5py._hl.files.File: 
         for k in pqf.keys():
-            if f.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
-                f.close()
+            if pqf.get(k, getclass=True) == h5py._hl.group.Group and k in str(pqf):
                 return k
 
         raise Exception('Cannot find the name of the measurement.')

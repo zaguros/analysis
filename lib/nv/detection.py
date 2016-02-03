@@ -29,20 +29,22 @@ def get_pflip_Ey(strain_splitting):
     """
     Returns spin flip probability per cycle for the Ey transition
     """
-    p0 = 0.012 #spin flip probability at zero strain
-    S0 = 15.   #GHz, the spoint where Ey becomes degenerate with E12
-    pflip = p0*(S0/(S0 - strain_splitting)) #phenomological model for the spin flip probability 
-                                            # well approximated by:
-                                            # (1-nvlevels.get_ms0_fraction(strain_splitting,2,theta_x=0))+0.095
+    #p0 = 0.012 #spin flip probability at zero strain
+    #S0 = 15.   #GHz, the spoint where Ey becomes degenerate with E12
+    #pflip = p0*(S0/(S0 - strain_splitting)) #phenomological model for the spin flip probability 
+    # well approximates
+    singlet_decay_factor = 0.008
+    pflip = (1-nvlevels.get_ms0_fraction(strain_splitting,2,theta_x=0))+singlet_decay_factor
     return pflip
 
 def get_pflip_Ex(strain_splitting):
     """
-    Returns the simulated spin flip probability per cycle for the Ey transition
+    Returns the simulated spin flip probability per cycle for the Ex transition
     NOT EXPERIMENTALLY VERIFIED!!
 
     """
-    return (1-nvlevels.get_ms0_fraction(strain_splitting,3,theta_x=0))+0.095
+    singlet_decay_factor = 0.008
+    return (1-nvlevels.get_ms0_fraction(strain_splitting,3,theta_x=0))+singlet_decay_factor
 
 def get_Ey_vs_strain_saturation(strain_splitting,saturation_counts):
     """

@@ -56,6 +56,7 @@ class SSROAnalysis(m2.M2Analysis):
 
     def cpsh_hist(self, ro_counts, reps, firstbin=0, lastbin=-1, plot=True, **kw):
         name = kw.pop('name', '')
+        save = kw.pop('save', True)
 
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
@@ -68,12 +69,15 @@ class SSROAnalysis(m2.M2Analysis):
         pzero = len(np.where(cpsh==0)[0])/float(reps)
         annotation += "\np(0 counts) = %.2f" % (pzero)
 
-        f = self.analysis_h5data()
-        if not 'cpsh' in f:
-                f.create_group('cpsh')
-        g = f['/cpsh']
-        g[name]=  cpsh
-        f.close()
+        if save:
+            f = self.analysis_h5data()
+            if not 'cpsh' in f:
+                    f.create_group('cpsh')
+            g = f['/cpsh']
+            if name in g:
+                del g[name]
+            g[name]=  cpsh
+            f.close()
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -83,13 +87,15 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)
             ax.set_xlim(-0.5, max(cpsh)+0.5)
+            if name == 'ms1':
+                ax.set_yscale('log')
 
             plt.figtext(0.85, 0.85, annotation, horizontalalignment='right',
                 verticalalignment='top')
-
-            fig.savefig(os.path.join(self.folder,
-                'cpsh'+fn_suffix+'.'+self.plot_format),
-                format=self.plot_format)
+            if save:
+                fig.savefig(os.path.join(self.folder,
+                    'cpsh'+fn_suffix+'.'+self.plot_format),
+                    format=self.plot_format)
 
     def readout_relaxation(self, ro_time, ro_counts, reps, binsize,
             lastbin=-1, plot=True, **kw):

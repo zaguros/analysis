@@ -2,16 +2,17 @@ import datetime
 
 bs_process_params = {
 
-    'st_start_ch0'            : 5410000, #XXXXXXX 5430000,
+    'st_start_ch0'            : 5420000,
     'st_len'                  : 250000 ,
-    'st_start_ch1'            : 5410000, #XXXXXXXXXXX 5430000,
-    'pulse_sep'               : 250000 ,  #XXXX
+    'st_start_ch1'            : 5420000,
+    'pulse_sep'               : 250000 ,
 
     'ent_marker_channel_bs' : 1,
 
-    'st_pulse_start'          : 5439000, #for ch 1
-    'st_pulse_len'            : 4000,
-    'pulse_max_sn_diff'       : 3000000, #3 million syncs ~ 60 secs
+    'st_pulse_start_ch0'      : 5443000,
+    'st_pulse_start_ch1'      : 5444000, #for ch 1
+    'st_pulse_len'            : 5000,
+    'pulse_max_sn_diff'       : 6000000, #6 million syncs ~ 120 secs
 
     'hist_binsize_ps'		  : 100, #ps 
     
@@ -49,7 +50,7 @@ lt_process_params = {
     'psb_tail_start_lt4'            : 5350,
     'psb_tail_len'                  : 200,
     'pulse_sep'              	    : bs_process_params['pulse_sep']/1000,
-    'psb_prepulse_start_lt3'        : 7470,
+    'psb_prepulse_start_lt3'        : 7570,
     'psb_prepulse_start_lt4'        : 5366,
     'psb_prepulse_len'              : 20,
 
@@ -58,20 +59,23 @@ lt_process_params = {
 
 analysis_params = {
 
-    'st_start_ch0'             : 5427000, #XXXXXXXXXXX 5444000,
+    'st_start_ch0'             : 5425300,
     'st_len'                   : 55000 ,
-    'st_start_ch1'             : 5427000-1000, #XXXXXXXXXXXXX 5444000+1000,
-    'st_len_w2_00'             : 1000,
-    'st_len_w2_11'             : 15000,
+    'st_start_ch1'             : 5426000-900,
+    'st_len_w2_00'             : 4000,
+    'st_len_w2_11'             : 2500,
     'pulse_sep'                : bs_process_params['pulse_sep'],
-    'st_pulse_start'           : bs_process_params['st_pulse_start'],
+    'st_pulse_start'           : bs_process_params['st_pulse_start_ch0'],
     'st_pulse_len'             : bs_process_params['st_pulse_len'],
-    'hist_binsize_ps'		  : 100, #ps 
+    'hist_binsize_ps'		   : 100, #ps 
+    'ro_start'                 : 10620,
+    'ro_length'                : 3700,
+    'invalid_marker_max_sn_diff': 251,
 
-    'F0A' : 0.950,
-    'F1A' : 0.980,
-    'F0B' : 0.935, 
-    'F1B' : 0.995,
+    'F0A' : 0.9550,
+    'F1A' : 0.9786,
+    'F0B' : 0.9376, 
+    'F1B' : 0.9952,
 }
     #XX-high_str F0A=0.9320, F1A=0.9966, F0B=0.915, F1B=0.9976):
     #XX_lock F0A=0.9380, F1A=0.9908, F0B=0.9096, F1B=0.9976):

@@ -2,7 +2,7 @@
 under dynamical decoupling gates. By THT '''
 
 import numpy as np
-# import qutip
+import qutip
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -99,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-
+def deleted_by_accident_by_someone():
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -3032,6 +3032,73 @@ def general_measurement():
     print
     print 'prob.'
     print norm_1**2
+
+def QZ():
+    ''' fucntion to test if entanglement is generated in quantum zeno with two qubits'''
+    XX = qutip.tensor(X,X)
+    YY = qutip.tensor(Y,Y)
+    ZZ = qutip.tensor(Z,Z)
+    II = qutip.tensor(Id,Id)
+    rot_zz = qutip.tensor((-1j*sz*np.pi/5).expm(), (-1j*sz*np.pi/5).expm())
+    rot_yy = qutip.tensor((-1j*sy*np.pi/5).expm(), (-1j*sy*np.pi/5).expm())
+
+    rho_init = qutip.tensor(rho0, rho0)
+    print_matrix(rho_init)
+
+    rho_1 = rot_yy*rho_init*rot_yy.dag()
+    rho_2 = 0.5*(II*rho_1*II + ZZ*rho_1*ZZ.dag())
+    # rho2 = 0.5*(II*rho1*II + YY*rho1*YY.dag())
+    
+
+    for kk in range(1):
+
+        rho_1 = rot_yy*rho_2*rot_yy.dag()
+        rho_2 = 0.5*(II*rho_1*II + ZZ*rho_1*ZZ.dag())
+  
+    print_matrix(rho_1)
+    print_matrix(rho_2)
+
+def QZ2():
+    '''more test fucntions for QZ'''
+    XX = qutip.tensor(2*sx,2*sx)
+    YY = qutip.tensor(2*sy,2*sy)
+    ZZ = qutip.tensor(2*sz,2*sz)
+    II = qutip.tensor(Id,Id)
+
+    H = qutip.tensor(2*sz,Id) + qutip.tensor(Id,2*sz) + qutip.tensor(Id,2*sx)
+    H = qutip.tensor(Id,2*sx)
+    H = qutip.tensor(2*sz)
+    print 'Hamiltonian'
+    print_matrix(H)
+
+    print 'Projector'
+    P = (II + XX)/2 
+    P = Id/2+sz
+    print_matrix(P)
+
+    print 'Zeno Hamiltonian'
+    Hz = P*H*P.dag()
+    print_matrix(Hz)
+
+    print 'evolution operator'
+    print (-1j*Hz).expm()
+
+def QZ3():
+    XX = qutip.tensor(2*sx,2*sx)
+    II = qutip.tensor(Id,Id)
+
+    P = II+XX
+    Q = II-XX
+
+    # P = 
+
+    print_matrix(P)
+    print_matrix(Q)
+
+    J = Q - P
+    print_matrix(J) 
+
+
 
 
 
