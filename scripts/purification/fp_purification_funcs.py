@@ -74,8 +74,10 @@ def get_hyperfine_params(ms = 'plus', carbon_spins = 'all',NV = None):
     HF_perp = []
     HF_par 	= []
     print 'NV (get hyperfine_params): ' + str(NV)
-    if NV =='Pippin':
+    if NV =='Pippin_SIL1':
       hf = module_hyperfine_params.hyperfine_params_pippin_SIL1_msm1
+    elif NV =='Pippin_SIL3':
+      hf = module_hyperfine_params.hyperfine_params_pippin_SIL3_msm1
     elif NV == 'hans':
       hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
     else: 
