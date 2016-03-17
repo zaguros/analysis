@@ -20,7 +20,7 @@ def analyse_pulse_calibration(angle='_pi_1'):
     if angle == '_pi_1':
         guess_x0 = 0.38
     elif angle == '_pi_o':
-        guess_x0 = 0.43
+        guess_x0 = 0.24
     elif angle == '_pi_p1':
         guess_x0 = 0.67   
         angle='_pi_1'     

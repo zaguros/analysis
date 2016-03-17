@@ -36,8 +36,8 @@ def get_raw_data(carbon,**kw):
 		ssro_calib_folder = toolbox.latest_data(contains = 'SSRO')
 		print ssro_calib_folder
 
-	search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)
-	search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)
+	search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+'_positive'
+	search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+'_negative'
 
 	folder_pos = toolbox.latest_data(contains = search_string_pos, older_than=older_than)
 	folder_neg = toolbox.latest_data(contains = search_string_neg, older_than=older_than)

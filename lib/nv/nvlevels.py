@@ -10,7 +10,7 @@ def get_levels(**kw):
     Returns an array with the ES energies as a function of strain Ex, 
     also returned
     """
-    Ex=kw.pop('strainvals', np.linspace(0,20,50))
+    Ex=kw.pop('strainvals', np.linspace(0,8,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
 def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.],transitions=True):
@@ -145,8 +145,8 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
                    [Ex, Ey, 0, 0, 0, Ez]])
     Vb = np.matrix([[0,  1j*(g_es_par*Bz + lambdaA2*Bz), 1j*(g_es_ort*By)/w2,  1j*(g_es_ort*Bx)/w2, 0, 0],
                     [-1j*(g_es_par*Bz + lambdaA2*Bz), 0, 1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2, 0, 0],
-                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 0, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
-                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2,  0,    0,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
+                    [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 -1j*lambdaA2*Bz, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
+                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2,  0,    1j*lambdaA2*Bz,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
                     [0, 0, -1j*(g_es_ort*By)/w2, 1j*(g_es_ort*Bx)/w2,  0, 1j*(g_es_par*Bz - lambdaA2*Bz)],
                     [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
@@ -197,13 +197,13 @@ def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show
     E_GS=np.sort(get_GS(**kw)[0])
     E_ES=np.sort(get_ES(**kw)[0])
     E_transitions=np.array([E_ES[2]-E_GS[0],
-                                 E_ES[3]-E_GS[0]])
+                                 E_ES[3]-E_GS[0]])   # 2 transitions
     A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
                                  E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
                                  E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 8 transitions
+                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
     E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
-                                        E_ES[1]-E_GS[1]])   # 4 transitions
+                                        E_ES[1]-E_GS[1]])   # 2 transitions
     FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
                                E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]]) # 4 transitions
     FB_A_transitions=np.array([E_ES[0]-E_GS[0],

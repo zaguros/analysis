@@ -20,6 +20,11 @@ reload(toolbox)
 
 #### this block reads tomography files and gets <Z>, <ZZ> and <ZZZ> expectation values.
 
+ssro_calib_timestamp = '20150610_174113'
+ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
+
+
 if True:
 	carbons  =[1,2,5]
 	RO_list=  ['negative','positive']
@@ -63,7 +68,7 @@ if True:
 			a = mbi.MBIAnalysis(folder)
 			a.get_sweep_pts()
 			a.get_readout_results(name='adwindata')
-			a.get_electron_ROC()
+			a.get_electron_ROC(ssro_calib_folder)
 
 			res_list.append(2*abs(a.p0[0]-0.5))
 			res_u_list.append(abs(2*a.u_p0[0])**2)
@@ -186,7 +191,7 @@ CarbonROC_Dict['values']['12']	=	0.734843046401
 CarbonROC_Dict['values']['15']	=	0.784368785197
 CarbonROC_Dict['values']['25']	=	0.747335160652
 CarbonROC_Dict['values']['125']	=	0.666209837064
-CarbonROC_Dict['values']['nitrogen'] = 0.963484593103#0.956397901621
+CarbonROC_Dict['values']['nitrogen'] = 0.963484593103#0.963891440771
 CarbonROC_Dict['error']['1']	=	0.00621794744892
 CarbonROC_Dict['error']['2']	=	0.00775792880472
 CarbonROC_Dict['error']['5']	=	0.00735657065159
@@ -194,7 +199,7 @@ CarbonROC_Dict['error']['12']	=	0.00565949773662
 CarbonROC_Dict['error']['15']	=	0.00217798138803
 CarbonROC_Dict['error']['25']	=	0.00219162359014
 CarbonROC_Dict['error']['125']	=	0.0089820755304
-CarbonROC_Dict['error']['nitrogen'] = 0.0149696842867#0.018270745207
+CarbonROC_Dict['error']['nitrogen'] = 0.0149696842867#0.0148976423135
 
 
 SolveDict = calc_ro_correction(CarbonROC_Dict['values'],CarbonROC_Dict['error'])

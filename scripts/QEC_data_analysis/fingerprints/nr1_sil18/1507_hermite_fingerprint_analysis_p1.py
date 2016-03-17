@@ -20,7 +20,7 @@ from analysis.scripts.QEC_data_analysis.fingerprints import fingerprint_funcs as
 
 def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 51,start_1 = 3.0, start_2 = 3.0+45*50*10e-3,
         step_size = 10e-3,
-        xrange = [0,20],tag_p = '',tag_n = '', older_than = None,return_data = False, do_plot = True):
+        xrange = [0,20],tag_p = '',tag_n = '', older_than = None,return_data = False, do_plot = True, load_from_data = False, Nr_of_pulses = None, save_folder = None):
 
 
     ###################
@@ -29,42 +29,71 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
 
     if disp_sim_spin == True:
             
-            HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'min')
+            HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'plus')
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file
             B_Field = 403.555 # use magnet tools  Bz = (msp1_f**2 - msm1_f**2)/(4.*ZFS*g_factor)
 
             tau_lst = np.linspace(0,72e-6,10000)
-            Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,32,tau_lst)
+            Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,Nr_of_pulses,tau_lst)
             FP_signal16 = ((Mt16+1)/2)
 
     ## Data location ##
     
-    ssro_calib_folder = folder = toolbox.latest_data(contains = 'AdwinSSRO_SSROCalibration_111_1_sil18', older_than = older_than,folder = 'd:\measuring\data')
-    
-    a1, folder = load_mult_dat_tag(tag_p+'0',older_than, number_of_msmts = 50,pts = pts, start=start_1, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
-    b1, folder_b1 = load_mult_dat_tag(tag_n+'0', older_than, number_of_msmts = 50,pts = pts, start=start_1, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
-
-    a2, folder = load_mult_dat_tag(tag_p+'45',older_than, number_of_msmts = 50,pts = pts, start=start_2, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
-    b2, folder_b2 = load_mult_dat_tag(tag_n+'45', older_than, number_of_msmts = 50,pts = pts, start=start_2, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
-
-    print folder_b2
-    print folder_b1
-
-    ###############
-    ## Plotting ###
-    ###############
+    if load_from_data == False:
 
 
+      ssro_calib_folder = folder = toolbox.latest_data(contains = 'AdwinSSRO_SSROCalibration_111_1_sil18', older_than = older_than,folder = 'd:\measuring\data')
+      
+      a1, folder = load_mult_dat_tag(tag_p+'0',older_than, number_of_msmts = 50,pts = pts, start=start_1, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
+      b1, folder_b1 = load_mult_dat_tag(tag_n+'0', older_than, number_of_msmts = 50,pts = pts, start=start_1, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
+
+      a2, folder = load_mult_dat_tag(tag_p+'45',older_than, number_of_msmts = 50,pts = pts, start=start_2, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
+      b2, folder_b2 = load_mult_dat_tag(tag_n+'45', older_than, number_of_msmts = 50,pts = pts, start=start_2, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
+
+      print folder_b2
+      print folder_b1
+
+      ###############
+      ## Plotting ###
+      ###############
 
 
-    y = np.concatenate(((a1.p0-b1.p0),(a2.p0-b2.p0)))
-    x = np.concatenate((a1.sweep_pts, a2.sweep_pts))
+
+
+      y = np.concatenate(((a1.p0-b1.p0),(a2.p0-b2.p0)))
+      x = np.concatenate((a1.sweep_pts, a2.sweep_pts))
+
+      data = {}
+      data['x'] = x
+      data['y'] = y
+
+      print 'shapes'
+      print np.transpose(x[0:10])
+      print np.array(y[0:10])
+
+      # x = np.arange(0,10,1)
+      # y = x**2
+
+      # pickle.dump(data, open( 'sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.p', 'wb' ) )
+      np.savetxt('sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.txt',(np.c_[x],y))
+
+    else:
+      # data = pickle.load( open( 'sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.p', 'rb' ) )
+
+      # x = data['x']
+      # y = data['y']
+      x,y = np.loadtxt('sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.txt')
+      folder = save_folder
+
+
+
+
 
     if do_plot == True:
-      fig = a1.default_fig(figsize=(35,5))
-      ax = a1.default_ax(fig)
+      fig,ax = plt.subplots(figsize=(35,5))
+
       ax.set_xlim(4.9,5.1)
       ax.set_xlim(xrange)
       start, end = ax.get_xlim()
@@ -92,10 +121,14 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
       plt.show(block = False)
 
       print folder
-      plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_contrast.pdf'),
-          format='pdf',bbox_extra_artists = (lgd,),bbox_inches='tight')
-      plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_contrast.png'),
-          format='png',bbox_extra_artists = (lgd,),bbox_inches='tight')
+
+      try: 
+        plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_contrast.pdf'),
+            format='pdf',bbox_extra_artists = (lgd,),bbox_inches='tight')
+        plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_contrast.png'),
+            format='png',bbox_extra_artists = (lgd,),bbox_inches='tight')
+      except:
+        print 'Figure has not been saved'
 
     if return_data == True:
       return x, (y+1)/2.
@@ -402,40 +435,42 @@ def plot_all(disp_sim_spin = True,xrange  = [2.5,52.5], n_sim_spins = 8,load_dat
 
 
 if 1:
-  plot_all(xrange  = [10,15])
+  plot_all(xrange  = [22,45])
 
 if 0:
 
-  x_64 , y_64 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*4e-3,
-          step_size = 4e-3,
-          xrange = [2.5,52.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_64-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_64x', 
-          older_than = '20150726090000',return_data = True, do_plot= False)
 
 
-  x_128 , y_128 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 21,start_1 = 3.0, start_2 = 3+45*20*4e-3,
-          step_size = 4e-3,
-          xrange = [2.5,52.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_128-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_128x', 
-          older_than = '20150726090000',return_data = True, do_plot= False)
+  # x_4 , y_4 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
+  #         step_size = 10e-3,
+  #         xrange = [2.5,22.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_4-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_4x', 
+  #         older_than = '20150726090000',return_data = True, do_plot= True, load_from_data = True, Nr_of_pulses = 4 )
 
-  x_4 , y_4 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
+
+  # x_8 , y_8 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
+  #         step_size = 10e-3,
+  #         xrange = [2.5,22.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_8-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_8x', 
+  #         older_than = '20150726090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 8 )
+
+
+  # x_16 , y_16 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
+  #         step_size = 10e-3,
+  #         xrange = [2.5,22.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_16-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_16x', 
+  #         older_than = '20150726090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 16)
+
+
+  x_32 , y_32 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
           step_size = 10e-3,
-          xrange = [2.5,52.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_4-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_4x', 
-          older_than = '20150726090000',return_data = True, do_plot= False)
+          xrange = [2.5,22.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_32-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_32x', 
+          older_than = '20150726090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 32)
+
+  # x_64 , y_64 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*4e-3,
+  #       step_size = 4e-3,
+  #       xrange = [2.5,22.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_64-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_64x', 
+  #       older_than = '20150726090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 64)
 
 
-  x_8 , y_8 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
-          step_size = 10e-3,
-          xrange = [2.5,52.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_8-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_8x', 
-          older_than = '20150726090000',return_data = True, do_plot= False)
-
-
-  x_16 , y_16 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
-          step_size = 10e-3,
-          xrange = [2.5,52.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_16-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_16x', 
-          older_than = '20150726090000',return_data = True, do_plot= False)
-
-
-  x_32 , y_32 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
-          step_size = 10e-3,
-          xrange = [2.5,52.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_32-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_32x', 
-          older_than = '20150726090000',return_data = True, do_plot= True)
+  # x_128 , y_128 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 21,start_1 = 3.0, start_2 = 3+45*20*4e-3,
+  #         step_size = 4e-3,
+  #         xrange = [2.5,22.5],tag_p = 'Hermite_Fingerprint_msp1_111_1_sil18_128-x',tag_n = 'Hermite_Fingerprint_msp1_111_1_sil18_128x', 
+  #         older_than = '20150726090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 128)

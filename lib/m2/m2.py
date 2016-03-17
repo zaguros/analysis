@@ -12,6 +12,7 @@ class M2Analysis:
     plot_format = 'png'
 
     def __init__(self, folder, **kw):
+        #print 'analyzing in', folder
         self.folder = folder
         self.load_hdf5data(**kw)
         
@@ -24,7 +25,7 @@ class M2Analysis:
         for k in self.f.keys():
             if type(self.f[k])==h5py.Group:
                 self.name = k
-                #print k
+                # print k
         self.g = self.f[self.name]      
 
         self.measurementstring = os.path.split(self.folder)[1]
