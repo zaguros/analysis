@@ -65,6 +65,7 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
 
         ## plot fit
         if plot_fit == True:
+
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
 
         fit_results.append(fit_result)
@@ -76,3 +77,5 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
 
         plt.show()
     return fit_results
+
+

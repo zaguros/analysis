@@ -26,47 +26,19 @@ import nuclear_spin_char as SC;  reload(SC)
 ###################
 timestamps = {}
 #uber stamps!
-
-# SIL 2
-timestamps['min'] ={'N8' : ['20160303_164327'], 
-					'N16' : ['20160303_181827'],
-					'N32' : ['20160303_201122'],
-					'N64' : ['20160303_222847']}
-timestamps['plus'] = 	{'N8' : ['20160309_173550'],
-					 	'N16' : ['20160309_193753'],
-					 	'N32' : ['20160309_220938'],
-						'N64' : ['20160310_012834']}
-# SIL 5 
-# timestamps['min'] ={'N8' : ['20160307_185923'], 
-# 					'N16' : ['20160307_215343'],
-# 					'N32' : ['20160308_005439'],
-# 					'N64' : ['20160308_045059']}
-
-# timestamps['plus'] = 	{'N8' : ['20160308_153657'],
-# 					 	'N16' : ['20160308_181059'],
-# 					 	'N32' : ['20160308_211537'],
-# 						'N64' : ['20160309_010854']}
-
-# timestamps['min'] ={'N8' : ['20160229_114914'], 
-# 					'N16' : ['20160229_133036'],
-# 					'N32' : ['20160229_152201'],
-# 					'N64' : ['20160229_174524']}
-# timestamps['plus'] = 	{'N8' : ['20160226_172904'],
-# 					 	'N16' : ['20160226_185757'],
-# 					 	'N32' : ['20160226_203842'],
-# 						'N64' : ['20160226_224334']}
-# # 2016 januari data
-# 						{'N8' : ['20160112_174142'],
-# 					 	'N16' : ['20160112_192510','20160116_110213'],
-# 					 	'N32' : ['20160112_211902','20160116_121642'],
-# 						'N64' : ['20160112_234557']}
+timestamps['plus'] = {'N8' : ['20160116_140951'],
+						 'N16' : ['20160116_161812'],
+						 'N32' : ['20160116_181552'],
+						 'N64' : ['20160116_202552']}
+timestamps['min'] = {'N8' : ['20160112_174142'],
+					 	'N16' : ['20160112_192510','20160116_110213'],
+					 	'N32' : ['20160112_211902','20160116_121642'],
+						'N64' : ['20160112_234557']}
 #'20160112_192510'
 #crappy stamps
 # timestamps['min'] = {'N8' : '20160107_173313', 'N16' : '20160107_201229','N32' : '20160107_222009','N64' : '20160108_004236'}
 # timestamps['plus'] = {'N8' : '20160110_121238', 'N16' : '20160110_143232','N32' : '20160110_170758','N64' : '20160110_202511'}
-# ssro_calib_folder = 'd:\\measuring\\data\\20160229\\114128_AdwinSSRO_SSROCalibration_111no2_SIL1'	
-ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
-print ssro_calib_folder
+ssro_calib_folder = 'd:\\measuring\\data\\20160107\\172632_AdwinSSRO_SSROCalibration_Pippin_SIL1'	
 
 def load_data(N = [8], el_trans = 'min'):
 	a = []
@@ -96,7 +68,7 @@ def load_data(N = [8], el_trans = 'min'):
 		a_temp.sweep_pts = sweep_pts
 		a.append(a_temp)
 		folder.append(folder_temp)
-		print 'data N' +str(N[i]) + ' for el_trans ' + el_trans + ' loaded'
+		print 'data N' +str(N[i]) + 'for el_trans ' + el_trans + ' loaded'
 	print 'All data for the specified N loaded via the timestamps in fp_ls'
 	return a, folder
 
@@ -113,7 +85,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 	### Load hyperfine params	
 	if disp_sim_spin == True:	
 		if (HF_perp == None) & (HF_par == None):
-			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL3')
+			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin')
 		elif el_trans == 'min':
 			HF_par =  [x * (-1) for x in HF_par]
 
@@ -154,12 +126,12 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		if xlim == None:
 			fig = data.default_fig(figsize=(35,5))
 			ax = data.default_ax(fig)
-			ax.set_xlim(3.5,23.5)
-			xlim = [3.5,23.5]
+			ax.set_xlim(3.5,15.5)
+			xlim = [3.5,15.5]
 		else:
 			# 5+30*(xlim[1]-xlim[0])
 			# 5+5*(xlim[1]-xlim[0])
-			fig = data.default_fig(figsize=(5+2*(xlim[1]-xlim[0]),5))
+			fig = data.default_fig(figsize=(5+30*(xlim[1]-xlim[0]),5))
 			ax = data.default_ax(fig)
 			ax.set_xlim(xlim)
 
@@ -175,9 +147,10 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		#######################
 		# Add simulated spins #
 		#######################
+
 		if disp_sim_spin == True:
 			print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
-			B_Field = 421.5
+			B_Field = 418.05
 			print B_Field
 			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
@@ -187,8 +160,12 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 
 			# plot simulated results
 			# colors = ['m', 'b', 'r', 'g', 'c']
-			colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
-
+			colors = cm.rainbow(np.linspace(0, 0.7, len(HF_par)))
+			# colors.extend(cm.rainbow(np.linspace(0.8, 0.9, len(HF_par))))
+			# print 'colors ' + str(colors)
+			# for 'min' the actual hyperfine coupling has the wrong sign. Flip it for image. Not efficient yet
+			# if el_trans == 'min':
+			# 	HF_par = [x * (-1) for x in HF_par]
 			for tt in range(len(HF_par)):
 			  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label = str(tt + 1) + ': HF_par = ' +str(HF_par[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt])
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
