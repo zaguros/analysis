@@ -18,53 +18,7 @@ from scipy.optimize import curve_fit
 import operator
 
 from analysis.lib.m2 import m2
-
-reload(toolbox)
-reload(common)
-
-'''
-The next three functions are the basis function to analyse the data. They gather the data that you want to collect, assign x and y 
-(Volt/Frequency and photodiode signal)
-and return the x and y values of the indicated scans.
-'''
-
-def load_data (folder, timestamp, scan_type, return_folder = False):
-    '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
-    Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
-    (which is different for laser scans and piezo scans).'''
-
-    all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
-    test = all_folders[0]
-    if len(all_folders) == 0:
-        x = []
-        y = []
-        f = None
-    
-    else:
-        curr_fold = os.path.join(folder, all_folders[0])
-        all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
-        file_name = [f for f in all_files if '.hdf5' in f]
-
-        if (scan_type =='piezo'):
-            grp_name = '/piezo_scan'
-            x_name = 'piezo_voltage'
-        elif (scan_type == 'lr_scan'):
-            grp_name = '/lr_scan'
-            x_name = 'frequency_GHz'
-        elif (scan_type =='fine_laser'):
-            grp_name = '/fine_laser_scan'
-            x_name = 'laser_tuning_voltage'
-        
-        f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
-        ls_grp = f[grp_name]
-        x = ls_grp[x_name].value
-        y = ls_grp['PD_signal'].value
-    if return_folder:
-        return curr_fold, x, y, test
-    else:
-        return x, y, test
-
-
+from analysis.scripts.cavity import peakdetect as pd; reload(pd)
 
 
 ##################################################################################################################################
@@ -122,521 +76,47 @@ def load_lr_scan (folder, timestamp):
 ##################################################################################################################################
 ##################################################################################################################################
 
-def show_fine_laser_plots(date, timestamp, folder, measurement_type, f_min, f_max, set_range_f):
-    'This function plots all fine laser scans within the given timestamp range'
-    T = []
-    LW = []
+##################################################################################################################################
+##################################################################################################################################
+########
 
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        f,y, name = load_fine_lr_scan(folder = folder, timestamp = time)
 
-        if len(f) == 0:
-            continue
+def determine_peak_range(folder,y,x,delta,tag='',show_plot=True,save_plot=True):
+    maxtab, mintab = pd.peakdet(y,.1)
 
-        T.append(1)
-        f = f*35./3.
+    print maxtab
+    if len(maxtab)==1:
+        print maxtab
+    if len(maxtab)>0:
+        x_maxima = np.array([x[i] for i in maxtab[:,0]])
+    else:
+        return(0,0)
         
-        ''' Assigns f_min and f_max '''
-        if set_range_f == True:
-            ind_min = np.where(f < f_min)
-            ind_max = np.where(f > f_max)
-            f = np.delete(f, ind_max[0])
-            f = np.delete(f, ind_min[0])
-            y = np.delete(y, ind_max[0])
-            y = np.delete(y, ind_min[0])
-        else:
-            f_max = max(f)
-            f_min = min(f)
-        # print name
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(f,y)
-        plt.xlabel('Relative frequency [GHz]')
-        plt.ylabel('Transmission')
-        ax.set_xlim(f_min,f_max)
-        # plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Fine laser plot without fit')
-        plt.title(name)
+    peak_range = x_maxima[-1]-x_maxima[0]
+    nr_peaks = len(x_maxima)
+
+    print tag,peak_range,nr_peaks
+
+    fig,ax = plt.subplots(figsize=(6,4.7))
+
+    ax.plot(x,y)
+    ax.scatter(x_maxima, np.array(maxtab)[:,1], color='blue')
+    ax.set_xlabel('voltage (V)',fontsize=14)
+    ax.set_ylabel('transmission (a.u.)',fontsize=14)
+    ax.tick_params(axis = 'both', which = 'major',labelsize = 14)
+    ax.set_xlim(x[0],x[-1])
+    ax.set_ylim(0,max(y))
+
+    ax.set_title(folder +'\n peak detect '+tag+'max range '+str(round(peak_range,2)))
+
+    if save_plot:
+        fig.savefig(folder +'/'+tag+"peaks.png")
+
+    if show_plot:
         plt.show()
-        
-    if len(T) == 0:
-        print "No fine laser data with these timestamps"
+    plt.close()
 
-##################################################################################################################################
-##################################################################################################################################
-##################################################################################################################################
-
-def show_piezo_plots(date, timestamp, folder, measurement_type, V_min, V_max, set_range_V):
-    'This function plots all piezo scans within the given timestamp range'
-    T = []
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-
-        V,y, name = load_piezo_scan(folder = folder, timestamp = time)
-
-        if len(V) == 0:
-            continue
-
-        T.append(1)
-        ''' Assigns V_min and V_max '''
-        if set_range_V == True:
-            ind_min = np.where(V < V_min)
-            ind_max = np.where(V > V_max)
-            V = np.delete(V, ind_max[0])
-            V = np.delete(V, ind_min)
-            y = np.delete(y, ind_max[0])
-            y = np.delete(y, ind_min)
-        else:
-            V_max = max(V)
-            V_min = min(V)
-
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(V,y)
-        plt.xlabel('Voltage [V]')
-        plt.ylabel('Transmission')
-        ax.set_xlim(V_min,V_max)
-        plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Piezo plot without fit')
-    if len(T) ==0:
-        print "No piezo data with these timestamps"
-
-##################################################################################################################################
-##################################################################################################################################
-##################################################################################################################################
-
-def show_laser_plots(date, timestamp, folder, measurement_type, f_min, f_max, set_range_f):
-    'This function plots all laser scans within the given timestamp range'
-    
-    T = []
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        f,y, name = load_lr_scan (folder=folder, timestamp = time)
-
-        if len(f) == 0:
-            continue
-
-        T.append(1)
-        ''' Assigns f_min and f_max '''
-        if set_range_f == True:
-            ind_min = np.where(f < f_min)
-            ind_max = np.where(f > f_max)
-            f = np.delete(f, ind_min)
-            f = np.delete(f, ind_max)
-            y = np.delete(y, ind_min)
-            y = np.delete(y, ind_max)
-
-        else:
-            f_min = min(f)
-            f_max = max(f)
-
-
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(f,y)
-        plt.xlabel('frequency [GHz]')
-        plt.ylabel('Transmission')
-        ax.set_xlim(f_min,f_max)
-        plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Laser plot without fit')
-    if len(T) ==0:
-        print "No laser data with these timestamps"
-
-##################################################################################################################################
-##################################################################################################################################
-##################################################################################################################################
-
-def get_FSR(date, timestamp, folder, newpath, V_min, V_max, set_range_V, labda = 637, save_data = False):
-    ''' Plots all laser scans within the given timestamp range and assigns the FSR_L (in V) and the conversion factor, given FSR_L = lambda/2'''
-    
-    print '### YOU\'RE ANALYSING THE FSR ### \n'
-    T = []
-    ALPHA = []
-    Delta_V = []
-    
-    for i in range(len(timestamp)):
-
-        time = timestamp[i]
-
-        '''Determine where the peaks are and select the resonance peaks'''
-        V,y, name = load_piezo_scan(folder = folder, timestamp = time)
-        V=-1*V
-        if len(V) == 0:
-            continue
-
-
-
-        if len(V) == 0:
-            continue
-
-        T.append(1)
-        ''' Assigns V_min and V_max '''
-        if set_range_V == True:
-            ind_min = np.where(V < V_min)
-            ind_max = np.where(V > V_max)
-            V = np.delete(V, ind_max[0])
-            V = np.delete(V, ind_min)
-            y = np.delete(y, ind_max[0])
-            y = np.delete(y, ind_min)
-        else:
-            V_max = max(V)
-            V_min = min(V)
-
-        T.append(1)
-        peak = np.where(y > 0.05)
-        resonance1 = peak[0][0]
-        resonance2 = peak[0][-1]
-        V1 = V[resonance1]
-        V2 = V[resonance2]
-
-        DV = V2-V1
-        Delta_V.append(DV)
-
-        # fsr = DV * 2500/12
-        # Length = labda**2/(2*fsr)
-        # FSR.append(fsr)
-        # L.append(Length)
-
-        # print 'FSR and LENGTH',fsr, Length
-        ''' (m/labda = 2L), therefore, for two consecutive peaks (m and m+1), (Delta_L = labda/2). And since Delta_L = alpha*Delta_V: alpha = labda/(2*Delta_V)'''
-        alpha = labda/(2.*(V2-V1))
-        ALPHA.append(alpha)
-        print 'DELTA VOLTAGE:', DV
-        print 'alpha is ', alpha
-
-        ''' Plot the Free Spectral Range '''        
-        fig, ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(V,y,'b-')
-        ax.set_xlim(V_min,V_max)
-        plt.plot(V1,0,'ro')
-        plt.plot(V2,0,'ro')
-        plt.xlabel('Volt [V]',fontsize=14)
-        plt.ylabel('transmission [arb. units]',fontsize=14)
-        plt.rc('text', usetex = True)
-        plt.title(date + ' - ' + time + '\n Free Spectral Range is ' + str(round(DV,2)) + 'V \n' + r'$\alpha$' + ' is ' + str(round(alpha,2)) + 'nm/V')
-        # plt.title('Free Spectral Range',fontsize=14)
-        # plt.axis('off')
-        plt.show()
-        
-        if save_data == True:
-            fig.savefig(newpath +'/' + "FSR " + time + ".png")
-
-    average_Delta_V = sum(Delta_V)/len(Delta_V)
-    variance_Delta_V = sum([(x-average_Delta_V)**2 for x in Delta_V])/len(Delta_V)
-    st_dev_Delta_V = np.sqrt(variance_Delta_V)
-    
-    average_ALPHA = sum(ALPHA)/len(ALPHA)
-    variance_alpha = sum([(x-average_ALPHA)**2 for x in ALPHA])/len(ALPHA)
-    st_dev_alpha = np.sqrt(variance_alpha)
-    
-    W = 182.5*average_Delta_V
-    st_W = 182.5*st_dev_Delta_V
-
-
-    print 'Average alpha is ', round(average_ALPHA,2), 'with a standard deviation of ', round(st_dev_alpha,2)
-    print 'Average Delta_V is ', round(W,2), 'with a standard deviation of ', round(st_W,4)
-
-
-
-
-    if len(T) ==0:
-        print "No piezo data with these timestamps"
-
-##################################################################################################################################
-##################################################################################################################################
-##################################################################################################################################
-
-def get_piezo_linewidth(date, timestamp, folder, measurement_type, V_min, V_max, newpath, set_range_V = False, save_data = False):
-    '''
-    This function loads the data for piezo scans, determines the peak, the mean of the peak and the standard deviation of this mean.
-    The linewidth is defined as three times the standard deviation of the mean. The scan is plotted and an indication of the determined
-    linewidth is given by two green dots.
-    '''
-
-    print '### YOU\'RE ANALYSING PIEZO SCANS ### \n'
-    LW = []
-    Quality = []
-    t = []
-    drift = []
-    drift_error = []
-    frequency = []
-    standard_dev = []
-    T = []
-
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        V,y, name = load_piezo_scan(folder = folder, timestamp = time)
-        # V,y = zip(*sorted(zip(V, y)))
-
-        if len(V) == 0:
-            continue
-
-        T.append(1)
-        '''
-        If a certain range for V is selected, delete all the datapoints outside this range
-        '''
-        if set_range_V == True:
-            ind_min = np.where(V < V_min)
-            ind_max = np.where(V > V_max)
-            # print len(V)
-            V = np.delete(V, ind_max[0])
-            V = np.delete(V, ind_min)
-            y = np.delete(y, ind_max[0])
-            y = np.delete(y, ind_min)
-        else:
-            V_max = max(V)
-            V_min = min(V)
-
-        ''' get the maximum value in the data and the index of this value (this should be the top of the linewidth peak) '''
-        max_index, max_value = max(enumerate(y), key = operator.itemgetter(1))
-
-        ''' Determine mean and standard deviation of the peaks '''
-        peak = np.where(y > 0.1)
-        if len(peak[0]) > 0:
-            print time + ' Peak detected'
-            X = [V[peak[0][i]] for i in range(len(peak[0]))]
-            mean = sum(X)/len(X)
-            variance = sum([(x-mean)**2 for x in X])/len(X)
-            st_dev = np.sqrt(variance)
-            st_dev_3 = 3*st_dev
-            X_left = mean - (st_dev_3/2)
-            X_right = mean + (st_dev_3/2)
-            LW.append(st_dev_3)
-            Ra = round(st_dev_3*111,3)
-            Ro = round(st_dev_3*3,2)
-            ''' Make a plot of the data '''
-            fig,ax = plt.subplots(figsize=(6,4.7))
-            ax.plot(V,y,'b', label = 'LT, tube low')
-            # ax.legend()
-            ax.legend(loc=2)
-            # plt.plot(X_left,0, 'go')
-            # plt.plot(X_right,0, 'go')
-            plt.xlabel('Voltage [V]',fontsize=14)
-            plt.ylabel('Transmission [arb. units]',fontsize=14)
-            ax.set_xlim(V_min,V_max)
-            # plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Linewidth is %s V' %(round(st_dev_3,5)))
-            plt.title('\n Range peak is %s $\pm$ %s nm' %(round(st_dev_3*111,2), round(st_dev_3*3,2)))
-
-            if save_data == True:
-                fig.savefig(newpath +'/' + "piezolinewidth " + time + ".png")
-
-        else:
-            print time + " No significant peak detected"
-            continue
-        
-            
-    ''' Determine linewidth by means of sigma '''
-
-    if len(LW) > 0:
-        average_sigma = sum(LW)/float(len(LW))
-        variance_average_sigma = sum([(x-average_sigma)**2 for x in LW])/len(LW)
-        st_dev_average_sigma = np.sqrt(variance_average_sigma)
-        print 'AVERAGE SIGMA IS ', round(average_sigma,5), ' [V] WITH A ST DEV OF ', round(st_dev_average_sigma,5), ' [V]'
-    elif len(T) == 0:
-        print "No piezo data with these timestamps"
-    else:
-        print "\n !!! The average linewidth could not be determined, for there was no significant peak detected !!!"
-
-        
-
-##################################################################################################################################
-##################################################################################################################################
-##################################################################################################################################
-
-def get_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_min, f_max, newpath, set_range_f = False, save_data = False):
-
-    print '### YOU\'RE ANALYSING LASER SCANS ### \n'
-
-    LW = []
-    Quality = []
-    t = []
-    drift = []
-    drift_error = []
-    delete = []
-    T = []
-
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        f,y, name = load_lr_scan (folder=folder, timestamp = time)
-
-        if len(f) == 0:
-            continue
-
-        T.append(1)
-
-        print "f: ", len(f), f[0], f[-1]
-
-        if set_range_f == True:
-            ind_min = np.where(f < f_min)
-            ind_max = np.where(f > f_max)
-            f = np.delete(f, ind_min)
-            f = np.delete(f, ind_max)
-            y = np.delete(y, ind_min)
-            y = np.delete(y, ind_max)
-        else:
-            f_min = min(f)
-            f_max = max(f)
-
-
-        print "f: ", len(f), f[0], f[-1]
-
-        max_index, max_value = max(enumerate(y), key = operator.itemgetter(1))
-        if max_value < threshold:
-            continue
-
-        '''
-        Determine mean and standard deviation of the peaks
-        '''
-        peak = np.where(y >= threshold)
-        X = [f[peak[0][i]] for i in range(len(peak[0]))]
-        mean = sum(X)/len(X)
-        variance = sum([(x-mean)**2 for x in X])/len(X)
-        st_dev = np.sqrt(variance)
-        st_dev_3 = 3*st_dev
-        X_left = mean - (st_dev_3/2)
-        X_right = mean + (st_dev_3/2)
-        LW.append(st_dev_3)
-
-        '''
-        Make a plot of the data
-        '''
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(f,y,'r', label = 'piezo scan linewidth')
-        ax.legend()
-        plt.plot(X_left,0, 'go')
-        plt.plot(X_right,0, 'go')
-        plt.xlabel('frequency [GHz]')
-        plt.ylabel('Transmission')
-        ax.set_xlim(f_min,f_max)
-        plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Linewidth is %s GHz' %(round(st_dev_3,2)))
-
-        if save_data == True:
-            print newpath
-            fig.savefig(newpath +'/' + "laserlinewidth " + time + ".png")
-
-    ''' 
-    Determine linewidth by means of sigma
-    '''
-    if len(LW) > 0:
-        average_sigma = sum(LW)/float(len(LW))
-        variance_average_sigma = sum([(x-average_sigma)**2 for x in LW])/len(LW)
-        st_dev_average_sigma = np.sqrt(variance_average_sigma)
-        print 'AVERAGE SIGMA IS ', round(average_sigma,5), 'WITH A ST DEV OF ', round(st_dev_average_sigma,5)
-    else:
-        print "\n !!! The average linewidth could not be determined, for there was no significant peak detected !!!"
-
-    if len(T) ==0:
-        print "No laser data with these timestamps"
-
-##################################################################################################################################
-##################################################################################################################################
-##################################################################################################################################
-
-def fit_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_min, f_max, newpath, set_range_f = False, save_data = False):
-
-    print '### YOU\'RE FITTING LASER SCANS ### \n'
-    
-    LW = []
-    Quality = []
-    t = []
-    drift = []
-    drift_error = []
-    delete = []
-    T = []
-
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        f,y, name = load_lr_scan (folder=folder, timestamp = time)
-
-        if len(f) == 0:
-            continue
-
-        T.append(1)
-
-        if set_range_f == True:
-            ind_min = np.where(f < f_min)
-            ind_max = np.where(f > f_max)
-            f = np.delete(f, ind_min)
-            f = np.delete(f, ind_max)
-            y = np.delete(y, ind_min)
-            y = np.delete(y, ind_max)
-        else:
-            f_min = min(f)
-            f_max = max(f)
-
-        max_index, max_value = max(enumerate(y), key = operator.itemgetter(1))
-        if max_value < threshold:
-            continue
-
-        # f,y = zip(*sorted(zip(f, y)))
-
-        offset = 0.01
-        amplitude = max_value
-        x0 = f[max_index]
-        exponent = 1
-        decay_constant = 3
-        sigma = 2.413625
-        gamma = 20
-
-        """ Fit a Gaussian """
-        fixed = [0]
-        p0, fitfunc, fitfunc_str = common.fit_gauss(offset, amplitude, x0, sigma)
-        fit_result = fit.fit1d(f,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
-
-        ''' 
-            In order to calculate the linewidth a help-function is created which resembles the fitting function (by means of
-            the fitting parameters). Of this function all indices where the function exceeds the half maximum are stored in
-            Half_Max. Of this list the very first and very last values are considered to by the indices at the half maximum and
-            the linewidth (in nm) is then calculated by subtracting the voltages of those points and multiplying that by 25 nm/V, 
-            a spec that is provided by JPE. Subsequently Q can be calculated by the well-known formula Q=omega/(delta omega), for 
-            which omega is the wavelength of the laser and delta omega the linewidth
-        '''
-        
-        A = fit_result['params_dict']['A']
-        a = offset
-        x0 = fit_result['params_dict']['x0']
-        sigma = fit_result['params_dict']['sigma']
-
-        function = a + A*np.exp(-(f-x0)**2/(2*sigma**2))
-
-        if A > 5*max_value:
-            print 'fit failed'
-            continue
-
-        Half_Max = np.where(function > A/2)
-        Half_Max_l = Half_Max[0][0]
-        Half_Max_r = Half_Max[0][-1]
-
-        Linewidth = abs(f[Half_Max_r]-f[Half_Max_l])
-        LW.append(Linewidth)
-
-
-        ''' Plot figure '''
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(f,y, 'bo', label = 'data')
-        plot.plot_fit1d(fit_result, np.linspace(f[0],f[-1],len(f)), ax=ax,label='Fit',show_guess=True, plot_data=False)
-        ax.plot(f,function, 'g', label='testplot')
-        ax.legend()
-        plt.plot(f[Half_Max_r], A/2+offset, 'go')
-        plt.plot(f[Half_Max_l], A/2+offset, 'go')
-        plt.xlabel('frequency [GHz]')
-        plt.ylabel('Transmission')
-        plt.xlim(f_min,f_max)
-        plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Linewidth is %s GHz' %round(Linewidth,2))
-
-        if save_data == True:
-            fig.savefig(newpath +'/' + "laserfit " + time + ".png")
-
-    ''' 
-    Determine linewidth by means of sigma
-    '''
-    if len(LW) > 0:
-        average_sigma = sum(LW)/float(len(LW))
-        variance_average_sigma = sum([(x-average_sigma)**2 for x in LW])/len(LW)
-        st_dev_average_sigma = np.sqrt(variance_average_sigma)
-        print 'AVERAGE SIGMA IS ', round(average_sigma,5), ' [GHz] WITH A ST DEV OF ', round(st_dev_average_sigma,5), ' [GHz]'
-    elif len(T) == 0:
-        print "No fine laser data with these timestamps"
-    else:
-        print "\n !!! The average linewidth could not be determined, for there was no significant peak detected !!!"
-
-        
-
+    return peak_range,nr_peaks
 
 def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = False, save_data = False, threshold=0.1):
     'This function plots all fine laser scans within the given timestamp range'
@@ -729,175 +209,21 @@ def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = F
     print 'Average LW_piezo is ', round(average_LW,1), ' GHz with a standard deviation of ', round(st_dev_LW,1), ' GHz'
 
 
-
-
-
-
-
-def fit_fine_laser_plots2(date, timestamp, folder, measurement_type, f_min, f_max, set_range_f = False, save_data = False, threshold = 0.1):
-    'This function plots all fine laser scans within the given timestamp range'
-    T = []
-    LW1 = []
-    LW2 = []
-
-    for i in range(len(timestamp)):
-        print i
-        time = timestamp[i]
-        data_folder, f,y, name = load_fine_lr_scan(folder = folder, timestamp = time, return_folder = True)
-
-        if len(f) == 0:
-            continue
-
-        T.append(1)
-        f = f*30./3.
-        
-        ''' Assigns f_min and f_max '''
-        if set_range_f == True:
-            ind_min = np.where(f < f_min)
-            ind_max = np.where(f > f_max)
-            f = np.delete(f, ind_max[0])
-            f = np.delete(f, ind_min[0])
-            y = np.delete(y, ind_max[0])
-            y = np.delete(y, ind_min[0])
-        else:
-            f_max = max(f)
-            f_min = min(f)
-        print threshold
-        max_index, max_value = max(enumerate(y), key = operator.itemgetter(1))
-        if max_value < threshold:
-            print "removing plot, max value < threshold"
-            continue
-
-        offset = 0.00
-        amplitude1 = max_value
-        x01 = f[max_index]
-        sigma1 = 5
-
-        amplitude2 = max_value 
-        x02 = f[max_index]+10
-        sigma2 = 2
-
-        """ Fit a Gaussian """
-        fixed = [0]
-        p0, fitfunc, fitfunc_str = common.fit_2gauss(offset, amplitude1, x01, sigma1, amplitude2, x02, sigma2)
-        fit_result = fit.fit1d(f,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
-
-
-        A1 = fit_result['params_dict']['A1']
-        a = offset
-        x01 = fit_result['params_dict']['x01']
-        sigma1 = fit_result['params_dict']['sigma1']
-        A2 = fit_result['params_dict']['A2']
-        x02 = fit_result['params_dict']['x02']
-        sigma2 = fit_result['params_dict']['sigma2']
-
-        # f2 = np.linspace(min(f),max(f),1001)
-        function1 = a + A1*np.exp(-(f-x01)**2/(2*sigma1**2))
-        function2 = a + A2*np.exp(-(f-x02)**2/(2*sigma2**2))
-
-        if A1 > 5  *max_value:
-            continue
-
-        Half_Max1 = np.where(function1 > A1/2)
-        Half_Max_l1 = Half_Max1[0][0]
-        Half_Max_r1 = Half_Max1[0][-1]
-        # print Half_Max,
-        # print Half_Max_l, Half_Max_r
-        Linewidth1 = abs(f[Half_Max_r1]-f[Half_Max_l1])
-        LW1.append(Linewidth1)
-
-        Half_Max2 = np.where(function2 > A2/2)
-        Half_Max_l2 = Half_Max2[0][0]
-        Half_Max_r2 = Half_Max2[0][-1]
-        # print Half_Max,
-        # print Half_Max_l, Half_Max_r
-        Linewidth2 = abs(f[Half_Max_r2]-f[Half_Max_l2])
-        LW2.append(Linewidth2)
-        
-        ''' Plot figure '''
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(f,y, 'bo', label = 'data')
-        plot.plot_fit1d(fit_result, np.linspace(f[0],f[-1],len(f)), ax=ax,label='Fit',show_guess=True, plot_data=False)
-        ax.plot(f,function1, 'g', label='testplot')
-        ax.plot(f,function2,'b')
-        #ax.legend()
-        plt.plot(f[Half_Max_r1], A1/2+offset, 'go')
-        plt.plot(f[Half_Max_l1], A1/2+offset, 'go')
-        plt.plot(f[Half_Max_r2], A2/2+offset, 'ro')
-        plt.plot(f[Half_Max_l2], A2/2+offset, 'ro')
-        plt.xlabel('frequency [GHz]')
-        plt.ylabel('Transmission')
-        plt.xlim(f_min,f_max)
-        plt.title(date + ' - ' + time + '\n' + measurement_type + '\n' + 'Linewidth is ' + str(round(Linewidth1,2)) + 'GHz') #'GHz and \n Linewidth2 is ' + str(round(Linewidth2,2)) + 'GHz')
-
-        # if save_data == True:
-        #   fig.savefig(newpath +'/' + "laserfit " + time + ".png")
-
-    if len(T) ==0:
-        print "No fine laser data with these timestamps"
-
-
-
-
-#! Not tested yet
-def bla_fine_laser_plots(date, timestamp, folder, measurement_type, f_min, f_max, set_range_f, save_data):
-    'This function plots all fine laser scans within the given timestamp range'
-    T = []
-    LW = []
-
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        f,y, name = load_fine_lr_scan(folder = folder, timestamp = time)
-
-        if len(f) == 0:
-            continue
-
-        T.append(1)
-        f = f*35./3.
-        
-        ''' Assigns f_min and f_max '''
-        if set_range_f == True:
-            ind_min = np.where(f < f_min)
-            ind_max = np.where(f > f_max)
-            f = np.delete(f, ind_max[0])
-            f = np.delete(f, ind_min[0])
-            y = np.delete(y, ind_max[0])
-            y = np.delete(y, ind_min[0])
-        else:
-            f_max = max(f)
-            f_min = min(f)
-
-        threshold = 0.02
-        peak = np.where(y >= threshold)
-
-        # print peak[0]
-        # print range(peak[0])
-
-        X2 = [f[index] for index in range(peak[0])]
-        X3 = np.delete(f,X2)
-        Y3 = np.delete(y,X2)
-
-
-        fig,ax = plt.subplots(figsize=(6,4.7))
-        ax.plot(X3,Y3)
-        plt.xlabel('Relative frequency [GHz]')
-        plt.ylabel('Transmission')
-        ax.set_xlim(f_min,f_max)
-        # plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Fine laser plot without fit')
-        plt.title(name)
-        plt.show()
-        
-    if len(T) == 0:
-        print "No fine laser data with these timestamps"
-
-
-def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, save_data = False, threshold = 0.1,show_plots=True):
+def fit_piezo_plots(data_folder,x_datas,y_datas,nr_repetitions=1,tag='',V_min=0, V_max=1, 
+        set_range_V = False, save_data = True, threshold = 0.1,show_plots=True, show_avg_plots=False ,averaging = True,**kw):
     'This function plots all length scans within the given timestamp range'
     print '### YOU\'RE ANALYSING PIEZO SCANS ### \n'
-    N_points = 140 #the number of points around the resonant centre cavity length that are averaged for all scans 
-    conversion_factor = 182 #nm / V . This is the calculated conversion factor from piezo voltage to distance moved
+
+    do_determine_drift = kw.pop('do_determine_drift',False)
+    timestamps = kw.pop('timestamps', None)
+
+    if do_determine_drift and timestamps == None:
+        print 'Drift cannot be determined since no timestamps are provided. Provide timestamps.'
+        do_determine_drift = False
+    
+    N_points = 100 #the number of points around the resonant centre cavity length that are averaged for all scans 
+    conversion_factor = 111 #nm / V . This is the calculated conversion factor from piezo voltage to distance moved
     LW = []
-    Quality = []
     t = []
     peak_positions = []
     times = []
@@ -905,12 +231,15 @@ def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, 
     standard_dev = []
     T = np.array([])
     Ts = np.zeros(2*N_points)
+    for i in np.arange(nr_repetitions):
+        if do_determine_drift:
+            time = timestamps[i]
 
-    for i in range(len(timestamp)):
-        time = timestamp[i]
-        data_folder, V,y, name = load_piezo_scan(folder = folder, timestamp = time, return_folder = True)
-        # V,y = zip(*sorted(zip(V, y)))
-
+        if nr_repetitions > 1:
+            V,y = x_datas[i],y_datas[i]
+        else:
+            V,y = x_datas,y_datas
+        
         if len(V) == 0:
             continue
 
@@ -963,7 +292,8 @@ def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, 
         u_Linewidth = u_gamma
         LW.append(Linewidth)
         peak_positions = np.append(peak_positions, x0)
-        times = np.append(times,time)
+        if do_determine_drift:
+            times = np.append(times,time)
         
         dLs, V_zoom, y_zoom, zoom_success = zoom_around_peak(V, y, x0, N_points, conversion_factor = conversion_factor)
 
@@ -971,7 +301,7 @@ def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, 
             final_dLs = dLs
             Ts = Ts + y_zoom
         
-        if (show_plots and zoom_success):
+        if (show_avg_plots and zoom_success):
             plot_current_and_average_transmission(dLs,Ts,T,y_zoom)
 
         if show_plots:
@@ -986,7 +316,7 @@ def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, 
             ax.set_title(data_folder + ' \n Cavity linewidth in length is %s $\pm$ %s nm' %(round(Linewidth*conversion_factor,2), round(u_Linewidth*conversion_factor,3)))
 
             if save_data == True:
-                fig.savefig(data_folder +'/'+ "piezofit " + ".png")
+                fig.savefig(data_folder +'/'+ "piezofit_"+tag+"_"+str(i)+".png")
             plt.show()
             plt.close()
 
@@ -996,44 +326,45 @@ def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, 
     average_LW = sum(LW)/len(LW)
     variance_LW = sum([(x-average_LW)**2 for x in LW])/len(LW)
     st_dev_LW = np.sqrt(variance_LW)
-    print  10*'*' + 'Average linewidth is ', round(average_LW*conversion_factor,3), '+-', round(st_dev_LW*conversion_factor,3), ' nm '+ 10*'*'
+    print  10*'*' + 'Average linewidth is ', round(average_LW*conversion_factor,3), '+-', round(st_dev_LW*conversion_factor,4), ' nm '+ 10*'*'
 
 
     #fit the averaged data -> if the linewidth is worse, the averaging is not done well.
+    if averaging:
 
-    offset = 0.05
-    amplitude = 2*max_value
-    x0 = 0
-    gamma = 0.3
+        offset = 0.05
+        amplitude = 2*max_value
+        x0 = 0
+        gamma = 0.3
 
-    fixed = []
-    p0, fitfunc, fitfunc_str = common.fit_lorentz(offset, amplitude, x0, gamma)
-    fit_result = fit.fit1d(final_dLs,Ts/len(T), None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+        fixed = []
+        p0, fitfunc, fitfunc_str = common.fit_lorentz(offset, amplitude, x0, gamma)
+        fit_result = fit.fit1d(final_dLs,Ts/len(T), None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
 
-    A = fit_result['params_dict']['A']
-    a = offset
-    x0 = fit_result['params_dict']['x0']
-    gamma = fit_result['params_dict']['gamma']
-    u_gamma = fit_result['error_dict']['gamma']
+        A = fit_result['params_dict']['A']
+        a = offset
+        x0 = fit_result['params_dict']['x0']
+        gamma = fit_result['params_dict']['gamma']
+        u_gamma = fit_result['error_dict']['gamma']
 
-    fig,ax = plt.subplots(figsize=(6,4))
-    plot.plot_fit1d(fit_result, np.linspace(final_dLs[0],final_dLs[-1],10*len(final_dLs)), ax=ax,color='navy',show_guess=True, plot_data=True, data_color = 'darkorange',data_linestyle ='-',data_lw  =3,lw = 1.5,label = 'fit', add_txt=False)
-    ax.legend()
-    ax.set_xlabel('detuning in length (nm)',fontsize=14)
-    ax.set_ylabel('Transmission (a.u.)',fontsize=14)
-    ax.tick_params(axis = 'both', which = 'major',labelsize = 14)
-    ax.set_xlim(final_dLs[0],final_dLs[-1])
-    ax.set_title(data_folder + ' \n Cavity linewidth in length is %s $\pm$ %s nm' %(round(gamma,3), round(u_gamma,3)))
-    fig.savefig(data_folder +'/'+ "average_transmission " + ".png")
-    fig.savefig(data_folder +'/'+ "average_transmission " + ".eps")
-    fig.savefig(data_folder +'/'+ "average_transmission " + ".pdf")
-    plt.tight_layout()
+        fig,ax = plt.subplots(figsize=(6,4))
+        plot.plot_fit1d(fit_result, np.linspace(final_dLs[0],final_dLs[-1],10*len(final_dLs)), ax=ax,color='navy',show_guess=True, plot_data=True, data_color = 'darkorange',data_linestyle ='-',data_lw  =3,lw = 1.5,label = 'fit', add_txt=False)
+        ax.legend()
+        ax.set_xlabel('detuning in length (nm)',fontsize=14)
+        ax.set_ylabel('Transmission (a.u.)',fontsize=14)
+        ax.tick_params(axis = 'both', which = 'major',labelsize = 14)
+        ax.set_xlim(final_dLs[0],final_dLs[-1])
+        ax.set_title(data_folder + ' \n Cavity linewidth in length is %s $\pm$ %s nm' %(round(gamma,3), round(u_gamma,3)))
+        fig.savefig(data_folder +'/'+ tag+"average_transmission " + ".png")
+        plt.tight_layout()
 
-    plt.show()
-    plt.close()
+        plt.show()
+        plt.close()
 
+    if do_determine_drift:
+        determine_drift(times,peak_positions, data_folder)
 
-    determine_drift(times,peak_positions, data_folder)
+    return average_LW*conversion_factor, st_dev_LW*conversion_factor
 
 def fit_birefringence(date, timestamp, folder, V_min=0, V_max=1, set_range_V = False, save_data = False, threshold = 0.1,show_plots=True, sweep_polarization=False):
     """

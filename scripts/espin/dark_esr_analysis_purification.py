@@ -27,7 +27,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
     if ax == None:
         fig, ax = plt.subplots(1,1)
     ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
-
+    print folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')

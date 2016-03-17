@@ -48,27 +48,28 @@ def get_raw_data_all_parts(carbon,**kw):
 		print ssro_calib_folder
 	else:
 		ssro_calib_folder = toolbox.latest_data(contains = ssro_tstamp + '_AdwinSSRO')
-		print ssro_calib_folder
+		# print ssro_calib_folder
 
 	if tau_nr == None:
-		search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)
-		search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)
+		search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive'
+		search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative'
 	else: 
 		search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau' + str(tau_nr) + '_'
 		search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative_tau' + str(tau_nr) + '_'
 
 
 	#list of all folders meeting the requirements
-	#this was needed because I couldn't get the toolbox to work for fragmented folder names build of multiple parts SK
-	folder_pos_list_reversed = toolbox.latest_data(contains = search_string_pos, older_than=older_than, newer_than=newer_than, return_all = True)
-	folder_neg_list_reversed = toolbox.latest_data(contains = search_string_neg, older_than=older_than, newer_than=newer_than, return_all = True)
-	print 'Number of parts: ' + str(len(folder_pos_list_reversed))
+	#Does the toolbox on LT4 work differently? Rewrote code slightly as compared to LT3 SK
+	folder_pos_list_extended = toolbox.latest_data(contains = search_string_pos, older_than=older_than, newer_than=newer_than, return_all = True)
+	folder_neg_list_extended = toolbox.latest_data(contains = search_string_neg, older_than=older_than, newer_than=newer_than, return_all = True)
+	print 'Number of parts for carbon ' + str(carbon) +': ' + str(len(folder_pos_list_extended[2]))
+	
 
 	#flip the folder list or we could loop from the back
-	folder_pos_list = list(reversed(folder_pos_list_reversed))
-	folder_neg_list = list(reversed(folder_neg_list_reversed))
-	# print folder_pos_list
-	# print folder_neg_list
+	folder_pos_list = folder_pos_list_extended[2]
+	folder_neg_list = folder_neg_list_extended[2]
+	print folder_pos_list
+	print folder_neg_list
 
 	# Initialization of arrays
 	x_arr,x_u_arr = np.array([]),np.array([])
@@ -244,8 +245,8 @@ def bar_plot_fidelity(gates,gate_values,b,b_u):
 	# gates,gate_values,b,b_u = self.get_gate_fidelity(carbon=carbon)
 	fig, ax = plt.subplots(figsize=(len(gates)/2.,5))
 	# ax = plt.subplot()
-	print len(b)
-	print len(gates)
+	# print len(b)
+	# print len(gates)
 	rects= ax.bar(np.arange(len(gates)),b,yerr=b_u, width = 0.8)#,align='center')
 	ax.set_xticks(np.arange(len(gates)))
 	ax.set_xticks(np.array(range(len(gates))))
@@ -300,7 +301,6 @@ def plot_gate_time(gates,gate_values,b,b_u):
 #                      plot_fidelity = plot_fidelity, plot_gate_time = plot_gate_time, plot_graph=plot_graph)
 
 
-print 'Mission complete'
 
 
 
