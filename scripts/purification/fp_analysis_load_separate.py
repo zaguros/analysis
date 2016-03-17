@@ -26,34 +26,82 @@ import nuclear_spin_char as SC;  reload(SC)
 ###################
 timestamps = {}
 #uber stamps!
-timestamps['min'] = {'N8' : '20160107_173313', 'N16' : '20160107_201229','N32' : '20160107_222009','N64' : '20160108_004236'}
-timestamps['plus'] = {'N8' : '20160112_174142', 'N16' : '20160112_192510','N32' : '20160112_211902','N64' : '20160112_234557'}
 
+# SIL 2
+timestamps['min'] ={'N8' : ['20160303_164327'], 
+					'N16' : ['20160303_181827'],
+					'N32' : ['20160303_201122'],
+					'N64' : ['20160303_222847']}
+timestamps['plus'] = 	{'N8' : ['20160309_173550'],
+					 	'N16' : ['20160309_193753'],
+					 	'N32' : ['20160309_220938'],
+						'N64' : ['20160310_012834']}
+# SIL 5 
+# timestamps['min'] ={'N8' : ['20160307_185923'], 
+# 					'N16' : ['20160307_215343'],
+# 					'N32' : ['20160308_005439'],
+# 					'N64' : ['20160308_045059']}
+
+# timestamps['plus'] = 	{'N8' : ['20160308_153657'],
+# 					 	'N16' : ['20160308_181059'],
+# 					 	'N32' : ['20160308_211537'],
+# 						'N64' : ['20160309_010854']}
+
+# timestamps['min'] ={'N8' : ['20160229_114914'], 
+# 					'N16' : ['20160229_133036'],
+# 					'N32' : ['20160229_152201'],
+# 					'N64' : ['20160229_174524']}
+# timestamps['plus'] = 	{'N8' : ['20160226_172904'],
+# 					 	'N16' : ['20160226_185757'],
+# 					 	'N32' : ['20160226_203842'],
+# 						'N64' : ['20160226_224334']}
+# # 2016 januari data
+# 						{'N8' : ['20160112_174142'],
+# 					 	'N16' : ['20160112_192510','20160116_110213'],
+# 					 	'N32' : ['20160112_211902','20160116_121642'],
+# 						'N64' : ['20160112_234557']}
+#'20160112_192510'
 #crappy stamps
 # timestamps['min'] = {'N8' : '20160107_173313', 'N16' : '20160107_201229','N32' : '20160107_222009','N64' : '20160108_004236'}
 # timestamps['plus'] = {'N8' : '20160110_121238', 'N16' : '20160110_143232','N32' : '20160110_170758','N64' : '20160110_202511'}
-ssro_calib_folder = 'd:\\measuring\\data\\20160107\\172632_AdwinSSRO_SSROCalibration_Pippin_SIL1'	
+# ssro_calib_folder = 'd:\\measuring\\data\\20160229\\114128_AdwinSSRO_SSROCalibration_111no2_SIL1'	
+ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
+print ssro_calib_folder
 
 def load_data(N = [8], el_trans = 'min'):
 	a = []
 	folder = []
 	for i in range(len(N)):
-		print i
 		# load data removing append for memory error!
 		print 'loading data'
-		a_temp, folder_temp = fp_funcs.load_mult_dat(timestamps[el_trans]['N'+str(N[i])], 
-				number_of_msmts = 100,
-				x_axis_step     = 0.1,
-				x_axis_start    = 3.5,
-				x_axis_pts_per_msmnt= 51,
-				ssro_calib_folder=ssro_calib_folder)
+		for ii,tstamp in enumerate(timestamps[el_trans]['N'+str(N[i])]):
+			a_temp, folder_temp = fp_funcs.load_mult_dat(tstamp, 
+					ssro_calib_folder=ssro_calib_folder)
+
+			if ii == 0:
+				sweep_pts = a_temp.sweep_pts
+				pts = a_temp.pts
+				p0 = a_temp.p0
+				u_p0 = a_temp.u_p0
+
+			else:
+				sweep_pts = np.concatenate((sweep_pts,a_temp.sweep_pts))
+				pts+=a_temp.pts
+				p0 = np.concatenate((p0,a_temp.p0))
+				u_p0 = np.concatenate((u_p0,a_temp.u_p0))
+
+		a_temp.pts = pts
+		a_temp.p0 = p0
+		a_temp.u_p0 = u_p0
+		a_temp.sweep_pts = sweep_pts
 		a.append(a_temp)
 		folder.append(folder_temp)
-		print 'data N' +str(N[i]) + 'for el_trans ' + el_trans + ' loaded'
+		print 'data N' +str(N[i]) + ' for el_trans ' + el_trans + ' loaded'
 	print 'All data for the specified N loaded via the timestamps in fp_ls'
 	return a, folder
 
-def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans = 'min', HF_perp = None, HF_par = None):
+def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], 
+	el_trans = 'min', HF_perp = None, HF_par = None,xlim=None,xticks=None):
 
 	# allowed params:
 	# el_trans = ['min', 'plus']
@@ -64,8 +112,8 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans
 
 	### Load hyperfine params	
 	if disp_sim_spin == True:	
-		if (HF_perp == None) & (HF_par== None):
-			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin')
+		if (HF_perp == None) & (HF_par == None):
+			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL3')
 		elif el_trans == 'min':
 			HF_par =  [x * (-1) for x in HF_par]
 
@@ -84,23 +132,8 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans
 	
 	print 'N = ' + str(N)
 
-	for ii in range(len(N)):
+	for pulses,data,datafolder in zip(N,a,folder):
 
-		# bad way of dealing with complete loaded data
-		if  N[ii] == 8:
-			i = 0
-		elif N[ii] == 16:
-			i = 1
-		elif N[ii] == 32:
-			i = 2
-		elif N[ii] == 64:
-			i = 3
-		else:
-			print 'N is not a standard value (8, 16, 32, 64)'
-			return
-
-		print i
-		
 		# print 'loading data'
 		# a, folder = fp_funcs.load_mult_dat(timestamps[el_trans]['N'+str(N[i])], 
 		#             number_of_msmts = 100,
@@ -115,36 +148,54 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans
 		#########################
 		
 		#lw default 0.4
-		fig = a[i].default_fig(figsize=(35,5))
-		ax = a[i].default_ax(fig)
-		ax.set_xlim(3.5,13.5)
-		start, end = ax.get_xlim()
-		ax.xaxis.set_ticks(np.arange(start, end, 0.5))
-		ax.set_ylim(-0.05,1.05)
-		ax.plot(a[i].sweep_pts, a[i].p0, '.-k', lw=0.4,label = 'data')
 
+
+		
+		if xlim == None:
+			fig = data.default_fig(figsize=(35,5))
+			ax = data.default_ax(fig)
+			ax.set_xlim(3.5,23.5)
+			xlim = [3.5,23.5]
+		else:
+			# 5+30*(xlim[1]-xlim[0])
+			# 5+5*(xlim[1]-xlim[0])
+			fig = data.default_fig(figsize=(5+2*(xlim[1]-xlim[0]),5))
+			ax = data.default_ax(fig)
+			ax.set_xlim(xlim)
+
+		start, end = ax.get_xlim()
+		if xticks == None:
+			ax.xaxis.set_ticks(np.arange(start, end, 0.5))
+		else:
+			ax.xaxis.set_ticks(np.arange(start, end, xticks))
+		ax.set_ylim(-0.05,1.05)
+		ax.plot(data.sweep_pts, data.p0, '.-k', lw=0.4,label = 'data')
+		print 'these are the sweep_pts',data.sweep_pts
 
 		#######################
 		# Add simulated spins #
 		#######################
-
 		if disp_sim_spin == True:
-			print 'Starting Simulation for N = ' + str(N[ii]) + ' on transition ' + str(el_trans) 
-			B_Field = 418.05
-			tau_lst = np.linspace(3.5e-6, 13.5e-6, 5000)
+			print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
+			B_Field = 421.5
+			print B_Field
+			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
-				B_field = B_Field, N = N[ii], tau = tau_lst)
+				B_field = B_Field, N = pulses, tau = tau_lst)
 			FP_signal16 = ((Mt16+1)/2)
 			
+
+			# plot simulated results
 			# colors = ['m', 'b', 'r', 'g', 'c']
 			colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
+
 			for tt in range(len(HF_par)):
 			  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label = str(tt + 1) + ': HF_par = ' +str(HF_par[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt])
-			plt.legend(loc=4)
+			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-			print folder[i]
-			plt.savefig(os.path.join(folder[i], str(disp_sim_spin)+'fingerprint.pdf'),
-			    format='pdf')
-			plt.savefig(os.path.join(folder[i], str(disp_sim_spin)+'fingerprint.png'),
-			    format='png')
+		print datafolder
+		plt.savefig(os.path.join(datafolder, str(disp_sim_spin)+'fingerprint.pdf'),
+		    format='pdf')
+		plt.savefig(os.path.join(datafolder, str(disp_sim_spin)+'fingerprint.png'),
+		    format='png')
 
