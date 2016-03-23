@@ -38,38 +38,30 @@ def get_raw_data_all_parts(carbon,**kw):
 	extracts the data for one carbon from a positive and negative file.
 	returns arrays for the contrast along x, y and the respective uncertainties.
 	"""
+	tau_nr		= kw.pop('tau_nr',None)
 	older_than = kw.pop('older_than',None)
 	newer_than = kw.pop('newer_than',None)
 	ssro_tstamp = kw.pop('ssro_tstamp',None)
-	tau_nr		= kw.pop('tau_nr',None)
-
+	
+	# get SSRO_tstamp from user, else most recent SSRO
 	if ssro_tstamp == None:
 		ssro_calib_folder = toolbox.latest_data(contains = 'SSRO')
 		print ssro_calib_folder
 	else:
 		ssro_calib_folder = toolbox.latest_data(contains = ssro_tstamp + '_AdwinSSRO')
-		# print ssro_calib_folder
-
-	if tau_nr == None:
-		search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive'
-		search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative'
-	else: 
-		search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau' + str(tau_nr) + '_'
-		search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative_tau' + str(tau_nr) + '_'
+		print ssro_calib_folder
 
 
-	#list of all folders meeting the requirements
-	#Does the toolbox on LT4 work differently? Rewrote code slightly as compared to LT3 SK
-	folder_pos_list_extended = toolbox.latest_data(contains = search_string_pos, older_than=older_than, newer_than=newer_than, return_all = True)
-	folder_neg_list_extended = toolbox.latest_data(contains = search_string_neg, older_than=older_than, newer_than=newer_than, return_all = True)
-	print 'Number of parts for carbon ' + str(carbon) +': ' + str(len(folder_pos_list_extended[2]))
-	
+	search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau' + str(tau_nr) + '_'
+	search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative_tau' + str(tau_nr) + '_'
 
-	#flip the folder list or we could loop from the back
-	folder_pos_list = folder_pos_list_extended[2]
-	folder_neg_list = folder_neg_list_extended[2]
-	print folder_pos_list
-	print folder_neg_list
+	#list of all folders meeting the requirements, could be sped up by only looking at the wanted parts. 
+	#Already up to date? Back to old toolbox, rewrite for old version
+	folder_pos_list = toolbox.latest_data(contains = search_string_pos, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
+	folder_neg_list = toolbox.latest_data(contains = search_string_neg, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
+	print 'Number of parts for carbon ' + str(carbon) +': ' + str(len(folder_pos_list))
+	# print folder_pos_list
+	# print folder_neg_list
 
 	# Initialization of arrays
 	x_arr,x_u_arr = np.array([]),np.array([])
@@ -77,11 +69,16 @@ def get_raw_data_all_parts(carbon,**kw):
 	gates = np.array([]) ### used parameters
 	gate_values = [] ### used parameters but not in string form
 
-	for f_index in range(len(folder_pos_list)):
-		# print folder_pos_list[f_index]
-		# print folder_neg_list[f_index]
-		folder_pos = toolbox.latest_data(contains = folder_pos_list[f_index][-40:], older_than=older_than, newer_than=newer_than)
-		folder_neg = toolbox.latest_data(contains = folder_neg_list[f_index][-40:], older_than=older_than, newer_than=newer_than)
+	# print 'kw in get_raw_data_all_parts: ' + str(kw) 
+    
+	# if parts == None:
+	# 	parts = range(len(folder_pos_list))
+	parts       = kw.pop('parts', range(len(folder_pos_list)))
+	print 'parts to be analyzed: ' + str(parts)
+
+	for p in parts:
+		folder_pos = folder_pos_list[p]
+		folder_neg = folder_neg_list[p]
 
 		a = mbi.MBIAnalysis(folder_pos)
 		a.get_sweep_pts()
@@ -93,83 +90,34 @@ def get_raw_data_all_parts(carbon,**kw):
 		b.get_readout_results(name='adwindata')
 		b.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
 
+		# convert fidelity to contrast
 		a.p0 = 2*a.p0-1; a.u_p0 = 2*a.u_p0
 		b.p0 = 2*b.p0-1; b.u_p0 = 2*b.u_p0
-
-		###combine positive & negative:
+		
+		###combine positive & negative contrast:
 		a.p0 = (a.p0 - b.p0)/2
 		a.u_p0 = ((a.u_p0**2 + b.u_p0**2)**0.5)/2
 	
-		### sort into X and y lists.
+		### sort into X and Y lists.
 		for (pt,val,val_u) in zip(a.sweep_pts.reshape(-1),a.p0.reshape(-1),a.u_p0.reshape(-1)):
+			
+			# print pt, val, val_u
 			if 'X' in pt:
 				x_arr = np.append(x_arr,val)
 				x_u_arr = np.append(x_u_arr,val_u)
-				#could be made more efficient
+				
 				gate_values.append([pt[2:4] ,pt[7:]])
 				gates = np.append(gates,'N = '+str(pt[2:4])+',\ntau = '+str(pt[7:]))
 			elif 'Y' in pt:
 				y_arr = np.append(y_arr,val)
 				y_u_arr = np.append(y_u_arr,val_u)
+		# print 'x_arr' + str(x_arr)
+		# print 'y_arr' + str(y_arr)
 
 	return gates,x_arr,y_arr,x_u_arr,y_u_arr,folder_pos, gate_values
 
-# def get_raw_data_original(carbon,**kw):
-# 	"""
-# 	extracts the data for one carbon from a positive and negative file.
-# 	returns arrays for the contrast along x, y and the respective uncertainties.
-# 	"""
-# 	older_than = kw.pop('older_than',None)
-# 	newer_than = kw.pop('newer_than',None)
-# 	ssro_tstamp = kw.pop('ssro_tstamp',None)
 
-# 	if ssro_tstamp == None:
-# 		ssro_calib_folder = toolbox.latest_data(contains = 'SSRO')
-# 		print ssro_calib_folder
-
-# 	search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive'
-# 	search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative'
-
-# 	folder_pos = toolbox.latest_data(contains = search_string_pos, older_than=older_than)
-# 	folder_neg = toolbox.latest_data(contains = search_string_neg, older_than=older_than)
-
-# 	a = mbi.MBIAnalysis(folder_pos)
-# 	a.get_sweep_pts()
-# 	a.get_readout_results(name='adwindata')
-# 	a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
-
-# 	b = mbi.MBIAnalysis(folder_neg)
-# 	b.get_sweep_pts()
-# 	b.get_readout_results(name='adwindata')
-# 	b.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
-
-# 	a.p0 = 2*a.p0-1; a.u_p0 = 2*a.u_p0
-# 	b.p0 = 2*b.p0-1; b.u_p0 = 2*b.u_p0
-
-# 	###combine positive & negative:
-
-# 	a.p0 = (a.p0 - b.p0)/2
-# 	a.u_p0 = ((a.u_p0**2 + b.u_p0**2)**0.5)/2
-
-
-# 	x_arr,x_u_arr = np.array([]),np.array([])
-# 	y_arr,y_u_arr = np.array([]),np.array([])
-# 	gates = np.array([]) ### used parameters
-
-# 	### sort into X and y lists.
-# 	for (pt,val,val_u) in zip(a.sweep_pts.reshape(-1),a.p0.reshape(-1),a.u_p0.reshape(-1)):
-# 		if 'X' in pt:
-# 			x_arr = np.append(x_arr,val)
-# 			x_u_arr = np.append(x_u_arr,val_u)
-# 			gates = np.append(gates,'N = '+str(pt[2:4])+',\ntau = '+str(pt[5:]))
-# 		elif 'Y' in pt:
-# 			y_arr = np.append(y_arr,val)
-# 			y_u_arr = np.append(y_u_arr,val_u)
-
-
-# 	return gates,x_arr,y_arr,x_u_arr,y_u_arr,folder_pos
-
-def get_gate_fidelity(carbon, **kw):
+def gate_sweep_analysis(carbon, **kw):
 	"""
 	gets data, plots it and prints the gate parameters for maximum bloch vector length.
 	"""
@@ -177,43 +125,27 @@ def get_gate_fidelity(carbon, **kw):
 	older_than = kw.pop('older_than',None)
 	newer_than = kw.pop('newer_than',None)
 	ssro_tstamp = kw.pop('ssro_tstamp',None)
-	tau_nrs 	= kw.pop('tau_nrs', None)
+	
+
 	return_data = kw.pop('return_data',False)
 	plot_fidelity = kw.pop('plot_fidelity',False)
 	gate_time = kw.pop('gate_time',False)
 	line_fidelity = kw.pop('line_fidelity',False)
-	# loop over each tau
 
-	if tau_nrs != None:
-		for t in tau_nrs:
-			
-			gates,x,y,x_u,y_u,folder_pos, gate_values = get_raw_data_all_parts(carbon,older_than = older_than,newer_than = newer_than,
-				ssro_tstamp = ssro_tstamp, tau_nr = t)
-			
-			b,b_u = get_bloch_length(x,y,x_u,y_u)
+	#finding how many taus there are: nr. folders/nr. of parts
+	search_string = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau'
+	entire_folder_list = toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
+	search_string += '0'
+	nr_of_parts = len(toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1])
+	nr_of_taus = len(entire_folder_list)/nr_of_parts
+	print nr_of_parts
+	print nr_of_taus
+	tau_nrs 	= kw.pop('tau_nrs', range(nr_of_taus))
 
-			best_b = np.amax(b)
-			best_b_ind = np.argmax(b)
-
-			print 'best gate configuration at: ', gates[best_b_ind]
-			print 'bloch vector length: ', best_b
-
-			if plot_fidelity:
-				bar_plot_fidelity(gates,gate_values,b,b_u)
-
-			if gate_time:
-				plot_gate_time([gates],[gate_values],[b],[b_u])
-
-			if line_fidelity:
-				line_plot_fidelity([gates],[gate_values],[b],[b_u])
-
-			if return_data:
-				return gates,gate_values,b,b_u
-				print 'data returned'
-	else:
-		gates,x,y,x_u,y_u,folder_pos, gate_values = get_raw_data_all_parts(carbon,older_than = older_than,newer_than = newer_than,
-				ssro_tstamp = ssro_tstamp)
-			
+	for t in tau_nrs:			
+		gates,x,y,x_u,y_u,folder_pos, gate_values = get_raw_data_all_parts(carbon,older_than = older_than,
+			newer_than = newer_than, ssro_tstamp = ssro_tstamp, tau_nr = t, **kw)
+		
 		b,b_u = get_bloch_length(x,y,x_u,y_u)
 
 		best_b = np.amax(b)
@@ -221,7 +153,7 @@ def get_gate_fidelity(carbon, **kw):
 
 		print 'best gate configuration at: ', gates[best_b_ind]
 		print 'bloch vector length: ', best_b
-		
+
 		if plot_fidelity:
 			bar_plot_fidelity(gates,gate_values,b,b_u)
 
@@ -229,15 +161,13 @@ def get_gate_fidelity(carbon, **kw):
 			plot_gate_time([gates],[gate_values],[b],[b_u])
 
 		if line_fidelity:
-			line_plot_fidelity([gates],[gate_values],[b],[b_u])
+			line_plot_fidelity([gates],gate_values,[b],[b_u])
 
 		if return_data:
 			return gates,gate_values,b,b_u
 			print 'data returned'
-	
 
-
-	print 'mission complete'
+	print 'Analysis complete, have a nice day!'
 
 
 def bar_plot_fidelity(gates,gate_values,b,b_u):
@@ -248,8 +178,8 @@ def bar_plot_fidelity(gates,gate_values,b,b_u):
 	# print len(b)
 	# print len(gates)
 	rects= ax.bar(np.arange(len(gates)),b,yerr=b_u, width = 0.8)#,align='center')
-	ax.set_xticks(np.arange(len(gates)))
-	ax.set_xticks(np.array(range(len(gates))))
+	ax.set_xticks(np.arange(0.4,len(gates)+0.3))
+	# ax.set_xticks(np.array(range(len(gates))))
 	ax.set_xticklabels(gates, rotation=90)
 	plt.xlabel('Gate configuration')
 	plt.ylabel('Bloch vector length')
@@ -260,8 +190,15 @@ def bar_plot_fidelity(gates,gate_values,b,b_u):
 
 def line_plot_fidelity(gates,gate_values,b,b_u):
 	plt.figure()
-	for i in range(len(gates)):
-		plt.errorbar(range(len(gates[i])),b[i],b_u[i],label = 'gates' + str(i+1))
+	
+	# Gets unique number of N's and from that the number of different taus and colors
+	print gate_values
+	print list(set(column(gate_values,0)))
+	u_ns =  len(set(column(gate_values,0)))
+	u_taus = len(set(column(gate_values,1)))
+	
+	# for i in range(len(gates)):
+	plt.errorbar(range(len(gates)),b[0],b_u[0],label = 'gates' + str(1))
 		# plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png')
 	plt.xlabel('Gates, same order as barplot')
 	plt.ylabel('Bloch vector length')
@@ -285,7 +222,9 @@ def plot_gate_time(gates,gate_values,b,b_u):
 	plt.ylabel('Bloch vector length')
 	plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-
+# Support methods
+def column(matrix, i):
+    return [row[i] for row in matrix]
 # # Should actually generalize this into all
 # def compare_msmts(carbons = [5,5],
 # 					newer_than = [None,None],
