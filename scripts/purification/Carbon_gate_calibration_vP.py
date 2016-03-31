@@ -9,6 +9,8 @@ from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.patches as patches
+
 reload(common)
 reload(plot)
 
@@ -59,6 +61,7 @@ def get_raw_data_all_parts(carbon,**kw):
 	#Already up to date? Back to old toolbox, rewrite for old version
 	folder_pos_list = toolbox.latest_data(contains = search_string_pos, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
 	folder_neg_list = toolbox.latest_data(contains = search_string_neg, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
+	# print folder_pos_list
 	print 'Number of parts for carbon ' + str(carbon) +': ' + str(len(folder_pos_list))
 	# print folder_pos_list
 	# print folder_neg_list
@@ -101,16 +104,21 @@ def get_raw_data_all_parts(carbon,**kw):
 		### sort into X and Y lists.
 		for (pt,val,val_u) in zip(a.sweep_pts.reshape(-1),a.p0.reshape(-1),a.u_p0.reshape(-1)):
 			
-			# print pt, val, val_u
-			if 'X' in pt:
+			pt_split = pt.split("_")
+			
+			if 'X' in pt_split[0]:
+				# print 'detected X!'
+
 				x_arr = np.append(x_arr,val)
 				x_u_arr = np.append(x_u_arr,val_u)
 				
-				gate_values.append([pt[2:4] ,pt[7:]])
-				gates = np.append(gates,'N = '+str(pt[2:4])+',\ntau = '+str(pt[7:]))
-			elif 'Y' in pt:
+				gate_values.append([pt_split[1].split(".")[0] ,pt_split[2]])
+				gates = np.append(gates,'N = '+pt_split[1].split(".")[0]+',\ntau = '+pt_split[2])
+			elif 'Y' in pt_split[0]:
+				# print 'detected Y!'
 				y_arr = np.append(y_arr,val)
 				y_u_arr = np.append(y_u_arr,val_u)
+
 		# print 'x_arr' + str(x_arr)
 		# print 'y_arr' + str(y_arr)
 
@@ -189,19 +197,37 @@ def bar_plot_fidelity(gates,gate_values,b,b_u):
 			ha='center', va='bottom',rotation='vertical',color='white')
 
 def line_plot_fidelity(gates,gate_values,b,b_u):
-	plt.figure()
+	fig = plt.figure()
 	
 	# Gets unique number of N's and from that the number of different taus and colors
-	print gate_values
-	print list(set(column(gate_values,0)))
-	u_ns =  len(set(column(gate_values,0)))
-	u_taus = len(set(column(gate_values,1)))
+	# print gate_values
+	# print list(set(column(gate_values,0)))
+	all_taus = column(gate_values,1)
+	all_ns = column(gate_values,0)
 	
-	# for i in range(len(gates)):
-	plt.errorbar(range(len(gates)),b[0],b_u[0],label = 'gates' + str(1))
-		# plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png')
-	plt.xlabel('Gates, same order as barplot')
-	plt.ylabel('Bloch vector length')
+	u_ns =  len(set(all_ns)) #unique number of Ns
+	u_taus = len(set(all_taus)) #unique number of taus
+	# print u_ns
+	# print u_taus
+	# print b[0]
+	# print b_u[0]
+	# print gates
+	# print range(len(column(gate_values,0)))
+	
+	colors = cm.rainbow(np.linspace(0, 1, u_taus))
+	range_of_values = range(len(column(gate_values,0)))
+	# print u_taus
+	# loop over unique taus, for different colours
+	# for j in range(u_taus):
+	for j in range(u_taus):
+		plt.errorbar(range_of_values[j*u_ns:((j+1)*u_ns)],b[0][j*u_ns:((j+1)*u_ns)],b_u[0][j*u_ns:((j+1)*u_ns)],
+			color = colors[j], label = 'tau = ' + all_taus[j*u_ns]) 
+	#plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png')
+
+	fig.suptitle('Sweep tau (' + all_taus[0] + ': 2e-9 :' + all_taus[-1]  + ') and N (' + 
+		all_ns[0] + ': 2 :' + all_ns[-1] + ')', fontsize=12)
+	plt.xlabel('Gate #, from left to right; lowest (N,tau) to highest (N,tau)')	
+	plt.ylabel('Bloch vector length (X,Y tomo)')
 	plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 	plt.show()
 
