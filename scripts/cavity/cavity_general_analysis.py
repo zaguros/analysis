@@ -19,53 +19,89 @@ import operator
 
 from analysis.lib.m2 import m2
 
-reload(toolbox)
-reload(common)
+class cavity_analysis(m2.M2Analysis):
 
-'''
-The next three functions are the basis function to analyse the data. They gather the data that you want to collect, assign x and y 
-(Volt/Frequency and photodiode signal)
-and return the x and y values of the indicated scans.
-'''
+    '''
+    The next three functions are the basis function to analyse the data. They gather the data that you want to collect, assign x and y 
+    (Volt/Frequency and photodiode signal)
+    and return the x and y values of the indicated scans.
+    '''
 
-def load_data (folder, timestamp, scan_type, return_folder = False):
-    '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
-    Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
-    (which is different for laser scans and piezo scans).'''
+    ####write the below function such that it works with the m2.m2Analysis framweork
+    def load_data (self,folder, timestamp, scan_type, return_folder = False):
+        '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
+        Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
+        (which is different for laser scans and piezo scans).'''
 
-    all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
-    test = all_folders[0]
-    if len(all_folders) == 0:
-        x = []
-        y = []
-        f = None
-    
-    else:
-        curr_fold = os.path.join(folder, all_folders[0])
-        all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
-        file_name = [f for f in all_files if '.hdf5' in f]
-
-        if (scan_type =='piezo'):
-            grp_name = '/piezo_scan'
-            x_name = 'piezo_voltage'
-        elif (scan_type == 'lr_scan'):
-            grp_name = '/lr_scan'
-            x_name = 'frequency_GHz'
-        elif (scan_type =='fine_laser'):
-            grp_name = '/fine_laser_scan'
-            x_name = 'laser_tuning_voltage'
+        all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
+        test = all_folders[0]
+        if len(all_folders) == 0:
+            x = []
+            y = []
+            f = None
         
-        f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
-        ls_grp = f[grp_name]
-        x = ls_grp[x_name].value
-        y = ls_grp['PD_signal'].value
-    if return_folder:
-        return curr_fold, x, y, test
-    else:
-        return x, y, test
+        else:
+            curr_fold = os.path.join(folder, all_folders[0])
+            all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
+            file_name = [f for f in all_files if '.hdf5' in f]
+
+            if (scan_type =='piezo'):
+                grp_name = '/piezo_scan'
+                x_name = 'piezo_voltage'
+            elif (scan_type == 'lr_scan'):
+                grp_name = '/lr_scan'
+                x_name = 'frequency_GHz'
+            elif (scan_type =='fine_laser'):
+                grp_name = '/fine_laser_scan'
+                x_name = 'laser_tuning_voltage'
+            
+            f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
+            ls_grp = f[grp_name]
+            x = ls_grp[x_name].value
+            y = ls_grp['PD_signal'].value
+        if return_folder:
+            return curr_fold, x, y, test
+        else:
+            return x, y, test
+
+    def get_x_pts(self):
+        self.nr_x_pts = self.f.attrs['nr_steps']
+        self.x_pts = np.linspace(self.f.attrs['start_voltage'],self.f.attrs['end_voltage'],self.f.attrs['nr_steps'])
+
+    def get_sweep_pts(self):
+        self.sweep_name = self.f.attrs['sweep_name']
+        self.sweep_pts = self.f.attrs['sweep_pts']
+        self.nr_syncs_per_pt = self.f.attrs['nr_syncs_per_pt']
+        print self.sweep_name, self.sweep_pts
+
+    def get_sweep_data (self):
+        """
+        function that loads the data from a sweep measurement
+        """
+        self.nr_scans = self.f.attrs['nr_scans']
+        self.nr_remainder = self.f.attrs['nr_remainder']
+        self.nr_repetitions = self.f.attrs['nr_repetitions']
+
+        self.sweep_data=np.zeros([len(self.sweep_pts),self.nr_repetitions,self.nr_x_pts])
+
+        for i in np.arange(self.nr_syncs_per_pt):
+            if (i == self.nr_syncs_per_pt-1): #the last one
+                if self.nr_remainder>0:
+                    self.nr_scans = self.nr_remainder
+            for j in np.arange(len(self.sweep_pts)):
+                first_rep = str(int(i*self.nr_scans+1))
+                last_rep = str(int(i*self.nr_scans+self.nr_scans))
+                data_index_name = 'sweep_pt_'+str(j)+'_reps_'+first_rep+'-'+last_rep  
+                grp = self.f['raw_data_'+data_index_name]
+                for k in np.arange(self.nr_scans):
+                    self.data = grp['scannr_'+str(k+1)].value
+                    #fill the sweep_data array for j = sweep pt, i*self.nr_scans+k = repetition nr
+                    self.sweep_data[j,int(i*self.nr_scans+k)] = self.data
 
 
+        self.avg_sweep_data = np.average(self.sweep_data,axis=1)
 
+        return self.sweep_data
 
 ##################################################################################################################################
 ##################################################################################################################################

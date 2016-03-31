@@ -241,7 +241,7 @@ def extract_data_from_sweep(older_than = None,
 def do_T2_correction(carbon='2', folder_dict=[], sequence_duration_us=10):
     if VERBOSE:
         print 'correcting for T2* decay before fitting. Are you sure this is what you want?'
-    T2star_us = {'2': 12600, '1': 10150, '5': 18550, '3': 6350, '6': 4150 }
+    T2star_us = {'2': 12600, '1': 10150, '5': 4300, '3': 6350, '6': 4150 }
 
     n_of_reps = np.array(folder_dict['sweep_pts'])
     bloch_vec_len = np.array(folder_dict['res'])
@@ -270,6 +270,7 @@ def do_T2_correction(carbon='2', folder_dict=[], sequence_duration_us=10):
     n_of_reps = n_of_reps[:cut_index]
     y_u = y_u[:cut_index]
 
+    print sequence_duration_us
     if 0. in T2_Factors:
         print 'Warning: devision by zero would be required. I take uncorrected data '
         return folder_dict
@@ -869,29 +870,29 @@ def Z_decay_vs_coupling(c_idents, perpendicular = True, **kw):
     plt.show()
     plt.close('all')
 
-def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
-            exclude_first_n_points = 0.,
-            offset = 0., x0 = 0, older_than= None,
-            amplitude = 1., x_offs=0,   
-            decay_constant_one = 0.2, decay_constant_two = 0.6, 
-            plot_results = True, do_T2correct=False, log_plot=True,
-            plot_fit = True, do_print = False, fixed = [2], show_guess = True,
-            powers = [0]):
+def repump_speed(timestamp=None, ssro_calib_timestamp =None, older_than=None, powers = [0],
+            exclude_first_n_points = 0., log_plot = False,
+            amplitude =0.2, decay_constant_one = 20., decay_constant_two = 40.,
+            x_offs = 0, offset=0.01, fixed = [0], 
+            do_plot = True, do_fit = False, print_fit = True, 
+            plot_fit=False,  plot_fit_guess = True, 
+            init_states = ['m1'], ro_states=['0','m1', 'p1']):
    
     ''' 
     Inputs:
     timestamp: in format yyyymmdd_hhmmss or hhmmss or None.
-    measurement_name: list of measurement names
     List of parameters (order important for 'fixed') 
     offset, amplitude, decay_constant,exponent,frequency ,phase 
     '''
-    figsize=(6,4.7)
-    fitted_tau, fitted_tau2 = [],[] 
-    fitted_tau_err, fitted_tau2_err = [],[]
-    
+    fitted_tau, fitted_tau2, fitted_tau_err, fitted_tau2_err = [],[], [], []
+    fig = plt.figure()
+    ax = plt.subplot()
+    plt.xlabel('time (ns)')
+    plt.ylabel('p')
+    fit_results = []
+
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
-        powers=[0]
 
     if ssro_calib_timestamp == None:
         ssro_calib_folder = toolbox.latest_data('SSRO', older_than=older_than)
@@ -901,13 +902,36 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
         print 'Using SSRO timestamp ', ssro_calib_folder
+    for power_elem in powers:
+        for init_element in init_states:
+            for ro_element in ro_states:
+                if timestamp != None:
+                    folder = toolbox.data_from_time(timestamp)
+                elif len(powers) >1:
+                    folder = toolbox.latest_data( \
+                        'Repump_'+power_elem+'nW_' \
+                        +ro_element+'RO_'+init_element+'init',
+                        older_than=older_than)
+                else:
+                    folder = toolbox.latest_data('nW_'+ro_element+'RO_'+init_element+'init',
+                        older_than=older_than)
+                print 'folder is ', folder
+                plt.title(folder)
+                a = mbi.MBIAnalysis(folder)
+                a.get_sweep_pts()
+                CR_after_check = None
+                a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
+                a.get_electron_ROC(ssro_calib_folder)
 
-    for sweep_elem in range(len(powers)):
-        fig = plt.figure()
-        ax = plt.subplot()
-        plt.xlabel('time (ns)')
-        plt.ylabel('p(m$_s$=$\pm1$)')
+                x = a.sweep_pts.reshape(-1)[exclude_first_n_points:]
+                if ro_element == '0':
+                    y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
+                    y = a.p0.reshape(-1)[exclude_first_n_points:]
+                else:
+                    y = a.p0.reshape(-1)[exclude_first_n_points:]
+                y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
 
+<<<<<<< .mine
         if timestamp != None:
             folder = toolbox.data_from_time(timestamp)
         elif len(powers) >1:
@@ -924,10 +948,34 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
         CR_after_check = True
         a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
         a.get_electron_ROC(ssro_calib_folder)
+=======
+                fmt = '.-' if init_element == '0' else 'o-' if init_element == 'm1' else 'x--' 
+                color = 'k' if ro_element == '0' else 'r' if ro_element == 'm1' else 'b' 
+                if do_plot:
+                    plt.errorbar(x,y, yerr = y_u, fmt = fmt, color = color, \
+                        label = init_element+'init_'+ro_element + 'RO' )
 
-        x = 1000* a.sweep_pts.reshape(-1)[exclude_first_n_points:]
-        y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
-        y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
+
+
+
+
+
+
+
+
+
+
+>>>>>>> .theirs
+
+                #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
+                p0, fitfunc, fitfunc_str = common.fit_repumping( offset, amplitude, decay_constant_one,
+                        decay_constant_two, x_offs )
+                if do_fit:
+                    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
+                    if plot_fit == True:
+                        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
+                if plot_fit_guess:
+                    ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
         if log_plot:
              # 0])+str(c_list[1]+'_repump_power'+str(sweep      plt.ylim(0.005,1.05)
@@ -945,11 +993,8 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
             decay_constant_two, x_offs )
 
         fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
-        fit_results.append(fit_result)
-        fitted_tau.append(fit_result['params_dict']['tau'])
-        fitted_tau2.append(fit_result['params_dict']['tau2'])
-        fitted_tau_err.append(fit_result['error_dict']['tau'])
-        fitted_tau2_err.append(fit_result['error_dict']['tau2'])
+    if do_fit:
+        return fitted_tau, fitted_tau_err, fitted_tau2, fitted_tau2_err
 
         if plot_fit == True:
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=True)
@@ -1297,6 +1342,7 @@ def repump_speed_pm1_paper_plot(timestamp=None, measurement_name = 'adwindata', 
             plt.savefig(os.path.join(save_figure_to, 'Fig2b.pdf'), format='pdf')
             plt.savefig(os.path.join(save_figure_to, 'Fig2b.png'), format='png')
         print 'tau ', fitted_tau, ' tau err ', fitted_tau_err, ' tau2 ', fitted_tau2, ' tau2 err ', fitted_tau2_err
+    plt.close('all')    
 
 def ionization_paper_plot(timestamps=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
             exclude_first_n_points = 0., binwidth_ns = None,
