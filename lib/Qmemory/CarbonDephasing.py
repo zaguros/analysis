@@ -34,7 +34,7 @@ import analysis.lib.QEC.hyperfine_params as hf ### used for perp_coupling vs ZZ
 import csv
 
 color_list = ['b','g','y','r','brown','m','c']
-CR_after_check = True ### discard events with ionization for data analysis? (this relies on the CR check after the SSRO.)
+CR_after_check = False ### discard events with ionization for data analysis? (this relies on the CR check after the SSRO.)
 linewidth = 1
 errorbar_width = 2
 figwidthPRL=3.+3./8.
@@ -49,6 +49,7 @@ majorticklength = 3
 minorticklength = 1.5
 tickwidth = 1
 save_figure_to = 'D:\measuring\QMem_plots'
+VERBOSE = False
 
 
 def get_from_hdf5(folder,key_list):
@@ -66,6 +67,9 @@ def get_tstamp_from_folder(folder):
     return folder[18:18+15]
 
 def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
+
+    if VERBOSE:
+        print 'Folder dict and ssro calib: ', folder_dict, ssro_calib_folder
 
     tomos = kw.pop('tomos',['X','Y'])
 
@@ -304,7 +308,7 @@ def Sweep_repetitions(older_than = None,
 
     folder_dict =  extract_data_from_sweep(older_than = older_than, folder_name =folder_name, carbon = carbon,
         ssro_calib_timestamp =ssro_calib_timestamp, do_T2correct=do_T2correct, **kw)
-
+    print folder_dict
     if folder_name == 'Memory_sweep_timing_':
         folder_dict['sweep_pts'] = folder_dict['sweep_pts']*1e6
     
@@ -852,13 +856,14 @@ def repump_speed(timestamp=None, ssro_calib_timestamp =None, older_than=None, po
                 x = a.sweep_pts.reshape(-1)[exclude_first_n_points:]
                 if ro_element == '0':
                     y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
-                    y = a.p0.reshape(-1)[exclude_first_n_points:]
+                    #y = a.p0.reshape(-1)[exclude_first_n_points:]
                 else:
                     y = a.p0.reshape(-1)[exclude_first_n_points:]
                 y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
 
                 fmt = '.-' if init_element == '0' else 'o-' if init_element == 'm1' else 'x--' 
                 color = 'k' if ro_element == '0' else 'r' if ro_element == 'm1' else 'b' 
+                print x,y
                 if do_plot:
                     plt.errorbar(x,y, yerr = y_u, fmt = fmt, color = color, \
                         label = init_element+'init_'+ro_element + 'RO' )
@@ -867,29 +872,29 @@ def repump_speed(timestamp=None, ssro_calib_timestamp =None, older_than=None, po
                 p0, fitfunc, fitfunc_str = common.fit_repumping( offset, amplitude, decay_constant_one,
                         decay_constant_two, x_offs )
                 if do_fit:
-                    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
+                    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=print_fit, ret=True,fixed=fixed)
                     if plot_fit == True:
                         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
                 if plot_fit_guess:
                     ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
                 plt.xlim(np.amin(x),np.amax(x))
-                plt.ylim(0.0001,1.0)
+                plt.ylim(0.001,1.0)
                 if log_plot:
                     ax.set_yscale("log", nonposy='clip')
                 if do_fit:
                     fit_results.append(fit_result)
-                    fitted_tau.append(fit_result['params_dict']['tau'])
-                    fitted_tau2.append(fit_result['params_dict']['tau2'])
-                    fitted_tau_err.append(fit_result['error_dict']['tau'])
-                    fitted_tau2_err.append(fit_result['error_dict']['tau2'])
+                    #fitted_tau.append(fit_result['params_dict']['tau'])
+                    #fitted_tau2.append(fit_result['params_dict']['tau2'])
+                    #fitted_tau_err.append(fit_result['error_dict']['tau'])
+                    #fitted_tau2_err.append(fit_result['error_dict']['tau2'])
     if do_plot:
-        plt.legend(loc=(0.6,0.4))
+        plt.legend(loc=3)
         plt.savefig(os.path.join(folder, 'analyzed_result.pdf'), format='pdf')
         plt.savefig(os.path.join(folder, 'analyzed_result.png'), format='png')
         
-    if do_fit:
-        return fitted_tau, fitted_tau_err, fitted_tau2, fitted_tau2_err
+    #if do_fit:
+     #   return fitted_tau, fitted_tau_err, fitted_tau2, fitted_tau2_err
 
 def bin_data(x=[], y=[], y_u=[], binwidth_ns = None):
     
