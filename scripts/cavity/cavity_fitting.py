@@ -82,9 +82,8 @@ def load_lr_scan (folder, timestamp):
 
 
 def determine_peak_range(folder,y,x,delta,tag='',show_plot=True,save_plot=True):
-    maxtab, mintab = pd.peakdet(y,.1)
+    maxtab, mintab = pd.peakdet(y,delta)
 
-    print maxtab
     if len(maxtab)==1:
         print maxtab
     if len(maxtab)>0:
@@ -95,11 +94,9 @@ def determine_peak_range(folder,y,x,delta,tag='',show_plot=True,save_plot=True):
     peak_range = x_maxima[-1]-x_maxima[0]
     nr_peaks = len(x_maxima)
 
-    print tag,peak_range,nr_peaks
-
     fig,ax = plt.subplots(figsize=(6,4.7))
 
-    ax.plot(x,y)
+    ax.plot(x,y,'o')
     ax.scatter(x_maxima, np.array(maxtab)[:,1], color='blue')
     ax.set_xlabel('voltage (V)',fontsize=14)
     ax.set_ylabel('transmission (a.u.)',fontsize=14)
@@ -110,7 +107,7 @@ def determine_peak_range(folder,y,x,delta,tag='',show_plot=True,save_plot=True):
     ax.set_title(folder +'\n peak detect '+tag+'max range '+str(round(peak_range,2)))
 
     if save_plot:
-        fig.savefig(folder +'/'+tag+"peaks.png")
+        fig.savefig(folder +'/peaks'+tag+'.png')
 
     if show_plot:
         plt.show()
