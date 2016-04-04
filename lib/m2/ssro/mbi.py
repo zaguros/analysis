@@ -41,14 +41,16 @@ class MBIAnalysis(m2.M2Analysis):
             results = adwingrp['ssro_results'].value
 
         if CR_after_check:
-
             CR_after = adwingrp['CR_after'].value
             reps_list = np.ones(self.pts)*self.reps
+            num_of_reps = len(CR_after)
+            CR_failed_count = 0
 
             ### loop over the results of CR check after and eliminate those where ionization was apparent.
             ### there is probably a faster way to do this. np.search?
             for ii,CR in enumerate(CR_after):
                 if CR < 2:
+                    CR_failed_count +=1
                     reps_list[(ii-1)%self.pts] -= 1
                     results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
 
@@ -59,7 +61,8 @@ class MBIAnalysis(m2.M2Analysis):
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
-        
+            # if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
+            #    print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
         else:
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro = self.ssro_results/float(self.reps)
@@ -130,8 +133,12 @@ class MBIAnalysis(m2.M2Analysis):
         self.sweep_pts = self.g.attrs['sweep_pts']
 
     def get_sequence_length(self):
-        self.repump_wait = self.g.attrs['repump_wait']
-        self.fast_repump_duration = self.g.attrs['fast_repump_duration']
+        self.repump_wait = self.g.attrs['repump_wait'][1]
+        self.fast_repump_duration = self.g.attrs['fast_repump_duration'][1]
+
+        self.AOM_delay =  339e-9
+        self.initial_wait = self.g.attrs['MW_switch_risetime'] + 240e-9 + (-104e-9-27e-9) + 300e-9 #hardcoded values from lt2 for the dealys of the specific channels.
+        self.avg_repump_time = self.g.attrs['average_repump_time'][1]
         #self.sequence_length = np.product(self.average_repump_time, self.fast_repump_duration)
 
 
