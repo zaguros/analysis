@@ -3,6 +3,8 @@ reload(nvlevels)
 import numpy as np
 from matplotlib import pyplot as plt
 
+save_path = 'H:/My Documents/Cavities/Simulations/nv_levels/'
+
 def plot_ES_b_dependence(strain_splitting=2.):
 	b_range=np.linspace(0,1000,100) #gauss
 	Ex=strain_splitting/2. #Ex is approx strain_splitting divided by 2
@@ -19,7 +21,7 @@ def plot_ES_b_dependence(strain_splitting=2.):
 
 	for i in range(6):
 		plt.plot(b_range,spectrum[:,i])
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/ES_B_dependence_Ex_'+str(Ex)+'.png')
+		plt.savefig(save_path+'ES_B_dependence_Ex_'+str(Ex)+'.png')
 
 def plot_GS_b_dependence(strain_splitting=2.):
 	b_range=np.linspace(0,1000,100) #gauss
@@ -35,7 +37,7 @@ def plot_GS_b_dependence(strain_splitting=2.):
 
 	for i in range(3):
 		plt.plot(b_range,spectrum[:,i])
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/GS_B_dependence.png')
+		plt.savefig(save_path+'GS_B_dependence.png')
 
 def plot_ES_e_dependence(Bz=20.):
 	e_range=np.linspace(0,10,100) #gauss
@@ -57,7 +59,7 @@ def plot_ES_e_dependence(Bz=20.):
 		plt.title('Excited state levels E dependence, Bz = '+str(Bz))
 		plt.xlabel('Strain E (GHz)')
 		plt.ylabel('relative energy (GHz)')
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/ES_E_dependence_Bz_'+str(Bz)+'.png')
+		plt.savefig(save_path+'ES_E_dependence_Bz_'+str(Bz)+'.png')
 
 def plot_transitions_b_dependence(strain_splitting=4.11):
 	b_range=np.linspace(250,500,50) #gauss
@@ -87,7 +89,7 @@ def plot_transitions_b_dependence(strain_splitting=4.11):
 		# else: style =0.5
 		plt.plot(b_range,spectrum[:,i],linewidth = style)
 	plt.axvline(x=400, ymin=-10, ymax = 8, linewidth=2, color='k')
-	plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/Transitions_B_dependence_strain_'+str(Ex)+'.png')
+	plt.savefig(save_path+'Transitions_B_dependence_strain_'+str(Ex)+'.png')
 
 def plot_transitions_bx_dependence(Bz=300,strain_splitting=2.5):
 	bx_range=np.linspace(0,500,100) #gauss
@@ -107,7 +109,7 @@ def plot_transitions_bx_dependence(Bz=300,strain_splitting=2.5):
 	for i in range(no_transitions):
 
 		plt.plot(bx_range,spectrum[:,i])
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/Transitions_Bx_dependence_Ex_'+str(Ex)+'_Bz_'+str(Bz)+'.png')
+		plt.savefig(save_path+'Transitions_Bx_dependence_Ex_'+str(Ex)+'_Bz_'+str(Bz)+'.png')
 
 def plot_transitions_E_dependence(Bz=300.):
 	e_range=np.linspace(0,10,100) #gauss
@@ -130,14 +132,14 @@ def plot_transitions_E_dependence(Bz=300.):
 	# print spectrum
 	# print len(spectrum)
 	for i in range(no_transitions):
-		if i < 4:
+		if i < 8:
 			style = 2
 		else: style =0.5
 		plt.plot(e_range,spectrum[:,i],linewidth = style)
 		plt.title('Transitions E dependence, Bz = '+str(Bz))
 		plt.xlabel('Strain E (GHz)')
 		plt.ylabel('relative energy difference (GHz)')
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/Transitions_E_dependence_Bz_'+str(Bz)+'.png')
+		plt.savefig(save_path+'Transitions_E_dependence_Bz_'+str(Bz)+'.png')
 
 def plot_transitions_in_laserscan_Ex_Ey(Ex,Ey,height=1,B_field = [0.,0.,300.]):
 	x2,y2 = nvlevels.get_transitions_ExEy_plottable(Ex,Ey,height,B_field=B_field)

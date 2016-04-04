@@ -167,6 +167,7 @@ class CavitySims ():
         mode_volume = np.pi*((0.5*waist)**2)*optical_length
         return mode_volume
 
+        y = np.zeros(len(nu))
 
     def wavelength_to_freq(self, wavelength):
         frequency = c/wavelength

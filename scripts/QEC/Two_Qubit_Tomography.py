@@ -65,6 +65,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		try:
 		    fig.savefig(
 		        os.path.join(folder,'tomo.png'))
+		    # fig.savefig(os.path.join(folder,'tomo.eps'))
 		except:
 		    print 'Figure has not been saved.'
 

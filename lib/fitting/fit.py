@@ -38,7 +38,6 @@ def fit1d(x, y, fitmethod, *arg, **kw):
              fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
                     fixed=[0],do_print=True)
              
-    
     """
     # process known kws
     do_print = kw.pop('do_print', False)
@@ -96,7 +95,6 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         #return False
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
-
     # package the result neatly
     
     #print 'info',info
@@ -104,6 +102,8 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     #print 'cov',cov
 
     #print 'dof',dof
+
+    #success True was not reached while the fit was definitely good
     if do_print and success:
         print_fit_result(result)
 

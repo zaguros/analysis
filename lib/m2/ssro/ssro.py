@@ -302,6 +302,84 @@ class SSROAnalysis(m2.M2Analysis):
 
             fig.savefig(os.path.join(self.folder,
                 'projectivity.'+self.plot_format),
+                format=self.plot_format) 
+
+    def mean_fidelity_MWInit(self, plot=True, plot_photon_ms0=True, **kw):
+
+        f = self.analysis_h5data()
+        g = f['/fidelity']
+        _fid0 = g['ms0']
+        # _fid1 = g['ms1']
+
+        time = _fid0[:,0]
+        fid0 = _fid0[:,1]
+        fid0_err = _fid0[:,2]
+        # fid1 = _fid1[:,1]
+        # fid1_err = _fid1[:,2]
+        F = fid0
+        F_err = fid0_err
+        # F = (fid0 + fid1)/2.
+        # F_err = np.sqrt(fid0_err**2 + fid1_err**2)
+        maxidx = F.argmax()
+        F_max = F[maxidx]
+        F_max_err = F_err[maxidx]
+        t_max = time[F.argmax()]   
+        # meanfid = (_fid0[:,1]+_fid1[:,1])*0.5
+        # meanfiderr = np.sqrt( (0.5*_fid0[:,2])**2 + (0.5*_fid1[:,2])**2 )
+
+        print 'SSRO calibration : ', self.timestamp
+        print 'max. F = ({:.2f} +/- {:.2f})% at t={:.0f} us'.format(F_max*100., F_max_err*100., t_max)
+        print '\tms_0 = ({:.2f} +/- {:.2f})%'.format(fid0[maxidx]*100, fid0_err[maxidx]*100)
+        # print '\tms_1 = ({:.2f} +/- {:.2f})%'.format(fid1[maxidx]*100, fid1_err[maxidx]*100)
+
+        try:
+            del g['time']
+            del g['mean_fidelity']
+            del g['mean_fidelity_err']
+        except:
+            pass
+
+        g['time'] = time
+        # g['mean_fidelity'] = meanfid
+        # g['mean_fidelity_err'] = meanfiderr
+        f.close()
+
+        if plot:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.errorbar(time, fid0, fmt='.', yerr=fid0_err, label='ms=0')
+            # ax.errorbar(time, fid1, fmt='.', yerr=fid1_err, label='ms=1')
+            # ax.errorbar(time, F, fmt='.', yerr=F_err, label='mean')
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('RO fidelity')
+            ax.set_ylim((0.5,1))
+            ax.legend(loc=4)
+            plt.figtext(0.8, 0.5, "max. F=({:.2f} +/- {:.2f})% at t={:.0f} us".format(F_max*100., F_max_err*100., t_max),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': mean RO fidelity')
+
+            fig.savefig(os.path.join(self.folder,
+                'mean_fidelity.'+self.plot_format),
+                format=self.plot_format)
+
+        if plot_photon_ms0:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
+            max_Prob_ms0 = Prob_ms0.max()
+            time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('Prob. photon came from ms=0')
+            ax.set_ylim((0.9,1))
+            plt.figtext(0.8, 0.5, "max. {:.2f} at t={:.0f} us".format(max_Prob_ms0*100., time_max_Prob_ms0),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
+
+            fig.savefig(os.path.join(self.folder,
+                'projectivity.'+self.plot_format),
                 format=self.plot_format)    
 
 
@@ -323,6 +401,23 @@ def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
     a.finish()
 
 
+def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
+    if folder=='':
+        folder=toolbox.latest_data('_SSRO_calib_MWInit_')
+    a = SSROAnalysis(folder)
+
+    for n,ms in zip(['ms0'], [0]): #zip((['ms0'], [0]):#
+        a.get_run(n)
+        a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
+        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.charge_hist(a.cr_counts, name=n, plot = plot)
+        a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n, plot = plot)
+    #f = self.analysis_h5data()
+    plt.close('all')
+    a.mean_fidelity_MWInit(plot,plot_photon_ms0)
+    a.finish()
+    print 'Job\'s done!'
 
 def thcalib(folder='', analyze_probe = False):
     if folder=='':
