@@ -15,6 +15,9 @@ from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
+
+
+
     def get_readout_results(self, name='',CR_after_check = False):
         """
         Get the readout results.
@@ -24,6 +27,7 @@ class MBIAnalysis(m2.M2Analysis):
             for getting a photon)
         CR_after_check: erases certain results from the SSRO results based on the CR check after the sequence.
         """
+
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
@@ -54,9 +58,7 @@ class MBIAnalysis(m2.M2Analysis):
                     reps_list[(ii-1)%self.pts] -= 1
                     results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
 
-
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
-
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
