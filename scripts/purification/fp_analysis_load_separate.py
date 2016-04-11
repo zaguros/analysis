@@ -31,10 +31,14 @@ timestamps['min'] = 	{'N8' : ['20160308_224027'],
 					 	'N32' : ['20160308_145258'],
 						'N64' : ['20160308_171903']}
 
-timestamps['plus'] = {'N8' : ['20160116_140951'],
-						 'N16' : ['20160116_161812'],
-						 'N32' : ['20160116_181552'],
-						 'N64' : ['20160116_202552']}
+timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
+						 'N16' : ['20160324_223312'],
+						 'N32' : ['20160325_030316'],
+						 'N64' : ['20160325_160138']}
+# timestamps['plus'] = {'N8' : ['20160116_140951'],
+# 						 'N16' : ['20160116_161812'],
+# 						 'N32' : ['20160116_181552'],
+# 						 'N64' : ['20160116_202552']}
 # timestamps['min'] = 	{'N8' : ['20160226_172904'],
 # 					 	'N16' : ['20160226_185757'],
 # 					 	'N32' : ['20160226_203842'],
@@ -99,6 +103,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		if (HF_perp == None) & (HF_par == None):
 			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL3')
 		elif el_trans == 'min':
+			# needs to be flipped for simulation
 			HF_par =  [x * (-1) for x in HF_par]
 
 		# security check could be removed
@@ -120,22 +125,9 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 
 	for pulses,data,datafolder in zip(N,[a[x] for x in N_keys],[folder[x] for x in N_keys]):
 
-		# print 'loading data'
-		# a, folder = fp_funcs.load_mult_dat(timestamps[el_trans]['N'+str(N[i])], 
-		#             number_of_msmts = 100,
-		#             x_axis_step     = 0.1,
-		#             x_axis_start    = 3.5,
-		#             x_axis_pts_per_msmnt= 51,
-		#             ssro_calib_folder=ssro_calib_folder)
-
-		# print 'data N' +str(N[i]) + ' loaded'
 		##########################
 		### 	 plot data ######
 		#########################
-		
-		#lw default 0.4
-
-
 		
 		if xlim == None:
 			fig = data.default_fig(figsize=(35,5))
@@ -175,6 +167,10 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 			# colors = ['m', 'b', 'r', 'g', 'c']
 			colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
 
+			
+			if el_trans == 'min':
+				# flip sign back after simulation for correct graph legend
+				HF_par =  [x * (-1) for x in HF_par]
 			for tt in range(len(HF_par)):
 			  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label = str(tt + 1) + ': HF_par = ' +str(HF_par[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt])
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)

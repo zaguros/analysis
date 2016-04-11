@@ -21,48 +21,6 @@ from analysis.lib.m2 import m2
 
 class cavity_analysis(m2.M2Analysis):
 
-    '''
-    The next three functions are the basis function to analyse the data. They gather the data that you want to collect, assign x and y 
-    (Volt/Frequency and photodiode signal)
-    and return the x and y values of the indicated scans.
-    '''
-
-    ####write the below function such that it works with the m2.m2Analysis framweork
-    def load_data (self,folder, timestamp, scan_type, return_folder = False):
-        '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
-        Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
-        (which is different for laser scans and piezo scans).'''
-
-        all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
-        test = all_folders[0]
-        if len(all_folders) == 0:
-            x = []
-            y = []
-            f = None
-        
-        else:
-            curr_fold = os.path.join(folder, all_folders[0])
-            all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
-            file_name = [f for f in all_files if '.hdf5' in f]
-
-            if (scan_type =='piezo'):
-                grp_name = '/piezo_scan'
-                x_name = 'piezo_voltage'
-            elif (scan_type == 'lr_scan'):
-                grp_name = '/lr_scan'
-                x_name = 'frequency_GHz'
-            elif (scan_type =='fine_laser'):
-                grp_name = '/fine_laser_scan'
-                x_name = 'laser_tuning_voltage'
-            
-            f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
-            ls_grp = f[grp_name]
-            x = ls_grp[x_name].value
-            y = ls_grp['PD_signal'].value
-        if return_folder:
-            return curr_fold, x, y, test
-        else:
-            return x, y, test
 
     def get_x_pts(self):
         self.nr_x_pts = self.f.attrs['nr_steps']
@@ -94,14 +52,30 @@ class cavity_analysis(m2.M2Analysis):
                 data_index_name = 'sweep_pt_'+str(j)+'_reps_'+first_rep+'-'+last_rep  
                 grp = self.f['raw_data_'+data_index_name]
                 for k in np.arange(self.nr_scans):
-                    self.data = grp['scannr_'+str(k+1)].value
+                    self.single_scan_data = grp['scannr_'+str(k+1)].value
                     #fill the sweep_data array for j = sweep pt, i*self.nr_scans+k = repetition nr
-                    self.sweep_data[j,int(i*self.nr_scans+k)] = self.data
+                    self.sweep_data[j,int(i*self.nr_scans+k)] = self.single_scan_data
 
 
         self.avg_sweep_data = np.average(self.sweep_data,axis=1)
 
         return self.sweep_data
+
+    def get_data (self):
+        """
+        function that loads the data from a single measurement
+        """
+        self.nr_scans = self.f.attrs['nr_scans']
+
+        self.data=np.zeros([self.nr_scans,self.nr_x_pts])
+        grp = self.f['raw_data_']
+
+        for j in np.arange(self.nr_scans):
+            self.single_scan_data = grp['scannr_'+str(j+1)].value
+            #fill the sweep_data array for j = sweep pt, i*self.nr_scans+k = repetition nr
+            self.data[j] = self.single_scan_data
+
+        return self.data
 
 ##################################################################################################################################
 ##################################################################################################################################

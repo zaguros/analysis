@@ -52,6 +52,8 @@ def get_raw_data(carbon,**kw):
 	b.get_readout_results(name='adwindata')
 	b.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
 
+	print a.p0
+	print b.p0
 	a.p0 = 2*a.p0-1; a.u_p0 = 2*a.u_p0
 	b.p0 = 2*b.p0-1; b.u_p0 = 2*b.u_p0
 
