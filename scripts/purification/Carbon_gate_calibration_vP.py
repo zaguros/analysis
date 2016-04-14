@@ -13,6 +13,7 @@ import matplotlib.patches as patches
 
 reload(common)
 reload(plot)
+reload(mbi)
 
 
 '''
@@ -50,7 +51,7 @@ def get_raw_data_all_parts(carbon,**kw):
 		ssro_calib_folder = toolbox.latest_data(contains = 'SSRO')
 		print ssro_calib_folder
 	else:
-		ssro_calib_folder = toolbox.latest_data(contains = ssro_tstamp + '_AdwinSSRO')
+		ssro_calib_folder = toolbox.latest_data(contains = ssro_tstamp)
 		print ssro_calib_folder
 
 

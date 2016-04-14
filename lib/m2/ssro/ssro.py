@@ -12,8 +12,28 @@ from matplotlib import pyplot as plt
 from analysis.lib.tools import toolbox
 from analysis.lib.m2 import m2
 
+# Some general tools
 
-# some general tools
+def get_SSRO_MWInit_calibration(folder, readout_time,el_state):
+    if 'analysis.hdf5' in str(folder):
+        fp = folder
+    else:
+        fp = os.path.join(folder, 'analysis.hdf5')
+    f = h5py.File(fp, 'r')
+
+    times = f['fidelity/time'].value
+    fids0 = f['fidelity/ms0'].value
+    fids1 = f['fidelity/ms' + str(el_state[-2:])].value
+    
+    tidx = np.argmin(abs(times-readout_time))
+    f0 = fids0[tidx,1]
+    u_f0 = fids0[tidx,2]
+    f1 = fids1[tidx,1]
+    u_f1 = fids1[tidx,2]
+
+    return f0, u_f0, f1, u_f1
+
+
 def get_SSRO_calibration(folder, readout_time):
     if 'analysis.hdf5' in str(folder):
         fp = folder
@@ -309,11 +329,9 @@ class SSROAnalysis(m2.M2Analysis):
 
         # it's not beautiful but works atm. Should be made more versatile
         f = self.analysis_h5data()
-        print f
+        # print f
         g = f['/fidelity']
-        test= str(g).split('(')
-        print test
-        print test[1][0]
+
         # print [int(g) for g in str.split() if g.isdigit()]
         _fid0 = g['ms0']
         _fidp1 = g['msp1']
@@ -377,7 +395,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, Fm, fmt='.', yerr=Fm_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0.5,1))
+            ax.set_ylim((0,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. Fm1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fm_max*100., Fm_max_err*100., tm_max),
                     horizontalalignment='right')
@@ -395,7 +413,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, Fp, fmt='.', yerr=Fp_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0.5,1))
+            ax.set_ylim((0,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. Fp1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fp_max*100., Fp_max_err*100., tp_max),
                     horizontalalignment='right')
@@ -450,7 +468,7 @@ def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
     a = SSROAnalysis(folder)
 
     for n,ms in zip(['ms0','msp1','msm1'], [0,1,-1]): #zip((['ms0'], [0]):#
-        print n, ms
+        # print n, ms
         a.get_run(n)
         a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
         a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)

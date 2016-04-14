@@ -16,7 +16,9 @@ class SequenceAnalysis(m2.M2Analysis):
     def get_readout_results(self, name=''):
         self.result_corrected = False
 
-        adwingrp = self.adwingrp(name)        
+        adwingrp = self.adwingrp(name)
+        self.adgrp = adwingrp
+             
         self.reps = adwingrp['completed_reps'].value
         self.ssro_results = adwingrp['RO_data'].value
         self.normalized_ssro = self.ssro_results/(float(self.reps)/len(self.sweep_pts))
@@ -157,25 +159,61 @@ class SequenceAnalysis(m2.M2Analysis):
                 format='png')
         
     def get_electron_ROC(self, **kw):
-        ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('SSROCalibration'))
+        ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('SSRO'))
         # print ssro_calib_folder
         if ssro_calib_folder == '':
-                ssro_calib_folder = toolbox.latest_data('SSROCalibration')
+                ssro_calib_folder = toolbox.latest_data('SSRO')
+
+
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
-        
+
         ro_duration = self.g.attrs['SSRO_duration']
         roc = error.SingleQubitROC()
-        roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-            ssro.get_SSRO_calibration(ssro_calib_folder, 
-                    ro_duration)
+
+        # Decide between ssro calib via MW Initialisation or some other method
+        # At the time of writing only MWInit and full las0r SSRO exist ~SK 2016
+        if 'MWInit' in ssro_calib_folder:
+            el_state = self.adgrp.attrs['electron_transition']
+            # print 'MWInit, el_state: ' + str(el_state)
+       
+            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                ssro.get_SSRO_MWInit_calibration(ssro_calib_folder,
+                        ro_duration,el_state)
+
+        else:
+            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                ssro.get_SSRO_calibration(ssro_calib_folder,
+                        ro_duration)
+
         p0, u_p0 = roc.num_eval(self.normalized_ssro,
                 self.u_normalized_ssro)
-            
+
         self.p0 = p0
         self.u_p0 = u_p0
-        
+
+
+
         self.result_corrected = True
+
+
+
+        # self.p0 = np.zeros(self.normalized_ssro.shape)
+        # self.u_p0 = np.zeros(self.normalized_ssro.shape)
+        
+        # ro_duration = self.g.attrs['SSRO_duration']
+        # roc = error.SingleQubitROC()
+
+        # roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+        #     ssro.get_SSRO_calibration(ssro_calib_folder, 
+        #             ro_duration)
+        # p0, u_p0 = roc.num_eval(self.normalized_ssro,
+        #         self.u_normalized_ssro)
+            
+        # self.p0 = p0
+        # self.u_p0 = u_p0
+        
+        # self.result_corrected = True
     
     def plot_result_vs_sweepparam(self, name='', save=True, **kw):
         ret = kw.get('ret', None)
