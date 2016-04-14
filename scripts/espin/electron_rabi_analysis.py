@@ -13,6 +13,7 @@ reload(rabi)
 
 from analysis.lib.tools import plot
 
+
 timestamp = None#'20140408125318'
 guess_frq = 1./8
 guess_amp = 0.
@@ -51,6 +52,7 @@ else:
     a.get_readout_results('ssro')
     a.get_electron_ROC()
     ax = a.plot_result_vs_sweepparam(ret='ax')
+
 
 x = a.sweep_pts
 y = a.p0
