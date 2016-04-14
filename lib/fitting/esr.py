@@ -7,7 +7,7 @@ from analysis.lib.fitting import fit as fit
 def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
     """
     fitfunction for gaussian esr dips,
-        y(x) = a - A*sum_i(exp(-((x-x0_i)/sigma)**2))
+        y(x) = a - |A|*sum_i(exp(-((x-x0_i)/sigma)**2))
 
     Initial guesses (in this order):
         g_a : offset
@@ -28,7 +28,7 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
         because of the equal splitting in the two cases, on top
         of each other, yielding 2 low, and two deep dips.
     """
-    fitfunc_str = 'a - A*sum_i(exp(-((x-x0_i)/sigma)**2))'
+    fitfunc_str = 'a - |A|*sum_i(exp(-((x-x0_i)/sigma)**2))'
     
     no_splits = len(arg)
 
@@ -39,7 +39,7 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
     p0 = [a, A, sigma, x0]
     g_p0 = [g_a, g_A, g_sigma, g_x0]
 
-    print 'fitting with %d splittings' % no_splits
+    # print 'fitting with %d splittings' % no_splits
 
     splits = []
     for i, s in enumerate(arg):
@@ -77,7 +77,9 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
 
         depth = 0.
         for p in pts:
-            depth += A() * exp(-((x-p)/sigma())**2)
+            # it is very convenient to force the dip to be negative. I changed this allready quite a few times.
+            # please leave it in!!! -Machiel apr-2014
+            depth += abs(A()) * exp(-((x-p)/sigma())**2)
 
         return a() - depth
 

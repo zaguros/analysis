@@ -12,10 +12,33 @@ from matplotlib import pyplot as plt
 from analysis.lib.tools import toolbox
 from analysis.lib.m2 import m2
 
+# Some general tools
 
-# some general tools
+def get_SSRO_MWInit_calibration(folder, readout_time,el_state):
+    if 'analysis.hdf5' in str(folder):
+        fp = folder
+    else:
+        fp = os.path.join(folder, 'analysis.hdf5')
+    f = h5py.File(fp, 'r')
+
+    times = f['fidelity/time'].value
+    fids0 = f['fidelity/ms0'].value
+    fids1 = f['fidelity/ms' + str(el_state[-2:])].value
+    
+    tidx = np.argmin(abs(times-readout_time))
+    f0 = fids0[tidx,1]
+    u_f0 = fids0[tidx,2]
+    f1 = fids1[tidx,1]
+    u_f1 = fids1[tidx,2]
+
+    return f0, u_f0, f1, u_f1
+
+
 def get_SSRO_calibration(folder, readout_time):
-    fp = os.path.join(folder, 'analysis.hdf5')
+    if 'analysis.hdf5' in str(folder):
+        fp = folder
+    else:
+        fp = os.path.join(folder, 'analysis.hdf5')
     f = h5py.File(fp, 'r')
 
     times = f['fidelity/time'].value
@@ -53,6 +76,7 @@ class SSROAnalysis(m2.M2Analysis):
 
     def cpsh_hist(self, ro_counts, reps, firstbin=0, lastbin=-1, plot=True, **kw):
         name = kw.pop('name', '')
+        save = kw.pop('save', True)
 
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
@@ -65,6 +89,15 @@ class SSROAnalysis(m2.M2Analysis):
         pzero = len(np.where(cpsh==0)[0])/float(reps)
         annotation += "\np(0 counts) = %.2f" % (pzero)
 
+        if save:
+            f = self.analysis_h5data()
+            if not 'cpsh' in f:
+                    f.create_group('cpsh')
+            g = f['/cpsh']
+            if name in g:
+                del g[name]
+            g[name]=  cpsh
+            f.close()
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -74,13 +107,15 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)
             ax.set_xlim(-0.5, max(cpsh)+0.5)
+            if name == 'ms1':
+                ax.set_yscale('log')
 
             plt.figtext(0.85, 0.85, annotation, horizontalalignment='right',
                 verticalalignment='top')
-
-            fig.savefig(os.path.join(self.folder,
-                'cpsh'+fn_suffix+'.'+self.plot_format),
-                format=self.plot_format)
+            if save:
+                fig.savefig(os.path.join(self.folder,
+                    'cpsh'+fn_suffix+'.'+self.plot_format),
+                    format=self.plot_format)
 
     def readout_relaxation(self, ro_time, ro_counts, reps, binsize,
             lastbin=-1, plot=True, **kw):
@@ -139,7 +174,7 @@ class SSROAnalysis(m2.M2Analysis):
 
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
-
+      
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -211,7 +246,7 @@ class SSROAnalysis(m2.M2Analysis):
             return fid_dat
 
 
-    def mean_fidelity(self, plot=True, **kw):
+    def mean_fidelity(self, plot=True, plot_photon_ms0=True, **kw):
 
         f = self.analysis_h5data()
         g = f['/fidelity']
@@ -233,6 +268,11 @@ class SSROAnalysis(m2.M2Analysis):
 
         meanfid = (_fid0[:,1]+_fid1[:,1])*0.5
         meanfiderr = np.sqrt( (0.5*_fid0[:,2])**2 + (0.5*_fid1[:,2])**2 )
+
+        print 'SSRO calibration : ', self.timestamp
+        print 'max. F = ({:.2f} +/- {:.2f})% at t={:.0f} us'.format(F_max*100., F_max_err*100., t_max)
+        print '\tms_0 = ({:.2f} +/- {:.2f})%'.format(fid0[maxidx]*100, fid0_err[maxidx]*100)
+        print '\tms_1 = ({:.2f} +/- {:.2f})%'.format(fid1[maxidx]*100, fid1_err[maxidx]*100)
 
         try:
             del g['time']
@@ -265,23 +305,181 @@ class SSROAnalysis(m2.M2Analysis):
                 'mean_fidelity.'+self.plot_format),
                 format=self.plot_format)
 
+        if plot_photon_ms0:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
+            max_Prob_ms0 = Prob_ms0.max()
+            time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('Prob. photon came from ms=0')
+            ax.set_ylim((0.9,1))
+            plt.figtext(0.8, 0.5, "max. {:.2f} at t={:.0f} us".format(max_Prob_ms0*100., time_max_Prob_ms0),
+                    horizontalalignment='right')
 
-def ssrocalib(folder=''):
+            ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
+
+            fig.savefig(os.path.join(self.folder,
+                'projectivity.'+self.plot_format),
+                format=self.plot_format) 
+
+    def mean_fidelity_MWInit(self, plot=True, plot_photon_ms0=True, **kw):
+
+
+        # it's not beautiful but works atm. Should be made more versatile
+        f = self.analysis_h5data()
+        # print f
+        g = f['/fidelity']
+
+        # print [int(g) for g in str.split() if g.isdigit()]
+        _fid0 = g['ms0']
+        _fidp1 = g['msp1']
+        _fidm1 = g['msm1']
+
+        time = _fid0[:,0]
+        fid0 = _fid0[:,1]
+        fid0_err = _fid0[:,2]
+        fidp1 = _fidp1[:,1]
+        fidp1_err = _fidp1[:,2]
+        fidm1 = _fidm1[:,1]
+        fidm1_err = _fidm1[:,2]
+
+        Fm = (fid0 + fidm1)/2.
+        Fm_err = np.sqrt(fid0_err**2 + fidm1_err**2)
+        Fp = (fid0 + fidp1)/2.
+        Fp_err = np.sqrt(fid0_err**2 + fidp1_err**2)
+
+        maxidxm = Fm.argmax()
+        Fm_max = Fm[maxidxm]
+        Fm_max_err = Fm_err[maxidxm]
+        tm_max = time[Fm.argmax()]
+
+        maxidxp = Fp.argmax()
+        Fp_max = Fp[maxidxp]
+        Fp_max_err = Fp_err[maxidxp]
+        tp_max = time[Fp.argmax()] 
+
+        meanfidm = (_fid0[:,1]+_fidm1[:,1])*0.5
+        meanfidmerr = np.sqrt( (0.5*_fid0[:,2])**2 + (0.5*_fidm1[:,2])**2 )
+
+        meanfidp = (_fid0[:,1]+_fidp1[:,1])*0.5
+        meanfidperr = np.sqrt( (0.5*_fid0[:,2])**2 + (0.5*_fidp1[:,2])**2 )
+
+        print 'SSRO calibration : ', self.timestamp
+        print 'max. Fm = ({:.2f} +/- {:.2f})% at t={:.0f} us'.format(Fm_max*100., Fm_max_err*100., tm_max)
+        print '\tms_0 = ({:.2f} +/- {:.2f})%'.format(fid0[maxidxm]*100, fid0_err[maxidxm]*100)
+        print '\tms_1 = ({:.2f} +/- {:.2f})%'.format(fidm1[maxidxm]*100, fidm1_err[maxidxm]*100)
+
+        print 'max. Fp = ({:.2f} +/- {:.2f})% at t={:.0f} us'.format(Fp_max*100., Fp_max_err*100., tp_max)
+        print '\tms_0 = ({:.2f} +/- {:.2f})%'.format(fid0[maxidxp]*100, fid0_err[maxidxp]*100)
+        print '\tms_1 = ({:.2f} +/- {:.2f})%'.format(fidp1[maxidxp]*100, fidp1_err[maxidxp]*100)
+
+        try:
+            del g['time']
+            del g['mean_fidelity']
+            del g['mean_fidelity_err']
+        except:
+            pass
+
+        g['time'] = time
+        g['mean_fidelity'] = meanfidm
+        g['mean_fidelity_err'] = meanfidmerr
+        f.close()
+
+        if plot:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.errorbar(time, fid0, fmt='.', yerr=fid0_err, label='ms=0')
+            ax.errorbar(time, fidm1, fmt='.', yerr=fidm1_err, label='ms=-1')
+            ax.errorbar(time, Fm, fmt='.', yerr=Fm_err, label='mean')
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('RO fidelity')
+            ax.set_ylim((0,1))
+            ax.legend(loc=4)
+            plt.figtext(0.8, 0.5, "max. Fm1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fm_max*100., Fm_max_err*100., tm_max),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': mean RO fidelity')
+
+            fig.savefig(os.path.join(self.folder,
+                'mean_fidelity_msm1.'+self.plot_format),
+                format=self.plot_format)
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.errorbar(time, fid0, fmt='.', yerr=fid0_err, label='ms=0')
+            ax.errorbar(time, fidp1, fmt='.', yerr=fidp1_err, label='ms=+1')
+            ax.errorbar(time, Fp, fmt='.', yerr=Fp_err, label='mean')
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('RO fidelity')
+            ax.set_ylim((0,1))
+            ax.legend(loc=4)
+            plt.figtext(0.8, 0.5, "max. Fp1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fp_max*100., Fp_max_err*100., tp_max),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': mean RO fidelity')
+
+            fig.savefig(os.path.join(self.folder,
+                'mean_fidelity_msp1.'+self.plot_format),
+                format=self.plot_format)
+
+        if plot_photon_ms0:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
+            max_Prob_ms0 = Prob_ms0.max()
+            time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('Prob. photon came from ms=0')
+            ax.set_ylim((0.9,1))
+            plt.figtext(0.8, 0.5, "max. {:.2f} at t={:.0f} us".format(max_Prob_ms0*100., time_max_Prob_ms0),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
+
+            fig.savefig(os.path.join(self.folder,
+                'projectivity.'+self.plot_format),
+                format=self.plot_format)    
+
+
+def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
     if folder=='':
         folder=toolbox.latest_data('AdwinSSRO')
     a = SSROAnalysis(folder)
 
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
         a.get_run(n)
-        a.cpsh_hist(a.ro_counts, a.reps, name=n)
-        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n)
-        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n)
-        a.charge_hist(a.cr_counts, name=n)
-        a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n)
-
+        a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
+        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.charge_hist(a.cr_counts, name=n, plot = plot)
+        a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n, plot = plot)
+    #f = self.analysis_h5data()
     plt.close('all')
-    a.mean_fidelity()
+    a.mean_fidelity(plot,plot_photon_ms0)
     a.finish()
+
+
+def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
+    if folder=='':
+        folder=toolbox.latest_data('_SSRO_calib_MWInit_')
+    a = SSROAnalysis(folder)
+
+    for n,ms in zip(['ms0','msp1','msm1'], [0,1,-1]): #zip((['ms0'], [0]):#
+        # print n, ms
+        a.get_run(n)
+        a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
+        a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n, plot = plot)
+        a.charge_hist(a.cr_counts, name=n, plot = plot)
+        a.fidelity(a.ro_counts, a.reps, a.binsize, ms, name=n, plot = plot)
+    #f = self.analysis_h5data()
+    plt.close('all')
+    a.mean_fidelity_MWInit(plot,plot_photon_ms0)
+    a.finish()
+    print 'Job\'s done!'
 
 def thcalib(folder='', analyze_probe = False):
     if folder=='':
@@ -410,3 +608,35 @@ def awgssro_prjprob(folder, pop0=1./6):
     ax.set_ylabel('Prob. for projection into 0')
 
 
+def sync_num_fast_SSRO_ph_events(fp_LT, RO_start, VERBOSE = True):
+    """
+    Returns a list with the sync numbers of events that have at least one photon in the time from the readout start 
+    til the readout end. The length of the readout is taken from the data. The function als return the RO counts per shot.
+    """
+
+    f = h5py.File(fp_LT, 'r')
+    sync_num_RO = f['/PQ_sync_number-1'].value
+    special_RO = f['/PQ_special-1'].value
+    sync_time_RO = f['/PQ_sync_time-1'].value
+
+    # Get name of the group to find read out length
+    group = toolbox.get_msmt_name(fp_LT)
+    total_string_name = '/' + group + '/joint_params'
+    RO_length = f[total_string_name].attrs['LDE_RO_duration']  * 1e9
+    f.close()
+
+    is_ph_RO = special_RO == 0   
+
+    is_in_window = (RO_start  <= sync_time_RO) & (sync_time_RO < (RO_start + RO_length))
+    is_ph_RO_in_ro_window = is_in_window & is_ph_RO
+
+    sync_num_ph_events = np.unique(sync_num_RO[is_ph_RO_in_ro_window])
+
+    if VERBOSE:
+        print "The total number of events for which a photon was read out is:", len(sync_num_ph_events)
+        print "The total number of photons that are readout for these events:", sum(is_ph_RO_in_ro_window)
+        print "The average amount of photons detected for each sync number is:", float(sum(is_ph_RO_in_ro_window))\
+                                                                                        /len(sync_num_ph_events)
+
+
+    return sync_num_ph_events, is_ph_RO_in_ro_window, sync_num_RO

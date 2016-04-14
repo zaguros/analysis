@@ -10,7 +10,7 @@ reload(SC)
 #input arguments ##
 ################
 
-def main(labpc = False):
+def main(labpc = True):
 
 
     ##############
