@@ -48,7 +48,7 @@ def get_raw_data_all_parts(carbon,**kw):
 	
 	# get SSRO_tstamp from user, else most recent SSRO
 	if ssro_tstamp == None:
-		ssro_calib_folder = toolbox.latest_data(contains = 'SSRO')
+		ssro_calib_folder = toolbox.latest_data(contains = 'SSROCalibration')
 		print ssro_calib_folder
 	else:
 		ssro_calib_folder = toolbox.latest_data(contains = ssro_tstamp)
