@@ -205,7 +205,7 @@ class TailAnalysis(PQSequenceAnalysis):
 
 
 
-class FastSSROAnalysis(PQSequenceAnalysis)
+class FastSSROAnalysis(PQSequenceAnalysis):
 
     def get_sweep_points(self):
         PQSequenceAnalysis.get_sweep_points(self)
