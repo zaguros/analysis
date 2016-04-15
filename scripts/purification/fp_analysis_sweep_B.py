@@ -54,7 +54,8 @@ def load_data(N = [8], el_trans = 'min'):
 	print 'All data for the specified N loaded via the timestamps in fp_ls'
 	return a, folder
 
-def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans = 'min', HF_perp = None, HF_par = None):
+def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans = 'min', 
+	HF_perp = None, HF_par = None, B_list = [418]):
 
 	# allowed params:
 	# el_trans = ['min', 'plus']
@@ -131,21 +132,24 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], el_trans
 
 		if disp_sim_spin == True:
 			print 'Starting Simulation for N = ' + str(N[ii]) + ' on transition ' + str(el_trans) 
-			B_Field = 418.05
-			tau_lst = np.linspace(3.5e-6, 13.5e-6, 5000)
-			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
-				B_field = B_Field, N = N[ii], tau = tau_lst)
-			FP_signal16 = ((Mt16+1)/2)
-			
-			colors = ['m', 'b', 'r', 'g', 'c']
-			colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
-			for tt in range(len(HF_par)):
-			  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label = str(tt + 1) + ': HF_par = ' +str(HF_par[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt])
+			colors = cm.rainbow(np.linspace(0, 1, len(HF_par)+len(B_list)))
+			for jj,B in enumerate(B_list):	
+				tau_lst = np.linspace(3.5e-6, 22.5e-6, 5000)
+				Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
+					B_field = B, N = N[ii], tau = tau_lst)
+				FP_signal16 = ((Mt16+1)/2)
+				
+				# colors = ['m', 'b', 'r', 'g', 'c']
+				for tt in range(len(HF_par)):
+				  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label =  str(tt + 1) + ': B = ' + str(B) + 
+				  	': HF_par = ' +str(HF_par[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt+jj])
+				
+
+				print folder[i]
 			plt.legend(loc=4)
 
-			print folder[i]
-			plt.savefig(os.path.join(folder[i], str(disp_sim_spin)+'fingerprint.pdf'),
-			    format='pdf')
-			plt.savefig(os.path.join(folder[i], str(disp_sim_spin)+'fingerprint.png'),
-			    format='png')
+			# plt.savefig(os.path.join(folder[i], str(disp_sim_spin)+'fingerprint.pdf'),
+			#     format='pdf')
+			# plt.savefig(os.path.join(folder[i], str(disp_sim_spin)+'fingerprint.png'),
+			#     format='png')
 

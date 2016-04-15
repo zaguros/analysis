@@ -51,7 +51,7 @@ def dyn_dec_signal(HFs_par, HFs_orth, B_field, N ,tau):
     '''
     Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght
     and an array of times and returns the signal at those times for that specific spin.
-M    ------
+    M    ------
     inputs
     ------
     HFs_par:        list of parallel component of HF strength in Hz
@@ -69,10 +69,11 @@ M    ------
     #Model parameters
     omega_larmor = 2*np.pi*gamma_c*B_field #radial frequency
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
-
-    print omega_larmor
-    print HF_par*2*np.pi
-    print HFs_orth[0]*2*np.pi
+    print 'wtf'
+    print HFs_par
+    print 'omega_larmor: ' +str(omega_larmor)
+    # print HFs_par*2*np.pi
+    # print HFs_orth[0]*2*np.pi
 
     #print 'tau larmor = %s' %tau_larmor
 
@@ -80,8 +81,8 @@ M    ------
         M=np.zeros([np.size(HFs_par),np.size(tau)])
     else:
         M = np.zeros([np.size(HFs_par),np.size(N)])
-    for i,HF_par in enumerate(HFs_par):
-        HF_par = HF_par*2*np.pi #Convert to radial frequency
+    for i,HFs_par in enumerate(HFs_par):
+        HF_par = HFs_par*2*np.pi #Convert to radial frequency
         HF_orth = HFs_orth[i]*2*np.pi #convert to radial frequency
         omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
 
