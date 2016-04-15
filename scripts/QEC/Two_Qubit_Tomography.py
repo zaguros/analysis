@@ -4,6 +4,8 @@ from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi; reload(mbi)
 from matplotlib import pyplot as plt
 
+import h5py
+
 def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,tag = '',
 		plot_fit = True) :
@@ -22,13 +24,14 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	    ssro_calib_folder = toolbox.latest_data('SSRO')
 	else:
 		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil8'
+		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
 		print ssro_calib_folder
 	# <<<<<<< HEAD
 	    # ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
 	# =======
 
 	a = mbi.MBIAnalysis(folder)
+
 	a.get_sweep_pts()
 	a.get_readout_results(name=measurement_name[0])
 	a.get_electron_ROC(ssro_calib_folder)
@@ -65,6 +68,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		try:
 		    fig.savefig(
 		        os.path.join(folder,'tomo.png'))
+		    # fig.savefig(os.path.join(folder,'tomo.eps'))
 		except:
 		    print 'Figure has not been saved.'
 
