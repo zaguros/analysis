@@ -11,10 +11,14 @@ from analysis.lib.spin import N_and_e_spin_correction
 reload(N_and_e_spin_correction)
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
+reload(ssro)
 from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
+
+
+
     def get_readout_results(self, name='',CR_after_check = False):
         """
         Get the readout results.
@@ -24,6 +28,7 @@ class MBIAnalysis(m2.M2Analysis):
             for getting a photon)
         CR_after_check: erases certain results from the SSRO results based on the CR check after the sequence.
         """
+
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
@@ -54,9 +59,7 @@ class MBIAnalysis(m2.M2Analysis):
                     reps_list[(ii-1)%self.pts] -= 1
                     results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
 
-
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
-
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
@@ -152,15 +155,37 @@ class MBIAnalysis(m2.M2Analysis):
         ro_durations = self.g.attrs['E_RO_durations']
         roc = error.SingleQubitROC()
 
-        for i in range(len(self.normalized_ssro[0])):
-            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-                ssro.get_SSRO_calibration(ssro_calib_folder,
-                        ro_durations[i])
-            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
-                    self.u_normalized_ssro[:,i])
+        # Decide between ssro calib via MW Initialisation or some other method
+        # At the time of writing only MWInit and full las0r SSRO exist ~SK 2016
+        if 'MWInit' in ssro_calib_folder:
+            el_state = self.adgrp.attrs['electron_transition']
+            # print 'MWInit, el_state: ' + str(el_state)
 
-            self.p0[:,i] = p0
-            self.u_p0[:,i] = u_p0
+            for i in range(len(self.normalized_ssro[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                    ssro.get_SSRO_MWInit_calibration(ssro_calib_folder,
+                            ro_durations[i],el_state)
+
+                p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                        self.u_normalized_ssro[:,i])
+
+                self.p0[:,i] = p0
+                self.u_p0[:,i] = u_p0
+
+
+        else:
+            for i in range(len(self.normalized_ssro[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                    ssro.get_SSRO_calibration(ssro_calib_folder,
+                            ro_durations[i])
+
+                p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                        self.u_normalized_ssro[:,i])
+
+                self.p0[:,i] = p0
+                self.u_p0[:,i] = u_p0
+
+
 
         self.result_corrected = True
 
