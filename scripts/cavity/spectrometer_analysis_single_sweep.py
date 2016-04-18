@@ -30,8 +30,8 @@ refr= 1 #refractive index
 
 # Open file and create dataframes in pandas
 
-indir="C:\Users\lcoenen\Dropbox\Afstuderen Diamond\Data\Sweep_bare_cavity" 
-data = pd.read_csv(os.path.join(indir,"160311_FP_10_Par1.csv"), usecols=[2,4,5])
+indir="D:\measuring\data/20160418" 
+data = pd.read_csv(os.path.join(indir,"Z_884_FP_8V 2016 april 18 16_07_51.csv"), usecols=[2,4,5])
 data_mean=data.groupby('Column').agg([np.mean])
 
 
