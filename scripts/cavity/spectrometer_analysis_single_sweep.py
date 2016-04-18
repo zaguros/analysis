@@ -23,94 +23,106 @@ from peakdetect import peakdet
 This script is written to import data from the spectrometer in the CSV format to Python and characterize the cavity. 
 """
 
-# values to input 
-
-rows = 20 #number of rows in spectrometer 
-refr= 1 #refractive index 
-
+### This is the only part where values should be inserted.#### 
+n_xticks = 9
+n_yticks = 8
+peak_detect_H_order_modes = False
+peak_detect_TEM00 = False
+order_peak_detection = 100
+order_peak_detect_higher_modes = 30
+ 
 # Open file and create dataframes in pandas
 
-indir="D:\measuring\data/20160418" 
-data = pd.read_csv(os.path.join(indir,"Z_884_FP_8V 2016 april 18 16_07_51.csv"), usecols=[2,4,5])
+indir="D:\DATA\Random data" 
+data = pd.read_csv(os.path.join(indir,"20160330 whitelight_directly_spectrometer_Q225.csv"), usecols=[2,4,5])
+
+max_WL = data['Wavelength'].max()
+min_WL = data['Wavelength'].min()
+max_I = data['Intensity'].max()
+min_I = data['Intensity'].min()
 data_mean=data.groupby('Column').agg([np.mean])
 
+# Peak detection method for higher order modes 
 
-# # Peak detection method for higher order modes 
+if peak_detect_H_order_modes == True:
 
-# I_array = np.asarray(data_mean['Intensity'])
-# peak_1=peakdet(I_array, 1000)
-# peak_WL_1=np.transpose(np.asarray(data_mean.loc[peak_1[0][:,0],'Wavelength']))[0]
-# peak_I_1=peak_1[0][:,1]
-# peak_freq_1 = 3.e8/(peak_WL_1*1.e-9)
+    I_array = np.asarray(data_mean['Intensity']) # write intensity dataframe as array
+    peak_1=peakdet(I_array, order_peak_detect_higher_modes) # use peakdet definition to detect all peaks from intensity
+    peak_WL_1=np.transpose(np.asarray(data_mean.loc[peak_1[0][:,0],'Wavelength']))[0] #get corresponding wavelengths
+    peak_I_1=peak_1[0][:,1]
+    peak_freq_1 = 3.e8/(peak_WL_1*1.e-9)
+else:
+    print 'There are no higher order modes in this plot.'
 
-# Peak detection method for FSR
+# Peak detection method for TEM00 modes
 
-I_avg_array = np.asarray(data_mean['Intensity']) # argrelextrema only takes an array
-indices = argrelextrema(I_avg_array, np.greater, order=100) # the number 100 is somewhat arbitrary, but seems to work. 
+if peak_detect_TEM00 == True:
 
-peak_WL= [] #connect indices with the values for the wavelength, creating arrays
-peak_I=[]
-peak_freq=[]
+    I_avg_array = np.asarray(data_mean['Intensity']) # argrelextrema only takes an array
+    indices = argrelextrema(I_avg_array, np.greater, order=order_peak_detection) # the number 100 is somewhat arbitrary, but seems to work. 
 
-for i in indices[0]:
-    peak_WL = np.append(peak_WL,data_mean.loc[i,'Wavelength'])
-    peak_I = np.append(peak_I,data_mean.loc[i,'Intensity'])
-    peak_f = 3.e8/(data_mean.loc[i,'Wavelength']*1.e-9)
-    peak_freq = np.append(peak_freq,peak_f)
+    peak_WL= [] #connect indices with the values for the wavelength, creating arrays
+    peak_I=[]
+    peak_freq=[]
 
-# Calculating the free spectral range in wavelength
+    for i in indices[0]:
+        peak_WL = np.append(peak_WL,data_mean.loc[i,'Wavelength'])
+        peak_I = np.append(peak_I,data_mean.loc[i,'Intensity'])
+        peak_f = 3.e8/(data_mean.loc[i,'Wavelength']*1.e-9)
+        peak_freq = np.append(peak_freq,peak_f)
 
-FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
-print 'The FSR is', FSR,'nm.'
+    FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
+    print 'The FSR is', FSR,'nm.'
 
-# Calculating the free spectral range in frequency in Hz
+    FSR_freq=fabs(peak_freq[-2]-peak_freq[-1]) # calculating the free spectral range in frequency in Hz
+    print 'The FSR is', round(FSR_freq*1.e-12,2), 'THz.'
 
-FSR_freq=fabs(peak_freq[-2]-peak_freq[-1])
+    L = 3.e8/(2*FSR_freq) # Calculating the length of the cavity in micrometer
+    print 'The Cavity Length is', round(L*1.e6,2), 'um.'
 
-print 'The average FSR in frequency is', round(FSR_freq*1.e-12,2), 'THz.'
+else:
+    print 'No TEM00 peaks are detected for this data, so no FSR and cavity length is determined.'
+    
+#Plotting the data and setting the axes 
 
-# Calculating the length of the cavity in micrometer
+ax = data_mean.plot(x='Wavelength',y='Intensity', legend=False) 
 
-L = ((peak_WL[-3]*1.e-9)**2)/(refr*2*FSR*1.e-9) #in meter
-print 'The Cavity Length is', round(L*1.e6,2), 'um.'
+if peak_detect_TEM00 == True:
+    plt.plot(peak_WL, peak_I, 'ro') # for assigning the peaks
+else:
+    print 'No TEM00 peaks assigned in plot'
+if peak_detect_H_order_modes == True:
+    plt.plot(peak_WL_1, peak_I_1, 'r+') # for assigning the higher order peaks
+else:
+    print 'No peaks for higher order modes assigned in plot.'
 
-L2 = 3.e8/(2*refr*FSR_freq)
-print 'The Cavity Length is', round(L2*1.e6,2), 'um.'
+ax.set_xlabel("Wavelength (nm)", fontsize = 14)
+ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
+ax.tick_params(which = 'both', direction = 'out')
+#ax.set_aspect('equal')
+xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
+xticklabels = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
 
-# The optical length of the cavity 
+#yticks=np.linspace(ax.get_ylim()[0],ax.get_ylim()[-1],n_yticks)
+#ytickslabels = np.linspace(ax.get_ylim()[0],ax.get_ylim()[-1],n_yticks)
 
-l = 2 * L 
-print 'The optical length of the cavity is', round(l*1.e6,2), 'um.'
-#Calculating the Finesse of the cavity with an assumption for the linewidth
+xticklabels_round=[]
+for j in xticklabels:
+    round_ = round(j,0)
+    xticklabels_round = np.append(xticklabels_round,round_)
 
-dv = 1.3*1.e9 
-F = FSR_freq/dv
+#ytickslabels_round=[]
+#for i in ytickslabels:
+#   round_ = round(i,0)
+#   ytickslabels_round = np.append(ytickslabels_round,round_)
 
-print 'The Finesse is', round(F,0), ',under the assumption that the linewidth is', round(dv*1.e-9,2), 'GHz.'
+ax.set_xticks(xticks)
+ax.set_xticklabels(xticklabels_round)
 
-# #Calculating the effective radius of curvature
+#ax.set_yticks(yticks)
+#ax.set_yticklabels(ytickslabels_round)
 
-# df_trans=fabs(peak_freq_1[-1]-peak_freq_1[-2]) # value from data: 2 nm (not conclusive yet!)
-# T=(df_trans/FSR_freq)*pi
-# ROC =l*(1/(1-(cos(T)**2)))
-# print 'The ROC is', round(ROC*1.e6,2),'um.' 
-
-# #Calculating the beam waist and mode volume 
-
-# w_0= sqrt((peak_WL[-2]*1.e-9)/pi)*(l*(ROC-l))**(1/4)
-# V_0 = (pi*(w_0**2)*l)/4
-
-# print 'The beam waist is', round(w_0*1.e6,2)
-# print 'The mode volume is', round(V_0*1.e12,2)
-
-#Plotting the data  
-
-data_mean.plot(x='Wavelength',y='Intensity',title='FSR bare cavity', legend=False) #ylim=[0,14000], xticks=range(600,700,10), yticks=range(0,14000,2000))
-plt.savefig("test.png", format="png")
-plt.plot(peak_WL, peak_I, 'ro') # for assigning the peaks
-#plt.plot(peak_WL_1, peak_I_1, 'r+') # for assigning the higher order peaks
 plt.show()
-
 
 
 

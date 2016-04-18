@@ -19,7 +19,7 @@ guess_offset = 1
 guess_x0 = 2.
 #guess_splitB = 30.
 guess_splitN = 2.18e-3
-guess_splitC = 0.8e-3 
+guess_splitC = 0.4e-3 
 guess_width = 0.3e-3
 guess_amplitude = 0.15
 
@@ -45,7 +45,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
             # (2, guess_splitN),
              # (2, guess_splitC),
             # (2, guess_splitB),
-            (3, guess_splitN),
+            # (3, guess_splitN),
             do_print=True, ret=True, fixed=[4])
     
     plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)

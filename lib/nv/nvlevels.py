@@ -3,6 +3,7 @@
 import numpy as np
 import os
 import scipy.constants as spc
+import scipy
 #import sys
 
 def get_levels(**kw):
@@ -13,7 +14,7 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,8,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
-def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.],transitions=True):
+def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.]):
     """
     Returns the six energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
@@ -22,13 +23,69 @@ def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.],transitions=True):
     strain=abs(Ex-Ey)/2.0
     offset=np.min([Ey,Ex])+strain
     if fast:
-        return np.sort(get_ES_fast(offset,strain,transitions=transitions))
+        if not(np.array_equal(B_field,[0.,0.,0.])):
+            print 'WARNING FAST ES energies doe not incorporate B'
+        return np.sort(get_ES_fast(offset,strain))
     #return np.sort(get_ES(E_field=[strain,0,0],Ee0=offset-1.94,transitions=transitions)[0])
     #XXXXXXXXXXXXXXXXXXX
-    return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,transitions=transitions)[0])
+    return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94)[0])
 
-def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
-                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True):
+
+def get_ES_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.],trans_A_levels = False, conv_order = True, Ee0=-1.94, **kw):
+    """
+    Returns the eigenenergies and eigenstates of the ES of the NV centre,
+    however, with the E'x and E'y basis states transformed in spin up and spin down basis states
+    """
+    w,v = get_ES(E_field=E_field,B_field=B_field,Ee0=Ee0, **kw)
+
+    if not trans_A_levels:
+        basis_transform = scipy.linalg.block_diag([[(1j/np.sqrt(2)), (1/np.sqrt(2))], [(1/np.sqrt(2)),(1j/np.sqrt(2))]],np.eye(4))
+    else:
+        basis_transform = scipy.linalg.block_diag([[(1j/np.sqrt(2)), (1/np.sqrt(2))], [(1/np.sqrt(2)),(1j/np.sqrt(2))]],np.eye(2),
+                        [[(1/np.sqrt(2)), (-1j/np.sqrt(2))], [(-1j/np.sqrt(2)),(1/np.sqrt(2))]])
+
+    v = basis_transform * v
+
+    if conv_order:
+        #Note that code goes as ["E-'","E+'","Ex",'Ey','A1','A2']
+        #This corrects to the conventional order
+        conventional_energy_order = [0,1,3,2,4,5]
+        v = v[conventional_energy_order]
+    return w,v
+
+def get_ES_SpinComp_ExEy(Ex,Ey,B_field=[0.,0.,0.],**kw):
+    """
+    Returns the eigenenergies and eigenstates of the ES of the NV centre,
+    however, with the E'x and E'y basis states transformed in spin up and spin down basis states
+    """
+
+    strain=abs(Ex-Ey)/2.0
+    offset=np.min([Ey,Ex])+strain
+
+    return get_ES_SpinComp(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,**kw)
+
+def get_GS_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
+    """
+    Returns the eigenenergies and eigenstates of the GS of the NV centre,
+    however, with the Ex and Ey basis states transformed in spin up and spin down basis states
+    """
+
+    w,v = get_GS(E_field=E_field,B_field=B_field,Ee0=Ee0, **kw)
+    basis_transform = scipy.linalg.block_diag(1,[[(1/np.sqrt(2)), (-1j/np.sqrt(2))], [(1/np.sqrt(2)),(1j/np.sqrt(2))]])
+    return w,basis_transform * v
+
+
+def get_ES_fast(f0,D):
+    D=D/0.749
+    return np.array([f0 - 0 - 3.8821 - 0.01856*D - 0.06452*D**2 + 0.00284*D**3 - 4.925e-5*D**4,
+                     f0 - 0 - 3.9021 + 0.0157*D  - 0.05397*D**2 + 0.00202*D**3 - 3.09e-5*D**4,
+                     f0 - 0.749*D,
+                     f0 + 0.749*D,
+                     f0 - 0 + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
+                     f0 - 0 + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
+
+def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_ms0_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
+                            show_FB_A_transitions=True, show_m1_transitions=True,show_p1_transitions=True,show_E_prime_flip_transitions=True, return_dict=False):
     """
     Returns the six transition energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
@@ -37,22 +94,16 @@ def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_E_transitions=True,show
     strain=abs(Ex-Ey)/2.0
     offset=np.min([Ey,Ex])+strain
 
-    return np.sort(get_optical_transitions(E_field=[strain,0,0],B_field=[0.,0.,300.],Ee0=offset-0.97,
-                            show_E_transitions=show_E_transitions,show_A_transitions=show_A_transitions,
-                            show_FB_E_transitions=show_FB_E_transitions, 
-                            show_FB_A_transitions=show_FB_A_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions))
-
-def get_ES_fast(f0,D,transitions=True):
-    D=D/0.749
-    ms1_off=0
-    if transitions:
-        ms1_off=2.87
-    return np.array([f0 - ms1_off - 3.8821 - 0.01856*D - 0.06452*D**2 + 0.00284*D**3 - 4.925e-5*D**4,
-                     f0 - ms1_off - 3.9021 + 0.0157*D  - 0.05397*D**2 + 0.00202*D**3 - 3.09e-5*D**4,
-                     f0 - 0.749*D,
-                     f0 + 0.749*D,
-                     f0 - ms1_off + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
-                     f0 - ms1_off + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
+    if not return_dict:
+        return np.sort(get_optical_transitions(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
+                            show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions,
+                            show_FB_E_transitions=show_FB_E_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions,
+                            show_FB_A_transitions=show_FB_A_transitions,return_dict=return_dict))
+    else:
+        return get_optical_transitions(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
+                    show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions,
+                    show_FB_E_transitions=show_FB_E_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions,
+                    show_FB_A_transitions=show_FB_A_transitions,return_dict=return_dict)
 
 def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
     """
@@ -69,7 +120,7 @@ def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
     return [np.sort(x),y]
 
 def get_transitions_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
-                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True):
+                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True, return_dict=False):
     """
     Returns an array plottable with qt.Plot2D of the six transition energies 
     in GHz of the ES of the NV centre, when given the Energies of the Ex and 
@@ -87,15 +138,13 @@ def get_transitions_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,300.],show_E_tran
         y[3*ii+1]=height
     return [np.sort(x),y]
     
-def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
+def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94):
     """Returns the eigenvalues and eigenvectors of the NV excited state 
     pertubation matrix.
     inputs:
     - E-field xyz vector in GHz
     - B-field xyz vector in Gauss
     - Energy offset for the eigenvalues
-    - boolean transitions - whether to return the transition energies 
-    (ms0 energies increased by the zero-field splitting)s
     """
     # [1]: Doherty, M. W. et al. Physics Reports 528, 1-45 (2013)
     # [2]: Maze, J. R. et al. New J. Phys. 13, 025025 (2011)
@@ -146,31 +195,25 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
     Vb = np.matrix([[0,  1j*(g_es_par*Bz + lambdaA2*Bz), 1j*(g_es_ort*By)/w2,  1j*(g_es_ort*Bx)/w2, 0, 0],
                     [-1j*(g_es_par*Bz + lambdaA2*Bz), 0, 1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2, 0, 0],
                     [-1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2, 0,                 -1j*lambdaA2*Bz, 1j*(g_es_ort*By)/w2, -1j*(g_es_ort*Bx)/w2],
-                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2,  0,    1j*lambdaA2*Bz,             -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
+                    [-1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, 1j*lambdaA2*Bz,  0,  -1j*(g_es_ort*Bx)/w2, -1j*(g_es_ort*By)/w2],
                     [0, 0, -1j*(g_es_ort*By)/w2, 1j*(g_es_ort*Bx)/w2,  0, 1j*(g_es_par*Bz - lambdaA2*Bz)],
                     [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
-   
-   
-    if kw.pop('transitions', False):
-        #print 'transitions kw deprecated, use function get_transitions instead'
-        VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0])
-    else:
-        VGSoffset = 0.
 
-    V = Vss + Vso + Ve + Vb + VGSoffset
+
+    V = Vss + Vso + Ve + Vb 
     
     w,v=np.linalg.eig(V)
     
     return np.real(w+Ee0),v
  
 
-def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
+def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.],**kw):
 
     Ex = E_field[0]
     Ey = E_field[1]
     Ez = E_field[2]
-    
+
     mu_B=spc.e*spc.hbar/(2*spc.m_e)/spc.h/1e9  #GHz/Tesla
     Bx = mu_B*B_field[0]*1e-4 #GHz
     By = mu_B*B_field[1]*1e-4 #GHz
@@ -189,38 +232,139 @@ def get_GS(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
     V = Vss + Ve + Vb
     
     w,v=np.linalg.eig(V)
+
+    # at low fields we return the array: [ms=0,ms=-1,ms+1]
     return np.real(w),v
 
-def get_optical_transitions(show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
-                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True, **kw):
+def get_optical_transition_strengths_ExEy(Ex,Ey,B_field=[0.,0.,0.],show_ms0_transitions=True, show_m1_transitions=True,show_p1_transitions=True):
+    """
+    Returns the six transition energies in GHz of the ES of the NV centre, 
+    when given the Energies of the Ex and Ey transitions in GHz
+    """
+    
+    strain=abs(Ex-Ey)/2.0
+    offset=np.min([Ey,Ex])+strain
+
+    return get_optical_transition_strengths(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
+                show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions)
+
+def get_optical_transition_strengths(show_ms0_transitions=True,show_m1_transitions=True,show_p1_transitions=True, **kw):
+
+    E_ES, v_ES = get_ES_SpinComp(trans_A_levels = True, **kw)
+
+    order = np.argsort(E_ES)
+    v_ES = v_ES[:,order]
+    E_ES = E_ES[order]
+
+    E_GS = np.sort(get_GS_SpinComp(**kw)[0])
+
+    transitions = {}
+
+    if show_ms0_transitions:
+
+        transitions['ms0'] = {}
+        transitions['ms0']['strength'] = np.empty([6])
+        transitions['ms0']['freq'] = np.empty([6])
+        for ii,v in enumerate(np.transpose(v_ES)):
+            v = np.transpose(v)
+            transitions['ms0']['strength'][ii] =  np.power(np.abs(v[2]),2) + np.power(np.abs(v[3]),2)
+            transitions['ms0']['freq'][ii]  = E_ES[ii] - E_GS[0]
+
+    if show_m1_transitions:       
+        transitions['msm1'] = {}
+        transitions['msm1']['strength'] = np.empty([6])
+        transitions['msm1']['freq'] = np.empty([6])
+        for ii,v in enumerate(np.transpose(v_ES)):
+            v = np.transpose(v)
+            transitions['msm1']['strength'][ii] =  np.power(np.abs(v[0]),2)**2 + np.power(np.abs(v[4]),2)
+            transitions['msm1']['freq'][ii]  = E_ES[ii] - E_GS[1]
+
+    if show_p1_transitions:  
+        transitions['msp1'] = {}
+        transitions['msp1']['strength'] = np.empty([6])
+        transitions['msp1']['freq'] = np.empty([6])
+        for ii,v in enumerate(np.transpose(v_ES)):
+            v = np.transpose(v)
+            transitions['msp1']['strength'][ii] =  np.power(np.abs(v[1]),2) + np.power(np.abs(v[5]),2)
+            transitions['msp1']['freq'][ii]  = E_ES[ii] - E_GS[2]
+
+    return transitions
+
+# PH edits 24/03/2015
+# Added in dictionary structure, cus it makes sense. Carefully modified to retain backwards compatibility.
+def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=True,show_m1_transitions=True,show_p1_transitions=True,show_FB_E_transitions=True, 
+                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True,return_dict = False, **kw):
+
+    if show_A_transitions:
+        show_m1_transitions = True
+        show_p1_transitions = True
 
     E_GS=np.sort(get_GS(**kw)[0])
+
+    # print E_GS[0],E_GS[1],E_GS[2]#,E_GS[2]-E_GS[1]
+    # print kw.get('B_field',0.)
     E_ES=np.sort(get_ES(**kw)[0])
-    E_transitions=np.array([E_ES[2]-E_GS[0],
-                                 E_ES[3]-E_GS[0]])   # 2 transitions
-    A_transitions=np.array([E_ES[0]-E_GS[1],#E_ES[0]-E_GS[2],
-                                 E_ES[1]-E_GS[2],#E_ES[1]-E_GS[1],
-                                 E_ES[4]-E_GS[1],E_ES[4]-E_GS[2],
-                                 E_ES[5]-E_GS[1],E_ES[5]-E_GS[2]])  # 6 transitions
-    E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
-                                        E_ES[1]-E_GS[1]])   # 2 transitions
-    FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
+    
+    if not return_dict:
+        transitions = []
+    else:
+        transitions = {}
+
+
+    if show_ms0_transitions:
+        ms0_transitions=np.array([E_ES[2]-E_GS[0],
+                                 E_ES[3]-E_GS[0]])
+        if not return_dict:
+            transitions = np.append(transitions, ms0_transitions)
+        else:
+            transitions['ms0'] = ms0_transitions
+
+    if show_m1_transitions:
+        msm1_transitions = np.array([E_ES[0]-E_GS[1],E_ES[4]-E_GS[1],E_ES[5]-E_GS[1]])
+
+        if not return_dict:
+            transitions = np.append(transitions, msm1_transitions)
+        else:
+            transitions['msm1'] = msm1_transitions
+
+    if show_p1_transitions:
+        msp1_transitions = np.array([E_ES[1]-E_GS[2],E_ES[4]-E_GS[2],E_ES[5]-E_GS[2]])
+
+        if not return_dict:
+            transitions = np.append(transitions, msp1_transitions)
+        else:
+            transitions['msp1'] = msp1_transitions
+
+    
+    if show_FB_E_transitions: 
+        FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
                                E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]]) # 4 transitions
-    FB_A_transitions=np.array([E_ES[0]-E_GS[0],
+
+        if not return_dict:
+            transitions = np.append(transitions, FB_E_transitions)
+        else:
+            transitions['FB_E'] = FB_E_transitions
+
+    if show_FB_A_transitions:
+        FB_A_transitions=np.array([E_ES[0]-E_GS[0],
                                E_ES[1]-E_GS[0],
                                E_ES[4]-E_GS[0],
                                E_ES[5]-E_GS[0]])    # 4 transitions
-    transitions = []
-    if show_E_transitions:
-        transitions = np.append(transitions, E_transitions)
-    if show_A_transitions:
-        transitions = np.append(transitions, A_transitions)
-    if show_FB_E_transitions: 
-        transitions = np.append(transitions, FB_E_transitions)
-    if show_FB_A_transitions: 
-        transitions = np.append(transitions, FB_A_transitions)
-    if show_E_prime_flip_transitions: 
-        transitions = np.append(transitions, E_prime_flip_transitions)
+
+        if not return_dict:
+            transitions = np.append(transitions, FB_A_transitions)
+        else:
+            transitions['FB_A'] = FB_A_transitions
+
+    if show_E_prime_flip_transitions:
+        E_prime_flip_transitions = np.array([E_ES[0]-E_GS[2],
+                                        E_ES[1]-E_GS[1]])   # 4 transitions
+ 
+        if not return_dict:
+            transitions = np.append(transitions, E_prime_flip_transitions)
+        else:
+            transitions['E_prime_flip'] = E_prime_flip_transitions
+
     return transitions
 
 
