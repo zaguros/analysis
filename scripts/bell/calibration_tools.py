@@ -6,7 +6,9 @@ from analysis.lib.tools import plot
 from analysis.lib.tools import toolbox
 
 from analysis.lib.m2.ssro import sequence
+reload(sequence)
 from analysis.lib.m2.ssro import ssro
+reload(ssro)
 
 def fit_rabi(folder=None, ax = None, f_guess=0.9, A_guess=1,fit_phi = False,fit_k = False):
     """
