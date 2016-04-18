@@ -27,42 +27,42 @@ class cavity_analysis(m2.M2Analysis):
     and return the x and y values of the indicated scans.
     '''
 
-    ####write the below function such that it works with the m2.m2Analysis framweork
-    def load_data (self,folder, timestamp, scan_type, return_folder = False):
-        '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
-        Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
-        (which is different for laser scans and piezo scans).'''
+    # ####write the below function such that it works with the m2.m2Analysis framweork
+    # def load_data (self,folder, timestamp, scan_type, return_folder = False):
+    #     '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
+    #     Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
+    #     (which is different for laser scans and piezo scans).'''
 
-        all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
-        test = all_folders[0]
-        if len(all_folders) == 0:
-            x = []
-            y = []
-            f = None
+    #     all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
+    #     test = all_folders[0]
+    #     if len(all_folders) == 0:
+    #         x = []
+    #         y = []
+    #         f = None
         
-        else:
-            curr_fold = os.path.join(folder, all_folders[0])
-            all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
-            file_name = [f for f in all_files if '.hdf5' in f]
+    #     else:
+    #         curr_fold = os.path.join(folder, all_folders[0])
+    #         all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
+    #         file_name = [f for f in all_files if '.hdf5' in f]
 
-            if (scan_type =='piezo'):
-                grp_name = '/piezo_scan'
-                x_name = 'piezo_voltage'
-            elif (scan_type == 'lr_scan'):
-                grp_name = '/lr_scan'
-                x_name = 'frequency_GHz'
-            elif (scan_type =='fine_laser'):
-                grp_name = '/fine_laser_scan'
-                x_name = 'laser_tuning_voltage'
+    #         if (scan_type =='piezo'):
+    #             grp_name = '/piezo_scan'
+    #             x_name = 'piezo_voltage'
+    #         elif (scan_type == 'lr_scan'):
+    #             grp_name = '/lr_scan'
+    #             x_name = 'frequency_GHz'
+    #         elif (scan_type =='fine_laser'):
+    #             grp_name = '/fine_laser_scan'
+    #             x_name = 'laser_tuning_voltage'
             
-            f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
-            ls_grp = f[grp_name]
-            x = ls_grp[x_name].value
-            y = ls_grp['PD_signal'].value
-        if return_folder:
-            return curr_fold, x, y, test
-        else:
-            return x, y, test
+    #         f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
+    #         ls_grp = f[grp_name]
+    #         x = ls_grp[x_name].value
+    #         y = ls_grp['PD_signal'].value
+    #     if return_folder:
+    #         return curr_fold, x, y, test
+    #     else:
+    #         return x, y, test
 
     def get_x_pts(self):
         self.nr_x_pts = self.f.attrs['nr_steps']
@@ -674,7 +674,7 @@ def fit_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_
         
 
 
-def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = False, save_data = False, threshold=0.1):
+def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = False, save_data = True, threshold=0.1):
     'This function plots all fine laser scans within the given timestamp range'
     T = []
     LW = []
