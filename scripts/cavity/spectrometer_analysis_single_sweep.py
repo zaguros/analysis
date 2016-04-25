@@ -27,14 +27,14 @@ This script is written to import data from the spectrometer in the CSV format to
 n_xticks = 9
 n_yticks = 8
 peak_detect_H_order_modes = False
-peak_detect_TEM00 = False
+peak_detect_TEM00 = True
 order_peak_detection = 100
 order_peak_detect_higher_modes = 30
  
 # Open file and create dataframes in pandas
 
-indir="D:\DATA\Random data" 
-data = pd.read_csv(os.path.join(indir,"20160330 whitelight_directly_spectrometer_Q225.csv"), usecols=[2,4,5])
+indir="D:\DATA\Sweep_bare_cavity 13 steps" 
+data = pd.read_csv(os.path.join(indir,"160311_FP_10_Par1.csv"), usecols=[2,4,5])
 
 max_WL = data['Wavelength'].max()
 min_WL = data['Wavelength'].min()
@@ -71,10 +71,10 @@ if peak_detect_TEM00 == True:
 		peak_f = 3.e8/(data_mean.loc[i,'Wavelength']*1.e-9)
 		peak_freq = np.append(peak_freq,peak_f)
 
-	FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
+	FSR=fabs(peak_WL[-3]-peak_WL[-2]) #calculate the free spectral range
 	print 'The FSR is', FSR,'nm.'
 
-	FSR_freq=fabs(peak_freq[-2]-peak_freq[-1]) # calculating the free spectral range in frequency in Hz
+	FSR_freq=fabs(peak_freq[-4]-peak_freq[-3]) # calculating the free spectral range in frequency in Hz
 	print 'The FSR is', round(FSR_freq*1.e-12,2), 'THz.'
 
 	L = 3.e8/(2*FSR_freq) # Calculating the length of the cavity in micrometer
