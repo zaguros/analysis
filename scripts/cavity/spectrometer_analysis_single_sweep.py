@@ -28,13 +28,13 @@ n_xticks = 9
 n_yticks = 8
 peak_detect_H_order_modes = False
 peak_detect_TEM00 = False
-order_peak_detection = 100
+order_peak_detection = 300
 order_peak_detect_higher_modes = 30
  
 # Open file and create dataframes in pandas
 
-indir="D:\DATA\Random data" 
-data = pd.read_csv(os.path.join(indir,"20160330 whitelight_directly_spectrometer_Q225.csv"), usecols=[2,4,5])
+indir="D:/measuring/data/20160419" 
+data = pd.read_csv(os.path.join(indir,"FSR_80nm_Q600_it10000.csv"), usecols=[2,4,5])
 
 max_WL = data['Wavelength'].max()
 min_WL = data['Wavelength'].min()
@@ -85,7 +85,7 @@ else:
     
 #Plotting the data and setting the axes 
 
-ax = data_mean.plot(x='Wavelength',y='Intensity', legend=False) 
+#ax = data_mean.plot(x='Wavelength',y='Intensity', legend=False) 
 
 if peak_detect_TEM00 == True:
     plt.plot(peak_WL, peak_I, 'ro') # for assigning the peaks
