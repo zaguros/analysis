@@ -77,7 +77,7 @@ min_I = data['Y'].min()
 x = 1.e5*np.asarray(data['X']) # multiplied by factor 1.e5 just to get normal numbers. 
 y = np.asarray(data['Y'])
 
-fixed=[5]
+fixed=[]
 
 if EOM_ON == True:
 
