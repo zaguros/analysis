@@ -453,28 +453,33 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
 
     return p0, fitfunc, fitfunc_str
 
-def fit_3lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2, g_A3, g_x03, g_gamma3):  # fit for 3 lorentzians for EOM drive
+
+def fit_3lorentz(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2, g_A3, g_gamma3):  # fit for 3 lorentzians for EOM drive
     fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
-            + 2*A2/np.pi*gamma2/(4*(x-x02)**2+gamma2**2) + 2*A3/np.pi*gamma3/(4*(x-x03)**2+gamma3**2)'
+            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma2**2) + 2*A3/np.pi*gamma3/(4*(x-x01+dx)**2+gamma3**2)'
 
     a1 = fit.Parameter(g_a1, 'a1')
     A1 = fit.Parameter(g_A1, 'A1')
     x01 = fit.Parameter(g_x01, 'x01')
     gamma1 = fit.Parameter(g_gamma1, 'gamma1')
 
+    dx = fit.Parameter(g_dx,'dx')
+
     A2 = fit.Parameter(g_A2, 'A2')
-    x02 = fit.Parameter(g_x02, 'x02')
+    #x02 = fit.Parameter(g_x02, 'x02')
     gamma2 = fit.Parameter(g_gamma2, 'gamma2')
 
     A3 = fit.Parameter(g_A3, 'A3')
-    x03 = fit.Parameter(g_x03, 'x03')
+    #dx3 = fit.Parameter(g_dx3,'dx3')
+    #x03 = fit.Parameter(g_x03, 'x03')
     gamma3 = fit.Parameter(g_gamma3, 'gamma3')
 
-    p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
+    p0 = [a1, A1, x01, gamma1, dx, A2, gamma2, A3, gamma3]
+    #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
 
     def fitfunc(x):
         return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
-                2*A2()/np.pi*gamma2()/(4*(x-x02())**2+gamma2()**2) + 2*A3()/np.pi*gamma3()/(4*(x-x03())**2+gamma3()**2)
+                2*A2()/np.pi*gamma2()/(4*(x-x01()-dx())**2+gamma2()**2) + 2*A3()/np.pi*gamma3()/(4*(x-x01()+dx())**2+gamma3()**2)
 
     return p0, fitfunc, fitfunc_str
 

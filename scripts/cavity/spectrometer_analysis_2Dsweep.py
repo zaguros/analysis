@@ -18,7 +18,7 @@ V_min = -2
 V_max = 9
 n_xticks= 12 #how many ticks you want on the x-axis
 n_yticks = 11 #how many ticks you want on the y-axis
-peak_detect_TEM00 = False
+peak_detect_TEM00 = True
 order_peak_detection = 100
 
 # load the files in the dataframe, only pick out Intensity and Column. All files in folder. 
@@ -55,23 +55,24 @@ for i in dataframes:
 	mean_val.append(mean)
 
 if peak_detect_TEM00 == True:
-
+	
 	for data in mean_val:
-
 		I_avg_array = np.asarray(data['Intensity']) # argrelextrema only takes an array
 		indices = argrelextrema(I_avg_array, np.greater, order=order_peak_detection) # the number 100 is somewhat arbitrary, but seems to work. 
-
+				
 		peak_WL= [] #connect indices with the values for the wavelength, creating arrays
 		peak_I=[]
 		peak_freq=[]
 
-		for i in indices[0]:
-			peak_WL = np.append(peak_WL,data.loc[i,'Wavelength'])
+		for i in indices:
+			peak_WL = np.append(peak_WL,data.ix['Wavelength'])
 			peak_I = np.append(peak_I,data.loc[i,'Intensity'])
 			peak_f = 3.e8/(data.loc[i,'Wavelength']*1.e-9)
 			peak_freq = np.append(peak_freq,peak_f)
 
+		FSR = []
 		FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
+		
 		print 'The FSR is', FSR,'nm.'
 
 		FSR_freq=fabs(peak_freq[-2]-peak_freq[-1]) # calculating the free spectral range in frequency in Hz
