@@ -7,39 +7,40 @@ from matplotlib import pyplot as plt
 
 #Calculating the Finesse of the cavity with an assumption for the linewidth
 
-v1 = 620.e-9 # wavelength position one
-v2 = 640.e-9 #wavelength position two
-dv = 3*1.e9 # linewidth in Hz
-
+v1 = 610.e-9 # wavelength position one
+v2 = 660.e-9 #wavelength position two
+dv = 2.09*1.e9 # linewidth in Hz
+error_dv = 0.017*1.e9 #error linewidth in Hz
 #FSR in wavelength and frequency
 FSR = v2 - v1
 FSR_freq = (3.e8/v1) - (3.e8/v2)
 
 # Finesse calculation
 F = FSR_freq/dv
+F_error = FSR_freq/error_dv
 print 'The Finesse is', round(F,0)
 
 #Cavity length calculation
-L = 3.e8/(2*2.4*FSR_freq) # Calculating the length of the cavity in micrometer
-print 'The Cavity Length is', round(L*1.e6,2), 'um.'
+#L = 3.e8/(2*2.4*FSR_freq) # Calculating the length of the cavity in micrometer
+#print 'The Cavity Length is', round(L*1.e6,2), 'um.'
 
 #Quality factor calculation
 Q = (3.e8/v1)/dv
 print 'The Q is', round(Q,0)
 
 
-X = np.linspace(-2,10,13)
-print len(X)
-Y = [6.76,6.85,6.87,7.01,7.19,7.17,7.28,7.44,7.64,7.56,7.68,7.87,7.83]
-print len(Y)
-plt.plot(X,Y, 'ro')
-m, b = np.polyfit(X, Y, 1)
-plt.plot(X, m*X + b, '-')
-print m
-plt.xlabel("Voltage (V)", fontsize = 14)
-plt.ylabel("Cavity length (um)", fontsize = 14)
+# X = np.linspace(-2,10,13)
+# print len(X)
+# Y = [6.76,6.85,6.87,7.01,7.19,7.17,7.28,7.44,7.64,7.56,7.68,7.87,7.83]
+# print len(Y)
+# plt.plot(X,Y, 'ro')
+# m, b = np.polyfit(X, Y, 1)
+# plt.plot(X, m*X + b, '-')
+# print m
+# plt.xlabel("Voltage (V)", fontsize = 14)
+# plt.ylabel("Cavity length (um)", fontsize = 14)
 
-plt.show()
+# plt.show()
 # #Calculating the effective radius of curvature
 
 # df_trans=fabs(peak_freq_1[-1]-peak_freq_1[-2]) # value from data: 2 nm (not conclusive yet!)
