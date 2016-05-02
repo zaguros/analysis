@@ -178,6 +178,94 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	if return_data == True:
 		return x_labels, x, y, y_err
 
+def CompleteTomo(timestamp = None, 
+		state = 'Z', 
+		measurement_name = ['adwindata'],
+		folder_tag ='Tomo',
+		ssro_calib_timestamp =None, 
+		save = True,
+		older_than = None,
+		newer_than = None,
+		plot_fit = True):
+
+	### Initialize with empty lists
+	x_labels =[]
+	x = []
+	y = []
+	y_err = []
+
+	# find the folders you'd like to use, contains both negative and postive
+	folder_list = toolbox.latest_data(contains = folder_tag, 
+			older_than = older_than, 
+			newer_than = newer_than, 
+			return_all = True)[::-1]
+	print 'number of folders: '  + str(len(folder_list))
+
+	folder_pos_list = [s for s in folder_list if "positive" in s]
+	folder_neg_list = [s for s in folder_list if "negative" in s]
+
+
+	# TODO, improve by doing correct axis etc. and maybe max only
+	if len(folder_neg_list) == 0:
+		pass
+		# write so it is compatible with positive data only
+		# BarPlotTomo
+	else:
+		for p,n in zip(folder_pos_list,folder_neg_list):
+			
+			# gets time stamps so it doesn't conflict with older tomo version
+			tp = p.split('\\')[3] + '_' + p.split('\\')[4][:6]
+			tn = n.split('\\')[3] + '_' + n.split('\\')[4][:6]
+
+			# try:
+			# 	a = ('mX'|'mY'|'mZ') in p.split('\\')[4]
+			# 	print a
+			# except:
+			# 	pass
+			# get tomo data from timestamp
+			x_labels_t, x_t, y_t, y_err_t  = BarPlotTomoContrast(
+				timestamps = [tp,tn],
+				ssro_calib_timestamp =None, 
+				save = False,
+				plot_fit = False, 
+				return_data = True)
+
+			x_labels.extend(list(x_labels_t))
+			# x.extend(list(x_t))
+			print 10*'*'
+			print x_labels_t
+			print y_t
+			print 10*'*'
+
+			y.extend(list(y_t))
+			y_err.extend(list(y_err_t))
+
+	x = range(len(y))
+
+	if plot_fit ==True: 
+		fig,ax = plt.subplots(figsize=(35,5)) 
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		ax.set_xticks(x)
+		ax.set_xticklabels(x_labels)
+		ax.set_ylim(-1.1,1.1)
+		ax.set_title(str(folder_pos_list[0])+'/'+str(folder_neg_list[0]))
+		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+
+			# print values on bar plot
+		def autolabel(rects):
+		    for ii,rect in enumerate(rects):
+		        height = rect.get_height()
+		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+		            ha='center', va='bottom')
+		autolabel(rects)
+
+	if save:# and ax != None:
+		try:
+		    fig.savefig(
+		        os.path.join(folder_pos_list[0],'tomo.png'))
+		except:
+		    print 'Figure has not been saved.'
+
 def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp =None, save = True,
 		plot_fit = True):

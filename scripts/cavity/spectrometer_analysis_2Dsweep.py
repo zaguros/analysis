@@ -15,10 +15,10 @@ indir="C:\Users\suzannevandam\Documents\localdata\spectrometer_data/20160330/CSV
 outdir="H:\My Documents\Cavities\SpectrumData"
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
-V_min = -2
-V_max = 10
-n_xticks= 3 #how many ticks you want on the x-axis
-n_yticks = 3 #how many ticks you want on the y-axis
+V_min = 8
+V_max = 2
+n_xticks= 7 #how many ticks you want on the x-axis
+n_yticks = 11 #how many ticks you want on the y-axis
 peak_detect_TEM00 = False
 order_peak_detection = 100
 
@@ -67,31 +67,32 @@ for i in dataframes:
 min_I = np.amin(min_I_all)
 
 # Group the Intensity data by column and compute the mean
-mean_val=[]
+mean_val1=[]
 for i in dataframes:
-    merged=i.groupby('Wavelength')
-    mean=merged.agg([np.mean])
-    mean_val.append(mean)
+	merged=i.groupby('Wavelength')
+	mean=merged.agg([np.mean])
+	mean_val1.append(mean)
 
 if peak_detect_TEM00 == True:
-
+	
     for data in mean_val:
-
         I_avg_array = np.asarray(data['Intensity']) # argrelextrema only takes an array
         indices = argrelextrema(I_avg_array, np.greater, order=order_peak_detection) # the number 100 is somewhat arbitrary, but seems to work. 
-
+				
         peak_WL= [] #connect indices with the values for the wavelength, creating arrays
         peak_I=[]
         peak_freq=[]
 
-        for i in indices[0]:
-            peak_WL = np.append(peak_WL,data.loc[i,'Wavelength'])
-            peak_I = np.append(peak_I,data.loc[i,'Intensity'])
-            peak_f = 3.e8/(data.loc[i,'Wavelength']*1.e-9)
-            peak_freq = np.append(peak_freq,peak_f)
+		for i in indices:
+			peak_WL = np.append(peak_WL,data.ix['Wavelength'])
+			peak_I = np.append(peak_I,data.loc[i,'Intensity'])
+			peak_f = 3.e8/(data.loc[i,'Wavelength']*1.e-9)
+			peak_freq = np.append(peak_freq,peak_f)
 
-        FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
-        print 'The FSR is', FSR,'nm.'
+		FSR = []
+		FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
+		
+		print 'The FSR is', FSR,'nm.'
 
         FSR_freq=fabs(peak_freq[-2]-peak_freq[-1]) # calculating the free spectral range in frequency in Hz
         print 'The FSR is', round(FSR_freq*1.e-12,2), 'THz.'
@@ -106,13 +107,15 @@ else:
 
 
 # Concatenate in one dataframe
-mean_val=pd.concat(mean_val,axis=1)
+mean_val=pd.concat(mean_val1,axis=1)
 
 
 # Plot using seaborn function and set all the axes
-ax=sns.heatmap(mean_val,vmax =4000 , cmap=plt.cm.coolwarm)#'YlGnBu')
+ax=sns.heatmap(mean_val, vmin = 0, vmax= 5000, cmap='YlGnBu')
 
-ax.set_title("Intensity (a.u.)", fontsize = 20)
+
+ax.set_xlabel("Voltage (V)", fontsize = 14)
+ax.set_ylabel("Wavelength (nm)", fontsize = 14)
 
 ax.set_xlabel("Voltage (V)", fontsize = 20)
 ax.set_ylabel("Wavelength (nm)", fontsize = 20)
