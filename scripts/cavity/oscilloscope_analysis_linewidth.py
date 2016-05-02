@@ -50,23 +50,20 @@ EOM_freq = 6  #GHz
 
 
 # Parameters for FSR 50 nm
-g_a1 = 0.02
-g_A1 = 0.04
-g_x01 = 0
-g_gamma1 = 0.1
-g_A2 = 0.02
-g_x02 = 0.7
-g_gamma2 = 0.2
-g_A3 = 0.02
-g_x03 = 0.4
+g_a1 = 0.5
+g_A1 = 0.02
+g_x01 = 0.0
+g_gamma1 = 0.05
+g_dx = 0.35
+g_A2 = 0.04
+g_gamma2 = 0.1
+g_A3 = 0.04
 g_gamma3 = 0.1
-g_dx = 0.3
-
  
 # Open file and create dataframes in pandas
 
-indir="D:/DATA/20160419 Linewidth" #folder where the data is
-data = pd.read_csv(os.path.join(indir,"FRI020_FSR_50nm_RFON_20DB.csv"), skiprows=16, names = ["X","Y","Z"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
+indir="D:\DATA/20160426\EOM_lw_LT" #folder where the data is
+data = pd.read_csv(os.path.join(indir,"NNNNNNNLOWT010.csv"), skiprows=16, names = ["X","Z","Y","none"],usecols=[0,2]) #creating a dataframe in pandas and importing the data
 
 #Could be used for x/y ticks and labels
 max_X = data['X'].max()
@@ -104,18 +101,18 @@ if EOM_ON == True:
 	ax.set_xlim(x[0],x[-1])
 	xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
 	#rescaling for x-axis in GHz
-	X_min_freq = ax.get_xlim()[0]*scaling
-	X_max_freq = ax.get_xlim()[-1]*scaling
+	#X_min_freq = ax.get_xlim()[0]*scaling
+	#X_max_freq = ax.get_xlim()[-1]*scaling
 
-	xticklabels = np.linspace(X_min_freq,X_max_freq,n_xticks)
+	#xticklabels = np.linspace(X_min_freq,X_max_freq,n_xticks)
 
-	xticklabels_round=[]
-	for j in xticklabels:
-		round_ = round(j,0)
-		xticklabels_round = np.append(xticklabels_round,round_)
+	# xticklabels_round=[]
+	# for j in xticklabels:
+	# 	round_ = round(j,0)
+	# 	xticklabels_round = np.append(xticklabels_round,round_)
 
-	ax.set_xticks(xticks)
-	ax.set_xticklabels(xticklabels_round)
+	# ax.set_xticks(xticks)
+	# ax.set_xticklabels(xticklabels_round)
 
 else:
 

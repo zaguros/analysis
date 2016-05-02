@@ -10,15 +10,15 @@ import matplotlib.image as mpimg
 from scipy.signal import argrelextrema
 
 
-indir="D:\DATA\Sweep_bare_cavity 13 steps" 
+indir="D:\DATA/20160430\calibration_finepiezos" 
 outdir="C:\Users\lcoenen\Dropbox\Afstuderen Diamond\Plaatjes/"
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
-V_min = -2
-V_max = 9
-n_xticks= 12 #how many ticks you want on the x-axis
+V_min = 8
+V_max = 2
+n_xticks= 7 #how many ticks you want on the x-axis
 n_yticks = 11 #how many ticks you want on the y-axis
-peak_detect_TEM00 = True
+peak_detect_TEM00 = False
 order_peak_detection = 100
 
 # load the files in the dataframe, only pick out Intensity and Column. All files in folder. 
@@ -48,11 +48,11 @@ for i in dataframes:
 min_I = np.amin(min_I_all)
 
 # Group the Intensity data by column and compute the mean
-mean_val=[]
+mean_val1=[]
 for i in dataframes:
 	merged=i.groupby('Wavelength')
 	mean=merged.agg([np.mean])
-	mean_val.append(mean)
+	mean_val1.append(mean)
 
 if peak_detect_TEM00 == True:
 	
@@ -88,10 +88,11 @@ else:
 
 
 # Concatenate in one dataframe
-mean_val=pd.concat(mean_val,axis=1)
+mean_val=pd.concat(mean_val1,axis=1)
 
 # Plot using seaborn function and set all the axes
-ax=sns.heatmap(mean_val, vmin = 0, vmax= 65000, cmap='YlGnBu')
+ax=sns.heatmap(mean_val, vmin = 0, vmax= 5000, cmap='YlGnBu')
+
 
 ax.set_xlabel("Voltage (V)", fontsize = 14)
 ax.set_ylabel("Wavelength (nm)", fontsize = 14)
