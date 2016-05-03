@@ -136,6 +136,10 @@ class MBIAnalysis(m2.M2Analysis):
         self.sweep_pts = self.g.attrs['sweep_pts']
 
     def get_sequence_length(self):
+        """
+        this should really be in the Qmemory analysis 
+        NK
+        """
         self.repump_wait = self.g.attrs['repump_wait'][1]
         self.fast_repump_duration = self.g.attrs['fast_repump_duration'][1]
 
