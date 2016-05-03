@@ -10,12 +10,12 @@ import matplotlib.image as mpimg
 from scipy.signal import argrelextrema
 
 
-indir="D:\DATA\Sweep_bare_cavity 13 steps" 
+indir="D:\measuring\data/20160430\ON_diamond" 
 outdir="C:\Users\lcoenen\Dropbox\Afstuderen Diamond\Plaatjes/"
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = -2
-V_max = 9
+V_max = 10
 n_xticks= 12 #how many ticks you want on the x-axis
 n_yticks = 11 #how many ticks you want on the y-axis
 peak_detect_TEM00 = True
