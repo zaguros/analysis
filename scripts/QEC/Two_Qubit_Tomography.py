@@ -186,6 +186,7 @@ def CompleteTomo(timestamp = None,
 		save = True,
 		older_than = None,
 		newer_than = None,
+		num_to_get = None,
 		plot_fit = True):
 
 	### Initialize with empty lists
@@ -203,6 +204,12 @@ def CompleteTomo(timestamp = None,
 
 	folder_pos_list = [s for s in folder_list if "positive" in s]
 	folder_neg_list = [s for s in folder_list if "negative" in s]
+
+	if num_to_get != None:
+		print "Woop"
+		folder_pos_list = folder_pos_list[0:num_to_get]
+		folder_neg_list = folder_neg_list[0:num_to_get]
+		
 
 
 	# TODO, improve by doing correct axis etc. and maybe max only
