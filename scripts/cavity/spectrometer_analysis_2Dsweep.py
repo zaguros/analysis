@@ -10,20 +10,20 @@ import matplotlib.image as mpimg
 from scipy.signal import argrelextrema
 
 
-indir="D:\measuring\data/20160430\ON_diamond" 
-outdir="C:\Users\lcoenen\Dropbox\Afstuderen Diamond\Plaatjes/"
+indir="D:\measuring\data/20160504\ON diamond\pos11/raw data spectrometer\L4" 
+outdir="D:\measuring\data/20160504\ON diamond\pos11/raw data spectrometer\L4"
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = -2
-V_max = 10
+V_max = 8
 n_xticks= 12 #how many ticks you want on the x-axis
 n_yticks = 11 #how many ticks you want on the y-axis
-peak_detect_TEM00 = True
+peak_detect_TEM00 = False
 order_peak_detection = 100
+
 
 # load the files in the dataframe, only pick out Intensity and Column. All files in folder. 
 dataframes = [pd.read_csv(filename, usecols = [2,5]) for filename in glob.glob(indir + "/*.csv")]
-
 #load the file in the dataframe with a certain name in a certain folder
 #number of files
 #dataframes = [pd.read_csv(os.path.join(indir,"160311_FP_%s_Par1.csv") % i, usecols=[2,5]) for i in xrange(0,11)]
@@ -32,6 +32,8 @@ dataframes = [pd.read_csv(filename, usecols = [2,5]) for filename in glob.glob(i
 
 max_WL = dataframes[0]['Wavelength'].max()
 min_WL = dataframes[0]['Wavelength'].min()
+
+print max_WL, min_WL
 
 max_I_all=[]
 for i in dataframes:
@@ -91,7 +93,7 @@ else:
 mean_val=pd.concat(mean_val,axis=1)
 
 # Plot using seaborn function and set all the axes
-ax=sns.heatmap(mean_val, vmin = 0, vmax= 65000, cmap='YlGnBu')
+ax=sns.heatmap(mean_val, vmin = 0, vmax=500,cmap='YlGnBu')
 
 ax.set_xlabel("Voltage (V)", fontsize = 14)
 ax.set_ylabel("Wavelength (nm)", fontsize = 14)
@@ -120,7 +122,10 @@ ax.set_yticks(yticks)
 ax.set_yticklabels(ytickslabels_round)
 
 plt.show()
-plt.savefig('2Dplot_bare_cavity.pdf', format='pdf', dpi=1000)
+try:
+	plt.savefig(os.path.join(outdir,'/2Dplot_diamond_L5.pdf'), format='pdf', dpi=1000)
+except:
+	print 'could not save data'
 #mpimg.imsave("out.png", fig)
 #plt.savefig(os.path.join(outdir, "2Dplot.eps"), format="png")
 
