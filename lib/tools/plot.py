@@ -18,6 +18,9 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
     info_xy = kw.pop('info_xy', 'auto')
     plot_data = kw.pop('plot_data', True)
     linestyle = kw.pop('linestyle', '-')
+    data_linestyle = kw.pop('data_linestyle','o')
+    data_color = kw.pop('data_color','b')
+    data_lw  = kw.pop('data_lw',1)
     color = kw.pop('color','r')
     label = kw.pop('label',None)
 
@@ -31,12 +34,12 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
 
     if plot_data:
         if 'yerr' in res.keys():
-            ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'],color='b')
+            ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'])
         else:
-            ax.plot(res['x'], res['y'], 'o')
+            ax.plot(res['x'], res['y'], data_linestyle, color = data_color, lw= data_lw)
     if fit_xvals == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle,color = color, lw=lw, label=None )
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle,color = color, lw=lw, label=label ) 
     
     if print_info and res['success']:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)

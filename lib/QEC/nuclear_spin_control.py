@@ -3098,61 +3098,6 @@ def QZ3():
     J = Q - P
     print_matrix(J) 
 
-def test_projectors():
-
-    rho00 = qutip.tensor(rho0,rho0)
-    rho10 = qutip.tensor(rho1,rho0)
-    rho01 = qutip.tensor(rho0,rho1)
-    rho11 = qutip.tensor(rho1,rho1)
-
-    rhoxx = qutip.tensor(rhox,rhox)
-    rho10 = qutip.tensor(rho1,rho0)
-    rho01 = qutip.tensor(rho0,rho1)
-    rhomxmx = qutip.tensor(rhomx,rhomx)
-
-    II = qutip.tensor(Id,Id)
-    IX = qutip.tensor(Id,2*sx)
-
-    ZZ = qutip.tensor(2*sz,2*sz)
-    XX = qutip.tensor(2*sx,2*sx)
-
-    # print 'projector0'
-    # P0  = ket0*bra0
-    # P0b = Id/2 + sz
-    # print_matrix(P0)
-    # print_matrix(P0b)
-
-    # print 'projector1'
-    # P1 = ket1*bra1
-    # # P1 = Id - P0
-    # print_matrix(P1)
-
-    # print 'projectorZZ'
-    # PZZ = rho00 + rho11
-    # PZZ = (II + ZZ)/2
-    # print_matrix(PZZ)
-
-    # print 'projectorZZm'
-    # PZZm = rho01 + rho10
-    # PZZm = II - PZZ
-    # print_matrix(PZZm)
-
-    print 'projectorIX'
-    PIX = qutip.tensor(rhox,Id)
-    # PIX = (II+XI)/2
-    print_matrix(PIX)
-
-    # print 'projectorXX'
-    # PXX = rhoxx + rhomxmx
-    # PXX = (II+XX)/2
-    # print_matrix(PXX)
-
-    print 'hamiltonian'
-    H = qutip.tensor(2*sz,Id) + qutip.tensor(Id,2*sz)
-    print_matrix(H)
-    # print_matrix(PXX)
-    H_zeno = PIX*H*PIX.dag()
-    print_matrix(H_zeno)
 
 
 

@@ -19,55 +19,63 @@ import operator
 
 from analysis.lib.m2 import m2
 
-reload(toolbox)
-reload(common)
-
-'''
-The next three functions are the basis function to analyse the data. They gather the data that you want to collect, assign x and y 
-(Volt/Frequency and photodiode signal)
-and return the x and y values of the indicated scans.
-'''
-
-def load_data (folder, timestamp, scan_type, return_folder = False):
-    '''This function selects the folder with the defined timestamp in the folder of the indicated day. 
-    Thereafter it picks the hdf5 file from this folder (the file that contains the data) and selects the x and y data 
-    (which is different for laser scans and piezo scans).'''
-    all_folders = [f for f in os.listdir(folder) if timestamp in f and scan_type in f]
-    test = all_folders[0]
-    if len(all_folders) == 0:
-        x = []
-        y = []
-        f = None
-    
-    else:
-        curr_fold = os.path.join(folder, all_folders[0])
-        all_files =[f for f in os.listdir(curr_fold) if os.path.isfile(os.path.join(curr_fold,f)) ]
-        file_name = [f for f in all_files if '.hdf5' in f]
-
-        if (scan_type =='piezo'):
-            grp_name = '/piezo_scan'
-            x_name = 'piezo_voltage'
-        elif (scan_type == 'lr_scan'):
-            grp_name = '/lr_scan'
-            x_name = 'frequency_GHz'
-        elif (scan_type =='fine_laser'):
-            grp_name = '/fine_laser_scan_processed_data_'
-            x_name = 'laser_tuning_voltage'
-        
-        f = h5py.File(os.path.join(curr_fold, file_name[0]),'r')
-        try:
-            ls_grp = f[grp_name]
-        except:
-            ls_grp = f[grp_name+'_single']
-        x = ls_grp[x_name].value
-        y = ls_grp['PD_signal'].value
-    if return_folder:
-        return curr_fold, x, y, test
-    else:
-        return x, y, test
+class cavity_analysis(m2.M2Analysis):
 
 
+    def get_x_pts(self):
+        self.nr_x_pts = self.f.attrs['nr_steps']
+        self.x_pts = np.linspace(self.f.attrs['start_voltage'],self.f.attrs['end_voltage'],self.f.attrs['nr_steps'])
 
+    def get_sweep_pts(self):
+        self.sweep_name = self.f.attrs['sweep_name']
+        self.sweep_pts = self.f.attrs['sweep_pts']
+        self.nr_syncs_per_pt = self.f.attrs['nr_syncs_per_pt']
+        print self.sweep_name, self.sweep_pts
+
+    def get_sweep_data (self):
+        """
+        function that loads the data from a sweep measurement
+        """
+        self.nr_scans = self.f.attrs['nr_scans']
+        self.nr_remainder = self.f.attrs['nr_remainder']
+        self.nr_repetitions = self.f.attrs['nr_repetitions']
+
+        self.sweep_data=np.zeros([len(self.sweep_pts),self.nr_repetitions,self.nr_x_pts])
+
+        for i in np.arange(self.nr_syncs_per_pt):
+            if (i == self.nr_syncs_per_pt-1): #the last one
+                if self.nr_remainder>0:
+                    self.nr_scans = self.nr_remainder
+            for j in np.arange(len(self.sweep_pts)):
+                first_rep = str(int(i*self.nr_scans+1))
+                last_rep = str(int(i*self.nr_scans+self.nr_scans))
+                data_index_name = 'sweep_pt_'+str(j)+'_reps_'+first_rep+'-'+last_rep  
+                grp = self.f['raw_data_'+data_index_name]
+                for k in np.arange(self.nr_scans):
+                    self.single_scan_data = grp['scannr_'+str(k+1)].value
+                    #fill the sweep_data array for j = sweep pt, i*self.nr_scans+k = repetition nr
+                    self.sweep_data[j,int(i*self.nr_scans+k)] = self.single_scan_data
+
+
+        self.avg_sweep_data = np.average(self.sweep_data,axis=1)
+
+        return self.sweep_data
+
+    def get_data (self):
+        """
+        function that loads the data from a single measurement
+        """
+        self.nr_scans = self.f.attrs['nr_scans']
+
+        self.data=np.zeros([self.nr_scans,self.nr_x_pts])
+        grp = self.f['raw_data_']
+
+        for j in np.arange(self.nr_scans):
+            self.single_scan_data = grp['scannr_'+str(j+1)].value
+            #fill the sweep_data array for j = sweep pt, i*self.nr_scans+k = repetition nr
+            self.data[j] = self.single_scan_data
+
+        return self.data
 
 ##################################################################################################################################
 ##################################################################################################################################
@@ -529,7 +537,10 @@ def get_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_
 ##################################################################################################################################
 ##################################################################################################################################
 
-def fit_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_min, f_max, newpath, set_range_f = False, save_data = False):  
+def fit_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_min, f_max, newpath, set_range_f = False, save_data = False):
+
+    print '### YOU\'RE FITTING LASER SCANS ### \n'
+    
     LW = []
     Quality = []
     t = []
@@ -637,13 +648,10 @@ def fit_laser_linewidth(date, timestamp, folder, measurement_type, threshold, f_
         
 
 
-def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = False, save_data = True, threshold=0.1,show_plots=True):
+def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = False, save_data = False, threshold=0.1):
     'This function plots all fine laser scans within the given timestamp range'
-    N_points = 180 #the number of points around the resonant centre cavity length that are averaged for all scans 
-
     T = []
     LW = []
-    Ts = np.zeros(2*N_points)
 
     for i in range(len(timestamp)):
         time = timestamp[i]
@@ -701,16 +709,6 @@ def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = F
         u_Linewidth = u_gamma
         LW.append(Linewidth)
 
-        dLs, V_zoom, y_zoom, zoom_success = zoom_around_peak(f, y, x0, N_points, conversion_factor = 1)
-
-        if zoom_success: #if the ranging was not succesful, y_plot does not have the right dimension to fit on Ts, and should not be taken into account
-            final_dLs = dLs
-            Ts = Ts + y_zoom
-        
-        if (show_plots and zoom_success):
-            plot_current_and_average_transmission(dLs,Ts,T,y_zoom, xlabel = 'detuning in frequency (GHz)')
-
-
         ''' Plot figure '''
         fig,ax = plt.subplots(figsize=(6,4.7))
         ax.plot(f,y, 'bo', label = 'data')
@@ -735,45 +733,172 @@ def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = F
     if len(T) ==0:
         print "No fine laser data with these timestamps"
 
-    average_LW, variance_LW, st_dev_LW = calculate_stats(LW)
-
+    average_LW = sum(LW)/len(LW)
+    variance_LW = sum([(x-average_LW)**2 for x in LW])/len(LW)
+    st_dev_LW = np.sqrt(variance_LW)
     print 'Average LW_piezo is ', round(average_LW,1), ' GHz with a standard deviation of ', round(st_dev_LW,1), ' GHz'
 
-    ##############################################
-    #####fit the averaged data -> if the linewidth is worse, the averaging is not done well.
-    ##############################################
 
-    offset = 0.05
-    amplitude = 2*max_value
-    x0 = 0
-    gamma = 0.3
 
-    fixed = []
-    p0, fitfunc, fitfunc_str = common.fit_lorentz(offset, amplitude, x0, gamma)
-    fit_result = fit.fit1d(final_dLs,Ts/len(T), None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
 
-    A = fit_result['params_dict']['A']
-    a = offset
-    x0 = fit_result['params_dict']['x0']
-    gamma = fit_result['params_dict']['gamma']
-    u_gamma = fit_result['error_dict']['gamma']
 
-    fig,ax = plt.subplots(figsize=(8,4))
-    plot.plot_fit1d(fit_result, np.linspace(final_dLs[0],final_dLs[-1],10*len(final_dLs)), ax=ax,color='navy',show_guess=True, plot_data=True, data_color = 'darkorange',data_linestyle ='-',data_lw  =3,lw = 1.5,label = 'fit', add_txt=False)
-    ax.legend()
-    ax.set_xlabel('detuning in frequency (GHz)',fontsize=14)
-    ax.set_ylabel('Transmission (a.u.)',fontsize=14)
-    ax.tick_params(axis = 'both', which = 'major',labelsize = 14)
-    ax.set_xlim(final_dLs[0],final_dLs[-1])
-    ax.set_title(data_folder + ' \n Cavity linewidth in frequency is %s $\pm$ %s GHz' %(round(gamma,3), round(u_gamma,3)))
-    fig.savefig(data_folder +'/'+ "average_transmission " + ".png")
-    fig.savefig(data_folder +'/'+ "average_transmission " + ".eps")
-    fig.savefig(data_folder +'/'+ "average_transmission " + ".pdf")
-    plt.tight_layout()
 
-    plt.show()
-    plt.close()
 
+def fit_fine_laser_plots2(date, timestamp, folder, measurement_type, f_min, f_max, set_range_f = False, save_data = False, threshold = 0.1):
+    'This function plots all fine laser scans within the given timestamp range'
+    T = []
+    LW1 = []
+    LW2 = []
+
+    for i in range(len(timestamp)):
+        print i
+        time = timestamp[i]
+        data_folder, f,y, name = load_fine_lr_scan(folder = folder, timestamp = time, return_folder = True)
+
+        if len(f) == 0:
+            continue
+
+        T.append(1)
+        f = f*30./3.
+        
+        ''' Assigns f_min and f_max '''
+        if set_range_f == True:
+            ind_min = np.where(f < f_min)
+            ind_max = np.where(f > f_max)
+            f = np.delete(f, ind_max[0])
+            f = np.delete(f, ind_min[0])
+            y = np.delete(y, ind_max[0])
+            y = np.delete(y, ind_min[0])
+        else:
+            f_max = max(f)
+            f_min = min(f)
+        print threshold
+        max_index, max_value = max(enumerate(y), key = operator.itemgetter(1))
+        if max_value < threshold:
+            print "removing plot, max value < threshold"
+            continue
+
+        offset = 0.00
+        amplitude1 = max_value
+        x01 = f[max_index]
+        sigma1 = 5
+
+        amplitude2 = max_value 
+        x02 = f[max_index]+10
+        sigma2 = 2
+
+        """ Fit a Gaussian """
+        fixed = [0]
+        p0, fitfunc, fitfunc_str = common.fit_2gauss(offset, amplitude1, x01, sigma1, amplitude2, x02, sigma2)
+        fit_result = fit.fit1d(f,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+
+
+        A1 = fit_result['params_dict']['A1']
+        a = offset
+        x01 = fit_result['params_dict']['x01']
+        sigma1 = fit_result['params_dict']['sigma1']
+        A2 = fit_result['params_dict']['A2']
+        x02 = fit_result['params_dict']['x02']
+        sigma2 = fit_result['params_dict']['sigma2']
+
+        # f2 = np.linspace(min(f),max(f),1001)
+        function1 = a + A1*np.exp(-(f-x01)**2/(2*sigma1**2))
+        function2 = a + A2*np.exp(-(f-x02)**2/(2*sigma2**2))
+
+        if A1 > 5  *max_value:
+            continue
+
+        Half_Max1 = np.where(function1 > A1/2)
+        Half_Max_l1 = Half_Max1[0][0]
+        Half_Max_r1 = Half_Max1[0][-1]
+        # print Half_Max,
+        # print Half_Max_l, Half_Max_r
+        Linewidth1 = abs(f[Half_Max_r1]-f[Half_Max_l1])
+        LW1.append(Linewidth1)
+
+        Half_Max2 = np.where(function2 > A2/2)
+        Half_Max_l2 = Half_Max2[0][0]
+        Half_Max_r2 = Half_Max2[0][-1]
+        # print Half_Max,
+        # print Half_Max_l, Half_Max_r
+        Linewidth2 = abs(f[Half_Max_r2]-f[Half_Max_l2])
+        LW2.append(Linewidth2)
+        
+        ''' Plot figure '''
+        fig,ax = plt.subplots(figsize=(6,4.7))
+        ax.plot(f,y, 'bo', label = 'data')
+        plot.plot_fit1d(fit_result, np.linspace(f[0],f[-1],len(f)), ax=ax,label='Fit',show_guess=True, plot_data=False)
+        ax.plot(f,function1, 'g', label='testplot')
+        ax.plot(f,function2,'b')
+        #ax.legend()
+        plt.plot(f[Half_Max_r1], A1/2+offset, 'go')
+        plt.plot(f[Half_Max_l1], A1/2+offset, 'go')
+        plt.plot(f[Half_Max_r2], A2/2+offset, 'ro')
+        plt.plot(f[Half_Max_l2], A2/2+offset, 'ro')
+        plt.xlabel('frequency [GHz]')
+        plt.ylabel('Transmission')
+        plt.xlim(f_min,f_max)
+        plt.title(date + ' - ' + time + '\n' + measurement_type + '\n' + 'Linewidth is ' + str(round(Linewidth1,2)) + 'GHz') #'GHz and \n Linewidth2 is ' + str(round(Linewidth2,2)) + 'GHz')
+
+        # if save_data == True:
+        #   fig.savefig(newpath +'/' + "laserfit " + time + ".png")
+
+    if len(T) ==0:
+        print "No fine laser data with these timestamps"
+
+
+
+
+#! Not tested yet
+def bla_fine_laser_plots(date, timestamp, folder, measurement_type, f_min, f_max, set_range_f, save_data):
+    'This function plots all fine laser scans within the given timestamp range'
+    T = []
+    LW = []
+
+    for i in range(len(timestamp)):
+        time = timestamp[i]
+        f,y, name = load_fine_lr_scan(folder = folder, timestamp = time)
+
+        if len(f) == 0:
+            continue
+
+        T.append(1)
+        f = f*35./3.
+        
+        ''' Assigns f_min and f_max '''
+        if set_range_f == True:
+            ind_min = np.where(f < f_min)
+            ind_max = np.where(f > f_max)
+            f = np.delete(f, ind_max[0])
+            f = np.delete(f, ind_min[0])
+            y = np.delete(y, ind_max[0])
+            y = np.delete(y, ind_min[0])
+        else:
+            f_max = max(f)
+            f_min = min(f)
+
+        threshold = 0.02
+        peak = np.where(y >= threshold)
+
+        # print peak[0]
+        # print range(peak[0])
+
+        X2 = [f[index] for index in range(peak[0])]
+        X3 = np.delete(f,X2)
+        Y3 = np.delete(y,X2)
+
+
+        fig,ax = plt.subplots(figsize=(6,4.7))
+        ax.plot(X3,Y3)
+        plt.xlabel('Relative frequency [GHz]')
+        plt.ylabel('Transmission')
+        ax.set_xlim(f_min,f_max)
+        # plt.title(date + ' - ' + time + '\n' + measurement_type + '\n Fine laser plot without fit')
+        plt.title(name)
+        plt.show()
+        
+    if len(T) == 0:
+        print "No fine laser data with these timestamps"
 
 
 def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, save_data = False, threshold = 0.1,show_plots=True):
@@ -878,9 +1003,9 @@ def fit_piezo_plots(date, timestamp, folder, V_min, V_max, set_range_V = False, 
     if len(T) ==0:
         print "No piezo data with these timestamps"
 
-
-    average_LW, variance_LW, st_dev_LW = calculate_stats(LW)
-
+    average_LW = sum(LW)/len(LW)
+    variance_LW = sum([(x-average_LW)**2 for x in LW])/len(LW)
+    st_dev_LW = np.sqrt(variance_LW)
     print  10*'*' + 'Average linewidth is ', round(average_LW*conversion_factor,3), '+-', round(st_dev_LW*conversion_factor,3), ' nm '+ 10*'*'
 
 
@@ -1216,13 +1341,12 @@ def zoom_around_peak(V, y, x0, N_points, conversion_factor = 182):
         dLs = np.linspace(-dL/2,dL/2,N_points*2)
     return dLs, V_zoom, y_zoom, success
 
-def plot_current_and_average_transmission(dLs,Ts,T,y_zoom, **kw):
-    xlabel = kw.pop('xlabel', 'detuning in length (nm)')
+def plot_current_and_average_transmission(dLs,Ts,T,y_zoom):
     fig,ax = plt.subplots(figsize=(6,4))
     ax.plot(dLs,Ts/len(T), '-',color = 'dimgray', linewidth = 2, label = 'average')
     ax.plot(dLs,y_zoom,'-',color = 'navy', linewidth = 2)
     ax.legend()
-    ax.set_xlabel(xlabel,fontsize=14)
+    ax.set_xlabel('detuning in length (nm)',fontsize=14)
     ax.set_xlim(dLs[0],dLs[-1])
     ax.set_ylabel('Transmission (a.u.)',fontsize=14)
     plt.show()

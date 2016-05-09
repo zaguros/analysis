@@ -70,6 +70,10 @@ def dyn_dec_signal(HFs_par, HFs_orth, B_field, N ,tau):
     omega_larmor = 2*np.pi*gamma_c*B_field #radial frequency
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
     print 'omega_larmor = ' + str(omega_larmor)
+    print 'in SC B_field = ' + str(B_field)
+    print 'in SC HF_par = ' + str(HFs_par)
+    print 'in SC HF_perp = ' + str(HFs_orth)
+
     # print HFs_par*2*np.pi
     # print HFs_orth[0]*2*np.pi
 

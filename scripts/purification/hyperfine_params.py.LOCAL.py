@@ -18,13 +18,8 @@ hyperfine_params_pippin_SIL1_msm1['C6']  = {'par' : -6.3e3,  'perp':27.5e3}
 hyperfine_params_pippin_SIL1_msm1['C7']  = {'par' : 27.5e3,  'perp':27e3}
 hyperfine_params_pippin_SIL1_msm1['C8']  = {'par' : -36.5e3, 'perp':44e3}
 
-#########################################################
-######### Pippin SIL 3  #################################
-#########################################################
 
-#### fitted to ms = -1 data
-hyperfine_params_pippin_SIL3_msm1 = {}
-hyperfine_params_pippin_SIL3_msm1['C1']  = {'par' : -335e3 , 'perp':312.5e3}
+
 
 
 
