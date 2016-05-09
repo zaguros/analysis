@@ -11,8 +11,7 @@ import matplotlib.image as mpimg
 from scipy.signal import argrelextrema
 
 
-indir="C:\Users\suzannevandam\Documents\localdata\spectrometer_data/20160330/CSV_2Dplot_diamond_sweep_l" 
-outdir="H:\My Documents\Cavities\SpectrumData"
+data_dir="\Users\suzannevandam\Documents\localdata/20160430/ON_Diamond" 
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = 8
@@ -25,7 +24,8 @@ order_peak_detection = 100
 
 # load the files in the dataframe, only pick out Intensity and Column. All files in folder. 
 
-files = (os.path.join(indir, fn) for fn in os.listdir(indir))
+files = (os.path.join(data_dir, fn) for fn in os.listdir(data_dir))
+print files
 files = ((os.stat(path), path) for path in files)
 files = ((stat[ST_MTIME], path)
            for stat, path in files if S_ISREG(stat[ST_MODE]))
@@ -34,7 +34,7 @@ files = ((stat[ST_MTIME], path)
 #     print time.ctime(cdate), os.path.basename(path)
 
 dataframes = [pd.read_csv(path, usecols = [2,5]) for cdate,path in sorted(files)]
-
+print dataframes
 # dataframes=np.array([])
 # print dataframes
 # for cdate, path in sorted(files):
@@ -140,8 +140,8 @@ ax.set_yticklabels(ytickslabels_round, fontsize=20)
 
 # plt.show()
 try:
-    plt.savefig(os.path.join(outdir,'2Dplot_diamond_cavity.jpg'))
-    plt.savefig(os.path.join(outdir,'2Dplot_diamond_cavity.eps'))
+    plt.savefig(os.path.join(data_dir,'2Dplot_diamond_cavity.jpg'))
+    plt.savefig(os.path.join(data_dir,'2Dplot_diamond_cavity.eps'))
 except:
     print('could not save figure')
 #mpimg.imsave("out.png", fig)
