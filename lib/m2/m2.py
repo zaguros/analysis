@@ -45,7 +45,7 @@ class M2Analysis:
             else:
                 logging.error("More than one measurement. Please give a name")
                 return False
-
+        print self.g[adwingrpname]
         return self.g[adwingrpname]
 
     def analysis_h5data(self, name='analysis'):

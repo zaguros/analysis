@@ -76,6 +76,7 @@ def get_raw_data(carbon,**kw):
 			y_u_arr = np.append(y_u_arr,val_u)
 
 
+
 	return gates,x_arr,y_arr,x_u_arr,y_u_arr,folder_pos
 
 def get_gate_fidelity(carbon,**kw):
@@ -103,14 +104,16 @@ def get_gate_fidelity(carbon,**kw):
 	ax.set_xticks(np.arange(len(gates)))
 	ax.set_xticks(np.array(range(len(gates))))
 	ax.set_xticklabels(gates, rotation=90)
+	ax.set_ylim(0,1.1)
 	plt.xlabel('Gate configuration')
 	plt.ylabel('Bloch vector length')
+
 
 	for ii,rect in enumerate(rects):
 		plt.text(rect.get_x()+rect.get_width()/2., 0.4*rect.get_height(), 'F='+str(round(b[ii],3))+' $\pm$ '+str(round(b_u[ii],3)),
 			ha='center', va='bottom',rotation='vertical',color='white')
 
-	plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png')
+	plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png',bbox_inches='tight', pad_inches=0.1)
 	plt.show()
 	plt.close('all')
 

@@ -65,7 +65,7 @@ def get_from_hdf5(folder,key_list):
 def get_tstamp_from_folder(folder):
     return folder[18:18+15]
 
-def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
+def get_dephasing_data(folder_dict,ssro_calib_folder,CR_after_check=CR_after_check, **kw):
 
     tomos = kw.pop('tomos',['X','Y'])
 
@@ -101,7 +101,7 @@ def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
                 data_dict[t+'_u'] = [np.sqrt(y0**2+y_u[ii]**2)/2 for ii,y0 in enumerate(data_dict[t+'_u'])]
 
 
-    
+
     ## one carbon experiment
     if len(tomos[0]) ==1:
         npY = np.array(data_dict['Y'])
@@ -109,14 +109,15 @@ def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
         npY_u = np.array(data_dict['Y_u'])
         npX_u = np.array(data_dict['X_u'])
         if kw.pop('do_get_sequence_length', False):
-            return x_labels,npX,npY,npX_u,npY_u, 2*a.repump_wait[1]+a.fast_repump_duration[1] # XXXXX check
+            return x_labels,npX,npY,npX_u,npY_u, 2*a.repump_wait + a.fast_repump_duration - a.AOM_delay + a.initial_wait - a.avg_repump_time # XXXXX check
         else:
             return x_labels,npX,npY,npX_u,npY_u
 
     elif len(tomos[0]) == 2:
         data_dict['sweep_pts'] = x_labels
         if kw.pop('do_get_sequence_length', False):
-            return data_dict, 2*a.repump_wait[1]+a.fast_repump_duration[1]# XXXXX check
+
+            return data_dict, 2*a.repump_wait + a.fast_repump_duration - a.AOM_delay + a.initial_wait - a.avg_repump_time # XXXXX check
         else:
             return data_dict
 
@@ -124,7 +125,7 @@ def extract_data_from_sweep(older_than = None,
         folder_name ='Repetitions_',
         carbon = '2',
         ssro_calib_timestamp =None, 
-        do_T2correct=False, **kw) :
+        do_T2correct=False, CR_after_check = CR_after_check, **kw) :
 
     '''
     searches for all necessary files, extracts the data, does T2* correction 
@@ -165,7 +166,7 @@ def extract_data_from_sweep(older_than = None,
 
     if len(carbon) == 1:
         #print folder_dict
-        x_labels,npX,npY,npX_u,npY_u, seq_length = get_dephasing_data(folder_dict,ssro_calib_folder, do_get_sequence_length=True)
+        x_labels,npX,npY,npX_u,npY_u, seq_length = get_dephasing_data(folder_dict,ssro_calib_folder, do_get_sequence_length=True, CR_after_check=CR_after_check)
 
         folder_dict['res'] = np.sqrt(npY**2+npX**2)
         folder_dict['res_u'] = np.sqrt((npX*npX_u)**2+(npY*npY_u)**2)/np.sqrt((npX**2+npY**2))
@@ -174,7 +175,7 @@ def extract_data_from_sweep(older_than = None,
 
     elif len(carbon) == 2:
 
-        tomo_dict, seq_length = get_dephasing_data(folder_dict,ssro_calib_folder, tomos = ['XX','YY','XY','YX'], do_get_sequence_length=True)
+        tomo_dict, seq_length = get_dephasing_data(folder_dict,ssro_calib_folder, tomos = ['XX','YY','XY','YX'], do_get_sequence_length=True, CR_after_check=CR_after_check)
         x_labels = tomo_dict['sweep_pts']
         XX,XX_u = np.array(tomo_dict['XX']),np.array(tomo_dict['XX_u'])
         YY,YY_u = np.array(tomo_dict['YY']),np.array(tomo_dict['YY_u'])
@@ -188,7 +189,7 @@ def extract_data_from_sweep(older_than = None,
 
     if do_T2correct:
         folder_dict = do_T2_correction(
-                carbon=carbon, folder_dict=folder_dict, sequence_duration_us=seq_length*10**6)
+                carbon=carbon, folder_dict=folder_dict, sequence_duration_us=seq_length*(10**6))
 
     return folder_dict
 
@@ -199,6 +200,7 @@ def do_T2_correction(carbon='2', folder_dict=[], sequence_duration_us=10):
     n_of_reps = np.array(folder_dict['sweep_pts'])
     bloch_vec_len = np.array(folder_dict['res'])
     y_u = np.array(folder_dict['res_u'])
+
 
     extrapolatedT2star={}
     for first in T2star_us:
@@ -224,12 +226,13 @@ def do_T2_correction(carbon='2', folder_dict=[], sequence_duration_us=10):
     y_u = y_u[:cut_index]
 
     if 0. in T2_Factors:
-        print 'Warning: devision by zero would be required. I take uncorrected data '
+        print 'Warning: division by zero would be required. I take uncorrected data '
         return folder_dict
     else:
         folder_dict['sweep_pts'] = n_of_reps
         folder_dict['res'] = np.divide( bloch_vec_len, T2_Factors)
-        folder_dict['res_u'] = y_u
+        folder_dict['res_u'] = np.divide(y_u,T2_Factors)
+
         return folder_dict
 
 
@@ -302,7 +305,7 @@ def Sweep_repetitions(older_than = None,
         do_T2correct=False, **kw) :
 
     folder_dict =  extract_data_from_sweep(older_than = older_than, folder_name =folder_name, carbon = carbon,
-        ssro_calib_timestamp =ssro_calib_timestamp, do_T2correct=do_T2correct, **kw)
+        ssro_calib_timestamp =ssro_calib_timestamp, do_T2correct=do_T2correct, CR_after_check=CR_after_check, **kw)
 
     if folder_name == 'Memory_sweep_timing_':
         folder_dict['sweep_pts'] = folder_dict['sweep_pts']*1e6
@@ -360,7 +363,7 @@ def Sweep_Rep_List( carbons = ['1','2'],
             folder_name =folder_name, carbon = c,
             ssro_calib_timestamp =ssro_calib_timestamp,
             logicstate = logicstate,
-            do_T2correct=do_T2correct, **kw)
+            do_T2correct=do_T2correct, CR_after_check=CR_after_check, **kw)
         x_arr.append(folder_dict['sweep_pts'])
         y_arr.append(folder_dict['res'])
         y_u_arr.append(folder_dict['res_u'])
@@ -532,7 +535,7 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None, do_p
         # print ssro_calib_folder
 
         ### extract data
-    x_labels,npX,npY,npX_u,npY_u = get_dephasing_data(folder_dict,ssro_calib_folder)
+    x_labels,npX,npY,npX_u,npY_u = get_dephasing_data(folder_dict,ssro_calib_folder, CR_after_check=CR_after_check)
 
     fig = plt.figure()
     ax = plt.subplot()
@@ -846,7 +849,7 @@ def repump_speed_doubleExp(timestamp=None, measurement_name = 'adwindata', ssro_
         
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
-        CR_after_check = None
+
         a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
         a.get_electron_ROC(ssro_calib_folder)
 
@@ -930,6 +933,8 @@ def bin_data(x=[], y=[], y_u=[], binwidth_ns = None):
     else:
         print 'no binwidth specified'
         binned_x, binned_y, binned_yu = x, y, y_u
+
+    print 'first x', x[0]
     return binned_x, binned_y, binned_yu
 
 def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
@@ -942,8 +947,6 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
    
 
     fitted_tau, fitted_tau2, fitted_tau_err, fitted_tau2_err = [],[],[],[]
-    CR_after_check = True
-
     #p0, fitfunc, fitfunc_str = [], [], []
     fig = plt.figure(figsize=figsize)
     ax = plt.subplot()
@@ -1103,7 +1106,6 @@ def repump_speed_pm1_paper_plot(timestamp=None, measurement_name = 'adwindata', 
     plt.tick_params(pad = 4, axis='both', which='major', labelsize=ticklabel_fontsize, width = tickwidth, length=majorticklength)
     plt.tick_params(pad = 4, axis='both', which='minor', labelsize=ticklabel_fontsize, width = tickwidth, length=minorticklength)
     plt.tight_layout()
-
 
     for panel_no in range(2):
 
@@ -1342,6 +1344,7 @@ def decay_vs_rep_paper_plot( carbons = ['1','2'],
         x_arr.append(folder_dict['sweep_pts'])
         y_arr.append(folder_dict['res'])
         y_u_arr.append(folder_dict['res_u'])
+        print 'this is the initial bloch vector length and error',folder_dict['res'][0]/2+0.5,folder_dict['res_u'][0]/2.
         folder_dict, coupling, folder = extract_coupling_strength(folder_dict)
         labels.append(np.round(coupling/100.)/10)
     

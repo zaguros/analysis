@@ -45,6 +45,8 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
     VERBOSE= kw.pop('VERBOSE',False)
+
+
     # err_y = kw.pop ('err_y', None)
 	#if False :
 	#    if (len(err_y) != len(y)):
@@ -81,7 +83,9 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         # if (err_y != None):
         # 	return ((y-fitfunc(x))/(err_y))
         # else:
+
         return y - fitfunc(x)
+
 
     if x is None: x = arange(y.shape[0])
     p = [param() for param in p0]

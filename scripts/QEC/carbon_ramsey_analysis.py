@@ -9,7 +9,7 @@ reload(common)
 reload(mbi)
 
 
-def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
+def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name = ['adwindata'], ssro_calib_timestamp =None,
             frequency = 1, 
             offset = 0.5, 
             x0 = 0,  
@@ -35,6 +35,8 @@ def Carbon_Ramsey(timestamp=None, measurement_name = ['adwindata'], ssro_calib_t
 
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
+    elif carbon != None:
+        folder = toolbox.latest_data(contains='C'+str(carbon)+'_ms'+str(transition))
     else:
         folder = toolbox.latest_data(title)
 
@@ -415,7 +417,8 @@ def Carbon_Ramsey_Crosstalk_no_fit(older_than=None, crosstalk = None,measurement
 
       
 
-def Carbon_Ramsey_DD_freq(older_than = None,  
+def Carbon_Ramsey_DD_freq(older_than = None,
+            transition = None,  
             carbon = 1,
             frequency = 1, 
             offset = 0.5, 
@@ -426,14 +429,24 @@ def Carbon_Ramsey_DD_freq(older_than = None,
             exponent = 2, 
             plot_fit = False, do_print = False, fixed = [2], show_guess = True,
             return_phase = False,
-            return_freq = False,
+            return_freq = True,
             return_results = True,
             close_plot = False):
     ''' 
     '''
-    folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon), older_than = older_than)
-    folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
-    folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
+    if transition != None:
+
+        folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon)+str(transition), older_than = older_than)
+        folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon)+str(transition), older_than = older_than)
+        folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon)+str(transition), older_than = older_than)
+    else:
+        folder1 = toolbox.latest_data(contains = 'evo_times_1_C' + str(carbon), older_than = older_than)
+        folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
+        folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
+
+
+
+
     
     
     a1 = mbi.MBIAnalysis(folder1)
