@@ -13,6 +13,8 @@ reload(common)
 import string
 import analysis.lib.QEC.hyperfine_params as hf ### used for perp_coupling vs ZZ
 import csv
+import copy as cp
+import matplotlib.cm as cm
 
 mpl.rc('pdf', fonttype=42)
 pdf_with_rc_fonts = {
@@ -69,7 +71,7 @@ def get_from_hdf5(folder,key_list):
 def get_tstamp_from_folder(folder):
     return folder[18:18+15]
 
-def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
+def get_dephasing_data(folder_dict,ssro_calib_folder,CR_after_check=CR_after_check, **kw):
 
     tomos = kw.pop('tomos',['X','Y'])
     ## contains tomo values
@@ -145,7 +147,7 @@ def extract_data_from_sweep(older_than = None,
         folder_name ='Repetitions_',
         carbon = '2',
         ssro_calib_timestamp = None, 
-        do_T2correct=False, **kw) :
+        do_T2correct=False, CR_after_check = CR_after_check, **kw) :
 
     '''
     searches for all necessary files, extracts the data, does T2* correction 
@@ -210,8 +212,8 @@ def extract_data_from_sweep(older_than = None,
         if VERBOSE:
             print 'x_labels ', x_labels, ' X_readout (npx) ', npX
         if is_X_measurement:
-            folder_dict['res'] = np.sqrt(npY**2+npX**2)
-            folder_dict['res_u'] = np.sqrt((npX*npX_u)**2+(npY*npY_u)**2)/np.sqrt((npX**2+npY**2))
+        folder_dict['res'] = np.sqrt(npY**2+npX**2)
+        folder_dict['res_u'] = np.sqrt((npX*npX_u)**2+(npY*npY_u)**2)/np.sqrt((npX**2+npY**2))
         else: # Give Bloch vector length Z coordinates, which come from get_dephasing data as 'X'
             folder_dict['res'] = npX
             folder_dict['res_u'] = npX_u
@@ -239,7 +241,7 @@ def extract_data_from_sweep(older_than = None,
         if VERBOSE:
             print 'Im doing T2 correction in get_data_from_sweep '
         folder_dict = do_T2_correction(
-                carbon=carbon, folder_dict=folder_dict, sequence_duration_us=seq_length*10**6)
+                carbon=carbon, folder_dict=folder_dict, sequence_duration_us=seq_length*(10**6))
 
     return folder_dict
 
@@ -253,6 +255,7 @@ def do_T2_correction(carbon='2', folder_dict=[], sequence_duration_us=10):
     if VERBOSE:
         print 'folder_dict in do_T2_correction: ', folder_dict
     y_u = np.array(folder_dict['res_u'])
+
 
     extrapolatedT2star={}
     for first in T2star_us:
@@ -277,7 +280,7 @@ def do_T2_correction(carbon='2', folder_dict=[], sequence_duration_us=10):
 
     print sequence_duration_us
     if 0. in T2_Factors:
-        print 'Warning: devision by zero would be required. I take uncorrected data '
+        print 'Warning: division by zero would be required. I take uncorrected data '
         return folder_dict
     else:
         folder_dict['sweep_pts'] = n_of_reps
@@ -357,7 +360,7 @@ def Sweep_repetitions(older_than = None,
         do_T2correct=False, **kw) :
 
     folder_dict =  extract_data_from_sweep(older_than = older_than, folder_name =folder_name, carbon = carbon,
-        ssro_calib_timestamp =ssro_calib_timestamp, do_T2correct=do_T2correct, **kw)
+        ssro_calib_timestamp =ssro_calib_timestamp, do_T2correct=do_T2correct, CR_after_check=CR_after_check, **kw)
 
     if folder_name == 'Memory_sweep_timing_':
         folder_dict['sweep_pts'] = folder_dict['sweep_pts']*1e6
@@ -404,6 +407,8 @@ def Sweep_Rep_List( carbons = ['1'],
     fitGauss = kw.get('fitGauss', False)
     return_fits = kw.get('return_fits', False)
 
+    do_plot_results = kw.pop('do_plot_results', True)
+
     x_arr = []
     y_arr = []
     y_u_arr = []
@@ -413,7 +418,7 @@ def Sweep_Rep_List( carbons = ['1'],
             folder_name =folder_name, carbon = c,
             ssro_calib_timestamp =ssro_calib_timestamp,
             logicstate = logicstate,
-            do_T2correct=do_T2correct, **kw)
+            do_T2correct=do_T2correct, CR_after_check=CR_after_check, **kw)
         if VERBOSE:
             print 'folder_dict in Sweep_Rep_List: ', folder_dict
         x_arr.append(folder_dict['sweep_pts'])
@@ -424,6 +429,7 @@ def Sweep_Rep_List( carbons = ['1'],
     if sequence_length != None:
         x_arr = [x*sequence_length for x in x_arr]
     
+    if do_plot_results:
     fig = plt.figure()
     ax = plt.subplot()
     is_X_measurement = kw.get('is_X_measurement', False)
@@ -443,8 +449,9 @@ def Sweep_Rep_List( carbons = ['1'],
             if sequence_length != None:
                 decay = decay*sequence_length
             if fitGauss:
-                A0 = max(y)
-                offset = min(y)
+                
+                offset = min(y)/4
+                A0 = max(y)/4
                 x0 = x[np.argmax(y)]
                 decay = np.abs( x[np.argmax(y)]-x[np.argmin(y)] ) /3
                 if VERBOSE:
@@ -453,20 +460,25 @@ def Sweep_Rep_List( carbons = ['1'],
                 fixed=[]
             else:
                 A0 = y[0]
-                x0 = 0
+            x0 = 0
                 offset = 0
                 decay = 500
-                p0,fitfunc,fitfunc_str = common.fit_exp_decay_shifted_with_offset(offset,A0,decay,x0)
-                fixed = [0,3]
+            p0,fitfunc,fitfunc_str = common.fit_exp_decay_shifted_with_offset(offset,A0,decay,x0)
+            fixed = [0,3]
 
             fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = not return_fits, ret = True, fixed = fixed)
+            
+            if do_plot_results:
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax,color = colors[jj], plot_data=False,add_txt = False, lw = 2)
 
         label_txt = 'C'+carbon
         if len(carbon)!=1:
             label_txt = label_txt+'_'+logicstate
-        plt.errorbar(x,y,y_u,marker='.',color = colors[jj],label=label_txt)
+        
+        if do_plot_results:
+            plt.errorbar(x,y,y_u,marker='.',color = colors[jj],label=label_txt)
 
+    if do_plot_results:
     plt.xlabel('Number of repetitions')
     if sequence_length != None:
         plt.xlabel('elapsed time (us)')
@@ -475,16 +487,16 @@ def Sweep_Rep_List( carbons = ['1'],
 
     plt.ylabel('Bloch vector length')
 
-    if log_plot:
-        ax.set_yscale("log", nonposy='clip')
-    y_min=kw.get('ymin', 0.8 * min(y))    
-    plt.ylim(y_min,1.0)
+        if log_plot:
+            ax.set_yscale("log", nonposy='clip')
+        y_min=kw.get('ymin', 0.8 * min(y))    
+        plt.ylim(y_min,1.0)
 
     plt.title(get_tstamp_from_folder(folder) + ' Dephasing for C'+carbon)
     plt.legend()#bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.savefig(os.path.join(folder,'CarbonDephasing.pdf'),format='pdf')
     plt.savefig(os.path.join(folder,'CarbonDephasing.png'),format='png')
-    #if not return_fits:
+        #if not return_fits:
     plt.show()
     plt.close('all')
 
@@ -499,37 +511,50 @@ def sweep_avg_repump_and_tau_larmor( carbons = ['1','2'],
         tau_larmor_list = [],
         **kw):
     is_X_measurement = kw.get('is_X_measurement', True)
+    A_list = [[] for i in enumerate(carbons)]
 
-    A_list, A_u_list, x0_list, x0_u_list = [], [],[],[]
-    for tau_larmor in tau_larmor_list:
-        folder, fit_result = Sweep_Rep_List( carbons = carbons,
-            older_than = older_than, 
-            do_T2correct = do_T2correct,
-            folder_name = 'Repetitions_', 
-            ssro_calib_timestamp = None,
-            tau_larmor = tau_larmor,
-            return_fits = True,
-            fit_result = True,
-            fitGauss = True,
-            **kw
-            )
-        A_list.append(fit_result['params_dict']['A'])
-        A_u_list.append(fit_result['error_dict']['A'])
-        x0_list.append(fit_result['params_dict']['x0'])
-        x0_u_list.append(fit_result['error_dict']['x0'])
-    print fit_result
+    A_u_list    = cp.deepcopy(A_list)
+    x0_list     = cp.deepcopy(A_list)
+    x0_u_list   = cp.deepcopy(A_list)
+
+
+    for ii,c in enumerate(carbons):
+        for tau_larmor in tau_larmor_list:
+            folder, fit_result = Sweep_Rep_List( carbons = [c],
+                older_than = older_than, 
+                do_T2correct = do_T2correct,
+                folder_name = 'Repetitions_', 
+                ssro_calib_timestamp = None,
+                tau_larmor = tau_larmor,
+                return_fits = True,
+                fit_result = True,
+                fitGauss = True,
+                **kw
+                )
+
+            A_list[ii].append(fit_result['params_dict']['A'])
+            A_u_list[ii].append(fit_result['error_dict']['A'])
+            x0_list[ii].append(fit_result['params_dict']['x0'])
+            x0_u_list[ii].append(fit_result['error_dict']['x0'])
+    # print fit_result
 
     fig = plt.figure()
-    ax = plt.subplot()
+    ax = fig.add_subplot(2,1,1)
+    ax2 = fig.add_subplot(2,1,2)
     plot_title = 'X Dephasing ' if is_X_measurement else 'Z decay '
-
-    plt.title(plot_title + get_tstamp_from_folder(folder))
-    plt.errorbar(tau_larmor_list,A_list,A_u_list, marker='.',label='A')
-    plt.errorbar(tau_larmor_list,x0_list,x0_u_list, marker='.',label='x0')
-    plt.legend()
-    plt.xlabel('t')
-    plt.ylabel('fit result')
-
+    
+    for ii, c in enumerate(carbons):
+        ax.errorbar(tau_larmor_list,A_list[ii],A_u_list[ii], marker='.',label='C'+str(c))
+        ax2.errorbar(tau_larmor_list,x0_list[ii],x0_u_list[ii], marker='.',label='C'+str(c))
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    ax.set_xlabel('t (us)')
+    ax2.set_xlabel('t (us)')
+    ax.set_ylabel('fitted Amplitude')
+    ax.set_ylim([0.3,0.9])
+    ax2.set_xlim([tau_larmor_list[0]-0.1,tau_larmor_list[-1]+0.1])
+    ax.set_xlim([tau_larmor_list[0]-0.1,tau_larmor_list[-1]+0.1])
+    ax2.set_ylabel('fitted tau (us)')
+    ax.set_title(plot_title + get_tstamp_from_folder(folder))
     plt.show()
     plt.close('all')
 
@@ -642,6 +667,7 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None, do_p
         for t in tomos:
             search_string = folder_name+ro+'_Tomo_'+t+'_'+'C'+carbon
             folder_dict[t].append(toolbox.latest_data(contains = search_string,older_than = older_than,raise_exc = False))
+    print folder_dict[t]
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSRO', older_than = older_than)
@@ -652,7 +678,7 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None, do_p
             print 'ssro Folder: ', ssro_calib_folder
 
         ### extract data
-    x_labels,npX,npY,npX_u,npY_u = get_dephasing_data(folder_dict,ssro_calib_folder)
+    x_labels,npX,npY,npX_u,npY_u = get_dephasing_data(folder_dict,ssro_calib_folder, CR_after_check=CR_after_check)
 
     fig = plt.figure()
     ax = plt.subplot()
@@ -670,7 +696,6 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None, do_p
             plot.plot_fit1d(fit_result, np.linspace(x_labels[0],x_labels[-1],1001), ax=ax,color = color_list[jj], plot_data=False,add_txt = add_txt, lw = 2)
 
             if show_guess:
-                print 'i was here'
                 print decay
                 ax.plot(np.linspace(x_labels[0],x_labels[-1],201), fitfunc(np.linspace(x_labels[0],x_labels[-1],201)), ':', lw=2)
         
@@ -685,14 +710,254 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None, do_p
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.savefig(os.path.join(folder,'CarbonDephasing_osci.pdf'),format='pdf')
     plt.savefig(os.path.join(folder,'CarbonDephasing_osci.png'),format='png')
-    if not auto_analysis:
         plt.show()
+    # if not auto_analysis:
+    #     plt.show()
     plt.close('all')
 
     print 'Results are saved in ', folder[18:18+15]
     if auto_analysis:
         return fit_result
 
+# all these functions are a mess and a lot is hardcoded, gonna write my own stuff. SK.
+def fit_sin_pos_neg_data(folder_name = '', measurement_name = ['adwindata'],
+            offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
+            frequency = [1], phase =[0],
+            fixed = [], ylim = [-0.5, 1.05],
+            plot_fit = False, do_print = False, show_guess = True, **kw):
+    ''' Function to fit positive and negative mbi type data 
+    with exponential and sinusoidal functions or combinations thereof. ~ SK
+    folder_name: ro + foldername is what it searches for
+    measurement_name: list of measurement names
+
+    '''
+    ax = kw.pop('ax',None)
+    label = kw.pop('label','')
+    older_than = kw.pop('older_than',None)
+
+    fit_results = []
+    fig = plt.figure()
+    ax = plt.subplot()
+    for k in range(0,len(measurement_name)):
+
+        x,y,y_u,f = get_PosNeg_data(folder_name, older_than = older_than, **kw)
+        print f
+        plt.errorbar(x,y,y_u,label = label,fmt='o',**kw)
+        
+
+        if ylim != None:
+            ax.set_ylim(ylim[0],ylim[1])
+
+        ### fit depending on the number of the frequencies
+        if len(frequency) == 1:
+            print exp_power[0]
+            p0, fitfunc, fitfunc_str = common.fit_exp_cos(offset[0],
+                    amplitude[0], center[0], decay_constant[0], exp_power[0],
+                    frequency[0], phase[0])
+            if show_guess:
+                plt.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
+            print 'starting fit.fit1d'
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+        elif len(frequency) == 2:
+            p0, fitfunc, fitfunc_str = common.fit_gaussian_decaying_2cos(offset[0],amplitude[0],decay_constant[0],amplitude[0],
+                frequency[0],  phase[0], amplitude[1], frequency[1],  phase[1])
+            if show_guess:
+                plt.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+
+        ## plot fit
+        if plot_fit == True:
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
+        
+        print 'folder combo: ' + str(f)
+        print fit_result['params_dict']
+        # print fit_results
+
+        # save as pdf and png
+        plt.savefig(os.path.join(f, 'analyzed_result.pdf'),         format='pdf')
+        plt.savefig(os.path.join(f, 'analyzed_result.png'),    format='png')
+
+        plt.show()
+        
+    return fit_result
+
+
+def attempt_decay(folder_name = '', 
+            tomo_basis = ['X','Y','Z'],
+            offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],frequency = [1], phase =[0],
+            fixed = [], ylim = [-0.5, 1.05],
+            plot_fit = False, do_print = False, show_guess = True, **kw):
+    ''' Function to fit positive and negative mbi type data 
+    with exponential and sinusoidal functions or combinations thereof. ~ SK
+    folder_name: ro + foldername is what it searches for
+    measurement_name: list of measurement names
+
+    '''
+    label = kw.pop('label','')
+    older_than = kw.pop('older_than',None)
+
+    fit_results = []
+    fig = plt.figure()
+    ax = plt.subplot()
+
+
+    if len(amplitude) == 1:
+        amplitude =  amplitude*len(tomo_basis)
+
+
+    
+    for ii, t in enumerate(tomo_basis):
+        ### supply it data to fit. Can be lists of data with list of amplitudes to do multi plot
+        x,y,y_u,f = get_PosNeg_data('_Tomo_'+ t + folder_name, older_than = older_than, **kw)
+
+
+        plt.errorbar(x,y,y_u,label = label,fmt='.',**kw)
+
+        #### Fitting
+        ## plot guess?
+        if show_guess:
+            plt.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
+        print 'starting fit.fit1d'
+
+        ## do fit?
+        if plot_fit:
+            p0, fitfunc, fitfunc_str = common.fit_exp_cos(offset[0],
+                amplitude[ii], center[0], decay_constant[0], exp_power[0],
+                frequency[0], phase[0])
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+            # print fit_result
+
+            ## plot fit
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
+            # print 'folder combo: ' + str(f)
+            # print fit_result['params_dict']
+    
+    # figure properties
+    if ylim != None:
+        ax.set_ylim(ylim[0],ylim[1])
+
+
+
+    #save
+    plt.savefig(os.path.join(f, 'analyzed_result.pdf'),         format='pdf')
+    plt.savefig(os.path.join(f, 'analyzed_result.png'),    format='png')
+
+    plt.title(folder_name)
+    plt.show()
+
+
+### BULK ANALYSIS FUCNTIONS SK 1-5
+def attempt_decay_all_data(carbon = 1, el_bases =['X','mX','Y','mY','Z','mZ'],
+            tomo_bases = ['X','Y','Z'],**kw):
+    ''' Function to fit positive and negative mbi type data 
+    with exponential and sinusoidal functions or combinations thereof. ~ SK
+    folder_name: ro + foldername is what it searches for
+    measurement_name: list of measurement names
+
+    '''
+    older_than = kw.pop('older_than',None)
+    x_list = []
+    y_list = []
+    y_u_list = []
+    f_list = []
+    labels = []
+
+    # brute way to get 6x3 list of lists, would a dictionary be more useful?
+    for e in el_bases:
+        # x_temp = []
+        # y_temp = []
+        # y_u_temp =[]
+        # f_temp = []
+        for t in tomo_bases:
+ 
+            ### supply it data to fit. Can be lists of data with list of amplitudes to do multi plot
+            x,y,y_u,f = get_PosNeg_data('_Tomo_'+ t + '_elState_' + e + '_C' + str(carbon), 
+                older_than = older_than, **kw)
+            # x_temp.append(x)
+            # y_temp.append(y)
+            # y_u_temp.append(y_u)
+            # f_temp.append(f)
+            labels.append('e in '+ e +', tomo in ' + t)
+            x_list.append(x)
+            y_list.append(y)
+            y_u_list.append(y_u)
+            f_list.append(f)
+
+
+    return x_list, y_list, y_u_list,f_list, labels
+        
+
+def errorplot_data(x_input,y_input,y_u_input,ax,**kw):
+    
+    labels = kw.pop('labels',['']*len(x_input))
+    y_lim = kw.pop('y_lim',None)
+    colors = cm.rainbow(np.linspace(0, 1, len(x_input)))
+    for ii,(x,y,y_u,l) in enumerate(zip(x_input,y_input,y_u_input,labels)):
+        ax.errorbar(x,y,yerr=y_u,fmt='.',label = l,color = colors[ii])
+    
+
+    #plot options
+    if labels != ['']*len(x_input):
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    if y_lim != None:
+        ax.set_ylim(y_lim[0],y_lim[1])
+
+# Not doing anything at the moment 29-04 SK
+def fit_and_plot_exp_sin(
+    x,
+    y,
+    ax,
+    offset=[0], 
+    amplitudes = [0.5], 
+    center = [0], 
+    decay_constant = [200], 
+    exp_power = [0],
+    frequency = [1], 
+    phase =[0],
+    fixed = [], 
+    plot_fit = True, 
+    do_print = False, 
+    show_guess = False, 
+    **kw):
+    
+    labels = kw.pop('labels',[None]*len(x))
+    #too lazy for multiple amplitudes?
+    if len(amplitudes)==1:
+        amplitudes = amplitudes*len(x)
+    colors = cm.rainbow(np.linspace(0, 1, len(x)))
+    ### fit depending on the number of the frequencies
+    for ii, (a,x,y) in enumerate(zip(amplitudes,x,y)):
+        # print offset[0], a, center[0], decay_constant[0], exp_power[0], frequency[0], phase[0]
+        p0, fitfunc, fitfunc_str = common.fit_exp_cos(offset[0],
+            a, center[0], decay_constant[0], exp_power[0],
+            frequency[0], phase[0])
+        if show_guess:
+            plt.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
+
+
+
+        if plot_fit:
+            fit_result = fit.fit1d(x,y, None, 
+                p0=p0, fitfunc=fitfunc, 
+                do_print=do_print, 
+                ret=True,
+                fixed=fixed,
+                VERBOSE=False)
+            # print fit_result
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), 
+                ax=ax, 
+                plot_data=False,
+                print_info = True,
+                add_txt = False,
+                color = colors[ii],
+                label = labels[ii] + ', Decay constant = ' + str(fit_result['params_dict']['T']))
+
+        if labels != [None]*len(x):
+            ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+### END BULK ANALYSIS FUNCTIONS
+
+
+# Nice function!
 def get_PosNeg_data(name,**kw):
 
     """
@@ -711,7 +976,7 @@ def get_PosNeg_data(name,**kw):
     }
 
 
-    for ro in ['negative','positive']:
+    for ro in ['positive','negative']:
         search_string = ro+name
         if VERBOSE:
             print 'looking for ', search_string, '  older than is ', older_than
@@ -737,11 +1002,15 @@ def get_PosNeg_data(name,**kw):
 
         x_labels = a.sweep_pts.reshape(-1)
         if i == 0:
+            # data_dict['res'] = abs(a.p0.reshape(-1)) # fidelity
             data_dict['res'] = ((a.p0.reshape(-1))-0.5)*2
+            # data_dict['res_u'] = a.u_p0.reshape(-1) # fidelity
             data_dict['res_u'] = 2*a.u_p0.reshape(-1)
         else:
-            y = ((a.p0.reshape(-1))-0.5)*2
-            y_u = 2*a.u_p0.reshape(-1)
+            y = ((a.p0.reshape(-1))-0.5)*2 # Contrast
+            # y = abs(a.p0.reshape(-1)) # fidelity
+            y_u = 2*a.u_p0.reshape(-1) # contrast
+            # y_u = a.u_p0.reshape(-1) # fidelity
             data_dict['res'] = [y0/2-y[ii]/2 for ii,y0 in enumerate(data_dict['res'])]
             data_dict['res_u'] = [np.sqrt(y0**2+y_u[ii]**2)/2 for ii,y0 in enumerate(data_dict['res_u'])]
 
@@ -766,7 +1035,8 @@ def fit_exp_pos_neg_data(folder_name,**kw):
     while loop_bit:
 
         x2,y2,y_u2,f = get_PosNeg_data(folder_name,label = label,older_than = older_than, **kw)
-
+        print '*'*10
+        print f
         # new reference
         older_than = get_tstamp_from_folder(f)
 
@@ -936,7 +1206,7 @@ def Z_decay_vs_coupling(c_idents, perpendicular = True, **kw):
     plt.errorbar(coupling_minus, fitted_decays, yerr = fitted_decays_u,fmt = '.',color = 'g', label = 'difference')
     plt.legend(numpoints=1)
     if VERBOSE:
-        print 'saving to ', f
+    print 'saving to ', f
     plt.savefig(os.path.join(f,'perp_coupling_vs_repetitions.pdf'),format='pdf')
     plt.savefig(os.path.join(f,'perp_coupling_vs_repeititons.png'),format='png')
     plt.show()
@@ -975,65 +1245,68 @@ def repump_speed(timestamp=None, ssro_calib_timestamp =None, older_than=None, po
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
         if VERBOSE:
-            print 'Using SSRO timestamp ', ssro_calib_folder
+        print 'Using SSRO timestamp ', ssro_calib_folder
     for power_elem in powers:
         for init_element in init_states:
             for ro_element in ro_states:
-                if timestamp != None:
-                    folder = toolbox.data_from_time(timestamp)
-                elif len(powers) >1:
+        if timestamp != None:
+            folder = toolbox.data_from_time(timestamp)
+        elif len(powers) >1:
                     folder = toolbox.latest_data( \
                         'Repump_'+str(power_elem)+'nW_' \
                         +str(ro_element)+'RO_'+str(init_element)+'init',
                         older_than=older_than)
-                else:
-                    folder = toolbox.latest_data('nW_'+ro_element+'RO_'+init_element+'init',
+        else:
+                    #folder = toolbox.latest_data('nW_'+ro_element+'RO_'+init_element+'init',
+                     #   older_than=older_than)
+                    folder = toolbox.latest_data('repump',
                         older_than=older_than)
-                print 'folder is ', folder
-                plt.title(folder)
-                a = mbi.MBIAnalysis(folder)
-                a.get_sweep_pts()
-                CR_after_check = None
-                a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
-                a.get_electron_ROC(ssro_calib_folder)
+
+        print 'folder is ', folder
+        plt.title(folder)
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+
+        a.get_readout_results(name='adwindata',CR_after_check = CR_after_check)
+        a.get_electron_ROC(ssro_calib_folder)
 
                 x = a.sweep_pts.reshape(-1)[exclude_first_n_points:]
                 if ro_element == '0':
-                    y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
+        y = np.array(1.) - a.p0.reshape(-1)[exclude_first_n_points:]
                     #y = a.p0.reshape(-1)[exclude_first_n_points:]
                 else:
                     y = a.p0.reshape(-1)[exclude_first_n_points:]
-                y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
+        y_u = a.u_p0.reshape(-1)[exclude_first_n_points:]
 
                 fmt = '.-' if init_element == '0' else 'o-' if init_element == 'm1' else 'x--' 
                 color = 'k' if ro_element == '0' else 'r' if ro_element == 'm1' else 'b' 
                 if do_plot:
-                    if log_plot:
-                        ax.set_yscale("log", nonposy='clip')
-                        plt.ylim(0.0001,1.05)
-                        plt.xlim(-10,np.amax(x))
-                    else:
-                        plt.ylim(0.0,1.05)
-                        plt.xlim(-10,np.amax(x))
+        if log_plot:
+            ax.set_yscale("log", nonposy='clip')
+            plt.ylim(0.0001,1.05)
+            plt.xlim(-10,np.amax(x))
+        else:
+            plt.ylim(0.0,1.05)
+            plt.xlim(-10,np.amax(x))
                     plt.errorbar(x,y, yerr = y_u, fmt = fmt, color = color, \
                         label = init_element+'init_'+ro_element + 'RO' )
                     plt.legend(numpoints=1, fontsize=legend_fontsize, loc=1,
                         frameon=False, labelspacing=-0.15, borderpad=.5, handletextpad=0, borderaxespad=0)
 
-                #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
-                p0, fitfunc, fitfunc_str = common.fit_repumping( offset, amplitude, decay_constant_one,
-                        decay_constant_two, x_offs )
+        #fitfunction: y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
+        p0, fitfunc, fitfunc_str = common.fit_repumping( offset, amplitude, decay_constant_one,
+            decay_constant_two, x_offs )
                 if do_fit:
                     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=print_fit, ret=True,fixed=fixed)
                     if plot_fit == True:
                         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, plot_data=False)
                 if plot_fit_guess:
-                    ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
         
     if do_plot:
-        plt.savefig(os.path.join(folder, 'analyzed_result.pdf'), format='pdf')
-        plt.savefig(os.path.join(folder, 'analyzed_result.png'), format='png')
+            plt.savefig(os.path.join(folder, 'analyzed_result.pdf'), format='pdf')
+            plt.savefig(os.path.join(folder, 'analyzed_result.png'), format='png')
         plt.show()
 
     plt.close('all')
@@ -1079,6 +1352,8 @@ def bin_data(x=[], y=[], y_u=[], binwidth_ns = None):
     else:
         print 'no binwidth specified'
         binned_x, binned_y, binned_yu = x, y, y_u
+
+    print 'first x', x[0]
     return binned_x, binned_y, binned_yu
 
 def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
@@ -1091,8 +1366,6 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
    
 
     fitted_tau, fitted_tau2, fitted_tau_err, fitted_tau2_err = [],[],[],[]
-    CR_after_check = True
-
     #p0, fitfunc, fitfunc_str = [], [], []
     fig = plt.figure(figsize=figsize)
     ax = plt.subplot()
@@ -1131,7 +1404,7 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
             ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp[count])
         if VERBOSE:
-            print 'Using SSRO timestamp ', ssro_calib_folder
+        print 'Using SSRO timestamp ', ssro_calib_folder
             
         for elem in np.arange(len(folder_list_ext)):
             #print folder_list_ext[elem]
@@ -1255,7 +1528,6 @@ def repump_speed_pm1_paper_plot(timestamp=None, measurement_name = 'adwindata', 
     plt.tick_params(pad = 4, axis='both', which='minor', labelsize=ticklabel_fontsize, width = tickwidth, length=minorticklength)
     plt.tight_layout()
 
-
     for panel_no in range(2):
 
 
@@ -1277,14 +1549,14 @@ def repump_speed_pm1_paper_plot(timestamp=None, measurement_name = 'adwindata', 
             x, y, y_u = [], [], []
             folder = toolbox.data_from_time(tstamps[count])
             if VERBOSE:
-                print folder
+            print folder
             if ssro_calib_timestamp == None :
                 ssro_calib_folder = toolbox.latest_data('SSRO', older_than=tstamps[count])
             else:
                 ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
                 ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
             if VERBOSE:
-                print 'Using SSRO timestamp ', ssro_calib_folder
+            print 'Using SSRO timestamp ', ssro_calib_folder
                 
             a = mbi.MBIAnalysis(folder)
             a.get_sweep_pts()
@@ -1472,7 +1744,7 @@ def coupling_vs_rep_paper_plot(c_idents = ['1'], do_Z=False, older_than_list= No
     ax = plt.subplot()
    
     if not do_Z:
-        fig.text(0.02,0.9, '(b)', fontsize=fignumber_fontsize)
+    fig.text(0.02,0.9, '(b)', fontsize=fignumber_fontsize)
     plt.tick_params(pad = 4, axis='both', which='major', labelsize=ticklabel_fontsize, width = tickwidth, length=majorticklength)
     plt.tick_params(pad = 4, axis='both', which='minor', labelsize=ticklabel_fontsize, width = tickwidth, length=minorticklength)
     plt.xlabel(r'Coupling strength $|\Delta \omega|/(2\pi)$ (kHz)', size=axeslabel_fontsize)   
@@ -1533,11 +1805,11 @@ def coupling_vs_rep_paper_plot(c_idents = ['1'], do_Z=False, older_than_list= No
     
     if True:  # Show Guess from repump time
         if VERBOSE:
-            print 'Plotting Guess'
+        print 'Plotting Guess'
         fit_guess_art= kw.get('fit_guess_art',[(1,0.000435,19)])
         if fit_guess_art != []:
             p0,fitfunc,fitfunc_str = common.fit_dephasing_coupl(fit_guess_art[0],fit_guess_art[1],fit_guess_art[2])
-            ax.plot(np.linspace(2,90,201), fitfunc(np.linspace(2,90,201)), ':', lw=linewidth, color = 'r')
+        ax.plot(np.linspace(2,90,201), fitfunc(np.linspace(2,90,201)), ':', lw=linewidth, color = 'r')
     if do_Z:  #plot Z
         ax.errorbar(x_zmeas,z,z_u, fmt = '.', color='r',
             zorder = 500, label = 'Z decay', capsize= errorbar_width, linewidth=linewidth, markeredgewidth = 1, markeredgecolor = 'r', markersize=2)
@@ -1571,8 +1843,8 @@ def coupling_vs_rep_paper_plot(c_idents = ['1'], do_Z=False, older_than_list= No
     #save_figure_to = 'K:\ns\qt\Diamond\Eigenpapers\15-WeaklyCoupledQuantumMemory\Figures'
     print 'saving to: ', save_figure_to
     if older_than_Z == None:
-        plt.savefig(os.path.join(save_figure_to, 'Fig4b.pdf'), format='pdf')
-        plt.savefig(os.path.join(save_figure_to, 'Fig4b.png'), format='png')
+    plt.savefig(os.path.join(save_figure_to, 'Fig4b.pdf'), format='pdf')
+    plt.savefig(os.path.join(save_figure_to, 'Fig4b.png'), format='png')
     else:
         plt.savefig(os.path.join(save_figure_to, 'Supp_Zdecay.pdf'), format='pdf')
         plt.savefig(os.path.join(save_figure_to, 'Supp_Zdecay.png'), format='png')
@@ -1607,6 +1879,7 @@ def decay_vs_rep_paper_plot(DPS = False, carbons = ['1','2'],
         x_arr.append(folder_dict['sweep_pts'])
         y_arr.append(folder_dict['res'])
         y_u_arr.append(folder_dict['res_u'])
+        print 'this is the initial bloch vector length and error',folder_dict['res'][0]/2+0.5,folder_dict['res_u'][0]/2.
         folder_dict, coupling, folder = extract_coupling_strength(folder_dict)
         labels.append(np.round(coupling/100.)/10)
     
@@ -1874,6 +2147,6 @@ def coupling_vs_rep_update_data( c_idents=['1'], older_than=None, do_Z = False, 
         #    folder_name = 'Memory_NoOfRepetitions_', do_T2correct=do_T2correct)
         return x_zmeas, z, z_u, folder
     else:    
-        x,y,y_u,folder = coupling_vs_repetitions(c_idents,older_than = older_than,
-            folder_name = 'Memory_NoOfRepetitions_', do_T2correct=do_T2correct)
+    x,y,y_u,folder = coupling_vs_repetitions(c_idents,older_than = older_than,
+                                                folder_name = 'Memory_NoOfRepetitions_', do_T2correct=do_T2correct)
         return x, y, y_u, folder
