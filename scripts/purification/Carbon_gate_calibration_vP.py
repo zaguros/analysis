@@ -63,6 +63,7 @@ def get_raw_data_all_parts(carbon,**kw):
 	folder_pos_list = toolbox.latest_data(contains = search_string_pos, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
 	folder_neg_list = toolbox.latest_data(contains = search_string_neg, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
 	# print folder_pos_list
+	# print folder_neg_list
 	print 'Number of parts for carbon ' + str(carbon) +': ' + str(len(folder_pos_list))
 	# print folder_pos_list
 	# print folder_neg_list

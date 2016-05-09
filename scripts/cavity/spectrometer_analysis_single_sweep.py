@@ -33,8 +33,8 @@ order_peak_detect_higher_modes = 30
  
 # Open file and create dataframes in pandas
 
-indir="D:/DATA/20160419 Linewidth" 
-data = pd.read_csv(os.path.join(indir,"FSR_50nm_Q1300_it60000.csv"), usecols=[2,4,5])
+indir="D:\measuring\data/20160430\ON_diamond" 
+data = pd.read_csv(os.path.join(indir,"2016-04-30 19_34_17 cal_finepiezo.csv"), usecols=[2,4,5])
 
 max_WL = data['Wavelength'].max()
 min_WL = data['Wavelength'].min()

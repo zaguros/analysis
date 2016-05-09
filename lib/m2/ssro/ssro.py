@@ -468,7 +468,7 @@ def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
     a = SSROAnalysis(folder)
 
     for n,ms in zip(['ms0','msp1','msm1'], [0,1,-1]): #zip((['ms0'], [0]):#
-        # print n, ms
+        print n, ms
         a.get_run(n)
         a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
         a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)

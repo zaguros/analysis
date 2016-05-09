@@ -98,7 +98,6 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # package the result neatly
     if do_print and success:
         print_fit_result(result)
-
     if ret and success:
         return result
 
