@@ -19,15 +19,16 @@ def get_linewidth(data,EOM_freq, g_a1 = 0.5, g_A1 = 0.04 , g_x01 = 0.0, g_gamma1
     g_gamma1 = guess linewidth of middle peak
     g_dx = guess separation between peaks 
     g_A2 = guess area of peak 2 and 3 for fit
-    g_gamma 2 = guess linewidth of peak 2 and 3 for fit
+    g_gamma2 = guess linewidth of peak 2 and 3 for fit
     output:
     lw = linewidth of middle peak
     u_lw = error of the linewidth
     """
-    x = data[:,0]
+    x = data[:,0]*1.e5
     y = data[:,1]
+    n_xticks = 10
     fixed=[]
-    print x,y
+    
     p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2)
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, fixed=fixed)
 
@@ -45,5 +46,16 @@ def get_linewidth(data,EOM_freq, g_a1 = 0.5, g_A1 = 0.04 , g_x01 = 0.0, g_gamma1
     ax.set_xlabel("Frequency (GHz)", fontsize = 14)
     ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
     ax.set_xlim(x[0],x[-1])
+    #rescaling x-axis in GHz
+    X_min_freq = ax.get_xlim()[0]*scaling
+    X_max_freq = ax.get_xlim()[-1]*scaling
+    xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks) 
+    xticklabels = np.linspace(X_min_freq,X_max_freq,n_xticks)
+    xticklabels_round=[]
+    for j in xticklabels:
+      round_ = round(j,0)
+      xticklabels_round = np.append(xticklabels_round,round_)
+    ax.set_xticklabels(xticklabels_round)
+    ax.set_xticks(xticks)
     plt.show()
     return lw, u_lw
