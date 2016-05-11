@@ -26,15 +26,26 @@ import nuclear_spin_char as SC;  reload(SC)
 ###################
 timestamps = {}
 #uber stamps!
-timestamps['min'] = 	{'N8' : ['20160308_224027'],
-					 	'N16' : ['20160309_003031'],
-					 	'N32' : ['20160308_145258'],
-						'N64' : ['20160308_171903']}
+timestamps['min'] = 	{'N8' : ['20160427_183244'],#'20160420_183630'],
+					 	'N16' : ['20160427_200051'],#'20160420_200748'],
+					 	'N32' : ['20160427_213632'],#'20160420_222506'],
+						'N64' : ['20160427_233619']}#'20160421_004107']}
 
-timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
-						 'N16' : ['20160324_223312'],
-						 'N32' : ['20160325_030316'],
-						 'N64' : ['20160325_160138']}
+# timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
+# 						 'N16' : ['20160324_223312'],
+# 						 'N32' : ['20160325_030316'],
+# 						 'N64' : ['20160325_160138']}
+
+
+
+# '20160413_150015'
+
+# timestamps['min'] = 	{'N8' : ['20160308_224027'],
+# 					 	'N16' : ['20160309_003031'],
+# 					 	'N32' : ['20160308_145258'],
+# 						'N64' : ['20160308_171903']}
+
+
 # timestamps['plus'] = {'N8' : ['20160116_140951'],
 # 						 'N16' : ['20160116_161812'],
 # 						 'N32' : ['20160116_181552'],
@@ -53,8 +64,7 @@ timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
 #crappy stamps
 # timestamps['min'] = {'N8' : '20160107_173313', 'N16' : '20160107_201229','N32' : '20160107_222009','N64' : '20160108_004236'}
 # timestamps['plus'] = {'N8' : '20160110_121238', 'N16' : '20160110_143232','N32' : '20160110_170758','N64' : '20160110_202511'}
-ssro_calib_folder = 'd:\\measuring\\data\\20160107\\172632_AdwinSSRO_SSROCalibration_Pippin_SIL1'	
-
+ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
 def load_data(N = [8], el_trans = 'min'):
 	a = {}
 	folder = {}
@@ -122,7 +132,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 	print 'N = ' + str(N)
 
 	N_keys = ['N'+str(pulse_no) for pulse_no in N]
-
+	print N_keys
 	for pulses,data,datafolder in zip(N,[a[x] for x in N_keys],[folder[x] for x in N_keys]):
 
 		##########################

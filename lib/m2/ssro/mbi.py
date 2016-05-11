@@ -28,7 +28,6 @@ class MBIAnalysis(m2.M2Analysis):
             for getting a photon)
         CR_after_check: erases certain results from the SSRO results based on the CR check after the sequence.
         """
-
         self.result_corrected = False
 
         adwingrp = self.adwingrp(name)
@@ -165,8 +164,8 @@ class MBIAnalysis(m2.M2Analysis):
             el_state = self.adgrp.attrs['electron_transition']
             # print 'MWInit, el_state: ' + str(el_state)
 
-            for i in range(len(self.normalized_ssro[0])):
-                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+        for i in range(len(self.normalized_ssro[0])):
+            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
                     ssro.get_SSRO_MWInit_calibration(ssro_calib_folder,
                             ro_durations[i],el_state)
 
@@ -180,14 +179,14 @@ class MBIAnalysis(m2.M2Analysis):
         else:
             for i in range(len(self.normalized_ssro[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-                    ssro.get_SSRO_calibration(ssro_calib_folder,
-                            ro_durations[i])
+                ssro.get_SSRO_calibration(ssro_calib_folder,
+                        ro_durations[i])
 
-                p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
-                        self.u_normalized_ssro[:,i])
+            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                    self.u_normalized_ssro[:,i])
 
-                self.p0[:,i] = p0
-                self.u_p0[:,i] = u_p0
+            self.p0[:,i] = p0
+            self.u_p0[:,i] = u_p0
 
 
 
@@ -228,6 +227,14 @@ class MBIAnalysis(m2.M2Analysis):
             self.u_p0[:,i] = u_p0
 
         self.result_corrected = True
+
+    def get_CR_before_after(self,name = 'adwindata'):
+
+        adgrp=self.adwingrp(name)
+        after = adgrp['CR_after'].value
+        before = adgrp['CR_before'].value
+        return before,after
+
 
     def get_correlation_ROC(self, P_min1=1, u_P_min1=0, P_0=0, u_P_0=0,
             F0_RO_pulse=1, u_F0_RO_pulse=0,
