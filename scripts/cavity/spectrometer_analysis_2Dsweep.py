@@ -13,13 +13,13 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 import analysis.scripts.cavity.spectrometer_analysis as sa
 
-data_dir='/Users/suzannevandam/Documents/PhD/localdata/20160504/pos9/raw data spectrometer/L1'#"/Users/suzannevandam/Documents/PhD/localdata/20160430/ON_diamond" 
+data_dir='D:/measuring/data/20160510/P12/csv_sweep2'#'D:/measuring/data/20160430/ON_diamond'#'D:/measuring/data/20160430/calibration_finepiezos'#"/Users/suzannevandam/Documents/PhD/localdata/20160430/ON_diamond" 
 print data_dir
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = -2
 # V_min = 4
-V_max = 10
+V_max = 4
 n_diamond = 2.4 #refractive index diamond
 c = 3.e8 #speed of light
 
@@ -73,7 +73,8 @@ def plot_from_2D_data(vmax = None):
     wavelengths,filenumbers,intensities = get_data()
     plot_data(wavelengths,intensities,vmax = vmax)    
 
-def peaks_from_2D_data(order_peak_detection=200):
+
+def peaks_from_2D_data(order_peak_detection=200, save_fig = False):
     wavelengths,filenumbers,intensities = get_data()
 
     x=np.array([])
@@ -82,13 +83,20 @@ def peaks_from_2D_data(order_peak_detection=200):
 
     print 'getting peak locations'
     for i,intensity in enumerate(np.transpose(intensities)):
+        if i<6:
+            continue
         print i,'/',len(np.transpose(intensities))
         indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(wavelengths,intensity,order_peak_detection=order_peak_detection)
+        print peak_wavelengths
+        print wavelengths
+        print intensity
         x0s,u_x0s = sa.fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity)
         x = np.append(x,x0s)
         u_x = np.append(u_x,u_x0s)
         for j in np.arange(len(x0s)):
             y = np.append(y,i)
+
+    print x,y
 
     # make a scatter plot of the peaks
     fig,ax = plt.subplots(figsize =(6,4))
@@ -99,6 +107,14 @@ def peaks_from_2D_data(order_peak_detection=200):
     ax.set_ylim((wavelengths[-1], wavelengths[0]))
 
     ax=set_axes(ax,wavelengths)
+
+    if save_fig:
+        try: 
+            print os.path.join(data_dir, 'peaks.png')
+            fig.savefig(os.path.join(data_dir, 'peaks.png'))
+        except:
+            print('could not save figure')
+
 
     return fig,ax
 

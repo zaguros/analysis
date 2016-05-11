@@ -7,7 +7,6 @@ from stat import S_ISREG, ST_MTIME, ST_MODE
 
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
-
 c=3.e8#speed of light
 
 def get_files_from_folder(folder):
@@ -99,7 +98,7 @@ def approximate_peak_location(wavelengths,intensity,order_peak_detection=70):
     return indices[0],peak_wavelengths, peak_intensity
 
 def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity, 
-        g_gamma = 2, g_offset=0, plot_fit = False):
+        g_gamma = 3, g_offset=0, plot_fit = False):
     """
     This function fits every presumed peak location with a lorentzian. 
     If the fit fails it rejects it as a peak.
@@ -134,7 +133,8 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
 
         intensity_around_peak = intensity[i_min:i_max]
         wavelengths_around_peak = wavelengths[i_min:i_max]
-
+        print wavelengths_around_peak
+        print intensity_around_peak
         fixed = []
 
         p0, fitfunc, fitfunc_str = common.fit_lorentz(g_offset, g_A, g_x0, g_gamma)
