@@ -64,7 +64,7 @@ def quadratic_addition(X,Y,X_u,Y_u):
 
 	return res, res_u
 
-def get_pos_neg_data(a,adwindata_str = '',**kw):
+def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**kw):
 	'''
 	Input: a : a data object of the class MBIAnalysis
 	averages positive and negative data
@@ -86,7 +86,7 @@ def get_pos_neg_data(a,adwindata_str = '',**kw):
 		return
 
 	##acquire pos_neg data
-	for i,ro in enumerate(['positive','negative']):
+	for i,ro in enumerate(ro_array):
 		a.get_sweep_pts()
 		a.get_readout_results(name = adwindata_str+ro,CR_after_check=CR_after_check)
 		a.get_electron_ROC(ssro_calib_folder)
@@ -132,8 +132,8 @@ def average_repump_time(contains = '',do_fit = False,**kw):
 		x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
 		x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
 		y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
-		# y=y2
-		# y_u = y2_u
+		# y=y1
+		# y_u = y1_u
 		ylabel = 'Bloch vector length'
 
 
@@ -151,3 +151,88 @@ def average_repump_time(contains = '',do_fit = False,**kw):
 
 	## save and close plot. We are done.
 	save_and_close_plot(f)
+
+
+def number_of_repetitions(contains = '', do_fit = False, **kw):
+	'''
+	gets data from a folder whose name contains the contains variable.
+	Does or does not fit the data with a gaussian function
+	'''
+
+	### folder choice
+	if contains == '':
+		contains = '_sweep_number_of_reps'
+	elif len(contains) == 2:
+		contains = '_sweep_number_of_reps'+contains
+	elif len(contains) == 1:
+		contains = '_sweep_number_of_reps_'+contains
+
+
+	# older_than = kw.get('older_than',None) automatically handled by kws
+	### acquire data
+	f = toolbox.latest_data(contains,**kw)
+	a = mbi.MBIAnalysis(f)
+	
+	if '_Z' in f:
+		x,y,y_u = get_pos_neg_data(a,adwindata_str = 'Z_',**kw)
+		ylabel = 'Z'
+	else:
+		x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
+		x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
+		y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
+		# y=y1
+		# y_u = y1_u
+		ylabel = 'Bloch vector length'
+
+
+	### create a plot
+	xlabel = a.g.attrs['sweep_name']
+	x = a.g.attrs['sweep_pts'] # could potentially be commented out?
+	create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'avg repump time')
+
+	### fitting if you feel like it / still needs implementation
+	if do_fit:
+		pass
+
+	## plot data
+	plot_data(x,y,y_u=y_u)
+
+	## save and close plot. We are done.
+	save_and_close_plot(f)
+
+
+def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
+	'''
+	gets data from a folder whose name contains the contains variable.
+	Does or does not fit the data with a gaussian function
+	'''
+
+	### folder choice
+	if contains == '':
+		contains = 'Swap_el_to_C'
+
+	# older_than = kw.get('older_than',None) automatically handled by kws
+	### acquire data
+	f = toolbox.latest_data(contains,**kw)
+	a = mbi.MBIAnalysis(f)
+	
+	for el in input_el:
+		ro_str = 'el_state_'+el+'_'
+
+		ro_array = ['positive','negative']
+		x,y,y_u = get_pos_neg_data(a,adwindata_str = ro_str,ro_array=ro_array,**kw)
+		print get_tstamp_from_folder(f),el,x,y,y_u
+	# ### create a plot XXX TODO
+	# xlabel = a.g.attrs['sweep_name']
+	# x = a.g.attrs['sweep_pts'] # could potentially be commented out?
+	# create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'avg repump time')
+
+	# ### fitting if you feel like it / still needs implementation
+	# if do_fit:
+	# 	pass
+
+	# ## plot data
+	# plot_data(x,y,y_u=y_u)
+
+	# ## save and close plot. We are done.
+	# save_and_close_plot(f)

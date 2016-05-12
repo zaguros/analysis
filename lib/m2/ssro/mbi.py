@@ -131,7 +131,6 @@ class MBIAnalysis(m2.M2Analysis):
 
     def get_sweep_pts(self):
 
-        # print self.g.attrs.keys()
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
 

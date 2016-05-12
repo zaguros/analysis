@@ -186,6 +186,8 @@ def CompleteTomo(timestamp = None,
 		save = True,
 		older_than = None,
 		newer_than = None,
+		return_num = "All",
+		return_newest_or_oldest = 'Newest',
 		plot_fit = True):
 
 	### Initialize with empty lists
@@ -204,6 +206,15 @@ def CompleteTomo(timestamp = None,
 	folder_pos_list = [s for s in folder_list if "positive" in s]
 	folder_neg_list = [s for s in folder_list if "negative" in s]
 
+	if return_num != "All": # Return only the latest files.
+		if return_newest_or_oldest == 'Newest':
+			folder_pos_list = folder_pos_list[-return_num:]
+			folder_neg_list = folder_neg_list[-return_num:]
+		elif return_newest_or_oldest == 'Oldest':
+			folder_pos_list = folder_pos_list[:return_num]
+			folder_neg_list = folder_neg_list[:return_num]
+		else:
+			print "Unknown option for return_newest_or_oldest"
 
 	# TODO, improve by doing correct axis etc. and maybe max only
 	if len(folder_neg_list) == 0:
@@ -243,12 +254,12 @@ def CompleteTomo(timestamp = None,
 	x = range(len(y))
 
 	if plot_fit ==True: 
-		fig,ax = plt.subplots(figsize=(35,5)) 
+		fig,ax = plt.subplots(figsize=(16,4)) 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
 		ax.set_xticks(x)
 		ax.set_xticklabels(x_labels)
 		ax.set_ylim(-1.1,1.1)
-		ax.set_title(str(folder_pos_list[0])+'/'+str(folder_neg_list[0]))
+		ax.set_title(str(folder_pos_list[0])+'...\n'+str(folder_neg_list[-1]))
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
 
 			# print values on bar plot
