@@ -50,20 +50,23 @@ EOM_freq = 6  #GHz
 
 
 # Parameters for FSR 50 nm
-g_a1 = 0.5
-g_A1 = 0.02
-g_x01 = 0.0
-g_gamma1 = 0.05
-g_dx = 0.35
-g_A2 = 0.04
-g_gamma2 = 0.1
-g_A3 = 0.04
-g_gamma3 = 0.1
+g_a1 = 0.02
+g_A1 = 0.04
+g_x01 = 0.01
+g_gamma1 = 0.001
+g_A2 = 0.02
+#g_x02 = 0.02
+g_gamma2 = 0.001
+g_A3 = 0.02
+#g_x03 = 0.4
+g_gamma3 = 0.001
+g_dx = 0.005
+
  
 # Open file and create dataframes in pandas
 
-indir="D:\DATA/20160426\EOM_lw_LT" #folder where the data is
-data = pd.read_csv(os.path.join(indir,"NNNNNNNLOWT010.csv"), skiprows=16, names = ["X","Z","Y","none"],usecols=[0,2]) #creating a dataframe in pandas and importing the data
+indir="D:\measuring\data/20160430" #folder where the data is
+data = pd.read_csv(os.path.join(indir,"OFFD008.csv"), skiprows=16, names = ["X","Z","Y","None"],usecols=[0,2]) #creating a dataframe in pandas and importing the data
 
 #Could be used for x/y ticks and labels
 max_X = data['X'].max()
@@ -71,7 +74,7 @@ min_X = data['X'].min()
 max_I = data['Y'].max()
 min_I = data['Y'].min()
 
-x = 1.e5*np.asarray(data['X']) # multiplied by factor 1.e5 just to get normal numbers. 
+x = 1.e3*np.asarray(data['X']) # multiplied by factor 1.e5 just to get normal numbers. 
 y = np.asarray(data['Y'])
 
 fixed=[]
@@ -96,13 +99,13 @@ if EOM_ON == True:
 
 	fig,ax = plt.subplots(figsize=(8,4))
 	plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
-	ax.set_xlabel("Frequency (GHz)", fontsize = 14)
+	ax.set_xlabel("Time (ms)", fontsize = 14)
 	ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
 	ax.set_xlim(x[0],x[-1])
 	xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
 	#rescaling for x-axis in GHz
-	#X_min_freq = ax.get_xlim()[0]*scaling
-	#X_max_freq = ax.get_xlim()[-1]*scaling
+	X_min_freq = ax.get_xlim()[0]*scaling
+	X_max_freq = ax.get_xlim()[-1]*scaling
 
 	#xticklabels = np.linspace(X_min_freq,X_max_freq,n_xticks)
 
@@ -121,7 +124,7 @@ else:
 	fig,ax = plt.subplots(figsize=(8,4))
 	plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
 	ax.set_xlim(x[0],x[-1])
-	ax.set_xlabel("Time (a.u.)", fontsize = 14)
+	ax.set_xlabel("Time (ms)", fontsize = 14)
 	ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
 
 

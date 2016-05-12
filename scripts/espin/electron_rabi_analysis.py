@@ -18,7 +18,7 @@ pulse_shape = 'Square'
 
 
 timestamp = None #'20150407144111' #'20150403163852'#None#'20140408125318'
-guess_frq = 1./6.
+guess_frq = 1./300.
 
 guess_amp = 0.2
 guess_of = 0.7
