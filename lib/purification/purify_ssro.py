@@ -15,7 +15,9 @@ import copy as cp
 
 reload(fit);reload(mbi);reload(common);reload(toolbox)
 
-CR_after_check = True # global variable that let's us post select whether or not the NV was ionized
+CR_after_check = False # global variable that allows us to post select whether or not the NV was ionized
+						# use with caution can sometimes break your analysis (incomplete data)
+
 
 def get_tstamp_from_folder(folder):
     return folder[18:18+15]
@@ -80,13 +82,13 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
 	    ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
 
 	    if ssro_calib_timestamp == None: 
-	        ssro_calib_folder = toolbox.latest_data('SSRO',**kw)#, older_than = older_than)
+	        ssro_calib_folder = toolbox.latest_data('SSROCalibration',**kw)#, older_than = older_than)
 	    else:
 	        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 	        ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
 
-	if adwindata_str == '':
-		return
+	# if adwindata_str == '':
+	# 	return
 
 	##acquire pos_neg data
 	for i,ro in enumerate(ro_array):
@@ -96,6 +98,8 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
 
 
 		x_labels = a.sweep_pts.reshape(-1)
+		if 'X' in x_labels:
+			x_labels = range(len(x_labels))
 		if i == 0:
 			res = ((a.p0.reshape(-1))-0.5)*2
 			res_u = 2*a.u_p0.reshape(-1)
@@ -107,6 +111,37 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
 			res_u = [np.sqrt(y0**2+y_u[ii]**2)/2 for ii,y0 in enumerate(res_u)]
 
 	return np.array(x_labels),np.array(res),np.array(res_u)
+
+def plot_pos_neg_data(contains = '', do_fit = False, **kw):
+	'''
+	simple plotting function for raw data
+	'''
+
+	### folder choice
+	# if contains == '':
+	# 	contains = '111no2'
+
+	# older_than = kw.get('older_than',None) automatically handled by kws
+	### acquire data
+	f = toolbox.latest_data(contains,**kw)
+	a = mbi.MBIAnalysis(f)
+
+	x,y,y_u = get_pos_neg_data(a,ro_array = ['positive','negative'],**kw)
+	ylabel = 'Contrast'
+
+
+
+	### create a plot
+	xlabel = a.g.attrs['sweep_name']
+	fig,ax = create_plot(f,xlabel = xlabel,ylabel =ylabel)
+
+
+	## plot data
+	plot_data(x,y,y_u=y_u)
+
+
+		## save and close plot. We are done.
+	save_and_close_plot(f)
 
 def average_repump_time(contains = '',do_fit = False,**kw):
 	'''
@@ -264,6 +299,7 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 	# for fitting
 	freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
 	fixed = kw.pop('fixed', [1])
+	decay = kw.pop('decay',50)
 	show_guess = kw.pop('show_guess', False)
 
 	# older_than = kw.get('older_than',None) automatically handled by kws
@@ -271,8 +307,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 	f = toolbox.latest_data(contains,**kw)
 	a = mbi.MBIAnalysis(f)
 	
-	ro_array = ['positive','negative']
-	print ro_array
+	ro_array = ['positive']#,'negative']
+	# print ro_array
 	x,y,y_u = get_pos_neg_data(a,adwindata_str = 'X_',ro_array = ro_array,**kw)
 	ylabel = 'X'
 
@@ -291,7 +327,6 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 		A0 = max(y)
 		offset = 0
 		phi0 = 0
-		decay = 50e3
 
 		p0,fitfunc,fitfunc_str = common.fit_decaying_cos(freq,offset,A0,phi0,decay)
 
@@ -311,8 +346,9 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 			p_dict['A'] = p_dict['A']*(-1)
 
 		print 'This is the phase detuning', detuning
-		print 'acquired phase per repetition (includes phase detuning) {:3.3f} +/- {:3.3f}'.format(round(360*(p_dict['f']),3)-detuning,round(360*(e_dict['f']),3) )
+		print 'acquired phase per repetition (includes phase detuning) {:3.3f} +/- {:3.3f}'.format(round(-1*(360*p_dict['f']-detuning),3),round(360*(e_dict['f']),3) )
 		print 'phase offset ', round(p_dict['phi'],3)
 		## save and close plot. We are done.
 	save_and_close_plot(f)
+
 

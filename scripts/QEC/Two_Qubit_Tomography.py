@@ -21,7 +21,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	    folder = toolbox.data_from_time(timestamp) 
 
 	if ssro_calib_timestamp == None: 
-	    ssro_calib_folder = toolbox.latest_data('SSRO')
+	    ssro_calib_folder = toolbox.latest_data('SSROCalibration')
 	else:
 		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
@@ -82,7 +82,7 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 	### SSRO calibration
 	if ssro_calib_timestamp == None: 
-	    ssro_calib_folder = toolbox.latest_data('SSRO')
+	    ssro_calib_folder = toolbox.latest_data('SSROCalibration')
 	else:
 	    ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 	    ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
