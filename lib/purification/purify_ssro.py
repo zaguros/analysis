@@ -15,7 +15,7 @@ import copy as cp
 
 reload(fit);reload(mbi);reload(common);reload(toolbox)
 
-CR_after_check = True # global variable that let's us post select whether or not the NV was ionized
+CR_after_check = False # global variable that let's us post select whether or not the NV was ionized
 
 def get_tstamp_from_folder(folder):
     return folder[18:18+15]
@@ -80,7 +80,7 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
 	    ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
 
 	    if ssro_calib_timestamp == None: 
-	        ssro_calib_folder = toolbox.latest_data('SSRO',**kw)#, older_than = older_than)
+	        ssro_calib_folder = toolbox.latest_data('SSROCalib',**kw)#, older_than = older_than)
 	    else:
 	        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 	        ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
@@ -108,11 +108,20 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
 
 	return np.array(x_labels),np.array(res),np.array(res_u)
 
-def average_repump_time(contains = '',do_fit = False,**kw):
+def average_repump_time(contains = '',do_fit = False, **kw):
 	'''
 	gets data from a folder whose name contains the contains variable.
 	Does or does not fit the data with a gaussian function
 	'''
+
+	### kw for fitting
+
+	fit_offset = kw.pop('fit_offset',0)
+	fit_amplitude = kw.pop('fit_amplitude', 1)
+	fit_x0 = kw.pop('fit_x0', 0.2)
+	fit_sigma = kw.pop('fit_sigma', 0.2)
+	fixed = kw.pop('fixed', [])
+	show_guess = kw.pop('show_guess', False)
 
 	### folder choice
 	if contains == '':
@@ -145,12 +154,21 @@ def average_repump_time(contains = '',do_fit = False,**kw):
 	x = a.g.attrs['sweep_pts'] # could potentially be commented out?
 	fig,ax = create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'avg repump time')
 
-	### fitting if you feel like it / still needs implementation
-	if do_fit:
-		pass
-
 	## plot data
 	plot_data(x,y,y_u=y_u)
+
+	### fitting if you feel like it 
+	if do_fit:
+		
+		p0,fitfunc,fitfunc_str = common.fit_gauss(fit_offset,fit_amplitude,fit_x0,fit_sigma)
+
+		if show_guess:
+			# print decay
+			ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+
+		fit_result = fit.fit1d(x,y,None,p0=p0,fitfunc=fitfunc,do_print=True,fixed=fixed,ret=True)
+		plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],100),ax=ax,plot_data=False)
+
 
 	## save and close plot. We are done.
 	save_and_close_plot(f)
@@ -161,6 +179,18 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 	gets data from a folder whose name contains the contains variable.
 	Does or does not fit the data with a gaussian function
 	'''
+
+	### kw for fitting
+
+	g_a = kw.pop('fit_a',0)
+	g_A = kw.pop('fit_A', 1)
+	g_x0 = kw.pop('fit_x0', 0)
+	g_T = kw.pop('fit_T', 500)
+	g_n = kw.pop('fit_n', 1)
+	g_f = kw.pop('fit_f', 0.0001)
+	g_phi = kw.pop('fit_phi', 0)
+	fixed = kw.pop('fixed', [])
+	show_guess = kw.pop('show_guess', False)
 
 	### folder choice
 	if contains == '':
@@ -193,12 +223,25 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 	x = a.g.attrs['sweep_pts'] # could potentially be commented out?
 	fig,ax = create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'Number of repetitions')
 
-	### fitting if you feel like it / still needs implementation
-	if do_fit:
-		pass
-
 	## plot data
 	plot_data(x,y,y_u=y_u)
+
+	### fitting if you feel like it
+	if do_fit:
+
+		p0,fitfunc,fitfunc_str = common.fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi)
+
+		if show_guess:
+			# print decay
+			ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+
+		fit_result = fit.fit1d(x,y,None,p0=p0,fitfunc=fitfunc,do_print=True,fixed=fixed,ret=True)
+
+		if isinstance(fit_result, int):
+			print "Fit failed!"
+		else: 
+			plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],100),ax=ax,plot_data=False)
+
 
 	## save and close plot. We are done.
 	save_and_close_plot(f)
@@ -263,6 +306,9 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 
 	# for fitting
 	freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
+	decay = kw.pop('decay',50)
+	phi0 = kw.pop('phi0',0)
+
 	fixed = kw.pop('fixed', [1])
 	show_guess = kw.pop('show_guess', False)
 
@@ -272,7 +318,7 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 	a = mbi.MBIAnalysis(f)
 	
 	ro_array = ['positive','negative']
-	print ro_array
+	# print ro_array
 	x,y,y_u = get_pos_neg_data(a,adwindata_str = 'X_',ro_array = ro_array,**kw)
 	ylabel = 'X'
 
@@ -290,8 +336,6 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 	if do_fit:
 		A0 = max(y)
 		offset = 0
-		phi0 = 0
-		decay = 50e3
 
 		p0,fitfunc,fitfunc_str = common.fit_decaying_cos(freq,offset,A0,phi0,decay)
 
@@ -305,13 +349,13 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 		p_dict = fit_result['params_dict']
 		e_dict = fit_result['error_dict']
 		detuning = a.g.attrs['phase_detuning']
-
+		
 		if p_dict['A'] < 0:
 			p_dict['phi'] = p_dict['phi']+180
 			p_dict['A'] = p_dict['A']*(-1)
 
 		print 'This is the phase detuning', detuning
-		print 'acquired phase per repetition (includes phase detuning) {:3.3f} +/- {:3.3f}'.format(round(360*(p_dict['f']),3)-detuning,round(360*(e_dict['f']),3) )
+		print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(round(360*(p_dict['f']),3)-detuning,round(360*(e_dict['f']),3) )
 		print 'phase offset ', round(p_dict['phi'],3)
 		## save and close plot. We are done.
 	save_and_close_plot(f)

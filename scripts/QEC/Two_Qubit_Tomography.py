@@ -97,21 +97,25 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	if timestamps[0] == None: 
 		folder_a = toolbox.latest_data(contains='positive' + tag,older_than = older_than)
 		folder_b = toolbox.latest_data(contains='negative' + tag,older_than = older_than)
-	elif len(timestamps)==1:		
-		folder_b = toolbox.data_from_time(timestamps[0])      
+	elif len(timestamps)==1:
+		folder_b = toolbox.data_from_time(timestamps[0])      		
 		print folder_b
 		folder_a = toolbox.latest_data(contains = 'pos', older_than = timestamps[0])   
 		print folder_a
 	else:
 		folder_a = toolbox.data_from_time(timestamps[0])      
 		folder_b = toolbox.data_from_time(timestamps[1])     	   
- 	
+
 	a = mbi.MBIAnalysis(folder_a)
+
 	a.get_sweep_pts()
+	
 	a.get_readout_results(name='adwindata')
+	
 	a.get_electron_ROC(ssro_calib_folder)
 	y_a= ((a.p0.reshape(-1)[:])-0.5)*2
 	y_err_a = 2*a.u_p0.reshape(-1)[:] 
+
 
 
 	b = mbi.MBIAnalysis(folder_b)
@@ -123,7 +127,6 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 	x_labels = a.sweep_pts.reshape(-1)[:]
 	x = range(len(y_a)) 
-
 
 	
 	### Combine data
