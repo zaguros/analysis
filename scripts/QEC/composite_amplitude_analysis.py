@@ -22,8 +22,8 @@ def get_max_amplitude(px,py,mx,my,px_u,py_u,mx_u,my_u):
 
     ##calc
 
-    b_arr = (np.sqrt(mx**2+my**2)+np.sqrt(px**2+py**2))/2
-    b_u_arr =  np.sqrt((px*px_u)**2+(py*py_u)**2)/np.sqrt(px**2+py**2)+np.sqrt((mx*mx_u)**2+(my*my_u)**2)/np.sqrt(mx**2+my**2)
+    b_arr = np.sqrt((px-mx)**2+(py-my)**2)/2
+    b_u_arr =  np.sqrt((px-mx)**2*(px_u**2+mx_u**2) +(py-my)**2*(py_u**2+my_u**2))/(np.sqrt((px-mx)**2+(py-my)**2)*2)
 
     return b_arr,b_u_arr
 
@@ -51,11 +51,11 @@ def get_raw_data(carbon,**kw):
 
     #if Ndiff != None:
     if carbon == 1:
-        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_width_p'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
-        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_width_p'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
+        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
+        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
     if carbon == 2 or carbon == 5:
-        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_width_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
-        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_width_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
+        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
+        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
     
     #if plotwidth == None and Ndiff == None:
     #    search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)
@@ -133,7 +133,7 @@ def get_gate_fidelity(carbon,**kw):
     for plotwidth in pwlist:
 
         fig = plt.figure(figsize=(12,6))
-        fig.suptitle('Sweep of N1 - N2 (Ntot is constant) for width ='+str(plotwidth), fontsize=20)
+        fig.suptitle('Sweep of N1 - N2 (Ntot is constant) for width ='+str(plotwidth)+'ns.', fontsize=20)
         legendlst=[]
         bestblist=[]
         bestbindlist=[]

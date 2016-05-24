@@ -79,3 +79,27 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
     return fit_results
 
 
+def get_CR_histos(contains='',timestamp = None,):
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp)
+    else:
+        folder = toolbox.latest_data(contains)
+
+    a = mbi.MBIAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results(name='adwindata')
+    a.get_electron_ROC()
+
+    before,after = a.get_CR_before_after()
+
+    fig = plt.figure()
+    ax = plt.subplot()
+    ax.hist(before,abs(max(before)-min(before)+1),normed=True,label = 'before')
+    ax.hist(after,abs(max(after)-min(after)+1),normed=True,label = 'after')
+    ax.set_title(a.default_plot_title)
+    ax.set_xlabel('counts during CR check')
+    ax.set_ylabel('probability')
+    plt.legend()
+
+    plt.show()
+    plt.close('all')
