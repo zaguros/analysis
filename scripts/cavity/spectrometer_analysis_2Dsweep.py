@@ -1,176 +1,234 @@
-#!/usr/bin/python
-
+# analyse 2D data of spectrometer 
 import pandas as pd
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
-from stat import S_ISREG, ST_MTIME, ST_MODE
-import os, sys, time
+import os
 import matplotlib.image as mpimg
-from scipy.signal import argrelextrema
+import scipy 
+import time
 
+from analysis.lib.tools import plot
+from analysis.lib.fitting import fit, common
+import analysis.scripts.cavity.spectrometer_analysis as sa
 
-data_dir="\Users\suzannevandam\Documents\localdata/20160430/ON_Diamond" 
+data_dir='C:\Users\suzannevandam\Documents\localdata/20160504/pos9/raw data spectrometer/L1'#"/Users/suzannevandam/Documents/PhD/localdata/20160430/ON_diamond" 
+print data_dir
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
-V_min = 8
-V_max = 2
-n_xticks= 7 #how many ticks you want on the x-axis
-n_yticks = 11 #how many ticks you want on the y-axis
-peak_detect_TEM00 = False
-order_peak_detection = 100
+V_min = -2
+# V_min = 4
+V_max = 10
+n_diamond = 2.419 #refractive index diamond
+c = 3.e8 #speed of light
 
 
-# load the files in the dataframe, only pick out Intensity and Column. All files in folder. 
+def get_data():
+    wavelengths,filenumbers,intensities = sa.load_data_from_folder(data_dir)
 
-files = (os.path.join(data_dir, fn) for fn in os.listdir(data_dir))
-print files
-files = ((os.stat(path), path) for path in files)
-files = ((stat[ST_MTIME], path)
-           for stat, path in files if S_ISREG(stat[ST_MODE]))
+    return wavelengths,filenumbers,intensities 
 
-# for cdate, path in sorted(files)[:-1]:
-#     print time.ctime(cdate), os.path.basename(path)
+def plot_data(wavelengths,intensities,vmax = None):
 
-dataframes = [pd.read_csv(path, usecols = [2,5]) for cdate,path in sorted(files)]
-print dataframes
-# dataframes=np.array([])
-# print dataframes
-# for cdate, path in sorted(files):
-#   dataframes=np.append(dataframes,pd.read_csv(path, usecols=[2,5]))
-#   print pd.read_csv(path, usecols=[2,5])
-#   print path
-# print dataframes
+    fig,ax = plt.subplots()
+    ax=sns.heatmap(intensities, vmax = vmax,cmap='YlGnBu',ax=ax)
 
-#load the file in the dataframe with a certain name in a certain folder
-#number of files
-#dataframes = [pd.read_csv(os.path.join(indir,"160311_FP_%s_Par1.csv") % i, usecols=[2,5]) for i in xrange(0,11)]
+    ax = set_axes(ax,wavelengths)
 
-# Calculating maximum and minimum values for wavelength and intensity. Intensity we have to use a for loop because we want the overall maximum from all files. 
-
-max_WL = dataframes[0]['Wavelength'].max()
-min_WL = dataframes[0]['Wavelength'].min()
-
-max_I_all=[]
-for i in dataframes:
-    max_I_single = i['Intensity'].max()
-    max_I_all = np.append(max_I_all,max_I_single)
-
-max_I = np.amax(max_I_all)
-
-min_I_all=[]
-for i in dataframes:
-    min_I_single = i['Intensity'].min()
-    min_I_all = np.append(min_I_all,min_I_single)
-
-min_I = np.amin(min_I_all)
-
-# Group the Intensity data by column and compute the mean
-mean_val1=[]
-for i in dataframes:
-	merged=i.groupby('Wavelength')
-	mean=merged.agg([np.mean])
-	mean_val1.append(mean)
-
-if peak_detect_TEM00 == True:
-	
-    for data in mean_val:
-        I_avg_array = np.asarray(data['Intensity']) # argrelextrema only takes an array
-        indices = argrelextrema(I_avg_array, np.greater, order=order_peak_detection) # the number 100 is somewhat arbitrary, but seems to work. 
-				
-        peak_WL= [] #connect indices with the values for the wavelength, creating arrays
-        peak_I=[]
-        peak_freq=[]
-
-		for i in indices:
-			peak_WL = np.append(peak_WL,data.ix['Wavelength'])
-			peak_I = np.append(peak_I,data.loc[i,'Intensity'])
-			peak_f = 3.e8/(data.loc[i,'Wavelength']*1.e-9)
-			peak_freq = np.append(peak_freq,peak_f)
-
-		FSR = []
-		FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
-		
-		print 'The FSR is', FSR,'nm.'
-
-        FSR_freq=fabs(peak_freq[-2]-peak_freq[-1]) # calculating the free spectral range in frequency in Hz
-        print 'The FSR is', round(FSR_freq*1.e-12,2), 'THz.'
-
-        L = 3.e8/(2*FSR_freq) # Calculating the length of the cavity in micrometer
-        print 'The Cavity Length is', round(L*1.e6,2), 'um.'
-
-        range_WL = linspace(max_WL,min_WL,n_yticks)
-        plt.plot(range_WL,L)
-else:
-    print 'No TEM00 peaks are detected for this data, so no FSR and cavity length is determined.'
+    try: 
+        print os.path.join(data_dir, '2D_plot.jpg')
+        fig.savefig(os.path.join(data_dir, '2D_plot.jpg'))
+    except:
+        print('could not save figure')
 
 
-# Concatenate in one dataframe
-mean_val=pd.concat(mean_val1,axis=1)
+def set_axes(ax,wavelengths):
+    ax.set_xlabel("Voltage (V)", fontsize = 14)
+    ax.set_ylabel("Frequency (THz)", fontsize = 14)
+
+    ax.grid(False)
+    ax.set_axis_bgcolor('white')
 
 
-# Plot using seaborn function and set all the axes
-ax=sns.heatmap(mean_val, vmin = 0, vmax= 5000, cmap='YlGnBu')
+    ax.tick_params(which = 'both', direction = 'out')
+    xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],int((V_max-V_min)/2+1))
+    xticklabels = np.linspace(V_min,V_max,int((V_max-V_min)/2+1))
+    xticklabels = np.round(xticklabels,1)
+
+    yticks=np.linspace(ax.get_ylim()[0],ax.get_ylim()[-1],7)
+    ytickslabels = np.linspace(wavelengths[-1],wavelengths[0],7)#in THz
+    ytickslabels =np.round(ytickslabels,0).astype(int)
+
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticklabels, rotation=0)
+
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(ytickslabels)
+
+    return ax
 
 
-ax.set_xlabel("Voltage (V)", fontsize = 14)
-ax.set_ylabel("Wavelength (nm)", fontsize = 14)
+def plot_from_2D_data(vmax = None):
+    wavelengths,filenumbers,intensities = get_data()
+    plot_data(wavelengths,intensities,vmax = vmax)    
 
-ax.set_xlabel("Voltage (V)", fontsize = 20)
-ax.set_ylabel("Wavelength (nm)", fontsize = 20)
+def peaks_from_2D_data(order_peak_detection=200):
+    wavelengths,filenumbers,intensities = get_data()
 
-ax.tick_params(which = 'both', direction = 'out')
-xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
-xticklabels = np.linspace(V_min,V_max,n_xticks)
+    x=np.array([])
+    u_x = np.array([])
+    y=np.array([])
 
-yticks=np.linspace(ax.get_ylim()[0],ax.get_ylim()[-1],n_yticks)
-ytickslabels = np.linspace(max_WL,min_WL,n_yticks)
+    print 'getting peak locations'
+    for i,intensity in enumerate(np.transpose(intensities)):
+        print i,'/',len(np.transpose(intensities))
+        indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(wavelengths,intensity,order_peak_detection=order_peak_detection)
+        x0s,u_x0s = sa.fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity)
+        x = np.append(x,x0s)
+        u_x = np.append(u_x,u_x0s)
+        for j in np.arange(len(x0s)):
+            y = np.append(y,i)
 
+    # make a scatter plot of the peaks
+    fig,ax = plt.subplots(figsize =(6,4))
+    ax.scatter(y,x)
+    ax.errorbar(y, x, ls='none',marker=None,yerr= u_x)
 
-xticklabels_round = np.round(xticklabels,1)
+    ax.set_xlim((filenumbers[0],filenumbers[-1]))
+    ax.set_ylim((wavelengths[-1], wavelengths[0]))
 
-ytickslabels_round=np.round(ytickslabels,0).astype(int)
+    ax=set_axes(ax,wavelengths)
 
-ax.set_xticks(xticks)
-ax.set_xticklabels(xticklabels_round, rotation=0, fontsize=20)
+    return fig,ax
 
-ax.set_yticks(yticks)
-ax.set_yticklabels(ytickslabels_round, fontsize=20)
-
-# plt.show()
-try:
-    plt.savefig(os.path.join(data_dir,'2Dplot_diamond_cavity.jpg'))
-    plt.savefig(os.path.join(data_dir,'2Dplot_diamond_cavity.eps'))
-except:
-    print('could not save figure')
-#mpimg.imsave("out.png", fig)
-#plt.savefig(os.path.join(outdir, "2Dplot.eps"), format="png")
-
-
-# # plot the maximum value of the intensity for the single piezo sweeps
-
-# xaxis = np.linspace(V_min,V_max,21)
-# plt.plot(xaxis, max_I_all,'ro', )
-# plt.xlabel("Voltage (V)", fontsize = 14, fontweight='bold')
-# plt.ylabel("Intensity (a.u.)", fontsize = 14, fontweight = 'bold')
-# plt.xlim(V_min-0.1, V_max+0.1)
-# plt.show()
+def overlap_peaks_and_modes(diamond_thickness=4.e-6,cavity_length = 1.e-6,conversion_factor = -150.e-9,order_peak_detection=70,nr_points=31):
+    fig,ax = peaks_from_2D_data(order_peak_detection=order_peak_detection)
+    ax = plot_diamond_modes(diamond_thickness=diamond_thickness,ax = ax)
+    ax = plot_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,ax=ax, conversion_factor=conversion_factor,nr_points=nr_points)
+    ax = plot_diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,ax=ax,conversion_factor=conversion_factor,nr_points=nr_points)
 
 
+    title ='d={}um_L={}um_cf={}nmpV'.format(str(diamond_thickness*1e6),str(cavity_length*1.e6),str(conversion_factor*1.e9))
+
+    ax.text(ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])/4,ax.get_ylim()[0],title)
+
+    #add an axis at the top with the cavity length 
+    ax2 = ax.twiny()
+    xticks = np.linspace(ax2.get_xlim()[0],ax2.get_xlim()[-1],int((V_max-V_min)/2+1))
+    xticklabels2 =np.linspace(cavity_length*1.e6,cavity_length*1.e6+(conversion_factor*(V_max-V_min)*1.e6),int((V_max-V_min)/2+1))
+    xticklabels2 = np.round(xticklabels2,2)
+
+    ax2.set_xticks(xticks)
+    ax2.set_xticklabels(xticklabels2,rotation=0)
+    ax2.set_xlabel('cavity length (um)',fontsize = 14)
+
+    try: 
+        print os.path.join(data_dir, 'overlap_peaks_and_modes{}.png'.format(title))
+        fig.savefig(os.path.join(data_dir, 'overlap_peaks_and_modes{}.png'.format(title)))
+    except:
+        print('could not save figure')
 
 
+    plt.close(fig)
+
+def pure_diamond_modes(diamond_thickness=4.e-6):
+    max_nr_modes = 100
+    nu_diamond = np.zeros(max_nr_modes)
+    for N in np.arange(max_nr_modes):
+        nu_diamond[N] = (N * c / (2 * n_diamond *diamond_thickness))/1.e12 # in THz
+
+    return nu_diamond
+
+def plot_diamond_modes(diamond_thickness=4.e-6,ax = None):
+    return_fig = False
+    if ax == None:
+        return_fig = True
+        fig,ax = plt.subplots()
+
+    nu_diamond = pure_diamond_modes(diamond_thickness)
+
+    for N,nu in enumerate(nu_diamond):
+        ax.plot(ax.get_xlim(),[nu,nu], lw=2)
+        # ax.text(ax.get_xlim()[-1],nu, 'N={}'.format(N))
+
+    if return_fig:
+        return fig,ax
+
+    return ax
+
+def pure_air_modes(cavity_length=1.e-6,conversion_factor = -150.e-9,nr_points=31):
+    delta_V = V_max - V_min
+    delta_L = delta_V*(conversion_factor) # in m
+    Ls = np.linspace(cavity_length,cavity_length+delta_L,nr_points)
+
+    max_nr_modes = 180
+    nu_air = np.zeros((max_nr_modes,nr_points))
+    for N in np.arange(max_nr_modes):
+        for i,L in enumerate(Ls):
+            nu_air[N,i] = (N * c / (2 * L))/1.e12 # in THz
+
+    return nu_air
+
+def plot_air_modes(cavity_length=1.e-6,diamond_thickness=0.e-6,ax = None,conversion_factor = -150.e-9,nr_points=31):
+    return_fig = False
+    if ax == None:
+        return_fig = True
+        fig,ax = plt.subplots()
+
+    nu_air = pure_air_modes(cavity_length=cavity_length-diamond_thickness,conversion_factor=conversion_factor,nr_points=nr_points)
+    xs = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],nr_points)
+
+    for N,nu in enumerate(nu_air):
+        ax.plot(xs,nu, lw=2)
+        # ax.text(ax.get_xlim()[0],nu[0], 'N={}'.format(N))
+
+    if return_fig:
+        return fig,ax
+
+    return ax
+
+def diamond_air_mode_freq(N=1,cavity_length=1.e-6, diamond_thickness=4.e-6):
+    Ltot = cavity_length+(n_diamond-1)*diamond_thickness
+    Lred = cavity_length-(n_diamond+1)*diamond_thickness
+    nu = c / (2*math.pi*Ltot) * \
+        (math.pi*N - (-1)**N * math.asin( (n_diamond-1)/(n_diamond+1) * \
+        math.sin( (N*math.pi*Lred/Ltot))))
+    return nu
+
+def diamond_air_modes(cavity_length = 1.e-6, diamond_thickness = 4.e-6, conversion_factor = 100e-9,nr_points=31):
+    delta_V = V_max - V_min
+    delta_L = delta_V*(conversion_factor) # in m
+    print delta_L
+    Ls = np.linspace(cavity_length,cavity_length+delta_L,nr_points)
+
+    max_nr_modes = 180
+    nu_diamond_air = np.zeros((max_nr_modes,nr_points))
+
+    for N in np.arange(max_nr_modes):
+        for i,L in enumerate(Ls):
+            nu_diamond_air[N,i] = diamond_air_mode_freq(N=N,cavity_length=L,diamond_thickness=diamond_thickness)/1.e12 # in THz
+
+    return nu_diamond_air
+
+def plot_diamond_air_modes(cavity_length=1.e-6,diamond_thickness=4.e-6,ax = None,conversion_factor = -150.e-9,nr_points=31):
+    return_fig = False
+    if ax == None:
+        return_fig = True
+        fig,ax = plt.subplots()
+
+    nu_diamond_air = diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,conversion_factor=conversion_factor,nr_points=nr_points)
+    xs = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],nr_points)
 
 
+    for N,nu in enumerate(nu_diamond_air):
+        ax.plot(xs,nu, lw=2)
+        # if (nu[0]<ax.get_ylim()[-1]) and (nu[0]>ax.get_ylim()[0]):
+        #     ax.text(ax.get_xlim()[0],nu[0], 'N={}'.format(N))
 
+    if return_fig:
+        return fig,ax
 
-
-
-
-
-
-
-
-
-
+    return ax
 
