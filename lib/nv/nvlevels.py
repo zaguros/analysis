@@ -84,26 +84,32 @@ def get_ES_fast(f0,D):
                      f0 - 0 + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
                      f0 - 0 + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
 
-def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,300.],show_ms0_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
-                            show_FB_A_transitions=True, show_m1_transitions=True,show_p1_transitions=True,show_E_prime_flip_transitions=True, return_dict=False):
+def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False, show_ms0_transitions=True,show_A_transitions=False,show_FB_E_transitions=False, 
+                            show_FB_A_transitions=False, show_m1_transitions=True,show_p1_transitions=False,show_E_prime_flip_transitions=False, return_dict=False):
     """
     Returns the six transition energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
     """
-    
+
     strain=abs(Ex-Ey)/2.0
     offset=np.min([Ey,Ex])+strain
 
-    if not return_dict:
-        return np.sort(get_optical_transitions(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
+    if fast:
+        if not(np.array_equal(B_field,[0.,0.,0.])):
+            print 'WARNING FAST ES energies doe not incorporate B'
+
+        return np.sort(get_optical_transitions_fast(offset,strain))
+
+    else: 
+        trans = get_optical_transitions(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
                             show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions,
                             show_FB_E_transitions=show_FB_E_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions,
-                            show_FB_A_transitions=show_FB_A_transitions,return_dict=return_dict))
-    else:
-        return get_optical_transitions(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
-                    show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions,
-                    show_FB_E_transitions=show_FB_E_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions,
-                    show_FB_A_transitions=show_FB_A_transitions,return_dict=return_dict)
+                            show_FB_A_transitions=show_FB_A_transitions,return_dict=return_dict)
+
+        if not return_dict:
+            return np.sort(trans)
+        else:
+            return trans
 
 def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
     """
@@ -138,7 +144,7 @@ def get_transitions_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,300.],show_E_tran
         y[3*ii+1]=height
     return [np.sort(x),y]
     
-def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94):
+def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,**kw):
     """Returns the eigenvalues and eigenvectors of the NV excited state 
     pertubation matrix.
     inputs:
@@ -200,8 +206,13 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94):
                     [0, 0, 1j*(g_es_ort*Bx)/w2,  1j*(g_es_ort*By)/w2, -1j*(g_es_par*Bz - lambdaA2*Bz), 0]])
       
 
+    if kw.pop('transitions', False):
+        raise ValueError('transitions kw deprecated, use function get_transitions instead')
+        VGSoffset =  np.diag([0, 0, 3*D1A1, 3*D1A1, 0, 0])
+    else:
+        VGSoffset = 0.
 
-    V = Vss + Vso + Ve + Vb 
+    V = Vss + Vso + Ve + Vb +VGSoffset
     
     w,v=np.linalg.eig(V)
     
@@ -292,8 +303,8 @@ def get_optical_transition_strengths(show_ms0_transitions=True,show_m1_transitio
 
 # PH edits 24/03/2015
 # Added in dictionary structure, cus it makes sense. Carefully modified to retain backwards compatibility.
-def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=True,show_m1_transitions=True,show_p1_transitions=True,show_FB_E_transitions=True, 
-                            show_FB_A_transitions=True, show_E_prime_flip_transitions=True,return_dict = False, **kw):
+def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=True,show_m1_transitions=True,show_p1_transitions=True,show_FB_E_transitions=False, 
+                            show_FB_A_transitions=False, show_E_prime_flip_transitions=False,return_dict = False, **kw):
 
     if show_A_transitions:
         show_m1_transitions = True
@@ -311,6 +322,14 @@ def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=Tru
         transitions = {}
 
 
+    # if show_nomag_transitions: # The classic no magnetic field transitions used for e.g. PID control
+
+    #     nomag_transitions=np.array([E_ES[2]-E_GS[0],E_ES[3]-E_GS[0], E_ES[0]-E_GS[1],E_ES[1]-E_GS[1],E_ES[4]-E_GS[1],E_ES[5]-E_GS[1]])
+    #     if not return_dict:
+    #         transitions = np.append(transitions, nomag_transitions)
+    #     else:
+    #         transitions['no_mag'] = nomag_transitions
+
     if show_ms0_transitions:
         ms0_transitions=np.array([E_ES[2]-E_GS[0],
                                  E_ES[3]-E_GS[0]])
@@ -320,7 +339,7 @@ def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=Tru
             transitions['ms0'] = ms0_transitions
 
     if show_m1_transitions:
-        msm1_transitions = np.array([E_ES[0]-E_GS[1],E_ES[4]-E_GS[1],E_ES[5]-E_GS[1]])
+        msm1_transitions = np.array([E_ES[0]-E_GS[1],E_ES[1]-E_GS[1],E_ES[4]-E_GS[1],E_ES[5]-E_GS[1]])
 
         if not return_dict:
             transitions = np.append(transitions, msm1_transitions)
@@ -328,14 +347,13 @@ def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=Tru
             transitions['msm1'] = msm1_transitions
 
     if show_p1_transitions:
-        msp1_transitions = np.array([E_ES[1]-E_GS[2],E_ES[4]-E_GS[2],E_ES[5]-E_GS[2]])
+        msp1_transitions = np.array([E_ES[0]-E_GS[2],E_ES[1]-E_GS[2],E_ES[4]-E_GS[2],E_ES[5]-E_GS[2]])
 
         if not return_dict:
             transitions = np.append(transitions, msp1_transitions)
         else:
             transitions['msp1'] = msp1_transitions
 
-    
     if show_FB_E_transitions: 
         FB_E_transitions=np.array([E_ES[2]-E_GS[1],E_ES[2]-E_GS[2],
                                E_ES[3]-E_GS[1],E_ES[3]-E_GS[2]]) # 4 transitions
@@ -367,6 +385,16 @@ def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=Tru
 
     return transitions
 
+
+def get_optical_transitions_fast(f0,D):
+    D=D/0.749
+    ms1_off=2.87
+    return np.array([f0 - ms1_off - 3.8821 - 0.01856*D - 0.06452*D**2 + 0.00284*D**3 - 4.925e-5*D**4,
+                     f0 - ms1_off - 3.9021 + 0.0157*D  - 0.05397*D**2 + 0.00202*D**3 - 3.09e-5*D**4,
+                     f0 - 0.749*D,
+                     f0 + 0.749*D,
+                     f0 - ms1_off + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
+                     f0 - ms1_off + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
 
 def fit_laserscan_from_file(file, plot=False,plot_save=True, **kw):
     d=np.load(file)['data']
@@ -446,7 +474,26 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
     i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
     """
     for str_split in np.linspace(0,20,20/precision):
-        levels=get_ES_ExEy(0,str_split,fast)
+        levels=get_ES_ExEytransitions(0,str_split,fast = fast)
+        offset=(f1-levels[i1])
+        levels=levels+offset
+        #print levels
+        if abs(f2-levels[i2])<precision:
+            return levels[2]+str_split, levels[2]
+
+    print 'could not find ex,ey within given precision'
+    return (0,0)
+
+def get_ExEy_from_Eprime_and_Ex_or_Ey(Eprime,E0,Ex_or_Ey, precision=0.03, fast=True):
+    """
+    Returns the Ey, Ex frequencys, when given two frequencies f1,f2, 
+    belonging to the i1,i2'th transitions respectively, 
+    counting from the lowest frequency. 
+    At low strain these would be
+    i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
+    """
+    for str_split in np.linspace(0,20,20/precision):
+        levels=get_ES_ExEytransitions(0,str_split,fast = fast)
         offset=(f1-levels[i1])
         levels=levels+offset
         #print levels
@@ -502,7 +549,7 @@ def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, v
     new_strain_splitting = strain_splitting_0 + delta_strain_splitting
     if verbose:
         print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
-    return get_ES_ExEy(F_Ey, F_Ey+new_strain_splitting)
+    return get_transitions_ExEy(F_Ey, F_Ey+new_strain_splitting, fast = fast)
 
 def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, verbose=False):
 
@@ -511,5 +558,5 @@ def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, v
     new_strain_splitting = strain_splitting_0 + delta_strain_splitting
     if verbose:
         print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
-    return get_ES_ExEy(F_Ex-new_strain_splitting, F_Ex)
+    return get_transitions_ExEy(F_Ex-new_strain_splitting, F_Ex, fast = fast)
 
