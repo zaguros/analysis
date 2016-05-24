@@ -12,9 +12,9 @@ import time
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 import analysis.scripts.cavity.spectrometer_analysis as sa
+reload(sa)
 
-data_dir='/Users/suzannevandam/Documents/PhD/localdata/20160504/pos9/raw data spectrometer/L1'#"/Users/suzannevandam/Documents/PhD/localdata/20160430/ON_diamond" 
-print data_dir
+
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = -2
@@ -24,12 +24,12 @@ n_diamond = 2.4 #refractive index diamond
 c = 3.e8 #speed of light
 
 
-def get_data():
+def get_data(data_dir):
     wavelengths,filenumbers,intensities = sa.load_data_from_folder(data_dir)
-
+    print data_dir
     return wavelengths,filenumbers,intensities 
 
-def plot_data(wavelengths,intensities,vmax = None):
+def plot_data(data_dir,wavelengths,intensities,vmax = None):
 
     fig,ax = plt.subplots()
     ax=sns.heatmap(intensities, vmax = vmax,cmap='YlGnBu',ax=ax)
@@ -69,12 +69,13 @@ def set_axes(ax,wavelengths):
     return ax
 
 
-def plot_from_2D_data(vmax = None):
-    wavelengths,filenumbers,intensities = get_data()
-    plot_data(wavelengths,intensities,vmax = vmax)    
+def plot_from_2D_data(data_dir,vmax = None):
+    print data_dir
+    wavelengths,filenumbers,intensities = get_data(data_dir)
+    plot_data(data_dir,wavelengths,intensities,vmax = vmax)    
 
-def peaks_from_2D_data(order_peak_detection=200):
-    wavelengths,filenumbers,intensities = get_data()
+def peaks_from_2D_data(data_dir,order_peak_detection=200):
+    wavelengths,filenumbers,intensities = get_data(data_dir)
 
     x=np.array([])
     u_x = np.array([])
@@ -187,9 +188,4 @@ def plot_air_modes(cavity_length=1.e-6,ax = None,conversion_factor = -150.e-9):
         return fig,ax
 
     return ax
-
-
-
-
-
 
