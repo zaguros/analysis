@@ -45,7 +45,8 @@ def get_raw_data_all_parts(carbon,**kw):
 	older_than = kw.pop('older_than',None)
 	newer_than = kw.pop('newer_than',None)
 	ssro_tstamp = kw.pop('ssro_tstamp',None)
-	
+	uncond_data = kw.pop('uncond_data',False)
+
 	# get SSRO_tstamp from user, else most recent SSRO
 	if ssro_tstamp == None:
 		ssro_calib_folder = toolbox.latest_data(contains = 'SSROCalibration')
@@ -54,9 +55,12 @@ def get_raw_data_all_parts(carbon,**kw):
 		ssro_calib_folder = toolbox.latest_data(contains = ssro_tstamp)
 		print ssro_calib_folder
 
-
-	search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau' + str(tau_nr) + '_'
-	search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative_tau' + str(tau_nr) + '_'
+	if uncond_data == False:
+		search_string_pos = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau' + str(tau_nr) + '_'
+		search_string_neg = 'Sweep_carbon_Gate__C'+str(carbon)+ '_negative_tau' + str(tau_nr) + '_'
+	else:
+		search_string_pos = 'Sweep_uncond_carbon_Gate__C'+str(carbon)+ '_positive_tau' + str(tau_nr) + '_'
+		search_string_neg = 'Sweep_uncond_carbon_Gate__C'+str(carbon)+ '_negative_tau' + str(tau_nr) + '_'
 
 	#list of all folders meeting the requirements, could be sped up by only looking at the wanted parts. 
 	#Already up to date? Back to old toolbox, rewrite for old version
@@ -136,6 +140,7 @@ def gate_sweep_analysis(carbon, **kw):
 	newer_than = kw.pop('newer_than',None)
 	ssro_tstamp = kw.pop('ssro_tstamp',None)
 	
+	uncond_data = kw.pop('uncond_data',False)
 
 	return_data = kw.pop('return_data',False)
 	plot_fidelity = kw.pop('plot_fidelity',False)
@@ -143,7 +148,11 @@ def gate_sweep_analysis(carbon, **kw):
 	line_fidelity = kw.pop('line_fidelity',False)
 
 	#finding how many taus there are: nr. folders/nr. of parts
-	search_string = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau'
+	if uncond_data == False:
+		search_string = 'Sweep_carbon_Gate__C'+str(carbon)+ '_positive_tau'
+	else:
+		search_string = 'Sweep_uncond_carbon_Gate__C'+str(carbon)+ '_positive_tau'
+		
 	entire_folder_list = toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
 	search_string += '0'
 	nr_of_parts = len(toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1])
@@ -154,7 +163,7 @@ def gate_sweep_analysis(carbon, **kw):
 
 	for t in tau_nrs:			
 		gates,x,y,x_u,y_u,folder_pos, gate_values = get_raw_data_all_parts(carbon,older_than = older_than,
-			newer_than = newer_than, ssro_tstamp = ssro_tstamp, tau_nr = t, **kw)
+			newer_than = newer_than, ssro_tstamp = ssro_tstamp, uncond_data = uncond_data, tau_nr = t, **kw)
 		
 		b,b_u = get_bloch_length(x,y,x_u,y_u)
 

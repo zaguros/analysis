@@ -179,14 +179,14 @@ class MBIAnalysis(m2.M2Analysis):
         else:
             for i in range(len(self.normalized_ssro[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-                ssro.get_SSRO_calibration(ssro_calib_folder,
-                        ro_durations[i])
+                    ssro.get_SSRO_calibration(ssro_calib_folder,
+                            ro_durations[i])
 
-            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
-                    self.u_normalized_ssro[:,i])
+                p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                        self.u_normalized_ssro[:,i])
 
-            self.p0[:,i] = p0
-            self.u_p0[:,i] = u_p0
+                self.p0[:,i] = p0
+                self.u_p0[:,i] = u_p0
 
 
 
