@@ -273,7 +273,7 @@ def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
 		### put output string together
 		for jj,res,res_u in zip(range(3),y,y_u):
 			data[ii][jj] = cp.deepcopy(str(res) + " +/- "+ str(res_u))
-
+	x = ['X','Y','Z']
 	row_format ="{:>18}" * (len(x) + 1)
 	headline_format = "{:>12}"+"{:>18}" * len(x)
 	print headline_format.format("", *x)
@@ -307,7 +307,7 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 	f = toolbox.latest_data(contains,**kw)
 	a = mbi.MBIAnalysis(f)
 	
-	ro_array = ['positive']#,'negative']
+	ro_array = ['positive','negative']
 	# print ro_array
 	x,y,y_u = get_pos_neg_data(a,adwindata_str = 'X_',ro_array = ro_array,**kw)
 	ylabel = 'X'
