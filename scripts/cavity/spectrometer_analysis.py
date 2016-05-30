@@ -34,18 +34,20 @@ def load_data(filepath):
     intensity - nuympy array with the averaged intensity per wavelength
     """
     data = pd.read_csv(filepath, usecols=[2,5]) #creating a dataframe in pandas and importing the data
-
+    #print data
     #the data from the spectrometer contains several intensity values per wavelength. 
     #This corresponds to rows in the camera.
     #Here we group by wavelength, and use the mean of the intensity per row.
     intensity=data.groupby('Wavelength')
     intensity=intensity.agg([np.mean])
 
-    wavelengths = intensity.index.get_values()[1:]
-    frequencies = c/(wavelengths*1.e-9)/1.e12 #frequency in THz
+    wavelengths = np.array(intensity.index.tolist()[1:])
 
+    frequencies = c/(wavelengths*1.e-9)/1.e12 #frequency in THz
+    
     intensity = intensity.as_matrix()
-    intensity = intensity[1:]
+    #print len(intensity)
+    #intensity = intensity[1:]
     return frequencies,intensity
 
 def load_data_from_folder(folder):
@@ -59,14 +61,22 @@ def load_data_from_folder(folder):
     intensities - a 2d numpy array with the intensities per (wavelengths, filenumbers)
     """
     files = get_files_from_folder(folder)
-
     nr_of_files = 0
+    ii=0
     for cdate,path in sorted(files):
-        try:
-            wavelength,intensity = load_data(path)
-            intensities = np.concatenate((intensities,intensity),axis =1)
-        except NameError:
+        if ii == 0:
             wavelengths,intensities = load_data(path)
+        else:
+        #try:  
+            wavelength,intensity = load_data(path)
+            if len(intensity)!= len(intensities[:,0]):
+                print 'Waring: data file {} has unequal data length {:d}, compared to previous data files with length {:d}'.format(os.path.split(path)[1], len(intensity), len(intensities[:,0]))
+                continue
+            intensities = np.concatenate((intensities,intensity),axis =1)
+        ii+=1
+        #
+            #wavelengths,intensities = load_data(path)
+
             # wavelengths = data[:,0]
             # intensities = np.array([data[:,1]])
         nr_of_files+=1
