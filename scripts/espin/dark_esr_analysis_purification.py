@@ -16,10 +16,10 @@ reload(plot)
 timestamp =None#'20160112_165427' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.
+guess_x0 = 2. #central frequency
 #guess_splitB = 30.
 guess_splitN = 2.18e-3
-guess_splitC = .2e-3 
+guess_splitC = 0.4e-3 
 guess_width = 0.3e-3
 guess_amplitude = 0.15
 
@@ -27,7 +27,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
     if ax == None:
         fig, ax = plt.subplots(1,1)
     ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
-
+    print folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
     a.get_readout_results('ssro')
@@ -43,7 +43,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             # (2, guess_splitN),
-             # (2, guess_splitC),
+             (2, guess_splitC),
             # (2, guess_splitB),
             (3, guess_splitN),
             do_print=True, ret=True, fixed=[4])

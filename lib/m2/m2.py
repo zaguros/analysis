@@ -12,6 +12,7 @@ class M2Analysis:
     plot_format = 'png'
 
     def __init__(self, folder, **kw):
+        #print 'analyzing in', folder
         self.folder = folder
         self.load_hdf5data(**kw)
         
@@ -45,7 +46,7 @@ class M2Analysis:
             else:
                 logging.error("More than one measurement. Please give a name")
                 return False
-
+        print self.g[adwingrpname]
         return self.g[adwingrpname]
 
     def analysis_h5data(self, name='analysis'):

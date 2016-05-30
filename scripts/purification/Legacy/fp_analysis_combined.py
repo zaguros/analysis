@@ -32,7 +32,10 @@ def fingerprint(disp_sim_spin = True, N = [8], el_trans = 'min', HF_perp = None,
 	###################
 
 	timestamps = {}
-	timestamps['min'] = {'N8' : '20160107_173313', 'N16' : '20160107_201229','N32' : '20160107_222009','N64' : '20160108_004236'}
+	timestamps['min'] = {'N8' : '20160229_114914', 
+						'N16' : '20160229_133036',
+						'N32' : '20160229_152201',
+						'N64' : '20160229_174524'}
 	timestamps['plus'] = {'N8' : '20160110_121238', 'N16' : '20160110_143232','N32' : '20160110_170758','N64' : '20160110_202511'}
 	ssro_calib_folder = 'd:\\measuring\\data\\20160107\\172632_AdwinSSRO_SSROCalibration_Pippin_SIL1'	
 
