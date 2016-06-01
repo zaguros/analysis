@@ -200,7 +200,7 @@ def extract_data_from_sweep(older_than = None,
                     older_than = older_than,raise_exc = False))
 
     if ssro_calib_timestamp == None: 
-        ssro_calib_folder = toolbox.latest_data('SSRO', older_than = older_than)
+        ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than = older_than)
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
@@ -669,7 +669,7 @@ def Osci_period(carbon = '1',older_than = None,ssro_calib_timestamp = None, do_p
     print folder_dict[t]
 
     if ssro_calib_timestamp == None: 
-        ssro_calib_folder = toolbox.latest_data('SSRO', older_than = older_than)
+        ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than = older_than)
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
@@ -983,7 +983,7 @@ def get_PosNeg_data(name,**kw):
 
 
     if ssro_calib_timestamp == None: 
-        ssro_calib_folder = toolbox.latest_data('SSRO', older_than = older_than)
+        ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than = older_than)
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
@@ -1237,7 +1237,7 @@ def repump_speed(timestamp=None, ssro_calib_timestamp =None, older_than=None, po
         folder = toolbox.data_from_time(timestamp)
 
     if ssro_calib_timestamp == None:
-        ssro_calib_folder = toolbox.latest_data('SSRO', older_than=older_than)
+        ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than=older_than)
         if VERBOSE:
             print 'Using SSRO timestamp ', ssro_calib_folder
     else:
@@ -1398,7 +1398,7 @@ def repump_speed_paper_plot(timestamp=None, measurement_name = 'adwindata', ssro
         #print 'folder is ', folder_list_ext
         
         if ssro_calib_timestamp == None :
-            ssro_calib_folder = toolbox.latest_data('SSRO', older_than=older_than[count])
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than=older_than[count])
         else:
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
             ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp[count])
@@ -1551,7 +1551,7 @@ def repump_speed_pm1_paper_plot(timestamp=None, measurement_name = 'adwindata', 
             if VERBOSE:
                 print folder
             if ssro_calib_timestamp == None :
-                ssro_calib_folder = toolbox.latest_data('SSRO', older_than=tstamps[count])
+                ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than=tstamps[count])
             else:
                 ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
                 ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
@@ -1678,7 +1678,7 @@ def ionization_paper_plot(timestamps=None, measurement_name = 'adwindata', ssro_
         folder = toolbox.data_from_time(timestamps[count])
 
         if ssro_calib_timestamp == None :
-            ssro_calib_folder = toolbox.latest_data('SSRO', older_than=timestamps[count])
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than=timestamps[count])
         else:
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
             ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)

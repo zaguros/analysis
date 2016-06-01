@@ -18,9 +18,15 @@ class SequenceAnalysis(m2.M2Analysis):
 
         adwingrp = self.adwingrp(name)
         self.adgrp = adwingrp
-             
-        self.reps = adwingrp['completed_reps'].value
-        self.ssro_results = adwingrp['RO_data'].value
+        
+        if 'ssro_results' in adwingrp:
+            #### the adwin did ssro, use this in order to gauge how many repetitions were done.
+            self.reps = int(len(adwingrp['ssro_results'].value))
+            self.ssro_results = adwingrp['ssro_results'].value
+            print type(self.ssro_results)
+        else:
+            self.reps = adwingrp['completed_reps'].value
+            self.ssro_results = adwingrp['RO_data'].value
         self.normalized_ssro = self.ssro_results/(float(self.reps)/len(self.sweep_pts))
         self.u_normalized_ssro = \
             (self.normalized_ssro*(1.-self.normalized_ssro)/(float(self.reps)/len(self.sweep_pts)))**0.5  #this is quite ugly, maybe replace?

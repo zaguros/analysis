@@ -157,8 +157,8 @@ def gate_sweep_analysis(carbon, **kw):
 	search_string += '0'
 	nr_of_parts = len(toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1])
 	nr_of_taus = len(entire_folder_list)/nr_of_parts
-	print nr_of_parts
-	print nr_of_taus
+	# print nr_of_parts
+	# print nr_of_taus
 	tau_nrs 	= kw.pop('tau_nrs', range(nr_of_taus))
 
 	for t in tau_nrs:			
@@ -170,8 +170,13 @@ def gate_sweep_analysis(carbon, **kw):
 		best_b = np.amax(b)
 		best_b_ind = np.argmax(b)
 
-		print 'best gate configuration at: ', gates[best_b_ind]
-		print 'bloch vector length: ', best_b
+
+		#### get the top 5 gates and return their configurations
+		idx = (-b).argsort()[:5]
+		for i in idx:
+			print 'Gate %i: Blochvec. length of: %f at %s'%(i,b[i],gates[i])
+		# print 'best gate configuration at: ', gates[best_b_ind]
+		# print 'bloch vector length: ', best_b
 
 		if plot_fidelity:
 			bar_plot_fidelity(gates,gate_values,b,b_u)

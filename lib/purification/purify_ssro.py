@@ -187,7 +187,7 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 	g_x0 = kw.pop('fit_x0', 0)
 	g_T = kw.pop('fit_T', 500)
 	g_n = kw.pop('fit_n', 1)
-	g_f = kw.pop('fit_f', 0.0001)
+	g_f = kw.pop('fit_f', 0.0000)
 	g_phi = kw.pop('fit_phi', 0)
 	fixed = kw.pop('fixed', [])
 	show_guess = kw.pop('show_guess', False)
