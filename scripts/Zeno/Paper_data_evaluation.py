@@ -37,7 +37,7 @@ reload(toolbox)
 datafolder = 'ZenData\ '[:-1] ### folder of all the pickle/data files.
 
 timetrace_keylist = ['evotime','fid','fid_u'] ### used in most pickle dictionaries.
-datapoint = 'o'
+datapoint = '.'
 ### Plot styling goes here. 
 
 figscaling = 0.66*0.72
@@ -81,7 +81,7 @@ def scale_figure(figscaling):
 	mpl.rcParams['legend.handletextpad'] = 0.3*figscaling
 	mpl.rcParams['legend.handlelength'] = 1.*figscaling
 	mpl.rcParams['legend.borderpad'] = 0.2+0.2*(figscaling-0.66*0.72)/(1-0.66*0.72)
-	mpl.rcParams['lines.markersize'] = 7*figscaling #was 6
+	mpl.rcParams['lines.markersize'] = 13.5*figscaling#7*figscaling 
 	mpl.rcParams['figure.figsize'] = (6*figscaling,4*figscaling)
 	mpl.rcParams['lines.markeredgewidth'] = 0.3/figscaling
 
@@ -400,6 +400,12 @@ class data_object(object):
 		self.results = []
 
 		keylist = sorted(self.pickle_dict.keys())
+
+		### the single qubit data needs to move to the background and is therefore plotted first.
+		# if 'single_qubit' in keylist:
+		# 	keylist[-1]=keylist[0]
+		# 	keylist[0] = 'single_qubit'
+		print keylist
 		for key in keylist:
 
 			# print key
@@ -414,9 +420,15 @@ class data_object(object):
 
 
 			### can be uncommented to add a N = .. to the legend label.
-			# legendlabel = 'N = ' +legendlabel
+
+			legendlabel = 'N = ' +legendlabel
 			if 'single_qubit' in legendlabel:
-					legendlabel = r'C$_1$'
+					legendlabel = 'Spin 1'#r'C$_1$'
+					# guarantess that singlequbit data is plotted in the back
+					zorder = 3
+
+			else:
+				zorder = 5
 
 
 			# converts process fidelities to avg fidelities	
@@ -481,11 +493,11 @@ class data_object(object):
 
 							self.perform_phenom_fit([key0,key],plotting = do_plot, ax=ax)
 						if do_plot:
-							plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt=datapoint,label=legendlabel,color=color_list[i],capsize = GlobalErrorCapsize)
+							plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt=datapoint,label=legendlabel,color=color_list[i],capsize = GlobalErrorCapsize,zorder=zorder)
 
 					else:
 						if do_plot:
-							plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker=datapoint,color=color_list[i],label = legendlabel,capsize = GlobalErrorCapsize)
+							plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker=datapoint,color=color_list[i],label = legendlabel,capsize = GlobalErrorCapsize,zorder=zorder)
 
 					i +=1	
 
@@ -508,11 +520,11 @@ class data_object(object):
 				
 					# print evotime, fid, fid_u
 					if do_plot:
-						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt=datapoint,label=legendlabel,color=color_list[i],capsize = GlobalErrorCapsize)
+						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],fmt=datapoint,label=legendlabel,color=color_list[i],capsize = GlobalErrorCapsize,zorder=zorder)
 
 				else:
 					if do_plot:
-						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker=datapoint,color=color_list[i],label = legendlabel,capsize = GlobalErrorCapsize)
+						plt.errorbar(np.sort(evotime),fid[np.argsort(evotime)],fid_u[np.argsort(evotime)],marker=datapoint,color=color_list[i],label = legendlabel,capsize = GlobalErrorCapsize,zorder=zorder)
 				
 
 			#increment for colors etc.
@@ -553,9 +565,16 @@ class data_object(object):
 		plt.ylabel(ylabel)
 		
 		if legend:
+			# get handles
+			handles, labels = ax.get_legend_handles_labels()
+			# remove the errorbars
+			handles = [h[0] for h in handles]
+			
+			
 			#plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 			ncol = kw.pop('legend_ncol', 2)
-			plt.legend(frameon = False,ncol = ncol,numpoints = 1)
+			# handles them in the legend
+			ax.legend(handles, labels, loc='upper right',numpoints=1,frameon = False,ncol = ncol)
 
 
 		if xticks != None:
@@ -613,7 +632,7 @@ class data_object(object):
 
 			i = self.find_index(key)
 			# plt.bar(i+0.*bar_width,self.acquire_fit_val(key,final_x_vals),bar_width,color = '#CD4A4A',linewidth = 0.5, edgecolor = 'black',hatch='//',alpha=0.5)
-			plt.bar(i-0.5*bar_width,final_y_vals,bar_width,yerr=final_u_vals,color='gray',linewidth = 1, 
+			plt.bar(i-0.5*bar_width,(np.array(final_y_vals)-0.5),bar_width,yerr=final_u_vals,bottom = 0.5,color='gray',linewidth = 1, 
 																								edgecolor = 'black',
 																								label = str(final_x_vals[0]), 
 																								error_kw=dict(lw = 1,capthick=1,
@@ -624,12 +643,12 @@ class data_object(object):
 		# plt.legend()
 		if not self.contrast:
 			plt.ylim(0.45)
-			plt.plot(np.linspace(-1,len(self.pickle_dict.keys()),101),[0.5]*101,'--',lw=0.2)
+			plt.plot(np.linspace(-1,len(self.pickle_dict.keys()),101),[0.5]*101,'-',color='black',lw=1)
 		plt.xlim(-bar_width)
 		if legend:
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-		plt.xlabel('Number of projections')
+		plt.xlabel('N')
 		if not self.contrast and not self.process_fidelities:
 			ylabel = 'State fidelity'
 		if self.process_fidelities:
@@ -785,7 +804,7 @@ def X_preservation():
 
 	THE_DATA.plot_timetrace(save_plot=True,plot_states = False,xlim=[0,100],xticks=[0,40,80],yticks=[0.4,0.6,0.8,1])
 
-	THE_DATA.plot_msmt_slices([40],legend = False,save_plot = True,yticks=[0.5,0.6,0.7,0.8],ylim=[0.45,0.8])
+	THE_DATA.plot_msmt_slices([40],legend = False,save_plot = True,yticks=[0.4,0.6,0.8,1],ylim=[0.4,1])#0.45 and 0.8
 
 	# THE_DATA.plot_msmt_slices([8],save_plot=True)
 	# THE_DATA.plot_msmt_slices([45],save_plot=True)
@@ -894,7 +913,7 @@ def Q2_vs_Q1():
 	if plot_avg_fid:
 		yticks = [0.6,0.8,1]
 		ylim = [0.55,1]
-		ylabel = 'Avg. state fidelity'
+		ylabel = 'Average state fidelity'
 	else:
 		yticks = [0.4,0.7,1]
 		ylim = None
@@ -918,8 +937,8 @@ def Q2_vs_Q1():
 								ylim=ylim,
 								xticks=[0,30,60],
 								yticks=yticks,
-								legend_ncol=1,)
-								#add_horizontal_line = 0.66)
+								legend_ncol=1,
+								add_horizontal_line = 2./3.)
 
 	data_even.average_state_dicts()
 
@@ -978,7 +997,7 @@ def TwoQFidelity():
 							ylim		= [0.3,0.9],
 							xticks 		= [0,30,60],
 							yticks 		= [0.3,0.5,0.7,0.9],
-							ylabel 		= 'Ent. state fidelity',
+							ylabel 		= 'Entangled state fidelity',
 							legend_ncol = 1)
 
 
@@ -993,7 +1012,7 @@ def TwoQFidelity():
 
 
 # color_list = ['b','r','0.5','m','y','black','brown','c','orange','0.75','0.0','0.5']
-#color_list = ['#e41a1c','#377eb8','#4D4D4D','#FAA43A','#4daf4a','','#4daf4a']
+# color_list = ['#e41a1c','#377eb8','#4D4D4D','#FAA43A','#4daf4a','','#4daf4a']
 
 
 def Protecting_XXX(states = True):
@@ -1059,156 +1078,6 @@ def Protecting_XXX(states = True):
 ##					##
 ######################
 ######################
-
-
-
-def coherence_scalingv1(theory = False):
-	### only used if theory == True
-	scaling_parameters = [1,0,2.142,0,2.8374,0,3.3893,0,3.8631,0,4.28478,0,4.66859,0,5.02315,0,5.3543]
-
-	scale_figure(1)
-
-	data2Q = []
-	data2Q.append(open_data("Zeno_2Q_scaling_Z.p"))
-	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_mZ.p", "rb" ) ))
-	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_Y.p", "rb" ) ))
-	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_mY.p", "rb" ) ))
-	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_XX.p", "rb" ) ))
-	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_YY.p", "rb" ) ))
-
-	# data1Q = pickle.load( open( "ZenData\Zeno_1Q_scaling_mX.p", "rb" ) )
-	data1Q = pickle.load( open( "ZenData\Zeno_1Q_scaling_class_bit.p", "rb" ) )
-
-	data3Q = pickle.load( open( "ZenData\Zeno_3Q_scaling.p", "rb" ) )
-
-	dict_keys = ['msmts','results','results_u']
-
-
-
-	### combine all single qubit expectation values of the two qubit measurements.
-	### i.e. <XI>, <YZ> etc.
-
-	Q2_data = {'msmts': [], 'results': [], 'results_u':[]}
-
-	Q2_data['results'] = np.array(data2Q[0]['results'])/4.
-	Q2_data['results_u'] = np.array(data2Q[0]['results_u'])**2/16
-
-	for i in range(3):
-		Q2_data['results'] = Q2_data['results'] + np.array(data2Q[i+1]['results'])/4.
-
-		Q2_data['results_u'] = np.array(data2Q[i+1]['results_u'])**2/16
-
-	Q2_data['results_u'] = np.sqrt(Q2_data['results_u'])
-	Q2_data['msmts'] = data2Q[0]['msmts']
-
-
-	print Q2_data['results']
-
-
-	### combine the decay of all logical two qubit states for the 3 qubit experiments.
-
-	Q3_data = {'msmts': [], 'results': [], 'results_u':[]}
-
-	Q3_data['results'] = np.array(data3Q['results'][0])/3.
-	Q3_data['results_u'] = np.array(data3Q['results_u'][0])**2/9
-
-	for i in range(2):
-		Q3_data['results'] = Q3_data['results'] + np.array(data3Q['results'][i+1])/3.
-
-		Q3_data['results_u'] = np.array(data3Q['results_u'][i+1])**2/9
-
-	Q3_data['results_u'] = np.sqrt(Q3_data['results_u'])
-	Q3_data['msmts'] = data3Q['msmts'][0]
-
-	
-	# print data1Q['results']
-
-
-	if theory:
-		for ii,msmts in enumerate(data1Q['msmts']):
-			data1Q['results'][ii] =  scaling_parameters[msmts]*data1Q['results'][ii]
-			data1Q['results_u'][ii] =  scaling_parameters[msmts]*data1Q['results_u'][ii]
-
-		for ii,msmts in enumerate(Q2_data['msmts']):
-			Q2_data['results'][ii] =  scaling_parameters[msmts]*Q2_data['results'][ii]
-			Q2_data['results_u'][ii] =  scaling_parameters[msmts]*Q2_data['results_u'][ii]
-			data2Q[-2]['results'][ii] = scaling_parameters[msmts]*data2Q[-2]['results'][ii]
-			data2Q[-2]['results_u'][ii] = scaling_parameters[msmts]*data2Q[-2]['results_u'][ii]
-			data2Q[-1]['results'][ii] = scaling_parameters[msmts]*data2Q[-1]['results'][ii]
-			data2Q[-1]['results_u'][ii] = scaling_parameters[msmts]*data2Q[-1]['results_u'][ii]
-
-		for ii,msmts in enumerate(Q3_data['msmts']):
-			Q3_data['results'][ii] =  scaling_parameters[msmts]*Q3_data['results'][ii]
-			Q3_data['results_u'][ii] =  scaling_parameters[msmts]*Q3_data['results_u'][ii]
-			data3Q['results'][3][ii] = scaling_parameters[msmts]*data3Q['results'][3][ii]
-			data3Q['results_u'][3][ii] = scaling_parameters[msmts]*data3Q['results_u'][3][ii]
-
-	# print Q2_data
-	# print Q3_data
-	# print data2Q
-	combined_data = [data1Q]
-	combined_data.extend([Q2_data])
-	combined_data.append(data2Q[-2]) ### XX scaling for 2 qubit experiments
-	combined_data.append(data2Q[-1]) ### YY scaling for 2 qubit experiments
-	combined_data.extend([Q3_data])
-	# print Q3_data
-	### add the XXX scaling to the data.
-	combined_data.append({'msmts':data3Q['msmts'][3], 'results':data3Q['results'][3],'results_u':data3Q['results_u'][3]})
-
-	# print combined_data
-	# TwoMsmts = []
-
-	labels = [r'$\langle X \rangle$',r'$\langle IX \rangle$ etc.',r'$\langle XX \rangle$',r'$\langle YY \rangle$',r'$\langle XIX \rangle$ etc.',r'$\langle XXX \rangle$']
-	for ii,data in enumerate(combined_data):
-
-		### extract the normalized values for two measurements.
-		# if 2 in data[dict_keys[0]] :
-		# 	index = data[dict_keys[0]].index(2)
-		# 	TwoMsmts.append(data[dict_keys[1]][index])
-
-
-		plt.errorbar(data[dict_keys[0]],data[dict_keys[1]],data[dict_keys[2]],fmt='o',label =labels[ii],color = color_list[ii],capsize = 2)
-
-	### let the theory go through the average of two measurements
-	### theory predicts an enhancement of 2.14 for 2 meaurements	
-	### we measure more or less 3.2
-	### TODO: implement average. comment: this does not give any physical intuition.
-	# print TwoMsmts
-	# offset = np.mean(np.array(TwoMsmts))/2.14
-	# print 'OFFSET', offset
-
-	def f(N): return 1+0.77186*N**0.626286#np.exp(0.403+0.4628*np.log(N))
-	
-	f = np.vectorize(f)
-
-	if theory:
-		plt.plot(np.linspace(0,19,1001),f(np.linspace(0,19,1001)), label = "Theory",color = 'black')
-
-	plt.xlabel('N')
-	
-	# ax.set_yscale('log')
-	# ax.set_xscale('log')
-	if theory:
-		plt.ylabel('Normalized decay time')
-		plt.xlim(-0.2,18)
-		plt.ylim(0.9,6.3)
-	else:
-		plt.ylabel(r'$T/T(N=0)$')
-		plt.xlim(-0.2,18)
-		plt.ylim(0.8,1.4)
-
-	plt.xticks([0,4,8,12,16])
-	plt.legend(loc=4,prop={'size':10},frameon=False,numpoints = 1) #,
-
-
-
-	save_folder = r'D:/measuring/data/Zeno_results'
-	plt.savefig(os.path.join(save_folder,'Fig4_coherence_scaling'+'.pdf'),format='pdf')
-	plt.savefig(os.path.join(save_folder,'Fig4_coherence_scaling'+'.png'),format='png')
-
-
-	plt.show()
-	plt.close('all')
 
 def coherence_scalingv2(theory = False,group_data = False,weight_XX_and_YY = False):
 	### only used if theory == True
@@ -1391,7 +1260,7 @@ def coherence_scalingv2(theory = False,group_data = False,weight_XX_and_YY = Fal
 		# 	TwoMsmts.append(data[dict_keys[1]][index])
 
 
-		plt.errorbar(data[dict_keys[0]],data[dict_keys[1]],data[dict_keys[2]],fmt='o',label =labels[ii],color = color_list[ii],capsize = 2)
+		plt.errorbar(data[dict_keys[0]],data[dict_keys[1]],data[dict_keys[2]],fmt=datapoint,label =labels[ii],color = color_list[ii],capsize = 2)
 
 	### let the theory go through the average of two measurements
 	### theory predicts an enhancement of 2.14 for 2 meaurements	
@@ -1408,7 +1277,7 @@ def coherence_scalingv2(theory = False,group_data = False,weight_XX_and_YY = Fal
 	if theory:
 		plt.plot(np.linspace(0,19,1001),f(np.linspace(0,19,1001)),color = 'black')
 
-	plt.xlabel('N')
+	plt.xlabel(r'$N$')
 	
 	# ax.set_yscale('log')
 	# ax.set_xscale('log')
@@ -1422,7 +1291,7 @@ def coherence_scalingv2(theory = False,group_data = False,weight_XX_and_YY = Fal
 		plt.ylim(0.8,1.4)
 
 	plt.xticks([0,4,8,12,16])
-	plt.legend(loc=4,frameon=False,numpoints = 1) #,
+	# plt.legend(loc=4,frameon=False,numpoints = 1) #,
 
 
 
@@ -1453,7 +1322,7 @@ def oddmsmts():
 
 	plot_avg_fid = True
 	if plot_avg_fid:
-		ylabel = 'Avg. state fidelity'
+		ylabel = 'Average state fidelity'
 		ylim = [0.55,0.95]
 		yticks = [0.6,0.7,0.8,0.9]
 	else:
