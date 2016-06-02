@@ -4,6 +4,7 @@ import scipy
 import pandas as pd
 import os
 from stat import S_ISREG, ST_MTIME, ST_MODE
+import matplotlib.pyplot as plt
 
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
@@ -40,14 +41,14 @@ def load_data(filepath):
     #Here we group by wavelength, and use the mean of the intensity per row.
     intensity=data.groupby('Wavelength')
     intensity=intensity.agg([np.mean])
-
+    #first datapoint in spectrometer is wrong - remove it.
     wavelengths = np.array(intensity.index.tolist()[1:])
 
     frequencies = c/(wavelengths*1.e-9)/1.e12 #frequency in THz
     
     intensity = intensity.as_matrix()
     #print len(intensity)
-    #intensity = intensity[1:]
+    intensity = intensity[1:]
     return frequencies,intensity
 
 def load_data_from_folder(folder):
@@ -108,7 +109,7 @@ def approximate_peak_location(wavelengths,intensity,order_peak_detection=70):
     return indices[0],peak_wavelengths, peak_intensity
 
 def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity, 
-        g_gamma = 3, g_offset=0, plot_fit = False):
+        g_gamma = 0.2, g_offset=0, plot_fit = False):
     """
     This function fits every presumed peak location with a lorentzian. 
     If the fit fails it rejects it as a peak.
@@ -143,8 +144,7 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
 
         intensity_around_peak = intensity[i_min:i_max]
         wavelengths_around_peak = wavelengths[i_min:i_max]
-        print wavelengths_around_peak
-        print intensity_around_peak
+
         fixed = []
 
         p0, fitfunc, fitfunc_str = common.fit_lorentz(g_offset, g_A, g_x0, g_gamma)
@@ -158,20 +158,29 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
             print 'fit failed'
             continue
 
-
         res_rms = fit_result['residuals_rms']/np.average(wavelengths_around_peak)
-
+        gamma = fit_result['params_dict']['gamma']
         x0 = fit_result['params_dict']['x0']
         u_x0 = fit_result['error_dict']['x0']
-
         A = fit_result['params_dict']['A']
+        # print x0,A,gamma
 
+
+ 
         if plot_fit:
-
+            print 'plot fit'
             fig,ax = plt.subplots()
             plot.plot_fit1d(fit_result, np.linspace(wavelengths_around_peak[0],wavelengths_around_peak[-1],len(wavelengths_around_peak)), 
                 ax =ax, label='Fit',show_guess=True, plot_data=True)
             plt.show()
+        if A < 20:
+            print 'peak intensity is too low; disregarding'
+            continue
+
+        if u_x0 > np.abs(wavelengths_around_peak[-1]-wavelengths_around_peak[0]):
+            print x0,u_x0
+            print 'uncertainty in peak position too large; disregarding'
+            continue 
 
         x0s = np.append(x0s,x0)
         u_x0s = np.append(u_x0s,u_x0)
