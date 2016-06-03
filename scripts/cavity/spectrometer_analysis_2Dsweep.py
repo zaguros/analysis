@@ -20,7 +20,7 @@ reload(sa)
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = -2
 # V_min = 4
-V_max = 4
+V_max = 10
 n_diamond = 2.419 #refractive index diamond
 c = 3.e8 #speed of light
 
@@ -75,7 +75,60 @@ def plot_from_2D_data(data_dir,vmax = None):
     wavelengths,filenumbers,intensities = get_data(data_dir)
     plot_data(data_dir,wavelengths,intensities,vmax = vmax)    
 
-def peaks_from_2D_data(data_dir,order_peak_detection=200):
+def shifted_plot_from_2D_data(data_dir):
+    wavelengths,filenumbers,intensities = get_data(data_dir)
+ 
+    fig,ax = plt.subplots(figsize=(6,4))
+    ax=set_axes(ax,wavelengths)
+
+    for i,intensity in enumerate(np.transpose(intensities)):
+        ax.plot(wavelengths,intensity-i*15000)
+    
+    plt.show()
+
+    try: 
+        print os.path.join(data_dir, 'shifted_plots.png')
+        fig.savefig(os.path.join(data_dir, 'shifted_plots.png'))
+    except:
+        print('could not save figure')
+
+    plt.close()
+
+def peaks_from_1D_data(wavelengths,intensity,**kw):
+    '''
+    function that finds the peaks in 1D data with 
+    x = wavelengths,
+    y = intensity,
+    output parameters:
+    x0s - array of xs corresponding to peak locations
+    u_x0s - uncertainty in xs from lorentzian fit
+    '''
+    plot_fit = kw.pop('plot_fit',False)
+    plot_peak_locations = kw.pop('plot_peak_locations',False)
+
+    indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(wavelengths,intensity,**kw)
+    x0s,u_x0s,success = sa.fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit)
+    peak_intensity_x0s = peak_intensity[np.where(peak_intensity*success >0)]
+    # print len(peak_intensity),len(peak_intensity_x0s)
+
+    if plot_peak_locations:
+        fig, ax = plt.subplots()
+        ax.plot(wavelengths,intensity)
+        # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
+        ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
+        plt.show()
+        plt.close()
+
+    return x0s,u_x0s    
+
+def peaks_from_2D_data(data_dir,**kw):
+    '''
+    function that finds the peaks in 2D data in data_dir.
+    Output: a 2d scatter plot showing the peak locations.
+    TODO: save the obtained peak locations
+    '''
+    save_fig = kw.pop('save_fig',True)
+
     wavelengths,filenumbers,intensities = get_data(data_dir)
 
     x=np.array([])
@@ -84,20 +137,14 @@ def peaks_from_2D_data(data_dir,order_peak_detection=200):
 
     print 'getting peak locations'
     for i,intensity in enumerate(np.transpose(intensities)):
-        if i<6:
-            continue
         print i,'/',len(np.transpose(intensities))
-        indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(wavelengths,intensity,order_peak_detection=order_peak_detection)
-        print peak_wavelengths
-        print wavelengths
-        print intensity
-        x0s,u_x0s = sa.fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity)
+        # if i>0:
+        #     break
+        x0s,u_x0s = peaks_from_1D_data(wavelengths,intensity,**kw)
         x = np.append(x,x0s)
         u_x = np.append(u_x,u_x0s)
         for j in np.arange(len(x0s)):
             y = np.append(y,i)
-
-    print x,y
 
     # make a scatter plot of the peaks
     fig,ax = plt.subplots(figsize =(6,4))
@@ -119,11 +166,27 @@ def peaks_from_2D_data(data_dir,order_peak_detection=200):
 
     return fig,ax
 
-def overlap_peaks_and_modes(diamond_thickness=4.e-6,cavity_length = 1.e-6,conversion_factor = -150.e-9,order_peak_detection=70,nr_points=31):
-    fig,ax = peaks_from_2D_data(order_peak_detection=order_peak_detection)
-    ax = plot_diamond_modes(diamond_thickness=diamond_thickness,ax = ax)
-    ax = plot_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,ax=ax, conversion_factor=conversion_factor,nr_points=nr_points)
-    ax = plot_diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,ax=ax,conversion_factor=conversion_factor,nr_points=nr_points)
+def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e-6,
+        conversion_factor = 307.e-9,nr_points=31, **kw):
+    '''
+    function that plots the fitted peak locations in 2D data in data_dir, 
+    and overlaps it with the analytically derived diamond and air modes.
+    Input parameters:
+    data_dir - directory containing 2D data
+    diamond_thickness - diamond thickness used to obtain analytic result for resonance frequency
+    cavity_length - diamond thickness used to obtain analytic result for resonance frequency
+    conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT:
+    nr_points - the number of points used for plotting analytic results of resonances
+    **keywords for peak-finding:
+    plot_fit - whether to plot the fit of each resonance found in the data
+
+    '''
+    fig,ax = peaks_from_2D_data(data_dir,**kw)
+    # ax = plot_diamond_modes(diamond_thickness=diamond_thickness,ax = ax)
+    # ax = plot_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+    #     ax=ax, conversion_factor=conversion_factor,nr_points=nr_points)
+    ax = plot_diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+        ax=ax,conversion_factor=conversion_factor,nr_points=nr_points)
 
 
     title ='d={}um_L={}um_cf={}nmpV'.format(str(diamond_thickness*1e6),str(cavity_length*1.e6),str(conversion_factor*1.e9))
