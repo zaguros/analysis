@@ -18,7 +18,7 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 
 		self.agrp=self.adwingrp('adwindata')
 
-	def filter_pq_data_for_adwin_syncs(self):
+	def filter_pq_data_from_adwin_syncs(self):
 
 		"""
 		returns a boolean numpy array.
@@ -27,13 +27,13 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 
 		TODO: Needs to be generalized for longer PQ meausrements with more data sets.
 		"""
-		adwin_syncs = self.agrp['sync_number'].value
-
+		adwin_syncs = self.agrp['sync_number'].value[:-1]
 		pq_syncs = self.pqf['/PQ_sync_number-1'].value
-		adwin_sync_filter = np.searchsorted(adwin_syncs,pq_syncs)
-		adwin_sync_filter = adwin_syncs[adwin_sync_filter]
 
-		return adwin_sync_filter == pq_syncs
+		#adwin_sync_filter = np.searchsorted(adwin_syncs,pq_syncs) ### does not return what we want.
+		#adwin_sync_filter = adwin_syncs[adwin_sync_filter]
+
+		return True #adwin_sync_filter == pq_syncs
 
 	def filter_adwin_data_from_pq_syncs(self,filtered_syncs):
 		"""
@@ -44,7 +44,23 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 		"""
 		sn_lt = self.pqf['/PQ_sync_number-1'].value
 		adwin_syncs = self.agrp['sync_number'].value
-		return np.searchsorted(adwin_syncs,sn_lt[filtered_syncs])
+		filtered_sn = sn_lt[filtered_syncs]
+		insert_pos = np.searchsorted(adwin_syncs,sn_lt[filtered_syncs])
+
+
+		return insert_pos, adwin_syncs[insert_pos] #does not return what we want.
+
+	def get_adwin_data_from_pq_syncs(self,filtered_syncs):
+		"""
+		takes the filtered pq syncs as input and returns a boolean array.
+		This array serves as filter for the adwin RO results
+
+		TODO: generalize for arbitrary PQ data size
+		"""
+		sn_lt = self.pqf['/PQ_sync_number-1'].value
+		adwin_syncs = self.agrp['sync_number'].value
+
+		return np.searchsorted(adwin_syncs,sn_lt[filtered_syncs]) #does not return what we want.
 
 	def get_filtered_ROC(normalized_ssro,u_normalized_ssro):
 		"""
