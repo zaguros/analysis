@@ -473,31 +473,16 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
     At low strain these would be
     i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
     """
+    print "Hihsi"
+    print precision
     for str_split in np.linspace(0,20,20/precision):
-        levels=get_ES_ExEytransitions(0,str_split,fast = fast)
+        levels= get_transitions_ExEy(0,str_split,fast = fast)
         offset=(f1-levels[i1])
         levels=levels+offset
         #print levels
-        if abs(f2-levels[i2])<precision:
-            return levels[2]+str_split, levels[2]
 
-    print 'could not find ex,ey within given precision'
-    return (0,0)
-
-def get_ExEy_from_Eprime_and_Ex_or_Ey(Eprime,E0,Ex_or_Ey, precision=0.03, fast=True):
-    """
-    Returns the Ey, Ex frequencys, when given two frequencies f1,f2, 
-    belonging to the i1,i2'th transitions respectively, 
-    counting from the lowest frequency. 
-    At low strain these would be
-    i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
-    """
-    for str_split in np.linspace(0,20,20/precision):
-        levels=get_ES_ExEytransitions(0,str_split,fast = fast)
-        offset=(f1-levels[i1])
-        levels=levels+offset
-        #print levels
         if abs(f2-levels[i2])<precision:
+
             return levels[2]+str_split, levels[2]
 
     print 'could not find ex,ey within given precision'
@@ -542,7 +527,7 @@ def mixing_probability(T):
 
     # 1/(2+1/(c1*T(i)^5))
     # 1/(2+1/(c1*T(i)^5))
-def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, verbose=False):
+def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, verbose=False, fast = True):
 
     delta_strain_splitting = (2.*(F_Y - F_Y_0 + a*(F_Ey_0 - F_Ey)))/(a + b)
     #delta_strain_offset = (F_Y - F_Y_0 - b*F_Ey_0 + b*F_Ey)/(a + b)
@@ -551,7 +536,7 @@ def get_E_prime_Ey(strain_splitting_0, F_Ey_0, F_Y_0, F_Ey, F_Y, a=4.2, b=0.2, v
         print 'new strain splitting: {:.2f} GHz'.format(new_strain_splitting)
     return get_transitions_ExEy(F_Ey, F_Ey+new_strain_splitting, fast = fast)
 
-def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, verbose=False):
+def get_E_prime_Ex(strain_splitting_0, F_Ex_0, F_Y_0, F_Ex, F_Y, a=4.2, b=0.2, verbose=False, fast = True):
 
     delta_strain_splitting = (2.*(-F_Y + F_Y_0 + a*(-F_Ex_0 + F_Ex)))/(a - b)
 
