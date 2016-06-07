@@ -27,26 +27,35 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 
 		TODO: Needs to be generalized for longer PQ meausrements with more data sets.
 		"""
-		adwin_syncs = self.agrp['sync_number'].value[:-1]
+		adwin_syncs = self.agrp['counted_awg_reps'].value
 		pq_syncs = self.pqf['/PQ_sync_number-1'].value
 
-		#adwin_sync_filter = np.searchsorted(adwin_syncs,pq_syncs) ### does not return what we want.
-		#adwin_sync_filter = adwin_syncs[adwin_sync_filter]
 
-		return True #adwin_sync_filter == pq_syncs
+		i = 0
+		j = 0
+		sync_indices = []
+		for adwin_sync in adwin_syncs:
+			while True:
+				if pq_syncs[j] == adwin_sync:
+					sync_indices.append(j)
+				if pq_syncs[j] > adwin_sync:
+					# print 'this is the last sync and index', pq_syncs[j],j
+					break
+				### since both lists are sorted: you don't want to start over again.	
+				j += 1
 
-	def filter_adwin_data_from_pq_syncs(self,filtered_syncs):
+		return np.array(sync_indices)
+	def filter_adwin_data_from_pq_syncs(self,filtered_sn):
 		"""
 		takes the filtered pq syncs as input and returns a boolean array.
 		This array serves as filter for the adwin RO results
 
 		TODO: generalize for arbitrary PQ data size
 		"""
-		sn_lt = self.pqf['/PQ_sync_number-1'].value
-		adwin_syncs = self.agrp['sync_number'].value
-		filtered_sn = sn_lt[filtered_syncs]
-		insert_pos = np.searchsorted(adwin_syncs,sn_lt[filtered_syncs])
-
+		adwin_syncs = self.agrp['counted_awg_reps'].value
+		# print 'elen', len(filtered_sn)
+		insert_pos = np.searchsorted(adwin_syncs,filtered_sn)
+		#insert_pos = np.searchsorted(filtered_sn,adwin_syncs)
 
 		return insert_pos, adwin_syncs[insert_pos] #does not return what we want.
 
@@ -58,7 +67,7 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 		TODO: generalize for arbitrary PQ data size
 		"""
 		sn_lt = self.pqf['/PQ_sync_number-1'].value
-		adwin_syncs = self.agrp['sync_number'].value
+		adwin_syncs = self.agrp['counted_awg_reps'].value
 
 		return np.searchsorted(adwin_syncs,sn_lt[filtered_syncs]) #does not return what we want.
 
