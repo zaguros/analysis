@@ -45,6 +45,7 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 				j += 1
 
 		return np.array(sync_indices)
+		
 	def filter_adwin_data_from_pq_syncs(self,filtered_sn):
 		"""
 		takes the filtered pq syncs as input and returns a boolean array.
