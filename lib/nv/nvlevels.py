@@ -260,7 +260,7 @@ def get_optical_transition_strengths_ExEy(Ex,Ey,B_field=[0.,0.,0.],show_ms0_tran
                 show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions)
 
 def get_optical_transition_strengths(show_ms0_transitions=True,show_m1_transitions=True,show_p1_transitions=True, **kw):
-
+    # Attempts to estimate strengths of optical transitions in a hand wavy way - looks at relevant eigenstate components 
     E_ES, v_ES = get_ES_SpinComp(trans_A_levels = True, **kw)
 
     order = np.argsort(E_ES)
@@ -473,8 +473,7 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
     At low strain these would be
     i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
     """
-    print "Hihsi"
-    print precision
+
     for str_split in np.linspace(0,20,20/precision):
         levels= get_transitions_ExEy(0,str_split,fast = fast)
         offset=(f1-levels[i1])
@@ -484,6 +483,37 @@ def get_ExEy_from_two_levels(f1,i1,f2,i2, precision=0.03, fast=True):
         if abs(f2-levels[i2])<precision:
 
             return levels[2]+str_split, levels[2]
+
+    print 'could not find ex,ey within given precision'
+    return (0,0)
+
+def get_ExEy_from_Eprime_and_Ex_or_Ey(f_E_prime,f_Ex_or_Ey,Ex_or_Ey = 'Ex', precision=0.03):
+    """
+    Returns the Ey, Ex frequencys, when given two frequencies f1,f2, 
+    belonging to the i1,i2'th transitions respectively, 
+    counting from the lowest frequency. 
+    At low strain these would be
+    i = [0, 1, 2, 3, 4, 5] == [E1, E2, Ey, Ex, A1, A2]
+    """
+    p1_or_m1 = 'm1' # At the moment this is hard coded, because I dont think it makes an important difference,
+    # However, could be fed as a parameter 
+    for str_split in np.linspace(0,20,20/precision):
+
+        if p1_or_m1 == 'p1':
+            levels = get_transitions_ExEy(0,str_split,show_ms0_transitions=True,show_p1_transitions=True, return_dict=True)
+            offset = f_E_prime - np.sort(levels['msp1'][0])
+        else:
+            levels = get_transitions_ExEy(0,str_split,show_ms0_transitions=True,show_m1_transitions=True, return_dict=True)
+            offset = f_E_prime - np.sort(levels['msm1'][0])
+
+        if Ex_or_Ey == 'Ey':
+            levels_Ex_or_Ey = np.sort(levels['ms0'])[0]+offset
+        else:
+            levels_Ex_or_Ey = np.sort(levels['ms0'])[1]+offset
+           
+        if abs(f_Ex_or_Ey-levels_Ex_or_Ey)<precision:
+
+            return np.flipud(np.sort(levels['ms0'])) + offset
 
     print 'could not find ex,ey within given precision'
     return (0,0)
