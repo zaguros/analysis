@@ -1,5 +1,5 @@
 """
-Provides analysis functions for Barret Kok measurements
+Provides analysis functions for purification measurements
 
 NK 2016
 """
@@ -12,17 +12,14 @@ from analysis.lib.tools import toolbox as tb; reload(tb)
 from analysis.lib.pq import pq_tools
 import copy as cp
 from matplotlib import pyplot as plt
-import BK_analysis_params as BK_params;reload(BK_params)
+import purify_analysis_params as analysis_params;reload(analysis_params)
 
 #### standard parameters
-w_start = 2790e-9
-w_length = 50e-9
-w_separation = 500e-9
 
 save_plot_folder = r'D:\measuring\data\purification_data'
 
 
-class BK_analysis(object):
+class purify_analysis(object):
 	"""
 	general class that stores prefiltered data and serves as analysis suite for non-local correlation measurements
 	"""
@@ -30,13 +27,14 @@ class BK_analysis(object):
 	def __init__(self,name,lt3_folder,lt4_folder,**kw):
 		"""
 		data is in general stored in dictionaries associated with one of the two setups. each dictionary entry contains a list of np.arrays (each entry corresponding to one given timestamp)
+		we additionally store the full purify_pq object for further processing of the raw data
 		"""
 		self.name = name
 
-		self.key_list = ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','counted_awg_reps','ssro_results','tstamp','raw_data']
+		self.key_list = ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','counted_awg_reps_w1','counted_awg_reps_w2','ssro_results','tstamp','raw_data']
 
 		self.key_list_pq =  ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1']
-
+		self.key_lst_adwin_data = ['ssro_results','electron_readout_results','Phase_correction_repetitions','CR_after','carbon_readout_results']
 		self.lt4_dict = {}
 		self.lt3_dict = {}
 
@@ -47,75 +45,6 @@ class BK_analysis(object):
 
 		self.lt3_folder = lt3_folder
 		self.lt4_folder = lt4_folder
-
-	#### helper functions for plotting ####
-
-	def create_plot(self,**kw):
-		ylabel = kw.pop('ylabel',None)
-		xlabel = kw.pop('xlabel',None)
-		title = kw.pop('title',None)
-
-		fig = plt.figure()
-		ax = plt.subplot()
-
-		if xlabel != None:
-			plt.xlabel(xlabel)
-		else:
-			plt.xlabel('Run (#)')
-
-		if ylabel != None:
-			plt.ylabel(ylabel)
-		else:
-			plt.ylabel('Contrast')
-
-		if title != None:
-			plt.title(title)
-
-		return fig,ax
-		
-		
-	def save_and_close_plot(self,f = save_plot_folder, save = False, name = None):
-
-		if name == None:
-			name = 'Results'
-		if save:
-			plt.savefig(os.path.join(f,'name.pdf'),format='pdf')
-			plt.savefig(os.path.join(f,'name.png'),format='png')
-			
-		plt.show()
-		plt.close('all')
-
-	def plot_data(self,x,y,**kw):
-		label = kw.pop('label',None)
-		y_u = kw.pop('y_u',None)
-		if y_u != None:
-			plt.errorbar(x,y,y_u,fmt = 'x',label = label,**kw)
-		else: plt.plot(x,y,'x',label = label)
-
-
-
-	def find_tstamps_of_day(self,ts_list,day_string,analysis_folder = 'throw exception'):
-		latest_t = str(int(day_string[:-1]) +1)+'_000000'
-		newer_than = day_string+'_000000'
-
-		while tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
-			latest_t,f = tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
-
-			### debug statement that prints the full timestamp and the relevant identifier.
-			#print latest_t[8:],latest_t
-
-			### append found timestamp to list of timestamps
-			ts_list.append(latest_t[8:]) 
-
-		return ts_list
-
-	def load_timestamps_lt3_lt4(self):
-		"""
-		loads the associated timestamps for BK.
-		returns timestamps for LT3 and LT4.
-		This should work via a static parameter dictionary in 'scripts', right now done by hand & find timestamps of day.
-		"""
-		pass
 
 	def load_raw_data(self,lt3_timestamps,lt4_timestamps):
 		"""
@@ -136,23 +65,48 @@ class BK_analysis(object):
 
 			### filter the timeharp data according to adwin events / syncs
 
+			### need to create two sync filters here.!
 			sync_filter = a_lt4.filter_pq_data_from_adwin_syncs() ### this syncfilter erases all data where from the PQ data where the adwin did NOT read out
 			# print sync_filter
 			if len(sync_filter) == 0: # empty list --> no read outs.
 				# print 'file empty, skipping these time stamps:',t_lt3,t_lt4
 				# print
 				continue
-			print 'tstamps', t_lt3,t_lt4
+
 			### store relevant adwin results
-			self.lt3_dict['ssro_results'].append(np.array(a_lt3.agrp['ssro_results'].value))
-			self.lt3_dict['counted_awg_reps'].append(np.array(a_lt3.agrp['counted_awg_reps'].value))
-			self.lt4_dict['ssro_results'].append(np.array(a_lt4.agrp['ssro_results'].value))
-			self.lt4_dict['counted_awg_reps'].append(np.array(a_lt4.agrp['counted_awg_reps'].value))
+			syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value)-np.array(a_lt3.agrp['attempts_second'].value))
+			syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value)
+
+
+			if len(syncs_w1) == 0:
+				print 'syncs_w1 empty, skipping these time stamps:',t_lt3,t_lt4
+				print
+				continue
+
+			self.lt3_dict['counted_awg_reps_w2'].append(syncs_w2)
+			self.lt3_dict['counted_awg_reps_w1'].append(syncs_w1)
+ 			self.lt4_dict['counted_awg_reps_w2'].append(syncs_w2)
+			self.lt4_dict['counted_awg_reps_w1'].append(syncs_w1)
+
+
+
+			### need to create two sync filters here. This is done by appending them to each other and sorting the relatively short array. (should never be more than 500 events??)
+			### this syncfilter erases all data from the PQ data where the adwin did NOT read out. Drastically reduces the data amount we have to handle.
+			sync_filter = a_lt4.filter_pq_data_from_adwin_syncs(np.sort(np.append(syncs_w1,syncs_w2)))
+			if len(sync_filter) == 0: # empty list --> no read outs.
+				print 'file empty, skipping these time stamps:',t_lt3,t_lt4
+				print
+				continue
+
+
+
 			self.lt3_dict['tstamp'].append(t_lt3)
 			self.lt4_dict['tstamp'].append(t_lt4)
 			self.lt3_dict['raw_data'].append(a_lt3)
 			self.lt4_dict['raw_data'].append(a_lt4)
 
+			for key in self.key_lst_adwin_data:
+				self.lt4_dict[key].append(np.array(a_lt4.agrp[key].value))
 			for key in self.key_list_pq:
 				self.lt4_dict[key].append(np.array(a_lt4.pqf[key].value[sync_filter]))
 
@@ -167,53 +121,33 @@ class BK_analysis(object):
 			print 'file no ', i+1 , ' with duty cycle of', round(100*time_in_LDE_sequence/total_elapsed_time,1), ' %'
 			i += 1
 
-		# print self.lt4_dict['/PQ_sync_number-1'][0]
 
-	def plot_quantity_for_raw_data(self):
-		"""
-		To be written. 
-		loops over all elements in raw data (lt3_lt4)
-		Input a function that operates on raw data objects (such as pq type objects) and the parameters associated with that function
-		The function should return a 1D array of values associated with the raw data.
-		plot_quantity_for_raw_data then groups the returned arrays element-wise and plots them
-		"""
-		pass
 
-	def plot_quantity_for_filtered_data(self):
-		"""
-		TO BE WRITTEN.
-		see above but takes entries of the filtered dictionary which are fed into the function alongside parameters.
-		one example for correlations would be: parameters: windows
-		dictionary entries: 'adwin_ssro', 'counted_awg_reps', 'all PQ data per entry'
-		"""
-		pass
+	
 
-	def check_tail_w1_w2(self,st_start = 2000e3,p_sep = 500e3,st_len = 50e3):
+	def check_tail_w1_w2(self,st_start = 2000e3,st_len = 50e3):
 		"""
-		goes through the timestamp list and selects only files according to the applied sync filter: returns the measured tail in each window
+		goes through the raw_data and selects only files according to the applied sync filter: returns the measured tail in each window
+		for the purification experiment there will only be one window
 		"""
 
 		i = 0
-		tails_w1,tails_w2 = [],[]
+		tails_w1 = []
 
 		for a in self.lt4_dict['raw_data']:
 					
 			### analysis for channel 0	&& window 1
 			w1_ch0 = self.get_total_number_of_clicks_in_window(a,0,st_start,st_len)
 			w1_ch1 = self.get_total_number_of_clicks_in_window(a,1,st_start,st_len)
-			w2_ch0 = self.get_total_number_of_clicks_in_window(a,0,st_start+p_sep,st_len)
-			w2_ch1 = self.get_total_number_of_clicks_in_window(a,1,st_start+p_sep,st_len)
 			last_sync = a.pqf['/PQ_sync_number-1'][-1]
 
 			tail_w1 = round(1e4*(w1_ch0+w1_ch1)/last_sync,2)
-			tail_w2 = round(1e4*(w2_ch0+w2_ch1)/last_sync,2)
 
 			# print 'tail in w1 / w2 (1e-4)    ', tail_w1, ' / ', tail_w2
-			tails_w1.append(tail_w1);tails_w2.append(tail_w2)
+			tails_w1.append(tail_w1);
 
 		f,ax = self.create_plot(ylabel = 'Tail (10e-4)', title = 'Tail counts vs run number; w1_start ' +  str(round(st_start/1e3,0)))
 		self.plot_data(range(len(tails_w1)),tails_w1,label = 'w1')
-		self.plot_data(range(len(tails_w2)),tails_w2,label = 'w2')
 		plt.legend()
 		self.save_and_close_plot()
 		# return np.array(tails_w1),np.array(tails_w2)
@@ -231,6 +165,10 @@ class BK_analysis(object):
 		return np.sum(y)
 
 	def apply_temporal_filters_to_prefiltered_data(self,st_start = None,st_len = None,st_len_w2 = None,p_sep =None,verbose = True):
+		"""
+		applies temporal filters to all the registered photon detections in the relevant window
+		"""
+		#####
 		self.st_fltr_w1 = []
 		self.st_fltr_w2 = []
 		no_w1 = 0
@@ -238,18 +176,16 @@ class BK_analysis(object):
 
 		### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
 		if st_start == None:
-			st_start = BK_params.BK_params['st_start']
+			st_start = analysis_params.temporal_filter['st_start']
 		if st_len == None:
-			st_len = BK_params.BK_params['st_len']
+			st_len = analysis_params.temporal_filter['st_len']
 		if st_len_w2 == None:
-			st_len_w2 = BK_params.BK_params['st_len_w2']
-		if p_sep == None:
-			p_sep = BK_params.BK_params['p_sep']
+			st_len_w2 = analysis_params.temporal_filter['st_len_w2']
 
 
 		for st_filtered,sp_filtered in zip(self.lt4_dict['/PQ_sync_time-1'],self.lt4_dict['/PQ_special-1']):
 			st_fltr_w1 = (st_filtered > st_start)  & (st_filtered < (st_start  + st_len)) & (sp_filtered == 0)
-			st_fltr_w2 = (st_filtered > st_start + p_sep)  & (st_filtered < (st_start + p_sep + st_len_w2)) & (sp_filtered == 0)
+			st_fltr_w2 = (st_filtered > st_start)  & (st_filtered < (st_start + st_len_w2)) & (sp_filtered == 0)
 			self.st_fltr_w1.append(st_fltr_w1)
 			self.st_fltr_w2.append(st_fltr_w2)
 
@@ -259,6 +195,69 @@ class BK_analysis(object):
 				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 		return
 
+
+	def apply_sync_filter_w1_w2(self,verbose = True):
+		"""
+		checks if associated sync number corresponds to a click in entanglement generation 1 or 2 and alters self.st_fltr_w1 and self.st_fltr_w2
+		is applied after temporal filtering.
+		Also has the ability to filter for decoherence of the nuclear spin state based on min and max attempts for LDE 1 and 2.
+		"""
+		
+		temp_fltr_w1 = cp.deepcopy(self.st_fltr_w1) ## store
+		temp_fltr_w2 = cp.deepcopy(self.st_fltr_w2) ## store
+
+		self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
+
+		### get deocherence filter
+		max_w1 = analysis_params.decoherence_params['max_reps_w1']
+		min_w1 = analysis_params.decoherence_params['min_reps_w1']
+		max_w2 = analysis_params.decoherence_params['max_reps_w2']
+		min_w2 = analysis_params.decoherence_params['min_reps_w2']
+
+
+		loop_array = zip(temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt4_dict['attempts_first'],self.lt4_dict['attempts_second'])
+		
+		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,attempts_first,attempts_second in loop_array:
+
+			decoherence_filter_w1 = (attempts_first > min_w1) & (attempts_first < max_w1)
+			decoherence_filter_w2 = (attempts_second_nr > min_w2) & (attempts_second < max_w2)
+
+			st_fltr_w1 = np.logical_and(np.logical_and(fltr_w1,np.equal(sync_nrs_w1,adwin_nrs_w1)), decoherence_filter_w1)
+			st_fltr_w2 = np.logical_and(np.logical_and(fltr_w2,np.equal(sync_nrs_w2,adwin_nrs_w2)), decoherence_filter_w2)
+
+			self.st_fltr_w1.append(st_fltr_w1)
+			self.st_fltr_w2.append(st_fltr_w2)
+
+			no_w1 += np.sum(st_fltr_w1)
+			no_w2 += np.sum(st_fltr_w2)
+			if verbose:
+				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+
+
+	def apply_is_purified_filter(self,signature = '00'):
+		"""
+		correlates the electron RO signature after the purification gate to "ms0 & ms0"
+		Returns a filter for the adwin_ssro results.
+		Input: the desired purification signature
+		Output: none. it only modifies the attributes self.st_fltr_w1 and self.st_fltr_w2
+		"""
+
+		temp_fltr_w1 = cp.deepcopy(self.st_fltr_w1) ## store
+		temp_fltr_w2 = cp.deepcopy(self.st_fltr_w2) ## store
+
+		self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
+
+		loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt3_dict['electron_readout_results'],self.lt4_dict['electron_readout_results'])
+		
+		for fltr_w1,fltr_w2, e_ro_lt3,e_ro_lt4 in loop_arrays:
+
+
+
+	def apply_CR_after_filter(self,verbose = True):
+		'''
+		Checks self.st_fltr_w1 and self.st_fltr_w2 if the CR check after the event was below a certain treshold.
+		'''
+		pass
 	def attach_state_filtered_syncs(self,verbose = True):
 		"""
 		checks for the signatures of psi_minus or psi_plus and returns a list of numpy arrays where each numpy array corresponds the correpsonding sync number of the event
@@ -322,17 +321,13 @@ class BK_analysis(object):
 		self.RO_data_LT4_plus = []
 		self.RO_data_LT4_minus = []
 
-		loop_array = zip(self.lt3_dict['tstamp'],self.lt4_dict['tstamp'],self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt3_dict['counted_awg_reps'],self.lt4_dict['counted_awg_reps'],self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results'])
-		for t_lt3,t_lt4,HH_s_psi_p,HH_s_psi_m,adwin_syncs_lt3,adwin_syncs_lt4,adwin_ro_lt3,adwin_ro_lt4 in loop_array:
+		for HH_s_psi_p,HH_s_psi_m,adwin_syncs_lt3,adwin_syncs_lt4,adwin_ro_lt3,adwin_ro_lt4 in zip(self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt3_dict['counted_awg_reps'],self.lt4_dict['counted_awg_reps'],self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results']):
 
 
 			fltr_plus_lt3  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_syncs_lt3)
 			fltr_minus_lt3 = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_syncs_lt3)
 			fltr_plus_lt4  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_syncs_lt4)
 			fltr_minus_lt4 = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_syncs_lt4)
-
-			# print t_lt3,t_lt4,adwin_syncs_lt3,fltr_plus_lt3,HH_s_psi_p
-			# print t_lt3,adwin_ro_lt3,adwin_ro_lt4
 
 			self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus_lt3])
 			self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus_lt4])
@@ -417,7 +412,7 @@ class BK_analysis(object):
 
 		for x in parameter_range:
 
-			BK_params.BK_params[parameter_name] = x ### commence sweep
+			analysis_params.temporal_filter[parameter_name] = x ### commence sweep
 
 			self.apply_temporal_filters_to_prefiltered_data(verbose = False)
 			self.attach_state_filtered_syncs(verbose = False)
@@ -460,7 +455,7 @@ class BK_analysis(object):
 		takes the filtered pq syncs as input and returns a boolean array.
 		This array serves as filter for the adwin RO results
 
-		TODO: generalize for arbitrary PQ data size
+		TODO: generalize for arbitrary PQ data size (introduce 'index')
 		"""
 
 		# print 'elen', len(filtered_sn)
@@ -468,3 +463,94 @@ class BK_analysis(object):
 		#insert_pos = np.searchsorted(filtered_sn,adwin_syncs)
 
 		return insert_pos
+
+	#######################################
+	#### helper functions for plotting ####
+	#######################################
+
+
+	def create_plot(self,**kw):
+		ylabel = kw.pop('ylabel',None)
+		xlabel = kw.pop('xlabel',None)
+		title = kw.pop('title',None)
+
+		fig = plt.figure()
+		ax = plt.subplot()
+
+		if xlabel != None:
+			plt.xlabel(xlabel)
+		else:
+			plt.xlabel('Run (#)')
+
+		if ylabel != None:
+			plt.ylabel(ylabel)
+		else:
+			plt.ylabel('Contrast')
+
+		if title != None:
+			plt.title(title)
+
+		return fig,ax
+		
+		
+	def save_and_close_plot(self,f = save_plot_folder, save = False, name = None):
+
+		if name == None:
+			name = 'Results'
+		if save:
+			plt.savefig(os.path.join(f,'name.pdf'),format='pdf')
+			plt.savefig(os.path.join(f,'name.png'),format='png')
+			
+		plt.show()
+		plt.close('all')
+
+	def plot_data(self,x,y,**kw):
+		label = kw.pop('label',None)
+		y_u = kw.pop('y_u',None)
+		if y_u != None:
+			plt.errorbar(x,y,y_u,fmt = 'x',label = label,**kw)
+		else: plt.plot(x,y,'x',label = label)
+
+
+
+	def find_tstamps_of_day(self,contains,ts_list,day_string,analysis_folder = 'throw exception'):
+		latest_t = str(int(day_string[:-1]) +1)+'_000000'
+		newer_than = day_string+'_000000'
+
+		while tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
+			latest_t,f = tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
+
+			### debug statement that prints the full timestamp and the relevant identifier.
+			#print latest_t[8:],latest_t
+
+			### append found timestamp to list of timestamps
+			ts_list.append(latest_t[8:]) 
+
+		return ts_list
+
+	def load_timestamps_lt3_lt4(self):
+		"""
+		returns timestamps for LT3 and LT4.
+		This should work via a static parameter dictionary in 'scripts', right now done by hand & find timestamps of day.
+		"""
+		pass
+
+
+	def plot_quantity_for_raw_data(self):
+		"""
+		To be written. 
+		loops over all elements in raw data (lt3_lt4)
+		Input a function that operates on raw data objects (such as pq type objects) and the parameters associated with that function
+		The function should return a 1D array of values associated with the raw data.
+		plot_quantity_for_raw_data then groups the returned arrays element-wise and plots them
+		"""
+		pass
+
+	def plot_quantity_for_filtered_data(self):
+		"""
+		TO BE WRITTEN.
+		see above but takes entries of the filtered dictionary which are fed into the function alongside parameters.
+		one example for correlations would be: parameters: windows
+		dictionary entries: 'adwin_ssro', 'counted_awg_reps', 'all PQ data per entry'
+		"""
+		pass
