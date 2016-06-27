@@ -9,22 +9,22 @@
 
 ### fitted to the ms = -1 data
 hyperfine_params_pippin_SIL1_msm1 = {}
-hyperfine_params_pippin_SIL1_msm1['C1']  = {'par' : -359.7e3, 'perp': 235e3}
-# hyperfine_params_pippin_SIL1_msm1['C3']  = {'par' :-51e3, 'perp':105.0e3} 
-# hyperfine_params_pippin_SIL1_msm1['C4']  = {'par' : 45.1e3,   'perp':25e3}  
-# hyperfine_params_pippin_SIL1_msm1['C5']  = {'par' : 17e3,   'perp':10e3}
-# hyperfine_params_pippin_SIL1_msm1['C6']  = {'par' :-15e3,   'perp':14e3}
-# hyperfine_params_pippin_SIL1_msm1['C7']  = {'par' :-23e3,   'perp':16e3}
-# hyperfine_params_pippin_SIL1_msm1['C8']  = {'par' : 10e3,   'perp':8.0e3}
-# hyperfine_params_pippin_SIL1_msm1['C9']  = {'par' : 8.0e3,  'perp':12e3}
-# hyperfine_params_pippin_SIL1_msm1['C10'] = {'par' :-9.3e3,  'perp':13e3}
-# hyperfine_params_pippin_SIL1_msm1['C11'] = {'par' :-10.0e3, 'perp':5e3}
-# hyperfine_params_pippin_SIL1_msm1['C12'] = {'par' :-30.0e3, 'perp':35e3}
-# hyperfine_params_pippin_SIL1_msm1['C13'] = {'par' :-32.0e3, 'perp':20e3}
+hyperfine_params_pippin_SIL1_msm1['C1']  = {'par' : -335e3 , 'perp':312.5e3}
+hyperfine_params_pippin_SIL1_msm1['C2']  = {'par' : -90e3  , 'perp':122.5e3} 
+hyperfine_params_pippin_SIL1_msm1['C3']  = {'par' : -92.5e3, 'perp':68.8e3}  
+hyperfine_params_pippin_SIL1_msm1['C4']  = {'par' : 22e3,    'perp':25e3}
+hyperfine_params_pippin_SIL1_msm1['C5']  = {'par' : -18e3,   'perp':30e3}
+hyperfine_params_pippin_SIL1_msm1['C6']  = {'par' : -6.3e3,  'perp':27.5e3}
+hyperfine_params_pippin_SIL1_msm1['C7']  = {'par' : 27.5e3,  'perp':27e3}
+hyperfine_params_pippin_SIL1_msm1['C8']  = {'par' : -36.5e3, 'perp':44e3}
 
+#########################################################
+######### Pippin SIL 3  #################################
+#########################################################
 
-
-
+#### fitted to ms = -1 data
+hyperfine_params_pippin_SIL3_msm1 = {}
+hyperfine_params_pippin_SIL3_msm1['C1']  = {'par' : -335e3 , 'perp':312.5e3}
 
 
 

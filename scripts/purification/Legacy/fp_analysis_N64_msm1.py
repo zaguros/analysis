@@ -12,7 +12,7 @@ import fp_purification_funcs as fp_funcs; reload(fp_funcs)
 
 import nuclear_spin_char as SC;  reload(SC)
 
-def fingerprint(disp_sim_spin = True):
+def fingerprint(disp_sim_spin = True,xlim=None,xticks=0.5):
     
     ###################
     ## Data location ##
@@ -50,9 +50,12 @@ def fingerprint(disp_sim_spin = True):
 
     fig = a.default_fig(figsize=(35,5))
     ax = a.default_ax(fig)
-    ax.set_xlim(3.5,15.5)
+    if xlim == None:
+        ax.set_xlim(3.5,15.5)
+    else:
+        ax.set_xlim(xlim)
     start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start, end, 0.5))
+    ax.xaxis.set_ticks(np.arange(start, end, xticks))
 
     ax.set_ylim(-0.05,1.05)
     print a.sweep_pts

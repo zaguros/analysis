@@ -1,3 +1,4 @@
+import numpy as np
 '''
 Script to analyze the dynamical decoupling data
 Here we compare a fingerprint with and without active gate tuning of the NV optical transitions.
