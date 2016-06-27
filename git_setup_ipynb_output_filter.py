@@ -3,7 +3,7 @@ with open('.git/info/attributes','w') as f:
 
 with open('.git/config','a') as f:
 	f.write('[filter "dropoutput_ipynb"]\n')
-	f.write('\tclean = python ipynb_output_filter.py\n')
+	f.write('\tclean = python git_ipynb_output_filter.py\n')
 	f.write('\tsmudge = cat\n')
 
 
