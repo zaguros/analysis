@@ -22,5 +22,5 @@ def calibrate_pulse_amplitude(x, y, ax, *args):
         fitfunc_str=fitfunc_str, do_print=True, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False, print_info=True)
-        
+  
     return fit_result
