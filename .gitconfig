@@ -1,3 +1,0 @@
-[filter "dropoutput_ipynb"]
-	clean = python ipynb_output_filter.py
-	smudge = cat
