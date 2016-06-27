@@ -38,7 +38,7 @@ for g in a.g.items():
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
 
-    idx0 = argmax(_c)+1
+    idx0 = np.argmax(_c)+1
     idx1 = -1   
     t,c = _t[idx0:idx1]/1e3, _c[idx0:idx1]
 
@@ -63,7 +63,7 @@ for g in a.g.items():
 plt.close('all')
 a.finish()
 
-sortidxs = argsort(pwrs)
+sortidxs = np.argsort(pwrs)
 pwrs = np.array(pwrs)[sortidxs][:]
 taus = np.array(taus)[sortidxs][:]
 u_taus = np.array(u_taus)[sortidxs][:]
