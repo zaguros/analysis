@@ -15,12 +15,8 @@ from analysis.lib.fitting import fit, common
 import analysis.scripts.cavity.spectrometer_analysis as sa
 reload(sa)
 
-
-
-# parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
-V_min = -2
-# V_min = 4
-V_max = 10
+V_min = -2.
+V_max = 10.
 n_diamond = 2.419 #refractive index diamond
 c = 3.e8 #speed of light
 
@@ -30,27 +26,33 @@ def get_data(data_dir):
     print data_dir
     return wavelengths,filenumbers,intensities 
 
-def plot_data(data_dir,wavelengths,intensities,vmax = None):
+def plot_data(data_dir,wavelengths,intensities,vmax = None,aspect=0.1):
 
     fig,ax = plt.subplots()
-    ax=sns.heatmap(intensities, vmax = vmax,cmap='YlGnBu',ax=ax)
-
-    ax = set_axes(ax,wavelengths)
+    extent = [V_min,V_max,wavelengths[-1],wavelengths[0]]
+    im = ax.imshow(intensities, extent= extent, vmax =vmax, cmap = 'YlGnBu', aspect = aspect)
+    ax = set_axes_basics(ax,wavelengths)
 
     try: 
+        print 'saving figure as:'
         print os.path.join(data_dir, '2D_plot.jpg')
         fig.savefig(os.path.join(data_dir, '2D_plot.jpg'))
     except:
         print('could not save figure')
 
+    plt.show()
+    plt.close()
 
-def set_axes(ax,wavelengths):
+def set_axes_basics(ax,wavelengths):
     ax.set_xlabel("Voltage (V)", fontsize = 14)
     ax.set_ylabel("Frequency (THz)", fontsize = 14)
 
     ax.grid(False)
     ax.set_axis_bgcolor('white')
 
+    return ax
+
+def set_axes_ticks(ax,wavelengths):
 
     ax.tick_params(which = 'both', direction = 'out')
     xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],int((V_max-V_min)/2+1))
@@ -66,7 +68,11 @@ def set_axes(ax,wavelengths):
 
     ax.set_yticks(yticks)
     ax.set_yticklabels(ytickslabels)
+    return ax
 
+def set_axes(ax,wavelengths):
+    ax=set_axes_basics(ax,wavelengths)
+    ax=set_axes_ticks(ax,wavelengths)
     return ax
 
 
@@ -128,6 +134,7 @@ def peaks_from_2D_data(data_dir,**kw):
     TODO: save the obtained peak locations
     '''
     save_fig = kw.pop('save_fig',True)
+    return_peak_locations = kw.pop('return_peak_locations',False)
 
     wavelengths,filenumbers,intensities = get_data(data_dir)
 
@@ -137,7 +144,7 @@ def peaks_from_2D_data(data_dir,**kw):
 
     print 'getting peak locations'
     for i,intensity in enumerate(np.transpose(intensities)):
-        print i,'/',len(np.transpose(intensities))
+        # print i,'/',len(np.transpose(intensities))
         # if i>0:
         #     break
         x0s,u_x0s = peaks_from_1D_data(wavelengths,intensity,**kw)
@@ -163,8 +170,36 @@ def peaks_from_2D_data(data_dir,**kw):
         except:
             print('could not save figure')
 
+    if return_peak_locations:
+        return x, y, fig, ax
 
     return fig,ax
+
+def find_best_overlap_peaks_and_modes(data_dir, diamond_thicknesses, air_lengths, conversion_factor=307.e-9, **kw):
+    x,y,fig,ax = peaks_from_2D_data(data_dir,return_peak_locations=True,**kw)
+
+    ms_overlap_qualities = np.zeros((len(diamond_thicknesses),len(air_lengths)))
+
+    for i,diamond_thickness in enumerate(diamond_thicknesses):
+        for j,air_length in enumerate(air_lengths):
+            cavity_length = diamond_thickness + air_length
+            modes = diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+                conversion_factor=conversion_factor,nr_points=max(y)+1)
+
+            avg_overlap_quality,ms_overlap_quality = calculate_overlap_quality(x,y,modes,**kw)
+            # print 15*'*'
+            # print 'manual fit overlap quality',avg_overlap_quality, 'mean square', ms_overlap_quality
+            # print 15*'*'
+            ms_overlap_qualities[i,j] = ms_overlap_quality
+
+    ix_min_mean_square_overlap = np.unravel_index(ms_overlap_qualities.argmin(), ms_overlap_qualities.shape)
+    print 'lowest mean square error (',ms_overlap_qualities[ix_min_mean_square_overlap], ') is found for:'
+    print 'diamond thickness: ',diamond_thicknesses[ix_min_mean_square_overlap[0]]
+    print 'air length: ',air_lengths[ix_min_mean_square_overlap[1]]
+    print 'total cavity length:', diamond_thicknesses[ix_min_mean_square_overlap[0]]+air_lengths[ix_min_mean_square_overlap[1]]
+
+
+    return ms_overlap_qualities
 
 def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e-6,
         conversion_factor = 307.e-9,nr_points=31, **kw):
@@ -181,17 +216,21 @@ def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e
     plot_fit - whether to plot the fit of each resonance found in the data
 
     '''
-    fig,ax = peaks_from_2D_data(data_dir,**kw)
+    x,y,fig,ax = peaks_from_2D_data(data_dir,return_peak_locations=True,**kw)
     # ax = plot_diamond_modes(diamond_thickness=diamond_thickness,ax = ax)
     # ax = plot_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
     #     ax=ax, conversion_factor=conversion_factor,nr_points=nr_points)
-    ax = plot_diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
-        ax=ax,conversion_factor=conversion_factor,nr_points=nr_points)
+    modes,ax = plot_diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+        ax=ax,conversion_factor=conversion_factor,nr_points=max(y)+1, return_modes=True)
 
+    avg_overlap_quality,ms_overlap_quality = calculate_overlap_quality(x,y,modes,**kw)
+    print 15*'*'
+    print 'manual fit overlap quality',avg_overlap_quality, 'mean square', ms_overlap_quality
+    print 15*'*'
 
-    title ='d={}um_L={}um_cf={}nmpV'.format(str(diamond_thickness*1e6),str(cavity_length*1.e6),str(conversion_factor*1.e9))
+    title ='d={}um_L={}um_fit={}'.format(str(diamond_thickness*1e6),str(cavity_length*1.e6),str(np.round(ms_overlap_quality,3)))
 
-    ax.text(ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])/4,ax.get_ylim()[0],title)
+    ax.text(ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])/4,ax.get_ylim()[0],title, size=14, backgroundcolor = 'w')
 
     #add an axis at the top with the cavity length 
     ax2 = ax.twiny()
@@ -211,6 +250,46 @@ def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e
 
 
     plt.close(fig)
+
+def find_nearest(array,value):
+    idx = (np.abs(array-value)).argmin()
+    return array[idx]
+
+def calculate_overlap_quality(x,y,modes, **kw):
+
+    min_frequency = kw.pop('min_frequency', 400)
+    max_frequency = kw.pop('max_frequency', 550)
+    min_voltage = kw.pop('min_voltage',0.)
+
+    nr_scans_to_disregard = int((min_voltage - V_min)/(V_max - V_min)*(max(y)+1))
+
+    differences = np.zeros(max(y)+1)
+    nr_comparisons= np.zeros(max(y)+1)
+    tot_nr_comparisons = 0
+    tot_differences = 0
+
+    for i in np.arange(max(y)+1):
+        if i>nr_scans_to_disregard:
+            x_i = x[np.where((y>i-0.2)&(y<i+0.2))]
+            nu_i = np.transpose(modes)[i]
+            
+            for x_ii in x_i: #important to compare to x_ii: the data.
+                if ((x_ii>min_frequency) and (x_ii < max_frequency)):
+                    nearest_nu_ii = find_nearest(nu_i, x_ii)
+                    nr_comparisons[i]+=1
+                    tot_nr_comparisons+=1
+                    # print x_ii,nearest_nu_ii
+                    differences[i] += (nearest_nu_ii-x_ii)**2
+                    tot_differences += (nearest_nu_ii-x_ii)**2                    
+
+        else: 
+            nr_comparisons[i]=1 #hack to avoid dividing by zero
+
+    total_differences = np.divide(np.sqrt(differences), nr_comparisons)
+    avg_difference = np.sum(total_differences)/len(total_differences) #average of the mean square values per voltage value
+
+    ms_difference = tot_differences/tot_nr_comparisons #mean square of all together
+    return avg_difference,ms_difference
 
 def pure_diamond_modes(diamond_thickness=4.e-6):
     max_nr_modes = 100
@@ -279,7 +358,7 @@ def diamond_air_mode_freq(N=1,cavity_length=1.e-6, diamond_thickness=4.e-6):
 def diamond_air_modes(cavity_length = 1.e-6, diamond_thickness = 4.e-6, conversion_factor = 100e-9,nr_points=31):
     delta_V = V_max - V_min
     delta_L = delta_V*(conversion_factor) # in m
-    print delta_L
+
     Ls = np.linspace(cavity_length,cavity_length+delta_L,nr_points)
 
     max_nr_modes = 180
@@ -291,7 +370,7 @@ def diamond_air_modes(cavity_length = 1.e-6, diamond_thickness = 4.e-6, conversi
 
     return nu_diamond_air
 
-def plot_diamond_air_modes(cavity_length=1.e-6,diamond_thickness=4.e-6,ax = None,conversion_factor = -150.e-9,nr_points=31):
+def plot_diamond_air_modes(cavity_length=1.e-6,diamond_thickness=4.e-6,ax = None,conversion_factor = -150.e-9,nr_points=31, return_modes=False):
     return_fig = False
     if ax == None:
         return_fig = True
@@ -309,5 +388,7 @@ def plot_diamond_air_modes(cavity_length=1.e-6,diamond_thickness=4.e-6,ax = None
     if return_fig:
         return fig,ax
 
+    if return_modes:
+        return nu_diamond_air,ax
     return ax
 

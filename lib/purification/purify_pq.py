@@ -17,8 +17,9 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 		pqsequence.PQSequenceAnalysis.__init__(self,folder,**kw)
 
 		self.agrp=self.adwingrp('adwindata')
+		self.joint_grp = self.adwingrp('joint_params')
 
-	def filter_pq_data_from_adwin_syncs(self):
+	def filter_pq_data_from_adwin_syncs(self, adwin_syncs = None):
 
 		"""
 		returns a boolean numpy array.
@@ -27,7 +28,9 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 
 		TODO: Needs to be generalized for longer PQ meausrements with more data sets.
 		"""
-		adwin_syncs = self.agrp['counted_awg_reps'].value
+
+		if adwin_syncs == None:
+			adwin_syncs = self.agrp['counted_awg_reps'].value
 		pq_syncs = self.pqf['/PQ_sync_number-1'].value
 
 
@@ -45,6 +48,7 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 				j += 1
 
 		return np.array(sync_indices)
+
 	def filter_adwin_data_from_pq_syncs(self,filtered_sn):
 		"""
 		takes the filtered pq syncs as input and returns a boolean array.
