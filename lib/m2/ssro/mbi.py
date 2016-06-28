@@ -19,7 +19,7 @@ class MBIAnalysis(m2.M2Analysis):
 
 
 
-    def get_readout_results(self, name='',CR_after_check = False):
+    def get_readout_results(self, name='',CR_after_check = True):
         """
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -32,6 +32,8 @@ class MBIAnalysis(m2.M2Analysis):
 
         adwingrp = self.adwingrp(name)
         self.adgrp = adwingrp
+
+        print 'i am the cr after check',CR_after_check
 
         self.reps = adwingrp.attrs['reps_per_ROsequence']
         self.pts = adwingrp.attrs['sweep_length']
@@ -53,18 +55,19 @@ class MBIAnalysis(m2.M2Analysis):
             ### loop over the results of CR check after and eliminate those where ionization was apparent.
             ### there is probably a faster way to do this. np.search?
             for ii,CR in enumerate(CR_after):
-                if CR < 2:
+                if CR < 1:
                     CR_failed_count +=1
-                    reps_list[(ii-1)%self.pts] -= 1
-                    results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
+                    reps_list[(ii)%self.pts] -= 1
+                    results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
 
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
-            # if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
-            #    print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
+            
+            if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
+               print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
         else:
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro = self.ssro_results/float(self.reps)
