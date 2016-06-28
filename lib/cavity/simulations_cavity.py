@@ -14,7 +14,7 @@ from analysis.lib.tools import toolbox as tb
 from matplotlib import rc, cm
 
 n_diamond=2.419
-c = 3.e8
+c = 2.99792e8
 
 class CavitySims ():
 
