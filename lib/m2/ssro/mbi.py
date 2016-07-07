@@ -57,9 +57,9 @@ class MBIAnalysis(m2.M2Analysis):
 
                     CR_failed_count +=1
                     reps_list[(ii)%self.pts] -= 1
-                    print ii,results[ii],
+                    ##print ii,results[ii],
                     results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
-                    print results[ii]
+                    ##print results[ii]
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
