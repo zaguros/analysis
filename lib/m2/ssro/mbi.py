@@ -57,16 +57,22 @@ class MBIAnalysis(m2.M2Analysis):
 
                     CR_failed_count +=1
                     reps_list[(ii)%self.pts] -= 1
+<<<<<<< HEAD
                     ##print ii,results[ii],
                     results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
                     ##print results[ii]
+=======
+                    # print ii,results[ii],
+                    results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
+                    # print results[ii]
+>>>>>>> e9b0f20801b2f92f10e715c3e659e9293a60db8c
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
-            if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
-               print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
+            # if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
+            #    print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
         else:
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro = self.ssro_results/float(self.reps)

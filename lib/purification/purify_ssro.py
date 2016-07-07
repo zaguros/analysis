@@ -85,8 +85,8 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
 	        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 	        ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
 
-	if adwindata_str == '':
-		return
+	# if adwindata_str == '':
+	# 	return
 
 	##acquire pos_neg data
 	for i,ro in enumerate(ro_array):
@@ -290,6 +290,39 @@ def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
 		print row_format.format(el+' |', *row)
 
 
+def phase_offset_after_LDE(contains = '', **kw):
+	'''
+	gets data from a folder whose name contains the contains variable.
+	Does or does not fit the data with a gaussian function
+	'''
+
+	### folder choice
+	if contains == '':
+		contains = 'phase_offset_after_LDE'
+
+	# older_than = kw.get('older_than',None) automatically handled by kws
+	### acquire data
+	f = toolbox.latest_data(contains,**kw)
+	a = mbi.MBIAnalysis(f)
+	print 'this is the timestamp ',get_tstamp_from_folder(f)
+
+	ro_array = ['positive','negative']
+	x,y,y_u = get_pos_neg_data(a,adwindata_str = '',ro_array=ro_array,**kw)
+	y = np.round(y,decimals = 2)
+	y_u = np.round(y_u,decimals=2)
+	# print el,x,y,y_u ### for debugging
+
+	data = [0,0,0]
+	### put output string together
+	for jj,res,res_u in zip(range(3),y,y_u):
+		data[jj] = cp.deepcopy(str(res) + " +/- "+ str(res_u))
+
+	row_format ="{:>18}" * (len(x))
+	
+	headline_format = "{:>18}" * len(x)
+	print headline_format.format(*x)
+	print "-------------------------------------------------------------------------"
+	print row_format.format(*data)
 
 
 
