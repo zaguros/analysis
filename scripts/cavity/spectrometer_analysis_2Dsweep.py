@@ -209,7 +209,7 @@ def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e
     Input parameters:
     data_dir - directory containing 2D data
     diamond_thickness - diamond thickness used to obtain analytic result for resonance frequency
-    cavity_length - diamond thickness used to obtain analytic result for resonance frequency
+    cavity_length - cavity length used to obtain analytic result for resonance frequency
     conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT:
     nr_points - the number of points used for plotting analytic results of resonances
     **keywords for peak-finding:
