@@ -52,9 +52,10 @@ EOM_freq = 6  #GHz
  
 # Open file and create dataframes in pandas
 
-def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1,g_A2, g_gamma2,g_dx):
 
-    data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","Y","None"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
+def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2,fixed=[]):
+
+    data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
 
     print 'found data'
     #print data
@@ -68,7 +69,7 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1,g_A2, g_gamma2,g_dx
     x = 1.e3*np.asarray(data['X'])#[3000:] # multiplied by factor 1.e3  to get ms  
     y = np.asarray(data['Y'])#[3000:]
 
-    fixed=[]
+
 
     print 'plotting data'
 
@@ -78,8 +79,8 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1,g_A2, g_gamma2,g_dx
     plt.savefig(os.path.join(indir,filename+'.png'))
 
 
-    x=x[3000:]
-    y=y[3000:]
+    x=x[:]
+    y=y[:]
 
     if EOM_ON == True:
 
@@ -92,10 +93,12 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1,g_A2, g_gamma2,g_dx
         gamma1 = fit_result['params_dict']['gamma1']
         gamma2 = fit_result['params_dict']['gamma2']
         u_gamma1 = fit_result['error_dict']['gamma1']
+        u_gamma2 = fit_result['error_dict']['gamma2']
+
         scaling = EOM_freq/dx #scale the known EOM freq with the separation here.
         lw = gamma1*scaling #scale the linewidth to get linewidht in frequency
         lw_error = u_gamma1*scaling
-        linewidth = 'gamma = ', round(lw,2), '+-',round(lw_error,3),'GHz'
+        linewidth = 'gamma = '+str(round(lw,2))+'+-'+str(round(lw_error,3))+'GHz'
         print linewidth
 
         #Plotting
