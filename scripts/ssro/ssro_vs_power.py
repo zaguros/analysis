@@ -6,7 +6,7 @@ import logging
 from matplotlib import pyplot as plt
 
 from analysis.lib.fitting import fit, common
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.tools import plot
 from analysis.lib.m2.ssro import ssro
 
@@ -38,7 +38,7 @@ for g in a.g.items():
     _t, _c = a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=gn,
             plot=False, ret=True)
 
-    idx0 = argmax(_c)+1
+    idx0 = np.argmax(_c)+1
     idx1 = -1   
     t,c = _t[idx0:idx1]/1e3, _c[idx0:idx1]
 
@@ -48,12 +48,13 @@ for g in a.g.items():
 
     res = fit.fit1d(t,c, common.fit_exp_decay_with_offset, 0, c[0], 10, 
             ret=True, do_print=True, fixed=[])
-    
     if res != False:
         plot.plot_fit1d(res, t, ax=ax, plot_data=False)
         pwrs.append(pwr)
         taus.append(res['params_dict']['tau'])
         u_taus.append(res['error_dict']['tau'])
+    else:
+        print 'i failed!'
 
     ax.set_xlabel('t ($\mu$s)')
     ax.set_ylabel('cts (Hz)')
@@ -63,7 +64,7 @@ for g in a.g.items():
 plt.close('all')
 a.finish()
 
-sortidxs = argsort(pwrs)
+sortidxs = np.argsort(pwrs)
 pwrs = np.array(pwrs)[sortidxs][:]
 taus = np.array(taus)[sortidxs][:]
 u_taus = np.array(u_taus)[sortidxs][:]
@@ -78,6 +79,7 @@ res = fit.fit1d(pwrs, ks, common.fit_saturation, 120, 50,
 fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111)
 ax.errorbar(pwrs, ks, yerr=u_ks, fmt='o', capsize=0, elinewidth=2)
+
 
 if res != False:
     plot.plot_fit1d(res, np.linspace(0,pwrs[-1],101), ax=ax,

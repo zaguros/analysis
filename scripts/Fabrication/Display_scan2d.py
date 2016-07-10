@@ -9,10 +9,12 @@ class DisplayScan(m2.M2Analysis):
 
     def get_data(self):
         self.zfocus = self.f['instrument_settings']['master_of_space'].attrs['z']
-
+        self.keyword = self.f['instrument_settings']['setup_controller'].attrs['keyword']
         self.xvalues = self.f['x'].value
         self.yvalues = self.f['y'].value
         self.countrates = self.f['countrate'].value
+        '''self.fitresultx = self.f['fit_result']['x'].value
+        self.fitresulty = self.f['fit_result']['y'].value'''
 
     def plot_data(self,title,save=True):
         fig = plt.figure()
@@ -21,7 +23,7 @@ class DisplayScan(m2.M2Analysis):
         colors=ax.pcolor(self.xvalues,self.yvalues,self.countrates, vmin=np.amin(self.countrates),vmax=np.amax(self.countrates),cmap=colorname)
         ax.set_xlim([np.amin(self.xvalues),np.amax(self.xvalues)])
         ax.set_ylim([np.amin(self.yvalues),np.amax(self.yvalues)])
-        ax.set_title('z = '+str(self.zfocus)+'    '+title)
+        ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax3 = fig.add_subplot(1,1,1)
@@ -51,3 +53,4 @@ def display_scan(older_than = None, nr_plots =1):
         a = DisplayScan(folder)
         a.get_data()
         a.plot_data(title)
+

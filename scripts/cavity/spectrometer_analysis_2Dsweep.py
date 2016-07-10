@@ -15,10 +15,12 @@ from analysis.lib.fitting import fit, common
 import analysis.scripts.cavity.spectrometer_analysis as sa
 reload(sa)
 
+
+# parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
 V_min = -2.
 V_max = 10.
 n_diamond = 2.419 #refractive index diamond
-c = 3.e8 #speed of light
+c = 2.99792458e8 #speed of light
 
 
 def get_data(data_dir):
@@ -210,7 +212,7 @@ def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e
     Input parameters:
     data_dir - directory containing 2D data
     diamond_thickness - diamond thickness used to obtain analytic result for resonance frequency
-    cavity_length - diamond thickness used to obtain analytic result for resonance frequency
+    cavity_length - cavity length used to obtain analytic result for resonance frequency
     conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT:
     nr_points - the number of points used for plotting analytic results of resonances
     **keywords for peak-finding:
