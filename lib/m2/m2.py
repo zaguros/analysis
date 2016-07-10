@@ -38,6 +38,7 @@ class M2Analysis:
         self.f.close()
 
     def adwingrp(self, name=''):
+
         if name != '':
             adwingrpname = name
         else:
@@ -46,7 +47,6 @@ class M2Analysis:
             else:
                 logging.error("More than one measurement. Please give a name")
                 return False
-
         return self.g[adwingrpname]
 
     def analysis_h5data(self, name='analysis'):
