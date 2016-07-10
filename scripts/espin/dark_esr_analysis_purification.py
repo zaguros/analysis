@@ -19,7 +19,7 @@ guess_offset = 1
 guess_x0 = 2. #central frequency
 #guess_splitB = 30.
 guess_splitN = 2.18e-3
-guess_splitC = 0.4e-3 
+guess_splitC = 0.8e-3 
 guess_width = 0.3e-3
 guess_amplitude = 0.15
 
