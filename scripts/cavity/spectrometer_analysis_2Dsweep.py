@@ -178,7 +178,8 @@ def peaks_from_2D_data(data_dir,**kw):
 def find_best_overlap_peaks_and_modes(data_dir, diamond_thicknesses, air_lengths, conversion_factor=307.e-9, **kw):
     x,y,fig,ax = peaks_from_2D_data(data_dir,return_peak_locations=True,**kw)
 
-    ms_overlap_qualities = np.zeros((len(diamond_thicknesses),len(air_lengths)))
+    ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
+    u_ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
 
     for i,diamond_thickness in enumerate(diamond_thicknesses):
         for j,air_length in enumerate(air_lengths):
@@ -186,20 +187,20 @@ def find_best_overlap_peaks_and_modes(data_dir, diamond_thicknesses, air_lengths
             modes = diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
                 conversion_factor=conversion_factor,nr_points=max(y)+1)
 
-            avg_overlap_quality,ms_overlap_quality = calculate_overlap_quality(x,y,modes,**kw)
+            ms_error, u_ms_error = calculate_overlap_quality(x,y,modes,**kw)
             # print 15*'*'
-            # print 'manual fit overlap quality',avg_overlap_quality, 'mean square', ms_overlap_quality
+            # print 'mean squared error fit',ms_error, '+-', u_ms_error
             # print 15*'*'
-            ms_overlap_qualities[i,j] = ms_overlap_quality
+            ms_errors[i,j] = ms_error
+            u_ms_errors[i,j] = u_ms_error
 
-    ix_min_mean_square_overlap = np.unravel_index(ms_overlap_qualities.argmin(), ms_overlap_qualities.shape)
-    print 'lowest mean square error (',ms_overlap_qualities[ix_min_mean_square_overlap], ') is found for:'
+    ix_min_mean_square_overlap = np.unravel_index(ms_errors.argmin(), ms_errors.shape)
+    print 'lowest mean square error (',round(ms_errors[ix_min_mean_square_overlap],3), '+-',round(u_ms_errors[ix_min_mean_square_overlap],3),') is found for:'
     print 'diamond thickness: ',diamond_thicknesses[ix_min_mean_square_overlap[0]]
     print 'air length: ',air_lengths[ix_min_mean_square_overlap[1]]
     print 'total cavity length:', diamond_thicknesses[ix_min_mean_square_overlap[0]]+air_lengths[ix_min_mean_square_overlap[1]]
 
-
-    return ms_overlap_qualities
+    return ms_errors, u_ms_errors
 
 def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e-6,
         conversion_factor = 307.e-9,nr_points=31, **kw):
@@ -223,12 +224,12 @@ def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e
     modes,ax = plot_diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
         ax=ax,conversion_factor=conversion_factor,nr_points=max(y)+1, return_modes=True)
 
-    avg_overlap_quality,ms_overlap_quality = calculate_overlap_quality(x,y,modes,**kw)
+    ms_error, u_ms_error = calculate_overlap_quality(x,y,modes,**kw)
     print 15*'*'
-    print 'manual fit overlap quality',avg_overlap_quality, 'mean square', ms_overlap_quality
+    print 'mean squared error', round(ms_error,3), '+-', round(u_ms_error,3)
     print 15*'*'
 
-    title ='d={}um_L={}um_fit={}'.format(str(diamond_thickness*1e6),str(cavity_length*1.e6),str(np.round(ms_overlap_quality,3)))
+    title ='d={}um_L={}um_fit={}'.format(str(diamond_thickness*1e6),str(cavity_length*1.e6),str(np.round(ms_error,3)))
 
     ax.text(ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])/4,ax.get_ylim()[0],title, size=14, backgroundcolor = 'w')
 
@@ -263,10 +264,8 @@ def calculate_overlap_quality(x,y,modes, **kw):
 
     nr_scans_to_disregard = int((min_voltage - V_min)/(V_max - V_min)*(max(y)+1))
 
-    differences = np.zeros(max(y)+1)
-    nr_comparisons= np.zeros(max(y)+1)
-    tot_nr_comparisons = 0
-    tot_differences = 0
+    squared_errors = []
+    tot_nr_errors = 0
 
     for i in np.arange(max(y)+1):
         if i>nr_scans_to_disregard:
@@ -276,20 +275,15 @@ def calculate_overlap_quality(x,y,modes, **kw):
             for x_ii in x_i: #important to compare to x_ii: the data.
                 if ((x_ii>min_frequency) and (x_ii < max_frequency)):
                     nearest_nu_ii = find_nearest(nu_i, x_ii)
-                    nr_comparisons[i]+=1
-                    tot_nr_comparisons+=1
-                    # print x_ii,nearest_nu_ii
-                    differences[i] += (nearest_nu_ii-x_ii)**2
-                    tot_differences += (nearest_nu_ii-x_ii)**2                    
+                    tot_nr_errors+=1
+                    squared_errors.append((nearest_nu_ii-x_ii)**2 )
 
-        else: 
-            nr_comparisons[i]=1 #hack to avoid dividing by zero
+    squared_errors = np.array(squared_errors)
+    total_squared_errors = np.sum(squared_errors)
+    mean_squared_error = total_squared_errors/tot_nr_errors
+    u_mean_squared_error = np.sqrt(np.sum((squared_errors-mean_squared_error)**2))/tot_nr_errors
 
-    total_differences = np.divide(np.sqrt(differences), nr_comparisons)
-    avg_difference = np.sum(total_differences)/len(total_differences) #average of the mean square values per voltage value
-
-    ms_difference = tot_differences/tot_nr_comparisons #mean square of all together
-    return avg_difference,ms_difference
+    return mean_squared_error, u_mean_squared_error
 
 def pure_diamond_modes(diamond_thickness=4.e-6):
     max_nr_modes = 100
@@ -321,7 +315,7 @@ def pure_air_modes(cavity_length=1.e-6,conversion_factor = -150.e-9,nr_points=31
     delta_L = delta_V*(conversion_factor) # in m
     Ls = np.linspace(cavity_length,cavity_length+delta_L,nr_points)
 
-    max_nr_modes = 180
+    max_nrmgi_odes = 180
     nu_air = np.zeros((max_nr_modes,nr_points))
     for N in np.arange(max_nr_modes):
         for i,L in enumerate(Ls):
