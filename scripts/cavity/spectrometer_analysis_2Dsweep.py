@@ -13,7 +13,7 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 import analysis.scripts.cavity.spectrometer_analysis as sa
 
-data_dir='/Users/suzannevandam/Documents/PhD/localdata/20160504/pos9/raw data spectrometer/L1'#"/Users/suzannevandam/Documents/PhD/localdata/20160430/ON_diamond" 
+data_dir='/Users/suzannevandam/Documents/PhD/localdata/20160430/calibration_finepiezos'#"/Users/suzannevandam/Documents/PhD/localdata/20160430/ON_diamond" 
 print data_dir
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
