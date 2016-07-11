@@ -7,13 +7,17 @@ from matplotlib import pyplot as plt
 
 #Calculating the Finesse of the cavity with an assumption for the linewidth
 
-v1 = 673.e-9 # wavelength position one
-v2 = 690.e-9 #wavelength position two
-dv = 2.09*1.e9 # linewidth in Hz
+v1 = 645.566*1.e-9 # wavelength position one
+v2 = 652.067*1.e-9 #wavelength position two
+dv = 5*1.e9 # linewidth in Hz
+print 'the linewidth is',round(dv*1.e-9,1),'GHz'
 error_dv = 0.017*1.e9 #error linewidth in Hz
 #FSR in wavelength and frequency
 FSR = v2 - v1
-FSR_freq = (3.e8/v1) - (3.e8/v2)
+#FSR_freq = (3.e8/v1) - (3.e8/v2)
+FSR_freq = 9.6*1.e12
+#print 'the FSR is', round(FSR_freq*1.e-12,1), 'THz'
+print 'the FSR is', 9.6, 'THz'
 
 # Finesse calculation
 F = FSR_freq/dv
@@ -22,11 +26,11 @@ print 'The Finesse is', round(F,0)
 
 #Cavity length calculation
 L = 3.e8/(2*FSR_freq) # Calculating the length of the cavity in micrometer
-print 'The Cavity Length is', round(L*1.e6,2), 'um.'
+#print 'The Cavity Length is', round(L*1.e6,2), 'um.'
 
-#Quality factor calculation
-Q = (3.e8/v1)/dv
-print 'The Q is', round(Q,0)
+# #Quality factor calculation
+# Q = (3.e8/v1)/dv
+# print 'The Q is', round(Q,0)
 
 
 # X = np.linspace(-2,10,13)
