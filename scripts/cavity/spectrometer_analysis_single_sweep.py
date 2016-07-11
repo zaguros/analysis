@@ -28,13 +28,13 @@ n_xticks = 9
 n_yticks = 8
 peak_detect_H_order_modes = False
 peak_detect_TEM00 = True
-order_peak_detection = 100
+order_peak_detection = 400
 order_peak_detect_higher_modes = 30
  
 # Open file and create dataframes in pandas
 
-indir="D:\measuring\data/20160430\ON_diamond" 
-data = pd.read_csv(os.path.join(indir,"2016-04-30 19_34_17 cal_finepiezo.csv"), usecols=[2,4,5])
+indir="D:\DATA/20160707\CL1\Spectrometer data" 
+data = pd.read_csv(os.path.join(indir,"Q700_it2sec_grating1800_stepglue 2016 juli 07 11_29_16.csv"), usecols=[2,4,5])
 
 max_WL = data['Wavelength'].max()
 min_WL = data['Wavelength'].min()
@@ -71,15 +71,15 @@ if peak_detect_TEM00 == True:
 		peak_f = 3.e8/(data_mean.loc[i,'Wavelength']*1.e-9)
 		peak_freq = np.append(peak_freq,peak_f)
 
-	FSR=fabs(peak_WL[-2]-peak_WL[-1]) #calculate the free spectral range
+	FSR=fabs(peak_WL[-4]-peak_WL[-3]) #calculate the free spectral range
 	print 'The FSR is', FSR,'nm.'
 
-	FSR_freq=fabs(peak_freq[-2]-peak_freq[-1]) # calculating the free spectral range in frequency in Hz
+	FSR_freq=fabs(peak_freq[-4]-peak_freq[-3]) # calculating the free spectral range in frequency in Hz
 	print 'The FSR is', round(FSR_freq*1.e-12,2), 'THz.'
 
-	peak_1_WL = peak_WL[0]
+	peak_1_WL = peak_WL[-4]
 	print 'The wavelength of the 1st peak is', peak_1_WL
-	peak_2_WL = peak_WL[1]
+	peak_2_WL = peak_WL[-3]
 	print 'The wavelength of the 2nd peak is', peak_2_WL
 
 	L = 3.e8/(2*FSR_freq) # Calculating the length of the cavity in micrometer

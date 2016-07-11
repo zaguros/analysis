@@ -137,6 +137,7 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
     wavelength_range = np.abs(wavelengths[-1]-wavelengths[0])
     indices_around_peak = int((len(wavelengths)/wavelength_range)*g_gamma*4)
     success = np.zeros(len(indices))
+    nr_fails = 0
 
     for i,ii,g_x0,g_A in zip(np.arange(len(indices)),indices, peak_wavelengths, peak_intensity):
         if ii - indices_around_peak <0:
@@ -162,7 +163,8 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
         #If it is 1,2,3,4 the fit succeeded, otherwise it failed. 
         #Break the loop if the fit failed
         if fit_result == 5:  
-            print 'fit failed'
+            #print 'fit failed'
+            nr_fails += 1
             continue
 
         res_rms = fit_result['residuals_rms']/np.average(wavelengths_around_peak)
@@ -194,6 +196,7 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
         x0s = np.append(x0s,x0)
         u_x0s = np.append(u_x0s,u_x0)
 
+    print 'number of failed fits:', nr_fails
     return x0s, u_x0s, success
 
 # import os
