@@ -304,6 +304,9 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder,
                 'mean_fidelity.'+self.plot_format),
                 format=self.plot_format)
+            # fig.savefig(os.path.join(self.folder,
+            #     'mean_fidelity.pdf'),
+            #     format='pdf')
 
         if plot_photon_ms0:
             fig = plt.figure()
@@ -405,6 +408,9 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder,
                 'mean_fidelity_msm1.'+self.plot_format),
                 format=self.plot_format)
+            fig.savefig(os.path.join(self.folder,
+                'mean_fidelity_msm1.pdf'),
+                format='pdf')
 
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -423,6 +429,10 @@ class SSROAnalysis(m2.M2Analysis):
             fig.savefig(os.path.join(self.folder,
                 'mean_fidelity_msp1.'+self.plot_format),
                 format=self.plot_format)
+            fig.savefig(os.path.join(self.folder,
+                'mean_fidelity_msp1.pdf'),
+                format='pdf')
+
 
         if plot_photon_ms0:
             fig = plt.figure()
@@ -444,9 +454,12 @@ class SSROAnalysis(m2.M2Analysis):
                 format=self.plot_format)    
 
 
-def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
-    if folder=='':
+def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True):
+    if folder=='' and contains == '':
         folder=toolbox.latest_data('AdwinSSRO')
+    elif contains != '':
+        folder = toolbox.latest_data(contains)
+
     a = SSROAnalysis(folder)
 
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#

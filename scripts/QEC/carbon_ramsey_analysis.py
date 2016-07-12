@@ -41,7 +41,7 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
         folder = toolbox.latest_data(title)
 
     if ssro_calib_timestamp == None: 
-        ssro_calib_folder = toolbox.latest_data('SSRO')
+        ssro_calib_folder = toolbox.latest_data('SSROCalibration')
 
     else:
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
