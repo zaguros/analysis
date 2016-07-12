@@ -6,6 +6,24 @@ from matplotlib import pyplot as plt
 from analysis.lib import fitting
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
+import pandas as pd
+
+
+def load_data(filepath):
+    """
+    Loading csv -files into pandas dataframe and convert to array
+    Input: 
+    filepath  - the filepath of csv file
+    Output: 
+    data  -  numpy ndarray with (time, intensity)
+    """
+    data = pd.read_csv(filepath, skiprows=16, names = ["X","Y","none"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
+    data = data.as_matrix()
+    x = data[:,0]*1.e5 # x-axis does not matter, factor for clarity. 
+    y = data[:,1]
+    return data, x, y
+
+
 
 def get_linewidth(data,EOM_freq, g_a1 = 0.5, g_A1 = 0.04 , g_x01 = 0.0, g_gamma1 = 0.1, g_dx = 0.35, g_A2 = 0.02, g_gamma2 = 0.1, plot_data = True):
     """
@@ -24,8 +42,7 @@ def get_linewidth(data,EOM_freq, g_a1 = 0.5, g_A1 = 0.04 , g_x01 = 0.0, g_gamma1
     lw = linewidth of middle peak
     u_lw = error of the linewidth
     """
-    x = data[:,0]*1.e5 # x-axis does not matter, factor for clarity. 
-    y = data[:,1]
+
     n_xticks = 10
     fixed=[]
     
@@ -40,10 +57,15 @@ def get_linewidth(data,EOM_freq, g_a1 = 0.5, g_A1 = 0.04 , g_x01 = 0.0, g_gamma1
     scaling = EOM_freq/dx #scale the known EOM freq with the separation here.
     lw = gamma1*scaling #scale the linewidth to get linewidth in frequency
     u_lw = u_gamma1*scaling
+    return lw, u_lw, scaling, fit_result
+
+def plot_data_and_fit(data, EOM_freq):
 
     fig,ax = plt.subplots(figsize=(8,4))
+    lw, u_lw, scaling, fit_result = get_linewidth(data, EOM_freq)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
     ax = set_axes(ax)
+    plt.show()
 
     # ax.set_xlabel("Frequency (GHz)", fontsize = 14)
     # ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
@@ -59,9 +81,6 @@ def get_linewidth(data,EOM_freq, g_a1 = 0.5, g_A1 = 0.04 , g_x01 = 0.0, g_gamma1
     #   xticklabels_round = np.append(xticklabels_round,round_)
     # ax.set_xticklabels(xticklabels_round)
     # ax.set_xticks(xticks)
-    plt.show()
-    return lw, u_lw, scaling
-
 
 def set_axes(ax):
     ax.set_xlabel("Frequency (GHz)", fontsize = 14)
