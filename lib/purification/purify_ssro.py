@@ -191,6 +191,7 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 	g_phi = kw.pop('fit_phi', 0)
 	fixed = kw.pop('fixed', [])
 	show_guess = kw.pop('show_guess', False)
+	x_only = kw.pop('x_only',False)
 
 	### folder choice
 	if contains == '':
@@ -211,11 +212,15 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 		ylabel = 'Z'
 	else:
 		x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
-		x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
-		y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
-		# y=y1
-		# y_u = y1_u
-		ylabel = 'Bloch vector length'
+		if x_only:
+			y = y1; y_u = y1_u;
+			ylabel = 'Y'
+		else:
+			x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
+			y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
+			ylabel = 'Bloch vector length'
+
+
 
 
 	### create a plot
