@@ -34,12 +34,16 @@ class purify_analysis(object):
 		self.key_list = ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','counted_awg_reps_w1','counted_awg_reps_w2','ssro_results','tstamp','raw_data']
 
 		self.key_list_pq =  ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1']
-		self.key_lst_adwin_data = ['ssro_results','electron_readout_results','Phase_correction_repetitions','CR_after','carbon_readout_results']
+		self.key_lst_adwin_data = ['ssro_results','electron_readout_result','Phase_correction_repetitions','CR_after','carbon_readout_result','attempts_first','attempts_second']
 		self.lt4_dict = {}
 		self.lt3_dict = {}
 
 		### initialize the data dictionaries
 		for key in self.key_list:
+			self.lt3_dict.update({key:[]})
+			self.lt4_dict.update({key:[]})
+
+		for key in self.key_lst_adwin_data:
 			self.lt3_dict.update({key:[]})
 			self.lt4_dict.update({key:[]})
 
@@ -56,26 +60,32 @@ class purify_analysis(object):
 
 		i = 0
 
+		#Reinit arrays
+		self.lt3_dict['counted_awg_reps_w2'] = []
+		self.lt3_dict['counted_awg_reps_w1'] = []
+		self.lt4_dict['counted_awg_reps_w2'] = []
+		self.lt4_dict['counted_awg_reps_w1'] = []
+
 		for t_lt3,t_lt4 in zip(lt3_timestamps,lt4_timestamps):
 			
 			# print self.lt3_folder
 			
-			a_lt3 = ppq.purify_pq(tb.latest_data(t_lt3,folder = self.lt3_folder),hdf5_mode ='r')
-			a_lt4 = ppq.purify_pq(tb.latest_data(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
+			a_lt3 = ppq.purifyPQAnalysis(tb.latest_data(t_lt3,folder = self.lt3_folder),hdf5_mode ='r')
+			a_lt4 = ppq.purifyPQAnalysis(tb.latest_data(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
 
 			### filter the timeharp data according to adwin events / syncs
 
 			### need to create two sync filters here.!
 			sync_filter = a_lt4.filter_pq_data_from_adwin_syncs() ### this syncfilter erases all data where from the PQ data where the adwin did NOT read out
-			# print sync_filter
+
 			if len(sync_filter) == 0: # empty list --> no read outs.
 				# print 'file empty, skipping these time stamps:',t_lt3,t_lt4
 				# print
 				continue
 
 			### store relevant adwin results
-			syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value)-np.array(a_lt3.agrp['attempts_second'].value))
-			syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value)
+			syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value-251)-np.array(a_lt3.agrp['attempts_second'].value))
+			syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value-251)
 
 
 			if len(syncs_w1) == 0:
@@ -85,7 +95,7 @@ class purify_analysis(object):
 
 			self.lt3_dict['counted_awg_reps_w2'].append(syncs_w2)
 			self.lt3_dict['counted_awg_reps_w1'].append(syncs_w1)
- 			self.lt4_dict['counted_awg_reps_w2'].append(syncs_w2)
+			self.lt4_dict['counted_awg_reps_w2'].append(syncs_w2)
 			self.lt4_dict['counted_awg_reps_w1'].append(syncs_w1)
 
 
@@ -107,8 +117,12 @@ class purify_analysis(object):
 
 			for key in self.key_lst_adwin_data:
 				self.lt4_dict[key].append(np.array(a_lt4.agrp[key].value))
+
 			for key in self.key_list_pq:
 				self.lt4_dict[key].append(np.array(a_lt4.pqf[key].value[sync_filter]))
+
+			for key in self.key_lst_adwin_data:
+				self.lt3_dict[key].append(np.array(a_lt3.agrp[key].value))
 
 			#### calculate the duty cycle for that specific file.
 			# print 'lde length',a_lt3.joint_grp.attrs['LDE_element_length']
@@ -164,15 +178,13 @@ class purify_analysis(object):
 
 		return np.sum(y)
 
-	def apply_temporal_filters_to_prefiltered_data(self,st_start = None,st_len = None,st_len_w2 = None,p_sep =None,verbose = True):
+	def apply_temporal_filters_to_prefiltered_data(self,st_start = None,st_len = None,st_len_w2 = None,verbose = True):
 		"""
 		applies temporal filters to all the registered photon detections in the relevant window
 		"""
 		#####
 		self.st_fltr_w1 = []
 		self.st_fltr_w2 = []
-		no_w1 = 0
-		no_w2 = 0
 
 		### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
 		if st_start == None:
@@ -184,15 +196,15 @@ class purify_analysis(object):
 
 
 		for st_filtered,sp_filtered in zip(self.lt4_dict['/PQ_sync_time-1'],self.lt4_dict['/PQ_special-1']):
+			
 			st_fltr_w1 = (st_filtered > st_start)  & (st_filtered < (st_start  + st_len)) & (sp_filtered == 0)
 			st_fltr_w2 = (st_filtered > st_start)  & (st_filtered < (st_start + st_len_w2)) & (sp_filtered == 0)
 			self.st_fltr_w1.append(st_fltr_w1)
 			self.st_fltr_w2.append(st_fltr_w2)
 
-			no_w1 += np.sum(st_fltr_w1)
-			no_w2 += np.sum(st_fltr_w2)
+			no_w1 = np.sum(st_fltr_w1)
 			if verbose:
-				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+				print 'number of total filtered detection events : ', no_w1
 		return
 
 
@@ -208,33 +220,50 @@ class purify_analysis(object):
 
 		self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
 
+
 		### get deocherence filter
-		max_w1 = analysis_params.decoherence_params['max_reps_w1']
-		min_w1 = analysis_params.decoherence_params['min_reps_w1']
-		max_w2 = analysis_params.decoherence_params['max_reps_w2']
-		min_w2 = analysis_params.decoherence_params['min_reps_w2']
+		max_w1 = analysis_params.decoherence_filter['max_reps_w1']
+		min_w1 = analysis_params.decoherence_filter['min_reps_w1']
+		max_w2 = analysis_params.decoherence_filter['max_reps_w2']
+		min_w2 = analysis_params.decoherence_filter['min_reps_w2']
 
 
 		loop_array = zip(temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt4_dict['attempts_first'],self.lt4_dict['attempts_second'])
 		
 		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,attempts_first,attempts_second in loop_array:
 
-			decoherence_filter_w1 = (attempts_first > min_w1) & (attempts_first < max_w1)
-			decoherence_filter_w2 = (attempts_second_nr > min_w2) & (attempts_second < max_w2)
+			decoherence_filter_w1 = (attempts_first >= min_w1) & (attempts_first <= max_w1)
+			decoherence_filter_w2 = (attempts_second >= min_w2) & (attempts_second <= max_w2)
 
-			st_fltr_w1 = np.logical_and(np.logical_and(fltr_w1,np.equal(sync_nrs_w1,adwin_nrs_w1)), decoherence_filter_w1)
-			st_fltr_w2 = np.logical_and(np.logical_and(fltr_w2,np.equal(sync_nrs_w2,adwin_nrs_w2)), decoherence_filter_w2)
+
+			dec_and_w1_filter = np.zeros(len(sync_nrs))
+			# Start by finding when get right sync number		
+			w1_sync_filtered = np.in1d(sync_nrs,adwin_nrs_w1)
+			# Gotta pull the right element from the decoherence filter list. Messy
+			dec_and_w1_filter[w1_sync_filtered] = decoherence_filter_w1[self.filter_adwin_data_from_pq_syncs(sync_nrs[w1_sync_filtered],adwin_nrs_w1)]
+
+
+			dec_and_w2_filter = np.zeros(len(sync_nrs))
+			# Start by finding when get right sync number		
+			w2_sync_filtered = np.in1d(sync_nrs,adwin_nrs_w2)
+			# Gotta pull the right element from the decoherence filter list. Messy
+			dec_and_w2_filter[w2_sync_filtered] = decoherence_filter_w2[self.filter_adwin_data_from_pq_syncs(sync_nrs[w2_sync_filtered],adwin_nrs_w2)]
+
+			# Combine with original filter
+			st_fltr_w1 = np.logical_and(fltr_w1, dec_and_w1_filter)
+			st_fltr_w2 = np.logical_and(fltr_w2, dec_and_w2_filter)
 
 			self.st_fltr_w1.append(st_fltr_w1)
 			self.st_fltr_w2.append(st_fltr_w2)
 
-			no_w1 += np.sum(st_fltr_w1)
-			no_w2 += np.sum(st_fltr_w2)
+			no_w1 = np.sum(st_fltr_w1)
+			no_w2 = np.sum(st_fltr_w2)
+		
 			if verbose:
 				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 
 
-	def apply_is_purified_filter(self,signature = '00'):
+	def apply_is_purified_filter(self,signature = '00',verbose = True):
 		"""
 		correlates the electron RO signature after the purification gate to "ms0 & ms0"
 		Returns a filter for the adwin_ssro results.
@@ -247,17 +276,35 @@ class purify_analysis(object):
 
 		self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
 
-		loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt3_dict['electron_readout_results'],self.lt4_dict['electron_readout_results'])
+		loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt3_dict['electron_readout_result'],self.lt4_dict['electron_readout_result'])
 		
-		for fltr_w1,fltr_w2, e_ro_lt3,e_ro_lt4 in loop_arrays:
+		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,e_ro_lt3,e_ro_lt4 in loop_arrays:
+
+			adwin_indices_w1  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w1],adwin_nrs_w1)
+			adwin_indices_w2  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w2],adwin_nrs_w2)
+
+			purified_filter_w1 = np.core.defchararray.add((e_ro_lt3[adwin_indices_w1]).astype('str'),(e_ro_lt4[adwin_indices_w1]).astype('str')) == signature 
+			fltr_w1[fltr_w1] = np.logical_and(fltr_w1[fltr_w1],purified_filter_w1)
+
+			purified_filter_w2 = np.core.defchararray.add((e_ro_lt3[adwin_indices_w2]).astype('str'),(e_ro_lt4[adwin_indices_w2]).astype('str')) == signature 
+			fltr_w2[fltr_w2] = np.logical_and(fltr_w2[fltr_w2],purified_filter_w2)
 
 
+			self.st_fltr_w1.append(fltr_w1)
+			self.st_fltr_w2.append(fltr_w2)
+			
+			no_w1 = np.sum(fltr_w1)
+			no_w2 = np.sum(fltr_w2)
+		
+			if verbose:
+				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 
 	def apply_CR_after_filter(self,verbose = True):
 		'''
 		Checks self.st_fltr_w1 and self.st_fltr_w2 if the CR check after the event was below a certain treshold.
 		'''
-		pass
+		
+
 	def attach_state_filtered_syncs(self,verbose = True):
 		"""
 		checks for the signatures of psi_minus or psi_plus and returns a list of numpy arrays where each numpy array corresponds the correpsonding sync number of the event
@@ -291,12 +338,13 @@ class purify_analysis(object):
 			#### formulate filteres according to the relevant state
 			#### for psi_plus: the same detector has to click within one sync
 			#### for psi_minus: different detectors have to click
-			#### the filter w1 is shifted onto the filter of w2 by inserting a boolean False at the beginning (clicks must be consecutive accross windows)
+			#### the filter w1 is shifted onto the filter of w2 by inserting two boolean Falses at the beginning (clicks must be consecutive accross windows)
+			#### Need extra False to get past the special in between the two valid clicks
+			st_fltr_w2_ch1 = np.append(st_fltr_w2_ch1,[False,False])[2:]
+			st_fltr_w2_ch0 = np.append(st_fltr_w2_ch0,[False,False])[2:]
 
-			st_fltr_w1_ch1 = np.insert(st_fltr_w1_ch1,0,False); st_fltr_w1_ch0 = np.insert(st_fltr_w1_ch0,0,False)
-
-			st_fltr_psi_plus = np.logical_or(np.logical_and(st_fltr_w1_ch1[:-1],st_fltr_w2_ch1),np.logical_and(st_fltr_w1_ch0[:-1],st_fltr_w2_ch0))
-			st_fltr_psi_minus = np.logical_or(np.logical_and(st_fltr_w1_ch0[:-1],st_fltr_w2_ch1),np.logical_and(st_fltr_w1_ch1[:-1],st_fltr_w2_ch0))
+			st_fltr_psi_plus = np.logical_or(np.logical_and(st_fltr_w1_ch1,st_fltr_w2_ch1),np.logical_and(st_fltr_w1_ch0,st_fltr_w2_ch0))
+			st_fltr_psi_minus = np.logical_or(np.logical_and(st_fltr_w1_ch0,st_fltr_w2_ch1),np.logical_and(st_fltr_w1_ch1,st_fltr_w2_ch0))
 
 			self.st_fltr_psi_plus.append(st_fltr_psi_plus)
 			self.st_fltr_psi_minus.append(st_fltr_psi_minus)
@@ -321,19 +369,28 @@ class purify_analysis(object):
 		self.RO_data_LT4_plus = []
 		self.RO_data_LT4_minus = []
 
-		for HH_s_psi_p,HH_s_psi_m,adwin_syncs_lt3,adwin_syncs_lt4,adwin_ro_lt3,adwin_ro_lt4 in zip(self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt3_dict['counted_awg_reps'],self.lt4_dict['counted_awg_reps'],self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results']):
+		for HH_s_psi_p,HH_s_psi_m,adwin_nrs_w1,adwin_ro_lt3,adwin_ro_lt4 in zip(self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt4_dict['counted_awg_reps_w1'],self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results']):
 
+			if np.sum(np.logical_not(np.in1d(HH_s_psi_p,adwin_nrs_w1))) != 0:
+					print 'Gone wrong HH_s_psi_p!'
+					print len(HH_s_psi_p[np.logical_not(np.in1d(HH_s_psi_p,adwin_nrs_w1))])
+					print len(HH_s_psi_p)
+			if np.sum(np.logical_not(np.in1d(HH_s_psi_m,adwin_nrs_w1))) != 0:
+					print 'Gone wrong HH_s_psi_m!'
 
-			fltr_plus_lt3  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_syncs_lt3)
-			fltr_minus_lt3 = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_syncs_lt3)
-			fltr_plus_lt4  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_syncs_lt4)
-			fltr_minus_lt4 = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_syncs_lt4)
+			fltr_plus  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_nrs_w1)
+			fltr_minus = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_nrs_w1)
 
-			self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus_lt3])
-			self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus_lt4])
-			self.RO_data_LT3_minus.append(adwin_ro_lt3[fltr_minus_lt3])
-			
-			self.RO_data_LT4_minus.append(adwin_ro_lt4[fltr_minus_lt4])
+			# print np.argmax(fltr_plus)
+			# print HH_s_psi_p[np.argmax(fltr_plus)]
+			# print np.argmax(fltr_minus)
+			# print HH_s_psi_m[np.argmax(fltr_minus)]
+			# print adwin_nrs_w1
+
+			self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus])
+			self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus])
+			self.RO_data_LT3_minus.append(adwin_ro_lt3[fltr_minus])	
+			self.RO_data_LT4_minus.append(adwin_ro_lt4[fltr_minus])
 
 		# print fltr_plus_lt3
 		# print fltr_plus_lt4
@@ -415,6 +472,8 @@ class purify_analysis(object):
 			analysis_params.temporal_filter[parameter_name] = x ### commence sweep
 
 			self.apply_temporal_filters_to_prefiltered_data(verbose = False)
+			self.apply_sync_filter_w1_w2(verbose = False)
+			self.apply_is_purified_filter(verbose = False)
 			self.attach_state_filtered_syncs(verbose = False)
 			psi_m_corrs, psi_p_corrs = self.correlate_RO_results(verbose=False,return_value = True)
 
@@ -426,29 +485,50 @@ class purify_analysis(object):
 			no_anti_correlations_p = float(psi_p_corrs[1]+psi_p_corrs[2])
 			no_correlations_p = float(psi_p_corrs[0]+psi_p_corrs[3])
 
-			minus_correlation.append(float(no_anti_correlations_m)/np.sum(psi_m_corrs))
-			plus_correlation.append(float(no_correlations_p)/np.sum(psi_p_corrs))
+
+			if np.sum(psi_m_corrs) == 0:
+				minus_correlation.append(0)
+				minus_correlation_u.append(0)
+			else:
+				minus_correlation_u.append(np.sqrt((no_anti_correlations_m*(no_correlations_m**2)+no_correlations_m*(no_anti_correlations_m**2)))/((no_correlations_m + no_anti_correlations_m)**2))
+				minus_correlation.append(float(no_anti_correlations_m)/np.sum(psi_m_corrs))
+			
+
+			if np.sum(psi_p_corrs) == 0:
+				plus_correlation.append(0)
+				plus_correlation_u.append(0)
+			else:
+				plus_correlation.append(float(no_correlations_p)/np.sum(psi_p_corrs))
+				plus_correlation_u.append(np.sqrt((no_anti_correlations_p*(no_correlations_p**2)+no_correlations_p*(no_anti_correlations_p**2)))/((no_correlations_p + no_anti_correlations_p)**2))
 
 			### error bars are based on poissonian statistics for correlated events vs. uncorrelated
-			minus_correlation_u.append(np.sqrt((no_anti_correlations_m*(no_correlations_m**2)+no_correlations_m*(no_anti_correlations_m**2)))/((no_correlations_m + no_anti_correlations_m)**2))
-			plus_correlation_u.append(np.sqrt((no_anti_correlations_p*(no_correlations_p**2)+no_correlations_p*(no_anti_correlations_p**2)))/((no_correlations_p + no_anti_correlations_p)**2))
-
+						
 		### commence plotting
-		self.create_plot(title = 'Number of events within filter', xlabel = parameter_name + ' (ns)',ylabel = 'Occurences')
-		self.plot_data(parameter_range/1e3,no_of_minus_events,label = '-')
-		self.plot_data(parameter_range/1e3,no_of_plus_events,label = '+')
+
+		### check if we are dealing with timing or something else (like CR after...)
+		if max(parameter_range) > 1000:
+			x = parameter_range/1000
+			x_units = ' (ns)'
+		else:
+			x = parameter_range
+			x_units = ''
+
+
+		self.create_plot(title = 'Number of events within filter', xlabel = parameter_name + x_units,ylabel = 'Occurences')
+		self.plot_data(x,no_of_minus_events,label = '-')
+		self.plot_data(x,no_of_plus_events,label = '+')
 		plt.legend()
 		self.save_and_close_plot()
 
 
 		### should really have an error calculation for the minus / plus correlation
-		self.create_plot(title = 'Fraction of correct correlations', xlabel = parameter_name + ' (ns)', ylabel = 'p_right_correlation')
-		self.plot_data(parameter_range/1e3,minus_correlation,y_u = minus_correlation_u,label = '-')
-		self.plot_data(parameter_range/1e3,plus_correlation,y_u = plus_correlation_u,label = '+')
+		self.create_plot(title = 'Fraction of correct correlations', xlabel = parameter_name + x_units, ylabel = 'p_right_correlation')
+		self.plot_data(x,minus_correlation,y_u = minus_correlation_u,label = '-')
+		self.plot_data(x,plus_correlation,y_u = plus_correlation_u,label = '+')
 		plt.legend(loc = 2)
 		self.save_and_close_plot()
 
-		reload(BK_params) ### to negate the sweep changes
+		reload(analysis_params) ### to negate the sweep changes
 
 	def filter_adwin_data_from_pq_syncs(self,filtered_sn,counted_awg_reps):
 		"""
@@ -511,31 +591,79 @@ class purify_analysis(object):
 			plt.errorbar(x,y,y_u,fmt = 'x',label = label,**kw)
 		else: plt.plot(x,y,'x',label = label)
 
+	def tstamps_for_both_setups(self,day_string,newest_tstamp = '235959'):
+		"""
+		takes a date as input and scans lt3 and lt4 for appropriate timestamps
+		will throw an error if both setups have run the experiment an unequal amount of times!
+		--> then you have to clean up the data folder of the setup with a longer list of timestamps
+		input: day_string, e.g. '20160607'
+		output: lt3_t_list,lt4_t_list
+		"""
+
+		lt3_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt3_folder ,newest_tstamp = newest_tstamp)
+		lt4_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt4_folder, newest_tstamp = newest_tstamp)
+
+		return self.verify_tstamp_lists(lt3_t_list,lt4_t_list,day_string)
 
 
-	def find_tstamps_of_day(self,contains,ts_list,day_string,analysis_folder = 'throw exception'):
-		latest_t = str(int(day_string[:-1]) +1)+'_000000'
+	def find_tstamps_of_day(self,ts_list,day_string,analysis_folder = 'throw exception',newest_tstamp = '235959'):
+		latest_t = day_string + newest_tstamp # where in the day do you want to begin? 235959 mean: take the whole day
 		newer_than = day_string+'_000000'
 
-		while tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
-			latest_t,f = tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
+		while tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
 
+			latest_t,f = tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
+			
 			### debug statement that prints the full timestamp and the relevant identifier.
-			#print latest_t[8:],latest_t
+			# print latest_t[8:],latest_t
 
 			### append found timestamp to list of timestamps
 			ts_list.append(latest_t[8:]) 
 
 		return ts_list
 
-	def load_timestamps_lt3_lt4(self):
-		"""
-		returns timestamps for LT3 and LT4.
-		This should work via a static parameter dictionary in 'scripts', right now done by hand & find timestamps of day.
-		"""
-		pass
+	def verify_tstamp_lists(self,lt3_t_list,lt4_t_list,date):
 
+		print len(lt3_t_list),len(lt4_t_list)
+		if len(lt3_t_list) != len(lt4_t_list):
+			print 't_lt3 , t_lt4'
+			for lt3_t,lt4_t in zip(lt3_t_list,lt4_t_list):
+				print lt3_t,lt4_t
+			raise Exception('The length of the time stamp lists is unequal. Clean out the data folders on each computer t3_0,t4_0: ',lt3_t_list[0],lt4_t_list[0]) 
 
+		clean_t_list_lt3,clean_t_list_lt4 = [],[]
+
+		### check for contents
+		newer_than = date+'_000000'
+		for t_lt3,t_lt4 in zip(lt3_t_list,lt4_t_list):
+			f_lt3 = tb.latest_data(t_lt3,folder = self.lt3_folder,newer_than = newer_than)
+			f_lt4 = tb.latest_data(t_lt4,folder = self.lt4_folder,newer_than = newer_than)
+
+			## get file path and open file
+			Datafile_lt3 = h5py.File(f_lt3+f_lt3[len(self.lt3_folder)+9:] + '.hdf5','r') 
+			Datafile_lt4 = h5py.File(f_lt3+f_lt3[len(self.lt4_folder)+9::] + '.hdf5','r') 
+
+			if (not u'PQ_hist' in Datafile_lt3.keys()) or (not u'PQ_hist' in Datafile_lt4.keys()): ### did we actually detect any clicks what so ever?
+				continue
+
+			### we exploit the fact that .keys is ordered according to what is saved last.
+			### --> adwin data is saved last: therefore if the last key contains pq --> no adwin data
+
+			if ('PQ' in Datafile_lt3.keys()[-1]) or ('PQ' in Datafile_lt4.keys()[-1]):
+				continue
+
+			### check if there are adwin ssro events and if they have the same length for both files
+			ssros_lt3 = Datafile_lt4[Datafile_lt4.keys()[-1]]['adwindata']['ssro_results'].value
+			ssros_lt4 = Datafile_lt4[Datafile_lt4.keys()[-1]]['adwindata']['ssro_results'].value
+
+			if (len(ssros_lt4) == len(ssros_lt3)) and (len(ssros_lt3) !=0):
+				### timestamp contains valuable information, add to clean lists
+				clean_t_list_lt3.append(t_lt3)
+				clean_t_list_lt4.append(t_lt4)
+	
+		### return clean timestamp lists
+
+		return clean_t_list_lt3,clean_t_list_lt4
 	def plot_quantity_for_raw_data(self):
 		"""
 		To be written. 

@@ -9,7 +9,7 @@ from analysis.lib.m2.ssro import pqsequence
 import numpy as np
 import os,h5py
 
-class purify_pq(pqsequence.PQSequenceAnalysis):
+class purifyPQAnalysis(pqsequence.PQSequenceAnalysis):
 	"""
 	Combines pq measurements with adwin ssro.
 	"""
@@ -19,35 +19,23 @@ class purify_pq(pqsequence.PQSequenceAnalysis):
 		self.agrp=self.adwingrp('adwindata')
 		self.joint_grp = self.adwingrp('joint_params')
 
-	def filter_pq_data_from_adwin_syncs(self, adwin_syncs = None):
+	def filter_pq_data_from_adwin_syncs(self, adwin_syncs = None, pq_syncs = None):
 
 		"""
 		returns a boolean numpy array.
 		True if the recored sync is in the adwin adwin_syncs
-		False if the recored sync is not in the adwin_syncs (agrp['sync_number'])
+		False if the recored sync is not in the adwin_syncs (agrp['counted_awg_reps'])
 
 		TODO: Needs to be generalized for longer PQ meausrements with more data sets.
 		"""
 
 		if adwin_syncs == None:
 			adwin_syncs = self.agrp['counted_awg_reps'].value
-		pq_syncs = self.pqf['/PQ_sync_number-1'].value
 
+		if pq_syncs == None:
+			pq_syncs = self.pqf['/PQ_sync_number-1'].value
 
-		i = 0
-		j = 0
-		sync_indices = []
-		for adwin_sync in adwin_syncs:
-			while True:
-				if pq_syncs[j] == adwin_sync:
-					sync_indices.append(j)
-				if pq_syncs[j] > adwin_sync:
-					# print 'this is the last sync and index', pq_syncs[j],j
-					break
-				### since both lists are sorted: you don't want to start over again.	
-				j += 1
-
-		return np.array(sync_indices)
+		return np.in1d(pq_syncs,adwin_syncs) ## CHANGE back
 
 	def filter_adwin_data_from_pq_syncs(self,filtered_sn):
 		"""

@@ -4,9 +4,9 @@ Contains analysis parameters for purification measurements. Such as temporal fil
 
 temporal_filter = {
 	
-	'st_start' 		: 2465e3,
-	'st_len'		: 50e3,
-	'st_len_w2' 	: 50e3,
+	'st_start' 		: 2752e3,
+	'st_len'		: 20e3,
+	'st_len_w2' 	: 20e3,
 }
 
 decoherence_filter = {

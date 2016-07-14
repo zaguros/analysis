@@ -348,13 +348,13 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     sn0 = sync_number[fltr0]
     
     st1 = sync_time[fltr1]
-    t1 = total_time[fltr1]
+    t1  = total_time[fltr1]
     sn1 = sync_number[fltr1]
     #print len(st0),len(t0),len(sn0),len(st1),len(t1),len(sn1),
 
     samesync0 = np.in1d(sn0, sn1)
     samesync1 = np.in1d(sn1, sn0)
-    
+
     c_st0 = st0[samesync0]
     c_st1 = st1[samesync1]
     c_t0 = t0[samesync0]
@@ -362,27 +362,55 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     c_t1 = t1[samesync1]
     c_sn1 = sn1[samesync1]
     
+    ### Code for afterpulsing (PH 16) - also need to uncomment one line in for loop
+    # unique_vals, uniq_counts = np.unique(sn1, return_counts = True)
+    # repeated = np.in1d(sn1,unique_vals[uniq_counts > 1])
+    # c_st0 = st1[repeated]
+    # c_st1 = st1[repeated]
+    # c_t0 = t1[repeated]
+    # c_sn0 = sn1[repeated]
+    # c_t1 = t1[repeated]
+    # c_sn1 = sn1[repeated]
+
     coincidences = np.empty((0,4))
-    for _sn0, _t0, _st0 in zip(c_sn0, c_t0, c_st0):
+    for i, (_sn0, _t0, _st0) in enumerate(zip(c_sn0, c_t0, c_st0)):
+
         _c = c_sn1==_sn0
+        # _c[i] = 0 # Not the same entry 
         
         for _t1, _st1 in zip(c_t1[_c], c_st1[_c]):
             dt = int(_t0) - int(_t1)
             coincidences = np.vstack((coincidences, np.array([dt, _st0, _st1, _sn0])))
 
+    # coincidences = np.empty((0,4))
+    # for _sn0, _t0, _st0 in zip(c_sn0, c_t0, c_st0):
+    #     _c = c_sn1==_sn0
+        
+    #     for _t1, _st1 in zip(c_t1[_c], c_st1[_c]):
+    #         dt = int(_t0) - int(_t1)
+    #         coincidences = np.vstack((coincidences, np.array([dt, _st0, _st1, _sn0])))
+    
     if save:
         set_analysis_data(pqf, 'coincidences', coincidences,
                           columns=('dt = ch0-ch1 (bins)', 'sync_time ch0 (bins)', 'sync_time ch1 (bins)', 'sync number'))
                        
     return coincidences
 
-def get_coincidences_from_folder(folder, index = 1):
+def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
 
     sync_num_name = 'PQ_sync_number-' + str(index)
-
+    # print 'this is the save!', save
     filepaths = tb.get_all_msmt_filepaths(folder) 
-    co = np.ones([1,4])
 
+    if contains != '':
+        new_fps = []
+        for f in filepaths:
+            if contains in f:
+                new_fps.append(f)
+        filepaths = new_fps
+
+    co = np.ones([1,4])
+    # print filepaths
     for i,f in enumerate(filepaths):
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
@@ -390,11 +418,12 @@ def get_coincidences_from_folder(folder, index = 1):
                 co = get_coincidences(pqf)           
         else:
             pqf = pqf_from_fp(f, rights = 'r+')
+
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:
-                    co = get_coincidences(pqf)
+                    co = get_coincidences(pqf,save = save)
                 else:
-                    co = np.vstack((co, get_coincidences(pqf)))
+                    co = np.vstack((co, get_coincidences(pqf,save = save)))
                     
     return co
 
