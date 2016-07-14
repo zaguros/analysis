@@ -67,8 +67,8 @@ class SequenceAnalysis(m2.M2Analysis):
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
     
-    def get_mean_cr_cts(self, save=True, pts=1, max_cr=-1):
-        ### plot the mean of the CR counts --- without the zero --- vs the sweep-param
+    def get_mean_cr_cts(self, save=True, pts=1, max_cr=-1,ionization_crit = 0):
+        ### plot the mean of the CR counts --- without the ionization threshold --- vs the sweep-param
        
         if max_cr < 0:
             max_cr = np.max(self.cr_after)
@@ -82,7 +82,7 @@ class SequenceAnalysis(m2.M2Analysis):
             self.sweep_CR_hist[i,:], binedges = np.histogram(cr, 
                 bins=np.arange(max_cr+2)-0.5,
                 normed=True)
-            self.sweep_CR_sum[i] = float(np.sum(cr))/len(np.where(cr>0)[0])
+            self.sweep_CR_sum[i] = float(np.sum(cr))/len(np.where(cr>ionization_crit)[0])
             self.sweep_CR_variance[i] = np.sqrt(np.sum((cr[np.where(cr>0)[0]] - self.sweep_CR_sum[i])**2)/len(np.where(cr>0)[0]))
        
         return (self.sweep_CR_hist, self.sweep_CR_sum, self.sweep_CR_variance)
@@ -94,9 +94,9 @@ class SequenceAnalysis(m2.M2Analysis):
         if max_cr < 0:
             max_cr = np.max(self.cr_after)
 
-        self.sweep_CR_hist, sweep_CR_sum, self.sweep_CR_variance = self.get_mean_cr_cts(save, pts, max_cr)
+        self.sweep_CR_hist, sweep_CR_sum, self.sweep_CR_variance = self.get_mean_cr_cts(save, pts, max_cr,ionization_crit)
 
-        ### plot the mean of the CR counts --- without the zero --- vs the sweep-param
+        ### plot the mean of the CR counts --- without the ionization threshold --- vs the sweep-param
        
         fig = self.default_fig(figsize=(6,4))
         ax = self.default_ax(fig)

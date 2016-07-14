@@ -2,6 +2,7 @@ import numpy as np
 import os 
 from numpy import *
 from scipy import optimize
+import h5py
 # import pylab
 
 # taken from the scipy fitting cookbook:
@@ -242,3 +243,17 @@ Fit results of: %s
 
     text_file.close() 
     
+def write_to_hdf(fitresult,fp):
+    f=h5py.File(fp, 'a')
+    g = f.create_group('fit_result')
+    for attr_key in ['success','dof', 'chisq','fitfunc_str','residuals_rms','reduced_chisq']:
+        g.attrs[attr_key] = fitresult[attr_key]
+    g['x'] = fitresult['x']
+    g['y'] = fitresult['y']
+    g_p = g.create_group('params_dict')
+    for k in fitresult['params_dict']:
+        g_p[k] = fitresult['params_dict'][k]
+    g_e = g.create_group('error_dict')
+    for k in fitresult['error_dict']:
+        g_e[k] = fitresult['params_dict'][k]
+    f.close()

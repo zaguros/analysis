@@ -12,7 +12,7 @@ def load_data(filepath):
     Output: 
     data  -  numpy ndarray with (time, intensity)
     """
-    data = pd.read_csv(filepath, skiprows=16, names = ["X","Z","Y","none"],usecols=[0,2]) #creating a dataframe in pandas and importing the data
+    data = pd.read_csv(filepath, skiprows=16, names = ["none","X","Y","none"],usecols=[1,2]) #creating a dataframe in pandas and importing the data
     data = data.as_matrix()
     return data
 
