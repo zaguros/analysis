@@ -12,6 +12,8 @@ from analysis.lib.tools import toolbox as tb; reload(tb)
 from analysis.lib.pq import pq_tools
 import copy as cp
 from matplotlib import pyplot as plt
+from analysis.lib.m2.ssro import ssro
+from analysis.lib.lde import sscorr; reload(sscorr)
 import purify_analysis_params as analysis_params;reload(analysis_params)
 
 #### standard parameters
@@ -24,7 +26,7 @@ class purify_analysis(object):
 	general class that stores prefiltered data and serves as analysis suite for non-local correlation measurements
 	"""
 
-	def __init__(self,name,lt3_folder,lt4_folder,**kw):
+	def __init__(self,name,lt3_folder,lt4_folder,ROC_lt3_tstamp,ROC_lt4_tstamp,**kw):
 		"""
 		data is in general stored in dictionaries associated with one of the two setups. each dictionary entry contains a list of np.arrays (each entry corresponding to one given timestamp)
 		we additionally store the full purify_pq object for further processing of the raw data
@@ -49,6 +51,9 @@ class purify_analysis(object):
 
 		self.lt3_folder = lt3_folder
 		self.lt4_folder = lt4_folder
+
+		self.ROC_lt3_tstamp = ROC_lt3_tstamp
+		self.ROC_lt4_tstamp = ROC_lt4_tstamp
 
 	def load_raw_data(self,lt3_timestamps,lt4_timestamps):
 		"""
@@ -84,8 +89,8 @@ class purify_analysis(object):
 				continue
 
 			### store relevant adwin results
-			syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value-251)-np.array(a_lt3.agrp['attempts_second'].value))
-			syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value-251)
+			syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value)-np.array(a_lt3.agrp['attempts_second'].value))
+			syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value)
 
 
 			if len(syncs_w1) == 0:
@@ -188,11 +193,11 @@ class purify_analysis(object):
 
 		### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
 		if st_start == None:
-			st_start = analysis_params.temporal_filter['st_start']
+			st_start = analysis_params.filter_settings['st_start']
 		if st_len == None:
-			st_len = analysis_params.temporal_filter['st_len']
+			st_len = analysis_params.filter_settings['st_len']
 		if st_len_w2 == None:
-			st_len_w2 = analysis_params.temporal_filter['st_len_w2']
+			st_len_w2 = analysis_params.filter_settings['st_len_w2']
 
 
 		for st_filtered,sp_filtered in zip(self.lt4_dict['/PQ_sync_time-1'],self.lt4_dict['/PQ_special-1']):
@@ -208,7 +213,7 @@ class purify_analysis(object):
 		return
 
 
-	def apply_sync_filter_w1_w2(self,verbose = True):
+	def apply_sync_filter_w1_w2(self,verbose = True,max_w2 = None):
 		"""
 		checks if associated sync number corresponds to a click in entanglement generation 1 or 2 and alters self.st_fltr_w1 and self.st_fltr_w2
 		is applied after temporal filtering.
@@ -222,14 +227,17 @@ class purify_analysis(object):
 
 
 		### get deocherence filter
-		max_w1 = analysis_params.decoherence_filter['max_reps_w1']
-		min_w1 = analysis_params.decoherence_filter['min_reps_w1']
-		max_w2 = analysis_params.decoherence_filter['max_reps_w2']
-		min_w2 = analysis_params.decoherence_filter['min_reps_w2']
+		max_w1 = analysis_params.filter_settings['max_reps_w1']
+		min_w1 = analysis_params.filter_settings['min_reps_w1']
+		if max_w2 == None:
+			max_w2 = analysis_params.filter_settings['max_reps_w2']
+		min_w2 = analysis_params.filter_settings['min_reps_w2']
 
 
 		loop_array = zip(temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt4_dict['attempts_first'],self.lt4_dict['attempts_second'])
 		
+		no_w1, no_w2 = 0, 0
+
 		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,attempts_first,attempts_second in loop_array:
 
 			decoherence_filter_w1 = (attempts_first >= min_w1) & (attempts_first <= max_w1)
@@ -256,14 +264,14 @@ class purify_analysis(object):
 			self.st_fltr_w1.append(st_fltr_w1)
 			self.st_fltr_w2.append(st_fltr_w2)
 
-			no_w1 = np.sum(st_fltr_w1)
-			no_w2 = np.sum(st_fltr_w2)
+			no_w1 += np.sum(st_fltr_w1)
+			no_w2 += np.sum(st_fltr_w2)
 		
-			if verbose:
-				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+		if verbose:
+			print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 
 
-	def apply_is_purified_filter(self,signature = '00',verbose = True):
+	def apply_is_purified_filter(self,signature = '11',verbose = True):
 		"""
 		correlates the electron RO signature after the purification gate to "ms0 & ms0"
 		Returns a filter for the adwin_ssro results.
@@ -278,10 +286,21 @@ class purify_analysis(object):
 
 		loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt3_dict['electron_readout_result'],self.lt4_dict['electron_readout_result'])
 		
+		no_w1, no_w2 = 0, 0
+		counts = np.zeros(4)
+
 		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,e_ro_lt3,e_ro_lt4 in loop_arrays:
 
 			adwin_indices_w1  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w1],adwin_nrs_w1)
 			adwin_indices_w2  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w2],adwin_nrs_w2)
+
+			if verbose:
+				sigs = ['00','01','10','11']
+				
+				for z, sig in enumerate(sigs):
+
+					purified_filter_w1 = np.core.defchararray.add((e_ro_lt3[adwin_indices_w1]).astype('str'),(e_ro_lt4[adwin_indices_w1]).astype('str')) == sig 
+					counts[z] = np.sum(purified_filter_w1)
 
 			purified_filter_w1 = np.core.defchararray.add((e_ro_lt3[adwin_indices_w1]).astype('str'),(e_ro_lt4[adwin_indices_w1]).astype('str')) == signature 
 			fltr_w1[fltr_w1] = np.logical_and(fltr_w1[fltr_w1],purified_filter_w1)
@@ -293,11 +312,25 @@ class purify_analysis(object):
 			self.st_fltr_w1.append(fltr_w1)
 			self.st_fltr_w2.append(fltr_w2)
 			
-			no_w1 = np.sum(fltr_w1)
-			no_w2 = np.sum(fltr_w2)
+			no_w1 += np.sum(fltr_w1)
+			no_w2 += np.sum(fltr_w2)
 		
-			if verbose:
-				print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+		if verbose:
+
+			probs = counts/float(np.sum(counts))
+
+			row_format ="     {:>.2f} " * (len(sigs))
+			headline_format = "{:>9} " * len(sigs)
+			print '\nProbability of each purification outcome:'
+			print headline_format.format(*sigs)
+
+			print "-"*(50)
+			print row_format.format(*probs)
+			row_format =" "+"    ({:>d}) " * (len(sigs))
+			print row_format.format(*(counts).astype('int'))
+
+			print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+			print
 
 	def apply_CR_after_filter(self,verbose = True):
 		'''
@@ -319,6 +352,7 @@ class purify_analysis(object):
 
 		self.HH_sync_psi_plus 	 = []
 		self.HH_sync_psi_minus	 = []
+
 		i = 0
 
 		for fltr_w1,fltr_w2,channels,HH_sync in zip(self.st_fltr_w1,self.st_fltr_w2,self.lt4_dict['/PQ_channel-1'],self.lt4_dict['/PQ_sync_number-1']):
@@ -371,12 +405,6 @@ class purify_analysis(object):
 
 		for HH_s_psi_p,HH_s_psi_m,adwin_nrs_w1,adwin_ro_lt3,adwin_ro_lt4 in zip(self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt4_dict['counted_awg_reps_w1'],self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results']):
 
-			if np.sum(np.logical_not(np.in1d(HH_s_psi_p,adwin_nrs_w1))) != 0:
-					print 'Gone wrong HH_s_psi_p!'
-					print len(HH_s_psi_p[np.logical_not(np.in1d(HH_s_psi_p,adwin_nrs_w1))])
-					print len(HH_s_psi_p)
-			if np.sum(np.logical_not(np.in1d(HH_s_psi_m,adwin_nrs_w1))) != 0:
-					print 'Gone wrong HH_s_psi_m!'
 
 			fltr_plus  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_nrs_w1)
 			fltr_minus = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_nrs_w1)
@@ -395,111 +423,155 @@ class purify_analysis(object):
 		# print fltr_plus_lt3
 		# print fltr_plus_lt4
 
-		if not apply_ROC:
-			all_m_lt3,all_m_lt4,all_p_lt3,all_p_lt4 = np.array([]),np.array([]),np.array([]),np.array([])
-			for m_lt3,m_lt4,p_lt3,p_lt4 in zip(self.RO_data_LT3_minus,self.RO_data_LT4_minus,self.RO_data_LT3_plus,self.RO_data_LT4_plus):
 
-				if len(m_lt3) != 0 and len(m_lt4) != 0:
-					if verbose:
-						print 'p_correlated for psi_minus', float(np.sum(np.equal(m_lt3,m_lt4)))/len(m_lt3)
-						print 'p_correlated for psi_plus', float(np.sum(np.equal(p_lt3,p_lt4)))/len(m_lt4)
+		all_m_lt3,all_m_lt4,all_p_lt3,all_p_lt4 = np.array([]),np.array([]),np.array([]),np.array([])
+		for m_lt3,m_lt4,p_lt3,p_lt4 in zip(self.RO_data_LT3_minus,self.RO_data_LT4_minus,self.RO_data_LT3_plus,self.RO_data_LT4_plus):
 
-				all_m_lt3 = np.append(all_m_lt3,m_lt3)
-				all_m_lt4 = np.append(all_m_lt4,m_lt4)
-				all_p_lt3 = np.append(all_p_lt3,p_lt3)
-				all_p_lt4 = np.append(all_p_lt4,p_lt4)
+			# if len(m_lt3) != 0 and len(m_lt4) != 0:
+			# 	if verbose:
+			# 		print 'p_correlated for psi_minus', float(np.sum(np.equal(m_lt3,m_lt4)))/len(m_lt3)
+			# 		print 'p_correlated for psi_plus', float(np.sum(np.equal(p_lt3,p_lt4)))/len(m_lt4)
 
-
-
-			#### print correlation matrix for RO results
-			### 
+			all_m_lt3 = np.append(all_m_lt3,m_lt3)
+			all_m_lt4 = np.append(all_m_lt4,m_lt4)
+			all_p_lt3 = np.append(all_p_lt3,p_lt3)
+			all_p_lt4 = np.append(all_p_lt4,p_lt4)
 
 
-			### get overall events psi minus:
-			m_correlations = [0,0,0,0]
-			m_correlations[0] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
-			m_correlations[1] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
-			m_correlations[2] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
-			m_correlations[3] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
-			# print m_correlations
 
-			# print headline_format.format("", *x)
-			p_correlations = [0,0,0,0]
-			p_correlations[0] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
-			p_correlations[1] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
-			p_correlations[2] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
-			p_correlations[3] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
-
-			if verbose:
-				print 'The occurence of each event after filtering'
-				print
-
-				x = ['ms0 & ms0', 'ms0 & ms1', 'ms1 & ms0','ms1 & ms1',]
-				row_format ="{:>12}" * (len(x) + 1)
-				headline_format = "{:>15}"+"{:>12}" * len(x)
-				print headline_format.format("", *x)
+		#### print correlation matrix for RO results
+		### 
 
 
-				
+		### get overall events psi minus:
+		m_correlations = [0,0,0,0]
+		m_correlations[0] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
+		m_correlations[1] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
+		m_correlations[2] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
+		m_correlations[3] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
+		# print m_correlations
 
-				for state, row in zip(['psi_minus'], [m_correlations]):
-					print "-"*(12*4+15)
-					print row_format.format(state+' |', *row)
+		# print headline_format.format("", *x)
+		p_correlations = [0,0,0,0]
+		p_correlations[0] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
+		p_correlations[1] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
+		p_correlations[2] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
+		p_correlations[3] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
 
-				print
+		if verbose:
+			print 'The occurence of each event after filtering'
+			print
+
+			x = ['ms0 & ms0', 'ms0 & ms1', 'ms1 & ms0','ms1 & ms1',]
+			row_format ="{:>12}" * (len(x) + 1)
+			headline_format = "{:>15}"+"{:>12}" * len(x)
+			print headline_format.format("", *x)
 
 
-				for state, row in zip(['psi_plus'], [p_correlations]):
-					print "-"*(12*4+15)
-					print row_format.format(state+' |', *row)
+			
 
-		else: 
-			print 'You need to write a routine that takes the read-out correction into account'
+			for state, row in zip(['psi_minus'], [m_correlations]):
+				print "-"*(12*4+15)
+				print row_format.format(state+' |', *row)
 
+			print
+
+
+			for state, row in zip(['psi_plus'], [p_correlations]):
+				print "-"*(12*4+15)
+				print row_format.format(state+' |', *row)
+
+		if apply_ROC: 
+			### get ssro_ROC for LT3 --> corresponds to setup B
+			F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['raw_data'][0],folder = self.lt3_folder)
+			### get ssro_ROC for LT4 --> corresponds to setup A
+			F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['raw_data'][0],folder = self.lt4_folder)
+
+			### apply ROC to the results --> input arrays for this function have to be reversed!
+			corrected_psi_minus,u_minus = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(m_correlations[::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
+			corrected_psi_plus, u_plus  = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(p_correlations[::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
+
+			### take care of the total number of correlations
+			no_m = np.sum(m_correlations)
+			no_p = np.sum(p_correlations)
+
+			### sscorr returns the array an inverted order ms 11, ms 10, ms 01, ms 00
+
+			m_correlations = np.array(list(reversed(corrected_psi_minus.reshape(-1)))) ### so much recasting!
+			p_correlations = np.array(list(reversed(corrected_psi_plus.reshape(-1)))) ### so much recasting!
+			u_minus = np.array(list(reversed(u_minus.reshape(-1))))
+			u_plus = np.array(list(reversed(u_plus.reshape(-1)))) ### so much recasting!
+
+			if return_value:
+				return m_correlations,u_minus,p_correlations,u_plus,no_m,no_p
 		if return_value:
-			return m_correlations,p_correlations
+			return m_correlations,[],p_correlations,[],np.sum(m_correlations),np.sum(p_correlations)
 
-	def sweep_filter_parameter_vs_correlations(self,parameter_name,parameter_range):
+	def find_RO_fidelities(self,timestamp,raw_data,folder = ''):
+
+		ssro_folder = tb.data_from_time(timestamp,folder = folder) 
+		# print ssro_folder
+
+		F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_calibration(ssro_folder,raw_data.g.attrs['E_RO_durations'][0]) #we onlky have one RO time in E_RO_durations
+
+		return F_0,F_1
+	def sweep_filter_parameter_vs_correlations(self,parameter_name,parameter_range,apply_ROC = False):
 
 
 		### initialize results lists
 		no_of_minus_events,no_of_plus_events = [],[]
 		minus_correlation,plus_correlation	 = [],[]
 		minus_correlation_u,plus_correlation_u = [],[]
-
+		minus_u,plus_u 							= [],[]
 		for x in parameter_range:
 
-			analysis_params.temporal_filter[parameter_name] = x ### commence sweep
+			analysis_params.filter_settings[parameter_name] = x ### commence sweep
 
 			self.apply_temporal_filters_to_prefiltered_data(verbose = False)
 			self.apply_sync_filter_w1_w2(verbose = False)
 			self.apply_is_purified_filter(verbose = False)
 			self.attach_state_filtered_syncs(verbose = False)
-			psi_m_corrs, psi_p_corrs = self.correlate_RO_results(verbose=False,return_value = True)
+			psi_m_corrs,minus_u, psi_p_corrs,plus_u,no_m,no_p = self.correlate_RO_results(verbose=False,return_value = True,apply_ROC = apply_ROC)
 
-			no_of_minus_events.append(np.sum(psi_m_corrs))
-			no_of_plus_events.append(np.sum(psi_p_corrs))
+			no_of_minus_events.append(no_m)
+			no_of_plus_events.append(no_p)
 
 			no_anti_correlations_m = float(psi_m_corrs[1]+psi_m_corrs[2])
 			no_correlations_m = float(psi_m_corrs[0]+psi_m_corrs[3])
 			no_anti_correlations_p = float(psi_p_corrs[1]+psi_p_corrs[2])
 			no_correlations_p = float(psi_p_corrs[0]+psi_p_corrs[3])
 
-
+			if no_anti_correlations_p>1:
+				print psi_p_corrs
 			if np.sum(psi_m_corrs) == 0:
 				minus_correlation.append(0)
 				minus_correlation_u.append(0)
-			else:
+
+			elif not apply_ROC:
 				minus_correlation_u.append(np.sqrt((no_anti_correlations_m*(no_correlations_m**2)+no_correlations_m*(no_anti_correlations_m**2)))/((no_correlations_m + no_anti_correlations_m)**2))
 				minus_correlation.append(float(no_anti_correlations_m)/np.sum(psi_m_corrs))
-			
+			else:
+				if no_anti_correlations_m>no_correlations_m:
+					minus_correlation.append(no_anti_correlations_m)
+					minus_correlation_u.append(np.sqrt(minus_u[1]**2+minus_u[2]**2))
+				else:
+					minus_correlation.append(no_correlations_m)
+					minus_correlation_u.append(np.sqrt(minus_u[0]**2+minus_u[3]**2))
 
 			if np.sum(psi_p_corrs) == 0:
 				plus_correlation.append(0)
 				plus_correlation_u.append(0)
-			else:
+			elif not apply_ROC:
 				plus_correlation.append(float(no_correlations_p)/np.sum(psi_p_corrs))
 				plus_correlation_u.append(np.sqrt((no_anti_correlations_p*(no_correlations_p**2)+no_correlations_p*(no_anti_correlations_p**2)))/((no_correlations_p + no_anti_correlations_p)**2))
+			else:
+				if no_anti_correlations_p>no_correlations_p:
+					plus_correlation.append(no_anti_correlations_p)
+					plus_correlation_u.append(np.sqrt(plus_u[1]**2+plus_u[2]**2)) 
+
+				else:
+					plus_correlation.append(no_correlations_p)
+					plus_correlation_u.append(np.sqrt(plus_u[0]**2+plus_u[3]**2)) 
 
 			### error bars are based on poissonian statistics for correlated events vs. uncorrelated
 						
@@ -537,6 +609,9 @@ class purify_analysis(object):
 
 		TODO: generalize for arbitrary PQ data size (introduce 'index')
 		"""
+
+		if np.sum(np.logical_not(np.in1d(filtered_sn,counted_awg_reps))) != 0:
+					print 'Connecting pq syncs to adwin data seems to be going wrong!'
 
 		# print 'elen', len(filtered_sn)
 		insert_pos = np.searchsorted(counted_awg_reps,filtered_sn)
@@ -591,7 +666,7 @@ class purify_analysis(object):
 			plt.errorbar(x,y,y_u,fmt = 'x',label = label,**kw)
 		else: plt.plot(x,y,'x',label = label)
 
-	def tstamps_for_both_setups(self,day_string,newest_tstamp = '235959'):
+	def tstamps_for_both_setups(self,day_string,contains = 'XX',newest_tstamp = '235959'):
 		"""
 		takes a date as input and scans lt3 and lt4 for appropriate timestamps
 		will throw an error if both setups have run the experiment an unequal amount of times!
@@ -600,19 +675,19 @@ class purify_analysis(object):
 		output: lt3_t_list,lt4_t_list
 		"""
 
-		lt3_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt3_folder ,newest_tstamp = newest_tstamp)
-		lt4_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt4_folder, newest_tstamp = newest_tstamp)
+		lt3_t_list = self.find_tstamps_of_day([],day_string,contains=contains,analysis_folder = self.lt3_folder ,newest_tstamp = newest_tstamp)
+		lt4_t_list = self.find_tstamps_of_day([],day_string,contains=contains,analysis_folder = self.lt4_folder, newest_tstamp = newest_tstamp)
 
 		return self.verify_tstamp_lists(lt3_t_list,lt4_t_list,day_string)
 
 
-	def find_tstamps_of_day(self,ts_list,day_string,analysis_folder = 'throw exception',newest_tstamp = '235959'):
+	def find_tstamps_of_day(self,ts_list,day_string,contains='XX',analysis_folder = 'throw exception',newest_tstamp = '235959'):
 		latest_t = day_string + newest_tstamp # where in the day do you want to begin? 235959 mean: take the whole day
 		newer_than = day_string+'_000000'
 
-		while tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
+		while tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
 
-			latest_t,f = tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
+			latest_t,f = tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
 			
 			### debug statement that prints the full timestamp and the relevant identifier.
 			# print latest_t[8:],latest_t

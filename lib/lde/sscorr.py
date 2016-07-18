@@ -366,7 +366,7 @@ def ssro_correct_twoqubit_state_photon_numbers(correlations, F0a, F0b, F1a, F1b,
     
     if verbose:
         print 'Correcting for read-out...'
-        print 'Before correction: \n\tLT1=0,LT2=0\tLT1=0,LT2>0\tLT1>0,LT2=0\tLT1>0,LT2>0'
+        print 'Before correction: \n\tLT4=0,LT3=0\tLT4=0,LT3>0\tLT4>0,LT3=0\tLT4>0,LT3>0'
         string = str()
         for k in correlations/np.float(correlations.sum()):
             string += '\t'+num2str(k,3)+'\t'
