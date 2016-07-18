@@ -12,7 +12,7 @@ import datetime
 try:
     import qt
     datadir = qt.config['datadir']
-    print datadir
+    #print datadir
 except:
     # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
@@ -23,7 +23,7 @@ except:
             datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
-    print datadir
+    #print datadir
 
 def nearest_idx(array, value):
     '''
