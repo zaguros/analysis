@@ -14,7 +14,7 @@ from analysis.lib.tools import toolbox as tb
 from matplotlib import rc, cm
 
 n_diamond=2.419
-c = 3.e8
+c = 2.99792e8
 
 class CavitySims ():
 
@@ -167,7 +167,6 @@ class CavitySims ():
         mode_volume = np.pi*((0.5*waist)**2)*optical_length
         return mode_volume
 
-        y = np.zeros(len(nu))
 
     def wavelength_to_freq(self, wavelength):
         frequency = c/wavelength
@@ -540,7 +539,7 @@ class CavitySims ():
 
 
         try:
-            fig.savefig('K://ns\qt\Diamond\Projects\Cavities\simulations\Figures/'+tb.get_timestamp_from_now()+plotmode+'_vs_'+sweepparam+'.png')
+            fig.savefig('H://My Documents/Cavities/Simulations/'+tb.get_timestamp_from_now()+plotmode+'_vs_'+sweepparam+'.png')
         except: 
             print 'Figure not saved'
         plt.show()

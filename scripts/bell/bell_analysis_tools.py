@@ -48,6 +48,51 @@ def merge_dicts(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
+def print_correlators_combined(corr_mats,VERBOSE=True):
+    corr_mat=np.zeros((4,4))
+    for k in corr_mats:
+        if 'psi_min' in k:
+            corr_mat+=corr_mats[k]
+        elif 'psi_plus' in k:
+            corr_mat[0]+=corr_mats[k][0][[1,0,3,2]]
+            corr_mat[1]+=corr_mats[k][1][[1,0,3,2]]
+            corr_mat[2]+=corr_mats[k][2]
+            corr_mat[3]+=corr_mats[k][3]
+    return print_corr(corr_mat,'psi_min',VERBOSE)
+
+def print_corr(corr_mat,psi,VERBOSE=True):
+    noof_ev_fltr = int(np.sum(corr_mat))
+            
+    Es=np.zeros(4)
+    dEs=np.zeros(4)
+
+    for i,rnd in enumerate(rnd_corr):
+        Es[i] = (corr_mat[i,0] - corr_mat[i,1] - corr_mat[i,2] + corr_mat[i,3])/float(np.sum(corr_mat[i,:]))
+        dEs[i] = correlator_error(corr_mat[i,0],corr_mat[i,1],corr_mat[i,2],corr_mat[i,3])
+        
+    if psi == 'psi_min':
+        expected_Es= (-0.42,0.42,0.67,0.67)
+        CHSH  = -Es[0] + Es[1] + Es[2] + Es[3]
+    elif psi == 'psi_plus':
+        expected_Es= (0.42,-0.42,0.67,0.67)
+        CHSH  = Es[0] - Es[1] + Es[2] + Es[3]
+    dCHSH = np.sqrt(dEs[0]**2 + dEs[1]**2 + dEs[2]**2 + dEs[3]**2)
+    if VERBOSE:
+        print '-'*40
+        print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
+        print 'RO ms   00, 01, 10, 11'
+        print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
+        print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
+        print 'RND10', corr_mat[2], '  0,     +3pi/4'
+        print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
+
+        print ' E (RND00  RND01  RND10  RND11 )'
+        print '   ({:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}) expected'.format(*expected_Es)
+        print '   ({:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}) measured'.format(*Es)
+        print '+/-( {:.3f},  {:.3f},  {:.3f},  {:.3f} )'.format(*dEs)
+
+        print 'CHSH : {:.3f} +- {:.3f}'.format(CHSH, dCHSH)
+    return CHSH, dCHSH, Es, dEs
 
 def print_correlators(corr_mats, VERBOSE=True, psis=['psi_min', 'psi_plus']):
     # print the results:
@@ -56,38 +101,10 @@ def print_correlators(corr_mats, VERBOSE=True, psis=['psi_min', 'psi_plus']):
         for k in corr_mats:
             if psi in k:
                 corr_mat+=corr_mats[k]
-        noof_ev_fltr = int(np.sum(corr_mat))
-                
-        Es=np.zeros(4)
-        dEs=np.zeros(4)
-
-        for i,rnd in enumerate(rnd_corr):
-            Es[i] = (corr_mat[i,0] - corr_mat[i,1] - corr_mat[i,2] + corr_mat[i,3])/float(np.sum(corr_mat[i,:]))
-            dEs[i] = correlator_error(corr_mat[i,0],corr_mat[i,1],corr_mat[i,2],corr_mat[i,3])
-            
-        if psi == 'psi_min':
-            expected_Es= (-0.42,0.42,0.67,0.67)
-            CHSH  = -Es[0] + Es[1] + Es[2] + Es[3]
-        elif psi == 'psi_plus':
-            expected_Es= (0.42,-0.42,0.67,0.67)
-            CHSH  = Es[0] - Es[1] + Es[2] + Es[3]
-        dCHSH = np.sqrt(dEs[0]**2 + dEs[1]**2 + dEs[2]**2 + dEs[3]**2)
         if VERBOSE:
-            print '-'*40
-            print 'FILTERED EVENTS {}: Number of events {}'.format(psi,noof_ev_fltr)
-            print 'RO ms   00, 01, 10, 11'
-            print 'RND00', corr_mat[0], '  +pi/2, +3pi/4'
-            print 'RND01', corr_mat[1], '  +pi/2, -3pi/4'
-            print 'RND10', corr_mat[2], '  0,     +3pi/4'
-            print 'RND11', corr_mat[3], '  0,     -3pi/4\n'
+            print_corr(corr_mat,psi,True)
+    return print_corr(corr_mat,psi,False)
 
-            print ' E (RND00  RND01  RND10  RND11 )'
-            print '   ({:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}) expected'.format(*expected_Es)
-            print '   ({:+.3f}, {:+.3f}, {:+.3f}, {:+.3f}) measured'.format(*Es)
-            print '+/-( {:.3f},  {:.3f},  {:.3f},  {:.3f} )'.format(*dEs)
-
-            print 'CHSH : {:.3f} +- {:.3f}'.format(CHSH, dCHSH)
-    return CHSH, dCHSH, Es, dEs
 
 def C_val(a,b,x,y,psi):#expects a,b,psi in {0,1} and x,y in {+1,-1}
         return ((-1)**(a*(b+psi))*x*y+1)/2

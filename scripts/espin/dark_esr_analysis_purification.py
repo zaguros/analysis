@@ -16,7 +16,7 @@ reload(plot)
 timestamp =None#'20160112_165427' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 2.
+guess_x0 = 2. #central frequency
 #guess_splitB = 30.
 guess_splitN = 2.18e-3
 guess_splitC = 0.8e-3 
@@ -43,7 +43,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
     fit_result = fit.fit1d(x, y, esr.fit_ESR_gauss, guess_offset,
             guess_amplitude, guess_width, guess_ctr,
             # (2, guess_splitN),
-             # (2, guess_splitC),
+             (2, guess_splitC),
             # (2, guess_splitB),
             (3, guess_splitN),
             do_print=True, ret=True, fixed=[4])
