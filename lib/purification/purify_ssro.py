@@ -191,6 +191,7 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 	g_phi = kw.pop('fit_phi', 0)
 	fixed = kw.pop('fixed', [])
 	show_guess = kw.pop('show_guess', False)
+	x_only = kw.pop('x_only',False)
 
 	### folder choice
 	if contains == '':
@@ -211,11 +212,15 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 		ylabel = 'Z'
 	else:
 		x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
-		x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
-		y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
-		# y=y1
-		# y_u = y1_u
-		ylabel = 'Bloch vector length'
+		if x_only:
+			y = y1; y_u = y1_u;
+			ylabel = 'Y'
+		else:
+			x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
+			y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
+			ylabel = 'Bloch vector length'
+
+
 
 
 	### create a plot
@@ -337,6 +342,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 		contains = 'LDE_phase_calibration'
 
 
+	# tomography 
+	tomo = kw.pop('tomo_basis','X')
 	# for fitting
 	freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
 	decay = kw.pop('decay',50)
@@ -352,9 +359,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 	
 	ro_array = ['positive','negative']
 	# print ro_array
-	x,y,y_u = get_pos_neg_data(a,adwindata_str = 'X_',ro_array = ro_array,**kw)
-	ylabel = 'X'
-
+	x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,**kw)
+	ylabel = tomo
 
 	### create a plot
 	xlabel = a.g.attrs['sweep_name']
@@ -381,15 +387,19 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 
 		p_dict = fit_result['params_dict']
 		e_dict = fit_result['error_dict']
-		detuning = a.g.attrs['phase_detuning']
+		
 		
 		if p_dict['A'] < 0:
 			p_dict['phi'] = p_dict['phi']+180
 			p_dict['A'] = p_dict['A']*(-1)
-
-		print 'This is the phase detuning', detuning
-		print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(round(360*(p_dict['f']),3)-detuning,round(360*(e_dict['f']),3) )
-		print 'phase offset ', round(p_dict['phi'],3)
+			
+		try:	
+			detuning = a.g.attrs['phase_detuning']
+			print 'This is the phase detuning', detuning
+			print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(round(360*(p_dict['f']),3)-detuning,round(360*(e_dict['f']),3) )
+			print 'phase offset ', round(p_dict['phi'],3)
+		except:
+			print 'no phase detuning found'
 		## save and close plot. We are done.
 	save_and_close_plot(f)
 
