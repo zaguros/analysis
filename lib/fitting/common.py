@@ -477,9 +477,9 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
     return p0, fitfunc, fitfunc_str
 
 
-def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
+def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
     fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
-            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma2**2) + 2*A2/np.pi*gamma2/(4*(x-x01+dx)**2+gamma2**2)'
+            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma1**2) + 2*A2/np.pi*gamma2/(4*(x-x01+dx)**2+gamma1**2)'
 
     a1 = fit.Parameter(g_a1, 'a1')
     A1 = fit.Parameter(g_A1, 'A1')
@@ -490,15 +490,15 @@ def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2):  
 
     A2 = fit.Parameter(g_A2, 'A2')
     #x02 = fit.Parameter(g_x02, 'x02')
-    gamma2 = fit.Parameter(g_gamma2, 'gamma2')
+    # gamma2 = fit.Parameter(g_gamma2, 'gamma2')
 
 
-    p0 = [a1, A1, x01, gamma1, dx, A2, gamma2]
+    p0 = [a1, A1, x01, gamma1, dx, A2]
     #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
 
     def fitfunc(x):
         return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
-                2*A2()/np.pi*gamma2()/(4*(x-x01()-dx())**2+gamma2()**2) + 2*A2()/np.pi*gamma2()/(4*(x-x01()+dx())**2+gamma2()**2)
+                2*A2()/np.pi*gamma1()/(4*(x-x01()-dx())**2+gamma1()**2) + 2*A2()/np.pi*gamma1()/(4*(x-x01()+dx())**2+gamma1()**2)
 
     return p0, fitfunc, fitfunc_str
 
