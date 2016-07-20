@@ -64,13 +64,13 @@ def get_ES_SpinComp_ExEy(Ex,Ey,B_field=[0.,0.,0.],**kw):
 
     return get_ES_SpinComp(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,**kw)
 
-def get_GS_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94, **kw):
+def get_GS_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
     """
     Returns the eigenenergies and eigenstates of the GS of the NV centre,
     however, with the Ex and Ey basis states transformed in spin up and spin down basis states
     """
 
-    w,v = get_GS(E_field=E_field,B_field=B_field,Ee0=Ee0, **kw)
+    w,v = get_GS(E_field=E_field,B_field=B_field, **kw)
     basis_transform = scipy.linalg.block_diag(1,[[(1/np.sqrt(2)), (-1j/np.sqrt(2))], [(1/np.sqrt(2)),(1j/np.sqrt(2))]])
     return w,basis_transform * v
 

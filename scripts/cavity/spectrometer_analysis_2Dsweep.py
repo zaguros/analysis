@@ -12,12 +12,13 @@ import time
 
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
+reload(common)
 import analysis.scripts.cavity.spectrometer_analysis as sa
 reload(sa)
 
 
 # parameters to vary per measurement Note: you might have to change the vmin and vmax of the colorbar inside the script! 
-V_min = -2.
+V_min = 0.
 V_max = 10.
 n_diamond = 2.419 #refractive index diamond
 c = 2.99792458e8 #speed of light
@@ -29,10 +30,9 @@ def get_data(data_dir):
     return wavelengths,filenumbers,intensities 
 
 def plot_data(data_dir,wavelengths,intensities,vmax = None,aspect=0.1):
-
     fig,ax = plt.subplots()
     extent = [V_min,V_max,wavelengths[-1],wavelengths[0]]
-    im = ax.imshow(intensities, extent= extent, vmax =vmax, cmap = 'YlGnBu', aspect = aspect)
+    im = ax.imshow(intensities, extent= extent, vmax =vmax, cmap = 'YlGnBu', aspect = aspect,interpolation='None')
     ax = set_axes_basics(ax,wavelengths)
 
     try: 
@@ -102,7 +102,7 @@ def shifted_plot_from_2D_data(data_dir):
 
     plt.close()
 
-def peaks_from_1D_data(wavelengths,intensity,**kw):
+def peaks_from_1D_data(wavelengths,intensity,data_dir=None,**kw):
     '''
     function that finds the peaks in 1D data with 
     x = wavelengths,
@@ -113,9 +113,10 @@ def peaks_from_1D_data(wavelengths,intensity,**kw):
     '''
     plot_fit = kw.pop('plot_fit',False)
     plot_peak_locations = kw.pop('plot_peak_locations',False)
+    save_fig = kw.pop('save_fig', False)
 
     indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(wavelengths,intensity,**kw)
-    x0s,u_x0s,success = sa.fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit)
+    x0s,u_x0s,success = sa.fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit,**kw)
     peak_intensity_x0s = peak_intensity[np.where(peak_intensity*success >0)]
     # print len(peak_intensity),len(peak_intensity_x0s)
 
@@ -124,6 +125,10 @@ def peaks_from_1D_data(wavelengths,intensity,**kw):
         ax.plot(wavelengths,intensity)
         # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
         ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
+        ax.set_title(data_dir)
+
+        if save_fig:
+            plt.savefig(os.path.join(data_dir,'plot.png'))
         plt.show()
         plt.close()
 
@@ -184,6 +189,7 @@ def find_best_overlap_peaks_and_modes(data_dir, diamond_thicknesses, air_lengths
     u_ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
 
     for i,diamond_thickness in enumerate(diamond_thicknesses):
+
         for j,air_length in enumerate(air_lengths):
             cavity_length = diamond_thickness + air_length
             modes = diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
@@ -195,6 +201,8 @@ def find_best_overlap_peaks_and_modes(data_dir, diamond_thicknesses, air_lengths
             # print 15*'*'
             ms_errors[i,j] = ms_error
             u_ms_errors[i,j] = u_ms_error
+        if (i%5==0):
+            print 'diamond thickness',i,'out of ', len(diamond_thicknesses), 'done'
 
     ix_min_mean_square_overlap = np.unravel_index(ms_errors.argmin(), ms_errors.shape)
     print 'lowest mean square error (',round(ms_errors[ix_min_mean_square_overlap],3), '+-',round(u_ms_errors[ix_min_mean_square_overlap],3),') is found for:'
@@ -213,7 +221,7 @@ def overlap_peaks_and_modes(data_dir,diamond_thickness=4.e-6,cavity_length = 5.e
     data_dir - directory containing 2D data
     diamond_thickness - diamond thickness used to obtain analytic result for resonance frequency
     cavity_length - cavity length used to obtain analytic result for resonance frequency
-    conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT:
+    conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT: 96nm/V?
     nr_points - the number of points used for plotting analytic results of resonances
     **keywords for peak-finding:
     plot_fit - whether to plot the fit of each resonance found in the data
@@ -378,8 +386,8 @@ def plot_diamond_air_modes(cavity_length=1.e-6,diamond_thickness=4.e-6,ax = None
 
     for N,nu in enumerate(nu_diamond_air):
         ax.plot(xs,nu, lw=2)
-        # if (nu[0]<ax.get_ylim()[-1]) and (nu[0]>ax.get_ylim()[0]):
-        #     ax.text(ax.get_xlim()[0],nu[0], 'N={}'.format(N))
+        if (nu[0]<ax.get_ylim()[-1]) and (nu[0]>ax.get_ylim()[0]):
+            ax.text(ax.get_xlim()[0],nu[0], 'N={}'.format(N))
 
     if return_fig:
         return fig,ax

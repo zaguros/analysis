@@ -36,7 +36,7 @@ class purify_analysis(object):
 		self.key_list = ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','counted_awg_reps_w1','counted_awg_reps_w2','ssro_results','tstamp','raw_data']
 
 		self.key_list_pq =  ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1']
-		self.key_lst_adwin_data = ['ssro_results','electron_readout_result','Phase_correction_repetitions','CR_after','carbon_readout_result','attempts_first','attempts_second']
+		self.key_lst_adwin_data = ['ssro_results','electron_readout_result','Phase_correction_repetitions','CR_after','CR_before','carbon_readout_result','attempts_first','attempts_second']
 		self.lt4_dict = {}
 		self.lt3_dict = {}
 
@@ -303,10 +303,10 @@ class purify_analysis(object):
 					counts[z] = np.sum(purified_filter_w1)
 
 			purified_filter_w1 = np.core.defchararray.add((e_ro_lt3[adwin_indices_w1]).astype('str'),(e_ro_lt4[adwin_indices_w1]).astype('str')) == signature 
-			fltr_w1[fltr_w1] = np.logical_and(fltr_w1[fltr_w1],purified_filter_w1)
+			fltr_w1[fltr_w1] = purified_filter_w1
 
 			purified_filter_w2 = np.core.defchararray.add((e_ro_lt3[adwin_indices_w2]).astype('str'),(e_ro_lt4[adwin_indices_w2]).astype('str')) == signature 
-			fltr_w2[fltr_w2] = np.logical_and(fltr_w2[fltr_w2],purified_filter_w2)
+			fltr_w2[fltr_w2] = purified_filter_w2
 
 
 			self.st_fltr_w1.append(fltr_w1)
@@ -332,15 +332,97 @@ class purify_analysis(object):
 			print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 			print
 
-	def apply_CR_after_filter(self,verbose = True):
+	def apply_CR_after_filter(self,min_cr_lt3 = None, min_cr_lt4 = None, verbose = True):
 		'''
 		Checks self.st_fltr_w1 and self.st_fltr_w2 if the CR check after the event was below a certain treshold.
 		'''
-		
 
-	def attach_state_filtered_syncs(self,verbose = True):
+		### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
+		if min_cr_lt3 == None:
+			min_cr_lt3 = analysis_params.filter_settings['min_cr_lt3_after']
+		if min_cr_lt4 == None:
+			min_cr_lt4 = analysis_params.filter_settings['min_cr_lt4_after']
+
+
+		temp_fltr_w1 = cp.deepcopy(self.st_fltr_w1) ## store
+		temp_fltr_w2 = cp.deepcopy(self.st_fltr_w2) ## store
+
+		self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
+
+		loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt3_dict['CR_after'],self.lt4_dict['CR_after'])
+		
+		no_w1, no_w2 = 0, 0
+
+		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,cr_lt3,cr_lt4 in loop_arrays:
+
+			adwin_indices_w1  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w1],adwin_nrs_w1)
+			adwin_indices_w2  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w2],adwin_nrs_w2)
+			
+			cr_filter_w1 = np.logical_and(cr_lt3[adwin_indices_w1] > min_cr_lt3, cr_lt4[adwin_indices_w1] > min_cr_lt3)
+			cr_filter_w2 = np.logical_and(cr_lt3[adwin_indices_w2] > min_cr_lt3, cr_lt4[adwin_indices_w2] > min_cr_lt4)
+			
+			fltr_w1[fltr_w1] = cr_filter_w1
+			fltr_w2[fltr_w2] = cr_filter_w2
+
+			self.st_fltr_w1.append(fltr_w1)
+			self.st_fltr_w2.append(fltr_w2)
+			
+			no_w1 += np.sum(fltr_w1)
+			no_w2 += np.sum(fltr_w2)
+		
+		if verbose:
+
+			print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+			print
+
+	def apply_CR_before_filter(self,min_cr_lt3 = None, min_cr_lt4 = None, verbose = True):
+		'''
+		Checks self.st_fltr_w1 and self.st_fltr_w2 if the CR check after the event was below a certain treshold.
+		'''
+
+		### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
+		if min_cr_lt3 == None:
+			min_cr_lt3 = analysis_params.filter_settings['min_cr_lt3_before']
+		if min_cr_lt4 == None:
+			min_cr_lt4 = analysis_params.filter_settings['min_cr_lt4_before']
+
+
+		temp_fltr_w1 = cp.deepcopy(self.st_fltr_w1) ## store
+		temp_fltr_w2 = cp.deepcopy(self.st_fltr_w2) ## store
+
+		self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
+
+		loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt3_dict['CR_before'],self.lt4_dict['CR_before'])
+		
+		no_w1, no_w2 = 0, 0
+
+		for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,cr_lt3,cr_lt4 in loop_arrays:
+
+			adwin_indices_w1  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w1],adwin_nrs_w1)
+			adwin_indices_w2  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w2],adwin_nrs_w2)
+			
+			cr_filter_w1 = np.logical_and(cr_lt3[adwin_indices_w1] > min_cr_lt3, cr_lt4[adwin_indices_w1] > min_cr_lt3)
+			cr_filter_w2 = np.logical_and(cr_lt3[adwin_indices_w2] > min_cr_lt3, cr_lt4[adwin_indices_w2] > min_cr_lt4)
+			
+			fltr_w1[fltr_w1] = cr_filter_w1
+			fltr_w2[fltr_w2] = cr_filter_w2
+
+			self.st_fltr_w1.append(fltr_w1)
+			self.st_fltr_w2.append(fltr_w2)
+			
+			no_w1 += np.sum(fltr_w1)
+			no_w2 += np.sum(fltr_w2)
+		
+		if verbose:
+
+			print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+			print
+
+
+	def attach_state_filtered_syncs(self,apply_dt_filter = True, max_dt = None, verbose = True):
 		"""
 		checks for the signatures of psi_minus or psi_plus and returns a list of numpy arrays where each numpy array corresponds the correpsonding sync number of the event
+		also has the ability to filter by the dt between the two events
 		"""
 
 		self.st_fltr_w1_ch1 	= []
@@ -355,7 +437,7 @@ class purify_analysis(object):
 
 		i = 0
 
-		for fltr_w1,fltr_w2,channels,HH_sync in zip(self.st_fltr_w1,self.st_fltr_w2,self.lt4_dict['/PQ_channel-1'],self.lt4_dict['/PQ_sync_number-1']):
+		for fltr_w1,fltr_w2,channels,HH_sync,HH_time in zip(self.st_fltr_w1,self.st_fltr_w2,self.lt4_dict['/PQ_channel-1'],self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['/PQ_sync_time-1']):
 
 			st_fltr_w1_ch1 = fltr_w1 & (channels == 1)
 			st_fltr_w1_ch0 = fltr_w1 & (channels == 0)
@@ -380,14 +462,26 @@ class purify_analysis(object):
 			st_fltr_psi_plus = np.logical_or(np.logical_and(st_fltr_w1_ch1,st_fltr_w2_ch1),np.logical_and(st_fltr_w1_ch0,st_fltr_w2_ch0))
 			st_fltr_psi_minus = np.logical_or(np.logical_and(st_fltr_w1_ch0,st_fltr_w2_ch1),np.logical_and(st_fltr_w1_ch1,st_fltr_w2_ch0))
 
+			if apply_dt_filter:
+
+				if max_dt == None:
+					max_dt = analysis_params.filter_settings['max_dt']
+
+
+				shift_fltr_psi_plus = np.insert(st_fltr_psi_plus,0,[False,False])[:-2]
+				shift_fltr_psi_minus = np.insert(st_fltr_psi_minus,0,[False,False])[:-2]
+				
+				st_fltr_psi_plus[st_fltr_psi_plus] = np.absolute(HH_time[st_fltr_psi_plus]-HH_time[shift_fltr_psi_plus]) <= max_dt
+				st_fltr_psi_minus[st_fltr_psi_minus] = np.absolute(HH_time[st_fltr_psi_minus]-HH_time[shift_fltr_psi_minus]) <= max_dt
+				
 			self.st_fltr_psi_plus.append(st_fltr_psi_plus)
 			self.st_fltr_psi_minus.append(st_fltr_psi_minus)
 
 			if verbose:
 				print 'Run ', i+1
 				print 'total events w1 / w2', np.sum(st_fltr_w1_ch0)+np.sum(st_fltr_w1_ch1),'/',np.sum(st_fltr_w2_ch0)+np.sum(st_fltr_w2_ch1)
-				print 'psi_minus events', np.sum(st_fltr_psi_minus[1:-1])
-				print 'psi_plus events', np.sum(st_fltr_psi_plus[1:-1])
+				print 'psi_minus events', np.sum(st_fltr_psi_minus)
+				print 'psi_plus events', np.sum(st_fltr_psi_plus)
 				print
 
 			### the required HH syncs are later used to get the corresponding adwin ROs
@@ -395,6 +489,8 @@ class purify_analysis(object):
 			self.HH_sync_psi_minus.append(HH_sync[st_fltr_psi_minus])
 
 			i += 1
+
+	
 
 	def correlate_RO_results(self,apply_ROC = False, verbose = True,return_value = False):
 
@@ -530,6 +626,8 @@ class purify_analysis(object):
 			self.apply_temporal_filters_to_prefiltered_data(verbose = False)
 			self.apply_sync_filter_w1_w2(verbose = False)
 			self.apply_is_purified_filter(verbose = False)
+			self.apply_CR_before_filter(verbose=False)
+			self.apply_CR_after_filter(verbose=False)
 			self.attach_state_filtered_syncs(verbose = False)
 			psi_m_corrs,minus_u, psi_p_corrs,plus_u,no_m,no_p = self.correlate_RO_results(verbose=False,return_value = True,apply_ROC = apply_ROC)
 
