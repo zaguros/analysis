@@ -68,7 +68,7 @@ class cavity_analysis(m2.M2Analysis):
         self.nr_scans = self.f.attrs['nr_scans']
 
         self.data=np.zeros([self.nr_scans,self.nr_x_pts])
-        grp = self.f['raw_data_']
+        grp = self.f['raw_data__single']
 
         for j in np.arange(self.nr_scans):
             self.single_scan_data = grp['scannr_'+str(j+1)].value

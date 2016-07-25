@@ -19,7 +19,7 @@ class MBIAnalysis(m2.M2Analysis):
 
 
 
-    def get_readout_results(self, name='',CR_after_check = False):
+    def get_readout_results(self, name='',CR_after_check = True):
         """
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -53,11 +53,13 @@ class MBIAnalysis(m2.M2Analysis):
             ### loop over the results of CR check after and eliminate those where ionization was apparent.
             ### there is probably a faster way to do this. np.search?
             for ii,CR in enumerate(CR_after):
-                if CR < 2:
-                    CR_failed_count +=1
-                    reps_list[(ii-1)%self.pts] -= 1
-                    results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
+                if CR < 1:
 
+                    CR_failed_count +=1
+                    reps_list[(ii)%self.pts] -= 1
+                    # print ii,results[ii],
+                    results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
+                    # print results[ii]
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)

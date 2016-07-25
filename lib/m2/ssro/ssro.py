@@ -454,9 +454,12 @@ class SSROAnalysis(m2.M2Analysis):
                 format=self.plot_format)    
 
 
-def ssrocalib(folder='', plot = True, plot_photon_ms0 = True):
-    if folder=='':
+def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True):
+    if folder=='' and contains == '':
         folder=toolbox.latest_data('AdwinSSRO')
+    elif contains != '':
+        folder = toolbox.latest_data(contains)
+
     a = SSROAnalysis(folder)
 
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#

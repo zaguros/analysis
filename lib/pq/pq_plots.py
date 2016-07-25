@@ -14,7 +14,7 @@ from analysis.lib.tools import toolbox as tb
 
 def _plot_photon_hist(ax, h, b, log=True, **kw):
     label = kw.pop('label', '')
-
+    x_label = kw.pop('x_label','time (ns)')
     _h = h.astype(float)
     _h[_h<=1e-1] = 1e-1
     _h = np.append(_h, _h[-1])
@@ -22,13 +22,15 @@ def _plot_photon_hist(ax, h, b, log=True, **kw):
     ax.plot(b/1000., _h, drawstyle='steps-post', label=label)
     if log:
         ax.set_yscale('log')
-    ax.set_xlabel('time (ns)')
+    ax.set_xlabel(x_label)
     ax.set_ylabel('events')
     ax.set_ylim(bottom=0.1)
     ax.set_xlim(min(b/1000.), max(b/1000.))
     ax.grid(True)
 
 def plot_photon_hist(pqf, **kw):    
+
+
     ret = kw.pop('ret', 'subplots')
 
     (h0, b0), (h1, b1) = pq_tools.get_photon_hist(pqf, **kw)
@@ -36,7 +38,7 @@ def plot_photon_hist(pqf, **kw):
     fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
     _plot_photon_hist(ax0, h0, b0, **kw)
     _plot_photon_hist(ax1, h1, b1, **kw)
-
+    print np.sum(h0)+np.sum(h1)
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
 
@@ -89,6 +91,31 @@ def plot_marker_filter_comparison(pqf,mrkr_chan = 2,**kw):
     is_ph_with_PLU_mrkr = is_ph & pq_tools.filter_marker(pqf, mrkr_chan)
     plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
 
+
+def plot_autocorrelation_histogram(pqf,start = 0,length = 2000,index = 1,binsize = 1e3,**kw):
+    """
+    does not exlcude no photon (i.e. markers) events at the moment.
+    """
+    sync_time_name = '/PQ_sync_time-' + str(index)
+    tot_time_name =  '/PQ_time-' + str(index)
+    sync_num_name = '/PQ_sync_number-' + str(index)
+
+    tot_time_0 = np.append(np.array([0]),pqf[tot_time_name])
+    tot_time_1 = np.append(pqf[tot_time_name],np.array([0]))
+
+    time_diff = (tot_time_1-tot_time_0)/1e6
+
+    binedges = np.arange(start,start+length, binsize)
+    h0, b0 = np.histogram(time_diff, bins=binedges)
+
+    fig, ax0 = plt.subplots(1,1, figsize=(12,8))
+    _plot_photon_hist(ax0, h0, b0,x_label = 'time (s)',**kw)
+
+    fp = pq_tools.fp_from_pqf(pqf)
+
+    fig.suptitle(tb.get_msmt_header(fp) + ' -- autocorrelation hist in total time')
+
+    
 
 #def plot_tail(fp, **kw):
 #    ret = kw.pop('ret', 'subplots')

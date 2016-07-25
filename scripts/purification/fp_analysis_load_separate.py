@@ -25,51 +25,44 @@ import nuclear_spin_char as SC;  reload(SC)
 ## Data location ##
 ###################
 timestamps = {}
-#uber stamps!
-# timestamps['min'] = 	{'N8' : ['20160427_183244'],#'20160420_183630'],
-# 					 	'N16' : ['20160427_200051'],#'20160420_200748'],
-# 					 	'N32' : ['20160427_213632'],#'20160420_222506'],
-# 						'N64' : ['20160427_233619']}#'20160421_004107']}
 
-timestamps['min'] = 	{'N8' : ['20160420_183630'],
-					 	'N16' : ['20160420_200748'],
-					 	'N32' : ['20160420_222506'],
-						'N64' : ['20160421_004107']}
+
+
+#### Pippin sil 3 timestamps
+
+timestamps['min'] = 	{'N8' : ['20160614_181449'],#'20160420_183630'],
+					 	'N16' : ['20160614_201116'],#'20160420_200748'],
+					 	'N32' : ['20160614_214742'],#'20160420_222506'],
+						'N64' : ['20160614_231213']}#'20160421_004107']}
+timestamps['plus'] = 	{'N8' : [''],#'20160420_183630'],
+					 	'N16' : ['20160703_095309'],#['20160614_201116'],#'20160420_200748'],
+					 	'N32' : ['20160703_103852'],#['20160614_214742'],#'20160420_222506'],
+						'N64' : ['20160703_113235']}#'20160421_004107']}
+ssro_calib_folder = 'd:\\measuring\\data\\20160614\\170041_AdwinSSRO_SSROCalibration_Pippin_SIL1'
+
+
+####################################
+#### Pippin SIL 2 timestamps
+####################################
+
+
+# timestamps['min'] = 	{'N8' : ['20160420_183630'],
+# 					 	'N16' : ['20160420_200748'],
+# 					 	'N32' : ['20160420_222506'],
+# 						'N64' : ['20160421_004107']}
 
 # timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
 # 						 'N16' : ['20160324_223312'],
 # 						 'N32' : ['20160325_030316'],
 # 						 'N64' : ['20160325_160138']}
 
+# ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
 
 
-# '20160413_150015'
-
-# timestamps['min'] = 	{'N8' : ['20160308_224027'],
-# 					 	'N16' : ['20160309_003031'],
-# 					 	'N32' : ['20160308_145258'],
-# 						'N64' : ['20160308_171903']}
 
 
-# timestamps['plus'] = {'N8' : ['20160116_140951'],
-# 						 'N16' : ['20160116_161812'],
-# 						 'N32' : ['20160116_181552'],
-# 						 'N64' : ['20160116_202552']}
-# timestamps['min'] = 	{'N8' : ['20160226_172904'],
-# 					 	'N16' : ['20160226_185757'],
-# 					 	'N32' : ['20160226_203842'],
-# 						'N64' : ['20160226_224334']}
 
-# # 2016 januari data
-# 						{'N8' : ['20160112_174142'],
-# 					 	'N16' : ['20160112_192510','20160116_110213'],
-# 					 	'N32' : ['20160112_211902','20160116_121642'],
-# 						'N64' : ['20160112_234557']}
-#'20160112_192510'
-#crappy stamps
-# timestamps['min'] = {'N8' : '20160107_173313', 'N16' : '20160107_201229','N32' : '20160107_222009','N64' : '20160108_004236'}
-# timestamps['plus'] = {'N8' : '20160110_121238', 'N16' : '20160110_143232','N32' : '20160110_170758','N64' : '20160110_202511'}
-ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
+
 def load_data(N = [8], el_trans = 'min'):
 	a = {}
 	folder = {}
@@ -116,7 +109,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 	### Load hyperfine params	
 	if disp_sim_spin == True:	
 		if (HF_perp == None) & (HF_par == None):
-			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL3')
+			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL1')
 		elif el_trans == 'min':
 			# needs to be flipped for simulation
 			HF_par =  [x * (-1) for x in HF_par]
@@ -150,8 +143,6 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 			ax.set_xlim(3.5,23.5)
 			xlim = [3.5,23.5]
 		else:
-			# 5+30*(xlim[1]-xlim[0])
-			# 5+5*(xlim[1]-xlim[0])
 			fig = data.default_fig(figsize=(5+2*(xlim[1]-xlim[0]),5))
 			ax = data.default_ax(fig)
 			ax.set_xlim(xlim)
@@ -170,7 +161,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		#######################
 		if disp_sim_spin == True:
 			print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
-			B_Field = 417.05
+			B_Field = 416.52 # in gauss
 			print B_Field
 			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
