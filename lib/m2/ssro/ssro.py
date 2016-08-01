@@ -44,11 +44,11 @@ class SSROAnalysis(m2.M2Analysis):
 
         self.repetitions = np.arange(self.reps)
         self.ro_time = self.ssro_time = np.arange(grp.attrs['SSRO_duration']) * \
-                self.cycle_duration * 10./3.
+                1000 #self.cycle_duration * 10./3. # This was harcoded to work only with the old T11 ADWIN, better solution still needed?
         self.sp_time = np.arange(grp.attrs['SP_duration']) * \
-                self.cycle_duration * 10./3.
+                1000 #self.cycle_duration * 10./3. # This was harcoded to work only with the old T11 ADWIN, better solution still needed?
 
-        self.binsize = grp.attrs['cycle_duration']/300.
+        self.binsize = 1 #grp.attrs['cycle_duration']/300. # This was harcoded to work only with the old T11 ADWIN, better solution still needed?
         self.ro_counts = grp['RO_data'].value.reshape(
                 self.reps, grp.attrs['SSRO_duration'])
         self.cr_counts = grp['CR_after'].value
