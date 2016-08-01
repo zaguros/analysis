@@ -79,7 +79,6 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         #ax.colorbar()
         ax.set_xlabel('Time [bins]')
         ax.set_ylabel('Counts per rep per bin')
-
         if save:
             self.save_fig_incremental_filename(fig,'histogram_chan_{}'.format(channel))
         
@@ -707,7 +706,7 @@ def fast_ssro_calib(folder='', name='ssro',cr=True, RO_length_ns=3500, plot_swee
     if plot_sweep_index != 'max':
         swp_idx = plot_sweep_index
     a.ssro_plots(sweep_index = swp_idx, RO_length_ns=RO_length_ns, plot_points=500)
-    a.plot_histogram(channel=0)
+    #a.plot_histogram(channel=0)
     a.finish()
 
 def get_analysed_fast_ssro_calibration(folder, readout_time=None, sweep_index=None):

@@ -149,9 +149,9 @@ def get_ssro_result_list(fp_lt,
     fltr_tail_w1    = (sp == 0) & (ch == ro_channel)  & (st > psb_tail_start)  & (st < (psb_tail_start  + psb_tail_len))
     fltr_tail_w2    = (sp == 0) & (ch == ro_channel)  & (st > psb_tail_start + pulse_sep)  & (st < (psb_tail_start  + psb_tail_len + pulse_sep))
     fltr_tail       = fltr_tail_w1 | fltr_tail_w2
-    fltr_rnd0       = (sp == 1) & (ch == rnd_0_channel)
-    fltr_rnd1       = (sp == 1) & (ch == rnd_1_channel)
-    fltr_ent_marker = (sp == 1) & (ch == ent_marker_channel_lt)
+    fltr_rnd0       = (sp == 1) & (ch & rnd_0_channel == rnd_0_channel)
+    fltr_rnd1       = (sp == 1) & (ch & rnd_1_channel == rnd_1_channel)
+    fltr_ent_marker = (sp == 1) & (ch & ent_marker_channel_lt == ent_marker_channel_lt)
 
     ssro_result_list=np.zeros((len(marker_sns),_lt_noof_columns), dtype=_lt_dtype)
     for i,cur_sn in enumerate(marker_sns):
@@ -183,7 +183,7 @@ def get_ssro_result_list(fp_lt,
         else:
             rnd_ma_tt = 0
 
-        if np.sum(fltr_ro_photon)>0:
+        if np.sum(fltr_ro_photon) > 0:
             first_ph_st = st[fltr_ro_photon][0]
         else:
             first_ph_st = 0
@@ -196,7 +196,7 @@ def get_ssro_result_list(fp_lt,
         if np.sum(fltr_tail_photon) >0:
             first_tail_st = st[fltr_tail_photon][0]
         else:
-           first_tail_st = 0
+            first_tail_st = 0
 
         
         #fltr_invalid_ev = (diff_invalid_ev > 0) & (diff_invalid_ev <= invalid_marker_max_sn_diff)

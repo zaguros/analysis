@@ -2,6 +2,7 @@ import numpy as np
 import os 
 from numpy import *
 from scipy import optimize
+import h5py
 # import pylab
 
 # taken from the scipy fitting cookbook:
@@ -31,6 +32,7 @@ class Parameter:
 # THT: I had to remove this because it crashes many measurements, including the optimizOr
 
 def fit1d(x, y, fitmethod, *arg, **kw):
+
     """
     example: from analysis.lib.fitting import fit,common
              x=np.array([0,1,2,3,4])
@@ -38,13 +40,14 @@ def fit1d(x, y, fitmethod, *arg, **kw):
              fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
                     fixed=[0],do_print=True)
              
-    
     """
     # process known kws
     do_print = kw.pop('do_print', False)
     ret = kw.pop('ret', False)
     fixed = kw.pop('fixed', [])
     VERBOSE= kw.pop('VERBOSE',False)
+
+
     # err_y = kw.pop ('err_y', None)
 	#if False :
 	#    if (len(err_y) != len(y)):
@@ -81,7 +84,9 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         # if (err_y != None):
         # 	return ((y-fitfunc(x))/(err_y))
         # else:
+
         return y - fitfunc(x)
+
 
     if x is None: x = arange(y.shape[0])
     p = [param() for param in p0]
@@ -89,29 +94,18 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
-        success = False
         if VERBOSE:
             print 'ERROR: Fit did not converge !'
             print 'reason: ',mesg
-        #return False
+        return success
+        
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
-
     # package the result neatly
-    
-    #print 'info',info
-    #print 'p1',p1
-    #print 'cov',cov
-
-    #print 'dof',dof
     if do_print and success:
         print_fit_result(result)
-
-    if ret:
-        return result       
-
-    return
-
+    if ret and success:
+        return result
 
 ###############################################################################
 # tools, for formatting, printing, etc.
@@ -211,7 +205,8 @@ def str_correlation_matrix(result):
     
 def print_fit_result(result):
     if result == False:
-       print "Could not fit data" 
+       print "Could not fit data"
+       return
     
     print "Converged with chi squared ", result['chisq']
     print "degrees of freedom, dof ", result['dof']
@@ -248,3 +243,17 @@ Fit results of: %s
 
     text_file.close() 
     
+def write_to_hdf(fitresult,fp):
+    f=h5py.File(fp, 'a')
+    g = f.create_group('fit_result')
+    for attr_key in ['success','dof', 'chisq','fitfunc_str','residuals_rms','reduced_chisq']:
+        g.attrs[attr_key] = fitresult[attr_key]
+    g['x'] = fitresult['x']
+    g['y'] = fitresult['y']
+    g_p = g.create_group('params_dict')
+    for k in fitresult['params_dict']:
+        g_p[k] = fitresult['params_dict'][k]
+    g_e = g.create_group('error_dict')
+    for k in fitresult['error_dict']:
+        g_e[k] = fitresult['params_dict'][k]
+    f.close()

@@ -11,11 +11,15 @@ from analysis.lib.spin import N_and_e_spin_correction
 reload(N_and_e_spin_correction)
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro
+reload(ssro)
 from analysis.lib.math import error
 from analysis.lib.tools import toolbox
 
 class MBIAnalysis(m2.M2Analysis):
-    def get_readout_results(self, name='',CR_after_check = False):
+
+
+
+    def get_readout_results(self, name='',CR_after_check = True):
         """
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -41,25 +45,28 @@ class MBIAnalysis(m2.M2Analysis):
             results = adwingrp['ssro_results'].value
 
         if CR_after_check:
-
             CR_after = adwingrp['CR_after'].value
             reps_list = np.ones(self.pts)*self.reps
+            num_of_reps = len(CR_after)
+            CR_failed_count = 0
 
             ### loop over the results of CR check after and eliminate those where ionization was apparent.
             ### there is probably a faster way to do this. np.search?
             for ii,CR in enumerate(CR_after):
-                if CR < 2:
-                    reps_list[(ii-1)%self.pts] -= 1
-                    results[ii-1] = (results[ii-1]-1)*results[ii-1] ### set all events to 0 photons
+                if CR < 1:
 
-
+                    CR_failed_count +=1
+                    reps_list[(ii)%self.pts] -= 1
+                    # print ii,results[ii],
+                    results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
+                    # print results[ii]
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
-
 
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
-        
+            # if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
+            #    print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
         else:
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro = self.ssro_results/float(self.reps)
@@ -124,19 +131,28 @@ class MBIAnalysis(m2.M2Analysis):
             self.normalized_correlations*(1.-self.normalized_correlations)/self.reps)**0.5
 
     def get_sweep_pts(self):
-        #print self.g.attrs.keys()
+
+        # print self.g.attrs.keys()
         self.sweep_name = self.g.attrs['sweep_name']
         self.sweep_pts = self.g.attrs['sweep_pts']
 
     def get_sequence_length(self):
-        self.repump_wait = self.g.attrs['repump_wait']
-        self.fast_repump_duration = self.g.attrs['fast_repump_duration']
+        """
+        this should really be in the Qmemory analysis 
+        NK
+        """
+        self.repump_wait = self.g.attrs['repump_wait'][1]
+        self.fast_repump_duration = self.g.attrs['fast_repump_duration'][1]
+
+        self.AOM_delay =  339e-9
+        self.initial_wait = self.g.attrs['MW_switch_risetime'] + 240e-9 + (-104e-9-27e-9) + 300e-9 #hardcoded values from lt2 for the dealys of the specific channels.
+        self.avg_repump_time = self.g.attrs['average_repump_time'][1]
         #self.sequence_length = np.product(self.average_repump_time, self.fast_repump_duration)
 
 
     def get_electron_ROC(self, ssro_calib_folder=''):
         if ssro_calib_folder == '':
-            ssro_calib_folder = toolbox.latest_data('SSRO')
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration')
 
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
@@ -144,15 +160,37 @@ class MBIAnalysis(m2.M2Analysis):
         ro_durations = self.g.attrs['E_RO_durations']
         roc = error.SingleQubitROC()
 
-        for i in range(len(self.normalized_ssro[0])):
-            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-                ssro.get_SSRO_calibration(ssro_calib_folder,
-                        ro_durations[i])
-            p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
-                    self.u_normalized_ssro[:,i])
+        # Decide between ssro calib via MW Initialisation or some other method
+        # At the time of writing only MWInit and full las0r SSRO exist ~SK 2016
+        if 'MWInit' in ssro_calib_folder:
+            el_state = self.adgrp.attrs['electron_transition']
+            # print 'MWInit, el_state: ' + str(el_state)
 
-            self.p0[:,i] = p0
-            self.u_p0[:,i] = u_p0
+            for i in range(len(self.normalized_ssro[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                    ssro.get_SSRO_MWInit_calibration(ssro_calib_folder,
+                            ro_durations[i],el_state)
+
+                p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                        self.u_normalized_ssro[:,i])
+
+                self.p0[:,i] = p0
+                self.u_p0[:,i] = u_p0
+
+
+        else:
+            for i in range(len(self.normalized_ssro[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                    ssro.get_SSRO_calibration(ssro_calib_folder,
+                            ro_durations[i])
+
+                p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
+                        self.u_normalized_ssro[:,i])
+
+                self.p0[:,i] = p0
+                self.u_p0[:,i] = u_p0
+
+
 
         self.result_corrected = True
 
@@ -191,6 +229,14 @@ class MBIAnalysis(m2.M2Analysis):
             self.u_p0[:,i] = u_p0
 
         self.result_corrected = True
+
+    def get_CR_before_after(self,name = 'adwindata'):
+
+        adgrp=self.adwingrp(name)
+        after = adgrp['CR_after'].value
+        before = adgrp['CR_before'].value
+        return before,after
+
 
     def get_correlation_ROC(self, P_min1=1, u_P_min1=0, P_0=0, u_P_0=0,
             F0_RO_pulse=1, u_F0_RO_pulse=0,

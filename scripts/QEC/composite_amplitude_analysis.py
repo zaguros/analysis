@@ -22,8 +22,8 @@ def get_max_amplitude(px,py,mx,my,px_u,py_u,mx_u,my_u):
 
     ##calc
 
-    b_arr = (np.sqrt(mx**2+my**2)+np.sqrt(px**2+py**2))/2
-    b_u_arr =  np.sqrt((px*px_u)**2+(py*py_u)**2)/np.sqrt(px**2+py**2)+np.sqrt((mx*mx_u)**2+(my*my_u)**2)/np.sqrt(mx**2+my**2)
+    b_arr = np.sqrt((px-mx)**2+(py-my)**2)/2
+    b_u_arr =  np.sqrt((px-mx)**2*(px_u**2+mx_u**2) +(py-my)**2*(py_u**2+my_u**2))/(np.sqrt((px-mx)**2+(py-my)**2)*2)
 
     return b_arr,b_u_arr
 
@@ -51,11 +51,11 @@ def get_raw_data(carbon,**kw):
 
     #if Ndiff != None:
     if carbon == 1:
-        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_width_'+str(plotwidth)+'nas_Ntot_'+str(Ndiff)
-        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_width_'+str(plotwidth)+'nas_Ntot_'+str(Ndiff)
+        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
+        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
     if carbon == 2 or carbon == 5:
-        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_width_'+str(plotwidth)+'nas_Ntot_'+str(Ndiff)
-        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_width_'+str(plotwidth)+'nas_Ntot_'+str(Ndiff)
+        search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
+        search_string_neg = 'Sweep_carbon_Gate_negative_C'+str(carbon)+'_det_'+str(plotwidth)+'nas_Ndiff_'+str(Ndiff)
     
     #if plotwidth == None and Ndiff == None:
     #    search_string_pos = 'Sweep_carbon_Gate_positive_C'+str(carbon)
@@ -106,7 +106,7 @@ def get_raw_data(carbon,**kw):
             mx_arr = np.append(mx_arr,val)
             mx_u_arr = np.append(mx_u_arr,val_u)
             gates = np.append(gates,'N1 = '+str(pt[3:5])+',\ntau1 = '+str(pt[8:17])+', N2 = '+str(pt[18:20])+', \ntau2 = '+str(pt[23:32])+', phase = '+str(pt[32:]))
-            xlabels= np.append(xlabels,'phase = '+str(pt[32:]))        
+            xlabels= np.append(xlabels,str(pt[33:]))        
         elif 'mY' in pt:
             my_arr = np.append(my_arr,val)
             my_u_arr = np.append(my_u_arr,val_u)
@@ -133,7 +133,7 @@ def get_gate_fidelity(carbon,**kw):
     for plotwidth in pwlist:
 
         fig = plt.figure(figsize=(12,6))
-        fig.suptitle('Sweep of different N1 and N2 values for width ='+str(plotwidth), fontsize=20)
+        fig.suptitle('Sweep of N1 - N2 (Ntot is constant) for width ='+str(plotwidth)+'ns.', fontsize=20)
         legendlst=[]
         bestblist=[]
         bestbindlist=[]
@@ -156,7 +156,7 @@ def get_gate_fidelity(carbon,**kw):
             gatelist.append(gates)
          
 
-            legendlst.append('N is Nres ' + str(Ndiff))
+            legendlst.append('N2 - N1 =' + str(Ndiff))
         
 
             errobarplot_= ax_ind.errorbar(np.arange(len(gates)),b,yerr=b_u)
@@ -165,16 +165,17 @@ def get_gate_fidelity(carbon,**kw):
             ax_ind.set_xticklabels(xlabels, rotation=90)
             ax_ind.set_ylim([0,1.1])
             plt.xlabel('Phase between decoupling sequence of gates')
-            plt.ylabel('Bloch vector length')
+            plt.ylabel('Amplitude of measurement')
             
         
         
         plt.legend(legendlst, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0)
-        plt.savefig(os.path.join(folder_pos, 'Sweep_gates.png'), format='png')
+        plt.savefig(os.path.join(folder_pos, 'Sweep_of_gates_width_'+str(plotwidth)+'.png'), format='png',bbox_inches='tight', pad_inches=0.1)
         print 'best gate configuration at: ', gatelist[np.argmax(bestblist)][bestbindlist[np.argmax(bestblist)]]
-        print 'bloch vector length: ', np.amax(bestblist)
+        print 'Oscilation Amplitude: ', np.amax(bestblist)
         plt.show()
         plt.close('all')
+        print('FIG saved in'+str(folder_pos))
 
 
 

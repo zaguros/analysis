@@ -39,7 +39,7 @@ def fit_ESR_gauss(g_a, g_A, g_sigma, g_x0, *arg):
     p0 = [a, A, sigma, x0]
     g_p0 = [g_a, g_A, g_sigma, g_x0]
 
-    print 'fitting with %d splittings' % no_splits
+    # print 'fitting with %d splittings' % no_splits
 
     splits = []
     for i, s in enumerate(arg):
