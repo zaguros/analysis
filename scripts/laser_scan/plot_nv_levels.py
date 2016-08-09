@@ -2,12 +2,15 @@ from analysis.lib.nv import nvlevels
 reload(nvlevels)
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib as mpl
 
 def plot_ES_b_dependence(strain_splitting=2.):
 	b_range=np.linspace(0,1000,100) #gauss
 	Ex=strain_splitting/2. #Ex is approx strain_splitting divided by 2
+	print Ex
 	spectrum=np.zeros((6,))
 	#plt.close()
+	fig,ax = plt.subplots(figsize=(3,2.5))
 	for Bz in b_range:
 		spectrum=np.vstack((spectrum,np.sort(nvlevels.get_ES(
 															E_field=[Ex,0.,0.], 
@@ -19,7 +22,21 @@ def plot_ES_b_dependence(strain_splitting=2.):
 
 	for i in range(6):
 		plt.plot(b_range,spectrum[:,i])
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/ES_B_dependence_Ex_'+str(Ex)+'.png')
+		# plt.title('Excited state levels B dependence, E = ' +str(strain_splitting))
+		plt.xlabel('Magnetic field Bz (G)')
+		plt.ylabel('relative energy (GHz)')
+		# plt.savefig('D:/jcramer3/Dropbox/thesis/plotted_figs/ES_E_dependence_Bz_'+str(Bz)+'.pdf')
+		ax.set_ylim(-15,15)
+		# ax.set_xlim(-0.5,62.5)
+		# ax.set_xticks(x, minor = True)
+		yticks = np.arange(-15,15.1,15)
+		xticks = np.arange(0,1001,500)
+		plt.yticks(yticks)
+		plt.xticks(xticks)
+		mpl.rcParams['axes.linewidth'] = 1
+		mpl.rcParams['pdf.fonttype'] = 42
+		plt.savefig('D:/jcramer3/Dropbox/thesis/plotted_figs/ES_B_dependence_Ex_'+str(Ex)+'.pdf',bbox_inches='tight')
+	plt.show(block = False)
 
 def plot_GS_b_dependence(strain_splitting=2.):
 	b_range=np.linspace(0,1000,100) #gauss
@@ -41,7 +58,7 @@ def plot_ES_e_dependence(Bz=20.):
 	e_range=np.linspace(0,10,100) #gauss
 	spectrum=np.zeros((6,))
 	# plt.close()
-	plt.figure()
+	fig,ax = plt.subplots(figsize=(3,2.5))
 	for Ex in e_range:
 		spectrum=np.vstack((spectrum,np.sort(nvlevels.get_ES(
 															E_field=[Ex,0.,0.], 
@@ -54,10 +71,24 @@ def plot_ES_e_dependence(Bz=20.):
 
 	for i in range(6):
 		plt.plot(e_range,spectrum[:,i])
-		plt.title('Excited state levels E dependence, Bz = '+str(Bz))
+		# plt.title('Excited state levels E dependence, Bz = '+str(Bz))
 		plt.xlabel('Strain E (GHz)')
 		plt.ylabel('relative energy (GHz)')
-		plt.savefig('D:/jcramer3/My Documents/QEC/nv_levels_sym/ES_E_dependence_Bz_'+str(Bz)+'.png')
+		# plt.savefig('D:/jcramer3/Dropbox/thesis/plotted_figs/ES_E_dependence_Bz_'+str(Bz)+'.pdf')
+
+		ax.set_ylim(-15,15)
+		# ax.set_xlim(-0.5,62.5)
+		# ax.set_xticks(x, minor = True)
+		yticks = np.arange(-15,15.1,15)
+		xticks = np.arange(0,10.1,5)
+		plt.yticks(yticks)
+		plt.xticks(xticks)
+		mpl.rcParams['axes.linewidth'] = 1
+		mpl.rcParams['pdf.fonttype'] = 42
+		plt.savefig('D:/jcramer3/Dropbox/thesis/plotted_figs/ES_E_dependence_Bz_'+str(Bz)+'.pdf',bbox_inches='tight')
+	plt.show(block = False)
+
+	plt.show(block = False)
 
 def plot_transitions_b_dependence(strain_splitting=4.11):
 	b_range=np.linspace(250,500,50) #gauss
