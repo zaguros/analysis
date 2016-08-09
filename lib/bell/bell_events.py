@@ -28,11 +28,11 @@ _cl_noof_rnd_0  = 5
 _cl_noof_rnd_1  = 6
 _cl_cr_after    = 7
 _cl_ro_after    = 8
-_cl_inv_mrkr    = 9
+_cl_last_inv_mrkr= 9
 _cl_tt_ma       = 10
-_cl_tt_rnd      = 11
+_cl_st_rnd      = 11
 _cl_first_ph_st = 12
-_cl_noof_ph_tail = 13
+_cl_first_tail_st = 13
 _cl_noof_rnd_0_prev  = 14
 _cl_noof_rnd_1_prev  = 15
 _cl_noof_ph_ro_prev  = 16
@@ -107,7 +107,7 @@ def get_ssro_result_list(fp_lt,
                             rnd_start, rnd_length, rnd_channel, rnd_0_channel, rnd_1_channel,
                             psb_tail_start,psb_tail_len, pulse_sep,
                             ent_marker_channel_lt, ent_marker_lt_timebin_limit, sn_diff_marker_ent_early, sn_diff_marker_ent_late,
-                            invalid_marker_channel_lt, invalid_marker_max_sn_diff,
+                            invalid_marker_channel_lt,
                             VERBOSE=False):
 
     pqf_lt  = h5py.File(fp_lt,  'r')
@@ -149,9 +149,9 @@ def get_ssro_result_list(fp_lt,
     fltr_tail_w1    = (sp == 0) & (ch == ro_channel)  & (st > psb_tail_start)  & (st < (psb_tail_start  + psb_tail_len))
     fltr_tail_w2    = (sp == 0) & (ch == ro_channel)  & (st > psb_tail_start + pulse_sep)  & (st < (psb_tail_start  + psb_tail_len + pulse_sep))
     fltr_tail       = fltr_tail_w1 | fltr_tail_w2
-    fltr_rnd0       = (sp == 1) & (ch == rnd_0_channel)
-    fltr_rnd1       = (sp == 1) & (ch == rnd_1_channel)
-    fltr_ent_marker = (sp == 1) & (ch == ent_marker_channel_lt)
+    fltr_rnd0       = (sp == 1) & (ch & rnd_0_channel == rnd_0_channel)
+    fltr_rnd1       = (sp == 1) & (ch & rnd_1_channel == rnd_1_channel)
+    fltr_ent_marker = (sp == 1) & (ch & ent_marker_channel_lt == ent_marker_channel_lt)
 
     ssro_result_list=np.zeros((len(marker_sns),_lt_noof_columns), dtype=_lt_dtype)
     for i,cur_sn in enumerate(marker_sns):
@@ -179,30 +179,40 @@ def get_ssro_result_list(fp_lt,
         fltr_ro_photon_prev = ( sn == ent_sn-1) & fltr_ro
         
         if np.sum(fltr_rnd0_ev | fltr_rnd1_ev )==1:
-            rnd_ma_tt =  tt[fltr_rnd0_ev | fltr_rnd1_ev]
+            rnd_ma_st =  st[fltr_rnd0_ev | fltr_rnd1_ev]
         else:
             rnd_ma_tt = 0
 
-        if np.sum(fltr_ro_photon)>0:
+        if np.sum(fltr_ro_photon) > 0:
             first_ph_st = st[fltr_ro_photon][0]
         else:
             first_ph_st = 0
 
-        
-        fltr_invalid_ev = (diff_invalid_ev > 0) & (diff_invalid_ev <= invalid_marker_max_sn_diff)
+        if np.sum(diff_invalid_ev>0) > 0:
+            last_inv_mrkr = np.min(diff_invalid_ev[diff_invalid_ev>0]) 
+        else:
+            last_inv_mrkr = 0
 
-        ssro_result_list[i,_cl_sn_ma]       = cur_sn
-        ssro_result_list[i,_cl_sn_ro]       = ent_sn
-        ssro_result_list[i,_cl_noof_ph_ro]  = np.sum(fltr_ro_photon)
-        ssro_result_list[i,_cl_st_ma]       = cur_ent_marker_st
-        ssro_result_list[i,_cl_noof_rnd]    = np.sum(fltr_rnd_click)
-        ssro_result_list[i,_cl_noof_rnd_0]  = np.sum(fltr_rnd0_ev)
-        ssro_result_list[i,_cl_noof_rnd_1]  = np.sum(fltr_rnd1_ev)
-        ssro_result_list[i,_cl_inv_mrkr]    = np.sum(fltr_invalid_ev)
-        ssro_result_list[i,_cl_tt_ma]       = cur_ent_marker_tt
-        ssro_result_list[i,_cl_tt_rnd]      = rnd_ma_tt
-        ssro_result_list[i,_cl_first_ph_st] = first_ph_st
-        ssro_result_list[i,_cl_noof_ph_tail]= np.sum(fltr_tail_photon)
+        if np.sum(fltr_tail_photon) >0:
+            first_tail_st = st[fltr_tail_photon][0]
+        else:
+            first_tail_st = 0
+
+        
+        #fltr_invalid_ev = (diff_invalid_ev > 0) & (diff_invalid_ev <= invalid_marker_max_sn_diff)
+
+        ssro_result_list[i,_cl_sn_ma]          = cur_sn
+        ssro_result_list[i,_cl_sn_ro]          = ent_sn
+        ssro_result_list[i,_cl_noof_ph_ro]     = np.sum(fltr_ro_photon)
+        ssro_result_list[i,_cl_st_ma]          = cur_ent_marker_st
+        ssro_result_list[i,_cl_noof_rnd]       = np.sum(fltr_rnd_click)
+        ssro_result_list[i,_cl_noof_rnd_0]     = np.sum(fltr_rnd0_ev)
+        ssro_result_list[i,_cl_noof_rnd_1]     = np.sum(fltr_rnd1_ev)
+        ssro_result_list[i,_cl_last_inv_mrkr]  = last_inv_mrkr
+        ssro_result_list[i,_cl_tt_ma]          = cur_ent_marker_tt
+        ssro_result_list[i,_cl_st_rnd]         = rnd_ma_st
+        ssro_result_list[i,_cl_first_ph_st]    = first_ph_st
+        ssro_result_list[i,_cl_first_tail_st]  = first_tail_st
         ssro_result_list[i,_cl_noof_rnd_0_prev]= np.sum(fltr_rnd0_prev)
         ssro_result_list[i,_cl_noof_rnd_1_prev]= np.sum(fltr_rnd1_prev)
         ssro_result_list[i,_cl_noof_ph_ro_prev]= np.sum(fltr_ro_photon_prev)

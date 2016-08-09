@@ -103,7 +103,12 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
 
             parity_a_result = self.parity_result[0::2]  ### The two parity outcomes are stored sequentially in an array 
             parity_b_result = self.parity_result[1::2] 
-            
+          
+            if orientation_correct:
+                orientation_a = adwingrp.attrs['Parity_A_RO_orientation']
+                orientation_b = adwingrp.attrs['Parity_B_RO_orientation']
+                orientation_c = adwingrp.attrs['Tomo_RO_orientation']
+                self.orientations = (orientation_a,orientation_b,orientation_c)
             if orientation_correct:
                 orientation_a = adwingrp.attrs['Parity_A_RO_orientation']
                 orientation_b = adwingrp.attrs['Parity_B_RO_orientation']
@@ -353,6 +358,11 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             orientation_c = adwingrp.attrs['Parity_yyx_RO_orientation']
             orientation_d = adwingrp.attrs['Tomo_RO_orientation']
             self.orientations = (orientation_a,orientation_b,orientation_c,orientation_d)
+
+            self.a_list = adwingrp.attrs['Parity_xyy_RO_list']
+            self.b_list = adwingrp.attrs['Parity_yxy_RO_list']
+            self.c_list = adwingrp.attrs['Parity_yyx_RO_list']
+            self.d_list = adwingrp.attrs['Tomo_RO_list']
 
             ### Step 0 extract data from hdf5 file
             self.parity_result = adwingrp['parity_RO_results'].value

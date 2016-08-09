@@ -7,9 +7,11 @@ from analysis.lib.fitting import fit,esr, common
 from matplotlib import rc, cm
 from scipy import interpolate
 from analysis.lib.tools import oscilloscope_cvs_trace as scope_trace
+from analysis.lib.cavity import cavity_tools as cavTools
 
 reload(toolbox)
 reload (scope_trace)
+reload (cavTools)
 
 
 def analize_time_trace(folder, file_name, limits = None, do_save = False, correlate = False):
@@ -74,15 +76,25 @@ def frequency_scan(folder, timestamp, do_save=False, xlimit=None):
 	f = f[ind]
 	y=y[ind]
 	do_save = False
-	f4 = plt.figure (figsize=(15, 5))
+	f4 = plt.figure (figsize=(15, 8))
+	xx = np.linspace (f[0], f[-1], 10000)
+	yy = 0.5*np.exp (-((xx-168.5)/5)**2) + 0.3*np.exp (-((xx+113)/5)**2)
+
+	plt.plot (xx, yy, color = 'royalblue', linewidth =4)
 	plt.plot (f, y, 'ob')
-	plt.plot (f, y, 'r')
+
 	plt.axis("tight")
+	matplotlib.rc('xtick', labelsize=30) 
+	matplotlib.rc('ytick', labelsize=30) 
 	#plt.xlim([-2000, -1500])
 
 	if xlimit:
 		plt.xlim (xlimit)
-	plt.xlabel ('freq [GHz]', fontsize=15)
+	plt.xlabel ('laser frequency detuning [GHz]', fontsize=20*1.5)
+	plt.ylabel ('transmission signal', fontsize=20*1.5)
+
+	f4.savefig ('D:/laser_scan.pdf')
+	f4.savefig ('D:/laser_scan.png')
 	if do_save:
 		f3.savefig (folder+'sum_fft_'+str(idx)+'.png')
 	plt.show()
@@ -117,22 +129,21 @@ def plot_piezoscan_in_time (folder, contains, threshold=None, xlimit=None, selec
 	else:
 		cavTools.combine_piezoscans_1D (folder = folder, folder_array = fnames[:], time_array = times[:], threshold = threshold, xlimit=xlimit)
 
-#frequency_scan()
 
 #folder = r'D:/Research/cavity/low_temperature/20150617_emptyCav/'
 #track_piezo_scan(folder=folder, contains = '_switchOFFcompr', threshold = 0.6, selection =[1, 40])
 
 #plot_piezoscan_in_time (folder = folder, contains = 'N3_z=270_zoom')#, xlimit = [6,7], selection =[1,40])
 #plot_single_piezoscan (folder = folder, timestamp = '123740')#, xlimit=[6.1, 6.3])
-#folder = r'M:/tnw/ns/qt/Diamond/Projects/Cavities/data/20150611/'
-#frequency_scan (folder=folder, timestamp='165011', xlimit=[-1800, -500])
+folder = r'D:/measuring/data/20151111/'
+frequency_scan (folder=folder, timestamp='103624', xlimit=[-250,-150])
 #plot_2D_piezo_laser (folder=folder, timestamp='120548')
 
 
-folder = r'M:/tnw/ns/qt/Diamond/Projects/Cavities/data/piezo_linearity_(forAM)/'
+#folder = r'M:/tnw/ns/qt/Diamond/Projects/Cavities/data/piezo_linearity_(forAM)/'
 
-fname = 'U1A004.csv'
-analize_time_trace (folder=folder, file_name=fname, limits = None, correlate = False)#[40, 60])
+#fname = 'U1A004.csv'
+#analize_time_trace (folder=folder, file_name=fname, limits = None, correlate = False)#[40, 60])
 
 
 
