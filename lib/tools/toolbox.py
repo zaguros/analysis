@@ -131,7 +131,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
                 if VERBOSE:
-                    print 'Timestamp not valid: ', dstamp,tstamp
+                    print 'Timestamp not valid: ', _timestamp
                 continue
             timestamp = dstamp+tstamp
 

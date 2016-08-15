@@ -693,3 +693,53 @@ def fit_repumping_p1(g_a, g_A1, g_A2, g_tau, g_tau2, g_offs_x, *arg):
         return a() - A1() * np.exp( -(x-offs_x()) / tau()) + A2() * np.exp(-(x-offs_x())/tau2())
 
     return p0, fitfunc, fitfunc_str
+
+
+def fit_2d_gaussian(g_offset,g_A, g_x0, g_y0, g_sigmax, g_sigmay, g_theta, *arg):
+    """
+    fitfunction for a 2d gaussian
+    have to transform this to a 1d array in the fit2d function
+    """
+    fitfunc_str = 'offset +  A * ( a * exp(-(x-x0)**2) + b *(x-x0)(y-y0) +c *exp(-(y-y0)**2) '
+
+    A = fit.Parameter(g_A, 'A')
+    offset = fit.Parameter(g_offset, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    y0 = fit.Parameter(g_y0, 'y0')
+
+    sigmax = fit.Parameter(g_sigmax, 'sigmax')
+    sigmay = fit.Parameter(g_sigmay, 'sigmay')
+    theta = fit.Parameter(g_theta, 'theta')
+
+    p0 = [offset, A, x0,y0,sigmax,sigmay,theta]
+
+    def fitfunc(x,y):
+        a = np.cos(theta())**2/(2*sigmax()**2) + np.sin(theta())**2/(2*sigmay()**2)
+        b = -np.sin(2*theta())/(4*sigmax()**2) + np.sin(2*theta())/(4*sigmay()**2)
+        c = np.sin(theta())**2/(2*sigmax()**2) + np.cos(theta())**2/(2*sigmay()**2)
+        z = offset()+A()*np.exp( - (a*(x-x0())**2 - 2*b*(x-x0())*(y-y0()) + c*(y-y0())**2))
+        return z
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_2d_gaussian_circular(g_offset,g_A, g_x0, g_y0, g_sigma, *arg):
+    """
+    fitfunction for a 2d gaussian
+    that has a circular shape (sigmax  = sigmay, theta = 0)
+    have to transform this to a 1d array in the fit2d function
+    """
+    fitfunc_str = 'offset +  A * ( exp(-(x-x0)**2)/(2*sigma**2) +exp(-(y-y0)**2)/(2*sigma**2) '
+
+    A = fit.Parameter(g_A, 'A')
+    offset = fit.Parameter(g_offset, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    y0 = fit.Parameter(g_y0, 'y0')
+
+    sigma = fit.Parameter(g_sigma, 'sigma')
+
+    p0 = [offset, A, x0,y0,sigma]
+
+    def fitfunc(x,y):
+        return offset()+A()*np.exp( - ((x-x0())**2/(2*sigma()**2)  + ((y-y0())**2)/(2*sigma()**2)))
+
+    return p0, fitfunc, fitfunc_str
