@@ -23,7 +23,6 @@ class M2Analysis:
         self.f = h5py.File(self.h5filepath,h5mode)
 
         for k in self.f.keys():
-            
             if type(self.f[k])==h5py.Group and k in os.path.split(self.h5filepath)[1]: # PH added this check because sometimes additional files added to hdf5 file (06/16)
                 self.name = k
         self.g = self.f[self.name]      

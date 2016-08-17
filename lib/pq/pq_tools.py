@@ -376,7 +376,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     for i, (_sn0, _t0, _st0) in enumerate(zip(c_sn0, c_t0, c_st0)):
 
         _c = c_sn1==_sn0
-        # _c[i] = 0 # Not the same entry 
+        # _c[i] = 0 # Not the same entry (for afterpulsing)
         
         for _t1, _st1 in zip(c_t1[_c], c_st1[_c]):
             dt = int(_t0) - int(_t1)
@@ -395,6 +395,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
                           columns=('dt = ch0-ch1 (bins)', 'sync_time ch0 (bins)', 'sync_time ch1 (bins)', 'sync number'))
                        
     return coincidences
+
 
 def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
 
