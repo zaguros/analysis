@@ -14,7 +14,7 @@ def analyze_dark_esr(guess_ctr, guess_splitN,
 guess_offset = 1,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-min_dip_depth = 0.86, 
+min_dip_depth = 0.9, 
 timestamp = None,
 add_folder = None,
 ret='f0',
@@ -241,7 +241,7 @@ guess_A_min = 0.3,
 guess_A_plus = 0.3,
 guess_width = 0.2e-3,
 guess_amplitude = 0.3,
-guess_Csplit = 0.105e-3,
+guess_Csplit = 0.100e-3,
 timestamp = None,
 add_folder = None,
 ret='f0',
@@ -255,6 +255,8 @@ do_plot = True,
         folder = toolbox.data_from_time(timestamp)
     else:
         folder = toolbox.latest_data('DarkESR')
+
+    print folder
 
     if add_folder !=None:
         folder = add_folder
@@ -271,15 +273,22 @@ do_plot = True,
     x = a.sweep_pts # convert to MHz
     
 
-    guess_ctr = x[y.argmin()]
-    guess_ctr = x[len(x)/2.]
-    print 'guess_ctr = '+str(guess_ctr)
+    ### create a guess for the center frequency
+    guess_ctr1 = x[y.argmin()]+guess_Csplit*1.2
+    guess_ctr2 = x[y.argmin()]-guess_Csplit*1.2 #
+
+    # guess_ctr1 =x[len(x)/2.]
+    print 'guess_ctr1 = '+str(guess_ctr1)
+    print 'guess_ctr2 = '+str(guess_ctr2)
+
+    
+    ### First fit attempt: guess_ctr1
 
     ### fitfunction
     A_min = fit.Parameter(guess_A_min, 'A_min')
     A_plus = fit.Parameter(guess_A_plus, 'A_plus')
     o = fit.Parameter(guess_offset, 'o')
-    ctr = fit.Parameter(guess_ctr, 'ctr')
+    ctr = fit.Parameter(guess_ctr1, 'ctr')
     width = fit.Parameter(guess_width, 'width')
     Csplit = fit.Parameter(guess_Csplit, 'Csplit')
 
@@ -288,9 +297,34 @@ do_plot = True,
                 - A_plus()*np.exp(-((x-(ctr()+Csplit()))/width())**2) \
 
 
+    print 'running fit1'
     fit_result = fit.fit1d(x, y, None, p0 = [A_min, A_plus, o, ctr, width, Csplit],
             fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
  
+    do_another_fit = False
+    if fit_result['success'] == False:
+            do_another_fit = True
+    elif fit_result['error_dict']['ctr'] > 8e-6:
+            do_another_fit = True
+
+    if do_another_fit == True:
+            print 'first fit failed'
+            ### Second fit attempt: guess_ctr2
+            A_min = fit.Parameter(guess_A_min, 'A_min')
+            A_plus = fit.Parameter(guess_A_plus, 'A_plus')
+            o = fit.Parameter(guess_offset, 'o')
+            ctr = fit.Parameter(guess_ctr2, 'ctr')
+            width = fit.Parameter(guess_width, 'width')
+            Csplit = fit.Parameter(guess_Csplit, 'Csplit')
+
+            def fitfunc(x):
+                return o() - A_min()*np.exp(-((x-(ctr()-Csplit()))/width())**2) \
+                        - A_plus()*np.exp(-((x-(ctr()+Csplit()))/width())**2) \
+
+            print 'running fit2'
+            fit_result = fit.fit1d(x, y, None, p0 = [A_min, A_plus, o, ctr, width, Csplit],
+                    fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+    
     if do_plot == True:        
         fig, ax = plt.subplots(1,1)
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
@@ -300,14 +334,21 @@ do_plot = True,
         #plt.show()
         plt.close(fig)
 
-
     if ret == 'f0' and ret_folder == False:
-        f0 = fit_result['params_dict']['ctr']
-        u_f0 = fit_result['error_dict']['ctr']
-        return f0, u_f0
+        if fit_result['success'] == False:
+            print 'Fit failed, returned dummy values for frequency'
+            f0 = 0
+            u_f0 = 1e-3         #large arbitrary uncertainty makes sure the data is filtered out later
+            return f0, u_f0
+        else: 
+            f0 = fit_result['params_dict']['ctr']
+            u_f0 = fit_result['error_dict']['ctr']
+            return f0, u_f0
+      
 
     elif ret == 'f0' and ret_folder == True:
         return f0, u_f0, folder
+    
 
 
 

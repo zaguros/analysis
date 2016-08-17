@@ -11,7 +11,7 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
-
+from analysis.lib.fitting import fit, ramsey; reload(ramsey)
 
 N_HF_splt = 2.17e-3
 detuning = 1.0e-6
@@ -91,7 +91,7 @@ ax.set_ylabel('State fidelity',fontsize = 30)
 ax.set_ylim([0,1])
 ax.tick_params(axis='x', which='major', labelsize=30)
 ax.tick_params(axis='y', which='major', labelsize=30)
-mpl.rcParams['axes.linewidth'] = 1
+#mpl.rcParams['axes.linewidth'] = 1
 ax.tick_params('both', length=4, width=1, which='major')
 folder = r'D:\measuring\data\QEC_data\figs\final figures'
 plt.savefig(os.path.join(folder, 'eramsey.pdf'),format='pdf',bbox_inches='tight')

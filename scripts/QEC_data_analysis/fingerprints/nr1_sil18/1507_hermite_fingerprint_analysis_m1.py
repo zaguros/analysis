@@ -8,7 +8,7 @@ import numpy as np
 import os
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
-import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating FP response of spins
+import analysis.lib.QEC.nuclear_spin_characterisation as SC; reload(SC) #used for simulating FP response of spins
 # import magnettools as mt # Does not work atm because of qt lab being imported in MT
 import matplotlib.cm as cm
 from matplotlib import pyplot as plt
@@ -20,8 +20,8 @@ from analysis.scripts.QEC_data_analysis.fingerprints import fingerprint_funcs as
 
 def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 51,start_1 = 3.0, start_2 = 3.0+45*50*10e-3,
         step_size = 10e-3,
-        xrange = [0,20],tag_p = '',tag_n = '',tag_p2 = '',tag_n2 = '', older_than = None,
-        older_than2 = None,return_data = False, do_plot = True,figsize=(35,5), load_from_data = False, Nr_of_pulses = None, save_folder = None):
+        xrange = [0,20],tag_p = '',tag_n = '',tag_p2 = '',tag_n2 = '', older_than = None,tau_larmor = False,
+        older_than2 = None,return_data = False, do_plot = True,figsize=(35,5), load_from_data = False, Nr_of_pulses = None, save_folder = None, name = ''):
 
 
     ###################
@@ -35,6 +35,7 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file
             B_Field = 403.555 # use magnet tools  Bz = (msp1_f**2 - msm1_f**2)/(4.*ZFS*g_factor)
+            t_L = 1/(1.0705e3*B_Field)*1e6
 
             tau_lst = np.linspace(0,72e-6,10000)
             Mt16 = SC.dyn_dec_signal(HF_par,HF_perp,B_Field,32,tau_lst)
@@ -50,32 +51,46 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
       a2, folder = load_mult_dat_tag(tag_p2,older_than2, number_of_msmts = 50,pts = pts, start=start_2, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
       b2, folder_b2 = load_mult_dat_tag(tag_n2, older_than2, number_of_msmts = 50,pts = pts, start=start_2, step_size=step_size,ssro_calib_folder=ssro_calib_folder)
 
+      # print a1.reps
+      # print a2.reps
+      # print b1.reps
+      # print b2.reps
+
       ###############
       ## Plotting ###
       ###############
 
       y = np.concatenate(((a1.p0-b1.p0),(a2.p0-b2.p0)))
       x = np.concatenate((a1.sweep_pts, a2.sweep_pts))
+      y_err = np.concatenate(((np.sqrt(a1.u_p0**2+b1.u_p0**2)),(np.sqrt(a2.u_p0**2+b2.u_p0**2))))
       
       data = {}
       data['x'] = x
       data['y'] = y
+      data['y_err']= y_err
 
 
 
       # pickle.dump(data, open( 'sil18_fingerprint_ms_min_N'+str(Nr_of_pulses)+'.p', 'wb' ) )
-      np.savetxt('sil18_fingerprint_ms_min_N'+str(Nr_of_pulses)+'.txt',(np.c_[x],y))
+      np.savetxt('sil18_fingerprint_incl_errorbar_ms_min_N'+str(Nr_of_pulses)+'.txt',(np.c_[x],y,y_err))
 
     else:
-      # data = pickle.load( open( 'sil18_fingerprint_ms_min_N'+str(Nr_of_pulses)+'.p', 'rb' ) )
+      # data = pickle.load( open( 'sil18_fingerprint_incl_errorbar_ms_min_N'+str(Nr_of_pulses)+'.p', 'rb' ) )
 
       # x = data['x']
       # y = data['y']
-      x,y = np.loadtxt('sil18_fingerprint_ms_min_N'+str(Nr_of_pulses)+'.txt')
+      x,y,y_err = np.loadtxt('sil18_fingerprint_incl_errorbar_ms_min_N'+str(Nr_of_pulses)+'.txt')
       folder = save_folder
 
       # x = data['x']
       # y = data['y']
+
+      if tau_larmor == True:
+        x = x/t_L
+
+      y = (y + 1)/2.
+      y_err = y_err/2.
+
 
       folder = save_folder
     if do_plot == True:
@@ -83,17 +98,20 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
       ax.set_xlim(4.9,5.1)
       ax.set_xlim(xrange)
       start, end = ax.get_xlim()
-      ax.xaxis.set_ticks(np.arange(xrange[0], xrange[1]+0.1, (xrange[1]- xrange[0])/4.))
-
+      # ax.xaxis.set_ticks(np.arange(xrange[0], xrange[1]+0.1, (xrange[1]- xrange[0])/4.))
+      ax.xaxis.set_ticks([5.85,5.95])
       # ax.set_ylim(-1.05,1.05)
-      ax.set_ylim(-1.05,1.05)
-      ax.yaxis.set_ticks([-1,-0.5,0,0.5,1])
+      ax.set_ylim(-0.05,1.05)
+      ax.yaxis.set_ticks([0,0.5,1])
       # ax.plot(x, y, '.-b', lw=1,label = 'data',marker = 'o') #N = 16
       # ax.plot(x, y, '.-k', lw=0.4,label = 'data') #N = 16
       # ax.plot(x, (y+1)/2., '.-b', lw=1,label = 'data', marker = 'o', ms = 8) #N = 16
-      ax.plot(x, y, '.-k', lw=0.5,label = 'data', marker = 'o', ms = 5) #N = 16
+      ax.plot(x, y, '.-k', lw=0.4,label = 'data', marker = 'o', ms = 3, markeredgecolor = 'c') #N = 16
       ax.set_xlabel('tau (us)')
-      ax.set_ylabel('Signal')
+      if tau_larmor == True:
+        ax.set_xlabel('tau/tau_larmor')
+
+      ax.set_ylabel('Fidelity')
 
       # ax.plot(a1.sweep_pts, (a1.p0-b1.p0), '.-b', lw=0.4,label = 'data') #N = 16
       # ax.plot(a2.sweep_pts, (a2.p0-b2.p0), '.-k', lw=0.4,label = 'data') #N = 16
@@ -101,7 +119,10 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
         colors = cm.rainbow(np.linspace(0, 1, n_sim_spins))
         for tt in range(n_sim_spins):
           # print tt
-          ax.plot(tau_lst*1e6, Mt16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
+          if tau_larmor == False:
+            ax.plot(tau_lst*1e6, Mt16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
+          if tau_larmor == True:
+            ax.plot(tau_lst*1e6/t_L, Mt16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])            
       if False:
           tot_signal = np.ones(len(tau_lst))
           for tt in range(n_sim_spins):
@@ -110,7 +131,11 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
           ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
 
 
-      lgd = plt.legend(loc=4)
+      # ax.vlines([5.85,5.9],-1.1,1.1,color = '0.5',lw = 1,linestyles = '-')
+      # plt.axvspan(5.85,5.9, facecolor='c', alpha=0.1)
+
+
+      # lgd = plt.legend(loc=4)
       plt.show(block = False)
       print folder
       print 'contrast_150924.pdf'
@@ -119,6 +144,10 @@ def fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 2,pts = 
             format='pdf',bbox_inches='tight')
         plt.savefig(os.path.join(folder, 'contrast_150924.png'),
             format='png',bbox_inches='tight')
+        plt.savefig(os.path.join(folder, name+'.pdf'),
+            format='pdf',bbox_inches='tight')
+        plt.savefig(os.path.join(folder, name+'.png'),
+            format='png',bbox_inches='tight')        
       except:
         print 'Figure has not been saved'
 
@@ -447,7 +476,7 @@ if 1:
   #         xrange = [2.5,52.5],
   #         tag_p = 'Hermite_Fingerprint_msm1_111_1_sil18_64-x0',tag_n = 'Hermite_Fingerprint_msm1_111_1_sil18_64x0', 
   #         tag_p2 = 'Hermite_Fingerprint_msm1_111_1_sil18_64-x45',tag_n2 = 'Hermite_Fingerprint_msm1_111_1_sil18_64x45', 
-  #         older_than = '20150728090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 64)
+  #         older_than = '20150728090000',return_data = True, do_plot= False, load_from_data = False, Nr_of_pulses = 64)
 
 
   # x_4 , y_4 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
@@ -455,7 +484,7 @@ if 1:
   #         xrange = [2.5,52.5],
   #         tag_p = 'mx111_1_sil18_4pulses',tag_n = 'px111_1_sil18_4pulses', 
   #         tag_p2 = 'Hermite_Fingerprint_msm1_111_1_sil18_4-x',tag_n2 = 'Hermite_Fingerprint_msm1_111_1_sil18_4x', 
-  #         older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 4 )
+  #         older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= False, load_from_data = False, Nr_of_pulses = 4 )
 
 
   # x_8 , y_8 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
@@ -463,7 +492,7 @@ if 1:
   #         xrange = [2.5,52.5],
   #         tag_p = 'mx111_1_sil18_8pulses',tag_n = 'px111_1_sil18_8pulses', 
   #         tag_p2 = 'Hermite_Fingerprint_msm1_111_1_sil18_8-x',tag_n2 = 'Hermite_Fingerprint_msm1_111_1_sil18_8x', 
-  #         older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 8 )
+  #         older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= False, load_from_data = False, Nr_of_pulses = 8 )
 
 
   # x_16 , y_16 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
@@ -471,13 +500,14 @@ if 1:
   #         xrange = [2.5,52.5],
   #         tag_p = 'mx111_1_sil18_16pulses',tag_n = 'px111_1_sil18_16pulses', 
   #         tag_p2 = 'Hermite_Fingerprint_msm1_111_1_sil18_16-x',tag_n2 = 'Hermite_Fingerprint_msm1_111_1_sil18_16x', 
-  #         older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True, load_from_data = False, Nr_of_pulses = 16)
+  #         older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= False, load_from_data = False, Nr_of_pulses = 16)
 
 
-  x_32 , y_32 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 8,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
+  x_32 , y_32 = fingerprint_contrast_concatenate(disp_sim_spin = True,n_sim_spins = 0,pts = 51,start_1 = 3.0, start_2 = 3+45*50*10e-3,
           step_size = 10e-3,
-          xrange = [30.5,42.5],
+          tau_larmor = True,
+          xrange = [5.85,5.95],
           tag_p = 'mx111_1_sil18_32pulses',tag_n = 'px111_1_sil18_32pulses', 
           tag_p2 = 'Hermite_Fingerprint_msm1_111_1_sil18_32-x',tag_n2 = 'Hermite_Fingerprint_msm1_111_1_sil18_32x', 
-          older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True,figsize=(20,5), save_folder = r'D:\measuring\data\LT2_Data\Fingerprinting',
-           load_from_data = False, Nr_of_pulses = 32)
+          older_than = '20150722090000',older_than2 = '20150727090000',return_data = True, do_plot= True,figsize=(3,3), save_folder = r'D:\measuring\data\LT2_Data\Fingerprinting',
+           load_from_data = True, Nr_of_pulses = 32, name = 'fig_msm1_zoomzoom3')

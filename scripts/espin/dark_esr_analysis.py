@@ -141,7 +141,7 @@ def analyze_dark_esr(folder,center_guess = False, ax=None, ret=None,min_dip_dept
     ax.set_xlabel('MW frq (GHz)')
     ax.set_ylabel(r'fidelity wrt. $|0\rangle$')
     ax.set_title(a.timestamp+'\n'+a.measurementstring)
-    ax.set_ylim([0,1.05])
+    ax.set_ylim([0.5,1.05])
     plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
             format='png')
     #ret='f0'
