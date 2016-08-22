@@ -35,6 +35,7 @@ class Parameter:
 
 
 def fit1d(x, y, fitmethod, *arg, **kw):
+
     """
     example: from analysis.lib.fitting import fit,common
              x=np.array([0,1,2,3,4])

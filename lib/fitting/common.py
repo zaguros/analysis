@@ -337,6 +337,21 @@ def fit_AOM_powerdependence(g_a, g_xc, g_k, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_AOM_powerdependence_diode(g_a,g_c, *arg):
+    fitfunc_str = 'a * x'
+
+    a = fit.Parameter(g_a, 'a')
+    c = fit.Parameter(g_c, 'k')
+
+    p0 = [a,c]
+
+    def fitfunc(x):
+        y = 0.5 * (np.sign((a()*x+c())) + 1)* (a()*x+c())* abs(np.sign((a()*x+c())))
+
+        return y
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_gauss(g_a, g_A, g_x0, g_sigma):
 ### i think there should be a factor 2 infront of the sigma
     fitfunc_str = 'a + A * exp(-(x-x0)**2/(2*sigma**2))'
@@ -398,8 +413,7 @@ def fit_general_exponential_fixed_offset(f_a, g_A, g_x0, g_T, g_n):
 
 def fit_2gauss(g_a1, g_A1, g_x01, g_sigma1, g_A2, g_x02, g_sigma2):
 ### i think there should be a factor 2 infront of the sigma
-    fitfunc_str = 'a1 + A1 * exp(-(x-x01)**2/(2*sigma1**2)) +\
-            A2 * exp(-(x-x02)**2/(2*sigma2**2))'
+    fitfunc_str = 'a1 + A1 * exp(-(x-x01)**2/(2*sigma1**2)) + A2 * exp(-(x-x02)**2/(2*sigma2**2))'
 
     a1 = fit.Parameter(g_a1, 'a1')
     x01 = fit.Parameter(g_x01, 'x01')
@@ -477,9 +491,9 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
     return p0, fitfunc, fitfunc_str
 
 
-def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
+def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
     fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
-            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma2**2) + 2*A2/np.pi*gamma2/(4*(x-x01+dx)**2+gamma2**2)'
+            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma1**2) + 2*A2/np.pi*gamma2/(4*(x-x01+dx)**2+gamma1**2)'
 
     a1 = fit.Parameter(g_a1, 'a1')
     A1 = fit.Parameter(g_A1, 'A1')
@@ -490,15 +504,15 @@ def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2):  
 
     A2 = fit.Parameter(g_A2, 'A2')
     #x02 = fit.Parameter(g_x02, 'x02')
-    gamma2 = fit.Parameter(g_gamma2, 'gamma2')
+    # gamma2 = fit.Parameter(g_gamma2, 'gamma2')
 
 
-    p0 = [a1, A1, x01, gamma1, dx, A2, gamma2]
+    p0 = [a1, A1, x01, gamma1, dx, A2]
     #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
 
     def fitfunc(x):
         return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
-                2*A2()/np.pi*gamma2()/(4*(x-x01()-dx())**2+gamma2()**2) + 2*A2()/np.pi*gamma2()/(4*(x-x01()+dx())**2+gamma2()**2)
+                2*A2()/np.pi*gamma1()/(4*(x-x01()-dx())**2+gamma1()**2) + 2*A2()/np.pi*gamma1()/(4*(x-x01()+dx())**2+gamma1()**2)
 
     return p0, fitfunc, fitfunc_str
 

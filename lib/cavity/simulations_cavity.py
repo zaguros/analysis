@@ -565,6 +565,17 @@ class CavitySims ():
         Ltot = 2*math.pi/F
         return Ltot
 
+    def optical_length_to_nuFSR(self,optical_length):
+        """
+        input:
+        optical_length - optical length
+        output:
+        FSR - FSR in freuqnecy
+        """        
+        FSR = c/(2*optical_length)
+        return FSR
+
+
     def dnu_nuFSR_to_F(self,dnu,nuFSR):
         """
         input:

@@ -53,7 +53,9 @@ EOM_freq = 6  #GHz
 # Open file and create dataframes in pandas
 
 
-def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2,fixed=[]):
+def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,fixed=[]):
+
+    # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","Y"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
 
     data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
 
@@ -85,21 +87,21 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamm
     if EOM_ON == True:
 
         print 'fitting data to 3 lorentzians'
-        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamma2)
+        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2)
         fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, fixed=fixed)
 
-        x01 = fit_result['params_dict']['x01']
+        # x01 = fit_result['params_dict']['x01']
         dx = fit_result['params_dict']['dx']
         gamma1 = fit_result['params_dict']['gamma1']
-        gamma2 = fit_result['params_dict']['gamma2']
+        # gamma2 = fit_result['params_dict']['gamma2']
         u_gamma1 = fit_result['error_dict']['gamma1']
-        u_gamma2 = fit_result['error_dict']['gamma2']
+        # u_gamma2 = fit_result['error_dict']['gamma2']
 
         scaling = EOM_freq/dx #scale the known EOM freq with the separation here.
-        lw = gamma1*scaling #scale the linewidth to get linewidht in frequency
-        lw_error = u_gamma1*scaling
-        linewidth = 'gamma = '+str(round(lw,2))+'+-'+str(round(lw_error,3))+'GHz'
-        print linewidth
+        linewidth = gamma1*scaling #scale the linewidth to get linewidht in frequency
+        u_linewidth = u_gamma1*scaling
+        linewidth_string = 'gamma = '+str(round(linewidth,2))+'+-'+str(round(u_linewidth,3))+'GHz'
+        print linewidth_string
 
         #Plotting
 
@@ -113,7 +115,7 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamm
         X_min_freq = ax.get_xlim()[0]*scaling
         X_max_freq = ax.get_xlim()[-1]*scaling
 
-        ax.set_title(linewidth)
+        ax.set_title(indir+'/'+filename+'\n'+linewidth_string)
         plt.savefig(os.path.join(indir,filename+'_fit.png'))
 
         #xticklabels = np.linspace(X_min_freq,X_max_freq,n_xticks)
@@ -136,7 +138,13 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamm
         ax.set_xlabel("Time (ms)", fontsize = 14)
         ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
 
+        linewidth = fit_result['params_dict']['gamma1']
+        u_linewidth = fit_result['error_dict']['gamma1']
+
         plt.savefig(os.path.join(indir,filename+'_fit.png'))
+
+
+
 
     ## you can use this for setting axes ###
 
@@ -165,6 +173,7 @@ def plot_and_fit(indir, filename,g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2, g_gamm
 
     plt.show()
 
+    return linewidth, u_linewidth
 
 
 
