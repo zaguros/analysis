@@ -30,9 +30,13 @@ class DisplayScan(m2.M2Analysis):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         colorname='afmhot'
-        colors=ax.pcolor(self.xvalues,self.yvalues,self.countrates, vmin=vmin,vmax=vmax,cmap=colorname)
-        ax.set_xlim([np.amin(self.xvalues),np.amax(self.xvalues)])
-        ax.set_ylim([np.amin(self.yvalues),np.amax(self.yvalues)])
+        #colors=ax.pcolormesh(self.xvalues,self.yvalues,self.countrates, vmin=vmin,vmax=vmax,cmap=colorname)
+        colors=ax.imshow(self.countrates, cmap=colorname, interpolation='none',
+                        vmin=vmin,vmax=vmax, 
+                        extent=[np.amin(self.xvalues),np.amax(self.xvalues),np.amin(self.yvalues),np.amax(self.yvalues)], origin='lower')
+
+        #ax.set_xlim([np.amin(self.xvalues),np.amax(self.xvalues)])
+        #ax.set_ylim([np.amin(self.yvalues),np.amax(self.yvalues)])
         ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -390,4 +394,64 @@ def table_of_good_NVs(folder):
     a = DisplayScan(folder)
     a.get_data() 
     goodNV = a.get_good_NVs_only()
+
+
+class DisplayScanFlim(DisplayScan):
+
+    def get_flim_data(self):
+        self.flimdata = self.f['flim_data'].value
+
+    def plot_flim_data(self,title,save=True, **kw):
+        
+        rmin = kw.pop('rmin', 0)
+        rmax = kw.pop('rmax', len(self.flimdata[0,0]))
+
+
+        self.flim_plot_data = np.sum(self.flimdata[:,:,rmin:rmax],axis=2)
+        vmax = kw.pop('vmax', np.amax(self.flim_plot_data))
+        vmin = kw.pop('vmin', np.amin(self.flim_plot_data))
+
+        use_save_location = kw.pop('use_save_location',False)
+        save_location = kw.pop('save_location',None)
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        colorname='afmhot'
+        colors=ax.imshow(self.flim_plot_data, cmap=colorname, interpolation='none', vmin=vmin,vmax=vmax, 
+                         extent=[np.amin(self.xvalues),np.amax(self.xvalues),np.amin(self.yvalues),np.amax(self.yvalues)], origin='lower')
+
+        ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax3 = fig.add_subplot(1,1,1)
+        # ax3.axis('off')
+        fig.colorbar(colors,ax=ax)
+        plt.show()
+
+
+        if save:
+            try:
+                fig.savefig(
+                    os.path.join(self.folder,colorname+'_scan2dflim.png'))
+            except:
+                print 'Figure has not been saved.'
+
+    def plot_flim_hist(self, title,save=True, **kw):
+        xmin = kw.pop('xmin', 0)
+        xmax = kw.pop('xmax', len(self.flimdata[0]))
+        ymin = kw.pop('ymin', 0)
+        ymax = kw.pop('ymax', len(self.flimdata[:,1]))
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        ax.semilogy(np.sum(self.flimdata[xmin:xmax,ymin:ymax,:],axis=(0,1)))
+        ax.set_xlabel('bin')
+        ax.set_ylabel(self.f.attrs['flim_units'])
+
+        if save:
+            try:
+                fig.savefig(
+                    os.path.join(self.folder,colorname+'_histflim.png'))
+            except:
+                print 'Figure has not been saved.'
+        return ax
 
