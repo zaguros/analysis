@@ -114,7 +114,7 @@ def approximate_peak_location(wavelengths,intensity,**kw):
     return indices,peak_wavelengths, peak_intensity
 
 def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity, 
-        g_gamma = 0.08, g_offset=0, plot_fit = False):
+        plot_fit = False, **kw):
     """
     This function fits every presumed peak location with a lorentzian. 
     If the fit fails it rejects it as a peak.
@@ -133,7 +133,9 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
     """
     x0s =np.array([])
     u_x0s =np.array([])
-
+    g_gamma = kw.pop('g_gamma',0.08)
+    g_offset= kw.pop('g_offset',0)
+     
     wavelength_range = np.abs(wavelengths[-1]-wavelengths[0])
     indices_around_peak = int((len(wavelengths)/wavelength_range)*g_gamma*4)
     success = np.zeros(len(indices))

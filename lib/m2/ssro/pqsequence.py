@@ -79,7 +79,6 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         #ax.colorbar()
         ax.set_xlabel('Time [bins]')
         ax.set_ylabel('Counts per rep per bin')
-
         if save:
             self.save_fig_incremental_filename(fig,'histogram_chan_{}'.format(channel))
         
