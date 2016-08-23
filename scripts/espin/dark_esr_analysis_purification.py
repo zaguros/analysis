@@ -26,7 +26,7 @@ guess_amplitude = 0.15
 def analyze_dark_esr(folder, ax=None, **kw):
     if ax == None:
         fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
+    ssro_calib_folder = toolbox.latest_data(contains='SSROCalibration')
     print folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
