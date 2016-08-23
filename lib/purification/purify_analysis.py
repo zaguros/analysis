@@ -569,54 +569,27 @@ class purify_analysis(object):
             fltr_plus  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_nrs_w1)
             fltr_minus = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_nrs_w1)
 
-            # print np.argmax(fltr_plus)
-            # print HH_s_psi_p[np.argmax(fltr_plus)]
-            # print np.argmax(fltr_minus)
-            # print HH_s_psi_m[np.argmax(fltr_minus)]
-            # print adwin_nrs_w1
 
             self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus])
             self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus])
             self.RO_data_LT3_minus.append(adwin_ro_lt3[fltr_minus]) 
             self.RO_data_LT4_minus.append(adwin_ro_lt4[fltr_minus])
 
-        # print fltr_plus_lt3
-        # print fltr_plus_lt4
-
-
         all_m_lt3,all_m_lt4,all_p_lt3,all_p_lt4 = np.array([]),np.array([]),np.array([]),np.array([])
         for m_lt3,m_lt4,p_lt3,p_lt4 in zip(self.RO_data_LT3_minus,self.RO_data_LT4_minus,self.RO_data_LT3_plus,self.RO_data_LT4_plus):
-
-            # if len(m_lt3) != 0 and len(m_lt4) != 0:
-            #   if verbose:
-            #       print 'p_correlated for psi_minus', float(np.sum(np.equal(m_lt3,m_lt4)))/len(m_lt3)
-            #       print 'p_correlated for psi_plus', float(np.sum(np.equal(p_lt3,p_lt4)))/len(m_lt4)
-
             all_m_lt3 = np.append(all_m_lt3,m_lt3)
             all_m_lt4 = np.append(all_m_lt4,m_lt4)
             all_p_lt3 = np.append(all_p_lt3,p_lt3)
             all_p_lt4 = np.append(all_p_lt4,p_lt4)
 
 
-
-        #### print correlation matrix for RO results
-        ### 
-
-
         ### get overall events psi minus:
         m_correlations = [0,0,0,0]
-        m_correlations[0] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
-        m_correlations[1] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
-        m_correlations[2] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
-        m_correlations[3] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
-        # print m_correlations
+        m_correlations[0], m_correlations[1], m_correlations[2] , m_correlations[3] = correlate_arrays(all_m_lt3,al_m_lt4)
 
-        # print headline_format.format("", *x)
+        ### get overall events psi plus:
         p_correlations = [0,0,0,0]
-        p_correlations[0] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
-        p_correlations[1] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
-        p_correlations[2] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
-        p_correlations[3] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
+        p_correlations[0], p_correlations[1], p_correlations[2], p_correlations[3] = correlate_arrays(all_p_lt3,all_p_lt4)
 
         if verbose:
             print 'The occurence of each event after filtering'
@@ -865,10 +838,7 @@ class purify_analysis(object):
 
         ### get overall events psi minus:
         correlations = [0,0,0,0]
-        correlations[0] = np.sum(np.equal(all_lt3[all_lt3 == 1],all_lt4[all_lt3 == 1]))
-        correlations[1] = np.sum(np.not_equal(all_lt3[all_lt3 == 1],all_lt4[all_lt3 == 1]))
-        correlations[2] = np.sum(np.not_equal(all_lt3[all_lt3 == 0],all_lt4[all_lt3 == 0]))
-        correlations[3] = np.sum(np.equal(all_lt3[all_lt3 == 0],all_lt4[all_lt3 == 0]))
+        correlations[0],correlations[1],correlations[2],correlations[3] = correlate_arrays(all_lt3,all_lt4)
         # print m_correlations
         # print headline_format.format("", *x)
 
@@ -917,6 +887,181 @@ class purify_analysis(object):
                 print u_corrected_corrs
         if return_value:
             return m_correlations,[],np.sum(m_correlations)
+
+    #############################################
+    #### density matrix and state estimation ####
+    #############################################
+
+    def get_DM_correlations(self,verbose = True,apply_ROC = False):
+        """
+        Generates a dictionary of all correlations (and associated errors) for plus and minus signature.
+        Dictionary keys are tomography bases: e.g. XY
+        If apply_ROC: besides the probabilities to detect each correlation (four columns) we also obtain a fifth column that gives the total amount of counts (comes in handy for any ML estimation of the state)
+
+        TODO: IMPLEMENT CARBON ROC
+        """
+
+        tomos = ['I','X','Y','Z']
+        ### init correlation dictionary
+        self.correlation_dict_m,self.correlation_dict_m_u  = {},{}
+        self.correlation_dict_p,self.correlation_dict_p_u  = {},{}
+        for t1 in tomos:
+            for t2 in tomos:
+                if 'I' in (t1+t2):
+                    tomo_length = 2 ## single qubit values
+                else:
+                    tomo_length = 4
+                self.correlation_dict_m.update({t1+t2:np.zeros(tomo_length+apply_ROC)})
+                self.correlation_dict_p.update({t1+t2:np.zeros(tomo_length+apply_ROC)})
+                self.correlation_dict_m_u.update({t1+t2:np.zeros(tomo_length)})
+                self.correlation_dict_p_u.update({t1+t2:np.zeros(tomo_length)})
+
+        ### init other lists
+        self.RO_data_LT3_plus,self.RO_data_LT3_minus = [],[]
+        self.RO_data_LT4_plus,self.RO_data_LT4_minus = [],[]
+        self.LT3_tomo,self.LT4_tomo = [],[]
+
+        ### filter RO data from HH syncs
+        for HH_s_psi_p,HH_s_psi_m,adwin_nrs_w1,adwin_ro_lt3,adwin_ro_lt4,attrs_LT3,attrs_LT4 in zip(self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt4_dict['counted_awg_reps_w1'], \
+                                                                                self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results'], \
+                                                                                self.lt3_dict['data_attrs'],self.lt4_dict['data_attrs']):
+
+
+            fltr_plus  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_nrs_w1)
+            fltr_minus = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_nrs_w1)
+
+            self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus])
+            self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus])
+            self.RO_data_LT3_minus.append(adwin_ro_lt3[fltr_minus]) 
+            self.RO_data_LT4_minus.append(adwin_ro_lt4[fltr_minus])
+            self.LT3_tomo.append(attrs_LT3['Tomography_bases'][0])
+            self.LT4_tomo.append(attrs_LT4['Tomography_bases'][0])
+
+
+        for m_lt3,m_lt4,p_lt3,p_lt4,t_LT3,t_LT4 in zip(self.RO_data_LT3_minus, self.RO_data_LT4_minus, self.RO_data_LT3_plus,\
+                                                        self.RO_data_LT4_plus, self.LT3_tomo, self.LT4_tomo):
+
+            basis = t_LT3,t_LT4
+            m11,m10,m01,m00 = correlate_arrays(m_lt3,m_lt4)
+
+            self.correlation_dict_m[basis] += np.array([m11,m10,m01,m00,np.sum([m11,m10,m01,m00])]) 
+
+            p11,p10,p01,p00 = correlate_arrays(p_lt3,p_lt4)
+
+            self.correlation_dict_p[basis] += np.array([p11,p10,p01,p00,np.sum([p11,p10,p01,p00])]) 
+
+        
+        if apply_ROC:
+            ### get ssro_ROC for LT3 --> corresponds to setup B
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
+            ### get ssro_ROC for LT4 --> corresponds to setup A
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
+
+            ### apply ROC to the results --> input arrays for this function have to be reversed!
+            for k in self.correlation_dict_m.keys():
+                corrected_psi_minus,u_minus = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(self.correlation_dict_m[k][3::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
+                corrected_psi_plus, u_plus  = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(self.correlation_dict_p[k][3::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
+        
+
+                self.correlation_dict_m[k] = np.array(list(reversed(corrected_psi_minus.reshape(-1)))+[self.correlation_dict_m[k][-1]])
+                self.correlation_dict_p[k] = np.array(list(reversed(corrected_psi_plus.reshape(-1)))+[self.corelation_dict_p[k][-1]]) 
+                self.correlation_dict_m_u[k] = np.array(list(reversed(u_minus.reshape(-1))))
+                self.correlation_dict_p_u[k] = np.array(list(reversed(u_plus.reshape(-1))))
+        else:
+            print 'NO ROC is not implemented for the density matrix yet!'
+
+        #### TODO
+        #### IMPLEMENT CARBON ROC FOR THE GIVEN CASE
+
+
+        #### after getting the correlated results we need to determine contributions such as IX and ZI (single qubit contributions)
+        ### trace out LT4 first and get expectation values for LT3
+        for t in ['X','Y','Z']:
+            cumulative_prob_m,cumulative_prob_p = np.array([0,0,0,0,0]),np.array([0,0,0,0,0])
+            cumulative_prob_m_u,cumulative_prob_p_u = np.array([0,0,0,0]),np.array([0,0,0,0])
+            for t2 in ['X','Y','Z']:
+                cumulative_prob_m   += self.correlation_dict_m[t+t2]
+                cumulative_prob_m_u += self.corelation_dict_m_u[t+t2]**2/9.
+                cumulative_prob_p   += self.corelation_dict_p[t+t2]
+                cumulative_prob_p_u += self.corelation_dict_p_u[t+t2]**2/9.
+
+            cumulative_prob_m_u = np.sqrt(cumulative_prob_m_u) ## error propagation on the individual errorbars
+            cumulative_prob_p_u = np.sqrt(cumulative_prob_p_u) ## error propagation on the individual errorbars
+
+            self.correlation_dict_m[t+'I']   = np.array([(cumulative_prob_m[0]+cumulative_prob_m[1])/3.,(cumulative_prob_m[2]+cumulative_prob_m[3])/3.,cumulative_prob_m[4]])
+            self.correlation_dict_p[t+'I']   = np.array([(cumulative_prob_p[0]+cumulative_prob_p[1])/3.,(cumulative_prob_p[2]+cumulative_prob_p[3])/3.,cumulative_prob_p[4]])
+            self.correlation_dict_m_u[t+'I'] = np.array([np.sqrt(cumulative_prob_m_u[0]**2+cumulative_prob_m_u[1]**2),(cumulative_prob_m_u[2]**2+cumulative_prob_m_u[3]**2)])
+            self.correlation_dict_p_u[t+'I'] = np.array([np.sqrt(cumulative_prob_p_u[0]**2+cumulative_prob_p_u[1]**2),(cumulative_prob_p_u[2]**2+cumulative_prob_p_u[3]**2)])
+
+        #### now trace out LT3 and get expectation values for LT3
+        for t in ['X','Y','Z']:
+            cumulative_prob_m,cumulative_prob_p = np.array([0,0,0,0,0]),np.array([0,0,0,0,0])
+            cumulative_prob_m_u,cumulative_prob_p_u = np.array([0,0,0,0]),np.array([0,0,0,0])
+            for t2 in ['X','Y','Z']:
+                cumulative_prob_m   += self.correlation_dict_m[t2+t]
+                cumulative_prob_m_u += self.corelation_dict_m_u[t2+t]**2/9.
+                cumulative_prob_p   += self.corelation_dict_p[t2+t]
+                cumulative_prob_p_u += self.corelation_dict_p_u[t2+t]**2/9.
+
+            cumulative_prob_m_u = np.sqrt(cumulative_prob_m_u) ## error propagation on the individual errorbars
+            cumulative_prob_p_u = np.sqrt(cumulative_prob_p_u) ## error propagation on the individual errorbars
+
+            self.correlation_dict_m['I'+t]   = np.array([(cumulative_prob_m[0]+cumulative_prob_m[2])/3.,(cumulative_prob_m[1]+cumulative_prob_m[3])/3.,cumulative_prob_m[4]])
+            self.correlation_dict_p['I'+t]   = np.array([(cumulative_prob_p[0]+cumulative_prob_p[2])/3.,(cumulative_prob_p[1]+cumulative_prob_p[3])/3.,cumulative_prob_p[4]])
+            self.correlation_dict_m_u['I'+t] = np.array([np.sqrt(cumulative_prob_m_u[0]**2+cumulative_prob_m_u[2]**2),(cumulative_prob_m_u[1]**2+cumulative_prob_m_u[3]**2)])
+            self.correlation_dict_p_u['I'+t] = np.array([np.sqrt(cumulative_prob_p_u[0]**2+cumulative_prob_p_u[2]**2),(cumulative_prob_p_u[1]**2+cumulative_prob_p_u[3]**2)])
+
+
+    def reconstruct_DMs(self,verbose = True,max_likelihood = False,aply_ROC = False):
+        """
+        reconstructs the density matrices for the plus and minus signature. 
+        Options include maximum likelihood estimation of the DM from the original number of counts
+        This step also applies the carbon RO correction.
+
+        TODO: implement max_likelihood estimation
+        TODO: error calculation!
+        """
+        paulis = self.generate_pauli_matrices()
+
+
+        if max_likelihood:
+            print 'Not implemented yet!'
+        else:
+            dm_p,dm_m = np.kron(paulis[0],paulis[0])/4.,np.kron(paulis[0],paulis[0])/4.
+
+            t_dict = {'I' : 0, 'X':1, 'Y':2, 'Z':3}
+            for t in ['I','X','Y','Z']:
+                for t2 in ['I','X','Y','Z']:
+                    if t+t2 != 'II':
+                        sigma_kron = np.kron(paulis[t_dict[t]],paulis[t_dict[t2]])
+                        if 'I' in t+t2:
+                            exp_p,exp_p_u = do_carbon_ROC(get_1q_expectation_val(self.correlation_dict_p[t+t2]),self.correlation_dict_p_u[t+t2])) 
+                            exp_m,exp_m_u = do_carbon_ROC(get_1q_expectation_val(self.correlation_dict_m[t+t2]),self.correlation_dict_m_u[t+t2])) 
+
+                            dm_p += exp_p*sigma_kron
+                            dm_m += exp_m*sigma_kron
+                            ### TODO dm_p_u,dm_m_u
+
+                        else:
+                            exp_p,exp_p_u = do_carbon_ROC(get_2q_expectation_val(self.correlation_dict_p[t+t2]), self.correlation_dict_p_u[t+t2])) 
+                            exp_m,exp_m_u = do_carbon_ROC(get_2q_expectation_val(self.correlation_dict_m[t+t2]), self.correlation_dict_m_u[t+t2])) 
+
+                            dm_p +=exp_p*sigma_kron
+                            dm_m +=exp_m*sigma_kron
+                            ### TODO dm_p_u,dm_m_u
+
+
+        if verbose:
+            print 'Density matrix for the positive signature'
+            print dm_p
+            print 'Eigenvalues'
+            print np.linalg.eigh(dm_p)
+            print 'Density matrix for the negative signature'
+            print dm_m
+            print 'Eigenvalues'
+            print np.linalg.eigh(dm_m)
+
+
     ##########################
     #### timing and rates ####
     ##########################
@@ -1103,14 +1248,21 @@ class purify_analysis(object):
     #######################################
     #### helper functions for plotting ####
     #######################################
+    def generate_pauli_matrices(self):
+        return [np.matrix([[1,0],[0,1]],dtype=complex),np.matrix([[0,1],[1,0]],dtype=complex),np.matrix([[0,-1j],[1j,0]],dtype=complex),np.matrix([[1,0],[0,-1]],dtype=complex)]
+    
+
     def get_tomography_bases(self):
         """
         makes two strings for the tomography bases as chosen by both setups
         """
+
+
         try: ### this only work if we really read-out a nuclear spin at the very end and not an electron spin.
             LT3 = self.lt3_dict['data_attrs'][0]['Tomography_bases'][0]
             LT4 = self.lt4_dict['data_attrs'][0]['Tomography_bases'][0]
         except:
+            print 'e spin experiment detected: using the MW amplitudes to determine tomography bases'
             LT3 = self.lt3_dict['data_attrs'][0]['LDE_final_mw_amplitude']
             LT4 = self.lt4_dict['data_attrs'][0]['LDE_final_mw_amplitude']
 
@@ -1402,3 +1554,32 @@ def check_if_file_exists(filePath):
 
     return file_exists
 
+def correlate_arrays(lt3,lt4):
+    """
+    assumes binary numpy arrays
+    """
+    m11 = np.sum(np.equal(    lt3[lt3 == 1],lt4[lt3 == 1]))
+    m10 = np.sum(np.not_equal(lt3[lt3 == 1],lt4[lt3 == 1]))
+    m01 = np.sum(np.not_equal(lt3[lt3 == 0],mt4[lt3 == 0]))
+    m00 = np.sum(np.equal(    lt3[lt3 == 0],lt4[lt3 == 0]))
+
+    return m11,m10,m01,m00
+
+def get_1q_expectation_val(arr):
+    """ 
+    assumption:
+    arr[0] --> bright/up state
+    arr[1] --> dark/down state
+    """
+    return 2*(arr[0]-0.5),2*arr_u[0]
+
+
+def get_2q_expectation_val(arr):
+    """ 
+    assumption:
+    arr[0] --> brightbright/upup state
+    arr[1] --> brightdark/updown state
+    arr[2] --> darkbright/downup state
+    arr[3] --> darkdark/downdown state
+    """
+    return 2*(arr[0]+arr[3]-0.5),2*np.sqrt(arr_u[0]**2+arr_u[3]**2)
