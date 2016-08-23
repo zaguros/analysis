@@ -75,6 +75,23 @@ class purify_analysis(object):
         length = len(lt3_timestamps)
         print 'loading the data, total number of files ', length
 
+        ### initialize the data dictionaries
+        for key in self.key_list_pq:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+
+        for key in self.key_lst_adwin_data:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+        
+        for key in self.key_list_misc:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+
+        for key in self.key_list_misc_to_save:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+
         i = 0
 
         for t_lt3,t_lt4 in zip(lt3_timestamps,lt4_timestamps):
@@ -928,13 +945,7 @@ class purify_analysis(object):
         Output: total_time (in seconds)
         """
 
-        total_time = 0
-
-        for times in self.lt4_dict['PQ_time-1']:
-            total_time += times[-1]-times[0]
-
-        return total_time/1e12
-
+        return np.sum(self.lt4_dict['total_elapsed_time'])
 
 
     def estimate_sequence_time(self):
@@ -947,14 +958,10 @@ class purify_analysis(object):
         Output: total_time (in seconds)
         """
 
-        total_syncs = 0
-        for syncs in self.lt4_dict['/PQ_sync_number-1']:
-            total_syncs += syncs[-1]
-
-
         No_of_pulses = self.lt4_dict['data_attrs'][0]['C4_Ren_N_m1'][0]
         tau = self.lt4_dict['data_attrs'][0]['C4_Ren_tau_m1'][0]
 
+        total_syncs = np.sum(self.lt4_dict['total_syncs'])
         total_duration = total_syncs*self.lt4_dict['joint_attrs'][0]['LDE_element_length']
 
         return total_duration

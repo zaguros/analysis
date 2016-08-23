@@ -112,7 +112,8 @@ def get_coincidences_from_folder(folder,lt4_timestamps,timing_offsets,offsets_ch
             pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
             if sync_num_name in pqf.keys():
                 co = get_coincidences(pqf,pulse_offset=pulse_offset) 
-                co[:,(1,2)]=  co[:,(1,2)] - timing_offsets[i]        
+                co[:,(1,2)]=  co[:,(1,2)] + timing_offsets[i]
+                co[:,2]=  co[:,2] + offsets_ch1[i]        
         else:
             pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
 
@@ -122,7 +123,7 @@ def get_coincidences_from_folder(folder,lt4_timestamps,timing_offsets,offsets_ch
                 #     co[:,(1,2)]=  co[:,(1,2)] - timing_offsets[i]
                 # else:
                 co_temp = get_coincidences(pqf,pulse_offset=pulse_offset,save = save)
-                co_temp[:,(1,2)]=  co_temp[:,(1,2)] - timing_offsets[i]
+                co_temp[:,(1,2)]=  co_temp[:,(1,2)] + timing_offsets[i]
                 co_temp[:,2]=  co_temp[:,2] + offsets_ch1[i]
                 co = np.vstack((co, co_temp))
                     
