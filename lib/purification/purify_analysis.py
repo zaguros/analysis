@@ -13,8 +13,11 @@ from analysis.lib.pq import pq_tools
 import copy as cp
 from matplotlib import pyplot as plt
 from analysis.lib.m2.ssro import ssro
+from analysis.lib.m2 import m2
 from analysis.lib.lde import sscorr; reload(sscorr)
 import purify_analysis_params as analysis_params;reload(analysis_params)
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
 
 #### standard parameters
 
@@ -33,19 +36,28 @@ class purify_analysis(object):
         """
         self.name = name
 
-        self.key_list = ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','PQ_time-1','counted_awg_reps_w1','counted_awg_reps_w2','ssro_results','tstamp','raw_data']
-
-        self.key_list_pq =  ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','PQ_time-1']
+        self.key_list_pq =  ['/PQ_sync_number-1','/PQ_channel-1','/PQ_sync_time-1','/PQ_special-1','/PQ_time-1']
         self.key_lst_adwin_data = ['ssro_results','electron_readout_result','Phase_correction_repetitions','CR_after','CR_before','carbon_readout_result','attempts_first','attempts_second']
+        self.key_list_misc_to_save = ['counted_awg_reps_w1','counted_awg_reps_w2','total_elapsed_time','total_syncs']
+        self.key_list_misc = ['tstamp','data_attrs','joint_attrs']
+
         self.lt4_dict = {}
         self.lt3_dict = {}
 
         ### initialize the data dictionaries
-        for key in self.key_list:
+        for key in self.key_list_pq:
             self.lt3_dict.update({key:[]})
             self.lt4_dict.update({key:[]})
 
         for key in self.key_lst_adwin_data:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+        
+        for key in self.key_list_misc:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+
+        for key in self.key_list_misc_to_save:
             self.lt3_dict.update({key:[]})
             self.lt4_dict.update({key:[]})
 
@@ -55,7 +67,7 @@ class purify_analysis(object):
         self.ROC_lt3_tstamp = ROC_lt3_tstamp
         self.ROC_lt4_tstamp = ROC_lt4_tstamp
 
-    def load_raw_data(self,lt3_timestamps,lt4_timestamps,verbose = False):
+    def load_raw_data(self,lt3_timestamps,lt4_timestamps,force_evaluation = False,save=True,verbose = False):
         """
         this script takes a list of timestamps for both setups and prefilters them according to adwin filters
         creates a list of arrays associated with each time stamp for adwin_ssro,syncs, time, special, channel, marker and attaches is it to the data object for further processing.
@@ -65,83 +77,112 @@ class purify_analysis(object):
 
         i = 0
 
-        #Reinit arrays
-        self.lt3_dict['counted_awg_reps_w2'] = []
-        self.lt3_dict['counted_awg_reps_w1'] = []
-        self.lt4_dict['counted_awg_reps_w2'] = []
-        self.lt4_dict['counted_awg_reps_w1'] = []
-
         for t_lt3,t_lt4 in zip(lt3_timestamps,lt4_timestamps):
             
-            # print self.lt3_folder
-            
-            a_lt3 = ppq.purifyPQAnalysis(tb.latest_data(t_lt3,folder = self.lt3_folder),hdf5_mode ='r')
-            a_lt4 = ppq.purifyPQAnalysis(tb.latest_data(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
+            lt3_folder = tb.latest_data(t_lt3,folder = self.lt3_folder)
+            lt4_folder = tb.latest_data(t_lt4,folder = self.lt4_folder)
 
-            ### filter the timeharp data according to adwin events / syncs
+            cleaned_data_lt4 = os.path.join(lt4_folder,'cleaned_data.hdf5')
 
-            ### need to create two sync filters here.!
-            sync_filter = a_lt4.filter_pq_data_from_adwin_syncs() ### this syncfilter erases all data where from the PQ data where the adwin did NOT read out
+            a_lt3 = ppq.purifyPQAnalysis(lt3_folder,hdf5_mode ='r')
+            a_lt4 = ppq.purifyPQAnalysis(lt4_folder,hdf5_mode ='r')
 
-            if len(sync_filter) == 0: # empty list --> no read outs.
-                # print 'file empty, skipping these time stamps:',t_lt3,t_lt4
-                # print
-                continue
+            if not(force_evaluation) and check_if_file_exists(cleaned_data_lt4):
 
-            ### store relevant adwin results
+                for key in self.key_list_pq:
+                    vals, attrs = tb.get_analysis_data(cleaned_data_lt4,str(key[1:])) # Need to drop first slash!
+                    self.lt4_dict[key].append(vals)   
 
-            if -1 in a_lt3.agrp['attempts_second'].value: ### this indicates that the measurement ran without LDE2
-                syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value))
-                print 'Ran without LDE2!'
+                for key in self.key_list_misc_to_save:
+                    vals, attrs = tb.get_analysis_data(cleaned_data_lt4,str(key))
+                    self.lt4_dict[key].append(vals)
+
             else:
-                syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value)-np.array(a_lt3.agrp['attempts_second'].value))
-            syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value)
+    
+                if save:
+                    try:
+                        f = h5py.File(cleaned_data_lt4, 'r')
+                    except:
+                        f = h5py.File(cleaned_data_lt4,'w-')
+                    f.close() 
+
+                ### filter the timeharp data according to adwin events / syncs
+
+                ### need to create two sync filters here.!
+                sync_filter = a_lt4.filter_pq_data_from_adwin_syncs() ### this syncfilter erases all data where from the PQ data where the adwin did NOT read out
+
+                if len(sync_filter) == 0: # empty list --> no read outs.
+                    # print 'file empty, skipping these time stamps:',t_lt3,t_lt4
+                    # print
+                    continue
+
+                ### store relevant adwin results
+
+                if -1 in a_lt3.agrp['attempts_second'].value: ### this indicates that the measurement ran without LDE2
+                    syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value))
+                    print 'Ran without LDE2!'
+                else:
+                    syncs_w1 = (np.array(a_lt3.agrp['counted_awg_reps'].value)-np.array(a_lt3.agrp['attempts_second'].value))
+                syncs_w2 = np.array(a_lt3.agrp['counted_awg_reps'].value)
 
 
-            if len(syncs_w1) == 0:
-                print 'syncs_w1 empty, skipping these time stamps:',t_lt3,t_lt4
-                print
-                continue
+                if len(syncs_w1) == 0:
+                    print 'syncs_w1 empty, skipping these time stamps:',t_lt3,t_lt4
+                    print
+                    continue
 
-            self.lt3_dict['counted_awg_reps_w2'].append(syncs_w2)
-            self.lt3_dict['counted_awg_reps_w1'].append(syncs_w1)
-            self.lt4_dict['counted_awg_reps_w2'].append(syncs_w2)
-            self.lt4_dict['counted_awg_reps_w1'].append(syncs_w1)
+                self.lt4_dict['counted_awg_reps_w2'].append(syncs_w2)
+                self.lt4_dict['counted_awg_reps_w1'].append(syncs_w1)
 
+                ### need to create two sync filters here. This is done by appending them to each other and sorting the relatively short array. (should never be more than 500 events??)
+                ### this syncfilter erases all data from the PQ data where the adwin did NOT read out. Drastically reduces the data amount we have to handle.
+                sync_filter = a_lt4.filter_pq_data_from_adwin_syncs(np.sort(np.append(syncs_w1,syncs_w2)))
+                if len(sync_filter) == 0: # empty list --> no read outs.
+                    print 'file empty, skipping these time stamps:',t_lt3,t_lt4
+                    print
+                    continue
 
+                self.lt4_dict['total_elapsed_time'].append((a_lt4.pqf['/PQ_time-1'].value[-1]-a_lt4.pqf['/PQ_time-1'].value[0])*1e-12)
+                self.lt4_dict['total_syncs'].append(a_lt4.pqf['/PQ_sync_number-1'].value[-1])
 
-            ### need to create two sync filters here. This is done by appending them to each other and sorting the relatively short array. (should never be more than 500 events??)
-            ### this syncfilter erases all data from the PQ data where the adwin did NOT read out. Drastically reduces the data amount we have to handle.
-            sync_filter = a_lt4.filter_pq_data_from_adwin_syncs(np.sort(np.append(syncs_w1,syncs_w2)))
-            if len(sync_filter) == 0: # empty list --> no read outs.
-                print 'file empty, skipping these time stamps:',t_lt3,t_lt4
-                print
-                continue
+                for key in self.key_list_pq:
+                    vals = np.array(a_lt4.pqf[key].value[sync_filter])
+                    self.lt4_dict[key].append(vals)
+
+                    if save:
+                        tb.set_analysis_data(cleaned_data_lt4,unicode(key[1:]), vals, []) # Need to drop first slash!
+
+                for key in self.key_list_misc_to_save:
+                    if save:
+                        tb.set_analysis_data(cleaned_data_lt4,unicode(key), self.lt4_dict[key][i], [])
 
             self.lt3_dict['tstamp'].append(t_lt3)
             self.lt4_dict['tstamp'].append(t_lt4)
-            self.lt3_dict['raw_data'].append(a_lt3)
-            self.lt4_dict['raw_data'].append(a_lt4)
-
+            self.lt3_dict['data_attrs'].append(convert_attrs_to_dict(a_lt3.g.attrs.items()))
+            self.lt4_dict['data_attrs'].append(convert_attrs_to_dict(a_lt4.g.attrs.items()))
+            self.lt3_dict['joint_attrs'].append(convert_attrs_to_dict(a_lt3.joint_grp.attrs.items()))
+            self.lt4_dict['joint_attrs'].append(convert_attrs_to_dict(a_lt4.joint_grp.attrs.items()))
+            
             for key in self.key_lst_adwin_data:
                 self.lt4_dict[key].append(np.array(a_lt4.agrp[key].value))
-
-            for key in self.key_list_pq:
-                self.lt4_dict[key].append(np.array(a_lt4.pqf[key].value[sync_filter]))
             for key in self.key_lst_adwin_data:
                 self.lt3_dict[key].append(np.array(a_lt3.agrp[key].value))
+
+            a_lt3.finish()
+            a_lt4.finish()
 
             #### calculate the duty cycle for that specific file.
             # print 'lde length',a_lt3.joint_grp.attrs['LDE_element_length']
             # print'first and last time',a_lt4.pqf['/PQ_time-1'].value[0],a_lt4.pqf['/PQ_time-1'][-1]
             # print 'last elapsed time in sequence vs total elapsed time',  
 
-            time_in_LDE_sequence = a_lt3.joint_grp.attrs['LDE_element_length']*self.lt4_dict['/PQ_sync_number-1'][-1][-1]
-            total_elapsed_time = (a_lt4.pqf['/PQ_time-1'].value[-1]-a_lt4.pqf['/PQ_time-1'][0])*1e-12
+            total_elapsed_time = self.lt4_dict['total_elapsed_time'][i]
+
+            time_in_LDE_sequence = self.lt3_dict['joint_attrs'][i]['LDE_element_length']*self.lt4_dict['total_syncs'][i]
+           
             if verbose:
                 print 'file no ', i+1 , ' with duty cycle of', round(100*time_in_LDE_sequence/total_elapsed_time,1), ' %'
             i += 1
-
 
 
     def correct_pq_times(self,offsets = [],offsets_ch1 = []): # Some of the data has different timings, since we changed one of the ZPL apds. Here we can fix this!
@@ -165,12 +206,14 @@ class purify_analysis(object):
         i = 0
         tails_w1 = []
 
-        for a in self.lt4_dict['raw_data']:
-                    
+        for t_lt4 in self.lt4_dict['tstamp']:
+                  
+            a_lt4 = ppq.purifyPQAnalysis(tb.latest_data(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
+
             ### analysis for channel 0  && window 1
-            w1_ch0 = self.get_total_number_of_clicks_in_window(a,0,st_start,st_len)
-            w1_ch1 = self.get_total_number_of_clicks_in_window(a,1,st_start,st_len)
-            last_sync = a.pqf['/PQ_sync_number-1'][-1]
+            w1_ch0 = self.get_total_number_of_clicks_in_window(a_lt4,0,st_start,st_len)
+            w1_ch1 = self.get_total_number_of_clicks_in_window(a_lt4,1,st_start,st_len)
+            last_sync = a_lt4.pqf['/PQ_sync_number-1'][-1]
 
             tail_w1 = round(1e4*(w1_ch0+w1_ch1)/last_sync,2)
 
@@ -600,9 +643,9 @@ class purify_analysis(object):
 
         if apply_ROC: 
             ### get ssro_ROC for LT3 --> corresponds to setup B
-            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['raw_data'][0],folder = self.lt3_folder)
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
             ### get ssro_ROC for LT4 --> corresponds to setup A
-            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['raw_data'][0],folder = self.lt4_folder)
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
 
             ### apply ROC to the results --> input arrays for this function have to be reversed!
             corrected_psi_minus,u_minus = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(m_correlations[::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
@@ -636,19 +679,21 @@ class purify_analysis(object):
         if return_value:
             return m_correlations,[],p_correlations,[],np.sum(m_correlations),np.sum(p_correlations)
 
-    def find_RO_fidelities(self,timestamp,raw_data,folder = ''):
+    def find_RO_fidelities(self,timestamp,data_attrs,folder = ''):
 
         ssro_folder = tb.data_from_time(timestamp,folder = folder) 
         # print ssro_folder
         if 'MWInit' in ssro_folder:
-            e_trans_string = raw_data.g.attrs['electron_transition']
+            e_trans_string = data_attrs['electron_transition']
             e_trans_string = 'ms'+e_trans_string[1:]
-            F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_MWInit_calibration(ssro_folder,raw_data.g.attrs['E_RO_durations'][0],e_trans_string)
+            F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_MWInit_calibration(ssro_folder,data_attrs['E_RO_durations'][0],e_trans_string)
 
         else:
-            F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_calibration(ssro_folder,raw_data.g.attrs['E_RO_durations'][0]) #we onlky have one RO time in E_RO_durations
+            F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_calibration(ssro_folder,data_attrs['E_RO_durations'][0]) #we onlky have one RO time in E_RO_durations
 
         return F_0,F_1
+
+
 
     def sweep_filter_parameter_vs_correlations(self,parameter_name,parameter_range,apply_ROC = False,do_plot = True):
 
@@ -657,10 +702,20 @@ class purify_analysis(object):
         no_of_minus_events,no_of_plus_events = [],[]
         minus_correlation,plus_correlation   = [],[]
         minus_correlation_u,plus_correlation_u = [],[]
-        minus_u,plus_u                          = [],[]
+        minus_full_corrs, plus_full_corrs = [], []
+        minus_full_corrs_u, plus_full_corrs_u = [], []
+
+        last_x = 0
+
         for x in parameter_range:
 
-            analysis_params.filter_settings[parameter_name] = x ### commence sweep
+            if parameter_name == 'bin_w2':
+                analysis_params.filter_settings['max_reps_w2'] = x
+                analysis_params.filter_settings['min_reps_w2'] = last_x + 1
+                last_x = x
+                
+            else:
+                analysis_params.filter_settings[parameter_name] = x ### commence sweep
 
             self.apply_temporal_filters_to_prefiltered_data(verbose = False)
             self.apply_sync_filter_w1_w2(verbose = False)
@@ -672,6 +727,11 @@ class purify_analysis(object):
 
             no_of_minus_events.append(no_m)
             no_of_plus_events.append(no_p)
+
+            plus_full_corrs.append(psi_p_corrs)
+            minus_full_corrs.append(psi_m_corrs)  
+            plus_full_corrs_u.append(plus_u) 
+            minus_full_corrs_u.append(minus_u) 
 
             no_anti_correlations_m = float(psi_m_corrs[1]+psi_m_corrs[2])
             no_correlations_m = float(psi_m_corrs[0]+psi_m_corrs[3])
@@ -691,11 +751,17 @@ class purify_analysis(object):
                 minus_correlation.append(float(no_anti_correlations_m)/np.sum(psi_m_corrs))
             else:
                 if (Tomo == 'XX') or (Tomo == 'YY'):
+                    #### we do ROC and return expectation values directly!!!
+                    no_anti_correlations_m = (no_anti_correlations_m-0.5)*2
+                    
+                    no_anti_correlations_m,m_u = do_carbon_ROC(no_anti_correlations_m,np.sqrt(minus_u[1]**2+minus_u[2]**2)*2)
                     minus_correlation.append(no_anti_correlations_m)
-                    minus_correlation_u.append(np.sqrt(minus_u[1]**2+minus_u[2]**2))
+                    minus_correlation_u.append(m_u)
                 else:
+                    no_correlations_m = (no_correlations_m-0.5)*2
+                    no_correlations_m,m_u = do_carbon_ROC(no_correlations_m,np.sqrt(minus_u[0]**2+minus_u[3]**2)*2)
                     minus_correlation.append(no_correlations_m)
-                    minus_correlation_u.append(np.sqrt(minus_u[0]**2+minus_u[3]**2))
+                    minus_correlation_u.append(m_u)
 
             if np.sum(psi_p_corrs) == 0:
                 plus_correlation.append(0)
@@ -704,13 +770,18 @@ class purify_analysis(object):
                 plus_correlation.append(float(no_correlations_p)/np.sum(psi_p_corrs))
                 plus_correlation_u.append(np.sqrt((no_anti_correlations_p*(no_correlations_p**2)+no_correlations_p*(no_anti_correlations_p**2)))/((no_correlations_p + no_anti_correlations_p)**2))
             else:
+                #### we do ROC and return expectation values directly!!!
                 if (Tomo == 'XX') or (Tomo == 'ZZ'):
+                    no_anti_correlations_p = (no_anti_correlations_p-0.5)*2
+                    no_anti_correlations_p,p_u = do_carbon_ROC(no_anti_correlations_p,np.sqrt(plus_u[1]**2+plus_u[2]**2)*2)
                     plus_correlation.append(no_anti_correlations_p)
-                    plus_correlation_u.append(np.sqrt(plus_u[1]**2+plus_u[2]**2)) 
+                    plus_correlation_u.append(p_u) 
 
                 else:
+                    no_correlations_p = (no_correlations_p-0.5)*2
+                    no_correlations_p,p_u = do_carbon_ROC(no_correlations_p,np.sqrt(plus_u[0]**2+plus_u[3]**2)*2)
                     plus_correlation.append(no_correlations_p)
-                    plus_correlation_u.append(np.sqrt(plus_u[0]**2+plus_u[3]**2)) 
+                    plus_correlation_u.append(p_u) 
 
             ### error bars are based on poissonian statistics for correlated events vs. uncorrelated
                         
@@ -735,14 +806,14 @@ class purify_analysis(object):
 
 
             ### should really have an error calculation for the minus / plus correlation
-            self.create_plot(title = 'Fraction of correct correlations', xlabel = parameter_name + x_units, ylabel = 'p_right_correlation')
+            self.create_plot(title = 'Fraction of correct correlations', xlabel = parameter_name + x_units, ylabel = 'Expectation value')
             self.plot_data(x,minus_correlation,y_u = minus_correlation_u,label = '-')
             self.plot_data(x,plus_correlation,y_u = plus_correlation_u,label = '+')
             plt.legend(loc = 2)
             self.save_and_close_plot()
 
         else: # if we do not plot we assume that values are supposed to be returned
-            return [np.array(no_of_minus_events),np.array(minus_correlation),np.array(minus_correlation_u)],[np.array(no_of_plus_events),np.array(plus_correlation),np.array(plus_correlation_u)]
+            return [np.array(no_of_minus_events),np.array(minus_correlation),np.array(minus_correlation_u)],[np.array(no_of_plus_events),np.array(plus_correlation),np.array(plus_correlation_u)],[np.transpose(np.array(minus_full_corrs)),np.transpose(np.array(minus_full_corrs_u))],[np.transpose(np.array(plus_full_corrs)),np.transpose(np.array(plus_full_corrs_u))]
 
     def filter_adwin_data_from_pq_syncs(self,filtered_sn,counted_awg_reps):
         """
@@ -821,9 +892,9 @@ class purify_analysis(object):
 
         if apply_ROC: 
             ### get ssro_ROC for LT3 --> corresponds to setup B
-            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['raw_data'][0],folder = self.lt3_folder)
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
             ### get ssro_ROC for LT4 --> corresponds to setup A
-            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['raw_data'][0],folder = self.lt4_folder)
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
 
             ### apply ROC to the results --> input arrays for this function have to be reversed!
             corrected_corrs,u_corrected_corrs = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(correlations[::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
@@ -865,6 +936,7 @@ class purify_analysis(object):
         return total_time/1e12
 
 
+
     def estimate_sequence_time(self):
         """
         Approximates the time spent in the AWG sequence:
@@ -880,10 +952,10 @@ class purify_analysis(object):
             total_syncs += syncs[-1]
 
 
-        No_of_pulses = self.lt4_dict['raw_data'][0].g.attrs['C4_Ren_N_m1'][0]
-        tau = self.lt4_dict['raw_data'][0].g.attrs['C4_Ren_tau_m1'][0]
+        No_of_pulses = self.lt4_dict['data_attrs'][0]['C4_Ren_N_m1'][0]
+        tau = self.lt4_dict['data_attrs'][0]['C4_Ren_tau_m1'][0]
 
-        total_duration = total_syncs*self.lt4_dict['raw_data'][0].joint_grp.attrs['LDE_element_length']
+        total_duration = total_syncs*self.lt4_dict['joint_attrs'][0]['LDE_element_length']
 
         return total_duration
 
@@ -945,10 +1017,11 @@ class purify_analysis(object):
 
             # Finally, for rates, add in filtering on the number of allowed attempts
             max_w1 = analysis_params.filter_settings['max_reps_w1']
+            min_w2 = analysis_params.filter_settings['min_reps_w2']
             if max_w2 == None:
                 max_w2 = analysis_params.filter_settings['max_reps_w2']
 
-            num_successes += np.sum(np.in1d(plu_syncs,awg_reps_w1[np.logical_and((attempts_first <= max_w1),(attempts_second <= max_w2))]))
+            num_successes += np.sum(np.in1d(plu_syncs,awg_reps_w1[np.logical_and((attempts_first <= max_w1),(attempts_second <= max_w2),(attempts_second >= min_w2))]))
 
             # Add it all up:
             num_raw_successes += np.sum(successful_pur_w1_sync)
@@ -1035,11 +1108,11 @@ class purify_analysis(object):
         makes two strings for the tomography bases as chosen by both setups
         """
         try: ### this only work if we really read-out a nuclear spin at the very end and not an electron spin.
-            LT3 = self.lt3_dict['raw_data'][0].g.attrs['Tomography_bases'][0]
-            LT4 = self.lt4_dict['raw_data'][0].g.attrs['Tomography_bases'][0]
+            LT3 = self.lt3_dict['data_attrs'][0]['Tomography_bases'][0]
+            LT4 = self.lt4_dict['data_attrs'][0]['Tomography_bases'][0]
         except:
-            LT3 = self.lt3_dict['raw_data'][0].g.attrs['LDE_final_mw_amplitude']
-            LT4 = self.lt4_dict['raw_data'][0].g.attrs['LDE_final_mw_amplitude']
+            LT3 = self.lt3_dict['data_attrs'][0]['LDE_final_mw_amplitude']
+            LT4 = self.lt4_dict['data_attrs'][0]['LDE_final_mw_amplitude']
 
             if LT3 > 0:
                 LT3 = 'X'
@@ -1221,6 +1294,7 @@ class purify_analysis(object):
         ### return clean timestamp lists
 
         return clean_t_list_lt3,clean_t_list_lt4
+
     def plot_quantity_for_raw_data(self):
         """
         To be written. 
@@ -1241,21 +1315,90 @@ class purify_analysis(object):
         pass
 
 
-    def format_figure(fig,scaling):
-        ## writes a bunch of parameters to matplotlib config.
-        ## input: effective figure scaling factor
-        mpl.rcParams['axes.linewidth'] = 1.8*figscaling
-        mpl.rcParams['xtick.major.width'] = 1.8*figscaling
-        mpl.rcParams['ytick.major.width'] = 1.8*figscaling
-        mpl.rcParams['font.size'] = (22-8*(figscaling-0.66*0.72)/(1-0.66*0.72))*figscaling
-        mpl.rcParams['axes.titlesize'] = mpl.rcParams['font.size']
-        mpl.rcParams['legend.fontsize'] = mpl.rcParams['font.size']
-        mpl.rcParams['legend.labelspacing'] = 0.5*figscaling
-        mpl.rcParams['legend.columnspacing'] = 1.5*figscaling
-        mpl.rcParams['legend.handletextpad'] = 0.3*figscaling
-        mpl.rcParams['legend.handlelength'] = 1.*figscaling
-        mpl.rcParams['legend.borderpad'] = 0.2+0.2*(figscaling-0.66*0.72)/(1-0.66*0.72)
-        mpl.rcParams['lines.markersize'] = 13.5*figscaling#7*figscaling 
-        mpl.rcParams['figure.figsize'] = (6*figscaling,4*figscaling)
-        mpl.rcParams['lines.markeredgewidth'] = 0.3/figscaling
+    # def format_figure(fig,scaling):
+    #     ## writes a bunch of parameters to matplotlib config.
+    #     ## input: effective figure scaling factor
+    #     mpl.rcParams['axes.linewidth'] = 1.8*figscaling
+    #     mpl.rcParams['xtick.major.width'] = 1.8*figscaling
+    #     mpl.rcParams['ytick.major.width'] = 1.8*figscaling
+    #     mpl.rcParams['font.size'] = (22-8*(figscaling-0.66*0.72)/(1-0.66*0.72))*figscaling
+    #     mpl.rcParams['axes.titlesize'] = mpl.rcParams['font.size']
+    #     mpl.rcParams['legend.fontsize'] = mpl.rcParams['font.size']
+    #     mpl.rcParams['legend.labelspacing'] = 0.5*figscaling
+    #     mpl.rcParams['legend.columnspacing'] = 1.5*figscaling
+    #     mpl.rcParams['legend.handletextpad'] = 0.3*figscaling
+    #     mpl.rcParams['legend.handlelength'] = 1.*figscaling
+    #     mpl.rcParams['legend.borderpad'] = 0.2+0.2*(figscaling-0.66*0.72)/(1-0.66*0.72)
+    #     mpl.rcParams['lines.markersize'] = 13.5*figscaling#7*figscaling 
+    #     mpl.rcParams['figure.figsize'] = (6*figscaling,4*figscaling)
+    #     mpl.rcParams['lines.markeredgewidth'] = 0.3/figscaling
+
+
+
+def do_carbon_ROC(expectation_value,uncertainty):
+    """
+    takes a two-partite expectation value and applies carbon read-out correction 
+    Returns the corrected expectation value and a new uncertainty via error propagation
+    """
+    #### these values were measured on 15-08-2016
+    ### see onenote carbon control LT3/LT4 for details
+    ROC = 0.951786
+    uROC = 0.0033490
+
+    u = np.sqrt((ROC*uncertainty)**2+(uROC*expectation_value)**2)/ROC**2
+
+    return expectation_value/ROC,u
+
+def calculate_ebits(parity_ZZ,parity_YY,correlations_XX):
+
+
+    c0110, p00, p01, p10, p11 = sp.symbols('c0110 p00 p01 p10 p11')
+
+    del_p00,del_p01,del_p10,del_p11, del_c0110 = sp.symbols('del_p00,del_p01,del_p10,del_p11, del_c0110')
+
+    logNegSimp = parse_expr('log(p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2))/log(2)')
+
+    error_p00 = parse_expr('p00/(sqrt(2) * sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))* (p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2))* log(2))')
+    error_p01 = parse_expr('(8+(2 *sqrt(2)* (-1+p01+p10)* (4 *c0110**2+(-1+p01+p10)* (-1+p01+p10+2* p11)+(-1+p01+p10+2* p11)**2))/(sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2))* sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2))))+(4 *sqrt(2)* (2 *c0110**2+(-1+p01+p10+p11)* (-1+p01+p10+2 *p11+sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))))/(sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2) * sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4* c0110**2+(-1+p01+p10+2* p11)**2))))/(8* (p01+p10+sqrt(2* c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4* c0110**2+(-1+p01+p10+2* p11)**2))/sqrt(2)+sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2)) *log(2))')
+    error_p10 = parse_expr('(8+(2 *sqrt(2)* (-1+p01+p10)* (4 *c0110**2+(-1+p01+p10)* (-1+p01+p10+2* p11)+(-1+p01+p10+2* p11)**2))/(sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2))* sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2))))+(4 *sqrt(2)* (2 *c0110**2+(-1+p01+p10+p11)* (-1+p01+p10+2 *p11+sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))))/(sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2) * sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4* c0110**2+(-1+p01+p10+2* p11)**2))))/(8* (p01+p10+sqrt(2* c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4* c0110**2+(-1+p01+p10+2* p11)**2))/sqrt(2)+sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2)) *log(2))')
+    error_p11 = parse_expr('((2 *(-1+p01+p10+2 *p11+((-1+p01+p10)* (-1+p01+p10+2 *p11))/sqrt(4 *c0110**2+(-1+p01+p10+2* p11)**2)))/sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4* c0110**2+(-1+p01+p10+2* p11)**2))+(2* (p11+((-1+p01+p10)**2 *(-1+p01+p10+2* p11))/sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2))))/sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2))))/(2 * sqrt(2) *(p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4* c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2* p11)**2)))/sqrt(2)) *log(2))')
+    error_c0110 = parse_expr('(sqrt(2) *c0110 * ((1+(-1+p01+p10)/sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4 *c0110**2+(-1+p01+p10+2* p11)**2))+(1+(-1+p01+p10)**2/sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2)))/sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))))/((p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2)) *log(2))')
+
+
+    error =  sp.sqrt((error_p00*del_p00)**2+(error_p01*del_p01)**2+(error_p10*del_p10)**2 +\
+                     (error_p11*del_p11)**2 + (error_c0110*del_c0110)**2)
+
+    logNegF = sp.lambdify([c0110, p00, p01, p10, p11],logNegSimp)
+    logNegU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110, del_p00,del_p01,del_p10,del_p11],error)
+
+    c0110 = (parity_ZZ[1] + parity_YY[1])/float(4)# Define correlations as even - odd
+    c0110_u = np.sqrt(parity_ZZ[2]**2 + parity_YY[2]**2)/float(4)
+
+    p00,p01,p10,p11 = np.array(correlations_XX[0][0]),np.array(correlations_XX[0][1]),np.array(correlations_XX[0][2]),np.array(correlations_XX[0][3])
+    del_p00,del_p01,del_p10,del_p11 = np.array(correlations_XX[1][0]),np.array(correlations_XX[1][1]),np.array(correlations_XX[1][2]),np.array(correlations_XX[1][3])
+
+    ebits = []
+    ebits_u = []
+    for c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind in zip(c0110,p00,p01,p10,p11,c0110_u,del_p00,del_p01,del_p10,del_p11):
+
+        ebits.append(logNegF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind))
+        ebits_u.append(logNegU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind))
+    
+    return np.array(ebits), np.array(ebits_u)
+
+def convert_attrs_to_dict(attrManagerItems):
+    data_attrs = dict([])
+    for key,value in attrManagerItems:
+        data_attrs[key] = value
+    return data_attrs
+
+def check_if_file_exists(filePath):
+    file_exists = True
+    try:
+        f = h5py.File(filePath, 'r')
+        f.close()
+    except:
+        file_exists = False
+
+    return file_exists
 
