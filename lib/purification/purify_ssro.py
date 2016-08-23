@@ -214,7 +214,7 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
 		x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
 		if x_only:
 			y = y1; y_u = y1_u;
-			ylabel = 'Y'
+			ylabel = 'X'
 		else:
 			x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
 			y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
@@ -344,6 +344,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 
 	# tomography 
 	tomo = kw.pop('tomo_basis','X')
+	# return fit
+	ret = kw.pop('ret', False)
 	# for fitting
 	freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
 	decay = kw.pop('decay',50)
@@ -382,7 +384,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 			# print decay
 			ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-		fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = fixed)
+		fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True,VERBOSE =True, fixed = fixed)
+
 		plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, color = 'r', plot_data=False,add_txt = True, lw = 2)
 
 		p_dict = fit_result['params_dict']
@@ -402,4 +405,7 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 			print 'no phase detuning found'
 		## save and close plot. We are done.
 	save_and_close_plot(f)
+
+	if ret:
+		return fit_result
 
