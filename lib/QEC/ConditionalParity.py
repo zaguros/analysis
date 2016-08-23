@@ -91,6 +91,16 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             self.parity_result = adwingrp['parity_RO_results'].value
             self.ssro_results  = adwingrp['ssro_results'].value 
 
+            self.C13_MBE_starts  = adwingrp['C13_MBE_starts'].value 
+            self.C13_MBE_success  = adwingrp['C13_MBE_success'].value 
+
+            self.C13_MBE_prob  = float(self.C13_MBE_success[0])/float(self.C13_MBE_starts[0])
+
+            self.N_MBI_starts  = adwingrp['N_MBI_starts'].value 
+            self.N_MBI_success  = adwingrp['N_MBI_success'].value     
+
+            self.N_MBI_prob  = float(self.N_MBI_success[0])/float(self.N_MBI_starts[0])              
+
             parity_a_result = self.parity_result[0::2]  ### The two parity outcomes are stored sequentially in an array 
             parity_b_result = self.parity_result[1::2] 
           

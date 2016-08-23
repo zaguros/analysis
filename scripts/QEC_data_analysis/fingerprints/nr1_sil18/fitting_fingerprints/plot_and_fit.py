@@ -36,7 +36,7 @@ def get_hyperfine_params(ms = 'plus', carbon_spins = 'all',NV = None):
     return HF_perp, HF_par
 
 def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
-        xrange = [0,20],figsize=(35,5), Nr_of_pulses = None, ms = 'plus'):
+        xrange = [0,20],figsize=(35,5), Nr_of_pulses = None, ms = 'plus', do_save = False):
 
 
 	###################
@@ -59,7 +59,7 @@ def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
 
 	# x = data['x']
 	# y = data['y']
-	# x,y = np.loadtxt('sil18_fingerprint_ms_plus_N'+str(Nr_of_pulses)+'.txt')
+	x,y = np.loadtxt(r'D:\jcramer3\Desktop\fitting_fingerprints\sil18_fingerprint_ms_'+ ms +'_N'+str(Nr_of_pulses)+'.txt')
 
 
 	fig,ax = plt.subplots(figsize=figsize)
@@ -70,7 +70,7 @@ def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
 
 	ax.set_ylim(-1.05,1.05)
 
-	# ax.plot(x, y, '.-k', lw=0.4,label = 'data') #N = 16
+	ax.plot(x, y, '.-k', lw=0.4,label = 'data') #N = 16
 	ax.set_xlabel('tau (us)')
 	ax.set_ylabel('Contrast')
 
@@ -83,13 +83,26 @@ def fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
 	lgd = plt.legend(loc=4)
 	plt.show(block = False)
 
+	if do_save == True:
+		folder = r'D:\jcramer3\Desktop\fitting_fingerprints\figures'
+		try:
+			fig.savefig(
+			os.path.join(folder,'fingerprint_ms'+ms+'_N_'+str(Nr_of_pulses)+'.png'))
+			fig.savefig(
+			    os.path.join(folder,'fingerprint_ms'+ms+'_N_'+str(Nr_of_pulses)+'.pdf'))
+		except:
+			print 'Figure has not been saved.'
+
 
 # for ms in ['plus','min']:
 # 	for Nr_of_pulses in [4,8,16,32,64]:
-
+# 		if Nr_of_pulses == 64:
+# 			x_range = [5,25]
+# 		else:
+# 			x_range = [5,50]
 # 		fingerprint_plot(disp_sim_spin = True,n_sim_spins = 8,
-# 		xrange = [8,15],figsize=(35,5), Nr_of_pulses = Nr_of_pulses, ms = ms)
+# 		xrange = x_range,figsize=(35,5), Nr_of_pulses = Nr_of_pulses, ms = ms)
 
 
-fingerprint_plot(disp_sim_spin = True,n_sim_spins = 2,
-		xrange = [8,15],figsize=(35,5), Nr_of_pulses = 32, ms = 'min')		
+fingerprint_plot(disp_sim_spin = True,n_sim_spins = 8,
+		xrange = [3,18],figsize=(15,5), Nr_of_pulses = 32, ms = 'min', do_save = True)		

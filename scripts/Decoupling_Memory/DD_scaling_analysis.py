@@ -173,7 +173,7 @@ def DD_scaling_elec(msmts,
     # color = ['r','g','b','m','k','r']
     
     
-    fig = plt.figure(figsize=(7,6))
+    fig = plt.figure(figsize=(10,5))
     # mpl.rcParams['axes.linewidth'] = 2
     min_x = 0.01
     max_x = 1000
