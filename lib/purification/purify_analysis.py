@@ -1036,7 +1036,6 @@ class purify_analysis(object):
         This step also applies the carbon RO correction.
 
         TODO: implement max_likelihood estimation
-        TODO: error calculation!
         """
         paulis = self.generate_pauli_matrices()
 
@@ -1045,38 +1044,50 @@ class purify_analysis(object):
             print 'Not implemented yet!'
         else:
             dm_p,dm_m = np.kron(paulis[0],paulis[0])/4.,np.kron(paulis[0],paulis[0])/4.
+            dm_p_u,dm_m_u = np.zeros((4,4)),np.zeros((4,4))
 
             t_dict = {'I' : 0, 'X':1, 'Y':2, 'Z':3}
             for t in ['I','X','Y','Z']:
                 for t2 in ['I','X','Y','Z']:
-                    if t+t2 != 'II':
-                        sigma_kron = np.kron(paulis[t_dict[t]],paulis[t_dict[t2]])
-                        if 'I' in t+t2:
-                            exp_p,exp_p_u = do_carbon_ROC(get_1q_expectation_val(self.correlation_dict_p[t+t2]),self.correlation_dict_p_u[t+t2])) 
-                            exp_m,exp_m_u = do_carbon_ROC(get_1q_expectation_val(self.correlation_dict_m[t+t2]),self.correlation_dict_m_u[t+t2])) 
+                    
+                    if t+t2 == 'II':
+                        continue
+                        
+                    sigma_kron = np.kron(paulis[t_dict[t]],paulis[t_dict[t2]])
 
-                            dm_p += exp_p*sigma_kron
-                            dm_m += exp_m*sigma_kron
-                            ### TODO dm_p_u,dm_m_u
+                    ### single or two qubit expectation value?
+                    if 'I' in t+t2:
+                        exp_p,exp_p_u = do_carbon_ROC(get_1q_expectation_val(self.correlation_dict_p[t+t2]),self.correlation_dict_p_u[t+t2])) 
+                        exp_m,exp_m_u = do_carbon_ROC(get_1q_expectation_val(self.correlation_dict_m[t+t2]),self.correlation_dict_m_u[t+t2]))
+                    else:
+                        exp_p,exp_p_u = do_carbon_ROC(get_2q_expectation_val(self.correlation_dict_p[t+t2]), self.correlation_dict_p_u[t+t2])) 
+                        exp_m,exp_m_u = do_carbon_ROC(get_2q_expectation_val(self.correlation_dict_m[t+t2]), self.correlation_dict_m_u[t+t2])) 
 
-                        else:
-                            exp_p,exp_p_u = do_carbon_ROC(get_2q_expectation_val(self.correlation_dict_p[t+t2]), self.correlation_dict_p_u[t+t2])) 
-                            exp_m,exp_m_u = do_carbon_ROC(get_2q_expectation_val(self.correlation_dict_m[t+t2]), self.correlation_dict_m_u[t+t2])) 
+                    dm_p +=exp_p*sigma_kron/4.
+                    dm_p_u += (exp_p_u**2)*sigma_kron/16.
+                    dm_m +=exp_m*sigma_kron/4.
+                    dm_m_u += (exp_m_u**2)*sigma_kron/16.
 
-                            dm_p +=exp_p*sigma_kron
-                            dm_m +=exp_m*sigma_kron
-                            ### TODO dm_p_u,dm_m_u
 
+        dm_p_u = np.sqrt(dm_p_u.real)+np.sqrt(dm_p_u.imaginary)*1j
+        dm_m_u = np.sqrt(dm_p_u.real)+np.sqrt(dm_p_u.imaginary)*1j
 
         if verbose:
             print 'Density matrix for the positive signature'
             print dm_p
+            print 'Error matrix'
+            print dm_p_u
             print 'Eigenvalues'
             print np.linalg.eigh(dm_p)
             print 'Density matrix for the negative signature'
             print dm_m
+            print 'Error matrix'
+            print dm_m_u
             print 'Eigenvalues'
             print np.linalg.eigh(dm_m)
+
+        else:
+            return dm_p,dm_p_u,dm_m,dm_m_u
 
 
     ##########################
