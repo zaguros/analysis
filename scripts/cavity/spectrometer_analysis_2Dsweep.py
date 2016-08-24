@@ -325,7 +325,7 @@ def pure_air_modes(cavity_length=1.e-6,conversion_factor = -150.e-9,nr_points=31
     delta_L = delta_V*(conversion_factor) # in m
     Ls = np.linspace(cavity_length,cavity_length+delta_L,nr_points)
 
-    max_nrmgi_odes = 180
+    max_nr_modes = 180
     nu_air = np.zeros((max_nr_modes,nr_points))
     for N in np.arange(max_nr_modes):
         for i,L in enumerate(Ls):
