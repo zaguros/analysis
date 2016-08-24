@@ -66,13 +66,15 @@ def load_data_from_folder(folder):
     nr_of_files = 0
     ii=0
     for cdate,path in sorted(files):
+        if 'raw' in path:
+            continue
         if ii == 0:
             wavelengths,intensities = load_data(path)
         else:
         #try:  
             wavelength,intensity = load_data(path)
             if len(intensity)!= len(intensities[:,0]):
-                print 'Waring: data file {} has unequal data length {:d}, compared to previous data files with length {:d}'.format(os.path.split(path)[1], len(intensity), len(intensities[:,0]))
+                print 'Warning: data file {} has unequal data length {:d}, compared to previous data files with length {:d}'.format(os.path.split(path)[1], len(intensity), len(intensities[:,0]))
                 continue
             intensities = np.concatenate((intensities,intensity),axis =1)
         ii+=1
@@ -133,8 +135,9 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
     """
     x0s =np.array([])
     u_x0s =np.array([])
-    g_gamma = kw.pop('g_gamma',0.08)
+    g_gamma = kw.pop('g_gamma',0.5)
     g_offset= kw.pop('g_offset',0)
+    max_gamma = kw.pop('max_gamma',None)
      
     wavelength_range = np.abs(wavelengths[-1]-wavelengths[0])
     indices_around_peak = int((len(wavelengths)/wavelength_range)*g_gamma*4)
@@ -179,9 +182,11 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
 
  
         if plot_fit:
+            # print indices_around_peak
+            # print wavelengths_around_peak
             print 'plot fit'
             fig,ax = plt.subplots()
-            ax.plot(wavelengths,intensity)
+            # ax.plot(wavelengths,intensity)
             plot.plot_fit1d(fit_result, np.linspace(wavelengths_around_peak[0],wavelengths_around_peak[-1],len(wavelengths_around_peak)), 
                 ax =ax, label='Fit',show_guess=True, plot_data=True)
             plt.show()
@@ -190,10 +195,16 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
         #     continue
 
         if u_x0 > np.abs(wavelengths_around_peak[-1]-wavelengths_around_peak[0]):
-            print x0,u_x0
-            print 'uncertainty in peak position too large; disregarding'
+            # print 'uncertainty in peak position too large; disregarding: ', 'x0', x0, '+-',u_x0 
+            nr_fails+=1
             continue 
         
+        if max_gamma!=None:
+            if gamma>max_gamma: 
+                # print 'ignoring this peak, since gamma is larger than max gamma:', gamma, '>', max_gamma
+                nr_fails+=1
+                continue
+
         success[i] = 1 #mark this peak as succesfully fitted
         x0s = np.append(x0s,x0)
         u_x0s = np.append(u_x0s,u_x0)
