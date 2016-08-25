@@ -67,20 +67,88 @@ class purify_analysis(object):
         self.ROC_lt3_tstamp = ROC_lt3_tstamp
         self.ROC_lt4_tstamp = ROC_lt4_tstamp
 
-    def load_raw_data(self,lt3_timestamps,lt4_timestamps,force_evaluation = False,save=True,verbose = False):
+    def get_tstamps_and_offsets(self,contains = 'Purify',return_tstamps = False,verbose = False, unshifted_days = None,shifted_days = None,shifted_data_correction_time = None, shifted_data_start_offset_ch1 = None):
+        all_lt3 , all_lt4 = [],[]
+        offsets,offsets_ch1 = [],[] # Hold offset to compensate for timing change for new APD
+
+        if shifted_data_correction_time == None:
+            shifted_data_correction_time = analysis_params.data_settings['shifted_data_correction_time']
+
+        if shifted_data_start_offset_ch1 == None:
+            shifted_data_start_offset_ch1 = analysis_params.data_settings['shifted_data_start_offset_ch1']
+
+        if unshifted_days == None:
+            unshifted_days = analysis_params.data_settings['unshifted_days']
+
+        if shifted_days == None:
+            shifted_days = analysis_params.data_settings['shifted_days']
+
+        for d in unshifted_days+shifted_days:
+                if verbose:
+                        print d
+                tstamp_lt3,tstamp_lt4 = self.tstamps_for_both_setups(d,contains = contains)
+                #,newest_tstamp = '110000') ### newest timestamp allows for only taking parts of a day.
+                all_lt3.extend(tstamp_lt3)
+                all_lt4.extend(tstamp_lt4)
+                if d in shifted_days:
+                    if verbose:
+                        print 'shifting ',d
+                    offsets.extend(np.zeros(np.shape(tstamp_lt3))+ shifted_data_correction_time)
+                    offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4))+ shifted_data_start_offset_ch1)           
+                else:
+                    offsets.extend(np.zeros(np.shape(tstamp_lt3)))
+                    offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4)))
+                if verbose:
+                    print 'Found ' + str(len(tstamp_lt3)) + ' timestamps!'
+
+        self.all_lt3 = all_lt3
+        self.all_lt4 = all_lt4
+        self.offsets = offsets
+        self.offsets_ch1 = offsets_ch1
+
+        
+
+        if return_tstamps:
+            return all_lt3,all_lt4,offsets,offsets_ch1
+
+    def load_raw_data(self,lt3_timestamps = None,lt4_timestamps =None,force_evaluation = False,save=True,verbose = False):
         """
         this script takes a list of timestamps for both setups and prefilters them according to adwin filters
         creates a list of arrays associated with each time stamp for adwin_ssro,syncs, time, special, channel, marker and attaches is it to the data object for further processing.
         """
+
+        if lt3_timestamps == None:
+            lt3_timestamps = self.all_lt3
+
+        if lt4_timestamps == None:
+            lt4_timestamps = self.all_lt4
+            
         length = len(lt3_timestamps)
         print 'loading the data, total number of files ', length
+
+        ### initialize the data dictionaries
+        for key in self.key_list_pq:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+
+        for key in self.key_lst_adwin_data:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+        
+        for key in self.key_list_misc:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
+
+        for key in self.key_list_misc_to_save:
+            self.lt3_dict.update({key:[]})
+            self.lt4_dict.update({key:[]})
 
         i = 0
 
         for t_lt3,t_lt4 in zip(lt3_timestamps,lt4_timestamps):
             
-            lt3_folder = tb.latest_data(t_lt3,folder = self.lt3_folder)
-            lt4_folder = tb.latest_data(t_lt4,folder = self.lt4_folder)
+            lt3_folder = tb.data_from_time(t_lt3,folder = self.lt3_folder)
+            lt4_folder = tb.data_from_time(t_lt4,folder = self.lt4_folder)
 
             cleaned_data_lt4 = os.path.join(lt4_folder,'cleaned_data.hdf5')
 
@@ -185,7 +253,13 @@ class purify_analysis(object):
             i += 1
 
 
-    def correct_pq_times(self,offsets = [],offsets_ch1 = []): # Some of the data has different timings, since we changed one of the ZPL apds. Here we can fix this!
+    def correct_pq_times(self,offsets = None,offsets_ch1 = None): # Some of the data has different timings, since we changed one of the ZPL apds. Here we can fix this!
+
+        if offsets == None:
+            offsets = self.offsets
+
+        if offsets_ch1 == None:
+            offsets_ch1 = self.offsets_ch1
 
         if np.size(offsets):
             for i,offset in enumerate(offsets):
@@ -206,13 +280,16 @@ class purify_analysis(object):
         i = 0
         tails_w1 = []
 
-        for t_lt4 in self.lt4_dict['tstamp']:
+        offsets = self.offsets
+        offsets_ch1 = self.offsets_ch1
+
+        for i, t_lt4 in enumerate(self.lt4_dict['tstamp']):
                   
-            a_lt4 = ppq.purifyPQAnalysis(tb.latest_data(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
+            a_lt4 = ppq.purifyPQAnalysis(tb.data_from_time(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
 
             ### analysis for channel 0  && window 1
-            w1_ch0 = self.get_total_number_of_clicks_in_window(a_lt4,0,st_start,st_len)
-            w1_ch1 = self.get_total_number_of_clicks_in_window(a_lt4,1,st_start,st_len)
+            w1_ch0 = self.get_total_number_of_clicks_in_window(a_lt4,0,st_start,st_len,offset = offsets[i])
+            w1_ch1 = self.get_total_number_of_clicks_in_window(a_lt4,1,st_start,st_len,offset = offsets[i] + offsets_ch1[i])
             last_sync = a_lt4.pqf['/PQ_sync_number-1'][-1]
 
             tail_w1 = round(1e4*(w1_ch0+w1_ch1)/last_sync,2)
@@ -227,12 +304,13 @@ class purify_analysis(object):
         # return np.array(tails_w1),np.array(tails_w2)
 
 
-    def get_total_number_of_clicks_in_window(self,a,channel,st_start,st_len):
+    def get_total_number_of_clicks_in_window(self,a,channel,st_start,st_len,offset = 0):
             
 
         is_ph = pq_tools.get_photons(a.pqf)[channel]
+        clicks = a.pqf['/PQ_sync_time-1'].value[np.where(is_ph)] + offset
         bins = np.arange(st_start-.5,st_start+st_len,1e3)
-        y,x=np.histogram(a.pqf['/PQ_sync_time-1'].value[np.where(is_ph)], bins=bins)
+        y,x=np.histogram(clicks, bins=bins)
         x=x[:-1]
         # print 'Total clicks:', np.sum(y)
 
@@ -245,7 +323,7 @@ class purify_analysis(object):
         #####
         self.st_fltr_w1 = []
         self.st_fltr_w2 = []
-
+        
         ### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
         if st_start == None:
             st_start = analysis_params.filter_settings['st_start']
@@ -256,7 +334,7 @@ class purify_analysis(object):
 
 
         for st_filtered,sp_filtered in zip(self.lt4_dict['/PQ_sync_time-1'],self.lt4_dict['/PQ_special-1']):
-            
+
             st_fltr_w1 = (st_filtered > st_start)  & (st_filtered < (st_start  + st_len)) & (sp_filtered == 0)
             st_fltr_w2 = (st_filtered > st_start)  & (st_filtered < (st_start + st_len_w2)) & (sp_filtered == 0)
             self.st_fltr_w1.append(st_fltr_w1)
@@ -265,6 +343,7 @@ class purify_analysis(object):
             no_w1 = np.sum(st_fltr_w1)
             if verbose:
                 print 'number of total filtered detection events : ', no_w1
+
         return
 
 
@@ -289,11 +368,11 @@ class purify_analysis(object):
         min_w2 = analysis_params.filter_settings['min_reps_w2']
 
 
-        loop_array = zip(temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt4_dict['attempts_first'],self.lt4_dict['attempts_second'])
+        loop_array = zip(temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt4_dict['attempts_first'],self.lt4_dict['attempts_second'],self.lt4_dict['tstamp'])
         
         no_w1, no_w2 = 0, 0
 
-        for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,attempts_first,attempts_second in loop_array:
+        for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,attempts_first,attempts_second,tstamp_lt4 in loop_array:
 
             decoherence_filter_w1 = (attempts_first >= min_w1) & (attempts_first <= max_w1)
             decoherence_filter_w2 = (attempts_second >= min_w2) & (attempts_second <= max_w2)
@@ -569,54 +648,27 @@ class purify_analysis(object):
             fltr_plus  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_nrs_w1)
             fltr_minus = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_nrs_w1)
 
-            # print np.argmax(fltr_plus)
-            # print HH_s_psi_p[np.argmax(fltr_plus)]
-            # print np.argmax(fltr_minus)
-            # print HH_s_psi_m[np.argmax(fltr_minus)]
-            # print adwin_nrs_w1
 
             self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus])
             self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus])
             self.RO_data_LT3_minus.append(adwin_ro_lt3[fltr_minus]) 
             self.RO_data_LT4_minus.append(adwin_ro_lt4[fltr_minus])
 
-        # print fltr_plus_lt3
-        # print fltr_plus_lt4
-
-
         all_m_lt3,all_m_lt4,all_p_lt3,all_p_lt4 = np.array([]),np.array([]),np.array([]),np.array([])
         for m_lt3,m_lt4,p_lt3,p_lt4 in zip(self.RO_data_LT3_minus,self.RO_data_LT4_minus,self.RO_data_LT3_plus,self.RO_data_LT4_plus):
-
-            # if len(m_lt3) != 0 and len(m_lt4) != 0:
-            #   if verbose:
-            #       print 'p_correlated for psi_minus', float(np.sum(np.equal(m_lt3,m_lt4)))/len(m_lt3)
-            #       print 'p_correlated for psi_plus', float(np.sum(np.equal(p_lt3,p_lt4)))/len(m_lt4)
-
             all_m_lt3 = np.append(all_m_lt3,m_lt3)
             all_m_lt4 = np.append(all_m_lt4,m_lt4)
             all_p_lt3 = np.append(all_p_lt3,p_lt3)
             all_p_lt4 = np.append(all_p_lt4,p_lt4)
 
 
-
-        #### print correlation matrix for RO results
-        ### 
-
-
         ### get overall events psi minus:
         m_correlations = [0,0,0,0]
-        m_correlations[0] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
-        m_correlations[1] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 1],all_m_lt4[all_m_lt3 == 1]))
-        m_correlations[2] = np.sum(np.not_equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
-        m_correlations[3] = np.sum(np.equal(all_m_lt3[all_m_lt3 == 0],all_m_lt4[all_m_lt3 == 0]))
-        # print m_correlations
+        m_correlations[0], m_correlations[1], m_correlations[2] , m_correlations[3] = correlate_arrays(all_m_lt3,all_m_lt4)
 
-        # print headline_format.format("", *x)
+        ### get overall events psi plus:
         p_correlations = [0,0,0,0]
-        p_correlations[0] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
-        p_correlations[1] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 1],all_p_lt4[all_p_lt3 == 1]))
-        p_correlations[2] = np.sum(np.not_equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
-        p_correlations[3] = np.sum(np.equal(all_p_lt3[all_p_lt3 == 0],all_p_lt4[all_p_lt3 == 0]))
+        p_correlations[0], p_correlations[1], p_correlations[2], p_correlations[3] = correlate_arrays(all_p_lt3,all_p_lt4)
 
         if verbose:
             print 'The occurence of each event after filtering'
@@ -865,10 +917,7 @@ class purify_analysis(object):
 
         ### get overall events psi minus:
         correlations = [0,0,0,0]
-        correlations[0] = np.sum(np.equal(all_lt3[all_lt3 == 1],all_lt4[all_lt3 == 1]))
-        correlations[1] = np.sum(np.not_equal(all_lt3[all_lt3 == 1],all_lt4[all_lt3 == 1]))
-        correlations[2] = np.sum(np.not_equal(all_lt3[all_lt3 == 0],all_lt4[all_lt3 == 0]))
-        correlations[3] = np.sum(np.equal(all_lt3[all_lt3 == 0],all_lt4[all_lt3 == 0]))
+        correlations[0],correlations[1],correlations[2],correlations[3] = correlate_arrays(all_lt3,all_lt4)
         # print m_correlations
         # print headline_format.format("", *x)
 
@@ -917,6 +966,211 @@ class purify_analysis(object):
                 print u_corrected_corrs
         if return_value:
             return m_correlations,[],np.sum(m_correlations)
+
+    #############################################
+    #### density matrix and state estimation ####
+    #############################################
+
+    def get_DM_correlations(self,verbose = True,apply_ROC = False):
+        """
+        Generates a dictionary of all correlations (and associated errors) for plus and minus signature.
+        Dictionary keys are tomography bases: e.g. XY
+        If apply_ROC: besides the probabilities to detect each correlation (four columns) we also obtain a fifth column that gives the total amount of counts (comes in handy for any ML estimation of the state)
+        """
+
+        tomos = ['I','X','Y','Z']
+        ### init correlation dictionary
+        self.correlation_dict_m,self.correlation_dict_m_u  = {},{}
+        self.correlation_dict_p,self.correlation_dict_p_u  = {},{}
+        for t1 in tomos:
+            for t2 in tomos:
+                if 'I' in (t1+t2):
+                    tomo_length = 2 ## single qubit values
+                else:
+                    tomo_length = 4
+                self.correlation_dict_m.update({t1+t2:np.zeros(tomo_length+apply_ROC)})
+                self.correlation_dict_p.update({t1+t2:np.zeros(tomo_length+apply_ROC)})
+                self.correlation_dict_m_u.update({t1+t2:np.zeros(tomo_length)})
+                self.correlation_dict_p_u.update({t1+t2:np.zeros(tomo_length)})
+
+        ### init other lists
+        self.RO_data_LT3_plus,self.RO_data_LT3_minus = [],[]
+        self.RO_data_LT4_plus,self.RO_data_LT4_minus = [],[]
+        self.LT3_tomo,self.LT4_tomo = [],[]
+
+        ### filter RO data from HH syncs
+        for HH_s_psi_p,HH_s_psi_m,adwin_nrs_w1,adwin_ro_lt3,adwin_ro_lt4,attrs_LT3,attrs_LT4 in zip(self.HH_sync_psi_plus,self.HH_sync_psi_minus,self.lt4_dict['counted_awg_reps_w1'], \
+                                                                                self.lt3_dict['ssro_results'],self.lt4_dict['ssro_results'], \
+                                                                                self.lt3_dict['data_attrs'],self.lt4_dict['data_attrs']):
+
+
+            fltr_plus  = self.filter_adwin_data_from_pq_syncs(HH_s_psi_p,adwin_nrs_w1)
+            fltr_minus = self.filter_adwin_data_from_pq_syncs(HH_s_psi_m,adwin_nrs_w1)
+
+            self.RO_data_LT3_plus.append(adwin_ro_lt3[fltr_plus])
+            self.RO_data_LT4_plus.append(adwin_ro_lt4[fltr_plus])
+            self.RO_data_LT3_minus.append(adwin_ro_lt3[fltr_minus]) 
+            self.RO_data_LT4_minus.append(adwin_ro_lt4[fltr_minus])
+            self.LT3_tomo.append(attrs_LT3['Tomography_bases'][0])
+            self.LT4_tomo.append(attrs_LT4['Tomography_bases'][0])
+
+
+        for m_lt3,m_lt4,p_lt3,p_lt4,t_LT3,t_LT4 in zip(self.RO_data_LT3_minus, self.RO_data_LT4_minus, self.RO_data_LT3_plus,\
+                                                        self.RO_data_LT4_plus, self.LT3_tomo, self.LT4_tomo):
+
+            basis = t_LT3+t_LT4
+            # print basis
+            m11,m10,m01,m00 = correlate_arrays(m_lt3,m_lt4)
+            # print 'negative correlations',m11,m10,m01,m00
+            self.correlation_dict_m[basis] += np.array([m11,m10,m01,m00,np.sum([m11,m10,m01,m00])]) 
+
+            p11,p10,p01,p00 = correlate_arrays(p_lt3,p_lt4)
+
+            self.correlation_dict_p[basis] += np.array([p11,p10,p01,p00,np.sum([p11,p10,p01,p00])]) 
+
+        
+        if apply_ROC:
+            ### get ssro_ROC for LT3 --> corresponds to setup B
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
+            ### get ssro_ROC for LT4 --> corresponds to setup A
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
+
+            ### apply ROC to the results --> input arrays for this function have to be reversed!
+            # print self.correlation_dict_m
+            for k in self.correlation_dict_m.keys():
+                if not 'I' in k: # single qubit values have yet to be determined. see below
+                    if verbose:
+                        print 'correlations in '+k+': ',self.correlation_dict_p[k]
+
+                    corrected_psi_minus,u_minus = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(self.correlation_dict_m[k][3::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = False,return_error_bars = True)
+                    corrected_psi_plus, u_plus  = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(self.correlation_dict_p[k][3::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = False,return_error_bars = True)
+            
+
+                    self.correlation_dict_m[k] = np.array(list(reversed(corrected_psi_minus.reshape(-1)))+[self.correlation_dict_m[k][-1]])
+                    self.correlation_dict_p[k] = np.array(list(reversed(corrected_psi_plus.reshape(-1)))+[self.correlation_dict_p[k][-1]]) 
+                    self.correlation_dict_m_u[k] = np.array(list(reversed(u_minus.reshape(-1))))
+                    self.correlation_dict_p_u[k] = np.array(list(reversed(u_plus.reshape(-1))))
+        else:
+            print 'NO ROC is not implemented for the density matrix yet!'
+
+        #### after getting the correlated results we need to determine contributions such as IX and ZI (single qubit contributions)
+        ### trace out LT4 first and get expectation values for LT3
+        for t in ['X','Y','Z']:
+            cumulative_prob_m,cumulative_prob_p = np.array([0.,0.,0.,0.,0.]),np.array([0.,0.,0.,0.,0.])
+            cumulative_prob_m_u,cumulative_prob_p_u = np.array([0.,0.,0.,0.]),np.array([0.,0.,0.,0.])
+            for t2 in ['X','Y','Z']:
+                cumulative_prob_m   += self.correlation_dict_m[t+t2]
+                cumulative_prob_m_u += self.correlation_dict_m_u[t+t2]**2/9.
+                cumulative_prob_p   += self.correlation_dict_p[t+t2]
+                cumulative_prob_p_u += self.correlation_dict_p_u[t+t2]**2/9.
+
+            cumulative_prob_m_u = np.sqrt(cumulative_prob_m_u) ## error propagation on the individual errorbars
+            cumulative_prob_p_u = np.sqrt(cumulative_prob_p_u) ## error propagation on the individual errorbars
+
+            self.correlation_dict_m[t+'I']   = np.array([(cumulative_prob_m[0]+cumulative_prob_m[1])/3.,(cumulative_prob_m[2]+cumulative_prob_m[3])/3.,cumulative_prob_m[4]])
+            self.correlation_dict_p[t+'I']   = np.array([(cumulative_prob_p[0]+cumulative_prob_p[1])/3.,(cumulative_prob_p[2]+cumulative_prob_p[3])/3.,cumulative_prob_p[4]])
+            self.correlation_dict_m_u[t+'I'] = np.array([np.sqrt(cumulative_prob_m_u[0]**2+cumulative_prob_m_u[1]**2),(cumulative_prob_m_u[2]**2+cumulative_prob_m_u[3]**2)])
+            self.correlation_dict_p_u[t+'I'] = np.array([np.sqrt(cumulative_prob_p_u[0]**2+cumulative_prob_p_u[1]**2),(cumulative_prob_p_u[2]**2+cumulative_prob_p_u[3]**2)])
+
+        #### now trace out LT3 and get expectation values for LT4
+        for t in ['X','Y','Z']:
+            cumulative_prob_m,cumulative_prob_p = np.array([0.,0.,0.,0.,0.]),np.array([0.,0.,0.,0.,0.])
+            cumulative_prob_m_u,cumulative_prob_p_u = np.array([0.,0.,0.,0.]),np.array([0.,0.,0.,0.])
+            for t2 in ['X','Y','Z']:
+                cumulative_prob_m   += self.correlation_dict_m[t2+t]
+                cumulative_prob_m_u += self.correlation_dict_m_u[t2+t]**2/9.
+                cumulative_prob_p   += self.correlation_dict_p[t2+t]
+                cumulative_prob_p_u += self.correlation_dict_p_u[t2+t]**2/9.
+
+            cumulative_prob_m_u = np.sqrt(cumulative_prob_m_u) ## error propagation on the individual errorbars
+            cumulative_prob_p_u = np.sqrt(cumulative_prob_p_u) ## error propagation on the individual errorbars
+
+            self.correlation_dict_m['I'+t]   = np.array([(cumulative_prob_m[0]+cumulative_prob_m[2])/3.,(cumulative_prob_m[1]+cumulative_prob_m[3])/3.,cumulative_prob_m[4]])
+            self.correlation_dict_p['I'+t]   = np.array([(cumulative_prob_p[0]+cumulative_prob_p[2])/3.,(cumulative_prob_p[1]+cumulative_prob_p[3])/3.,cumulative_prob_p[4]])
+            self.correlation_dict_m_u['I'+t] = np.array([np.sqrt(cumulative_prob_m_u[0]**2+cumulative_prob_m_u[2]**2),(cumulative_prob_m_u[1]**2+cumulative_prob_m_u[3]**2)])
+            self.correlation_dict_p_u['I'+t] = np.array([np.sqrt(cumulative_prob_p_u[0]**2+cumulative_prob_p_u[2]**2),(cumulative_prob_p_u[1]**2+cumulative_prob_p_u[3]**2)])
+
+
+    def reconstruct_DMs(self,verbose = True,max_likelihood = False,aply_ROC = False):
+        """
+        reconstructs the density matrices for the plus and minus signature. 
+        Options include maximum likelihood estimation of the DM from the original number of counts
+        This step also applies the carbon RO correction.
+
+        TODO: implement max_likelihood estimation
+        """
+        paulis = self.generate_pauli_matrices()
+
+
+        if max_likelihood:
+            print 'Not implemented yet!'
+        else:
+            dm_p,dm_m = np.kron(paulis[0],paulis[0])/4.,np.kron(paulis[0],paulis[0])/4.
+            dm_p_u,dm_m_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
+
+            t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z!
+            paulis[1] = -paulis[1]
+            for t in ['I','X','Y','Z']:
+                for t2 in ['I','X','Y','Z']:
+                    if t+t2 == 'II':
+                        continue
+                        
+                    sigma_kron = np.kron(paulis[t_dict[t]],paulis[t_dict[t2]])
+
+                    ### single or two qubit expectation value?
+                    if 'I' in t+t2:
+                        if t == 'I':
+                            corrected_setup = 'lt4'
+                        else:
+                            corrected_setup = 'lt3'
+                        # print t+t2,self.correlation_dict_p[t+t2],self.correlation_dict_p_u[t+t2]
+                        exp_p,exp_p_u = do_carbon_ROC_1q(*(get_1q_expectation_val(self.correlation_dict_p[t+t2],self.correlation_dict_p_u[t+t2])+(corrected_setup,)))
+                        exp_m,exp_m_u = do_carbon_ROC_1q(*(get_1q_expectation_val(self.correlation_dict_m[t+t2],self.correlation_dict_m_u[t+t2])+(corrected_setup,)))
+                    else:
+                        exp_p,exp_p_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_p[t+t2], self.correlation_dict_p_u[t+t2]))
+                        exp_m,exp_m_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_m[t+t2], self.correlation_dict_m_u[t+t2]))
+                    
+
+                    if (t+t2 == 'YY') or (t+t2 == 'XX') or (t+t2 == 'ZZ'):
+                        print t+t2+' plus',np.round((exp_p)*sigma_kron/4.,decimals=3)
+                        print t+t2+' minus',np.round((exp_m)*sigma_kron/4.,decimals=3)
+                    dm_p +=(exp_p)*sigma_kron/4.
+                    dm_p_u += (exp_p_u**2)*sigma_kron/16.
+                    dm_m +=(exp_m)*sigma_kron/4.
+                    dm_m_u += (exp_m_u**2)*sigma_kron/16.
+
+
+        ### need to think more how to combine error bars for the density matrix!!
+        # print 'the error matrices for plus'
+        # print np.round(dm_p_u.real,decimals = 3)
+        # print np.round(dm_p_u.imag,decimals = 3)
+        # dm_p_u = (np.sqrt(dm_p_u.real)+0j)+np.sqrt(dm_p_u.imag)*1j
+        # dm_m_u = (np.sqrt(dm_p_u.real)+0j)+np.sqrt(dm_p_u.imag)*1j
+
+        if verbose:
+            print 'Density matrix for the positive signature'
+            print np.round(dm_p,decimals=3)
+            print 'Expectation values from density matrix'
+            print '      XX        YY          ZZ'
+            print np.round(np.trace(np.dot(dm_p,np.kron(paulis[1],paulis[1]))),decimals=3),np.round(np.trace(np.dot(dm_p,np.kron(paulis[2],paulis[2]))),decimals=3),np.round(np.trace(np.dot(dm_p,np.kron(paulis[3],paulis[3]))),decimals=3)
+            # print 'Error matrix'
+            # print np.round(dm_p_u,decimals=3)
+            print 'Eigenvalues'
+            print np.linalg.eigh(dm_p)[0]
+            print 'Density matrix for the negative signature'
+            print np.round(dm_m,decimals=3)
+            print 'Expectation values from density matrix'
+            print '      XX        YY          ZZ'
+            print np.round(np.trace(np.dot(dm_m,np.kron(paulis[1],paulis[1]))),decimals=3),np.round(np.trace(np.dot(dm_m,np.kron(paulis[2],paulis[2]))),decimals=3),np.round(np.trace(np.dot(dm_m,np.kron(paulis[3],paulis[3]))),decimals=3)
+            # print 'Error matrix'
+            # print np.round(dm_m_u,decimals=3)
+            print 'Eigenvalues'
+            print np.linalg.eigh(np.round(dm_m,decimals=3))[0]
+
+        else:
+            return dm_p,dm_p_u,dm_m,dm_m_u
+
+
     ##########################
     #### timing and rates ####
     ##########################
@@ -928,13 +1182,7 @@ class purify_analysis(object):
         Output: total_time (in seconds)
         """
 
-        total_time = 0
-
-        for times in self.lt4_dict['PQ_time-1']:
-            total_time += times[-1]-times[0]
-
-        return total_time/1e12
-
+        return np.sum(self.lt4_dict['total_elapsed_time'])
 
 
     def estimate_sequence_time(self):
@@ -947,14 +1195,10 @@ class purify_analysis(object):
         Output: total_time (in seconds)
         """
 
-        total_syncs = 0
-        for syncs in self.lt4_dict['/PQ_sync_number-1']:
-            total_syncs += syncs[-1]
-
-
         No_of_pulses = self.lt4_dict['data_attrs'][0]['C4_Ren_N_m1'][0]
         tau = self.lt4_dict['data_attrs'][0]['C4_Ren_tau_m1'][0]
 
+        total_syncs = np.sum(self.lt4_dict['total_syncs'])
         total_duration = total_syncs*self.lt4_dict['joint_attrs'][0]['LDE_element_length']
 
         return total_duration
@@ -962,11 +1206,10 @@ class purify_analysis(object):
     def calculate_sequence_time(self,lt4_timestamps,st_start=None,st_len=None,max_w2 = None):
         """
         Approximates the time spent in the AWG sequence:
-        instead of calculating the exact time spent in the awg sequence one can make a few basic assumptions to obtain a duration 
-        a) the number of trials give the number of LDE attempts
-        b) per 1000 attempts we do the full 5 carbon gates and two RO triggers of 90 us duration (the number 1000 is pure speculatioN!!!)
-        c) keep in mind that one could get the exact duration spent in the sequence by looping over the syncnumbers and plu markers to extract what happened
-        Output: total_time (in seconds)
+        Uses the fact that clicks picked up by the plu are always followed by a special sync to filter out clicks in w1 and w2, even if the ultimate second click was not successful.
+        Then can further filter into only w1 clicks by removing any successful w2 clicks using the awdin data.
+        Finally we pull out the number of syncs from the end of a successful purification to the next first click, in order to estimate the average number of attempts required to get a first click.
+        Using all this data we crunch a bunch of statistics for the runs. 
         """
 
         num_raw_successes, num_successes, total_attempts_to_first_click, num_first_clicks, est_resets, total_time, total_syncs = 0,0,0,0,0,0,0
@@ -974,7 +1217,7 @@ class purify_analysis(object):
         #for each file
         for t_lt4 in lt4_timestamps:
                    
-            a_lt4 = ppq.purifyPQAnalysis(tb.latest_data(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
+            a_lt4 = ppq.purifyPQAnalysis(tb.data_from_time(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
             
             if 'LDE1_attempts' in a_lt4.g.attrs:
                 LDE1_attempts = a_lt4.g.attrs['LDE1_attempts']
@@ -1103,14 +1346,22 @@ class purify_analysis(object):
     #######################################
     #### helper functions for plotting ####
     #######################################
+
+    def generate_pauli_matrices(self):
+        return [np.matrix([[1,0],[0,1]],dtype=complex),np.matrix([[0,1],[1,0]],dtype=complex),np.matrix([[0,-1j],[1j,0]],dtype=complex),np.matrix([[1,0],[0,-1]],dtype=complex)]
+    
+
     def get_tomography_bases(self):
         """
         makes two strings for the tomography bases as chosen by both setups
         """
+
+
         try: ### this only work if we really read-out a nuclear spin at the very end and not an electron spin.
             LT3 = self.lt3_dict['data_attrs'][0]['Tomography_bases'][0]
             LT4 = self.lt4_dict['data_attrs'][0]['Tomography_bases'][0]
         except:
+            print 'e spin experiment detected: using the MW amplitudes to determine tomography bases'
             LT3 = self.lt3_dict['data_attrs'][0]['LDE_final_mw_amplitude']
             LT4 = self.lt4_dict['data_attrs'][0]['LDE_final_mw_amplitude']
 
@@ -1219,6 +1470,8 @@ class purify_analysis(object):
         linewidth = 1.5
         textsize = 14
         return linewidth,textsize
+
+
     def tstamps_for_both_setups(self,day_string,contains = 'XX',newest_tstamp = '235959'):
         """
         takes a date as input and scans lt3 and lt4 for appropriate timestamps
@@ -1233,6 +1486,9 @@ class purify_analysis(object):
 
         return self.verify_tstamp_lists(lt3_t_list,lt4_t_list,day_string)
 
+    ###########################################
+    #### helper functions for getting data ####
+    ###########################################
 
     def find_tstamps_of_day(self,ts_list,day_string,contains='XX',analysis_folder = 'throw exception',newest_tstamp = '235959'):
 
@@ -1247,15 +1503,15 @@ class purify_analysis(object):
             # print latest_t[8:],latest_t
 
             ### append found timestamp to list of timestamps
-            ts_list.append(latest_t[8:]) 
+            ts_list.append(latest_t) 
 
         return ts_list
 
     def verify_tstamp_lists(self,lt3_t_list,lt4_t_list,date):
 
         # print len(lt3_t_list),len(lt4_t_list)
-        print 'verifying timestamps of',date
         if len(lt3_t_list) != len(lt4_t_list):
+            print 'verifying timestamps of',date
             print 't_lt3 , t_lt4'
             for lt3_t,lt4_t in zip(lt3_t_list,lt4_t_list):
                 print lt3_t,lt4_t
@@ -1266,8 +1522,8 @@ class purify_analysis(object):
         ### check for contents
         newer_than = date+'_000000'
         for t_lt3,t_lt4 in zip(lt3_t_list,lt4_t_list):
-            f_lt3 = tb.latest_data(t_lt3,folder = self.lt3_folder,newer_than = newer_than)
-            f_lt4 = tb.latest_data(t_lt4,folder = self.lt4_folder,newer_than = newer_than)
+            f_lt3 = tb.data_from_time(t_lt3,folder = self.lt3_folder)
+            f_lt4 = tb.data_from_time(t_lt4,folder = self.lt4_folder)
 
             ## get file path and open file
             Datafile_lt3 = h5py.File(f_lt3+f_lt3[len(self.lt3_folder)+9:] + '.hdf5','r') 
@@ -1333,7 +1589,22 @@ class purify_analysis(object):
     #     mpl.rcParams['figure.figsize'] = (6*figscaling,4*figscaling)
     #     mpl.rcParams['lines.markeredgewidth'] = 0.3/figscaling
 
+    ###########################################
+    #### Misc functions not in class obj   ####
+    ###########################################
 
+def get_folders_from_theta(theta):
+
+    base_folder_lt3 = analysis_params.data_settings['base_folder_lt3']
+    base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
+
+    theta_folder = analysis_params.data_settings['theta_folders'][theta]
+
+    return base_folder_lt3+theta_folder,base_folder_lt4+theta_folder
+
+def get_ssro_calibs():
+
+    return analysis_params.data_settings['ssro_calib_lt3'], analysis_params.data_settings['ssro_calib_lt4']
 
 def do_carbon_ROC(expectation_value,uncertainty):
     """
@@ -1348,6 +1619,23 @@ def do_carbon_ROC(expectation_value,uncertainty):
     u = np.sqrt((ROC*uncertainty)**2+(uROC*expectation_value)**2)/ROC**2
 
     return expectation_value/ROC,u
+
+def do_carbon_ROC_1q(expectation_value,uncertainty,key):
+    """
+    takes a two-partite expectation value and applies carbon read-out correction 
+    Returns the corrected expectation value and a new uncertainty via error propagation
+    TODO: FILL IN PROPER VALUES
+    """
+    #### these values were measured on 15-08-2016
+    ### see onenote/ carbon control LT3/LT4 for details
+    ROC = {'lt3': 0.978264, 'lt4':0.972934}
+    uROC = {'lt3':0.00194222,'lt4':0.0028265}
+
+
+    u = np.sqrt((ROC[key]*uncertainty)**2+(uROC[key]*expectation_value)**2)/ROC[key]**2
+
+    return expectation_value/ROC[key],u
+
 
 def calculate_ebits(parity_ZZ,parity_YY,correlations_XX):
 
@@ -1402,3 +1690,57 @@ def check_if_file_exists(filePath):
 
     return file_exists
 
+def correlate_arrays(lt3,lt4):
+    """
+    assumes binary numpy arrays
+    """
+    m11 = np.sum(np.equal(    lt3[lt3 == 1],lt4[lt3 == 1]))
+    m10 = np.sum(np.not_equal(lt3[lt3 == 1],lt4[lt3 == 1]))
+    m01 = np.sum(np.not_equal(lt3[lt3 == 0],lt4[lt3 == 0]))
+    m00 = np.sum(np.equal(    lt3[lt3 == 0],lt4[lt3 == 0]))
+
+    return m11,m10,m01,m00
+
+def get_1q_expectation_val(arr,arr_u):
+    """ 
+    assumption:
+    arr[0] --> bright/up state
+    arr[1] --> dark/down state
+
+    arr_u containts the associated statistical uncertainties
+    """
+    return 2*(arr[0]-0.5),2*arr_u[0]
+
+
+def get_2q_expectation_val(arr,arr_u):
+    """ 
+    assumption:
+    arr[0] --> brightbright/upup state (LT3/LT4)
+    arr[1] --> brightdark/updown state (LT3/LT4)
+    arr[2] --> darkbright/downup state (LT3/LT4)
+    arr[3] --> darkdark/downdown state (LT3/LT4)
+
+    arr_u containts the associated statistical uncertainties
+    """
+    return 2*(arr[0]+arr[3]-0.5),2*np.sqrt(arr_u[0]**2+arr_u[3]**2)
+
+def get_photon_hists_from_tstamps(tstamps,base_folder, **kw):
+    '''
+    return the cumulative photon histogram from all data contained in a folder
+    (all sub-levels are searched).
+    '''
+    for i,t_lt4 in enumerate(tstamps):
+        f = tb.data_from_time(t_lt4,folder = base_folder)
+        if i == 0:
+            (h0,b0),(h1,b1) = get_photon_hist(f, **kw)
+        else:
+            (_h0,_b0),(_h1,_b1) = get_photon_hist(f, **kw)
+            h0 += _h0
+            h1 += _h1
+    return (h0, b0), (h1, b1)
+
+############################################################
+### reloading bound methods without affecting attirbutes ###
+############################################################
+# note this can be done via weak references. See e.g. stackoverflow
+# http://stackoverflow.com/questions/1080669/in-python-how-do-you-change-an-instantiated-object-after-a-reload
