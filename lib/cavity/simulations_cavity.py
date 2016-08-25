@@ -44,13 +44,15 @@ class CavitySims ():
         self.g_relative = self.gamma_tot*self.epsilon
         #CAVITY parameter
         self.cavity_length = 1.1e-6 # only air length
-        self.Q = None
+        self.finesse=None
         self.T = None
         self.diamond_thickness = 3.e-6
         self.radius_curvature = 15.e-6
         self.wavelength_ZPL = c/float(self.freq[0])
 
         self._ZPL_linewidth = True #ZPL is set as above, not via temperature.
+
+        self.optical_length  = self.calc_optical_length()
 
         #simulation parameters
         #self.N_sim = 50000
@@ -102,20 +104,24 @@ class CavitySims ():
         self._ZPL_linewidth = True
 
     def set_Q (self, value):
-        self.Q = value
+        self.finesse = self.Q_to_finesse(value, self.FSR, self.freq[0])
+
+    def set_finesse (self, value):
+        self.finesse = value
 
     def calc_k(self,**kw):
         """
         Input:
-        Q  - cavity quality factor
+        finesse - cavity finesse
         wavelength - wavelength of the light in the cavity; default: self.wavelength_ZPL
         Output:
         k - the cavity loss rate
         """
-        Q = kw.pop('Q',self.Q)
-        wavelength = kw.pop('wavelength', self.wavelength_ZPL)
+        finesse = kw.pop('finesse',self.finesse)
+        optical_length = kw.pop('optical_length',self.optical_length)
 
-        k = math.pi*c/(wavelength*Q)
+        k=math.pi*c/(optical_length*finesse)
+        # k = 2*math.pi*nu/Q
         return k
 
     def calc_FSR(self, **kw):
@@ -231,11 +237,11 @@ class CavitySims ():
         Input:
         mode volume
         wavelength
-        Q 
+        Q
         Output:
         purcell factor (for a cavity with diamond) 
         """
-        Q = kw.pop('Q',self.Q)
+        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.freq[0]))
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
         mode_volume = kw.pop('mode_volume', self.mode_volume)
 
@@ -257,7 +263,7 @@ class CavitySims ():
         Output:
         purcell factor (for a cavity with diamond) 
         """
-        Q = kw.pop('Q',self.Q)
+        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.freq[0]))
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
         mode_volume = kw.pop('mode_volume', self.mode_volume)
 
@@ -278,6 +284,7 @@ class CavitySims ():
         long_modes_lambda 
         long_modes_freq
         """
+        #################SvD: WHY not calculate the actual frequencies that are resonant with the cavity at hand?
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
         FSR = kw.pop('FSR', self.FSR)
 
@@ -308,14 +315,11 @@ class CavitySims ():
         self.freq_ZPL = self.wavelength_to_freq(self.wavelength_ZPL)
 
         self.long_modes_lambda, self.long_modes_freq = self.calc_longitudinal_cav_modes(do_plot=do_plot)
-
-        #mode volume
         self.optical_length = self.calc_optical_length()
-        if (self.optical_length>self.radius_curvature-2e-6):
-            print "WARNING: Cavity is unstable!"
+        # if (self.optical_length>self.radius_curvature-2e-6):
+        #     print "WARNING: Cavity is unstable!", self.optical_length,'>',self.radius_curvature-2e-6 
         self.waist = self.calc_waist()
         self.mode_volume = self.calc_mode_volume()
-
 
         if verbose:
             print 'lambda_ZPL = ', self.wavelength_ZPL*1e9, '[nm]'
@@ -338,11 +342,16 @@ class CavitySims ():
         self.naive_FpA = self.calc_purcell_factor_air()
         self.naive_FpD = self.calc_purcell_factor_diamond()
 
+        # print 'optical length', self.optical_length
+        # print 'g',self.g 
+        # print 'w , mv =',self.waist,self.mode_volume
+        # print 'k', self.k
+
     def calculate_R_and_P (self, do_plot = True, do_save = False, verbose=False):
         """
         function that calculates all the rates R and coupling parameters P, 
         for the NV linewidths as in self.linewidths and the longitudinal modes as in long_modes_lambda
-            """
+        """
 
         delta = np.zeros([len(self.linewidths), len(self.long_modes_lambda)])
         
@@ -354,8 +363,8 @@ class CavitySims ():
                 j = j+1
                 delta [i, j] = f_line - f_mode ###get delta_ij = det between NV-line i and cav-mode j
 
-        G_all = self.g_all
-        Gamma = self.gamma
+        G_all = self.g_all #coupling to the cavity, for all modes
+        Gamma = self.gamma #kappa+gamma+gamma* for each transition (ZPL & PSB)
         for j in np.arange(len(self.long_modes_freq)-1):
             Gamma = np.vstack([Gamma, self.gamma])
             G_all = np.vstack([G_all, self.g_all])
@@ -388,7 +397,7 @@ class CavitySims ():
             plt.show()
             
     
-    def emission_in_ZPL (self, sweep_param = 'Cavity length (um)', min_val=0, max_val=15e-6, nr_points=50, xlogscale=False):
+    def emission_in_ZPL (self, sweep_param = 'Cavity length (um)', min_val=0, max_val=15, nr_points=50, xlogscale=False):
         sweep_vals = np.linspace (min_val, max_val, nr_points)
         if xlogscale:
             sweep_vals = np.logspace(np.log10(min_val), np.log10(max_val), nr_points)
@@ -410,42 +419,47 @@ class CavitySims ():
         gamma_PSB = np.zeros(nr_points)
         lifetime = np.zeros(nr_points)
 
-        # print 'Q',int(self.Q)
-        # print 'L_a',self.cavity_length
-        # print 'L_d',self.diamond_thickness
+        print 'Finesse',int(self.finesse)
+        print 'L_a',self.cavity_length
+        print 'L_d',self.diamond_thickness
         for p in sweep_vals:
-            err = 0
             if (sweep_param == 'Cavity length (um)'):
-                err = self.set_cavity_length (p) #err is 1 if cavity is unstable
+                self.set_cavity_length (p*1.e-6) 
             elif (sweep_param == 'Temperature (K)'):
                 self.set_temperature (p)
             elif (sweep_param == 'dephasing rate (GHz)'):
                 self.set_ZPL_linewidth (p*1e9/(2*math.pi))
             elif (sweep_param == 'Quality factor'):
-                self.set_Q (p)
+                self.set_Q (p) #keep cavity length constant, change the finesse.
+            elif (sweep_param == 'Finesse'):
+                self.set_finesse (p)
             elif (sweep_param == 'cavity linewidth (GHz)'):
-                self.set_Q(self.dnu_nu_to_Q(p*1.e9,self.wavelength_to_freq(self.wavelength_ZPL)))
+                self.set_finesse(self.dnu_nuFSR_to_finesse(p*1.e9,self.FSR))
+            elif (sweep_param == 'Diamond thickness (um)'):
+                self.set_diamond_thickness(p*1.e-6)
+            else:
+                print "You entered an invalid sweep parameter. stopping."
+                break
 
-        
             self.calculate_params(do_plot = False)
             self.calculate_R_and_P(do_plot=False,verbose=False)
-            if (err==0):
-                emission_prob[ind] = self.P_tot[0]
-                emission_prob_others[ind] = np.sum(self.P_tot[1:])
-                emission_prob_ZPL_in_0[ind] = self.P_ZPL_zero
-                emission_prob_PSB_in_0[ind] = self.P_PSB_zero
-                emission_prob_ZPL_nonzero[ind] = self.P_ZPL_nonzero
-                emission_prob_PSB_nonzero[ind] = self.P_PSB_nonzero
-                mode_vol[ind] = self.mode_volume
-                purcell[ind] = self.F0
-                purcellA[ind] = self.naive_FpA
-                purcellD[ind] = self.naive_FpD
-                rate_ZPL[ind] = self.R_plus_gm[0]
-                rate_PSB[ind] = np.sum(self.R_plus_gm[1:])
-                gamma_ZPL[ind] = self.g_relative[0]/float(np.sum(np.sum(self.R))+self.gamma_tot)
-                gamma_PSB[ind] = np.sum(self.g_relative[1:])/float(np.sum(np.sum(self.R))+self.gamma_tot)
-                lifetime[ind] = self.lifetime
-                ind = ind + 1
+
+            emission_prob[ind] = self.P_tot[0]
+            emission_prob_others[ind] = np.sum(self.P_tot[1:])
+            emission_prob_ZPL_in_0[ind] = self.P_ZPL_zero
+            emission_prob_PSB_in_0[ind] = self.P_PSB_zero
+            emission_prob_ZPL_nonzero[ind] = self.P_ZPL_nonzero
+            emission_prob_PSB_nonzero[ind] = self.P_PSB_nonzero
+            mode_vol[ind] = self.mode_volume
+            purcell[ind] = self.F0
+            purcellA[ind] = self.naive_FpA
+            purcellD[ind] = self.naive_FpD
+            rate_ZPL[ind] = self.R_plus_gm[0]
+            rate_PSB[ind] = np.sum(self.R_plus_gm[1:])
+            gamma_ZPL[ind] = self.g_relative[0]/float(np.sum(np.sum(self.R))+self.gamma_tot)
+            gamma_PSB[ind] = np.sum(self.g_relative[1:])/float(np.sum(np.sum(self.R))+self.gamma_tot)
+            lifetime[ind] = self.lifetime
+            ind = ind + 1
 
         return sweep_vals[:ind], emission_prob[:ind], mode_vol[:ind], purcell[:ind], purcellA[:ind],purcellD[:ind],emission_prob_others[:ind],emission_prob_ZPL_in_0[:ind],emission_prob_PSB_in_0[:ind],emission_prob_ZPL_nonzero[:ind],emission_prob_PSB_nonzero[:ind],rate_ZPL[:ind],rate_PSB[:ind], gamma_ZPL[:ind],gamma_PSB[:ind],lifetime[:ind]
 
@@ -531,7 +545,7 @@ class CavitySims ():
         # ax.text(x[-1]-8000,y3[-1]-0.1,str(round(y3[-1],2)),fontsize=15,color='DarkViolet')
         ax.tick_params(axis='both', which='major', labelsize=16)
         ax.legend(loc = 'middle left')
-        ax.set_title('d = '+str(round(self.diamond_thickness*1e6,1))+' $\mu$m; L = ' +str(round(self.cavity_length*1e6,1)) +' $\mu$m; ROC = '+str(int(self.radius_curvature*1.e6))+' $\mu$m; Q ='+str(int(self.Q)) +'\n',fontsize=16)
+        ax.set_title('d = '+str(round(self.diamond_thickness*1e6,1))+' $\mu$m; L = ' +str(round(self.cavity_length*1e6,1)) +' $\mu$m; ROC = '+str(int(self.radius_curvature*1.e6))+' $\mu$m; finesse ='+str(int(self.finesse)) +'\n',fontsize=16)
         sweepparam = sweep_param.replace(" ","")
         
         ax.tick_params(axis='both', which='major',   top='off',right = 'off',labelsize=14)
@@ -545,15 +559,15 @@ class CavitySims ():
         plt.show()
 
 
-    def Ltot_to_F(self,Ltot):
+    def Ltot_to_finesse(self,Ltot):
         """
         input:
         Ltot - total losses
         output:
         F - Finesse
         """
-        F = 2*math.pi/Ltot
-        return F
+        finesse = 2*math.pi/Ltot
+        return finesse
 
     def F_to_Ltot(self,F):
         """
@@ -565,7 +579,18 @@ class CavitySims ():
         Ltot = 2*math.pi/F
         return Ltot
 
-    def dnu_nuFSR_to_F(self,dnu,nuFSR):
+    def optical_length_to_nuFSR(self,optical_length):
+        """
+        input:
+        optical_length - optical length
+        output:
+        FSR - FSR in freuqnecy
+        """        
+        FSR = c/(2*optical_length)
+        return FSR
+
+
+    def dnu_nuFSR_to_finesse(self,dnu,nuFSR):
         """
         input:
         dnu - linewidth in frequency
@@ -573,8 +598,8 @@ class CavitySims ():
         output:
         F - Finesse
         """
-        F = nuFSR/dnu 
-        return F
+        finesse = nuFSR/dnu 
+        return finesse
 
     def dnu_nu_to_Q(self,dnu,nu):
         """
@@ -600,7 +625,7 @@ class CavitySims ():
         return dnu
 
 
-    def Q_to_F(self,Q, nuFSR, nu):
+    def Q_to_finesse(self,Q, nuFSR, nu):
         """
         input:
         Q - Quality factor
@@ -609,10 +634,10 @@ class CavitySims ():
         output:
         F - Finesse
         """
-        F = nuFSR / nu * Q
-        return F
+        finesse = nuFSR / nu * Q
+        return finesse
 
-    def F_to_Q(self,F, nuFSR, nu):
+    def finesse_to_Q(self,finesse, nuFSR, nu):
         """
         input:
         F - Finesse
@@ -621,7 +646,7 @@ class CavitySims ():
         output:
         Q - quality factor
         """
-        Q = nu / nuFSR * F
+        Q = nu / nuFSR * finesse
         return Q
 
 

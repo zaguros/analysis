@@ -205,7 +205,6 @@ def fit_fine_laser_plots(date, timestamp, folder,  f_min, f_max, set_range_f = F
     st_dev_LW = np.sqrt(variance_LW)
     print 'Average LW_piezo is ', round(average_LW,1), ' GHz with a standard deviation of ', round(st_dev_LW,1), ' GHz'
 
-
 def fit_piezo_plots(data_folder,x_datas,y_datas,nr_repetitions=1,tag='',V_min=0, V_max=1, 
         set_range_V = False, save_data = True, threshold = 0.1,show_plots=True, show_avg_plots=False ,averaging = True,**kw):
     'This function plots all length scans within the given timestamp range'

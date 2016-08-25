@@ -12,7 +12,7 @@ import datetime
 try:
     import qt
     datadir = qt.config['datadir']
-    print datadir
+    #print datadir
 except:
     # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
@@ -23,7 +23,7 @@ except:
             datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
-    print datadir
+    #print datadir
 
 def nearest_idx(array, value):
     '''
@@ -76,7 +76,7 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False,**kw):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -131,7 +131,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
                 if VERBOSE:
-                    print 'Timestamp not valid: ', dstamp,tstamp
+                    print 'Timestamp not valid: ', _timestamp
                 continue
             timestamp = dstamp+tstamp
 
