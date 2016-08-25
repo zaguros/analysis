@@ -398,7 +398,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, Fm, fmt='.', yerr=Fm_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0,1))
+            ax.set_ylim((0.5,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. Fm1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fm_max*100., Fm_max_err*100., tm_max),
                     horizontalalignment='right')
@@ -419,7 +419,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, Fp, fmt='.', yerr=Fp_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0,1))
+            ax.set_ylim((0.5,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. Fp1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fp_max*100., Fp_max_err*100., tp_max),
                     horizontalalignment='right')
