@@ -7,6 +7,7 @@ from analysis.lib.purification import purify_pq; reload(purify_pq)
 #import Settings, Filter
 import matplotlib.pyplot as plt
 
+import purify_analysis_params as analysis_params;reload(analysis_params)
 
 def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, pulse_offset = 0, force_coincidence_evaluation = False, save = True):
 
@@ -106,22 +107,16 @@ def get_coincidences_from_folder(folder,lt4_timestamps,timing_offsets,offsets_ch
     co = np.ones([1,4])
 
     for i,t_lt4 in enumerate(lt4_timestamps):
-        f = tb.latest_data(t_lt4,folder = folder)
+        f = tb.data_from_time(t_lt4,folder = folder)
         f = tb.get_msmt_fp(f)
-        if i == 0:
-            pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
-            if sync_num_name in pqf.keys():
+        pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
+
+        if sync_num_name in pqf.keys():
+            if i == 0:
                 co = get_coincidences(pqf,pulse_offset=pulse_offset) 
                 co[:,(1,2)]=  co[:,(1,2)] + timing_offsets[i]
                 co[:,2]=  co[:,2] + offsets_ch1[i]        
-        else:
-            pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
-
-            if sync_num_name in pqf.keys():
-                # if co[0,3] == 1:
-                #     co = get_coincidences(pqf,pulse_offset=pulse_offset,save = save)
-                #     co[:,(1,2)]=  co[:,(1,2)] - timing_offsets[i]
-                # else:
+            else:
                 co_temp = get_coincidences(pqf,pulse_offset=pulse_offset,save = save)
                 co_temp[:,(1,2)]=  co_temp[:,(1,2)] + timing_offsets[i]
                 co_temp[:,2]=  co_temp[:,2] + offsets_ch1[i]
@@ -199,6 +194,43 @@ def find_tstamps_of_day(ts_list,day_string,contains='XX',analysis_folder = 'thro
         # print latest_t[8:],latest_t
 
         ### append found timestamp to list of timestamps
-        ts_list.append(latest_t[8:]) 
+        ts_list.append(latest_t) 
 
     return ts_list
+
+
+def get_tstamps_and_offsets(analysis_folder, contains = 'Purify', verbose = False, unshifted_days = None,shifted_days = None,shifted_data_correction_time = None, shifted_data_start_offset_ch1 = None):
+    all_lt4 = []
+    offsets,offsets_ch1 = [],[] # Hold offset to compensate for timing change for new APD
+
+    if shifted_data_correction_time == None:
+        shifted_data_correction_time = analysis_params.data_settings['shifted_data_correction_time']
+
+    if shifted_data_start_offset_ch1 == None:
+        shifted_data_start_offset_ch1 = analysis_params.data_settings['shifted_data_start_offset_ch1']
+
+    if unshifted_days == None:
+        unshifted_days = analysis_params.data_settings['unshifted_days']
+
+    if shifted_days == None:
+        shifted_days = analysis_params.data_settings['shifted_days']
+
+    for d in unshifted_days+shifted_days:
+            if verbose:
+                    print d
+            tstamp_lt4 = find_tstamps_of_day([],d,contains = contains,analysis_folder = analysis_folder)
+            #,newest_tstamp = '110000') ### newest timestamp allows for only taking parts of a day.
+            all_lt4.extend(tstamp_lt4)
+            if d in shifted_days:
+                if verbose:
+                    print 'shifting ',d
+                offsets.extend(np.zeros(np.shape(tstamp_lt4))+ shifted_data_correction_time)
+                offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4))+ shifted_data_start_offset_ch1)           
+            else:
+                offsets.extend(np.zeros(np.shape(tstamp_lt4)))
+                offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4)))
+            if verbose:
+                print 'Found ' + str(len(tstamp_lt4)) + ' timestamps!'
+
+    return all_lt4, offsets, offsets_ch1
+
