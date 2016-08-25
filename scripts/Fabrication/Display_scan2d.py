@@ -16,11 +16,11 @@ class DisplayScan(m2.M2Analysis):
         '''self.fitresultx = self.f['fit_result']['x'].value
         self.fitresulty = self.f['fit_result']['y'].value'''
 
-    def plot_data(self,title,save=True):
+    def plot_data(self,title,save=True, **kw):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         colorname='afmhot'
-        colors=ax.pcolor(self.xvalues,self.yvalues,self.countrates, vmin=np.amin(self.countrates),vmax=np.amax(self.countrates),cmap=colorname)
+        colors=ax.pcolor(self.xvalues,self.yvalues,self.countrates, vmin=kw.get('vmin',np.amin(self.countrates)),vmax=kw.get('vmax',np.amax(self.countrates)),cmap=colorname)
         ax.set_xlim([np.amin(self.xvalues),np.amax(self.xvalues)])
         ax.set_ylim([np.amin(self.yvalues),np.amax(self.yvalues)])
         ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
