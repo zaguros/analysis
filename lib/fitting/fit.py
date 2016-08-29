@@ -35,18 +35,18 @@ class Parameter:
 
 
 def fit1d(x, y, fitmethod, *arg, **kw):
-
     """
     example: from analysis.lib.fitting import fit,common
              x=np.array([0,1,2,3,4])
              y=np.array([2,12,22,32,42])
              fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
                     fixed=[0],do_print=True)
+    Returns a dictionary with the results if ret=True (regardles of the sit success), None otherwise.
              
     """
     # process known kws
     do_print = kw.pop('do_print', False)
-    ret = kw.pop('ret', False)
+    ret = kw.pop('ret', True)
     fixed = kw.pop('fixed', [])
     VERBOSE= kw.pop('VERBOSE',False)
 
@@ -97,17 +97,18 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
+        success=False
         if VERBOSE:
             print 'ERROR: Fit did not converge !'
             print 'reason: ',mesg
-        return success
+    
         
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
     # package the result neatly
     if do_print and success:
         print_fit_result(result)
-    if ret and success:
+    if ret:
         return result
 
 

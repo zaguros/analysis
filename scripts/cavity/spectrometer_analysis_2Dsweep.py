@@ -42,6 +42,16 @@ class spectrometer_2D_analysis():
         self.intensities=self.intensities[i_max:i_min,:]
         return self.frequencies,self.filenumbers,self.intensities 
 
+
+    def subtract_offset(self):
+        """
+        function that subtracts the average offset (average over voltage of spectrometer data) from the data
+        """
+        offset = np.average(self.intensities,axis=1)
+        offsets=np.array([offset,]*len(self.intensities[0])).transpose()
+        self.intensities = self.intensities-offsets
+        return self.intensities
+
     def plot_data(self, aspect=0.1,**kw):
         title = kw.pop('title',self.data_dir)
         cmap = kw.pop('cmap','YlGnBu')
@@ -130,9 +140,8 @@ class spectrometer_2D_analysis():
 
         indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(self.frequencies,intensity,**kw)
         x0s,u_x0s,success = sa.fit_peak(self.frequencies,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit,**kw)
-        peak_intensity_x0s = peak_intensity[np.where(peak_intensity*success >0)]
+        peak_intensity_x0s = peak_intensity[np.where(success >0)]
         # print len(peak_intensity),len(peak_intensity_x0s)
-
         if plot_peak_locations:
             fig, ax = plt.subplots()
             ax.plot(self.frequencies,intensity)

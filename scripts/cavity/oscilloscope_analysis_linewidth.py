@@ -58,20 +58,22 @@ class oscilloscope_analysis():
         self.use_timetrace = kw.pop('use_timetrace',True)
         x_min = kw.pop('x_min',0)
         x_max = kw.pop('x_max',-1)
+        data_col = kw.pop('data_col',2) #startign from 0
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","Y"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
 
-        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","X","Y"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
+        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
 
         #print data
 
         #Could be used for x/y ticks and labels
+        data_name = str(data_col)
 
-        max_I = data['Y'].max()
-        min_I = data['Y'].min()
-        y = np.asarray(data['Y'])#[3000:]
+        max_I = data[data_name].max()
+        min_I = data[data_name].min()
+        y = np.asarray(data[data_name])#[3000:]
 
         if self.use_timetrace:
             max_X = data['X'].max()
