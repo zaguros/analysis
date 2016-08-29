@@ -7,12 +7,16 @@ TODO: proper error propagation onto elements of the dnesity matrix.
 
 
 import numpy as np
-import os
+import copy as cp
+import os,h5py
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.m2.ssro import mbi; reload(mbi)
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from analysis.lib.m2.ssro import ssro
+from analysis.lib.m2 import m2
+from analysis.lib.lde import sscorr; reload(sscorr)
 
-import h5py
 
 
 
@@ -47,8 +51,10 @@ def get_correlations(**kw):
         ssro_calib_folder = tb.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
         print ssro_calib_folder
 
-    tomo_pulses_p = ['none','x','y'] ### used when looking for folders
-    tomo_pulses_m = ['X','mx','my'] ### used when looking for folders
+    ### for basis assignment, see onenote 2016-08-24 or alternatively mathematica file E_13C_Bell_state.nb
+    tomo_pulses_p = ['none','x','my'] ### used when looking for folders
+    tomo_pulses_m = ['X','mx','y'] ### used when looking for folders
+
     f_list_pos_p,f_list_neg_p,f_list_pos_m,f_list_neg_m = [],[],[],[]
     exp_values,exp_vals_u = np.array([]),np.array([]) ### this will be a list with all combined expectation values such as XX or YZ
     sweep_pts = [] ### this will be a list of the bases associated expectation values
@@ -58,7 +64,7 @@ def get_correlations(**kw):
     c_x_u,c_y_u,c_z_u = 0.,0.,0.
 
     ### this dictionary is used to translate the electron RO pulse into a measurement basis
-    tomo_pulse_translation_dict = {'none': 'Z','X':'Z','x':'X','mx':'X','y':'Y','my':'Y'}
+    tomo_pulse_translation_dict = {'none': 'Z','X':'Z','x':'Y','mx':'Y','y':'X','my':'X'}
 
     for p,m in zip(tomo_pulses_p,tomo_pulses_m):
         f_list_pos_p.append(tb.latest_data('el_13C_dm_'+p+'_positive' ,return_timestamp = False,**kw))
@@ -144,13 +150,65 @@ def carbon_ROC(exp,exp_u,folder):
     setup dependent carbon read-correction coefficients are implemented here
     """
     if 'Pippin' in folder:
-        ROC_coeff = 
-        ROC_coeff_u = 
+        ROC_coeff =  0.978264
+        ROC_coeff_u = 0.00194222
     else:
-        ROC_coeff = 
-        ROC_coeff_u = 
+        ROC_coeff = 0.972934
+        ROC_coeff_u = 0.0028265
 
-    return exp/ROC_coeff,exp_u
+
+    ### calc new uncertainty
+    u = np.sqrt((ROC_coeff*exp_u)**2+(ROC_coeff_u*exp)**2)/ROC_coeff**2
+    return exp/ROC_coeff,u
+
+
+def plot_dm(dm,dm_u = None):
+    """
+    routine for bar plotting
+    """
+    ticks = ['Z,Z','Z,-Z','-Z,Z','-Z,-Z']
+
+
+    hf = plt.figure(figsize=plt.figaspect(0.5))
+    ha = plt.subplot(121, projection='3d')
+
+    xpos, ypos = np.array(range(4)),np.array(range(4))
+
+
+
+    dx = 0.25 * np.ones(16)
+    dy = dx.copy()
+
+
+    a=np.arange(0,4,1)
+    xpos,ypos = np.meshgrid(a,a)
+    zpos = np.zeros((4,4))
+    xpos = xpos.flatten()/2.
+    ypos = ypos.flatten()/2.
+    zpos = zpos.flatten()
+    dz = np.reshape(np.asarray(dm.real), 16)
+
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
+    ha.set_title('Real part')
+    ha.set_xticklabels(ticks)
+    ha.set_yticklabels(ticks)
+    ha.set_xticks([0.125,0.625,1.125,1.625])
+    ha.set_yticks([0.125,0.625,1.125,1.625])
+    ha.set_zlim([-0.5,0.5])
+
+
+    dz = np.reshape(np.asarray(dm.imag), 16)
+
+    hb = hf.add_subplot(122, projection='3d')
+    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
+    # ha.plot_surface(X, Y, input_matrix.real)
+    hb.set_title('Imaginary part')
+    hb.set_xticklabels(ticks)
+    hb.set_yticklabels(ticks)
+    hb.set_xticks([0.125,0.625,1.125,1.625])
+    hb.set_yticks([0.125,0.625,1.125,1.625])
+    hb.set_zlim([-0.5,0.5])
+    plt.show()
 
 def electron_carbon_density_matrix(**kw):
     """
@@ -168,8 +226,8 @@ def electron_carbon_density_matrix(**kw):
     t_dict = {'I' : 0, 'X':1, 'Y':2, 'Z':3}
 
     ### put dm together
-    for t,exp,exp_u in zip(sweep_pts,exp_values,exp_vals_u)
-            if t+t2 == 'II':
+    for t,exp,exp_u in zip(sweep_pts,exp_values,exp_vals_u):
+            if t == 'II':
                 continue
                 
             sigma_kron = np.kron(paulis[t_dict[t[0]]],paulis[t_dict[t[1]]])
@@ -184,3 +242,18 @@ def electron_carbon_density_matrix(**kw):
 
                 dm +=exp*sigma_kron/4.
 
+
+
+    if kw.get('verbose',True):
+        print 'Density matrix for the electron-carbon Bell state'
+        print np.round(dm,decimals=3)
+        print 'Expectation values from density matrix'
+        print '      XX        YY          ZZ'
+        print np.round(np.trace(np.dot(dm,np.kron(paulis[1],paulis[1]))),decimals=3),np.round(np.trace(np.dot(dm,np.kron(paulis[2],paulis[2]))),decimals=3),np.round(np.trace(np.dot(dm,np.kron(paulis[3],paulis[3]))),decimals=3)
+        # print 'Error matrix'
+        # print np.round(dm_p_u,decimals=3)
+        print 'Eigenvalues'
+        print np.linalg.eigh(dm)[0]
+
+
+    plot_dm(dm)
