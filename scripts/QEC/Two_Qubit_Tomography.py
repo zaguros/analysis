@@ -26,9 +26,6 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
 		print ssro_calib_folder
-	# <<<<<<< HEAD
-	    # ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-	# =======
 
 	a = mbi.MBIAnalysis(folder)
 

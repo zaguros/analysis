@@ -5,7 +5,6 @@ from matplotlib import pyplot as plt
 import os
 import msvcrt
 
-from analysis.lib.tools import toolbox as tb
 from analysis.lib.fitting import fit
 from analysis.lib.fitting import common
 

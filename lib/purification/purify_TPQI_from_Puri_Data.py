@@ -125,20 +125,28 @@ def get_coincidences_from_folder(folder,lt4_timestamps,timing_offsets,offsets_ch
     return co
 
 
-def filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses,
+def filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
                          column_st_0, column_st_1):
 
     tail_length = WINDOW_LENGTH
-    pulse_sep = dif_win1_win2
-
     
-    f_st0 = pq_tools.filter_synctimes(coincidences[:,column_st_0], ch0_start, ch0_start + tail_length, noof_pulses, pulse_sep, pq_file = False)
-    f_st1 = pq_tools.filter_synctimes(coincidences[:,column_st_1], ch1_start, ch1_start +  tail_length, noof_pulses, pulse_sep, pq_file = False)
+    
+    f_st0 = pq_tools.filter_synctimes(coincidences[:,column_st_0], ch0_start, ch0_start + tail_length, 1, 0, pq_file = False)
+    f_st1 = pq_tools.filter_synctimes(coincidences[:,column_st_1], ch1_start, ch1_start +  tail_length, 1, 0, pq_file = False)
         
     return f_st0 & f_st1 # & f_dt
 
-def TPQI_analysis(Base_Folder_primary,ts_list,timing_offsets,offsets_ch1, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, 
+def TPQI_analysis(Base_Folder_primary,ts_list,timing_offsets,offsets_ch1, ch0_start = None, ch1_start = None, WINDOW_LENGTH = None, 
                                     return_sn = False , Verbose = True, ):
+
+
+    if ch0_start == None:
+        ch0_start = analysis_params.filter_settings['st_start']
+    if ch1_start == None:
+        ch1_start = analysis_params.filter_settings['st_start']
+    if WINDOW_LENGTH == None:
+        WINDOW_LENGTH = analysis_params.filter_settings['st_len']
+    
     # Gets coincident photons from Hydraharp data
     coincidences = get_coincidences_from_folder(Base_Folder_primary,ts_list,timing_offsets,offsets_ch1)
     offset_coincidences = get_coincidences_from_folder(Base_Folder_primary,ts_list,timing_offsets,offsets_ch1,pulse_offset=1)
@@ -166,9 +174,9 @@ def TPQI_analysis(Base_Folder_primary,ts_list,timing_offsets,offsets_ch1, ch0_st
 
     #Filters the coincident photons by selecting only the photons emitted by the NV center
     is_sync_time_filter = filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
-                                                 dif_win1_win2, noof_pulses, column_st_0, column_st_1)
+                                                column_st_0, column_st_1)
     is_sync_time_filter_offset = filter_coincidences(offset_coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
-                                                 dif_win1_win2, noof_pulses, column_st_0, column_st_1)
+                                                column_st_0, column_st_1)
 
     filtered_dts = dts[is_sync_time_filter]
     filtered_dts_offset = dts_offset[is_sync_time_filter_offset]

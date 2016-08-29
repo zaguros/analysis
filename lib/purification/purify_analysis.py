@@ -12,12 +12,14 @@ from analysis.lib.tools import toolbox as tb; reload(tb)
 from analysis.lib.pq import pq_tools
 import copy as cp
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.m2 import m2
 from analysis.lib.lde import sscorr; reload(sscorr)
 import purify_analysis_params as analysis_params;reload(analysis_params)
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
+import os
 
 #### standard parameters
 
@@ -67,7 +69,7 @@ class purify_analysis(object):
         self.ROC_lt3_tstamp = ROC_lt3_tstamp
         self.ROC_lt4_tstamp = ROC_lt4_tstamp
 
-    def get_tstamps_and_offsets(self,contains = 'Purify',return_tstamps = False,verbose = False, unshifted_days = None,shifted_days = None,shifted_data_correction_time = None, shifted_data_start_offset_ch1 = None):
+    def get_tstamps_and_offsets(self,contains = 'Purify',return_tstamps = False,verbose = False, unshifted_days = None,shifted_days = None,shifted_data_correction_time = None, shifted_data_start_offset_ch1 = None,unshifted_data_start_offset_ch1= None):
         all_lt3 , all_lt4 = [],[]
         offsets,offsets_ch1 = [],[] # Hold offset to compensate for timing change for new APD
 
@@ -76,6 +78,10 @@ class purify_analysis(object):
 
         if shifted_data_start_offset_ch1 == None:
             shifted_data_start_offset_ch1 = analysis_params.data_settings['shifted_data_start_offset_ch1']
+
+        if unshifted_data_start_offset_ch1 == None:
+            unshifted_data_start_offset_ch1 = analysis_params.data_settings['unshifted_data_start_offset_ch1']
+
 
         if unshifted_days == None:
             unshifted_days = analysis_params.data_settings['unshifted_days']
@@ -97,7 +103,7 @@ class purify_analysis(object):
                     offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4))+ shifted_data_start_offset_ch1)           
                 else:
                     offsets.extend(np.zeros(np.shape(tstamp_lt3)))
-                    offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4)))
+                    offsets_ch1.extend(np.zeros(np.shape(tstamp_lt4))+ unshifted_data_start_offset_ch1)
                 if verbose:
                     print 'Found ' + str(len(tstamp_lt3)) + ' timestamps!'
 
@@ -149,30 +155,28 @@ class purify_analysis(object):
             
             lt3_folder = tb.data_from_time(t_lt3,folder = self.lt3_folder)
             lt4_folder = tb.data_from_time(t_lt4,folder = self.lt4_folder)
-
             cleaned_data_lt4 = os.path.join(lt4_folder,'cleaned_data.hdf5')
+            if check_if_file_exists(cleaned_data_lt4):
+                os.remove(cleaned_data_lt4)
 
-            a_lt3 = ppq.purifyPQAnalysis(lt3_folder,hdf5_mode ='r')
-            a_lt4 = ppq.purifyPQAnalysis(lt4_folder,hdf5_mode ='r')
+            a_lt3 = ppq.purifyPQAnalysis(lt3_folder)
+            a_lt4 = ppq.purifyPQAnalysis(lt4_folder)
 
-            if not(force_evaluation) and check_if_file_exists(cleaned_data_lt4):
+            if not(force_evaluation) and tb.has_analysis_data(a_lt4.f,str('counted_awg_reps_w1'),analysisgrp = 'pur_analysis'):
+
+                values_updated = False
 
                 for key in self.key_list_pq:
-                    vals, attrs = tb.get_analysis_data(cleaned_data_lt4,str(key[1:])) # Need to drop first slash!
+                    vals, attrs = tb.get_analysis_data(a_lt4.f,str(key[1:]),analysisgrp = 'pur_analysis') # Need to drop first slash!
                     self.lt4_dict[key].append(vals)   
 
                 for key in self.key_list_misc_to_save:
-                    vals, attrs = tb.get_analysis_data(cleaned_data_lt4,str(key))
+                    vals, attrs = tb.get_analysis_data(a_lt4.f,str(key),analysisgrp = 'pur_analysis')
                     self.lt4_dict[key].append(vals)
 
             else:
-    
-                if save:
-                    try:
-                        f = h5py.File(cleaned_data_lt4, 'r')
-                    except:
-                        f = h5py.File(cleaned_data_lt4,'w-')
-                    f.close() 
+
+                values_updated = True
 
                 ### filter the timeharp data according to adwin events / syncs
 
@@ -217,13 +221,6 @@ class purify_analysis(object):
                     vals = np.array(a_lt4.pqf[key].value[sync_filter])
                     self.lt4_dict[key].append(vals)
 
-                    if save:
-                        tb.set_analysis_data(cleaned_data_lt4,unicode(key[1:]), vals, []) # Need to drop first slash!
-
-                for key in self.key_list_misc_to_save:
-                    if save:
-                        tb.set_analysis_data(cleaned_data_lt4,unicode(key), self.lt4_dict[key][i], [])
-
             self.lt3_dict['tstamp'].append(t_lt3)
             self.lt4_dict['tstamp'].append(t_lt4)
             self.lt3_dict['data_attrs'].append(convert_attrs_to_dict(a_lt3.g.attrs.items()))
@@ -236,17 +233,28 @@ class purify_analysis(object):
             for key in self.key_lst_adwin_data:
                 self.lt3_dict[key].append(np.array(a_lt3.agrp[key].value))
 
+            filename_lt4 = a_lt4.f.filename
+
             a_lt3.finish()
             a_lt4.finish()
+
+            if values_updated and save:
+
+                for key in self.key_list_pq:
+                        tb.set_analysis_data(str(filename_lt4),unicode(key[1:]), self.lt4_dict[key][-1], [],ANALYSISGRP = 'pur_analysis') # Need to drop first slash!
+
+                for key in self.key_list_misc_to_save:
+                        tb.set_analysis_data(str(filename_lt4),unicode(key), self.lt4_dict[key][-1], [],ANALYSISGRP = 'pur_analysis')
+
 
             #### calculate the duty cycle for that specific file.
             # print 'lde length',a_lt3.joint_grp.attrs['LDE_element_length']
             # print'first and last time',a_lt4.pqf['/PQ_time-1'].value[0],a_lt4.pqf['/PQ_time-1'][-1]
             # print 'last elapsed time in sequence vs total elapsed time',  
 
-            total_elapsed_time = self.lt4_dict['total_elapsed_time'][i]
+            total_elapsed_time = self.lt4_dict['total_elapsed_time'][-1]
 
-            time_in_LDE_sequence = self.lt3_dict['joint_attrs'][i]['LDE_element_length']*self.lt4_dict['total_syncs'][i]
+            time_in_LDE_sequence = self.lt3_dict['joint_attrs'][-1]['LDE_element_length']*self.lt4_dict['total_syncs'][-1]
            
             if verbose:
                 print 'file no ', i+1 , ' with duty cycle of', round(100*time_in_LDE_sequence/total_elapsed_time,1), ' %'
@@ -982,6 +990,8 @@ class purify_analysis(object):
         ### init correlation dictionary
         self.correlation_dict_m,self.correlation_dict_m_u  = {},{}
         self.correlation_dict_p,self.correlation_dict_p_u  = {},{}
+
+
         for t1 in tomos:
             for t2 in tomos:
                 if 'I' in (t1+t2):
@@ -1019,9 +1029,9 @@ class purify_analysis(object):
                                                         self.RO_data_LT4_plus, self.LT3_tomo, self.LT4_tomo):
 
             basis = t_LT3+t_LT4
-            # print basis
+
             m11,m10,m01,m00 = correlate_arrays(m_lt3,m_lt4)
-            # print 'negative correlations',m11,m10,m01,m00
+
             self.correlation_dict_m[basis] += np.array([m11,m10,m01,m00,np.sum([m11,m10,m01,m00])]) 
 
             p11,p10,p01,p00 = correlate_arrays(p_lt3,p_lt4)
@@ -1036,7 +1046,7 @@ class purify_analysis(object):
             F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
 
             ### apply ROC to the results --> input arrays for this function have to be reversed!
-            # print self.correlation_dict_m
+
             for k in self.correlation_dict_m.keys():
                 if not 'I' in k: # single qubit values have yet to be determined. see below
                     if verbose:
@@ -1100,7 +1110,7 @@ class purify_analysis(object):
         TODO: implement max_likelihood estimation
         """
         paulis = self.generate_pauli_matrices()
-
+        paulis2 = cp.deepcopy(paulis)
 
         if max_likelihood:
             print 'Not implemented yet!'
@@ -1109,13 +1119,15 @@ class purify_analysis(object):
             dm_p_u,dm_m_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
 
             t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z!
-            paulis[1] = -paulis[1]
+
+            paulis2[1] = -paulis2[1] #this can fix the state issue once we found out what the problem is...
+
             for t in ['I','X','Y','Z']:
                 for t2 in ['I','X','Y','Z']:
                     if t+t2 == 'II':
                         continue
                         
-                    sigma_kron = np.kron(paulis[t_dict[t]],paulis[t_dict[t2]])
+                    sigma_kron = np.kron(paulis[t_dict[t]],paulis2[t_dict[t2]])
 
                     ### single or two qubit expectation value?
                     if 'I' in t+t2:
@@ -1131,9 +1143,9 @@ class purify_analysis(object):
                         exp_m,exp_m_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_m[t+t2], self.correlation_dict_m_u[t+t2]))
                     
 
-                    if (t+t2 == 'YY') or (t+t2 == 'XX') or (t+t2 == 'ZZ'):
-                        print t+t2+' plus',np.round((exp_p)*sigma_kron/4.,decimals=3)
-                        print t+t2+' minus',np.round((exp_m)*sigma_kron/4.,decimals=3)
+                    # if (t+t2 == 'YY') or (t+t2 == 'XX') or (t+t2 == 'ZZ'):
+                    #     print t+t2+' plus',np.round((exp_p)*sigma_kron/4.,decimals=3)
+                    #     print t+t2+' minus',np.round((exp_m)*sigma_kron/4.,decimals=3)
                     dm_p +=(exp_p)*sigma_kron/4.
                     dm_p_u += (exp_p_u**2)*sigma_kron/16.
                     dm_m +=(exp_m)*sigma_kron/4.
@@ -1343,6 +1355,8 @@ class purify_analysis(object):
         """
         TO BE WRITTEN: this function gets the time we spent in a data file as accurate as possible
         """
+    
+
     #######################################
     #### helper functions for plotting ####
     #######################################
@@ -1485,6 +1499,8 @@ class purify_analysis(object):
         lt4_t_list = self.find_tstamps_of_day([],day_string,contains=contains,analysis_folder = self.lt4_folder, newest_tstamp = newest_tstamp)
 
         return self.verify_tstamp_lists(lt3_t_list,lt4_t_list,day_string)
+
+
 
     ###########################################
     #### helper functions for getting data ####
@@ -1725,20 +1741,88 @@ def get_2q_expectation_val(arr,arr_u):
     return 2*(arr[0]+arr[3]-0.5),2*np.sqrt(arr_u[0]**2+arr_u[3]**2)
 
 def get_photon_hists_from_tstamps(tstamps,base_folder, **kw):
+    offsets = kw.pop('offsets', np.zeros(len(tstamps)))
+    offsets_ch1 = kw.pop('offsets_ch1',  np.zeros(len(tstamps)))
+    
     '''
     return the cumulative photon histogram from all data contained in a folder
     (all sub-levels are searched).
     '''
     for i,t_lt4 in enumerate(tstamps):
-        f = tb.data_from_time(t_lt4,folder = base_folder)
+        f = tb.get_msmt_fp(tb.data_from_time(t_lt4,folder = base_folder))
+
+        f = pq_tools.pqf_from_fp(f, rights = 'r')
         if i == 0:
-            (h0,b0),(h1,b1) = get_photon_hist(f, **kw)
+            (h0,b0),(h1,b1) = pq_tools.get_photon_hist(f, offset = offsets[i], offset_ch1 = offsets_ch1[i], **kw)
         else:
-            (_h0,_b0),(_h1,_b1) = get_photon_hist(f, **kw)
+            (_h0,_b0),(_h1,_b1) = pq_tools.get_photon_hist(f, offset = offsets[i], offset_ch1 = offsets_ch1[i], **kw)
             h0 += _h0
             h1 += _h1
-    return (h0, b0), (h1, b1)
+        f.close()
+    return (h0, b0*1e-3), (h1, b1*1e-3)
 
+def plot_photon_hist(ax, h, b, log=True, **kw):
+    label = kw.pop('label', '')
+
+    _h = h.astype(float)
+    _h[_h<=1e-1] = 1e-1
+    _h = np.append(_h, _h[-1])
+           
+    ax.plot(b, _h, drawstyle='steps-post', label=label)
+    if log:
+        ax.set_yscale('log')
+    ax.set_xlabel('time (ns)')
+    ax.set_ylabel('events')
+    ax.set_ylim(bottom=0.1)
+    ax.set_xlim(min(b), max(b))
+
+def plot_3D_bars(input_matrix,input_u = None):
+    """
+    this is all about representing the density matrix...
+    """
+
+
+    ticks = ['X,X','X,-X','-X,X','-X,-X']
+    hf = plt.figure(figsize=plt.figaspect(0.5))
+    ha = hf.add_subplot(1,2,1, projection='3d')
+
+    xpos, ypos = np.array(range(4)),np.array(range(4))
+
+
+
+    dx = 0.25 * np.ones(16)
+    dy = dx.copy()
+
+
+    a=np.arange(0,4,1)
+    xpos,ypos = np.meshgrid(a,a)
+    zpos = np.zeros((4,4))
+    xpos = xpos.flatten()/2.
+    ypos = ypos.flatten()/2.
+    zpos = zpos.flatten()
+    dz = np.reshape(np.asarray(input_matrix.real), 16)
+
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
+    ha.set_title('Real part')
+    ha.set_xticklabels(ticks)
+    ha.set_yticklabels(ticks)
+    ha.set_xticks([0.125,0.625,1.125,1.625])
+    ha.set_yticks([0.125,0.625,1.125,1.625])
+    ha.set_zlim([-0.5,0.5])
+
+
+    dz = np.reshape(np.asarray(input_matrix.imag), 16)
+
+    hb = hf.add_subplot(1,2,2, projection='3d')
+    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
+    # ha.plot_surface(X, Y, input_matrix.real)
+    hb.set_title('Imaginary part')
+    hb.set_xticklabels(ticks)
+    hb.set_yticklabels(ticks)
+    hb.set_xticks([0.125,0.625,1.125,1.625])
+    hb.set_yticks([0.125,0.625,1.125,1.625])
+    hb.set_zlim([-0.5,0.5])
+    plt.show()
 ############################################################
 ### reloading bound methods without affecting attirbutes ###
 ############################################################
