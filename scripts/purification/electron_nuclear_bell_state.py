@@ -89,6 +89,7 @@ def get_correlations(**kw):
         y   = (y_pos_electron - y_neg_electron)/2.
         y_u = 1./2*(y_pos_electron_u**2 + y_neg_electron_u**2)**0.5
 
+
         ### Combine data
         exp_values = np.append(exp_values,y)
         exp_vals_u = np.append(exp_vals_u,y_u)
@@ -97,7 +98,7 @@ def get_correlations(**kw):
         #### easy for the electron spin. One simply adds the electron outcomes and divides by 2.
         #### for the nuclear spin one has to add up several RO bases and look at the correlations there:
         exp_val_sum = (y_pos_electron + y_neg_electron)/2.
-        exp_val_sum_u = 1./2*(y_pos_electron_u**2 + y_neg_electron_u**2)
+        exp_val_sum_u = (y_pos_electron_u**2 + y_neg_electron_u**2)/4.
 
 
         ### update the running average of the nuclear spin expectation values:
@@ -127,23 +128,11 @@ def get_correlations(**kw):
     ### and are now added to the results (square root still needs to be taken for the uncertainties)
     sweep_pts = np.append(sweep_pts,['IX','IY','IZ'])
     exp_values = np.append(exp_values,np.array([c_x,c_y,c_z]))
-    exp_vals_u = np.append(exp_vals_u,np.array([c_x_u,c_y_u,c_z_u]))
+    exp_vals_u = np.append(exp_vals_u,np.array([np.sqrt(c_x_u),np.sqrt(c_y_u),np.sqrt(c_z_u)]))
 
 
 
     return f_list_pos_p[0],sweep_pts,exp_values,exp_vals_u
-
-def add_single_qubit_correlations(sweep_pts,exp_values,exp_vals_u):
-    """
-    gets two qubit correlations as input, traces over one of the two and adds individual correlations.
-    returns a dictionary where the keys are te measurement basis and the outcomes are the associated values
-    """
-    vals_dict,vals_dict_u = {},{}
-    ### load up dictionaries
-    # for t,exp,exp_u in sweep_pts,exp_values,exp_vals_u:
-    #     vals_dict.update(t:exp)
-    #     vals_dict_u.update(t:exp_u)
-
 
 def carbon_ROC(exp,exp_u,folder):
     """
@@ -162,21 +151,26 @@ def carbon_ROC(exp,exp_u,folder):
     return exp/ROC_coeff,u
 
 
-def plot_dm(dm,dm_u = None):
+def plot_dm(dm,dm_u_re = None,dm_u_im = None):
     """
     routine for bar plotting
     """
+    color = '#90C3D4'
+    alpha = 0.67
+
+
     ticks = ['Z,Z','Z,-Z','-Z,Z','-Z,-Z']
 
 
     hf = plt.figure(figsize=plt.figaspect(0.5))
     ha = plt.subplot(121, projection='3d')
-
+    ha.grid(False)
+    plt.gca().patch.set_facecolor('white')
     xpos, ypos = np.array(range(4)),np.array(range(4))
 
 
 
-    dx = 0.25 * np.ones(16)
+    dx = 0.35 * np.ones(16)
     dy = dx.copy()
 
 
@@ -186,28 +180,45 @@ def plot_dm(dm,dm_u = None):
     xpos = xpos.flatten()/2.
     ypos = ypos.flatten()/2.
     zpos = zpos.flatten()
-    dz = np.reshape(np.asarray(dm.real), 16)
+    dz = np.reshape(np.asarray(np.abs(dm.real)), 16)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
-    ha.set_title('Real part')
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+
+    #### now plot the error bars if given as input
+    if dm_u_re != None:
+        dm_err_re = np.reshape(np.asarray(dm_u_re), 16)
+        for i in np.arange(0,len(xpos)):
+            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black')
+
+    ha.set_title('abs(Real part)')
     ha.set_xticklabels(ticks)
-    ha.set_yticklabels(ticks)
+    ha.set_yticklabels(ticks,
+                   verticalalignment='baseline',
+                   horizontalalignment='left')
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
-    ha.set_zlim([-0.5,0.5])
+    ha.set_zlim([-0.0,0.5])
 
 
-    dz = np.reshape(np.asarray(dm.imag), 16)
+    dz = np.reshape(np.asarray(np.abs(dm.imag)), 16)
 
     hb = hf.add_subplot(122, projection='3d')
-    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
-    # ha.plot_surface(X, Y, input_matrix.real)
-    hb.set_title('Imaginary part')
+    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+    # hb.grid(False)
+    #### now plot the error bars if given as input
+    if dm_u_im != None:
+        dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
+        for i in np.arange(0,len(xpos)):
+            hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
+
+    hb.set_title('abs(Imaginary part)')
     hb.set_xticklabels(ticks)
-    hb.set_yticklabels(ticks)
+    hb.set_yticklabels(ticks,
+                   verticalalignment='baseline',
+                   horizontalalignment='left')
     hb.set_xticks([0.125,0.625,1.125,1.625])
     hb.set_yticks([0.125,0.625,1.125,1.625])
-    hb.set_zlim([-0.5,0.5])
+    hb.set_zlim([-0.0,0.5])
     plt.show()
 
 def electron_carbon_density_matrix(**kw):
@@ -221,7 +232,7 @@ def electron_carbon_density_matrix(**kw):
     paulis = generate_pauli_matrices()
     ### initialize the dm via the identity correlations
     dm = np.kron(paulis[0],paulis[0])/4.
-
+    dm_u_re,dm_u_im = np.zeros((4,4),dtype = float),np.zeros((4,4),dtype = float)
     ### basis definition
     t_dict = {'I' : 0, 'X':1, 'Y':2, 'Z':3}
 
@@ -237,12 +248,23 @@ def electron_carbon_density_matrix(**kw):
             if t[1] =='I':
                 dm +=exp*sigma_kron/4.
 
+                ### error calc is separate for real and imaginary part of the dm
+                dm_u_re += ((exp_u/4.)**2)*np.abs(sigma_kron.real)
+                dm_u_im += ((exp_u/4.)**2)*np.abs(sigma_kron.imag)
+
             else:
                 exp,exp_u = carbon_ROC(exp,exp_u,folder)
 
                 dm +=exp*sigma_kron/4.
 
+                ### error calc is separate for real and imaginary part of the dm
+                dm_u_re += ((exp_u/4.)**2)*np.abs(sigma_kron.real)
+                dm_u_im += ((exp_u/4.)**2)*np.abs(sigma_kron.imag)
 
+            # print t,(exp_u/4.)**2
+
+    dm_u_re = np.sqrt(dm_u_re)
+    dm_u_im = np.sqrt(dm_u_im)
 
     if kw.get('verbose',True):
         print 'Density matrix for the electron-carbon Bell state'
@@ -256,4 +278,4 @@ def electron_carbon_density_matrix(**kw):
         print np.linalg.eigh(dm)[0]
 
 
-    plot_dm(dm)
+    plot_dm(dm,dm_u_re,dm_u_im)
