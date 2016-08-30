@@ -21,6 +21,23 @@ from analysis.lib.m2 import m2
 
 class cavity_analysis(m2.M2Analysis):
 
+    def load_hdf5data(self, **kw):
+        #copy of the m2 function, but without same-name requirement
+        self.h5filepath = toolbox.measurement_filename(self.folder)
+        h5mode=kw.pop('hdf5_mode', 'r')
+        self.f = h5py.File(self.h5filepath,h5mode)
+
+        for k in self.f.keys():
+            
+            if type(self.f[k])==h5py.Group :
+                self.name = k
+        self.g = self.f[self.name]      
+
+        self.measurementstring = os.path.split(self.folder)[1]
+        self.timestamp = os.path.split(os.path.split(self.folder)[0])[1] \
+                + '/' + self.measurementstring[:6]
+        self.measurementstring = self.measurementstring[7:]        
+        self.default_plot_title = self.timestamp+'\n'+self.measurementstring    
 
     def get_x_pts(self):
         self.nr_x_pts = self.f.attrs['nr_steps']

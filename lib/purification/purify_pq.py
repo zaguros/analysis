@@ -76,7 +76,7 @@ class purifyPQAnalysis(pqsequence.PQSequenceAnalysis):
 		returns calibrated fidelities and uncertainties for ms = 0 and the dark state.
 		"""
 
-def get_analysed_fast_ssro_calibration(folder, readout_time=None, sweep_index=None):
+def get_analysed_fast_ssro_calibration(folder, readout_time=None, e_transition = None, sweep_index=None):
 
     fp = os.path.join(folder, 'analysis.hdf5')
     f = h5py.File(fp, 'r')
@@ -92,10 +92,14 @@ def get_analysed_fast_ssro_calibration(folder, readout_time=None, sweep_index=No
         print 'No analysis found, correct sweep-index specified?'
     g=f[key]
 
-
+    if e_transition == None:
+    	trans = 'ms1'
+    else:
+    	trans = e_transition
+    	
     times = g['ms0'].value[:,0]
     fids0 = g['ms0'].value
-    fids1 = g['ms1'].value
+    fids1 = g[trans].value
 
     if readout_time==None:
         tidx=len(times)-1

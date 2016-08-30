@@ -76,7 +76,7 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False,**kw):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -131,7 +131,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
                 if VERBOSE:
-                    print 'Timestamp not valid: ', dstamp,tstamp
+                    print 'Timestamp not valid: ', _timestamp
                 continue
             timestamp = dstamp+tstamp
 
@@ -486,34 +486,45 @@ def set_raw_data(fp, name, data):
     f.flush()
     f.close()        
     
-def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
+def set_analysis_data(f, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
     put in the function. Also saves the attributes.
     """
-    try:
-        f = h5py.File(fp, permissions)
-    except:
-        print "Cannot open file", fp
+        
+    if type(f) == str:
+        try:
+            pqf = h5py.File(f, permissions)
+        except:
+            print "Cannot open file", f
+            raise
+    
+    elif type(f) == h5py._hl.files.File:  
+        if f.mode == 'r':
+            print 'Wrong permissions to write to file!'
+            raise
+        pqf = f
+    else:
+        print 'Unknown argument type'
         raise
 
     try:
-        agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        agrp = pqf.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
 
         
         if name in agrp.keys():
             del agrp[name]
         agrp[name] = data
-        f.flush()
+        pqf.flush()
         
         for k in attributes:
             agrp[name].attrs[k] = attributes[k]
             #print agrp[name].attrs[k]
         #    agrp[name].attrs[k] = kw[k]
         
-        f.flush()
-        f.close()        
+        pqf.flush()
+        pqf.close()        
     except:
-        f.close()
+        pqf.close()
         raise
 

@@ -17,7 +17,7 @@ hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
 from analysis.scripts.QEC_data_analysis.fingerprints import fingerprint_funcs as fp_funcs; reload(fp_funcs)
 
 
-def fingerprint(disp_sim_spin = True,x_range = [0,20],n_sim_spins= 13):
+def fingerprint(disp_sim_spin = True,x_range = [12.3,21.5],n_sim_spins= 13):
 
 
     ###################
@@ -52,12 +52,12 @@ def fingerprint(disp_sim_spin = True,x_range = [0,20],n_sim_spins= 13):
     ############
     
 
-    fig = a.default_fig(figsize=(20,5))
+    fig = a.default_fig(figsize=(15,5))
     ax = a.default_ax(fig)
 
     ax.set_xlim(x_range)
     start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start, end, 2))
+    ax.xaxis.set_ticks(np.arange(14, 22, 2))
 
     # ax.set_xlim(xrange)
     ax.set_ylim(-0.05,1.05)
@@ -87,6 +87,7 @@ def fingerprint(disp_sim_spin = True,x_range = [0,20],n_sim_spins= 13):
 
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
+    folder = r'D:\measuring\data\Analyzed figures\Fingerprints'
     print folder
     plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf'),
         format='pdf')
