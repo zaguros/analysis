@@ -6,10 +6,7 @@ by THT, adapted from JC
 
 import numpy as np
 from analysis.lib.tools import toolbox
-from analysis.lib.m2.ssro import mbi
-import analysis.lib.QEC.nuclear_spin_characterisation as SC 
 import matplotlib.cm as cm
-import os
 from matplotlib import pyplot as plt
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
@@ -18,15 +15,12 @@ from analysis.lib.m2.ssro import sequence
 from analysis.lib.fitting import dark_esr_auto_analysis; 
 import matplotlib.mlab as mlab
 from tempfile import TemporaryFile
-# reload(dark_esr_auto_analysis)
-# reload(toolbox)
-# reload(amt)
-# reload(fit)
+#reload(dark_esr_auto_analysis)
+#reload(toolbox)
+#reload(amt)
+#reload(fit)
 
-# Start of data 20160712 183728
-# end of data
-
-def fit_B_msmt_loop(older_than = None, newer_than = None):
+def fit_B_msmt_loop(older_than = None, newer_than = None, include_temperature = True, filename = 'Bfield_stability'):
     f0m = []; u_f0m = []; #f0p = [] ;u_f0p = []
     # Bx_field_measured = []
     # Bz_field_measured = []
@@ -95,8 +89,11 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
 
 
         ### Get the temperature data
-        temperature = (a.g.attrs['temp']-100)/0.385
-        temperature_list.append(temperature)
+        if include_temperature:     # For backwards compatibility with measurements taken before we installed the temperature sensor
+            temperature = (a.g.attrs['temp']-100)/0.385
+            temperature_list.append(temperature)
+        else: 
+            temperature_list.append(0)
 
         absolute_time = int(timestamp[-2:]) + int(timestamp[-4:-2])*60 + int(timestamp[-6:-4])*60**2 + int(timestamp[6:8])*(60**2)*24
         absolute_time_list.append(absolute_time)
@@ -108,7 +105,7 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
     it_list = np.linspace(0,len(it_list)-1,len(it_list))
     outfile = TemporaryFile()
     
-    np.savez('test_B_field_meas',f0m=f0m,
+    np.savez(filename,f0m=f0m,
             u_f0m=u_f0m,
             # f0p=f0p,
             # u_f0p=u_f0p,
@@ -123,7 +120,7 @@ def fit_B_msmt_loop(older_than = None, newer_than = None):
             it_list=it_list, 
             temperature_list = temperature_list)
 
-def plot_meas_B_loop():
+def plot_meas_B_loop(filename = ):
 
     d = np.load('test_B_field_meas.npz')
     f0m = d['f0m']; u_f0m = d['u_f0m']; #f0p = d['f0p'] ;u_f0p = d['u_f0p']
