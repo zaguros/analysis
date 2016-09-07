@@ -26,9 +26,6 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
 		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
 		print ssro_calib_folder
-	# <<<<<<< HEAD
-	    # ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
-	# =======
 
 	a = mbi.MBIAnalysis(folder)
 
@@ -93,10 +90,13 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 	# if timestamps[0][0] == 'C': 
 	# 	folder_a = toolbox.latest_data(contains=timestamps[0]+'_positive')
 	# 	folder_b = toolbox.latest_data(contains=timestamps[0]+'_negative')	
-
+	print 'older_than', older_than
 	if timestamps[0] == None: 
 		folder_a = toolbox.latest_data(contains='positive' + tag,older_than = older_than)
 		folder_b = toolbox.latest_data(contains='negative' + tag,older_than = older_than)
+		print folder_a
+		print folder_b
+
 	elif len(timestamps)==1:
 		folder_b = toolbox.data_from_time(timestamps[0])      		
 		print folder_b

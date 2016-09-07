@@ -9,7 +9,29 @@ reload(tomo_ps)
 from analysis.lib.QEC import ConditionalParity as CP
 import matplotlib as mpl; reload(mpl)
 from analysis.scripts.QEC_data_analysis.C13_initialization_and_RO_fidelity import C13_RO_fid_dict as C_RO
+import sys
+import numpy as np
 
+sys.path.append(r'D:/measuring')
+sys.path.append(r'D:/measuring/analysis')
+
+from matplotlib import pyplot as plt
+from analysis.scripts.mbi import mbi_electron_decoupling_analysis
+from analysis.scripts.QEC import Carbon_control_analysis_sweep_N as cca; reload(cca)
+
+from analysis.scripts.QEC import carbon_ramsey_analysis as cr
+
+from analysis.scripts.QEC import Two_Qubit_Tomography as tomo
+
+import analysis.scripts.mbi.mbi_electron_decoupling_analysis as DD
+reload(DD)
+
+from analysis.scripts.QEC import three_qubit_QEC_analysis as QEC
+reload(QEC)
+
+from analysis.lib.m2.ssro import ssro
+reload(ssro)
+from analysis.lib.tools import toolbox
 # folder = r'D:\measuring\data\Analyzed figures\Three qubit states'
 folder = r'D:\measuring\data\QEC_data\figs\final figures\RO_corr'
 folder = r'D:\measuring\data\QEC_data\figs\Tim_pres'
@@ -511,6 +533,10 @@ def BarPlotTomoContrastFull(timestamp = None, state = 'Z', measurement_name = ['
 		except:
 		    print 'Figure has not been saved.'
 
+
+	if return_data == True:
+		return state_tick_list_1, y_fid, y_err
+
 c_grey = (240/255.,242/255.,166/255.)
 c_green = (9/255.,232/255.,94/255.)
 c_grey = (64/255.,78/255.,77/255.)#(240/255.,242/255.,166/255.)
@@ -572,25 +598,77 @@ y_fidelity_err = np.zeros(6)
 # 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 
-BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
+x_ticks_Z, y_fid_Z, y_fid_err_Z = BarPlotTomoContrastFull(timestamp = '20141225_224000', state = 'Z', measurement_name = ['adwindata'],folder_name ='Tomo',
 		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True, return_data = True)
 
-# BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
-# 		ssro_calib_timestamp ='20141225_150151', save = True,
-# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+x_ticks_mZ, y_fid_mZ, y_fid_err_mZ = BarPlotTomoContrastFull(timestamp = '20141226_015500', state = 'mZ', measurement_name = ['adwindata'],folder_name ='Tomo',
+		ssro_calib_timestamp ='20141225_150151', save = True,
+		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True, return_data = True)
 
+
+XII = 1/2.*(y_fid_Z[0]+y_fid_mZ[0])
+IXI = 1/2.*(y_fid_Z[1]+y_fid_mZ[1])
+IIX = 1/2.*(y_fid_Z[2]+y_fid_mZ[2])
+
+XII_err = 1/2.*np.sqrt(y_fid_err_Z[0]**2+y_fid_err_mZ[0]**2)
+IXI_err = 1/2.*np.sqrt(y_fid_err_Z[1]**2+y_fid_err_mZ[1]**2)
+IIX_err = 1/2.*np.sqrt(y_fid_err_Z[2]**2+y_fid_err_mZ[2]**2)
+
+plt.close('all')
+print
+print 'final values'
+y_enc =  [IIX,IXI,XII]
+y_err_enc = [IIX_err,IXI_err,XII_err]
+
+# # y_QEC, y_err_QEC = QEC.extra_3_rounds_analysis()
+    
+def get_QEC_one_rnd():
+    y_data = np.zeros(3)
+    y_err_data = np.zeros(3)
+
+    i = 0
+    for RO in [0,1,2]:
+        syndrome = '11'
+        y_data[i] = 1/2.*(QEC.undo_correction_single_state_RO(run = 3, no_error = '11',state = 'Z',RO = RO)[0]-QEC.undo_correction_single_state_RO(run = 3, no_error = '11',state = 'mZ',RO = RO)[0])
+
+        dict_y_Z = QEC.QEC_sum_data_single_state_RO(run = 3, no_error = '11',state = 'Z',RO = RO)
+        dict_y_mZ = QEC.QEC_sum_data_single_state_RO(run = 3, no_error = '11',state = 'mZ',RO = RO)
+        y_err_data[i] = 1/2.*np.sqrt(dict_y_Z['y_err'][0]**2+dict_y_mZ['y_err'][0]**2)
+
+        # 1/2.*(data_dict['Z' + 'RO'+str(RO) + 'S'+syndrome]['y'][0]- data_dict['mZ' + 'RO'+str(RO) + 'S'+syndrome]['y'][0]) #no added error
+        # y_err_data[i] = 1/2.*np.sqrt(data_dict['Z' + 'RO'+str(RO) + 'S'+syndrome]['y_err'][0]**2+data_dict['mZ' + 'RO'+str(RO) + 'S'+syndrome]['y_err'][0]**2) #no added error
+        i = i+1
+    # print "TEST"
+    return y_data, y_err_data
+
+
+# get_QEC_one_rnd()
+# y_QEC, y_err_QEC = get_QEC_one_rnd()
+
+G_fid = np.zeros(3)
+G_fid_err = np.zeros(3)
+
+for i in range(3):
+	G_fid[i] =  (y_QEC[i]/y_enc[i])**(1/4.)
+	print G_fid[i]
+	G_fid_err[i] =  1/4.*(y_QEC[i]/y_enc[i])**(1/4.)*np.sqrt(y_err_enc[i]**2+y_err_QEC[i]**2)
+	print G_fid_err[i]
+# 	print
+
+print np.average(G_fid)
+print np.sqrt(G_fid_err[0]**2+G_fid_err[1]**2+G_fid_err[2]**2)/3.
 # BarPlotTomoContrastFull(timestamp = '20141230_103000', state = 'Y', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141230_064816', save = True,
 # 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141230_064816', save = True,
-		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+# BarPlotTomoContrastFull(timestamp = '20141230_144000', state = 'mY', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141230_064816', save = True,
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
-BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
-		ssro_calib_timestamp ='20141225_150151', save = True,
-		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
+# BarPlotTomoContrastFull(timestamp = '20141226_050300', state = 'X', measurement_name = ['adwindata'],folder_name ='Tomo',
+# 		ssro_calib_timestamp ='20141225_150151', save = True,
+# 		plot_fit = True,color = c_blue, plot_type = 'compressed',RO_corr = True)
 
 # BarPlotTomoContrastFull(timestamp = '20141226_090000', state = 'mX', measurement_name = ['adwindata'],folder_name ='Tomo',
 # 		ssro_calib_timestamp ='20141225_150151', save = True,

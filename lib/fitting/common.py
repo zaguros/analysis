@@ -516,6 +516,63 @@ def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2):  # fit for 
 
     return p0, fitfunc, fitfunc_str
 
+
+def fit_3lorentz_symmetric_asym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
+            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma1**2) + 2*A2/np.pi*gamma2/(4*(x-x01+dx)**2+gamma1**2)'
+
+    a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    x01 = fit.Parameter(g_x01, 'x01')
+    gamma1 = fit.Parameter(g_gamma1, 'gamma1')
+
+    dx = fit.Parameter(g_dx,'dx')
+
+    A2 = fit.Parameter(g_A2, 'A2')
+    A3 = fit.Parameter(g_A3, 'A3')
+
+    p0 = [a1, A1, x01, gamma1, dx, A2,A3]
+    #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
+
+    def fitfunc(x):
+        return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
+                2*A2()/np.pi*gamma1()/(4*(x-x01()-dx())**2+gamma1()**2) + 2*A3()/np.pi*gamma1()/(4*(x-x01()+dx())**2+gamma1()**2)
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_5lorentz_symmetric_sym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3, g_A4,g_A5):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
+            + 2*A2/np.pi*gamma2/(4*(x-x01-dx)**2+gamma1**2) + 2*A3/np.pi*gamma2/(4*(x-x01+dx)**2+gamma1**2)\
+            + 2*A4/np.pi*gamma2/(4*(x-x01-2dx)**2+gamma1**2) + 2*A5/np.pi*gamma2/(4*(x-x01+2dx)**2+gamma1**2)'
+
+
+    a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    x01 = fit.Parameter(g_x01, 'x01')
+    gamma1 = fit.Parameter(g_gamma1, 'gamma1')
+
+    dx = fit.Parameter(g_dx,'dx')
+
+    A2 = fit.Parameter(g_A2, 'A2')
+    A3 = fit.Parameter(g_A3, 'A3')
+    A4 = fit.Parameter(g_A4, 'A4')
+    A5 = fit.Parameter(g_A5, 'A5')
+
+    p0 = [a1, A1, x01, gamma1, dx, A2,A3,A4,A5]
+    #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
+
+    def fitfunc(x):
+        return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
+                2*A2()/np.pi*gamma1()/(4*(x-x01()-dx())**2+gamma1()**2) + 2*A3()/np.pi*gamma1()/(4*(x-x01()+dx())**2+gamma1()**2) +\
+                2*A4()/np.pi*gamma1()/(4*(x-x01()-(2*dx()) )**2+gamma1()**2) + 2*A5()/np.pi*gamma1()/(4*(x-x01()+(2*dx()) )**2+gamma1()**2) 
+
+    return p0, fitfunc, fitfunc_str
+
+
+
+
+
 def fit_2lorentz_splitting(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_dx2, g_gamma2):
     fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
             + 2*A2/np.pi*gamma2/(4*(x-x01-dx2)**2+gamma2**2)'
@@ -557,6 +614,28 @@ def fit_line(g_a, g_b, *arg):
 
     def fitfunc(x):
         return a() + b()*x
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_inverse(g_a, g_b, *arg):
+    """
+    fitfunction for a line
+        y(x) = a + b/x
+
+    I.g.:
+        g_a : offset
+        g_b : linear slope
+    """
+
+    fitfunc_str = 'a + b/x'
+
+    a = fit.Parameter(g_a, 'a')
+    b = fit.Parameter(g_b, 'b')
+    #xsat = fit.Parameter(g_xsat, 'xsat')
+    p0 = [a, b]
+
+    def fitfunc(x):
+        return a() + b()*1./x
 
     return p0, fitfunc, fitfunc_str
 
@@ -705,5 +784,55 @@ def fit_repumping_p1(g_a, g_A1, g_A2, g_tau, g_tau2, g_offs_x, *arg):
 
     def fitfunc(x):
         return a() - A1() * np.exp( -(x-offs_x()) / tau()) + A2() * np.exp(-(x-offs_x())/tau2())
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_2d_gaussian(g_offset,g_A, g_x0, g_y0, g_sigmax, g_sigmay, g_theta, *arg):
+    """
+    fitfunction for a 2d gaussian
+    have to transform this to a 1d array in the fit2d function
+    """
+    fitfunc_str = 'offset +  A * ( a * exp(-(x-x0)**2) + b *(x-x0)(y-y0) +c *exp(-(y-y0)**2) '
+
+    A = fit.Parameter(g_A, 'A')
+    offset = fit.Parameter(g_offset, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    y0 = fit.Parameter(g_y0, 'y0')
+
+    sigmax = fit.Parameter(g_sigmax, 'sigmax')
+    sigmay = fit.Parameter(g_sigmay, 'sigmay')
+    theta = fit.Parameter(g_theta, 'theta')
+
+    p0 = [offset, A, x0,y0,sigmax,sigmay,theta]
+
+    def fitfunc(x,y):
+        a = np.cos(theta())**2/(2*sigmax()**2) + np.sin(theta())**2/(2*sigmay()**2)
+        b = -np.sin(2*theta())/(4*sigmax()**2) + np.sin(2*theta())/(4*sigmay()**2)
+        c = np.sin(theta())**2/(2*sigmax()**2) + np.cos(theta())**2/(2*sigmay()**2)
+        z = offset()+A()*np.exp( - (a*(x-x0())**2 - 2*b*(x-x0())*(y-y0()) + c*(y-y0())**2))
+        return z
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_2d_gaussian_circular(g_offset,g_A, g_x0, g_y0, g_sigma, *arg):
+    """
+    fitfunction for a 2d gaussian
+    that has a circular shape (sigmax  = sigmay, theta = 0)
+    have to transform this to a 1d array in the fit2d function
+    """
+    fitfunc_str = 'offset +  A * ( exp(-(x-x0)**2)/(2*sigma**2) +exp(-(y-y0)**2)/(2*sigma**2) '
+
+    A = fit.Parameter(g_A, 'A')
+    offset = fit.Parameter(g_offset, 'a')
+    x0 = fit.Parameter(g_x0, 'x0')
+    y0 = fit.Parameter(g_y0, 'y0')
+
+    sigma = fit.Parameter(g_sigma, 'sigma')
+
+    p0 = [offset, A, x0,y0,sigma]
+
+    def fitfunc(x,y):
+        return offset()+A()*np.exp( - ((x-x0())**2/(2*sigma()**2)  + ((y-y0())**2)/(2*sigma()**2)))
 
     return p0, fitfunc, fitfunc_str
