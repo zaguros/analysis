@@ -3,7 +3,7 @@ by THT'''
 
 import numpy as np
 import os
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
@@ -16,7 +16,7 @@ reload(common)
 ## Data location ##
 measurement_name = ['adwindata']
 
-timestamp = ['20140405_123712']
+timestamp = ['20160905_162415']
 
 ## fit paramaters initial values (general exponential function) ##
 offset      = 0.5
