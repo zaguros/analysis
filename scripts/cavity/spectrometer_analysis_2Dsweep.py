@@ -30,8 +30,7 @@ class spectrometer_2D_analysis():
         self.V_max = V_max
         self.get_data()
         self.laser_wavelength = laser_wavelength
-
-
+        self.filename = os.path.split(data_dir)[-1]
 
     def get_data(self,min_frq=0,max_frq=1000):
         self.frequencies,self.filenumbers,self.intensities = sa.load_data_from_folder(self.data_dir)
@@ -125,6 +124,25 @@ class spectrometer_2D_analysis():
 
         plt.close()
 
+    def remove_higher_order_modes(self,x0s,u_x0s,hom_max =10):
+        """
+        function that removes the peaks that are higher order modes. 
+        If the separation dx0 beteween two peaks is wihtin the range (HOM_min <) dx0 < HOM_max,
+        only the oeak with the lowest x0 is kept.
+        """
+        # nr_peaks = 
+        success = np.zeros(len(x0s))
+
+        indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
+        x0s_fund = x0s[indices_fund]
+        x0s = np.append(x0s_fund,x0s[-1])
+        u_x0s_fund = u_x0s[indices_fund]
+        u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
+        success[indices_fund]=1
+        success[-1]=1
+        return x0s,u_x0s,success
+
+
     def peaks_from_1D_data(self, intensity,**kw):
         '''
         function that finds the peaks in 1D data with 
@@ -137,10 +155,25 @@ class spectrometer_2D_analysis():
         plot_fit = kw.pop('plot_fit',False)
         plot_peak_locations = kw.pop('plot_peak_locations',False)
         save_fig = kw.pop('save_fig', False)
+        fit_peaks = kw.pop('fit_peaks', True)
+        remove_hom = kw.pop('remove_hom',False)
+        hom_max = kw.pop('hom_max',10)
 
         indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(self.frequencies,intensity,**kw)
-        x0s,u_x0s,success = sa.fit_peak(self.frequencies,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit,**kw)
+        if fit_peaks:
+            x0s,u_x0s,success = sa.fit_peak(self.frequencies,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit,**kw)
+        else:
+            x0s=peak_wavelengths
+            u_x0s = np.zeros(len(peak_wavelengths))
+            success = np.ones(len(peak_wavelengths))
         peak_intensity_x0s = peak_intensity[np.where(success >0)]
+
+        if remove_hom:
+            x0s,u_x0s,hom_success = self.remove_higher_order_modes(x0s,u_x0s,hom_max=hom_max)
+            peak_intensity_x0s = peak_intensity_x0s[np.where(hom_success >0)]
+
+
+
         # print len(peak_intensity),len(peak_intensity_x0s)
         if plot_peak_locations:
             fig, ax = plt.subplots()
@@ -193,11 +226,11 @@ class spectrometer_2D_analysis():
         save_fig = kw.pop('save_fig',False)
 
         # make a scatter plot of the peaks
-        fig,ax = plt.subplots(figsize =(6,4))
+        if ax == None:
+            fig,ax = plt.subplots(figsize =(6,4))
         ax.scatter(self.peak_y,self.peak_x)
         ax.errorbar(self.peak_y, self.peak_x, ls='none',marker=None,yerr= self.u_peak_x)
-
-
+        ax.set_title(self.filename+'_peaks.png')
         ax.set_xlim((self.filenumbers[0],self.filenumbers[-1]))
         ax.set_ylim((self.frequencies[-1], self.frequencies[0]))
 

@@ -65,6 +65,7 @@ def load_data_from_folder(folder):
     files = get_files_from_folder(folder)
     nr_of_files = 0
     ii=0
+
     for cdate,path in sorted(files):
         if 'raw' in path:
             continue
@@ -99,15 +100,17 @@ def approximate_peak_location(wavelengths,intensity,**kw):
     intensity - intensity data 
     minimum_peak_distance - in number of datapoints, default - 30
     minimum_peak_height - default=0.2*(max intensity)
+    kpsh - "keep same height" - keeps peaks with the same height, even if they are <mpd away
 
     Output parameters:
     peak_wavelengths - the wavelengths at which a peak is found
     """
     minimum_peak_height = kw.pop('minimum_peak_height',0.2*max(intensity))
     minimum_peak_distance = kw.pop('minimum_peak_distance',30)
+    kpsh = kw.pop('kpsh',False)
     peak_wavelengths = np.array([])
     peak_intensity = np.array([])
-    indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance)
+    indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance,kpsh=kpsh)
     # print indices_maxima
     for ii in indices:
         peak_wavelengths = np.append(peak_wavelengths,wavelengths[ii])
@@ -140,11 +143,11 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
     max_gamma = kw.pop('max_gamma',None)
      
     wavelength_range = np.abs(wavelengths[-1]-wavelengths[0])
-    indices_around_peak = int((len(wavelengths)/wavelength_range)*g_gamma*4)
+    indices_around_peak = int((len(wavelengths)/wavelength_range)*g_gamma*6)
     success = np.zeros(len(indices))
     nr_fails = 0
 
-    for i,ii,g_x0,g_A in zip(np.arange(len(indices)),indices, peak_wavelengths, peak_intensity):
+    for i,ii,g_x0,g_A in zip(np.arange(len(indices)),indices, peak_wavelengths, peak_intensity*g_gamma):
         if ii - indices_around_peak <0:
             i_min = 0
         else:
@@ -157,6 +160,7 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
 
         intensity_around_peak = intensity[i_min:i_max]
         wavelengths_around_peak = wavelengths[i_min:i_max]
+        g_offset = np.average(intensity_around_peak)
 
         fixed = []
 
@@ -167,6 +171,10 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
         #if the fit failed, it outputs the variable 'success', that is an integer flag.
         #If it is 1,2,3,4 the fit succeeded, otherwise it failed. 
         #Break the loop if the fit failed
+        if fit_result['success']==False:
+            nr_fails += 1
+            continue
+            
         if fit_result == 5:  
             #print 'fit failed'
             nr_fails += 1
@@ -204,6 +212,11 @@ def fit_peak(wavelengths,intensity,indices,peak_wavelengths,peak_intensity,
                 # print 'ignoring this peak, since gamma is larger than max gamma:', gamma, '>', max_gamma
                 nr_fails+=1
                 continue
+
+        if A*gamma < 0:
+            print 'ignoring since negative '
+            nr_fails+=1
+            continue
 
         success[i] = 1 #mark this peak as succesfully fitted
         x0s = np.append(x0s,x0)
