@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
 import seaborn as sns
 import glob
 import os
@@ -23,22 +24,37 @@ n_diamond = 2.419 #refractive index diamond
 c = 2.99792458e8 #speed of light
 
 
-class spectrometer_2D_analysis():
-    def __init__(self,data_dir, V_min, V_max,laser_wavelength=None):
-        self.data_dir = data_dir
+class spectrometer_2D_analysis(sa.spectrometer_analysis):
+    def __init__(self,folder, V_min, V_max,laser_wavelength=None):
+        #initialise data-independent parameters
+        self.laser_wavelength = laser_wavelength
+        self.folder = folder
         self.V_min = V_min
         self.V_max = V_max
+        self.plot_name = os.path.split(os.path.split(os.path.split(self.folder)[0])[0])[-1] +\
+            '/'+os.path.split(os.path.split(self.folder)[0])[-1] + '/'+os.path.split(self.folder)[-1]
+
+        #get data
         self.get_data()
-        self.laser_wavelength = laser_wavelength
-        self.filename = os.path.split(data_dir)[-1]
+
+        #initialise some useful data-dependent parameters
+        self.V_range=np.abs(self.V_max-self.V_min)
+        self.V_extent_correction = self.V_range/float((len(self.filenumbers)-1))/2.
+        self.frq_range = abs(self.frequencies[-1]-self.frequencies[0])
+        self.frq_extent_correction = self.frq_range/(float(len(self.frequencies)-1))/2.
+
+
+
+
 
     def get_data(self,min_frq=0,max_frq=1000):
-        self.frequencies,self.filenumbers,self.intensities = sa.load_data_from_folder(self.data_dir)
+        self.frequencies,self.filenumbers,self.intensities = self.load_data_from_folder()
         #the ability to select a certain frequency range        
         i_min = np.argmin(np.abs(self.frequencies-min_frq)) 
         i_max = np.argmin(np.abs(self.frequencies-max_frq))
         self.frequencies=self.frequencies[i_max:i_min]
         self.intensities=self.intensities[i_max:i_min,:]
+
         return self.frequencies,self.filenumbers,self.intensities 
 
 
@@ -51,26 +67,78 @@ class spectrometer_2D_analysis():
         self.intensities = self.intensities-offsets
         return self.intensities
 
-    def plot_data(self, aspect=0.1,**kw):
-        title = kw.pop('title',self.data_dir)
+    def plot_data_quickly(self,**kw):
+        """
+        Function that can be used for quick plotting of the data.
+        HOWEVER, it is plotting the frequencies on the y-axis evenly spaced. this is WRONG.
+        """
+        title = kw.pop('title','/quick_2D_plot_imshow')
         cmap = kw.pop('cmap','YlGnBu')
         vmax = kw.pop('vmax',None)
         vmin = kw.pop('vmin',None)
+        aspect = kw.pop('aspect','auto')
         fig,ax = plt.subplots()
-        extent = [self.V_min,self.V_max,self.frequencies[-1],self.frequencies[0]]
+
+        extent = [self.V_min-self.V_extent_correction,self.V_max+self.V_extent_correction,\
+            self.frequencies[-1]-self.frq_extent_correction,self.frequencies[0]+self.frq_extent_correction]
+        extent = [self.V_min,self.V_max,self.wavelengths[-1],self.wavelengths[0]]
         im = ax.imshow(self.intensities, extent= extent, vmax =vmax, vmin=vmin,cmap = cmap, aspect = aspect,interpolation='None')
         ax = self.set_axes_basics(ax)
-        ax.set_title(title)
+        ax.set_title(self.plot_name+title)
         plt.colorbar(im)
+        print 'Note that the y axis of this figure is distorted - data is NOT in reality equally spaced in frequency'
+
         try: 
             print 'saving figure as:'
-            print os.path.join(self.data_dir, '2D_plot.jpg')
-            fig.savefig(os.path.join(self.data_dir, '2D_plot.jpg'))
+            print os.path.join(self.folder, '2D_plot_imshow.png')
+            fig.savefig(os.path.join(self.folder, '2D_plot_imshow.png'))
         except:
             print('could not save figure')
 
         plt.show()
         plt.close()
+
+        return fig,ax
+
+    def plot_data(self, **kw):
+        title = kw.pop('title','/2D_plot')
+        cmap = kw.pop('cmap','YlGnBu')
+        vmax = kw.pop('vmax',None)
+        vmin = kw.pop('vmin',None)
+        aspect = kw.pop('aspect','auto')
+
+        extent = [self.V_min-self.V_extent_correction,self.V_max+self.V_extent_correction,\
+            self.frequencies[-1]-self.frq_extent_correction,self.frequencies[0]+self.frq_extent_correction]
+
+        #add an extra point to the Vs array, to make the pcolor plot work
+        Vs_xl = np.linspace(self.V_min-self.V_extent_correction,self.V_max+self.V_extent_correction,len(self.filenumbers)+1)
+        #also adding an extra point to frequencies, 
+        #but due to the unequal spacing in frequencies, I do it this way, which is not completely correct.
+        #the added frequency should also be unequally spaced... 
+        frqs_xl = np.append(self.frequencies+self.frq_extent_correction,self.frequencies[-1]-self.frq_extent_correction)
+        x,y = np.meshgrid(Vs_xl,frqs_xl) 
+        fig,ax = plt.subplots()
+        im = ax.pcolormesh(x,y,self.intensities,vmax =vmax, vmin=vmin,cmap = cmap)
+        ax = self.set_axes_basics(ax)
+        ax.set_title(self.plot_name+title)
+        plt.colorbar(im)
+
+        ax.set_xlim([self.V_min-self.V_extent_correction,self.V_max+self.V_extent_correction])
+        ax.set_ylim([self.frequencies[-1]-self.frq_extent_correction,self.frequencies[0]+self.frq_extent_correction])
+        print ax.get_xlim()
+        print ax.get_ylim()
+
+        try: 
+            print 'saving figure as:'
+            print os.path.join(self.folder, '2D_plot.png')
+            fig.savefig(os.path.join(self.folder, '2D_plot.png'))
+        except:
+            print('could not save figure')
+
+        plt.show()
+        plt.close()
+
+        return fig,ax
 
     def set_axes_basics(self, ax):
         ax.set_xlabel("Voltage (V)", fontsize = 14)
@@ -107,7 +175,7 @@ class spectrometer_2D_analysis():
     def plot_from_2D_data(self, **kw):
         self.plot_data(**kw)    
 
-    def shifted_plot_from_2D_data(self, data_dir):     
+    def shifted_plot_from_2D_data(self, folder):     
         fig,ax = plt.subplots(figsize=(6,4))
         ax=self.set_axes(ax)
 
@@ -117,8 +185,8 @@ class spectrometer_2D_analysis():
         plt.show()
 
         try: 
-            print os.path.join(self.data_dir, 'shifted_plots.png')
-            fig.savefig(os.path.join(self.data_dir, 'shifted_plots.png'))
+            print os.path.join(self.folder, 'shifted_plots.png')
+            fig.savefig(os.path.join(self.folder, 'shifted_plots.png'))
         except:
             print('could not save figure')
 
@@ -160,13 +228,13 @@ class spectrometer_2D_analysis():
         remove_hom = kw.pop('remove_hom',False)
         hom_max = kw.pop('hom_max',10)
 
-        indices,peak_wavelengths,peak_intensity = sa.approximate_peak_location(self.frequencies,intensity,**kw)
+        indices,peak_frequencies,peak_intensity = self.approximate_peak_location(intensity,**kw)
         if fit_peaks:
-            x0s,u_x0s,success = sa.fit_peak(self.frequencies,intensity,indices,peak_wavelengths,peak_intensity,plot_fit = plot_fit,**kw)
+            x0s,u_x0s,success = self.fit_peak(intensity,indices,peak_frequencies,peak_intensity,plot_fit = plot_fit,**kw)
         else:
-            x0s=peak_wavelengths
-            u_x0s = np.zeros(len(peak_wavelengths))
-            success = np.ones(len(peak_wavelengths))
+            x0s=peak_frequencies
+            u_x0s = np.zeros(len(peak_frequencies))
+            success = np.ones(len(peak_frequencies))
         peak_intensity_x0s = peak_intensity[np.where(success >0)]
 
         if remove_hom:
@@ -181,10 +249,10 @@ class spectrometer_2D_analysis():
             ax.plot(self.frequencies,intensity)
             # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
             ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
-            ax.set_title(self.data_dir)
+            ax.set_title(self.plot_name)
 
             if save_fig:
-                plt.savefig(os.path.join(self.data_dir,'plot.png'))
+                plt.savefig(os.path.join(self.folder,'plot_1D_peaks.png'))
             plt.show()
             plt.close()
 
@@ -192,7 +260,7 @@ class spectrometer_2D_analysis():
 
     def peaks_from_2D_data(self,**kw):
         '''
-        function that finds the peaks in 2D data in data_dir.
+        function that finds the peaks in 2D data in folder.
         Output: the peak locations, if return_peak_locations is true.
         '''
         return_peak_locations = kw.pop('return_peak_locations',False)
@@ -214,7 +282,7 @@ class spectrometer_2D_analysis():
 
         self.peak_x = x
         self.u_peak_x = u_x
-        self.peak_y = y
+        self.peak_y = y /(len(self.filenumbers)-1)*self.V_range
 
         if return_peak_locations:
             return self.peak_x, self.peak_y
@@ -225,29 +293,35 @@ class spectrometer_2D_analysis():
         function that plots the peaks found in the data in a scatter plot
         """
         save_fig = kw.pop('save_fig',False)
+        ax = kw.pop('ax',None)
 
         # make a scatter plot of the peaks
         if ax == None:
-            fig,ax = plt.subplots(figsize =(6,4))
-        ax.scatter(self.peak_y,self.peak_x)
-        ax.errorbar(self.peak_y, self.peak_x, ls='none',marker=None,yerr= self.u_peak_x)
-        ax.set_title(self.filename+'_peaks.png')
-        ax.set_xlim((self.filenumbers[0],self.filenumbers[-1]))
-        ax.set_ylim((self.frequencies[-1], self.frequencies[0]))
+            fig,ax = plt.subplots(figsize =(6,4))    
 
-        if self.laser_wavelength!=None:
-            ax.plot([ax.get_xlim()[0],ax.get_xlim()[-1]],[c/self.laser_wavelength*1.e-12,c/self.laser_wavelength*1.e-12]) #laser wavelength in THz
+        ax.scatter(self.peak_y,self.peak_x)
+        print ax.get_xlim(),ax.get_ylim()
+        # ax.errorbar(self.peak_y, self.peak_x, ls='none',marker=None,yerr= self.u_peak_x)
+        ax.set_title(self.plot_name+'/peaks.png')
+        ax.set_xlim((self.V_min-self.V_extent_correction,self.V_max+self.V_extent_correction))
+        ax.set_ylim((self.frequencies[-1]-self.frq_extent_correction, self.frequencies[0]+self.frq_extent_correction))
+        print ax.get_xlim(),ax.get_ylim()
+        # if self.laser_wavelength!=None:
+        #     ax.plot([ax.get_xlim()[0],ax.get_xlim()[-1]],[c/self.laser_wavelength*1.e-12,c/self.laser_wavelength*1.e-12]) #laser wavelength in THz
 
         ax=self.set_axes(ax)
 
         if save_fig:
             try: 
-                print os.path.join(self.data_dir, 'peaks.png')
-                fig.savefig(os.path.join(self.data_dir, 'peaks.png'))
+                print 'saving figure to: ',os.path.join(self.folder, 'peaks.png')
+                fig = ax.get_figure()
+                fig.savefig(os.path.join(self.folder, 'peaks.png'))
             except:
                 print('could not save figure')
+        plt.show()
+        plt.close()
 
-        return fig,ax
+        return ax
 
 
     def find_best_overlap_peaks_and_modes(self,diamond_thicknesses, air_lengths, conversion_factor=307.e-9, **kw):
@@ -290,15 +364,15 @@ class spectrometer_2D_analysis():
         return ms_errors, u_ms_errors
 
     def overlap_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
-            conversion_factor = 307.e-9,nr_points=31, **kw):
+            conversion_factor = 307.e-9,nr_points=61, ax=None, **kw):
         '''
-        function that plots the fitted peak locations in 2D data in data_dir, 
+        function that plots the fitted peak locations in 2D data in folder, 
         and overlaps it with the analytically derived diamond and air modes.
         Input parameters:
-        data_dir - directory containing 2D data
+        folder - directory containing 2D data
         diamond_thickness - diamond thickness used to obtain analytic result for resonance frequency
         cavity_length - cavity length used to obtain analytic result for resonance frequency
-        conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT: 96nm/V?
+        conversion_factor - the piezo conversion factor. at RT:307 nm/V,. at LT: 123 nm/V in latest mstm
         nr_points - the number of points used for plotting analytic results of resonances
         mode_type - the type of the modes plotted = possible are 'diamond_air_modes' or 'air_modes'
         **keywords for peak-finding:
@@ -306,7 +380,10 @@ class spectrometer_2D_analysis():
 
         '''
         # x,y,fig,ax = self.peaks_from_2D_data(return_peak_locations=True,**kw)
-        fig,ax = self.plot_peaks(**kw)
+        # ax = kw.pop('ax',None)
+        if ax==None:
+            fig,ax = plt.subplots()
+            ax = self.plot_peaks(**kw)
 
         mode_type = kw.pop('type','diamond_air_modes') #can be 'diamond_air_modes', or 'air_modes'
         ret_ax = kw.pop('ret_ax',False)
@@ -314,8 +391,9 @@ class spectrometer_2D_analysis():
 
         if mode_type == 'diamond_air_modes':
             modes,ax = self.plot_diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,
-                ax=ax,conversion_factor=conversion_factor,nr_points=max(self.peak_y)+1, return_modes=True)
+                ax=ax,conversion_factor=conversion_factor,nr_points=nr_points, return_modes=True)
         elif mode_type == 'air_modes':
+            modes,ax = self.plot_air_modes(air_length=air_length,conversion_factor=conversion_factor,nr_points = nr_points,ax=ax)
             pass 
         # ax = self.plot_diamond_modes(diamond_thickness=diamond_thickness,ax = ax)
         # ax = self.plot_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
@@ -341,8 +419,9 @@ class spectrometer_2D_analysis():
         ax2.set_xlabel('air length (um)',fontsize = 14)
 
         try: 
-            print os.path.join(self.data_dir, 'overlap_peaks_and_modes{}.png'.format(title))
-            fig.savefig(os.path.join(self.data_dir, 'overlap_peaks_and_modes{}.png'.format(title)))
+            print os.path.join(self.folder, 'overlap_peaks_and_modes{}.png'.format(title))
+            fig = ax.get_figure()
+            fig.savefig(os.path.join(self.folder, 'overlap_peaks_and_modes{}.png'.format(title)))
         except:
             print('could not save figure')
 
