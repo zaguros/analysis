@@ -55,7 +55,7 @@ ax2.errorbar(x2, y[0::2], yerr=u_y[0::2], fmt='o',
              label='Pi/2 - Pi')
 ax2.errorbar(x2, y[1::2], yerr=u_y[1::2], fmt='o',
              label='Pi/2')
-ax2.legend(frameon=True, framealpha=0.5)
+ax2.legend(frameon=True)
 ax2.set_ylabel('P(0)')
 ax2.set_xlabel(n)
 
