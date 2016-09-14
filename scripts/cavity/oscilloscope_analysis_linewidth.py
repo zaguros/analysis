@@ -49,7 +49,7 @@ class oscilloscope_analysis():
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
 
-        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3","4"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
+        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
 
         #print data
 
