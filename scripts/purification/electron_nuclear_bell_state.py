@@ -43,6 +43,7 @@ def get_correlations(**kw):
 
     ### pull data
     ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
+    search_string = kw.pop('search_string','el_13C_dm_')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = tb.latest_data('SSROCalibration')
@@ -67,10 +68,10 @@ def get_correlations(**kw):
     tomo_pulse_translation_dict = {'none': 'Z','X':'Z','x':'Y','mx':'Y','y':'X','my':'X'}
 
     for p,m in zip(tomo_pulses_p,tomo_pulses_m):
-        f_list_pos_p.append(tb.latest_data('el_13C_dm_'+p+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_p.append(tb.latest_data('el_13C_dm_'+p+'_negative' ,return_timestamp = False,**kw))
-        f_list_pos_m.append(tb.latest_data('el_13C_dm_'+m+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_m.append(tb.latest_data('el_13C_dm_'+m+'_negative' ,return_timestamp = False,**kw))
+        f_list_pos_p.append(tb.latest_data(search_string + p+'_positive' ,return_timestamp = False,**kw))
+        f_list_neg_p.append(tb.latest_data(search_string + p+'_negative' ,return_timestamp = False,**kw))
+        f_list_pos_m.append(tb.latest_data(search_string + m+'_positive' ,return_timestamp = False,**kw))
+        f_list_neg_m.append(tb.latest_data(search_string + m+'_negative' ,return_timestamp = False,**kw))
 
         #### now also calculate the measured contrast
         y_a,y_err_a = get_RO_results(f_list_pos_p[-1],ssro_calib_folder)
@@ -227,7 +228,7 @@ def electron_carbon_density_matrix(**kw):
     """
 
     folder,sweep_pts,exp_values,exp_vals_u = get_correlations(**kw)
-    
+    print 'this is the folder', folder
 
     paulis = generate_pauli_matrices()
     ### initialize the dm via the identity correlations
