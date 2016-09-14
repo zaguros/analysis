@@ -97,18 +97,18 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
-        success=False
+        success = False
         if VERBOSE:
             print 'ERROR: Fit did not converge !'
             print 'reason: ',mesg
+        # return success    #commented out by THT and MA because it bvreaks all old automatic fitting code. 160802
     
-        
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
     # package the result neatly
     if do_print and success:
         print_fit_result(result)
-    if ret:
+    if ret: #and success:
         return result
 
 
