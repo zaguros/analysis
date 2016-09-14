@@ -213,6 +213,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
         success[indices_fund]=1
         success[-1]=1
+        print '%d higher order modes removed'%(len(succes) - len(indices_fund))
         return x0s,u_x0s,success
 
 
