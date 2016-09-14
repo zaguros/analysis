@@ -59,45 +59,91 @@ class laserscan_analysis(cga.cavity_analysis):
 
         plt.close()
 
+    def fit_gaussian(self,**kw):
+        y=kw.pop('y',self.y_data)
+        x=kw.pop('x',self.frq_data)
+        g_sigma = kw.pop('g_sigma',10)
+        plot_title = kw.pop('plot_title','')
+        plot_fit=kw.pop('plot_fit',False)
+        fixed=kw.pop('fixed',[])
+
+        g_a = np.average(y)
+        g_A = max(y)-g_a
+        g_x0= self.frq_data[np.argmax(y)]
+
+
+        p0, fitfunc, fitfunc_str = common.fit_gauss(g_a, g_A, g_x0, g_sigma)
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+        if 'sigma' not in fit_result['params_dict']:
+            fig,ax = plt.subplots(figsize=(10,4))      
+            ax.plot(x,y)
+            print 'WARNING: COULD NOT FIT sigma'
+            return 0,10
+
+        sigma = np.abs(fit_result['params_dict']['sigma'])
+        u_sigma = np.abs(fit_result['error_dict']['sigma'])
+        FWHM = 2*math.sqrt(2*math.log(2))*sigma
+        u_FWHM = 2*math.sqrt(2*math.log(2))*u_sigma
+
+        if plot_fit:
+            fig,ax = plt.subplots(figsize=(10,4))
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)*10),
+                ax=ax,label='Fit',show_guess=True, plot_data=True)
+            ax.set_title('FWHM = %.1f +- %.1f GHz %s'%(FWHM,u_FWHM,plot_title))
+            fig.savefig(self.folder+'/gaussian_fit_%s.png'%(plot_title))
+            plt.show()
+            plt.close()
+
+        return FWHM,u_FWHM
+
+    def fit_lorentzian(self,**kw):
+        y=kw.pop('y',self.y_data)
+        x=kw.pop('x',self.frq_data)
+        g_gamma = kw.pop('g_gamma',10)
+        plot_title = kw.pop('plot_title','')
+        plot_fit=kw.pop('plot_fit',False)
+        fixed=kw.pop('fixed',[])
+
+        g_a = np.average(y)
+        g_A = max(y)-g_a
+        g_x0= self.frq_data[np.argmax(y)]
+
+
+        p0, fitfunc, fitfunc_str = common.fit_lorentz(g_a, g_A, g_x0, g_gamma)
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+        if 'gamma' not in fit_result['params_dict']:
+            fig,ax = plt.subplots(figsize=(10,4))      
+            ax.plot(x,y)
+            print 'WARNING: COULD NOT FIT gamma'
+            return 0,10
+
+        gamma = np.abs(fit_result['params_dict']['gamma'])
+        u_gamma = np.abs(fit_result['error_dict']['gamma'])
+        FWHM = gamma
+        u_FWHM = u_gamma
+
+        if plot_fit:
+            fig,ax = plt.subplots(figsize=(10,4))
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)*10),
+                ax=ax,label='Fit',show_guess=True, plot_data=True)
+            ax.set_title('FWHM = %.1f +- %.1f GHz %s'%(FWHM,u_FWHM,plot_title))
+            fig.savefig(self.folder+'/lorentzian_fit_%s.png'%(plot_title))
+            plt.show()
+            plt.close()
+
+        return FWHM,u_FWHM
+
     def fit_bins(self,**kw):
-        plot_fit = kw.pop('plot_fit',False)
         plot_sigmas = kw.pop('plot_sigmas',True)
-        g_sigma = 10
-        fixed=[]
 
         FWHMs=np.array([])
         u_FWHMs=np.array([])
 
-
         for i in np.arange(self.nr_bins):
-            g_a = np.average(self.y_data_per_ms_binned[:,i])
-            g_A = max(self.y_data_per_ms_binned[:,i])-g_a
-            g_x0= self.frq_data[np.argmax(self.y_data_per_ms_binned[:,i])]
-
-
-            p0, fitfunc, fitfunc_str = common.fit_gauss(g_a, g_A, g_x0, g_sigma)
-            fit_result = fit.fit1d(self.frq_data,self.y_data_per_ms_binned[:,i], None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
-            if 'sigma' not in fit_result['params_dict']:
-                fig,ax = plt.subplots(figsize=(10,4))      
-                ax.plot(self.frq_data,self.y_data_per_ms_binned[:,i])
-                print 'WARNING: COULD NOT FIT sigma'
-                continue
-
-            sigma = np.abs(fit_result['params_dict']['sigma'])
-            u_sigma = np.abs(fit_result['error_dict']['sigma'])
-            FWHM = 2*math.sqrt(2*math.log(2))*sigma
-            u_FWHM = 2*math.sqrt(2*math.log(2))*u_sigma
+            FWHM,u_FWHM = self.fit_gaussian(x=self.frq_data, y=self.y_data_per_ms_binned[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize),**kw )
+            
             FWHMs=np.append(FWHMs,FWHM)
             u_FWHMs=np.append(u_FWHMs,u_FWHM)
-
-            if plot_fit:
-                fig,ax = plt.subplots(figsize=(10,4))
-                plot.plot_fit1d(fit_result, np.linspace(self.frq_data[0],self.frq_data[-1],len(self.frq_data)*10),
-                    ax=ax,label='Fit',show_guess=True, plot_data=True)
-                ax.set_title('FWHM = %.1f +- %.1f GHz, bin = %d, binsize = %d'%(FWHM,u_FWHM,i,self.binsize))
-                fig.savefig(self.folder+'/gaussian_fit_bin_%d_binsize_%d.png'%(i,self.binsize))
-                plt.show()
-                plt.close()
 
         if plot_sigmas:
             fig2,ax2 = plt.subplots(figsize=(10,4))

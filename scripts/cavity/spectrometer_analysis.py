@@ -138,6 +138,8 @@ class spectrometer_analysis():
         x0s - 1d array of the fitted peak locations
         u_x0s -  1d array of the uncertainty in the fitted peak locations
         """
+        report_fails = kw.pop('report_fails',False)
+
         x0s =np.array([])
         u_x0s =np.array([])
         g_gamma = kw.pop('g_gamma',0.5)
@@ -213,15 +215,16 @@ class spectrometer_analysis():
                     continue
 
             if A*gamma < 0:
-                print 'ignoring since negative '
+                if report_fails:
+                    print 'ignoring since negative '
                 nr_fails+=1
                 continue
 
             success[i] = 1 #mark this peak as succesfully fitted
             x0s = np.append(x0s,x0)
             u_x0s = np.append(u_x0s,u_x0)
-
-        print 'number of failed fits:', nr_fails
+        if report_fails:
+            print 'number of failed fits:', nr_fails
         return x0s, u_x0s, success
 
 # import os
