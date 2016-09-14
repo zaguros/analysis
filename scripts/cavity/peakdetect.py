@@ -166,7 +166,7 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
     >>> # set threshold = 2
     >>> detect_peaks(x, threshold = 2, show=True)
     """
-
+    
     x = np.atleast_1d(x).astype('float64')
     if x.size < 3:
         return np.array([], dtype=int)
