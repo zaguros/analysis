@@ -49,7 +49,7 @@ class oscilloscope_analysis():
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
 
-        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3","4"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
+        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
 
         #print data
 
@@ -187,6 +187,76 @@ class oscilloscope_analysis():
         plt.close()
 
         return linewidth, u_linewidth, A1, u_A1,gamma1,u_gamma1,chi_sq,x01,A2
+
+
+    def plot_and_fit_birefringence_with_EOM(self,EOM_freq,**kw):
+        """
+        input: EOM frequency in GHz
+        """
+        show_fit = kw.pop('show_fit',False)
+        g_a1 = kw.pop('g_a1',min(self.y))
+
+        g_x01 = kw.pop('g_X01', self.x[np.argmax(self.y)])
+        #g_x01 = kw.pop('g_X01', self.x[np.argmin(self.y)])
+        g_gamma1 = kw.pop('g_gamma1',(self.x[-1]-self.x[0])/20.)
+        #g_gamma2 = kw.pop('g_gamma2',(self.x[-1]-self.x[0])/20.)
+        g_dx = kw.pop('g_dx',(self.x[-1]-self.x[0])/10.)
+        g_dx2 = kw.pop('g_dx2',(self.x[-1]-self.x[0])/10.)
+        g_A1 = kw.pop('g_A1',max(self.y)*g_gamma1)  
+        g_A2 = kw.pop('g_A2',g_A1/8.)  
+        #g_A3 = kw.pop('g_A3',g_A1*0.6)
+        #g_A4 = kw.pop('g_A4',g_A1/8.)  
+        #g_A5 = kw.pop('g_A5',g_A1/8.)
+
+        fixed = kw.pop('fixed',[])
+
+        #print g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3
+
+        p0, fitfunc, fitfunc_str = common.fit_4lorentz_symmetric_sym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_dx2, g_A2)
+        # p0, fitfunc, fitfunc_str = common.fit_5lorentz_symmetric_asym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3,g_A4,g_A5)
+
+    #        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2)
+        fit_result = fit.fit1d(self.x,self.y, None, p0=p0, fitfunc=fitfunc, do_print=show_fit, ret=True, fixed=fixed)
+
+        #x01 = fit_result['params_dict']['x01']
+        dx = fit_result['params_dict']['dx']
+        #dx2 = fit_result['params_dict']['dx2']
+        gamma1 = fit_result['params_dict']['gamma1']
+        #gamma2 = fit_result['params_dict']['gamma2']
+        u_gamma1 = fit_result['error_dict']['gamma1']
+        #u_gamma2 = fit_result['error_dict']['gamma2']
+
+        scaling = EOM_freq/dx #scale the known EOM freq with the separation here.
+        linewidth = gamma1*scaling #scale the linewidth to get linewidht in frequency
+        u_linewidth = u_gamma1*scaling
+        linewidth_string = 'gamma = '+str(round(linewidth,2))+'+-'+str(round(u_linewidth,3))+'GHz'
+        print linewidth_string
+
+        #Plotting
+
+        fig,ax = plt.subplots(figsize=(8,4))
+        plot.plot_fit1d(fit_result, np.linspace(self.x[0],self.x[-1],10*len(self.x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
+        if self.use_timetrace:
+            ax.set_xlabel("Time (ms)", fontsize = 14)
+        else:
+            ax.set_xlabel("datapoints", fontsize = 14)        
+        ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
+        ax.set_xlim(self.x[0],self.x[-1])
+        xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
+        #rescaling for x-axis in GHz
+        X_min_freq = ax.get_xlim()[0]*scaling
+        X_max_freq = ax.get_xlim()[-1]*scaling
+
+        ax.set_title(self.indir+'/'+self.filename+'\n'+linewidth_string)
+        plt.savefig(os.path.join(self.indir,self.filename+'_fit.png'))
+
+        if show_fit:
+            plt.show()
+        plt.close()
+
+        return linewidth, u_linewidth
+
+
 
             #xticklabels = np.linspace(X_min_freq,X_max_freq,n_xticks)
 

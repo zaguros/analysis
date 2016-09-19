@@ -192,13 +192,14 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
         plt.close()
 
-    def remove_higher_order_modes(self,x0s,u_x0s,hom_max =10):
+    def remove_higher_order_modes(self,x0s,u_x0s,hom_max =10,**kw):
         """
         function that removes the peaks that are higher order modes. 
         If the separation dx0 beteween two peaks is wihtin the range (HOM_min <) dx0 < HOM_max,
         only the oeak with the lowest x0 is kept.
         """
         # nr_peaks = 
+        report_fails = kw.pop('report_fails',False)
         success = np.zeros(len(x0s))
 
         indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
@@ -208,7 +209,8 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
         success[indices_fund]=1
         success[-1]=1
-        print '%d higher order modes removed'%(len(succes) - len(indices_fund))
+        if report_fails:
+            print '%d higher order modes removed'%(len(success) - len(x0s))
         return x0s,u_x0s,success
 
 
@@ -238,7 +240,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         peak_intensity_x0s = peak_intensity[np.where(success >0)]
 
         if remove_hom:
-            x0s,u_x0s,hom_success = self.remove_higher_order_modes(x0s,u_x0s,hom_max=hom_max)
+            x0s,u_x0s,hom_success = self.remove_higher_order_modes(x0s,u_x0s,hom_max=hom_max,**kw)
             peak_intensity_x0s = peak_intensity_x0s[np.where(hom_success >0)]
 
 
@@ -254,7 +256,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
             if save_fig:
                 plt.savefig(os.path.join(self.folder,'plot_1D_peaks.png'))
             plt.show()
-            plt.close()
+            #plt.close()
 
         return x0s,u_x0s    
 
@@ -318,15 +320,16 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
                 fig.savefig(os.path.join(self.folder, 'peaks.png'))
             except:
                 print('could not save figure')
-        plt.show()
-        plt.close()
+        # plt.show()
+        # plt.close()
 
         return ax
 
 
     def find_best_overlap_peaks_and_modes(self,diamond_thicknesses, air_lengths, conversion_factor=307.e-9, **kw):
         # x,y,fig,ax = self.peaks_from_2D_data(return_peak_locations=True,**kw)
-        fig,ax = self.plot_peaks(**kw)
+        fig,ax = plt.subplots()
+        ax = self.plot_peaks(ax=ax,**kw)
 
         ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
         u_ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
@@ -383,13 +386,14 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         # ax = kw.pop('ax',None)
         if ax==None:
             fig,ax = plt.subplots()
-            ax = self.plot_peaks(**kw)
+            ax = self.plot_peaks(ax=ax,**kw)
 
         mode_type = kw.pop('type','diamond_air_modes') #can be 'diamond_air_modes', or 'air_modes'
         ret_ax = kw.pop('ret_ax',False)
 
 
         if mode_type == 'diamond_air_modes':
+            print 'overlapping diamond air modes'
             modes,ax = self.plot_diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,
                 ax=ax,conversion_factor=conversion_factor,nr_points=nr_points, return_modes=True)
         elif mode_type == 'air_modes':
