@@ -32,22 +32,7 @@ This script is written to import data from the oscilloscope in the CSV format to
 ### This is the only part where values should be inserted.#### 
 n_xticks = 5
 n_yticks = 8
-# fit guess parameters
-
-# # Parameters for FSR 80 nm
-# g_a1 = 0.02
-# g_A1 = 0.22
-# g_x01 = 0.4
-# g_gamma1 = 0.2
-# g_dx = 0.3
-# g_A2 = 0.08
-# g_gamma2 = 0.2
-# g_A3 = 0.08
-# g_gamma3 = 0.2
-
-
  
-# Open file and create dataframes in pandas
 
 class oscilloscope_analysis():
     def __init__(self,indir,filename):
@@ -64,7 +49,7 @@ class oscilloscope_analysis():
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
 
-        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
+        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
 
         #print data
 
@@ -92,8 +77,10 @@ class oscilloscope_analysis():
 
     def plot_data(self,**kw):
         plot_mod = kw.pop('plot_mod',False)
-        fig,ax = plt.subplots(figsize=(6,4))
-        ax.plot(self.x,self.y,'o')
+        figsize = kw.pop('figsize',(6,4))
+        fmt = kw.pop('fmt','o')
+        fig,ax = plt.subplots(figsize=figsize)
+        ax.plot(self.x,self.y,fmt)
         if plot_mod:
             scale_y =max(self.y)/ max(self.mod)
             ax.plot(self.x,self.mod*scale_y)
@@ -133,9 +120,12 @@ class oscilloscope_analysis():
         input: EOM frequency in GHz
         """
         show_fit = kw.pop('show_fit',False)
+        print_fit = kw.pop('print_fit',False)
+        plot_name = kw.pop('plot_name','')
+        save_fit = kw.pop('save_fit',True)
         g_a1 = kw.pop('g_a1',min(self.y))
 
-        g_x01 = kw.pop('g_X01', self.x[np.argmax(self.y)])
+        g_x01 = kw.pop('g_x01', self.x[np.argmax(self.y)])
         g_gamma1 = kw.pop('g_gamma1',(self.x[-1]-self.x[0])/20.)
         g_dx = kw.pop('g_dx',(self.x[-1]-self.x[0])/10.)
         g_A1 = kw.pop('g_A1',max(self.y)*g_gamma1)  
@@ -146,19 +136,25 @@ class oscilloscope_analysis():
 
         fixed = kw.pop('fixed',[])
 
-        #print g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3
-
-        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric_asym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3)
+        # p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric_asym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3)
         # p0, fitfunc, fitfunc_str = common.fit_5lorentz_symmetric_asym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3,g_A4,g_A5)
+        
+        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2)
 
-    #        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2)
-        fit_result = fit.fit1d(self.x,self.y, None, p0=p0, fitfunc=fitfunc, do_print=show_fit, ret=True, fixed=fixed)
+        fit_result = fit.fit1d(self.x,self.y, None, p0=p0, fitfunc=fitfunc, do_print=print_fit, ret=True, fixed=fixed)
 
-        # x01 = fit_result['params_dict']['x01']
+        if 'x01' not in fit_result['params_dict']:
+            return 0,0,0,0,0,0,10000,g_x01,0
+
+        x01 = fit_result['params_dict']['x01']
         dx = fit_result['params_dict']['dx']
         gamma1 = fit_result['params_dict']['gamma1']
+        A1 = fit_result['params_dict']['A1']
+        A2 = fit_result['params_dict']['A2']
         # gamma2 = fit_result['params_dict']['gamma2']
         u_gamma1 = fit_result['error_dict']['gamma1']
+        u_A1 = fit_result['error_dict']['A1']
+        chi_sq=fit_result['chisq']
         # u_gamma2 = fit_result['error_dict']['gamma2']
 
         scaling = EOM_freq/dx #scale the known EOM freq with the separation here.
@@ -183,13 +179,14 @@ class oscilloscope_analysis():
         X_max_freq = ax.get_xlim()[-1]*scaling
 
         ax.set_title(self.indir+'/'+self.filename+'\n'+linewidth_string)
-        plt.savefig(os.path.join(self.indir,self.filename+'_fit.png'))
+        if save_fit:
+            plt.savefig(os.path.join(self.indir,self.filename+'_fit_'+plot_name+'.png'))
 
         if show_fit:
             plt.show()
         plt.close()
 
-        return linewidth, u_linewidth
+        return linewidth, u_linewidth, A1, u_A1,gamma1,u_gamma1,chi_sq,x01,A2
 
 
     def plot_and_fit_birefringence_with_EOM(self,EOM_freq,**kw):

@@ -18,7 +18,7 @@ pulse_shape = 'Square'
 
 
 timestamp = None #'20150407144111' #'20150403163852'#None#'20140408125318'
-guess_frq = 1./6000.
+guess_frq = 1./300.
 
 guess_amp = 0.2
 guess_of = 0.7
@@ -37,8 +37,7 @@ o = fit.Parameter(guess_of, 'o')
 f = fit.Parameter(guess_frq, 'f')
 A = fit.Parameter(guess_amp, 'A')
 phi = fit.Parameter(guess_phi, 'phi')
-k = fit.Parameter(guess_k, 'k')
-p0 = [f, A, phi, o, k]
+p0 = [f, A, phi, o]
 fitfunc_str = ''
 
 ### script
@@ -72,16 +71,19 @@ y = a.p0
 #         guess_amp, guess_of, guess_frq, guess_tau, (0, 0), (-2.193e-3, 0), (2.193e-3, 0), fixed=[],
 #         do_print=True, ret=True)
 
-fitfunc_str = 'o - A + A*e^(-(kx)**2)*cos(2pi (fx-phi))'
+fitfunc_str = 'o - A + A*cos(2pi (fx-phi))'
 
 def fitfunc(x):
-    return (o()-A()) + A() * np.exp(-(k()*x)**2) * np.cos(2*np.pi*(f()*x - phi()))
+    return (o()-A()) + A()*np.cos(2*np.pi*(f()*x - phi()))
+
+
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, fixed=fixed,
         do_print=True, ret=True)
 plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax,
        plot_data=False)
 # ax.set_ylim([0.,0.25])
+
 print "pi pulse = {:.5f} ".format(1/f()/2.) + a.sweep_name
 
 # ax.set_title(a.timestamp+'\n'+a.measurementstring)

@@ -301,9 +301,10 @@ def fit_poly_shifted(g_x0,*arg):
     for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
         idx = i
+
     def fitfunc(x):
-        val = 0
-        for i in range(idx):
+        val=0
+        for i in range(idx+1):
             val += p0[i+1]() * (x-x0())**i
         return val
 
