@@ -152,7 +152,7 @@ class spectrometer_2D_analysis():
             if save_fig:
                 plt.savefig(os.path.join(self.data_dir,'plot.png'))
             plt.show()
-            plt.close()
+            #plt.close()
 
         return x0s,u_x0s    
 
