@@ -102,13 +102,14 @@ class spectrometer_analysis():
         frequencies - frequency data
         intensity - intensity data 
         minimum_peak_distance - in number of datapoints, default - 30
-        minimum_peak_height - default=0.2*(max intensity)
+        minimum_peak_height - the minimum height above average; default=0.2*(max intensity)
         kpsh - "keep same height" - keeps peaks with the same height, even if they are <mpd away
 
         Output parameters:
         peak_wavelengths - the wavelengths at which a peak is found
         """
         minimum_peak_height = kw.pop('minimum_peak_height',0.2*max(intensity))
+        minimum_peak_height=np.average(intensity)+minimum_peak_height
         minimum_peak_distance = kw.pop('minimum_peak_distance',30)
         kpsh = kw.pop('kpsh',False)
         peak_frequencies = np.array([])

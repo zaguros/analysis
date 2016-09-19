@@ -69,7 +69,7 @@ class cavity_analysis(m2.M2Analysis):
         """
         self.frq_data = self.g['laser_frequency']
         self.x_data = self.g['laser_tuning_voltage']
-        self.y_data = self.g['PD_signal']
+        self.y_data = np.array(self.g['PD_signal'])
         self.y_data_per_ms = self.g['PD_signal_per_ms'][:]
         return self.x_data,self.y_data,self.frq_data,self.y_data_per_ms
 
@@ -80,7 +80,7 @@ class cavity_analysis(m2.M2Analysis):
             print 'deleting %d points to enable reshaping'%del_points
             self.y_data_per_ms = self.y_data_per_ms[:,:-del_points]
         self.nr_bins =(np.size(self.y_data_per_ms,1)/binsize)
-        print 'using %d bins of size %d'%(self.nr_bins,self.binsize)
+        #print 'using %d bins of size %d'%(self.nr_bins,self.binsize)
         # try:
         y_data_per_ms_reshaped = self.y_data_per_ms.reshape(np.size(self.y_data_per_ms,0),self.nr_bins,binsize)
         # except ValueError:
@@ -91,15 +91,10 @@ class cavity_analysis(m2.M2Analysis):
 
     def avg_bins_per_s(self,**kw):
         max_bins = kw.pop('max_bins',1000/self.binsize)
-        print max_bins
         if self.nr_bins%max_bins==0:
             bin_repetitions = self.nr_bins/max_bins
             self.nr_bins = max_bins
-            print 'bin repetitions'
-            print 'new nr bins', self.nr_bins
-            print np.shape(self.y_data_per_ms_binned)
             y_data_per_ms_reshaped = self.y_data_per_ms_binned.reshape(np.size(self.y_data_per_ms,0),bin_repetitions,self.nr_bins)
-            print np.shape(y_data_per_ms_reshaped)
             self.y_data_per_ms_binned = np.average(y_data_per_ms_reshaped,axis=1)
         return self.y_data_per_ms_binned
 

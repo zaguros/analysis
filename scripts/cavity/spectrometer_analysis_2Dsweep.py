@@ -10,6 +10,7 @@ import os
 import matplotlib.image as mpimg
 import scipy 
 import time
+import json
 
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
@@ -290,6 +291,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         self.peak_x = x
         self.u_peak_x = u_x
         self.peak_y = y /(len(self.filenumbers)-1)*self.V_range
+        self.y = y
 
         if return_peak_locations:
             return self.peak_x, self.peak_y
@@ -311,8 +313,8 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         ax.set_title(self.plot_name+'/peaks.png')
         ax.set_xlim((self.V_min-self.V_extent_correction,self.V_max+self.V_extent_correction))
         ax.set_ylim((self.frequencies[-1]-self.frq_extent_correction, self.frequencies[0]+self.frq_extent_correction))
-        # if self.laser_wavelength!=None:
-        #     ax.plot([ax.get_xlim()[0],ax.get_xlim()[-1]],[c/self.laser_wavelength*1.e-12,c/self.laser_wavelength*1.e-12]) #laser wavelength in THz
+        if self.laser_wavelength!=None:
+            ax.plot([ax.get_xlim()[0],ax.get_xlim()[-1]],[c/self.laser_wavelength*1.e-12,c/self.laser_wavelength*1.e-12]) #laser wavelength in THz
         ax=self.set_axes(ax)
         ax.grid(False)
         if save_fig:
@@ -332,6 +334,8 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
 
     def find_best_overlap_peaks_and_modes(self,diamond_thicknesses, air_lengths, conversion_factor=307.e-9, ax=None,**kw):
+        mode_type = kw.pop('mode_type','diamond_air_modes') #can be 'diamond_air_modes', or 'air_modes'
+
         ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
         u_ms_errors = np.zeros((len(diamond_thicknesses),len(air_lengths)))
 
@@ -339,10 +343,17 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         for i,diamond_thickness in enumerate(diamond_thicknesses):
             for j,air_length in enumerate(air_lengths):
                 cavity_length = diamond_thickness + air_length
-                modes = self.diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
-                    conversion_factor=conversion_factor,nr_points=max(self.peak_y)+1)
-
-                ms_error, u_ms_error = self.calculate_overlap_quality(self.peak_x,self.peak_y,modes,**kw)
+                if mode_type == 'diamond_air_modes':
+                    modes = self.diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+                        conversion_factor=conversion_factor,nr_points=len(self.filenumbers)) 
+                        #important to take same nr_points for the modes as filenumbers
+                elif mode_type == 'air_modes':
+                    modes = self.pure_air_modes(cavity_length=cavity_length,
+                        conversion_factor=conversion_factor,nr_points=len(self.filenumbers))
+                else: 
+                    print 'enter valid mode_type!'
+                    return 0,0
+                ms_error, u_ms_error = self.calculate_overlap_quality(modes,**kw)
                 # print 15*'*'
                 # print 'mean squared error fit',ms_error, '+-', u_ms_error
                 # print 15*'*'
@@ -380,7 +391,8 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         mode_type - the type of the modes plotted = possible are 'diamond_air_modes' or 'air_modes'
         '''
         name = kw.pop('name','')
-        mode_type = kw.pop('type','diamond_air_modes') #can be 'diamond_air_modes', or 'air_modes'
+        mode_type = kw.pop('mode_type','diamond_air_modes') #can be 'diamond_air_modes', or 'air_modes'
+        save_fig = kw.pop('save_fig',True)
 
         if ax==None:
             fig,ax = plt.subplots()
@@ -394,10 +406,10 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
             modes,ax = self.plot_air_modes(air_length=air_length,conversion_factor=conversion_factor,nr_points = nr_points,ax=ax)
             
 
-        ms_error, u_ms_error = self.calculate_overlap_quality(self.peak_x,self.peak_y,modes,**kw)
-        print 15*'*'
-        print 'mean squared error', round(ms_error,3), '+-', round(u_ms_error,3)
-        print 15*'*'
+        #ms_error, u_ms_error = self.calculate_overlap_quality(self.peak_x,self.peak_y,modes,**kw)
+        #print 15*'*'
+        #print 'mean squared error', round(ms_error,3), '+-', round(u_ms_error,3)
+        #print 15*'*'
 
 
         title ='d={}um_L={}um'.format(str(diamond_thickness*1e6),str(air_length*1.e6))
@@ -415,12 +427,13 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         ax2.set_xlabel('air length (um)',fontsize = 14)
         ax2.grid(False)
 
-        try: 
-            print os.path.join(self.folder, '%s_%s%s.png'%(mode_type,title,name))
-            fig = ax.get_figure()
-            fig.savefig(os.path.join(self.folder, '%s_%s%s.png'%(mode_type,title,name)))
-        except:
-            print('could not save figure')
+        if save_fig:
+            try: 
+                print os.path.join(self.folder, '%s_%s%s.png'%(mode_type,title,name))
+                fig = ax.get_figure()
+                fig.savefig(os.path.join(self.folder, '%s_%s%s.png'%(mode_type,title,name)))
+            except:
+                print('could not save figure')
 
         if ret_ax:
             return ax
@@ -431,7 +444,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
 
 
-    def overlap_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
+    def plot_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
             conversion_factor = 307.e-9,nr_points=61, ax=None,ret_ax=False, **kw):
         '''
         function that plots the fitted peak locations in 2D data in folder, 
@@ -453,7 +466,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         plt.close(fig)
 
 
-    def overlap_2dplot_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
+    def plot_2dplot_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
             conversion_factor = 307.e-9,nr_points=61, ax=None,ret_ax=False, **kw):
         '''
         function that plots the fitted peak locations in 2D data in folder, 
@@ -474,7 +487,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         plt.show(fig)
         plt.close(fig)
 
-    def overlap_2dplot_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
+    def plot_2dplot_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
             conversion_factor = 307.e-9,nr_points=61, ax=None,ret_ax=False, **kw):
         '''
         function that plots the fitted peak locations in 2D data in folder, 
@@ -497,91 +510,44 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         plt.show(fig)
         plt.close(fig)
 
+    def default(self,obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        raise TypeError('Not serializable')
 
-        # mode_type = kw.pop('type','diamond_air_modes') #can be 'diamond_air_modes', or 'air_modes'
-        # ret_ax = kw.pop('ret_ax',False)
-
-        # # x,y,fig,ax = self.peaks_from_2D_data(return_peak_locations=True,**kw)
-        # # ax = kw.pop('ax',None)
-        # if ax==None:
-        #     fig,ax = plt.subplots()
-        #     ax = self.plot_peaks(**kw)
-
-        # ax.grid(False)
-
-
-
-        # if mode_type == 'diamond_air_modes':
-        #     modes,ax = self.plot_diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,
-        #         ax=ax,conversion_factor=conversion_factor,nr_points=nr_points, return_modes=True)
-        # elif mode_type == 'air_modes':
-        #     modes,ax = self.plot_air_modes(air_length=air_length,conversion_factor=conversion_factor,nr_points = nr_points,ax=ax)
-        #     pass 
-        # # ax = self.plot_diamond_modes(diamond_thickness=diamond_thickness,ax = ax)
-        # # ax = self.plot_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
-        # #     ax=ax, conversion_factor=conversion_factor,nr_points=nr_points)
-
-        # ms_error, u_ms_error = self.calculate_overlap_quality(self.peak_x,self.peak_y,modes,**kw)
-        # print 15*'*'
-        # print 'mean squared error', round(ms_error,3), '+-', round(u_ms_error,3)
-        # print 15*'*'
-
-        # title ='d={}um_L={}um'.format(str(diamond_thickness*1e6),str(air_length*1.e6))
-
-        # ax.text(ax.get_xlim()[0] + (ax.get_xlim()[-1]-ax.get_xlim()[0])/4,ax.get_ylim()[0],title, size=14, backgroundcolor = 'w')
-
-        # #add an axis at the top with the cavity length 
-        # ax2 = ax.twiny()
-        # xticks = np.linspace(ax2.get_xlim()[0],ax2.get_xlim()[-1],int((self.V_max-self.V_min)/2+1))
-        # xticklabels2 =np.linspace(air_length*1.e6,air_length*1.e6+(conversion_factor*(self.V_max-self.V_min)*1.e6),int((self.V_max-self.V_min)/2+1))
-        # xticklabels2 = np.round(xticklabels2,2)
-
-        # ax2.set_xticks(xticks)
-        # ax2.set_xticklabels(xticklabels2,rotation=0)
-        # ax2.set_xlabel('air length (um)',fontsize = 14)
-
-        # try: 
-        #     print os.path.join(self.folder, 'overlap_peaks_and_modes{}.png'.format(title))
-        #     fig = ax.get_figure()
-        #     fig.savefig(os.path.join(self.folder, 'overlap_peaks_and_modes{}.png'.format(title)))
-        # except:
-        #     print('could not save figure')
-
-        # if ret_ax:
-        #     return fig,ax
-
-        # plt.close(fig)
+    def save_analysis_params(self,analysis_params_dict):
+        f=open(os.path.join(self.folder,'analysis_params.json'), 'w')
+        json.dump(analysis_params_dict,f,default=self.default)
+        f.close()
+       
 
     def find_nearest(self, array,value):
         idx = (np.abs(array-value)).argmin()
         return array[idx]
 
-    def calculate_overlap_quality(self, x,y,modes, **kw):
+    def calculate_overlap_quality(self, modes, **kw):
         min_frequency = kw.pop('min_frequency', 400)
         max_frequency = kw.pop('max_frequency', 550)
         min_voltage = kw.pop('min_voltage',0.)
 
-        nr_scans_to_disregard = int((min_voltage - self.V_min)/(self.V_max - self.V_min)*(max(y)+1))
-
+        nr_scans_to_disregard = int((min_voltage - self.V_min)/(self.V_max - self.V_min)*(len(self.filenumbers)))
+        nr_scans_to_disregard = int((min_voltage - self.V_min)/float((self.V_max - self.V_min))*(len(self.filenumbers)))
         squared_errors = []
         tot_nr_errors = 0
-
-        for i in np.arange(max(y)+1):
+        for i in self.filenumbers:
             if i>nr_scans_to_disregard:
-                x_i = x[np.where((y>i-0.2)&(y<i+0.2))]
-                nu_i = np.transpose(modes)[i]
-                
+                #select the peaks in this file. use self.y since it lists the filenumbers instead of voltages as y
+                x_i = self.peak_x[np.where(self.y==i)]#self.peak_x[np.where((self.peak_y>i-0.2)&(self.peak_y<i+0.2))]
+                nu_i = np.transpose(modes)[i]#so it is important that modes has the same number of points as filenumbers
                 for x_ii in x_i: #important to compare to x_ii: the data.
                     if ((x_ii>min_frequency) and (x_ii < max_frequency)):
                         nearest_nu_ii = self.find_nearest(nu_i, x_ii)
                         tot_nr_errors+=1
                         squared_errors.append((nearest_nu_ii-x_ii)**2 )
-
         squared_errors = np.array(squared_errors)
         total_squared_errors = np.sum(squared_errors)
         mean_squared_error = total_squared_errors/tot_nr_errors
         u_mean_squared_error = np.sqrt(np.sum((squared_errors-mean_squared_error)**2))/tot_nr_errors
-
         return mean_squared_error, u_mean_squared_error
 
     def pure_diamond_modes(self, diamond_thickness=4.e-6):

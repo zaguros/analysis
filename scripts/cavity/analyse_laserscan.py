@@ -59,42 +59,81 @@ class laserscan_analysis(cga.cavity_analysis):
 
         plt.close()
 
-    def fit_gaussian(self,**kw):
+    def find_nearest(self, array,value):
+        idx = (np.abs(array-value)).argmin()
+        return array[idx]
+
+    def shift_centre(self,**kw):
+        y=kw.pop('y',self.y_data)
+        x=kw.pop('x',self.frq_data)
+        FWHM,u_FWHM,x0 = self.fit_gaussian(**kw)
+        x0i = self.find_nearest(x,x0)
+        self.dx_data = x-x0i
+        return self.dx_data
+
+    def crop_data_around_centre(self,i_window=10,**kw):
+        ix_centre = int(np.where(self.dx_data==0.)[0])
+
+        #use_ix = np.arange(ix_centre-i_window,ix_centre+i_window)
+        #use_ix=np.where((self.dx_data>-dfreq_window/2.) & (self.dx_data<dfreq_window/2.))
+        self.dx_data_centred=self.dx_data[ix_centre-i_window:ix_centre+i_window+1]
+        self.y_data_centred = self.y_data[ix_centre-i_window:ix_centre+i_window+1]
+
+        return self.dx_data_centred,self.y_data_centred
+
+    def crop_binned_data_around_centre(self,i_window=10,**kw):
+        ix_centre = int(np.where(self.dx_data==0.)[0])
+
+        #use_ix=np.where((self.dx_data>-dfreq_window/2.) & (self.dx_data<dfreq_window/2.))
+        self.dx_data_centred=self.dx_data[ix_centre-i_window:ix_centre+i_window+1]
+        self.y_data_per_ms_binned_centred = np.zeros((2*i_window+1,self.nr_bins))
+        for i in np.arange(self.nr_bins):
+            self.y_data_per_ms_binned_centred[:,i] = self.y_data_per_ms_binned[ix_centre-i_window:ix_centre+i_window+1,i]
+        return self.y_data_per_ms_binned_centred
+
+    def fit_gaussian(self,ax=None,ret_ax =False,**kw):
         y=kw.pop('y',self.y_data)
         x=kw.pop('x',self.frq_data)
         g_sigma = kw.pop('g_sigma',10)
         plot_title = kw.pop('plot_title','')
         plot_fit=kw.pop('plot_fit',False)
+        save_plot=kw.pop('save_plot',True)
         fixed=kw.pop('fixed',[])
-
+        label=kw.pop('label','')
         g_a = np.average(y)
         g_A = max(y)-g_a
-        g_x0= self.frq_data[np.argmax(y)]
+        g_x0= x[np.argmax(y)]
 
 
         p0, fitfunc, fitfunc_str = common.fit_gauss(g_a, g_A, g_x0, g_sigma)
         fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
         if 'sigma' not in fit_result['params_dict']:
-            fig,ax = plt.subplots(figsize=(10,4))      
-            ax.plot(x,y)
             print 'WARNING: COULD NOT FIT sigma'
             return 0,10
 
         sigma = np.abs(fit_result['params_dict']['sigma'])
         u_sigma = np.abs(fit_result['error_dict']['sigma'])
+        x0 = fit_result['params_dict']['x0']
         FWHM = 2*math.sqrt(2*math.log(2))*sigma
         u_FWHM = 2*math.sqrt(2*math.log(2))*u_sigma
 
         if plot_fit:
-            fig,ax = plt.subplots(figsize=(10,4))
+            if ax==None:
+                fig,ax = plt.subplots(figsize=(10,4))
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)*10),
-                ax=ax,label='Fit',show_guess=True, plot_data=True)
+                ax=ax,label=label,show_guess=False, plot_data=True,print_info=False)
             ax.set_title('FWHM = %.1f +- %.1f GHz %s'%(FWHM,u_FWHM,plot_title))
-            fig.savefig(self.folder+'/gaussian_fit_%s.png'%(plot_title))
-            plt.show()
-            plt.close()
+            if save_plot:
+                fig = ax.get_figure()
+                fig.savefig(self.folder+'/gaussian_fit_%s.png'%(plot_title))
 
-        return FWHM,u_FWHM
+        if ret_ax:
+            return ax
+
+        plt.show()
+        plt.close()
+        
+        return FWHM,u_FWHM,x0
 
     def fit_lorentzian(self,**kw):
         y=kw.pop('y',self.y_data)
@@ -119,6 +158,7 @@ class laserscan_analysis(cga.cavity_analysis):
 
         gamma = np.abs(fit_result['params_dict']['gamma'])
         u_gamma = np.abs(fit_result['error_dict']['gamma'])
+        x0 = fit_result['params_dict']['x0']
         FWHM = gamma
         u_FWHM = u_gamma
 
@@ -135,12 +175,13 @@ class laserscan_analysis(cga.cavity_analysis):
 
     def fit_bins(self,**kw):
         plot_sigmas = kw.pop('plot_sigmas',True)
+        binned_data=kw.pop('binned_data',self.y_data_per_ms_binned)
 
         FWHMs=np.array([])
         u_FWHMs=np.array([])
 
         for i in np.arange(self.nr_bins):
-            FWHM,u_FWHM = self.fit_gaussian(x=self.frq_data, y=self.y_data_per_ms_binned[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize),**kw )
+            FWHM,u_FWHM = self.fit_gaussian(x=self.frq_data, y=binned_data[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize),**kw )
             
             FWHMs=np.append(FWHMs,FWHM)
             u_FWHMs=np.append(u_FWHMs,u_FWHM)
@@ -150,12 +191,15 @@ class laserscan_analysis(cga.cavity_analysis):
             ax2.errorbar(np.arange(self.nr_bins),FWHMs,yerr=u_FWHMs)
             ax2.set_xlabel('bin nr')
             ax2.set_ylabel('FWHM')
-            ax2.set_ylim([0,80])
+            #ax2.set_ylim([0,80])
             ax2.set_title(self.folder+'/FWHMs_vs_bins_binsize_%d.png'%self.binsize)
             fig2.savefig(self.folder+'/FWHMs_vs_bins_binsize_%d.png'%self.binsize)
 
 
         return FWHMs,u_FWHMs
+
+    def get_bin(self,bin_nr):
+        return self.y_data_per_ms_binned[:,bin_nr]
 
     def get_linecut_per_ms(self,linecut_point=15,**kw):
         do_plot=kw.pop('do_plot',True)
@@ -169,32 +213,64 @@ class laserscan_analysis(cga.cavity_analysis):
             fig.savefig(self.folder+'/PDsignal_per_mslinecut%d.png'%linecut_point)
         return self.y_per_ms_linecut
 
-    def plot_PD_signal_vs_V(self):
-        fig,ax = plt.subplots()
+    def plot_PD_signal_vs_V(self,ax=None,ret_ax=False,**kw):
+        save_fig = kw.pop('save_fig',True)
+        if ax==None:
+            fig,ax = plt.subplots()
         ax.set_title(self.folder+'\ntotalsweeptime=%.1fs'%(self.total_sweep_time))
         ax.set_xlabel('laser tuning voltage (V)')
         ax.set_ylabel('PD signal (V)')
-        plt.plot(self.x_data,self.y_data)
-        fig.savefig(self.folder+'/PDsignal_vs_laser_tuning_voltage.png')
+        ax.plot(self.x_data,self.y_data)
+        if save_fig:
+            fig = ax.get_figure()
+            fig.savefig(self.folder+'/PDsignal_vs_laser_tuning_voltage.png')
+        if ret_ax:
+            return ax
         plt.show()
 
-    def plot_PD_signal_vs_frq(self):
-        fig,ax = plt.subplots()
+    def plot_PD_signal_vs_frq(self,ax=None,ret_ax=False,**kw):
+        save_fig = kw.pop('save_fig',True)
+        if ax==None:
+            fig,ax = plt.subplots()     
         ax.set_title(self.folder+'\ntotalsweeptime=%.4fs'%(self.total_sweep_time))
         ax.set_xlabel('frequency (GHz) + 470.4 THz')
         ax.set_ylabel('PD signal (V)')
-        plt.plot(self.frq_data,self.y_data)
-        fig.savefig(self.folder+'/PDsignal_vs_frq.png')
+        ax.plot(self.frq_data,self.y_data)
+        if save_fig:
+            fig = ax.get_figure()
+            fig.savefig(self.folder+'/PDsignal_vs_frq.png')
+        if ret_ax:
+            return ax
         plt.show()
 
+    def plot_PD_signal_vs_dfrq(self,ax=None,ret_ax=False,**kw):
+        save_fig = kw.pop('save_fig',True)
+        if ax==None:
+            fig,ax = plt.subplots()     
+        ax.set_title(self.folder+'\ntotalsweeptime=%.4fs'%(self.total_sweep_time))
+        ax.set_xlabel('delta frequency (GHz)')
+        ax.set_ylabel('PD signal (V)')
+        ax.plot(self.dx_data_centred,self.y_data_centred)
+        if save_fig:
+            fig = ax.get_figure()
+            fig.savefig(self.folder+'/PDsignal_vs_dfrq.png')
+        if ret_ax:
+            return ax
+        plt.show()
 
-    def plot_frq_vs_V(self):
-        fig,ax = plt.subplots()
+    def plot_frq_vs_V(self,ax=None,ret_ax=False,**kw):
+        save_fig = kw.pop('save_fig',True)
+        if ax==None:
+            fig,ax = plt.subplots()        
         ax.set_title(self.folder+'\ntotalsweeptime=%.1fs'%(self.total_sweep_time))
         ax.set_ylabel('frequency (GHz) + 470.4 THz')
         ax.set_xlabel('laser tuning voltage (V)')
-        plt.plot(self.x_data,self.frq_data)
-        fig.savefig(self.folder+'/laser_tuning_voltage_vs_frq.png')
+        ax.plot(self.x_data,self.frq_data)
+        if save_fig:
+            fig = ax.get_figure()
+            fig.savefig(self.folder+'/laser_tuning_voltage_vs_frq.png')
+        if ret_ax:
+            return ax
         plt.show()
 
 

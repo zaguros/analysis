@@ -1,8 +1,8 @@
-#################################
-# S.B. vanDam
-# S.B.vanDam@gmail.com
-#################################
-# Data analysis script of cavity characteristics and modes
+"""
+This class is used to import data from the oscilloscope in the CSV format 
+Specifically used to fit cavity resonances and extract the linewidth  
+SvD  9-2016
+"""
 
 
 import numpy as np 
@@ -22,12 +22,10 @@ from analysis.lib import fitting
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
 
+import analysis.scripts.cavity.functions_for_processing_linewidth_data as funcs
+
 reload(common)
 
-
-"""
-This script is written to import data from the oscilloscope in the CSV format to Python and characterize the cavity. 
-"""
 
 ### This is the only part where values should be inserted.#### 
 n_xticks = 5
@@ -228,5 +226,139 @@ class oscilloscope_analysis():
 
 
 
+############
+def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
+                                g_dx,g_A,max_chisq,test=False,total_length=12500,data_col=3):
+    '''
+    function that fits the resonances in an oscilloscope trace.
+    for particularly noisy/'vibrating' data, it uses a first fit to put the resonance to the middle of the windows
+    TODO: improve -> instead of fitting twice, use the highest point in the first window for the middle of the second window 
+    '''
+    oa_single = oscilloscope_analysis(indir=indir,filename=filename)
 
+    max_u_lw=0.1
+    min_A2=0.1
+    lws = np.array([])#lws_old## 
+    As = np.array([])#lws_old## 
+    gammas = np.array([])#lws_old## 
+    chisqs= np.array([])
+    x01s = np.array([])
+    u_lws =np.array([])
+    nr_lws=nr_lws
+    x0=x0
+    success =np.zeros(nr_lws)
+    windowsize=windowsize# print len(x)
+
+    
+    for i in np.arange(nr_lws):
+        if test:
+            if i>10:
+                break
+        xi = int(x0+(total_length*i/nr_lws))
+        print xi
+
+
+        if i%2==1:
+            xi=xi+x_odd_offset
+        if (xi-windowsize)>0:
+            x_min = xi-windowsize
+        else: 
+            x_min = 0
+        if (xi+windowsize)<len(x)-1:
+            x_max = xi+windowsize
+        else:
+            x_max = -1
+
+
+        oa_single.get_data(use_timetrace=False,x_min = x_min, x_max=x_max,data_col=data_col)    
+        oa_single.plot_data()
+
+        lw,u_lw,A1,u_A1,gamma1,u_gamma1,chisq,x01,A2 = \
+            oa_single.plot_and_fit_with_EOM(EOM_freq=EOM_freq,
+               g_gamma1=g_gamma, g_dx=g_dx,g_A2=g_A,g_A3=g_A,show_fit=test,print_fit=test,save_fit=False)
+
+        if chisq>0.4:
+            print 20*'*'
+            print chisq,lw
+            print 'fit already not good enough! '
+            print 20*'*'
+            lws = np.append(lws,lw)
+            As = np.append(As,A1)
+            gammas = np.append(gammas,gamma1)
+            chisqs = np.append(chisqs,chisq)
+            x01s = np.append(x01s,x01)
+            u_lws = np.append(u_lws,u_lw)
+
+            continue
+
+        if (x01-windowsize)>0:
+            x_min = x01-windowsize    
+        else: 
+            x_min = 0
+        if (x01+windowsize)<len(x)-1:
+            x_max = x01+windowsize
+        else:
+            x_max = None
+        oa_single.get_data(use_timetrace=False,x_min = x_min, x_max=x_max,data_col=data_col)
+    #     oa_single.plot_data()    
+        lw,u_lw,A1,u_A1,gamma1,u_gamma1,chisq,x02,A2 = \
+            oa_single.plot_and_fit_with_EOM(EOM_freq=EOM_freq,
+               g_gamma1=g_gamma, g_dx=g_dx,g_A2=g_A,g_A3=g_A,show_fit=True,print_fit=False,plot_name=str(int(round(x01,0))))
+
+        u_lws = np.append(u_lws,u_lw)
+        lws = np.append(lws,lw)
+        As = np.append(As,A1)
+        gammas = np.append(gammas,gamma1)
+        chisqs = np.append(chisqs,chisq)
+        x01s = np.append(x01s,x01)
+        if chisq>max_chisq:
+            print 20*'*'
+            print chisq,lw,'+-',u_lw
+            print 'fit not good enough! '
+            print 20*'*'
+            continue
+        if u_lw > max_u_lw:
+            print 20*'*'
+            print chisq,lw,'+-',u_lw
+            print 'fit not good enough! uncertainty in linewidth too large '
+            print 20*'*'
+            continue
+        if A2 < min_A2:
+            print 20*'*'
+            print chisq,lw,'+-',u_lw
+            print A2
+            print 'fit not good enough! A2 is less than 0'
+            print 20*'*'
+            continue      
+
+        print 20*'*'
+        print chisq,lw,'+-',u_lw,'gamma',gamma1
+        print 'fit good!!! '
+        print 20*'*'
+        success[i] = 1
+
+    good_x01s = x01s[np.where(success>0)]
+    good_lws = lws[np.where(success>0)]
+    good_chisqs = chisqs[np.where(success>0)]
+    good_u_lws = u_lws[np.where(success>0)]
+
+    good_fits = {}
+    good_fits['x0s'] =good_x01s
+    good_fits['lws'] = good_lws
+    good_fits['chisqs'] = good_chisqs
+    good_fits['u_lws']=good_u_lws
+    good_fits['max_chisq']=max_chisq
+    good_fits['max_u_lw']=max_u_lw
+    good_fits['min_A2']=min_A2
+
+    print '%d good fits out of %d tries'%(len(good_lws),nr_lws)
+    print 'the good linewidth fits from %s :'%filename
+    print 'average lw = %.2f +- %.2f'%(np.average(good_lws),np.std(good_lws))
+    print 'lws = ',good_lws
+    print 'u_lws = ',good_u_lws
+    print 'chisq = ',good_chisqs
+    print 'x0s = ',good_x01s
+
+    funcs.save_to_json_file(indir,filename+'_analysis',good_fits)
+    return good_lws
 
