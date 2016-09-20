@@ -8,6 +8,7 @@ Improvements to be made:
 
 import numpy as np
 import math
+import scipy as sc
 import pylab as plt
 import matplotlib
 from analysis.lib.tools import toolbox as tb
@@ -18,39 +19,52 @@ c = 2.99792e8
 
 class CavitySims ():
 
-    def __init__(self):
+    def __init__(self,use='our_bulk_params'):
+        if use == 'our_bulk_params':
+            #experimental values taken from fit of 5 Lorentzians to spectrometer data at LT 
+            # (Cavities/SpectrumData/Y_data_2_smooth.txt ; X_data_wl.tx; measurements at 10 K)
+            self.freq = np.array([471.1e12,456.3e12,440.6e12,432.4e12,423.4e12])
+            self.A = np.array([119.,1648.,646.,439.,488.])
+            self.linewidths = np.array([0.4e12,19.8e12,10.8e12,10.6e12,9.1e12])
+            #alternatively, fitting with different range, but obtaining 0.055 branching ratio:
+            #self.freq = np.array([471.1,456.0,440.9,431.9,423.7])*1.e12
+            #self.A = np.array([110.,722.,686.,309.,167.])
+            #self.linewidths = np.array([0.39,11.3,12.5,11.0,5.2])*1.e12
+            self.gamma_tot = 1/(12.e-9) #using the typical decay tiume we measure in bulk diamond 
 
-        #NV parameters
-        #experimental values taken from PRL 110, 243602
-        #self.freq = np.array([469.6e12, 461.9e12,452.6e12, 439.7e12, 429.0e12, 416.2e12, 403.2e12, 392.4e12])
-        #self.A = np.array([1520., 5260., 18600., 16400., 14000., 9180., 6570., 3270.]) ##branching ratios from Albrecht et al.
-        #self.A = np.array([0.03, 0.1, 0.1, 0.2, 0.17, 0.2, 0.1, 0.1]) ##fake branching ratio, but with ZPL/(all)=0.03
-        self.freq = np.array([471.1e12,456.3e12,440.6e12,432.4e12,423.4e12])
-        self.A = np.array([119.,1648.,646.,439.,488.])
-        self.linewidths = np.array([0.4e12,19.8e12,10.8e12,10.6e12,9.1e12])
-        # self.freq = np.array([471.1e12,456.9e12,438.4e12,423.7e12])
-        # self.A = np.array([120.,1463.,1560.,496.])
-        # self.linewidths = np.array([0.4e12,19.2e12,19.8e12,10.0e12])
+        elif use == 'Becher_nanodiamond_params':
+            #NV parameters
+            #experimental values taken from PRL 110, 243602
+            self.freq = np.array([469.6, 461.9,452.6, 439.7, 429.0, 416.2, 403.2, 392.4])*1.e12
+            self.A = np.array([1520., 5260., 18600., 16400., 14000., 9180., 6570., 3270.]) ##branching ratios from Albrecht et al.
+            self.linewidths = np.array([2.44,15.9,15.5,15.0,16.5,12.7,13.7,16.1])*1.e12
+            self.gamma_tot = 34.9e6 #deduced by g2 msmnts on nanodiamonds (Albrecht),corresponds to t = 28 ns, in nanodiamond.
 
-        self.d = self.freq - self.freq[0] 
-        #self.freqC = freq[0]
+        else:
+            print 'Please give a valid parameter set!!! '
 
         self.A_tot = np.sum(self.A)
         self.epsilon = self.A/self.A_tot #relative strength transitions
+        self.gamma_relative = self.gamma_tot*self.epsilon
+        self.dfreq = self.freq-self.freq[0]
+
         # print 'brancing ratio ZPL to rest:',self.epsilon[0]
-        #self.gamma_tot = 35.e6 #deduced by g2 msmnts on nanodiamonds (Albrecht)
-        self.gamma_tot = 1/(12.e-9) ####the above value is from the Albrecht  (becher) paper, but corresponds to t = 28 ns, in nanodiamond.. this is typically longer.. 
-        # print 'lifetime excited state:',str(round(1/self.gamma_tot*1.e9,1)),'ns'
-        self.g_relative = self.gamma_tot*self.epsilon
+        print 'lifetime excited state:',str(round(1/self.gamma_tot*1.e9,1)),'ns'
+
+        #assume the broadening of ZPL is due to pure dephasing (gamma) only. 
+        #Note that at 10 K (our_bulk_params) this approximation cannot be great. But neither is our fitting
+        self.gamma_star = 2*math.pi*self.linewidths[0]
+        self.gamma_i_im1 = 2*math.pi*self.linewidths - self.gamma_star
+
         #CAVITY parameter
         self.cavity_length = 1.1e-6 # only air length
         self.finesse=None
         self.T = None
         self.diamond_thickness = 3.e-6
         self.radius_curvature = 15.e-6
-        self.wavelength_ZPL = c/float(self.freq[0])
 
-        self._ZPL_linewidth = True #ZPL is set as above, not via temperature.
+        self.freq_ZPL = self.freq[0]
+        self.wavelength_ZPL = c/float(self.freq[0])
 
         self.optical_length  = self.calc_optical_length()
 
@@ -93,15 +107,10 @@ class CavitySims ():
 
     def set_temperature(self, value):
         self.T = value
-        # dephZPL = (16.2+9.2e-7*(1/0.0125)*self.T**5)*1e6 #in Hz. Only for T < 100 K!, removed 2*pi, compared to Cristian's code. 
-        # self.linewidths[0] = dephZPL
-        # self.gm_star = 2*np.pi*self.linewidths[0] 
-        self._ZPL_linewidth = False
+        self.gamma_star = self.T_to_dephZPL(value)
 
-    def set_ZPL_linewidth (self, value):
-        self.linewidths[0] = value       
-        # self.gm_star = 2*np.pi*self.linewidths[0]
-        self._ZPL_linewidth = True
+    def set_pure_dephasing (self, value):
+        self.gamma_star = value       
 
     def set_Q (self, value):
         self.finesse = self.Q_to_finesse(value, self.FSR, self.freq[0])
@@ -111,67 +120,43 @@ class CavitySims ():
 
     def calc_k(self,**kw):
         """
-        Input:
-        finesse - cavity finesse
-        wavelength - wavelength of the light in the cavity; default: self.wavelength_ZPL
-        Output:
-        k - the cavity loss rate
+        self.k=math.pi*c/(self.optical_length*self.finesse)
         """
-        finesse = kw.pop('finesse',self.finesse)
-        optical_length = kw.pop('optical_length',self.optical_length)
-
-        k=math.pi*c/(optical_length*finesse)
-        # k = 2*math.pi*nu/Q
-        return k
+        self.k=math.pi*c/(self.optical_length*self.finesse)
+        return self.k
 
     def calc_FSR(self, **kw):
         """
-        Input:
-        diamond_thickness  - thickness of the diamond in m; default self.diamond_thickness
-        cavity_length  - cavity length in m; default self.cavity_length
-        Output:
-        FSR  -  free spectral range in Hz
+        self.FSR = c/(2*(self.diamond_thickness*n_diamond+self.cavity_length)) 
         """
-        cavity_length = kw.pop('cavity_length', self.cavity_length)
-        diamond_thickness = kw.pop('diamond_thickness', self.diamond_thickness)
-        FSR = c/(2*(diamond_thickness*2.5+cavity_length)) #FSR
-        return FSR
+        self.FSR = c/(2*(self.diamond_thickness*n_diamond+self.cavity_length)) 
+        return self.FSR
 
     def calc_optical_length(self, **kw):
         """
-        Input:
-        diamond_thickness  - thickness of the diamond in m; default: self.diamond_thickness
-        cavity_length  - cavity length in m; default: self.cavity_length
-        Output:
-        d  -  optical cavity length
+        self.optical_length = self.diamond_thickness*n_diamond + self.cavity_length
         """
-        cavity_length = kw.pop('cavity_length', self.cavity_length)
-        diamond_thickness = kw.pop('diamond_thickness', self.diamond_thickness)
-        d = diamond_thickness*n_diamond + cavity_length
-        return d
+        self.optical_length = self.diamond_thickness*n_diamond + self.cavity_length
+        return self.optical_length
 
     def calc_waist(self,**kw):
         """
         Input:
-        optical length - optical length of the cavity; default: self.optical_length
         wavelength   -  wavelength of the light in the cavity; default: self.wavelength_ZPL
-        radius_curvature - radius of curvature of the concave mirror; default: self.radius_curvature
-        Output:
-        waist  - the waist of the longitudinal cavity mode
+        output:
+        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
+
         """
-        optical_length = kw.pop('optical_length',self.optical_length)
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
-        radius_curvature = kw.pop('radius_curvature', self.radius_curvature)
+        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
+        return self.waist
 
-        waist = ((wavelength/np.pi)**0.5)*(optical_length*(radius_curvature-optical_length))**(1/4.)
-        return waist
-
-    def calc_mode_volume(self, **kw):
-        waist = kw.pop('waist', self.waist)
-        optical_length = kw.pop('optical_length',self.optical_length)
-
-        mode_volume = np.pi*((0.5*waist)**2)*optical_length
-        return mode_volume
+    def calc_mode_volume(self):
+        """
+        self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
+        """
+        self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
+        return self.mode_volume
 
 
     def wavelength_to_freq(self, wavelength):
@@ -179,54 +164,58 @@ class CavitySims ():
         return frequency
 
     def T_to_dephZPL(self, T):
-        dephZPL = (16.2+9.2e-7*(1/0.0125)*T**5)*1e6 #in Hz. This is w - thus differs a factor 2pi from Jahn-Teller paper
-        return dephZPL
+        """
+        caculate the linewidth broadening as due to the Jahn-Teller effect from temperature T.
+        Formula is from Fu et al. 
+        """
+        self.gamma_star = 2*math.pi*(16.2+9.2e-7*(1/0.0125)*T**5)*1e6 #in Hz. 
+        return self.gamma_star
+
+    def calc_gamma(self, **kw):
+        """
+        calculate 'gamma', the combined decays as in Albrecht et al:
+        'gamma' = kappa + gamma_tot + gamma_i_(i-1) + gamma_star
+        (note: this combined parameter is never given a name in Albrecht et al. Hence here 'gamma')
+        with:
+        kappa (self.k) - the cavity decay rate
+        gamma_tot (self.gamma_tot) - the total decay rate from the NV excited state
+        gamma_i_(i-1) (=2pi*linewidth - gamma_star) - the decay rate from vibronic state i to vibronic state i-1  
+        gamma_star (self.gamma_star) - the temperature broadened part of the decay rate
+        """
+        self.gamma=(self.k+self.gamma_tot+self.gamma_i_im1+self.gamma_star)
+        return self.gamma
 
     def calc_coupling(self, **kw): 
         """
         Input:
-        wavelength - wavelength of th elight in the cavity; default: self.wavelength_ZPL
+        wavelength - wavelength of the light in the cavity; default: self.wavelength_ZPL
+        Uses:
         gamma_tot   - the total decay rate of the excited state  (1/lifetime)
         mode volume - the mode volume of the cavity 
+        output:
+        self.g = np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
         """
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
-        gamma_tot = kw.pop('gamma_tot', self.gamma_tot)
-        mode_volume = kw.pop('mode_volume', self.mode_volume)
 
-        g = np.sqrt((3.*c*(wavelength**2)*gamma_tot/2.)/(4.*math.pi*mode_volume))
-        return g
+        #albrecht et al:
+        self.g = np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
+        #kaupp et al (scaling laws)
+        #self.g = np.sqrt((3.*math.pi*c*(wavelength**2)*self.gamma_tot)/(2.*self.mode_volume))
+        #note that for an accurate treatment, we should perhaps use n_diamond in here. (mu~1/sqrt(n)()
+        return self.g
 
-    def calc_gamma(self, **kw):
+    def calc_g_i(self, **kw):
         """
-        Input:
-        linewidths  - length n array with the linewidths (in omega) of the ZPL and PSBs. ZPL = 0th entry
-        k           - the cavity decay rate
-        gamma_tot   - the total NV decay rate
-        Output:
-        gamma       - length n array with the gamma to all channels of the ZPL and PSBs
-        """
-        linewidths = kw.pop('linewidths', self.linewidths)
-        gamma_tot = kw.pop('gamma_tot', self.gamma_tot)
-        k = kw.pop('k', self.k)
-
-        gm_star = 2*math.pi*linewidths[0]
-        gm_relax = 2*math.pi*linewidths-2*math.pi*linewidths[0]
-        gamma=(k+gamma_tot+gm_relax+gm_star)
-        return gamma
-
-    def calc_g_all(self, **kw):
-        """
+        self.g_i = self.g*np.sqrt(self.epsilon)
         Input:
         epsilon     - length n array with the relative amplitude of the ZPL and PSBs. ZPL = 0th entry
         g           - the cavity-NV coupling
         Output:
-        gamma       - length n array of the coupling between cavity and the ZPL and PSBs
+        self.g_i    - the relative coupling per NV ZPL/PSB transition i.
         """
-        g = kw.pop('g', self.g)
-        epsilon = kw.pop('epsilon', self.epsilon)
-
-        g_all = g*np.sqrt(epsilon)
-        return g_all
+        self.calc_coupling(**kw)
+        self.g_i = self.g*np.sqrt(self.epsilon)
+        return self.g_i
 
 
     def calc_purcell_factor_air(self, **kw):
@@ -245,8 +234,8 @@ class CavitySims ():
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
         mode_volume = kw.pop('mode_volume', self.mode_volume)
 
-        naive_FpA = 3. * Q * (wavelength)**3. / n_diamond**3. /(4.*math.pi**2 * mode_volume) 
-        return naive_FpA
+        self.naive_FpA = 3. * Q * (wavelength)**3. / n_diamond**3. /(4.*math.pi**2 * mode_volume) 
+        return self.naive_FpA
         # naive_Fp2= 4.*((g)**2)/(self.k*gamma_tot)
         # naive_Fp3 = 3. * Q * (wavelength)**3. / (4.*(math.pi**2) * mode_volume) 
 
@@ -267,127 +256,173 @@ class CavitySims ():
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
         mode_volume = kw.pop('mode_volume', self.mode_volume)
 
-        naive_FpD = 3. * Q * (wavelength)**3. /(n_diamond**3 - n_diamond)  /(4.*math.pi**2 * mode_volume) 
-        return naive_FpD
+        self.naive_FpD = 3. * Q * (wavelength)**3. /(n_diamond**3 - n_diamond)  /(4.*math.pi**2 * mode_volume) 
+        return self.naive_FpD
         # naive_Fp2= 4.*((g)**2)/(self.k*gamma_tot)
         # naive_Fp3 = 3. * Q * (wavelength)**3. / (4.*(math.pi**2) * mode_volume) 
 
-    def calc_longitudinal_cav_modes(self,do_plot=False, **kw):
+    def calc_level_energies(self):
+        """
+        E_i = omega_i*hbar=2*pi*(x_ci-xc0) as from Albrecht et al.
+        """
+        self.E_i = sc.constants.hbar*2*math.pi*(self.dfreq)/ sc.constants.e*1.e3 #in meV
+        return self.E_i
+
+    def calc_longitudinal_cav_modes(self, **kw):
         """
         function that calculations the frequencies of the longitudinal cavity modes
-        it uses the resonance frequency of the cavity (given by ZPL freq) 
+        it uses the resonance frequency of the cavity (given by ZPL freq), or the cavity length
         and the FSR
         Input:
-        wavelength   -   one wavelength of the resonant light in the cavity; default: self.wavelength_ZPL
-        FSR          -   free spectral range 
+        reference    -   'ZPL' or 'cavity length'. default: 'ZPL'
+                            If 'ZPL', it takes the cavity modes as self.freq_ZPL, and self.freq_ZPL-i*self.FSR 
+                            If 'cavity length', it calculates the modes as c*N/2*self.optical_length
+        stopband     -   [wl_min,wl_max], the minimum and maximum wavelengths taken into account for modes default: [600e-9,800e-9]
+                            Note that the actually different mode space outside stopband is NOT taken into account in the model now
         Ouput:
         long_modes_lambda 
         long_modes_freq
         """
-        #################SvD: WHY not calculate the actual frequencies that are resonant with the cavity at hand?
-        wavelength = kw.pop('wavelength', self.wavelength_ZPL)
-        FSR = kw.pop('FSR', self.FSR)
 
-        freq = self.wavelength_to_freq(wavelength)
+        reference = kw.pop('reference','ZPL')
+        stopband = kw.pop('stopband',[600.e-9,800.e-9])
+        wavelength = kw.pop('wavelength',self.wavelength_ZPL)
+        freq = c/wavelength
+        if reference == 'ZPL':
+            self.long_modes_lambda =np.array([])
+            self.long_modes_freq = np.array([])
+            l=0
+            i=0
+            while ((l<stopband[1]) and (i< 1000)):
+                nu = freq-i*self.FSR
+                l = c/nu 
+                self.long_modes_lambda = np.append(self.long_modes_lambda,l)
+                i = i+1
 
-        long_modes_lambda =[]
-        long_modes_freq = []
-        l=0
-        i=0
-        while ((l<800) and (i< 1000)):
-            nu = freq-i*FSR
-            l = 1e9*c/nu 
-            long_modes_lambda.append(l)
-            long_modes_freq.append(i*FSR)
-            i = i+1
+        elif reference == 'cavity_length':
+            N = np.arange(120)+1
+            self.long_modes_lambda = 2*self.optical_length / N
+        else:
+            print 'no valid reference given to calculate longitudinal modes! '
+            return 0,0
+        
+        self.long_modes_lambda=self.long_modes_lambda[np.where((self.long_modes_lambda>stopband[0])&(self.long_modes_lambda<stopband[1]))]
+        self.long_modes_lambda = np.sort(self.long_modes_lambda)
+        self.long_modes_freq = c/self.long_modes_lambda
 
-        if do_plot:
-            plt.figure()
-            plt.plot (long_modes_lambda, 'o')
-            plt.ylabel ('wavelength [nm]')
-            plt.show()
-
-        return long_modes_lambda, long_modes_freq
+        return self.long_modes_lambda, self.long_modes_freq
 
 
-    def calculate_params (self, do_plot = False, verbose=False):
-        self.FSR = self.calc_FSR()
-        self.freq_ZPL = self.wavelength_to_freq(self.wavelength_ZPL)
 
-        self.long_modes_lambda, self.long_modes_freq = self.calc_longitudinal_cav_modes(do_plot=do_plot)
-        self.optical_length = self.calc_optical_length()
-        # if (self.optical_length>self.radius_curvature-2e-6):
-        #     print "WARNING: Cavity is unstable!", self.optical_length,'>',self.radius_curvature-2e-6 
-        self.waist = self.calc_waist()
-        self.mode_volume = self.calc_mode_volume()
+    def calculate_derived_params (self, verbose=False,**kw):
+        self.calc_optical_length()    
+        if (self.optical_length>self.radius_curvature-2e-6):
+            print "WARNING: Cavity is unstable!", self.optical_length,'>',self.radius_curvature-2e-6 
+   
+        self.calc_waist(**kw)
+        self.calc_mode_volume()
 
-        if verbose:
-            print 'lambda_ZPL = ', self.wavelength_ZPL*1e9, '[nm]'
-            print 'FSR = ', 1e9*((self.wavelength_ZPL**2)/3e8)*self.FSR, '[nm]'
-            print "mode volume: ", self.mode_volume*1e18,  "micron^3"
+        self.calc_FSR()
+        self.calc_longitudinal_cav_modes(**kw)
 
-        # calculate dephasing of ZPL from temperatre, if _ZPL_linewidth is set to False
-        if not(self._ZPL_linewidth):
-            self.linewidths[0] = self.T_to_dephZPL(self.T) 
+        # calculate the cavity decay rate
+        self.calc_k()
 
         # calculate the coupling between NV and cavity
-        self.g = self.calc_coupling()
-        self.g_all = self.calc_g_all()
+        self.calc_g_i(**kw)
 
         #calculate the decay of the NV into all the channels
-        self.k = self.calc_k()
-        self.gamma = self.calc_gamma()
+        self.calc_gamma()
 
         #calculate_naive_pUrcell factors
-        self.naive_FpA = self.calc_purcell_factor_air()
-        self.naive_FpD = self.calc_purcell_factor_diamond()
+        self.calc_purcell_factor_air()
+        self.calc_purcell_factor_diamond()
 
-        # print 'optical length', self.optical_length
-        # print 'g',self.g 
-        # print 'w , mv =',self.waist,self.mode_volume
-        # print 'k', self.k
+        self.calculate_detuning()
 
-    def calculate_R_and_P (self, do_plot = True, do_save = False, verbose=False):
+        self.calc_level_energies()
+
+        if verbose:
+            print 100*'*'
+            print 'diamond length',self.diamond_thickness*1.e6,'um'
+            print 'mirror radius of curvature', self.radius_curvature*1.e6,'um'
+            print 'optical length',self.optical_length*1.e6,'um'
+            print 'mode volume ', self.mode_volume/1.e-18,'um^3'
+            print 'beam waist ', self.waist/1.e-6,'um'
+            print 'cavity decay rate', self.k*1.e-9/(2*math.pi),'GHz'
+            print 'lambda_ZPL = ', self.wavelength_ZPL*1e9, 'nm'
+            print 'pure dephasing rate = ', self.gamma_star*1.e-9, 'GHz'
+            print 100*'*'
+
+    def calculate_detuning(self):
+        """
+        calculate the detuning between the longitudinal modes (self.long_modes_freq)
+        and the NV transitions (ZPL and PSB, as in self.freq)
+        """
+        self.delta = np.zeros([len(self.freq), len(self.long_modes_freq)])
+        
+        for i,f_line in enumerate(self.freq):
+            for j,f_mode in enumerate(self.long_modes_freq):
+                self.delta[i,j] = f_line - f_mode ###get delta_ij = det between NV-line i and cav-mode j
+        self.delta = 2*math.pi*self.delta
+        return self.delta
+
+    def calculate_R_and_P (self, do_plot = False, do_save = False, verbose=False):
         """
         function that calculates all the rates R and coupling parameters P, 
-        for the NV linewidths as in self.linewidths and the longitudinal modes as in long_modes_lambda
+        for the NV lines as in self.freq and the longitudinal modes as in long_modes_lambda
         """
+        G_all = self.g_i #coupling between NV and cavity, for all modes i
+        Gamma = self.gamma #kappa+gamma+gamma_(i,i-1)+gamma* for each transition (ZPL & PSB)
 
-        delta = np.zeros([len(self.linewidths), len(self.long_modes_lambda)])
-        
-        i=-1
-        for f_line in self.d:
-            j = -1
-            i = i+1
-            for f_mode in self.long_modes_freq:
-                j = j+1
-                delta [i, j] = f_line - f_mode ###get delta_ij = det between NV-line i and cav-mode j
+        #create a copy of these array for each longitudinal mode, to be able to calculate R_ij
+        Gamma = np.tile(Gamma,(len(self.long_modes_freq),1))
+        G_all = np.tile(G_all,(len(self.long_modes_freq),1))
 
-        G_all = self.g_all #coupling to the cavity, for all modes
-        Gamma = self.gamma #kappa+gamma+gamma* for each transition (ZPL & PSB)
-        for j in np.arange(len(self.long_modes_freq)-1):
-            Gamma = np.vstack([Gamma, self.gamma])
-            G_all = np.vstack([G_all, self.g_all])
         self.Gamma = Gamma.transpose()
         self.G_all = G_all.transpose()
-        if verbose:
-            print 'g',self.g_all
-        self.R = (4*self.G_all**2/self.Gamma)*(1/(1+(2*delta/(self.Gamma))**2)) 
+
+        self.R = (4.*(self.G_all**2)/self.Gamma)*(1./(1+(2*self.delta/(self.Gamma))**2))
+
+        #sum over all cavity modes. the emission rate from ZPL, PSBs in all cavity modes
+        self.R_tot = np.sum(self.R, axis=1)
+
+        #the for us relevant factor - emission from ZPL into cavity mode (R[0,0]) compared to free speac emission gamma_tot
         self.F = self.R/float(self.gamma_tot)
-        self.F0 = self.F[0,0]
-        if verbose:
-            print 'Rij',self.R[:,0]
+        self.F0 = self.R[0,0] #I don't think this factor means anything
+           
+        #probability of emission into all channels
         self.P = self.R/ float(np.sum(np.sum(self.R))+self.gamma_tot)
-        self.P_tot = np.sum(self.P, axis=0) # sum over NV lines
-        self.R_tot = np.sum(self.R, axis=1) ## the emission rate from the ZPL, PSBs in all modes (sum over cavity modes)
-        self.R_plus_gm = np.add(self.R_tot, self.g_relative)
-        self.P_PSB = np.sum(self.P[1:,:],axis=0) #sum over the PSB lines
-        self.P_ZPL = self.P[0,:]
+        #sum over all NV lines. probability of emission into all longitudinal modes
+        self.P_tot = np.sum(self.P, axis=0)
+
+        #sum over the PSB lines. Emission into the different longitudinal modes, per PSB
+        self.P_PSB = np.sum(self.P[1:,:],axis=0) 
+        #Emission from all PSB lines into the 'zero-order' longitudinal mode; thus the one on resonance with NV
         self.P_PSB_zero = self.P_PSB[0]
+        #Emission from all PSB into all other cavity modes than the 'zero-order' one
         self.P_PSB_nonzero = np.sum(self.P_PSB[1:])
+        #Emission into the different longitudinal modes for the ZPL
+        self.P_ZPL = self.P[0,:]
+        #emission from the ZPL into the 'zero-order' longitudinal cavity mode
         self.P_ZPL_zero  = self.P_ZPL[0]
-        self.P_ZPL_nonzero = np.sum(self.P_ZPL[1:])       
+        #Emission from the ZPL into all other cavity modes than the 'zero-order' one
+        self.P_ZPL_nonzero = np.sum(self.P_ZPL[1:])    
+        #the total decay of the NV both into the cavity and outside of the cavity, per NV line   
+        self.R_plus_gm = np.add(self.R_tot, self.gamma_relative)
+        #the lifetime is the inverse of the total decay rate.
         self.lifetime = 1./np.sum(self.R_plus_gm)
+
+        if verbose:
+            print 'Rij (kHz):'
+            print self.R[:,0]
+            print 'Rtot (kHz):'
+            print self.R_tot*1.e-3
+            print 'P (%)', self.P*100
+            print 'P_tot (%)',self.P_tot*100
+            print 'R_plus_gm',self.R_plus_gm
+            print 'lifetime', self.lifetime
+
 
         if do_plot:
             plt.figure()
@@ -397,7 +432,8 @@ class CavitySims ():
             plt.show()
             
     
-    def emission_in_ZPL (self, sweep_param = 'Cavity length (um)', min_val=0, max_val=15, nr_points=50, xlogscale=False):
+
+    def emission_in_ZPL (self, sweep_param = 'Cavity length (um)', min_val=0, max_val=15, nr_points=50, xlogscale=False,**kw):
         sweep_vals = np.linspace (min_val, max_val, nr_points)
         if xlogscale:
             sweep_vals = np.logspace(np.log10(min_val), np.log10(max_val), nr_points)
@@ -419,16 +455,13 @@ class CavitySims ():
         gamma_PSB = np.zeros(nr_points)
         lifetime = np.zeros(nr_points)
 
-        print 'Finesse',int(self.finesse)
-        print 'L_a',self.cavity_length
-        print 'L_d',self.diamond_thickness
         for p in sweep_vals:
             if (sweep_param == 'Cavity length (um)'):
                 self.set_cavity_length (p*1.e-6) 
             elif (sweep_param == 'Temperature (K)'):
                 self.set_temperature (p)
             elif (sweep_param == 'dephasing rate (GHz)'):
-                self.set_ZPL_linewidth (p*1e9/(2*math.pi))
+                self.set_pure_dephasing (p*1e9/(2*math.pi))
             elif (sweep_param == 'Quality factor'):
                 self.set_Q (p) #keep cavity length constant, change the finesse.
             elif (sweep_param == 'Finesse'):
@@ -441,7 +474,7 @@ class CavitySims ():
                 print "You entered an invalid sweep parameter. stopping."
                 break
 
-            self.calculate_params(do_plot = False)
+            self.calculate_derived_params(**kw)
             self.calculate_R_and_P(do_plot=False,verbose=False)
 
             emission_prob[ind] = self.P_tot[0]
@@ -456,12 +489,15 @@ class CavitySims ():
             purcellD[ind] = self.naive_FpD
             rate_ZPL[ind] = self.R_plus_gm[0]
             rate_PSB[ind] = np.sum(self.R_plus_gm[1:])
-            gamma_ZPL[ind] = self.g_relative[0]/float(np.sum(np.sum(self.R))+self.gamma_tot)
-            gamma_PSB[ind] = np.sum(self.g_relative[1:])/float(np.sum(np.sum(self.R))+self.gamma_tot)
+            gamma_ZPL[ind] = self.gamma_relative[0]/float(np.sum(np.sum(self.R))+self.gamma_tot)
+            gamma_PSB[ind] = np.sum(self.gamma_relative[1:])/float(np.sum(np.sum(self.R))+self.gamma_tot)
             lifetime[ind] = self.lifetime
             ind = ind + 1
 
-        return sweep_vals[:ind], emission_prob[:ind], mode_vol[:ind], purcell[:ind], purcellA[:ind],purcellD[:ind],emission_prob_others[:ind],emission_prob_ZPL_in_0[:ind],emission_prob_PSB_in_0[:ind],emission_prob_ZPL_nonzero[:ind],emission_prob_PSB_nonzero[:ind],rate_ZPL[:ind],rate_PSB[:ind], gamma_ZPL[:ind],gamma_PSB[:ind],lifetime[:ind]
+        return sweep_vals[:ind], emission_prob[:ind], mode_vol[:ind], purcell[:ind],\
+            purcellA[:ind],purcellD[:ind],emission_prob_others[:ind],emission_prob_ZPL_in_0[:ind],\
+            emission_prob_PSB_in_0[:ind],emission_prob_ZPL_nonzero[:ind],emission_prob_PSB_nonzero[:ind],\
+            rate_ZPL[:ind],rate_PSB[:ind], gamma_ZPL[:ind],gamma_PSB[:ind],lifetime[:ind]
 
 
     def plot_emission_spectrum (self):
@@ -482,8 +518,8 @@ class CavitySims ():
         plt.xlim ([600, 800])
         plt.show()
     
-    def plot_vs_sweepparam(self, sweep_param, min_val, max_val, nr_points, xlogscale=False, plotmode='all_to_zero'):
-        x, y1, V, F_p, F_pA, F_pD, y2, y3, y4,y5,y6, y7, y8,y9,y10,y11 = self.emission_in_ZPL(sweep_param, min_val, max_val, nr_points, xlogscale)
+    def plot_vs_sweepparam(self, sweep_param, min_val, max_val, nr_points, xlogscale=False, plotmode='all_to_zero',**kw):
+        x, y1, V, F_p, F_pA, F_pD, y2, y3, y4,y5,y6, y7, y8,y9,y10,y11 = self.emission_in_ZPL(sweep_param, min_val, max_val, nr_points, xlogscale,**kw)
             #y1 : emission all - into zero mode
             #y2 : emission all - into others modes
             #y3 : emission ZPL - into zero mode
@@ -557,6 +593,10 @@ class CavitySims ():
         except: 
             print 'Figure not saved'
         plt.show()
+
+         
+        #for now always return x (the sweep paran), y3 (ZPL to zero mode) and y11 (lifetime)
+        return x,y3, y11
 
 
     def Ltot_to_finesse(self,Ltot):
