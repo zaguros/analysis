@@ -262,7 +262,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
             if save_fig:
                 plt.savefig(os.path.join(self.folder,'plot_1D_peaks.png'))
             plt.show()
-            plt.close()
+            #plt.close()
 
         return x0s,u_x0s    
 
