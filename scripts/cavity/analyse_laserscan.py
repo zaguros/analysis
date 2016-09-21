@@ -73,22 +73,28 @@ class laserscan_analysis(cga.cavity_analysis):
 
     def crop_data_around_centre(self,i_window=10,**kw):
         ix_centre = int(np.where(self.dx_data==0.)[0])
-
+        i_min = max(0,ix_centre-i_window)
+        i_max = ix_centre+i_window+1 
+        if i_max > len(self.dx_data):
+            i_max = -1
         #use_ix = np.arange(ix_centre-i_window,ix_centre+i_window)
         #use_ix=np.where((self.dx_data>-dfreq_window/2.) & (self.dx_data<dfreq_window/2.))
-        self.dx_data_centred=self.dx_data[ix_centre-i_window:ix_centre+i_window+1]
-        self.y_data_centred = self.y_data[ix_centre-i_window:ix_centre+i_window+1]
+        self.dx_data_centred=self.dx_data[i_min:i_max]
+        self.y_data_centred = self.y_data[i_min:i_max]
 
         return self.dx_data_centred,self.y_data_centred
 
     def crop_binned_data_around_centre(self,i_window=10,**kw):
         ix_centre = int(np.where(self.dx_data==0.)[0])
-
+        i_min = max(0,ix_centre-i_window)
+        i_max = ix_centre+i_window+1 
+        if i_max > len(self.dx_data):
+            i_max = -1
         #use_ix=np.where((self.dx_data>-dfreq_window/2.) & (self.dx_data<dfreq_window/2.))
-        self.dx_data_centred=self.dx_data[ix_centre-i_window:ix_centre+i_window+1]
-        self.y_data_per_ms_binned_centred = np.zeros((2*i_window+1,self.nr_bins))
+        self.dx_data_centred=self.dx_data[i_min:i_max]
+        self.y_data_per_ms_binned_centred = np.zeros((len(self.dx_data_centred),self.nr_bins))
         for i in np.arange(self.nr_bins):
-            self.y_data_per_ms_binned_centred[:,i] = self.y_data_per_ms_binned[ix_centre-i_window:ix_centre+i_window+1,i]
+            self.y_data_per_ms_binned_centred[:,i] = self.y_data_per_ms_binned[i_min:i_max,i]
         return self.y_data_per_ms_binned_centred
 
     def fit_gaussian(self,ax=None,ret_ax =False,**kw):
@@ -181,7 +187,7 @@ class laserscan_analysis(cga.cavity_analysis):
         u_FWHMs=np.array([])
 
         for i in np.arange(self.nr_bins):
-            FWHM,u_FWHM = self.fit_gaussian(x=self.frq_data, y=binned_data[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize),**kw )
+            FWHM,u_FWHM,x0 = self.fit_gaussian(x=self.frq_data, y=binned_data[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize),**kw )
             
             FWHMs=np.append(FWHMs,FWHM)
             u_FWHMs=np.append(u_FWHMs,u_FWHM)
@@ -196,7 +202,7 @@ class laserscan_analysis(cga.cavity_analysis):
             fig2.savefig(self.folder+'/FWHMs_vs_bins_binsize_%d.png'%self.binsize)
 
 
-        return FWHMs,u_FWHMs
+        return FWHMs,u_FWHMs,x0
 
     def get_bin(self,bin_nr):
         return self.y_data_per_ms_binned[:,bin_nr]

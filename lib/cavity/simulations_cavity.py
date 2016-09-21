@@ -115,6 +115,9 @@ class CavitySims ():
     def set_Q (self, value):
         self.finesse = self.Q_to_finesse(value, self.FSR, self.freq[0])
 
+    def get_finesse(self):
+        return self.finesse
+
     def set_finesse (self, value):
         self.finesse = value
 
@@ -390,7 +393,7 @@ class CavitySims ():
         #the for us relevant factor - emission from ZPL into cavity mode (R[0,0]) compared to free speac emission gamma_tot
         self.F = self.R/float(self.gamma_tot)
         self.F0 = self.R[0,0] #I don't think this factor means anything
-           
+
         #probability of emission into all channels
         self.P = self.R/ float(np.sum(np.sum(self.R))+self.gamma_tot)
         #sum over all NV lines. probability of emission into all longitudinal modes

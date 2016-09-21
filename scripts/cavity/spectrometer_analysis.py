@@ -109,12 +109,18 @@ class spectrometer_analysis():
         peak_wavelengths - the wavelengths at which a peak is found
         """
         minimum_peak_height = kw.pop('minimum_peak_height',0.2*max(intensity))
-        minimum_peak_height=np.average(intensity)+minimum_peak_height
         minimum_peak_distance = kw.pop('minimum_peak_distance',30)
+        edge=kw.pop('edge','rising')#peakdetect setting. #not used atm
         kpsh = kw.pop('kpsh',False)
+        max_height_diff = kw.pop('max_height_diff',0)#the maximum difference between peak height, in order that they are kept if kpsh
+        rescale_to_avg=kw.pop('rescale_to_avg',False)
+        if not rescale_to_avg:
+            minimum_peak_height=np.average(intensity)+minimum_peak_height
+
         peak_frequencies = np.array([])
         peak_intensity = np.array([])
-        indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance,kpsh=kpsh)
+        indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance,
+            kpsh=kpsh,edge=edge,mhd=max_height_diff, rescale_to_avg=rescale_to_avg)
         # print indices_maxima
         for ii in indices:
             peak_frequencies = np.append(peak_frequencies,self.frequencies[ii])

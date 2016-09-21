@@ -437,7 +437,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
         if ret_ax:
             return ax
-
+        fig = ax.get_figure()
         plt.show(fig)
         plt.close(fig)
 
