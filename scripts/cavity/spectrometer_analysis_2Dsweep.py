@@ -345,7 +345,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
             for j,air_length in enumerate(air_lengths):
                 cavity_length = diamond_thickness + air_length
                 if mode_type == 'diamond_air_modes':
-                    modes = self.diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+                    modes = self.diamond_air_modes(air_length = air_length,diamond_thickness=diamond_thickness,
                         conversion_factor=conversion_factor,nr_points=len(self.filenumbers)) 
                         #important to take same nr_points for the modes as filenumbers
                 elif mode_type == 'air_modes':
