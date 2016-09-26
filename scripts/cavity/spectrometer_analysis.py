@@ -102,7 +102,7 @@ class spectrometer_analysis():
         frequencies - frequency data
         intensity - intensity data 
         minimum_peak_distance - in number of datapoints, default - 30
-        minimum_peak_height - default=0.2*(max intensity)
+        minimum_peak_height - the minimum height above average; default=0.2*(max intensity)
         kpsh - "keep same height" - keeps peaks with the same height, even if they are <mpd away
 
         Output parameters:
@@ -110,10 +110,17 @@ class spectrometer_analysis():
         """
         minimum_peak_height = kw.pop('minimum_peak_height',0.2*max(intensity))
         minimum_peak_distance = kw.pop('minimum_peak_distance',30)
+        edge=kw.pop('edge','rising')#peakdetect setting. #not used atm
         kpsh = kw.pop('kpsh',False)
+        max_height_diff = kw.pop('max_height_diff',0)#the maximum difference between peak height, in order that they are kept if kpsh
+        rescale_to_avg=kw.pop('rescale_to_avg',False)
+        if not rescale_to_avg:
+            minimum_peak_height=np.average(intensity)+minimum_peak_height
+
         peak_frequencies = np.array([])
         peak_intensity = np.array([])
-        indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance,kpsh=kpsh)
+        indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance,
+            kpsh=kpsh,edge=edge,mhd=max_height_diff, rescale_to_avg=rescale_to_avg)
         # print indices_maxima
         for ii in indices:
             peak_frequencies = np.append(peak_frequencies,self.frequencies[ii])
