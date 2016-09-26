@@ -290,7 +290,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
         self.peak_x = x
         self.u_peak_x = u_x
-        self.peak_y = y /(len(self.filenumbers)-1)*self.V_range
+        self.peak_y = y /(len(self.filenumbers)-1)*self.V_range+self.V_min
         self.y = y
 
         if return_peak_locations:
@@ -520,6 +520,11 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         json.dump(analysis_params_dict,f,default=self.default)
         f.close()
        
+    def load_analysis_params(self):
+        f=open(os.path.join(self.folder,'analysis_params.json'), 'r')
+        analysis_params_dict = json.load(f)
+        f.close()
+        return analysis_params_dict
 
     def find_nearest(self, array,value):
         idx = (np.abs(array-value)).argmin()
