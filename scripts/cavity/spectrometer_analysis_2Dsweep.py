@@ -290,7 +290,8 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
         self.peak_x = x
         self.u_peak_x = u_x
-        self.peak_y = y /(len(self.filenumbers)-1)*self.V_range
+        self.peak_y = y /(len(self.filenumbers)-1)*self.V_range+self.V_min
+        print self.peak_y
         self.y = y
 
         if return_peak_locations:
@@ -442,6 +443,20 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         plt.close(fig)
 
 
+    def get_slope(self,  diamond_thickness=4.e-6,air_length = 5.e-6, conversion_factor = 307.e-9,nr_points=61, N=39):
+
+         modes= self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,
+                conversion_factor=conversion_factor,nr_points=nr_points)
+         modeN=modes[N]
+
+         y_diff = np.diff(modeN)
+         index, frequency = self.find_nearest(modeN, c/self.laser_wavelength*1e-12)
+         slope_value=1./2*(y_diff[index]+y_diff[index+1])
+
+         final_slope = slope_value/(self.V_range/nr_points)
+
+
+         return final_slope
 
 
     def plot_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
@@ -523,7 +538,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
     def find_nearest(self, array,value):
         idx = (np.abs(array-value)).argmin()
-        return array[idx]
+        return  idx, array[idx]
 
     def calculate_overlap_quality(self, modes, **kw):
         min_frequency = kw.pop('min_frequency', 400)
@@ -541,7 +556,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
                 nu_i = np.transpose(modes)[i]#so it is important that modes has the same number of points as filenumbers
                 for x_ii in x_i: #important to compare to x_ii: the data.
                     if ((x_ii>min_frequency) and (x_ii < max_frequency)):
-                        nearest_nu_ii = self.find_nearest(nu_i, x_ii)
+                        _tmp, nearest_nu_ii = self.find_nearest(nu_i, x_ii)
                         tot_nr_errors+=1
                         squared_errors.append((nearest_nu_ii-x_ii)**2 )
         squared_errors = np.array(squared_errors)
@@ -607,6 +622,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
         return ax
 
     def diamond_air_mode_freq(self, N=1,cavity_length=1.e-6, diamond_thickness=4.e-6):
+        
         Ltot = cavity_length+(n_diamond-1)*diamond_thickness
         Lred = cavity_length-(n_diamond+1)*diamond_thickness
         nu = c / (2*math.pi*Ltot) * \
@@ -614,7 +630,9 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
             math.sin( (N*math.pi*Lred/Ltot))))
         return nu
 
-    def diamond_air_modes(self, cavity_length = 1.e-6, diamond_thickness = 4.e-6, conversion_factor = 100e-9,nr_points=31):
+    def diamond_air_modes(self, air_length = 1.e-6, diamond_thickness = 4.e-6, conversion_factor = 100e-9,nr_points=31):
+        
+        cavity_length= air_length+diamond_thickness
         delta_V = self.V_max - self.V_min
         delta_L = delta_V*(conversion_factor) # in m
 
@@ -635,8 +653,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
             return_fig = True
             fig,ax = plt.subplots()
 
-        cavity_length= air_length+diamond_thickness
-        nu_diamond_air = self.diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,conversion_factor=conversion_factor,nr_points=nr_points)
+        nu_diamond_air = self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,conversion_factor=conversion_factor,nr_points=nr_points)
         xs = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],nr_points)
 
 
