@@ -629,7 +629,7 @@ class spectrometer_2D_analysis(sa.spectrometer_analysis):
 
         return nu_diamond_air
 
-    def plot_diamond_air_modes(self, air_length=1.e-6,diamond_thickness=4.e-6,ax = None,conversion_factor = -150.e-9,nr_points=31, return_modes=False):
+    def plot_diamond_air_modes(self, air_length=1.e-6,diamond_thickness=4.e-6,ax = None,conversion_factor = 307.e-9,nr_points=31, return_modes=False):
         return_fig = False
         if ax == None:
             return_fig = True
