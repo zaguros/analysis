@@ -54,9 +54,8 @@ class laserscan_analysis(cga.cavity_analysis):
         ax.set_title(self.folder+'/binsize = %d'%(self.binsize))
         ax.legend()
         fig.savefig(self.folder+'/data_per_ms_binned_binsize_%d.png'%(self.binsize))
+        
         plt.show()
-
-
         plt.close()
 
     def find_nearest(self, array,value):
@@ -67,9 +66,21 @@ class laserscan_analysis(cga.cavity_analysis):
         y=kw.pop('y',self.y_data)
         x=kw.pop('x',self.frq_data)
         FWHM,u_FWHM,x0 = self.fit_gaussian(**kw)
-        x0i = self.find_nearest(x,x0)
-        self.dx_data = x-x0i
+        self.dx_data = x-x0
         return self.dx_data
+
+    def bin_shifted_data(self,**kw):
+        binsizeGHz = kw.pop('binsizeGHz',1.)#in GHz
+        rangeGHz = kw.pop('rangeGHz',50)
+        self.binsGHz = np.linspace(-rangeGHz/2.,rangeGHz/2,rangeGHz/binsizeGHz+1)
+        self.y_data_per_ms_binned_shifted  = np.zeros((len(self.binsGHz),self.nr_bins))
+
+        for i,b in enumerate(self.binsGHz):
+            bin_indices = np.where( (self.dx_data>b-binsizeGHz/2.)&(self.dx_data<b+binsizeGHz/2.) )
+            for j in np.arange(self.nr_bins):
+                self.y_data_per_ms_binned_shifted[i,j] = np.average(self.y_data_per_ms_binned[:,j][bin_indices])
+
+        return self.binsGHz, self.y_data_per_ms_binned_shifted
 
     def crop_data_around_centre(self,i_window=10,**kw):
         ix_centre = int(np.where(self.dx_data==0.)[0])
@@ -81,7 +92,7 @@ class laserscan_analysis(cga.cavity_analysis):
         #use_ix=np.where((self.dx_data>-dfreq_window/2.) & (self.dx_data<dfreq_window/2.))
         self.dx_data_centred=self.dx_data[i_min:i_max]
         self.y_data_centred = self.y_data[i_min:i_max]
-
+        print self.dx_data_centred
         return self.dx_data_centred,self.y_data_centred
 
     def crop_binned_data_around_centre(self,i_window=10,**kw):
@@ -106,7 +117,7 @@ class laserscan_analysis(cga.cavity_analysis):
         save_plot=kw.pop('save_plot',True)
         fixed=kw.pop('fixed',[])
         label=kw.pop('label','')
-        g_a = np.average(y)
+        g_a = np.nanmean(y)
         g_A = max(y)-g_a
         g_x0= x[np.argmax(y)]
 
@@ -133,11 +144,11 @@ class laserscan_analysis(cga.cavity_analysis):
                 fig = ax.get_figure()
                 fig.savefig(self.folder+'/gaussian_fit_%s.png'%(plot_title))
 
-        if ret_ax:
-            return ax
+            if ret_ax:
+                return ax
 
-        plt.show()
-        plt.close()
+            plt.show(ax.get_figure())
+            plt.close(ax.get_figure())
         
         return FWHM,u_FWHM,x0
 
@@ -174,8 +185,8 @@ class laserscan_analysis(cga.cavity_analysis):
                 ax=ax,label='Fit',show_guess=True, plot_data=True)
             ax.set_title('FWHM = %.1f +- %.1f GHz %s'%(FWHM,u_FWHM,plot_title))
             fig.savefig(self.folder+'/lorentzian_fit_%s.png'%(plot_title))
-            plt.show()
-            plt.close()
+            plt.show(fig)
+            plt.close(fig)
 
         return FWHM,u_FWHM
 
@@ -233,6 +244,7 @@ class laserscan_analysis(cga.cavity_analysis):
         if ret_ax:
             return ax
         plt.show()
+        plt.close()
 
     def plot_PD_signal_vs_frq(self,ax=None,ret_ax=False,**kw):
         save_fig = kw.pop('save_fig',True)
@@ -248,6 +260,7 @@ class laserscan_analysis(cga.cavity_analysis):
         if ret_ax:
             return ax
         plt.show()
+        plt.close()
 
     def plot_PD_signal_vs_dfrq(self,ax=None,ret_ax=False,**kw):
         save_fig = kw.pop('save_fig',True)
@@ -263,6 +276,7 @@ class laserscan_analysis(cga.cavity_analysis):
         if ret_ax:
             return ax
         plt.show()
+        plt.close()
 
     def plot_frq_vs_V(self,ax=None,ret_ax=False,**kw):
         save_fig = kw.pop('save_fig',True)
@@ -278,6 +292,7 @@ class laserscan_analysis(cga.cavity_analysis):
         if ret_ax:
             return ax
         plt.show()
+        plt.close()
 
 
 # def laserscan_analysis(folder,**kw):

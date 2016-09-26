@@ -143,6 +143,11 @@ def get_LT_avg_array_from_json(Vs,L_dir):
 
 ##########functions to plot linewidths/Finesse vs cavity length
 
+def finesses_from_lws(avg_lws,u_avg_lws,Ns,lambda_c=636.6e-9):
+    finesses = c/(np.multiply(Ns,lambda_c))/np.multiply(avg_lws,1.e9)
+    u_finesses = c/(np.multiply(Ns,lambda_c))/np.multiply((avg_lws**2),1.e9)*u_avg_lws
+    return finesses,u_finesses
+
 def plot_updown_lws(avgs,Ns,ax=None):
     if ax==None:
         fig,ax = plt.subplots()
@@ -172,8 +177,9 @@ def plot_finesse_vs_length_from_avgs(avgs,Ns,lambda_c=636.6e-9,ax=None,label='fi
     return(ax)
     
 def plot_finesse_vs_length(avg_lws,u_avg_lws,Ns,lambda_c=636.6e-9,ax=None,label='finesse',style='o'):
-    Finesses = c/(np.multiply(Ns,lambda_c))/np.multiply(avg_lws,1.e9)
-    u_Finesses = c/(np.multiply(Ns,lambda_c))/np.multiply((avg_lws**2),1.e9)*u_avg_lws
+    # Finesses = c/(np.multiply(Ns,lambda_c))/np.multiply(avg_lws,1.e9)
+    # u_Finesses = c/(np.multiply(Ns,lambda_c))/np.multiply((avg_lws**2),1.e9)*u_avg_lws
+    Finesses,u_Finesses=finesses_from_lws(avg_lws,u_avg_lws,Ns,lambda_c=lambda_c)
     if ax==None:
         fig,ax = plt.subplots()
 #     print Finesses,u_Finesses
