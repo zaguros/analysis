@@ -67,7 +67,7 @@ class oscilloscope_analysis():
         else:
             x = np.arange(len(y))
 
-        mod = np.asarray(data['mod'])
+        mod = np.asarray(data['3'])
         self.mod = mod[x_min:x_max]
         self.x=x[x_min:x_max]
         self.y=y[x_min:x_max]

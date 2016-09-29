@@ -226,7 +226,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             for j,air_length in enumerate(air_lengths):
                 cavity_length = diamond_thickness + air_length
                 if mode_type == 'diamond_air_modes':
-                    modes = self.diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,
+                    modes = self.diamond_air_modes(air_length = air_length,diamond_thickness=diamond_thickness,
                         nr_points=self.nr_files) 
                         #important to take same nr_points for the modes as filenumbers
                 elif mode_type == 'air_modes':
@@ -520,7 +520,23 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         plt.close(fig)
 
 
-    def plot_peaks_and_modes(self, ax=None,ret_ax=False, **kw):
+    def get_slope(self,  diamond_thickness=4.e-6,air_length = 5.e-6, nr_points=61, N=39):
+
+         modes= self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
+         modeN=modes[N]
+
+         y_diff = np.diff(modeN)
+         index, frequency = self.find_nearest(modeN, c/self.laser_wavelength*1e-12)
+         slope_value=1./2*(y_diff[index]+y_diff[index+1])
+
+         final_slope = slope_value/(self.V_range/nr_points)
+
+
+         return final_slope
+
+
+    def plot_peaks_and_modes(self, diamond_thickness=4.e-6,air_length = 5.e-6,
+            nr_points=61, ax=None,ret_ax=False, **kw):
         '''
         function that plots the fitted peak locations in 2D data in folder, 
         and overlaps it with the analytically derived diamond and air modes.
@@ -786,6 +802,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         return ax
 
     def diamond_air_mode_freq(self, N=1,cavity_length=1.e-6, diamond_thickness=4.e-6):
+        
         Ltot = cavity_length+(n_diamond-1)*diamond_thickness
         Lred = cavity_length-(n_diamond+1)*diamond_thickness
         nu = c / (2*math.pi*Ltot) * \
@@ -803,6 +820,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         max_nr_modes = 180
         nu_diamond_air = np.zeros((max_nr_modes,nr_points))
+        cavity_length= air_length+diamond_thickness
 
         for N in np.arange(max_nr_modes):
             for i,L in enumerate(Ls):
@@ -816,8 +834,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             return_fig = True
             fig,ax = plt.subplots()
 
-        cavity_length= air_length+diamond_thickness
-        nu_diamond_air = self.diamond_air_modes(cavity_length=cavity_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
+        nu_diamond_air = self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
         xs = np.linspace(self.Vs[0],self.Vs[-1],nr_points)
 
         for N,nu in enumerate(nu_diamond_air):
