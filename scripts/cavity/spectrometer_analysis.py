@@ -11,9 +11,21 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 c=3.e8#speed of light
 
-class spectrometer_analysis():
+class spectrometer_analysis(object):
     def __init__(self,folder):
         self.folder = folder
+        self.ana_pars = {}
+        self.set_default_params()
+
+    def set_default_params(self):
+        #set some defaults for ana_pars
+        self.ana_pars['minimum_peak_height']=0 #the minimum height above average
+        self.ana_pars['minimum_peak_distance']=60 #units: number of datapoints
+        self.ana_pars['max_gamma']=2.4
+        self.ana_pars['g_gamma']=0.2
+        self.ana_pars['keep_same_height']=True #keep peaks closer together than min_peak_dist, if the same height(!)
+        self.ana_pars['max_height_diff'] = 0.28#0.2#120 #if keep_same_height, the max smaller the smaller one is allowed to be.
+        self.ana_pars['rescale_to_avg']=True
 
     def get_files_from_folder(self):
         """
@@ -108,19 +120,19 @@ class spectrometer_analysis():
         Output parameters:
         peak_wavelengths - the wavelengths at which a peak is found
         """
-        minimum_peak_height = kw.pop('minimum_peak_height',0.2*max(intensity))
-        minimum_peak_distance = kw.pop('minimum_peak_distance',30)
-        edge=kw.pop('edge','rising')#peakdetect setting. #not used atm
-        kpsh = kw.pop('kpsh',False)
-        max_height_diff = kw.pop('max_height_diff',0)#the maximum difference between peak height, in order that they are kept if kpsh
-        rescale_to_avg=kw.pop('rescale_to_avg',False)
+        minimum_peak_height = kw.pop('minimum_peak_height',self.ana_pars['minimum_peak_height'])
+        minimum_peak_distance = kw.pop('minimum_peak_distance',self.ana_pars['minimum_peak_distance'])
+        kpsh = kw.pop('kpsh',self.ana_pars['keep_same_height'])
+        max_height_diff = kw.pop('max_height_diff',self.ana_pars['max_height_diff'])#the maximum difference between peak height, in order that they are kept if kpsh
+        rescale_to_avg = kw.pop('rescale_to_avg',self.ana_pars['rescale_to_avg'])
+
         if not rescale_to_avg:
             minimum_peak_height=np.average(intensity)+minimum_peak_height
 
         peak_frequencies = np.array([])
         peak_intensity = np.array([])
         indices = peakdetect.detect_peaks(intensity,mph=minimum_peak_height,mpd=minimum_peak_distance,
-            kpsh=kpsh,edge=edge,mhd=max_height_diff, rescale_to_avg=rescale_to_avg)
+            kpsh=kpsh,mhd=max_height_diff, rescale_to_avg=rescale_to_avg)
         # print indices_maxima
         for ii in indices:
             peak_frequencies = np.append(peak_frequencies,self.frequencies[ii])
@@ -149,9 +161,8 @@ class spectrometer_analysis():
 
         x0s =np.array([])
         u_x0s =np.array([])
-        g_gamma = kw.pop('g_gamma',0.5)
-        g_offset= kw.pop('g_offset',0)
-        max_gamma = kw.pop('max_gamma',None)
+        g_gamma = kw.pop('g_gamma',self.ana_pars['g_gamma'])
+        max_gamma = kw.pop('max_gamma',self.ana_pars['max_gamma'])
          
         frequency_range = np.abs(self.frequencies[-1]-self.frequencies[0])
         indices_around_peak = int((len(self.frequencies)/frequency_range)*g_gamma*6)
