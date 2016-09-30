@@ -220,7 +220,7 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None):
     hb.set_xticks([0.125,0.625,1.125,1.625])
     hb.set_yticks([0.125,0.625,1.125,1.625])
     hb.set_zlim([-0.0,0.5])
-    plt.show()
+    # plt.show()
 
 def electron_carbon_density_matrix(**kw):
     """
