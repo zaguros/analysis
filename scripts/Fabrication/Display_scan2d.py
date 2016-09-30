@@ -28,9 +28,10 @@ class DisplayScan(m2.M2Analysis):
         save_location = kw.pop('save_location',None)
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        colorname='afmhot'
-        #colors=ax.pcolormesh(self.xvalues,self.yvalues,self.countrates, vmin=vmin,vmax=vmax,cmap=colorname)
-        colors=ax.imshow(self.countrates, cmap=colorname, interpolation='none',
+
+        colormap=kw.pop('colormap','afmhot')
+        #colors=ax.pcolormesh(self.xvalues,self.yvalues,self.countrates, vmin=vmin,vmax=vmax,cmap=colormap)
+        colors=ax.imshow(self.countrates, cmap=colormap, interpolation='none',
                         vmin=vmin,vmax=vmax, 
                         extent=[np.amin(self.xvalues),np.amax(self.xvalues),np.amin(self.yvalues),np.amax(self.yvalues)], origin='lower')
 
@@ -48,7 +49,7 @@ class DisplayScan(m2.M2Analysis):
         if save:
             try:
                 fig.savefig(
-                    os.path.join(self.folder,colorname+'_scan2d.png'))
+                    os.path.join(self.folder,colormap+'_scan2d.png'))
                 if use_save_location and (save_location!=None):
                     min_x = min(self.xvalues)
                     min_y = min(self.yvalues)
@@ -58,6 +59,7 @@ class DisplayScan(m2.M2Analysis):
                         os.path.join(save_location, '%d,%d,%.2f%s.png'%(min_x,min_y,self.zfocus,depth)))
             except:
                 print 'Figure has not been saved.'
+        return fig
 
     def find_NV_locations(self,g_sigma = 0.2,**kw):
         plot_NV_zoom=kw.pop('plot_NV_zoom',False)
@@ -398,15 +400,23 @@ def table_of_good_NVs(folder):
 class DisplayScanFlim(DisplayScan):
 
     def get_flim_data(self):
-        self.flimdata = self.f['flim_data'].value
+        self.flim_data = self.f['flim_data'].value
+        self.flim_data_syncs = self.f['flim_data_syncs'].value
 
     def plot_flim_data(self,title,save=True, **kw):
+
+        if kw.pop('raw', False):
+            flim_data =  self.flim_data
+            title=title+'_raw'
+        else:
+            flim_data =  self.flim_data.astype(np.float)/self.flim_data_syncs.reshape(np.append(self.flim_data.shape[:2],1)) * 1e4
         
         rmin = kw.pop('rmin', 0)
-        rmax = kw.pop('rmax', len(self.flimdata[0,0]))
+        rmax = kw.pop('rmax', len(flim_data[0,0]))
+        title=title+'range: {%d} - {%d}'.format(rmin,rmax)
 
-
-        self.flim_plot_data = np.sum(self.flimdata[:,:,rmin:rmax],axis=2)
+        title = title + ''
+        self.flim_plot_data = np.sum(flim_data[:,:,rmin:rmax],axis=2)
         vmax = kw.pop('vmax', np.amax(self.flim_plot_data))
         vmin = kw.pop('vmin', np.amin(self.flim_plot_data))
 
@@ -435,14 +445,21 @@ class DisplayScanFlim(DisplayScan):
                 print 'Figure has not been saved.'
 
     def plot_flim_hist(self, title,save=True, **kw):
+
+        if kw.pop('raw', False):
+            flim_data =  self.flim_data_raw
+        else:
+            flim_data =  self.flim_data
         xmin = kw.pop('xmin', 0)
-        xmax = kw.pop('xmax', len(self.flimdata[0]))
+        xmax = kw.pop('xmax', len(flim_data[0]))
         ymin = kw.pop('ymin', 0)
-        ymax = kw.pop('ymax', len(self.flimdata[:,1]))
+        ymax = kw.pop('ymax', len(flim_data[:,1]))
+
+
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        ax.semilogy(np.sum(self.flimdata[xmin:xmax,ymin:ymax,:],axis=(0,1)))
+        ax.semilogy(np.sum(flim_data[ymin:ymax,xmin:xmax,:],axis=(0,1)))
         ax.set_xlabel('bin')
         ax.set_ylabel(self.f.attrs['flim_units'])
 

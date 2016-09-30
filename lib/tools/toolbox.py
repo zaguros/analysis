@@ -528,3 +528,40 @@ def set_analysis_data(f, name, data, attributes, subgroup=None, ANALYSISGRP = 'a
         pqf.close()
         raise
 
+
+
+
+def copy_figure_to_clipboard(fig=None):
+    '''
+    copy a matplotlib figure to clipboard as BMP on windows
+    http://stackoverflow.com/questions/7050448/write-image-to-windows-clipboard-in-python-with-pil-and-win32clipboard
+    '''
+    from cStringIO import StringIO
+    from time import sleep
+
+    from PIL import Image
+    import win32clipboard
+    
+    output = StringIO()
+    # fig.savefig(output, format='bmp') # bmp not supported
+    buf = fig.canvas.buffer_rgba()
+    print len(buf)
+    w = int(fig.get_figwidth() * fig.dpi)
+    print w
+    h = int(fig.get_figheight() * fig.dpi)
+    print h
+    print w*h, len(buf)/(w*h)
+    im = Image.frombuffer('RGBA', (w,h), buf,"raw", 'RGBA', 0, 1)
+    im.convert("RGB").save(output, "BMP")
+    data = output.getvalue()[14:] # The file header off-set of BMP is 14 bytes
+    output.close()
+
+    try:
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        # win32clipboard.SetClipboardData(win32clipboard.CF_BITMAP, data) # did not work!
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data) # DIB = device independent bitmap 
+        win32clipboard.CloseClipboard()
+    except:
+        sleep(0.2)
+        copy2clipboard(fig)
