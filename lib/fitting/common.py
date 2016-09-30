@@ -282,10 +282,10 @@ def fit_poly(*arg):
     for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
         idx = i
-
     def fitfunc(x):
         val = 0
-        for i in range(idx):
+        for i in range(idx+1):
+
             val += p0[i]() * x**i
         return val
 
@@ -293,7 +293,6 @@ def fit_poly(*arg):
 
 def fit_poly_shifted(g_x0,*arg):
     fitfunc_str = 'sum_n ( a[n] * (x-x0)**n )'
-
     idx = 0
     p0 = []
     x0 = fit.Parameter(g_x0, 'x0')
@@ -570,8 +569,41 @@ def fit_5lorentz_symmetric_sym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3, g
 
     return p0, fitfunc, fitfunc_str
 
+def fit_4lorentz_symmetric_sym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_dx2, g_A2):  # fit for 4 lorentzians for EOM drive, symmetric around middle peak
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01-dx2)**2+gamma1**2) \
+            + 2*A1/np.pi*gamma1/(4*(x-x01-dx2)**2+gamma1**2) + 2*A2/np.pi*gamma1/(4*(x-x01+dx)**2+gamma1**2)\
+            + 2*A2/np.pi*gamma1/(4*(x-x01-dx2-dx)**2+gamma1**2)'
 
+    a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    x01 = fit.Parameter(g_x01, 'x01')
+    gamma1 = fit.Parameter(g_gamma1, 'gamma1')
+    #gamma2 = fit.Parameter(g_gamma2,'gamma2')
 
+    dx = fit.Parameter(g_dx,'dx')
+    dx2 = fit.Parameter(g_dx2,'dx2')
+
+    A2 = fit.Parameter(g_A2, 'A2')
+    #A3 = fit.Parameter(g_A3, 'A3')
+    #A4 = fit.Parameter(g_A4, 'A4')
+    #A5 = fit.Parameter(g_A5, 'A5')
+
+    p0 = [a1, A1, x01, gamma1, dx, dx2, A2]
+    #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
+
+    #For when you have the x_01 as the min point in the center. 
+    # def fitfunc(x):
+    #     return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01()-dx2())**2+gamma1()**2)+\
+    #             2*A1()/np.pi*gamma1()/(4*(x-x01()+dx2())**2+gamma1()**2) + 2*A2()/np.pi*gamma1()/(4*(x-x01()-dx2()-dx())**2+gamma1()**2) +\
+    #             2*A2()/np.pi*gamma1()/(4*(x-x01()+dx()+dx2())**2+gamma1()**2)
+
+    #For when x_01 is the max point in the center (- sign here means fit to the right)
+    def fitfunc(x):
+        return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
+                2*A1()/np.pi*gamma1()/(4*(x-x01()-dx2())**2+gamma1()**2) + 2*A2()/np.pi*gamma1()/(4*(x-x01()+dx())**2+gamma1()**2) +\
+                2*A2()/np.pi*gamma1()/(4*(x-x01()-dx()-dx2())**2+gamma1()**2)
+
+    return p0, fitfunc, fitfunc_str
 
 
 def fit_2lorentz_splitting(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_dx2, g_gamma2):

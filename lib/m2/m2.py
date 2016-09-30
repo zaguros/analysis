@@ -25,7 +25,8 @@ class M2Analysis:
         for k in self.f.keys():
             if type(self.f[k])==h5py.Group and k in os.path.split(self.h5filepath)[1]: # PH added this check because sometimes additional files added to hdf5 file (06/16)
                 self.name = k
-        self.g = self.f[self.name]      
+                self.g = self.f[self.name]      
+                break
 
         self.measurementstring = os.path.split(self.folder)[1]
         self.timestamp = os.path.split(os.path.split(self.folder)[0])[1] \
