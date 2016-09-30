@@ -282,10 +282,10 @@ def fit_poly(*arg):
     for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
         idx = i
-
     def fitfunc(x):
         val = 0
-        for i in range(idx):
+        for i in range(idx+1):
+
             val += p0[i]() * x**i
         return val
 
@@ -293,7 +293,6 @@ def fit_poly(*arg):
 
 def fit_poly_shifted(g_x0,*arg):
     fitfunc_str = 'sum_n ( a[n] * (x-x0)**n )'
-
     idx = 0
     p0 = []
     x0 = fit.Parameter(g_x0, 'x0')

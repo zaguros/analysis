@@ -16,14 +16,11 @@ def lengthscan_analysis(folder,**kw):
 
 
     a = cga.cavity_analysis(folder)
-    x,y = a.get_lengthscan_data()
-
-    total_sweep_time = a.f.attrs['nr_steps']*(a.f.attrs['ADC_averaging_cycles']+a.f.attrs['wait_cycles'])/3*10/1e6 # in us (adwin cycle 300 kHz)in seconds
-    print 'total sweep time = ', total_sweep_time 
+    x,y = a.get_lengthscan_data(**kw)
 
     fig,ax = plt.subplots()
-    ax.set_title(folder+'\ntotalsweeptime=%.1fs'%(total_sweep_time))
-    ax.set_xlabel('laser tuning voltage (V)')
+    ax.set_title(folder)
+    ax.set_xlabel('length tuning voltage (V)')
     ax.set_ylabel('PD signal (V)')
     plt.plot(x,y)
 

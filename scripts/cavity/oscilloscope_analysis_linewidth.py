@@ -41,14 +41,16 @@ class oscilloscope_analysis():
         self.use_timetrace = kw.pop('use_timetrace',True)
         x_min = kw.pop('x_min',0)
         x_max = kw.pop('x_max',-1)
+        nr_channels = kw.pop('nr_channels',3) #startign from 0
         data_col = kw.pop('data_col',2) #startign from 0
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","Y"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
-
-        data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3","4"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
-
+        if nr_channels == 3:
+            data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
+        elif nr_channels == 4:
+            data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3","4"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
         #print data
 
         #Could be used for x/y ticks and labels
@@ -139,20 +141,20 @@ class oscilloscope_analysis():
         
         p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2)
 
-        fit_result = fit.fit1d(self.x,self.y, None, p0=p0, fitfunc=fitfunc, do_print=print_fit, ret=True, fixed=fixed)
+        self.fit_result = fit.fit1d(self.x,self.y, None, p0=p0, fitfunc=fitfunc, do_print=print_fit, ret=True, fixed=fixed)
 
-        if 'x01' not in fit_result['params_dict']:
-            return 0,0,0,0,0,0,10000,g_x01,0
+        if 'x01' not in self.fit_result['params_dict']:
+            return 0,0,0,0,0,0,10000,g_x01,0 #return dummy values to prevent crashing
 
-        x01 = fit_result['params_dict']['x01']
-        dx = fit_result['params_dict']['dx']
-        gamma1 = fit_result['params_dict']['gamma1']
-        A1 = fit_result['params_dict']['A1']
-        A2 = fit_result['params_dict']['A2']
+        x01 = self.fit_result['params_dict']['x01']
+        dx = self.fit_result['params_dict']['dx']
+        gamma1 = self.fit_result['params_dict']['gamma1']
+        A1 = self.fit_result['params_dict']['A1']
+        A2 = self.fit_result['params_dict']['A2']
         # gamma2 = fit_result['params_dict']['gamma2']
-        u_gamma1 = fit_result['error_dict']['gamma1']
-        u_A1 = fit_result['error_dict']['A1']
-        chi_sq=fit_result['chisq']
+        u_gamma1 = self.fit_result['error_dict']['gamma1']
+        u_A1 = self.fit_result['error_dict']['A1']
+        chi_sq=self.fit_result['chisq']
         # u_gamma2 = fit_result['error_dict']['gamma2']
 
         scaling = EOM_freq/dx #scale the known EOM freq with the separation here.
@@ -164,7 +166,7 @@ class oscilloscope_analysis():
         #Plotting
 
         fig,ax = plt.subplots(figsize=(8,4))
-        plot.plot_fit1d(fit_result, np.linspace(self.x[0],self.x[-1],10*len(self.x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
+        plot.plot_fit1d(self.fit_result, np.linspace(self.x[0],self.x[-1],10*len(self.x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
         if self.use_timetrace:
             ax.set_xlabel("Time (ms)", fontsize = 14)
         else:
@@ -297,8 +299,8 @@ class oscilloscope_analysis():
 
 
 ############
-def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
-                                g_dx,g_A,max_chisq,test=False,total_length=12500,data_col=3):
+def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_odd_offset,g_gamma,
+                                g_dx,g_A,max_chisq,test=False,total_length=125000,data_col=3,max_plots=10,min_plots=0,return_data=False):
     '''
     function that fits the resonances in an oscilloscope trace.
     for particularly noisy/'vibrating' data, it uses a first fit to put the resonance to the middle of the windows
@@ -317,15 +319,19 @@ def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
     nr_lws=nr_lws
     x0=x0
     success =np.zeros(nr_lws)
-    windowsize=windowsize# print len(x)
+    windowsize=windowsize
+
 
     
     for i in np.arange(nr_lws):
         if test:
-            if i>10:
+            if i>max_plots-1:
                 break
+            if i<min_plots:
+                continue
         xi = int(x0+(total_length*i/nr_lws))
         print xi
+
 
 
         if i%2==1:
@@ -334,7 +340,7 @@ def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
             x_min = xi-windowsize
         else: 
             x_min = 0
-        if (xi+windowsize)<len(x)-1:
+        if (xi+windowsize)<total_length-1:
             x_max = xi+windowsize
         else:
             x_max = -1
@@ -349,6 +355,7 @@ def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
 
         if chisq>0.4:
             print 20*'*'
+            print 'lw number',int(i+1) 
             print chisq,lw
             print 'fit already not good enough! '
             print 20*'*'
@@ -365,7 +372,7 @@ def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
             x_min = x01-windowsize    
         else: 
             x_min = 0
-        if (x01+windowsize)<len(x)-1:
+        if (x01+windowsize)<total_length-1:
             x_max = x01+windowsize
         else:
             x_max = None
@@ -383,18 +390,21 @@ def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
         x01s = np.append(x01s,x01)
         if chisq>max_chisq:
             print 20*'*'
+            print 'lw number',int(i+1) 
             print chisq,lw,'+-',u_lw
             print 'fit not good enough! '
             print 20*'*'
             continue
         if u_lw > max_u_lw:
             print 20*'*'
+            print 'lw number',int(i+1) 
             print chisq,lw,'+-',u_lw
             print 'fit not good enough! uncertainty in linewidth too large '
             print 20*'*'
             continue
         if A2 < min_A2:
             print 20*'*'
+            print 'lw number',int(i+1) 
             print chisq,lw,'+-',u_lw
             print A2
             print 'fit not good enough! A2 is less than 0'
@@ -429,6 +439,10 @@ def fit_all_resonances_in_sweep(nr_lws,x0,windowsize,x_odd_offset,g_gamma,
     print 'chisq = ',good_chisqs
     print 'x0s = ',good_x01s
 
-    funcs.save_to_json_file(indir,filename+'_analysis',good_fits)
+    funcs.save_to_json_file(indir,filename+'_analysis_2',good_fits)
+
+    if return_data:
+        return oa_single.x,oa_single.y,oa_single.fit_result
+
     return good_lws
 

@@ -17,7 +17,7 @@ from scipy import interpolate
 from scipy.optimize import curve_fit
 import operator
 
-from analysis.lib.m2 import m2
+from analysis.lib.m2 import m2;reload(m2)
 
 class cavity_analysis(m2.M2Analysis):
 
@@ -55,12 +55,17 @@ class cavity_analysis(m2.M2Analysis):
 
         return self.sweep_data
 
-    def get_lengthscan_data(self):
+    def get_lengthscan_data(self,**kw):
         """
         function that loads the data from a single length scan measurement
         """
-        self.x_data = self.g['piezo_voltage']
-        self.y_data = self.g['PD_signal']
+        old_style=kw.pop('old_style',False)
+        if old_style:
+            self.x_data = self.f['/length_scan_processed_data__single/piezo_voltage']
+            self.y_data = self.f['length_scan_processed_data__single/PD_signal']
+        else:
+            self.x_data = self.g['piezo_voltage']
+            self.y_data = self.g['PD_signal']
         return self.x_data,self.y_data
 
     def get_laserscan_data(self):
