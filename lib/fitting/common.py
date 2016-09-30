@@ -884,5 +884,5 @@ def fit_clipping_radius(g_ROC,g_rclip,g_Transmission,g_Loss, *arg):
     p0 = [ROC,rclip,Transmission,Loss]
 
     def fitfunc(x):
-        return 2*np.pi/(Transmission()+Loss())+np.exp(-2*rclip()**2/(wavelength**2/np.pi**2*wavelength*x/2*(ROC()-wavelength*x/2))))
+        return 2*np.pi/(Transmission()+Loss())+np.exp(-2*rclip()**2/(wavelength**2/np.pi**2*wavelength*x/2*(ROC()-wavelength*x/2)))
     return p0, fitfunc, fitfunc_str
