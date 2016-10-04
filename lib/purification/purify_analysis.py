@@ -1119,11 +1119,14 @@ class purify_analysis(object):
             print 'Not implemented yet!'
         else:
             dm_p,dm_m = np.kron(paulis[0],paulis[0])/4.,np.kron(paulis[0],paulis[0])/4.
-            dm_p_u,dm_m_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
+
+            ### initialize the matrices for statistical uncertainties
+            dm_p_re_u,dm_m_re_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
+            dm_p_im_u,dm_m_im_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
 
             t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z!
 
-            paulis2[1] = -paulis2[1] #this can fix the state issue once we found out what the problem is...
+            paulis2[1] = -paulis2[1] #this can fixes the state issue once we found out what the problem is...
 
             for t in ['I','X','Y','Z']:
                 for t2 in ['I','X','Y','Z']:
@@ -1145,14 +1148,14 @@ class purify_analysis(object):
                         exp_p,exp_p_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_p[t+t2], self.correlation_dict_p_u[t+t2]))
                         exp_m,exp_m_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_m[t+t2], self.correlation_dict_m_u[t+t2]))
                     
-
-                    # if (t+t2 == 'YY') or (t+t2 == 'XX') or (t+t2 == 'ZZ'):
-                    #     print t+t2+' plus',np.round((exp_p)*sigma_kron/4.,decimals=3)
-                    #     print t+t2+' minus',np.round((exp_m)*sigma_kron/4.,decimals=3)
+                    
                     dm_p +=(exp_p)*sigma_kron/4.
-                    dm_p_u += (exp_p_u**2)*sigma_kron/16.
+                    dm_p_re_u += (exp_p_u**2)*np.abs(sigma_kron.real)/16.
+                    dm_p_im_u += (exp_p_u**2)*np.abs(sigma_kron.imag)/16.
+
                     dm_m +=(exp_m)*sigma_kron/4.
-                    dm_m_u += (exp_m_u**2)*sigma_kron/16.
+                    dm_m_re_u += (exp_m_u**2)*np.abs(sigma_kron.real)/16.
+                    dm_m_im_u += (exp_m_u**2)*np.abs(sigma_kron.imag)/16.
 
 
         ### need to think more how to combine error bars for the density matrix!!
@@ -1183,7 +1186,7 @@ class purify_analysis(object):
             print np.linalg.eigh(np.round(dm_m,decimals=3))[0]
 
         else:
-            return dm_p,dm_p_u,dm_m,dm_m_u
+            return dm_p,np.sqrt(dm_p_re_u)+1j*np.sqrt(dm_p_im_u),dm_m,np.sqrt(dm_m_re_u)+1j*np.sqrt(dm_m_im_u)
 
 
     ##########################
@@ -1800,21 +1803,24 @@ def plot_photon_hist(ax, h, b, log=True, **kw):
     ax.set_ylim(bottom=0.1)
     ax.set_xlim(min(b), max(b))
 
-def plot_3D_bars(input_matrix,input_u = None):
+def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None):
     """
-    this is all about representing the density matrix...
+    this is all about representing the non-local density matrix.
+    See also electron_nuclear_bell_state.py
     """
-
+    color = '#90C3D4'
+    alpha = 0.67
 
     ticks = ['X,X','X,-X','-X,X','-X,-X']
     hf = plt.figure(figsize=plt.figaspect(0.5))
-    ha = hf.add_subplot(1,2,1, projection='3d')
-
+    ha = plt.subplot(121, projection='3d')
+    # ha.grid(False)
+    plt.gca().patch.set_facecolor('white')
     xpos, ypos = np.array(range(4)),np.array(range(4))
 
 
 
-    dx = 0.25 * np.ones(16)
+    dx = 0.35 * np.ones(16)
     dy = dx.copy()
 
 
@@ -1826,10 +1832,19 @@ def plot_3D_bars(input_matrix,input_u = None):
     zpos = zpos.flatten()
     dz = np.reshape(np.asarray(input_matrix.real), 16)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+
+    #### now plot the error bars if given as input
+    if dm_u_re != None:
+        dm_err_re = np.reshape(np.asarray(dm_u_re), 16)
+        for i in np.arange(0,len(xpos)):
+            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black')
+
     ha.set_title('Real part')
     ha.set_xticklabels(ticks)
-    ha.set_yticklabels(ticks)
+    ha.set_yticklabels(ticks,
+                   verticalalignment='baseline',
+                   horizontalalignment='left')
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
     ha.set_zlim([-0.5,0.5])
@@ -1838,15 +1853,25 @@ def plot_3D_bars(input_matrix,input_u = None):
     dz = np.reshape(np.asarray(input_matrix.imag), 16)
 
     hb = hf.add_subplot(1,2,2, projection='3d')
-    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
-    # ha.plot_surface(X, Y, input_matrix.real)
+    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+
+    #### now plot the error bars if given as input
+    if dm_u_im != None:
+        dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
+        for i in np.arange(0,len(xpos)):
+            hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
+
     hb.set_title('Imaginary part')
     hb.set_xticklabels(ticks)
-    hb.set_yticklabels(ticks)
+    hb.set_yticklabels(ticks,
+                   verticalalignment='baseline',
+                   horizontalalignment='left')
     hb.set_xticks([0.125,0.625,1.125,1.625])
     hb.set_yticks([0.125,0.625,1.125,1.625])
     hb.set_zlim([-0.5,0.5])
     plt.show()
+
+
 ############################################################
 ### reloading bound methods without affecting attirbutes ###
 ############################################################
