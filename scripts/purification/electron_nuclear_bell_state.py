@@ -1,6 +1,8 @@
 """
 Evaluates the density matrix of a combined electron nuclear spin state.
-Based upon 12 tomographic measurements for different initial measurement bases of the electron
+Based upon 12 measurements for different initial measurements of the electron
+
+TODO: proper error propagation onto elements of the dnesity matrix.
 """
 
 
@@ -47,7 +49,7 @@ def get_correlations(**kw):
         ssro_calib_folder = tb.latest_data('SSROCalibration')
     else:
         ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = tb.latest_data(contains = ssro_tstmp+'_SSRO',older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp)
+        ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp)
 
     ### for basis assignment, see onenote 2016-08-24 or alternatively mathematica file E_13C_Bell_state.nb
     tomo_pulses_p = ['none','x','my'] ### used when looking for folders
@@ -164,6 +166,7 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     ha = plt.subplot(121, projection='3d')
     ha.grid(True)
     # plt.gca().patch.set_facecolor('white')
+    ha.pbaspect = [1.0, 1.0, 0.255]
     xpos, ypos = np.array(range(4)),np.array(range(4))
 
 
@@ -190,9 +193,8 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
 
     # ha.set_title('abs(Real part)')
-    rot = 0
-    ha.set_xticklabels(xticks,va = 'center',horizontalalignment = 'center',size=  fontsize,rotation = rot)
-    ha.set_yticklabels(yticks,size=  fontsize,rotation = 360-rot,
+    ha.set_xticklabels(xticks,va = 'center',size=  fontsize)
+    ha.set_yticklabels(yticks,size=  fontsize,
                    verticalalignment='baseline',
                    horizontalalignment='left')
     ha.set_zticklabels([0.0,0.1,0.2,0.3,0.4,0.5],size=  fontsize,
