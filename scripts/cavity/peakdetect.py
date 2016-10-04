@@ -91,7 +91,7 @@ def peakdet(v, delta, x = None):
 
 
 def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
-                 kpsh=False, valley=False, show=False, ax=None):
+                 kpsh=False, valley=False, show=False, ax=None, mhd = 0,rescale_to_avg=False):
 
     """Detect peaks in data based on their amplitude and other features.
 
@@ -118,7 +118,10 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
     show : bool, optional (default = False)
         if True (1), plot data in matplotlib figure.
     ax : a matplotlib.axes.Axes instance, optional (default = None).
-
+    mhd :  integer (default = 1)
+        the maximum difference between peaks to be kept if kpsh = True
+    rescale_to_avg: bool (default=False)
+        rescale the array to the average -> peak heighst defines with respect to this
     Returns
     -------
     ind : 1D array_like
@@ -166,10 +169,14 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
     >>> # set threshold = 2
     >>> detect_peaks(x, threshold = 2, show=True)
     """
-
+    
     x = np.atleast_1d(x).astype('float64')
     if x.size < 3:
         return np.array([], dtype=int)
+
+    if rescale_to_avg:
+        x = x - np.average(x)
+
     if valley:
         x = -x
     # find indices of all peaks
@@ -212,7 +219,7 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
             if not idel[i]:
                 # keep peaks with the same height if kpsh is True
                 idel = idel | (ind >= ind[i] - mpd) & (ind <= ind[i] + mpd) \
-                    & (x[ind[i]] > x[ind] if kpsh else True)
+                    & (x[ind[i]]*mhd > x[ind] if kpsh else True)
                 idel[i] = 0  # Keep current peak
         # remove the small peaks and sort back the indices by their occurrence
         ind = np.sort(ind[~idel])

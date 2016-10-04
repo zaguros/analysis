@@ -3,7 +3,7 @@ reload(nvlevels)
 import numpy as np
 from matplotlib import pyplot as plt
 
-save_path = 'H:/My Documents/Cavities/Simulations/nv_levels/'
+save_path = 'D:\measuring\data\20160816\122554_LaserFrequencyScan_111_No1_SIL18_line_scan_green'
 
 def plot_ES_b_dependence(strain_splitting=2.):
 	b_range=np.linspace(0,1000,100) #gauss
@@ -21,6 +21,7 @@ def plot_ES_b_dependence(strain_splitting=2.):
 
 	for i in range(6):
 		plt.plot(b_range,spectrum[:,i])
+		# plt.show()
 		plt.savefig(save_path+'ES_B_dependence_Ex_'+str(Ex)+'.png')
 
 def plot_GS_b_dependence(strain_splitting=2.):
