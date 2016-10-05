@@ -340,7 +340,7 @@ class purify_analysis(object):
         if st_len_w2 == None:
             st_len_w2 = analysis_params.filter_settings['st_len_w2']
 
-
+        total_no_w1 = 0
         for st_filtered,sp_filtered in zip(self.lt4_dict['/PQ_sync_time-1'],self.lt4_dict['/PQ_special-1']):
 
             st_fltr_w1 = (st_filtered > st_start)  & (st_filtered < (st_start  + st_len)) & (sp_filtered == 0)
@@ -349,9 +349,12 @@ class purify_analysis(object):
             self.st_fltr_w2.append(st_fltr_w2)
 
             no_w1 = np.sum(st_fltr_w1)
+            total_no_w1 += no_w1
             if verbose:
-                print 'number of total filtered detection events : ', no_w1
+                print 'number of filtered detection events : ', no_w1
 
+        if verbose:
+            print 'total number of filtered detection events : ', total_no_w1
         return
 
 
@@ -1116,11 +1119,14 @@ class purify_analysis(object):
             print 'Not implemented yet!'
         else:
             dm_p,dm_m = np.kron(paulis[0],paulis[0])/4.,np.kron(paulis[0],paulis[0])/4.
-            dm_p_u,dm_m_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
+
+            ### initialize the matrices for statistical uncertainties
+            dm_p_re_u,dm_m_re_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
+            dm_p_im_u,dm_m_im_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
 
             t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z!
 
-            paulis2[1] = -paulis2[1] #this can fix the state issue once we found out what the problem is...
+            paulis2[1] = -paulis2[1] #this can fixes the state issue once we found out what the problem is...
 
             for t in ['I','X','Y','Z']:
                 for t2 in ['I','X','Y','Z']:
@@ -1142,14 +1148,14 @@ class purify_analysis(object):
                         exp_p,exp_p_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_p[t+t2], self.correlation_dict_p_u[t+t2]))
                         exp_m,exp_m_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_m[t+t2], self.correlation_dict_m_u[t+t2]))
                     
-
-                    # if (t+t2 == 'YY') or (t+t2 == 'XX') or (t+t2 == 'ZZ'):
-                    #     print t+t2+' plus',np.round((exp_p)*sigma_kron/4.,decimals=3)
-                    #     print t+t2+' minus',np.round((exp_m)*sigma_kron/4.,decimals=3)
+                    
                     dm_p +=(exp_p)*sigma_kron/4.
-                    dm_p_u += (exp_p_u**2)*sigma_kron/16.
+                    dm_p_re_u += (exp_p_u**2)*np.abs(sigma_kron.real)/16.
+                    dm_p_im_u += (exp_p_u**2)*np.abs(sigma_kron.imag)/16.
+
                     dm_m +=(exp_m)*sigma_kron/4.
-                    dm_m_u += (exp_m_u**2)*sigma_kron/16.
+                    dm_m_re_u += (exp_m_u**2)*np.abs(sigma_kron.real)/16.
+                    dm_m_im_u += (exp_m_u**2)*np.abs(sigma_kron.imag)/16.
 
 
         ### need to think more how to combine error bars for the density matrix!!
@@ -1180,7 +1186,7 @@ class purify_analysis(object):
             print np.linalg.eigh(np.round(dm_m,decimals=3))[0]
 
         else:
-            return dm_p,dm_p_u,dm_m,dm_m_u
+            return dm_p,np.sqrt(dm_p_re_u)+1j*np.sqrt(dm_p_im_u),dm_m,np.sqrt(dm_m_re_u)+1j*np.sqrt(dm_m_im_u)
 
 
     ##########################
@@ -1215,7 +1221,7 @@ class purify_analysis(object):
 
         return total_duration
 
-    def calculate_sequence_time(self,lt4_timestamps,st_start=None,st_len=None,max_w2 = None):
+    def calculate_sequence_time(self,lt4_timestamps = None,offsets = None,offsets_ch1=None,st_start=None,st_len=None,max_w2 = None):
         """
         Approximates the time spent in the AWG sequence:
         Uses the fact that clicks picked up by the plu are always followed by a special sync to filter out clicks in w1 and w2, even if the ultimate second click was not successful.
@@ -1224,10 +1230,29 @@ class purify_analysis(object):
         Using all this data we crunch a bunch of statistics for the runs. 
         """
 
+        if lt4_timestamps == None:
+            lt4_timestamps = self.all_lt4
+
+        if offsets == None:
+            offsets = self.offsets
+
+        if offsets_ch1 == None:
+            offsets_ch1 = self.offsets_ch1  
+
+        if st_start == None:
+            st_start = analysis_params.filter_settings['st_start']
+        if st_len == None:
+            st_len = analysis_params.filter_settings['st_len']
+
+        max_w1 = analysis_params.filter_settings['max_reps_w1']
+        min_w2 = analysis_params.filter_settings['min_reps_w2']
+        if max_w2 == None:
+            max_w2 = analysis_params.filter_settings['max_reps_w2']
+
         num_raw_successes, num_successes, total_attempts_to_first_click, num_first_clicks, est_resets, total_time, total_syncs = 0,0,0,0,0,0,0
 
         #for each file
-        for t_lt4 in lt4_timestamps:
+        for i,t_lt4 in enumerate(lt4_timestamps):
                    
             a_lt4 = ppq.purifyPQAnalysis(tb.data_from_time(t_lt4,folder = self.lt4_folder),hdf5_mode ='r')
             
@@ -1247,51 +1272,53 @@ class purify_analysis(object):
             time = np.array(a_lt4.pqf['/PQ_time-1'].value)
             sync_time = np.array(a_lt4.pqf['/PQ_sync_time-1'].value)
 
+            if np.size(offsets):
+                sync_time = sync_time + offsets[i]
+
+            if np.size(offsets_ch1):
+                ch1_fltr = np.array(a_lt4.pqf['/PQ_channel-1'].value)==1
+                sync_time[ch1_fltr] = sync_time[ch1_fltr] + offsets_ch1[i] 
+
             plu_clicks = np.append((spec == 1),False)[1:] # Plu click is followed by a special value
             plu_syncs = syncs[plu_clicks]
             plu_sync_time = sync_time[plu_clicks]
-
-            ### one can also apply manual filters if one wants to deviate from the prescribed parameter dictionary
-            if st_start == None:
-                st_start = analysis_params.filter_settings['st_start']
-            if st_len == None:
-                st_len = analysis_params.filter_settings['st_len']
 
             st_fltr = (plu_sync_time > st_start)  & (plu_sync_time < (st_start  + st_len))
             plu_syncs = plu_syncs[st_fltr]
 
             successful_pur_w1_sync = np.in1d(plu_syncs, awg_reps_w1) # Check if led to successful purification
             successful_pur_w2_sync = np.in1d(plu_syncs, awg_reps_w2) # Check if led to successful purification
-
+            
             first_clicks = plu_syncs[np.logical_not(successful_pur_w2_sync)]
 
+            successful_pur_w1_sync = np.logical_and(successful_pur_w1_sync,np.append(successful_pur_w2_sync[1:],False))
+            successful_pur_w2_sync = np.insert(successful_pur_w1_sync,0,[False])[:-1]
+            
             # To estimate this, we only use data where we know we succeeded, since then no ambiguity about what happened.
             next_sync = plu_syncs[np.insert(successful_pur_w2_sync,0,[False])[:-1]] 
             elapsed_syncs = next_sync - plu_syncs[successful_pur_w2_sync][:len(next_sync)]
 
-
-            # Finally, for rates, add in filtering on the number of allowed attempts
-            max_w1 = analysis_params.filter_settings['max_reps_w1']
-            min_w2 = analysis_params.filter_settings['min_reps_w2']
-            if max_w2 == None:
-                max_w2 = analysis_params.filter_settings['max_reps_w2']
-
-            num_successes += np.sum(np.in1d(plu_syncs,awg_reps_w1[np.logical_and((attempts_first <= max_w1),(attempts_second <= max_w2),(attempts_second >= min_w2))]))
+            num_successes += np.sum(np.in1d(plu_syncs[successful_pur_w1_sync],awg_reps_w1[np.logical_and((attempts_first <= max_w1),(attempts_second <= max_w2),(attempts_second >= min_w2))]))
 
             # Add it all up:
-            num_raw_successes += np.sum(successful_pur_w1_sync)
+            num_raw_successes += np.sum(successful_pur_w2_sync)
             total_attempts_to_first_click += (np.sum(elapsed_syncs))
             num_first_clicks += len(first_clicks)
             total_time += time[-1]/1e12
             total_syncs += syncs[-1]
 
-        No_of_pulses = a_lt4.g.attrs['C4_Ren_N_m1'][0]
-        tau = a_lt4.g.attrs['C4_Ren_tau_m1'][0]
+
+            No_of_pulses = a_lt4.g.attrs['C4_Ren_N_m1'][0]
+            tau = a_lt4.g.attrs['C4_Ren_tau_m1'][0]
+            LDE_elem_length = a_lt4.joint_grp.attrs['LDE_element_length'] 
+
+            a_lt4.finish()
+
+        
         C13_manipulation_duration = 2*No_of_pulses*tau+1*90e-6
         reset_duration = 2*C13_manipulation_duration
         msmt_duration = 2*C13_manipulation_duration
         store_duration = 2*C13_manipulation_duration
-        LDE_elem_length = a_lt4.joint_grp.attrs['LDE_element_length'] 
 
         avg_attempts_per_first_click = float(total_attempts_to_first_click)/num_raw_successes
         resets_per_first_click = (float(avg_attempts_per_first_click)/LDE1_attempts + 1)
@@ -1343,9 +1370,9 @@ class purify_analysis(object):
         print 'elapsed_total_time: ', total_time
         
         print '\n'
-        print 'est. rate (inc. purific. succ.): ',(1/8.0)*(1/est_time_per_success)
-        print 'crude rate from number of syncs (inc. purific. succ.): ',(1/8.0)*num_successes/(total_syncs*LDE_elem_length)
-        print 'actual rate (inc. purific. succ.): ',(1/8.0)*float(num_successes)/total_time
+        print 'est. rate (inc. purific. succ.): ',(0.2)*(1/est_time_per_success)
+        print 'crude rate from number of syncs (inc. purific. succ.): ',(0.2)*num_successes/(total_syncs*LDE_elem_length)
+        print 'actual rate (inc. purific. succ.): ',(0.2)*float(num_successes)/total_time
         print 'est. duty cycle: ',(est_time_per_success*float(num_successes))/(total_time)
     
         print '\n'
@@ -1776,21 +1803,24 @@ def plot_photon_hist(ax, h, b, log=True, **kw):
     ax.set_ylim(bottom=0.1)
     ax.set_xlim(min(b), max(b))
 
-def plot_3D_bars(input_matrix,input_u = None):
+def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None):
     """
-    this is all about representing the density matrix...
+    this is all about representing the non-local density matrix.
+    See also electron_nuclear_bell_state.py
     """
-
+    color = '#90C3D4'
+    alpha = 0.67
 
     ticks = ['X,X','X,-X','-X,X','-X,-X']
     hf = plt.figure(figsize=plt.figaspect(0.5))
-    ha = hf.add_subplot(1,2,1, projection='3d')
-
+    ha = plt.subplot(121, projection='3d')
+    # ha.grid(False)
+    plt.gca().patch.set_facecolor('white')
     xpos, ypos = np.array(range(4)),np.array(range(4))
 
 
 
-    dx = 0.25 * np.ones(16)
+    dx = 0.35 * np.ones(16)
     dy = dx.copy()
 
 
@@ -1802,10 +1832,19 @@ def plot_3D_bars(input_matrix,input_u = None):
     zpos = zpos.flatten()
     dz = np.reshape(np.asarray(input_matrix.real), 16)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+
+    #### now plot the error bars if given as input
+    if dm_u_re != None:
+        dm_err_re = np.reshape(np.asarray(dm_u_re), 16)
+        for i in np.arange(0,len(xpos)):
+            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black')
+
     ha.set_title('Real part')
     ha.set_xticklabels(ticks)
-    ha.set_yticklabels(ticks)
+    ha.set_yticklabels(ticks,
+                   verticalalignment='baseline',
+                   horizontalalignment='left')
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
     ha.set_zlim([-0.5,0.5])
@@ -1814,15 +1853,25 @@ def plot_3D_bars(input_matrix,input_u = None):
     dz = np.reshape(np.asarray(input_matrix.imag), 16)
 
     hb = hf.add_subplot(1,2,2, projection='3d')
-    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color='b')
-    # ha.plot_surface(X, Y, input_matrix.real)
+    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+
+    #### now plot the error bars if given as input
+    if dm_u_im != None:
+        dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
+        for i in np.arange(0,len(xpos)):
+            hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
+
     hb.set_title('Imaginary part')
     hb.set_xticklabels(ticks)
-    hb.set_yticklabels(ticks)
+    hb.set_yticklabels(ticks,
+                   verticalalignment='baseline',
+                   horizontalalignment='left')
     hb.set_xticks([0.125,0.625,1.125,1.625])
     hb.set_yticks([0.125,0.625,1.125,1.625])
     hb.set_zlim([-0.5,0.5])
     plt.show()
+
+
 ############################################################
 ### reloading bound methods without affecting attirbutes ###
 ############################################################

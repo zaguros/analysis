@@ -13,7 +13,7 @@ filter_settings = {
 	'min_cr_lt4_after'	: 1,
 	'max_reps_w1'	: 1000,
 	'min_reps_w1'	: 1,
-	'max_reps_w2'	: 50,
+	'max_reps_w2'	: 500,
 	'min_reps_w2'	: 1,
 	'max_dt'		: 40e3,
 }

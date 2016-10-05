@@ -30,15 +30,15 @@ timestamps = {}
 
 #### Pippin sil 3 timestamps
 
-timestamps['min'] = 	{'N8' : ['20160614_181449'],#'20160420_183630'],
-					 	'N16' : ['20160614_201116'],#'20160420_200748'],
-					 	'N32' : ['20160614_214742'],#'20160420_222506'],
-						'N64' : ['20160614_231213']}#'20160421_004107']}
-timestamps['plus'] = 	{'N8' : [''],#'20160420_183630'],
-					 	'N16' : ['20160703_095309'],#['20160614_201116'],#'20160420_200748'],
-					 	'N32' : ['20160703_103852'],#['20160614_214742'],#'20160420_222506'],
-						'N64' : ['20160703_113235']}#'20160421_004107']}
-ssro_calib_folder = 'd:\\measuring\\data\\20160614\\170041_AdwinSSRO_SSROCalibration_Pippin_SIL1'
+# timestamps['min'] = 	{'N8' : ['20160614_181449'],#'20160420_183630'],
+# 					 	'N16' : ['20160614_201116'],#'20160420_200748'],
+# 					 	'N32' : ['20160614_214742'],#'20160420_222506'],
+# 						'N64' : ['20160614_231213']}#'20160421_004107']}
+# timestamps['plus'] = 	{'N8' : [''],#'20160420_183630'],
+# 					 	'N16' : ['20160703_095309'],#['20160614_201116'],#'20160420_200748'],
+# 					 	'N32' : ['20160703_103852'],#['20160614_214742'],#'20160420_222506'],
+# 						'N64' : ['20160703_113235']}#'20160421_004107']}
+# ssro_calib_folder = 'd:\\measuring\\data\\20160614\\170041_AdwinSSRO_SSROCalibration_Pippin_SIL1'
 
 
 ####################################
@@ -57,6 +57,25 @@ ssro_calib_folder = 'd:\\measuring\\data\\20160614\\170041_AdwinSSRO_SSROCalibra
 # 						 'N64' : ['20160325_160138']}
 
 # ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
+
+
+####################################
+#### 111no2 SIL 2 timestamps
+####################################
+
+
+timestamps['min'] = 	{'N8' : ['20160420_183630'],
+					 	'N16' : ['20160420_200748'],
+					 	'N32' : ['20160420_222506'],
+						'N64' : ['20160421_004107']}
+
+timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
+						 'N16' : ['20160324_223312'],
+						 'N32' : ['20160325_030316'],
+						 'N64' : ['20160325_160138']}
+
+ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
+
 
 
 
@@ -111,6 +130,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		if (HF_perp == None) & (HF_par == None):
 			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL1')
 		elif el_trans == 'min':
+			print 'I did a thing!@'
 			# needs to be flipped for simulation
 			HF_par =  [x * (-1) for x in HF_par]
 
@@ -176,9 +196,12 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 			
 			if el_trans == 'min':
 				# flip sign back after simulation for correct graph legend
-				HF_par =  [x * (-1) for x in HF_par]
+				HF_par_legend =  [x * (-1) for x in HF_par]
+
+			else:
+				HF_par_legend = HF_par
 			for tt in range(len(HF_par)):
-			  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label = str(tt + 1) + ': HF_par = ' +str(HF_par[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt])
+			  ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=1,label = str(tt + 1) + ': HF_par = ' +str(HF_par_legend[tt]) + '; HF_perp = ' +str(HF_perp[tt]), color = colors[tt])
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
 		print datafolder

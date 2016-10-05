@@ -173,21 +173,20 @@ def plot_mean_lws(avg_lws,u_avg_lws,Ns,ax=None,style='o',label='mean'):
     return(ax)
 
 def plot_finesse_vs_length_from_avgs(avgs,Ns,lambda_c=636.6e-9,ax=None,label='finesse',style='o'):
-    ax = plot_finesse_vs_length(avgs[:,4],avgs[:,5],Ns,lambda_c=lambda_c,ax=ax,label=label,style=style)
-    return(ax)
+    ax,Finesses = plot_finesse_vs_length(avgs[:,4],avgs[:,5],Ns,lambda_c=lambda_c,ax=ax,label=label,style=style)
+    return(ax,Finesses)
     
 def plot_finesse_vs_length(avg_lws,u_avg_lws,Ns,lambda_c=636.6e-9,ax=None,label='finesse',style='o'):
     # Finesses = c/(np.multiply(Ns,lambda_c))/np.multiply(avg_lws,1.e9)
     # u_Finesses = c/(np.multiply(Ns,lambda_c))/np.multiply((avg_lws**2),1.e9)*u_avg_lws
-    Finesses,u_Finesses=finesses_from_lws(avg_lws,u_avg_lws,Ns,lambda_c=lambda_c)
+    Finesses,u_Finesses=finesses_from_lws(avg_lws,u_avg_lws,Ns)
     if ax==None:
         fig,ax = plt.subplots()
-#     print Finesses,u_Finesses
     ax.errorbar(Ns,Finesses,yerr=u_Finesses,fmt=style,label=label)
     ax.set_xlabel('cavity length (lambda/2)')
     ax.set_ylabel('Finesse')
     ax.legend()
-    return(ax)
+    return(ax,Finesses)
 
 def fit_lws(linewidths,u_linewidths,Ns,g_Finesse,datapath,ax=None,lambda_c=636.6e-9):
     #cavity_lengths =  Ns#636.6e-9*Ns/2 # in um
@@ -216,7 +215,6 @@ def fit_lws(linewidths,u_linewidths,Ns,g_Finesse,datapath,ax=None,lambda_c=636.6
     plt.show()
     plt.close()
     return Finesse
-
 
 
 
