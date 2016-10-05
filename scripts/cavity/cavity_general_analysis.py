@@ -17,7 +17,7 @@ from scipy import interpolate
 from scipy.optimize import curve_fit
 import operator
 
-from analysis.lib.m2 import m2
+from analysis.lib.m2 import m2;reload(m2)
 
 class cavity_analysis(m2.M2Analysis):
 
@@ -55,12 +55,17 @@ class cavity_analysis(m2.M2Analysis):
 
         return self.sweep_data
 
-    def get_lengthscan_data(self):
+    def get_lengthscan_data(self,**kw):
         """
         function that loads the data from a single length scan measurement
         """
-        self.x_data = self.g['piezo_voltage']
-        self.y_data = self.g['PD_signal']
+        old_style=kw.pop('old_style',False)
+        if old_style:
+            self.x_data = self.f['/length_scan_processed_data__single/piezo_voltage']
+            self.y_data = self.f['length_scan_processed_data__single/PD_signal']
+        else:
+            self.x_data = self.g['piezo_voltage']
+            self.y_data = self.g['PD_signal']
         return self.x_data,self.y_data
 
     def get_laserscan_data(self):
@@ -69,7 +74,7 @@ class cavity_analysis(m2.M2Analysis):
         """
         self.frq_data = self.g['laser_frequency']
         self.x_data = self.g['laser_tuning_voltage']
-        self.y_data = self.g['PD_signal']
+        self.y_data = np.array(self.g['PD_signal'])
         self.y_data_per_ms = self.g['PD_signal_per_ms'][:]
         return self.x_data,self.y_data,self.frq_data,self.y_data_per_ms
 
@@ -80,7 +85,7 @@ class cavity_analysis(m2.M2Analysis):
             print 'deleting %d points to enable reshaping'%del_points
             self.y_data_per_ms = self.y_data_per_ms[:,:-del_points]
         self.nr_bins =(np.size(self.y_data_per_ms,1)/binsize)
-        print 'using %d bins of size %d'%(self.nr_bins,self.binsize)
+        #print 'using %d bins of size %d'%(self.nr_bins,self.binsize)
         # try:
         y_data_per_ms_reshaped = self.y_data_per_ms.reshape(np.size(self.y_data_per_ms,0),self.nr_bins,binsize)
         # except ValueError:
@@ -91,15 +96,10 @@ class cavity_analysis(m2.M2Analysis):
 
     def avg_bins_per_s(self,**kw):
         max_bins = kw.pop('max_bins',1000/self.binsize)
-        print max_bins
         if self.nr_bins%max_bins==0:
             bin_repetitions = self.nr_bins/max_bins
             self.nr_bins = max_bins
-            print 'bin repetitions'
-            print 'new nr bins', self.nr_bins
-            print np.shape(self.y_data_per_ms_binned)
             y_data_per_ms_reshaped = self.y_data_per_ms_binned.reshape(np.size(self.y_data_per_ms,0),bin_repetitions,self.nr_bins)
-            print np.shape(y_data_per_ms_reshaped)
             self.y_data_per_ms_binned = np.average(y_data_per_ms_reshaped,axis=1)
         return self.y_data_per_ms_binned
 
