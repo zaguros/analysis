@@ -376,7 +376,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     for i, (_sn0, _t0, _st0) in enumerate(zip(c_sn0, c_t0, c_st0)):
 
         _c = c_sn1==_sn0
-        # _c[i] = 0 # Not the same entry 
+        # _c[i] = 0 # Not the same entry (for afterpulsing)
         
         for _t1, _st1 in zip(c_t1[_c], c_st1[_c]):
             dt = int(_t0) - int(_t1)
@@ -395,6 +395,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
                           columns=('dt = ch0-ch1 (bins)', 'sync_time ch0 (bins)', 'sync_time ch1 (bins)', 'sync number'))
                        
     return coincidences
+
 
 def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
 
@@ -844,8 +845,10 @@ def get_photon_hist(pqf, index = 1, **kw):
     force_eval = kw.pop('force_eval', True)
     start = kw.pop('start', 0) 
     length = kw.pop('length', 1e6) 
-    hist_binsize= kw.pop('hist_binsize', 1e3) 
-    
+    hist_binsize= kw.pop('hist_binsize', 1e3)
+    offset = kw.pop('offset',0) 
+    offset_ch1 = kw.pop('offset_ch1',0)
+
     if not force_eval and has_analysis_data(pqf, 'photon_histogram'):
         h, h_attrs = get_analysis_data(pqf, 'photon_histogram')
         be, be_attrs = get_analysis_data(pqf, 'photon_histogram_binedges')
@@ -864,11 +867,11 @@ def get_photon_hist(pqf, index = 1, **kw):
         _fltr0 = ph0
         _fltr1 = ph1
     
-    st0 = sync_time[_fltr0]
-    st1 = sync_time[_fltr1]
+    st0 = sync_time[_fltr0] + offset
+    st1 = sync_time[_fltr1] + offset + offset_ch1
 
     binedges = np.arange(start,start+length, hist_binsize)
-    
+
     h0, b0 = np.histogram(st0, bins=binedges)
     h1, b1 = np.histogram(st1, bins=binedges)
     

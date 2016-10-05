@@ -64,11 +64,11 @@ class SSROAnalysis(m2.M2Analysis):
 
         self.repetitions = np.arange(self.reps)
         self.ro_time = self.ssro_time = np.arange(grp.attrs['SSRO_duration']) * \
-                self.cycle_duration * 10./3.
+                1000 #self.cycle_duration * 10./3. # This was harcoded to work only with the old T11 ADWIN, better solution still needed?
         self.sp_time = np.arange(grp.attrs['SP_duration']) * \
-                self.cycle_duration * 10./3.
+                1000 #self.cycle_duration * 10./3. # This was harcoded to work only with the old T11 ADWIN, better solution still needed?
 
-        self.binsize = grp.attrs['cycle_duration']/300.
+        self.binsize = 1 #grp.attrs['cycle_duration']/300. # This was harcoded to work only with the old T11 ADWIN, better solution still needed?
         self.ro_counts = grp['RO_data'].value.reshape(
                 self.reps, grp.attrs['SSRO_duration'])
         self.cr_counts = grp['CR_after'].value
@@ -398,7 +398,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, Fm, fmt='.', yerr=Fm_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0,1))
+            ax.set_ylim((0.5,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. Fm1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fm_max*100., Fm_max_err*100., tm_max),
                     horizontalalignment='right')
@@ -419,7 +419,7 @@ class SSROAnalysis(m2.M2Analysis):
             ax.errorbar(time, Fp, fmt='.', yerr=Fp_err, label='mean')
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('RO fidelity')
-            ax.set_ylim((0,1))
+            ax.set_ylim((0.5,1))
             ax.legend(loc=4)
             plt.figtext(0.8, 0.5, "max. Fp1=({:.2f} +/- {:.2f})% at t={:.0f} us".format(Fp_max*100., Fp_max_err*100., tp_max),
                     horizontalalignment='right')

@@ -31,19 +31,22 @@ class Parameter:
 # errors can be passed by a list err_y - Cristian 24/11/2014
 # THT: I had to remove this because it crashes many measurements, including the optimizOr
 
-def fit1d(x, y, fitmethod, *arg, **kw):
 
+
+
+def fit1d(x, y, fitmethod, *arg, **kw):
     """
     example: from analysis.lib.fitting import fit,common
              x=np.array([0,1,2,3,4])
              y=np.array([2,12,22,32,42])
              fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
                     fixed=[0],do_print=True)
+    Returns a dictionary with the results if ret=True (regardles of the sit success), None otherwise.
              
     """
     # process known kws
     do_print = kw.pop('do_print', False)
-    ret = kw.pop('ret', False)
+    ret = kw.pop('ret', True)
     fixed = kw.pop('fixed', [])
     VERBOSE= kw.pop('VERBOSE',False)
 
@@ -94,18 +97,80 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
+        success = False
         if VERBOSE:
             print 'ERROR: Fit did not converge !'
             print 'reason: ',mesg
-        return success
-        
+        # return success    #commented out by THT and MA because it bvreaks all old automatic fitting code. 160802
+    
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
     # package the result neatly
     if do_print and success:
         print_fit_result(result)
+    if ret: #and success:
+        return result
+
+
+def fit2d((meshx,meshy),z,fitmethod, *arg, **kw):
+    """
+    This function fits 2d data. It does so by raveling the data down to a 1 d array.
+    """
+    # process known kws
+    do_print = kw.pop('do_print', False)
+    ret = kw.pop('ret', False)
+    fixed = kw.pop('fixed', [])
+    VERBOSE= kw.pop('VERBOSE',False)
+
+    # use the standardized fitmethod: any arg is treated as initial guess
+    if fitmethod != None:
+        p0, fitfunc, fitfunc_str = fitmethod(*arg)
+    else:
+        p0 = kw.pop('p0')
+        fitfunc = kw.pop('fitfunc')
+        fitfunc_str = kw.pop('fitfunc_str', '')        
+ 
+ 
+    # general ability to fix parameters
+    fixedp = []
+    for i,p in enumerate(p0):
+        if i in fixed:
+            fixedp.append(p)
+    for p in fixedp:
+        p0.remove(p)
+
+    if ((meshx is None) or (meshy is None)): meshx,meshy = mgrid[0:z.shape[0], 0:z.shape[1]]
+   
+    # convenient fitting method with parameters; see scipy cookbook for details
+    def f(params):
+        i = 0
+        for p in p0:
+            p.set(params[i])
+            i += 1
+
+        return ravel(z) - ravel(fitfunc(ravel(meshx),ravel(meshy)))
+
+
+
+    p = [param() for param in p0]
+
+    # do the fit and process
+    p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(ravel(meshx))*20)
+    if not success or cov == None: # FIXME: find a better solution!!!
+        if VERBOSE:
+            print 'ERROR: Fit did not converge !'
+            print 'reason: ',mesg
+        return success
+    
+    result = result_dict(p1, cov, info, mesg, success, meshx, z, p0, 
+            fitfunc, fitfunc_str)    #if this 2d function becomes more commonly used, the dictionary should also have meshy as a key.
+
+    # package the result neatly
+    if do_print and success:
+        print_fit_result(result)
     if ret and success:
         return result
+
 
 ###############################################################################
 # tools, for formatting, printing, etc.

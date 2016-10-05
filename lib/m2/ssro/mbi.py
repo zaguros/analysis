@@ -19,7 +19,7 @@ class MBIAnalysis(m2.M2Analysis):
 
 
 
-    def get_readout_results(self, name='',CR_after_check = True):
+    def get_readout_results(self, name='',CR_after_check = True,**kw):
         """
         Get the readout results.
         self.ssro_results contains the readout results (sum of the photons for
@@ -150,7 +150,7 @@ class MBIAnalysis(m2.M2Analysis):
         #self.sequence_length = np.product(self.average_repump_time, self.fast_repump_duration)
 
 
-    def get_electron_ROC(self, ssro_calib_folder=''):
+    def get_electron_ROC(self, ssro_calib_folder='',**kw):
         if ssro_calib_folder == '':
             ssro_calib_folder = toolbox.latest_data('SSROCalibration')
 
