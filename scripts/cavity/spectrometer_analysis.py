@@ -40,7 +40,6 @@ class spectrometer_analysis(object):
         self.files = np.array([])
         for f in csv_files:
             self.files = np.append(self.files,f)
-
         return self.files
 
     def sort_files_alphabetically(self):
@@ -91,6 +90,7 @@ class spectrometer_analysis(object):
                 continue
             if ii == 0:
                 self.frequencies,self.intensities = self.load_data(path)
+                
             else:
                 frequency,intensity = self.load_data(path)
                 if len(intensity)!= len(self.intensities[:,0]):

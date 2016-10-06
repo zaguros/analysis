@@ -84,7 +84,7 @@ def create_plot(f,**kw):
     title = kw.pop('title',None)
 
     fig = plt.figure()
-    ax = plt.subplot(111)
+    ax = plt.subplot()
 
     if xlabel != None:
         plt.xlabel(xlabel)
@@ -403,15 +403,15 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
     # tomography 
     tomo = kw.pop('tomo_basis','X')
     # return fit
-    ret = kw.pop('ret', False)
+    ret = kw.get('ret', False)
     # for fitting
     freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
     decay = kw.pop('decay',50)
     phi0 = kw.pop('phi0',0)
+    post_select_e_outcome = kw.pop('post_select_e_outcome',False)
 
     fixed = kw.pop('fixed', [1])
     show_guess = kw.pop('show_guess', False)
-    post_select_e_outcome = kw.pop('post_select_e_outcome',False)
 
     # older_than = kw.get('older_than',None) automatically handled by kws
     ### acquire data
@@ -420,7 +420,11 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
     
     ro_array = ['positive','negative']
     # print ro_array
-    x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,**kw)
+    if tomo == '':
+        adwindata_str = tomo
+    else:
+        adwindata_str = tomo+'_'
+    x,y,y_u = get_pos_neg_data(a,adwindata_str = adwindata_str,ro_array = ro_array,**kw)
     ylabel = tomo
 
     ### create a plot
@@ -465,15 +469,14 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
         ## save and close plot. We are done.
     if post_select_e_outcome:
         print 'and here is where i would post select the data'
-        x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,eRO_post_select = 0,**kw)
+        x,y,y_u = get_pos_neg_data(a,adwindata_str = adwindata_str,ro_array = ro_array,eRO_post_select = 0,**kw)
         plot_data(x,y,y_u=y_u,label = 'dark')
-        x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,eRO_post_select = 1,**kw)
+        x,y,y_u = get_pos_neg_data(a,adwindata_str = adwindata_str,ro_array = ro_array,eRO_post_select = 1,**kw)
         plot_data(x,y,y_u=y_u,label = 'bright')
         plt.legend()
 
     save_and_close_plot(f)
-    
-    if ret:
-        print 'yes'
+
+    if kw.get('ret',False):
         return fit_result
 

@@ -150,6 +150,11 @@ def carbon_ROC(exp,exp_u,folder):
     u = np.sqrt((ROC_coeff*exp_u)**2+(ROC_coeff_u*exp)**2)/ROC_coeff**2
     return exp/ROC_coeff,u
 
+####################
+#                  # 
+#   Plotting etc.  #
+#                  #
+####################
 
 def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     """
@@ -230,7 +235,7 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
 
 def electron_carbon_density_matrix(**kw):
     """
-    This function currently neglects error propagation
+    This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
     """
 
     folder,sweep_pts,exp_values,exp_vals_u = get_correlations(**kw)
