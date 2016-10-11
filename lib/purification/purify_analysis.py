@@ -1116,7 +1116,7 @@ class purify_analysis(object):
         paulis2 = cp.deepcopy(paulis)
 
         if max_likelihood:
-            print 'Not implemented yet!'
+            print 'Max likelihood is not implemented yet!'
         else:
             dm_p,dm_m = np.kron(paulis[0],paulis[0])/4.,np.kron(paulis[0],paulis[0])/4.
 
@@ -1126,7 +1126,7 @@ class purify_analysis(object):
 
             t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z!
 
-            paulis2[1] = -paulis2[1] #this can fixes the state issue once we found out what the problem is...
+            paulis2[1] = -paulis2[1] #this fixes the state issue once we found out what the problem is...
 
             for t in ['I','X','Y','Z']:
                 for t2 in ['I','X','Y','Z']:
@@ -1803,16 +1803,19 @@ def plot_photon_hist(ax, h, b, log=True, **kw):
     ax.set_ylim(bottom=0.1)
     ax.set_xlim(min(b), max(b))
 
-def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None):
+def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     """
     this is all about representing the non-local density matrix.
     See also electron_nuclear_bell_state.py
     """
+    save_folder = r'K:\ns\qt\Diamond\Projects\Purification\Paper\Plots'
     color = '#90C3D4'
     alpha = 0.67
-
-    ticks = ['X,X','X,-X','-X,X','-X,-X']
-    hf = plt.figure(figsize=plt.figaspect(0.5))
+    fontsize = 10
+    lw = 1 #  linewidths
+    xticks = [r'$|$X,X$\rangle$',r'$|$X,-X$\rangle$',r'$|$-X,X$\rangle$',r'$|$-X,-X$\rangle$']
+    yticks = [r'$\langle$X,X$|$',r'$\langle$X,-X$|$',r'$\langle$-X,X$|$',r'$\langle$-X,-X$|$']
+    hf = plt.figure(figsize=np.array(plt.figaspect(0.45))/1.5)
     ha = plt.subplot(121, projection='3d')
     # ha.grid(False)
     plt.gca().patch.set_facecolor('white')
@@ -1832,43 +1835,73 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None):
     zpos = zpos.flatten()
     dz = np.reshape(np.asarray(input_matrix.real), 16)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
-
     #### now plot the error bars if given as input
     if dm_u_re != None:
         dm_err_re = np.reshape(np.asarray(dm_u_re), 16)
         for i in np.arange(0,len(xpos)):
-            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black')
+            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black',mew=lw,zorder = 0)
 
-    ha.set_title('Real part')
-    ha.set_xticklabels(ticks)
-    ha.set_yticklabels(ticks,
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha,linewidths=0.7,zorder= 1)
+
+
+    # ha.set_title('Real part')
+    ha.tick_params(axis='x',pad=20)
+    ha.set_xticklabels(xticks,va = 'baseline',size=  fontsize,rotation=45)
+
+    #### fine adjustment of the x label positions... thanks stackexchange
+    import types,matplotlib
+    SHIFTX = 0.008 # Data coordinates
+    SHIFTY = 0.004 # Data coordinates
+    for label in ha.xaxis.get_majorticklabels():
+        label.customShiftValueX = SHIFTX
+        label.customShiftValueY = SHIFTY
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValueX ), 
+                                        label, matplotlib.text.Text )
+        label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValueY ), 
+                                        label, matplotlib.text.Text )
+
+
+    ha.set_yticklabels(yticks,size=  fontsize,rotation=-15,
                    verticalalignment='baseline',
                    horizontalalignment='left')
+
+    SHIFT = 0.008 # Data coordinates
+    # for label in ha.yaxis.get_majorticklabels():
+    #     label.customShiftValue = SHIFT
+    #     label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValue ), 
+    #                                     label, matplotlib.text.Text )
+    ha.set_zticklabels([-0.4,-0.2,0.0,0.2,0.4],size=  fontsize,
+                   va='center',
+                   ha ='left')
+    ha.set_zticks([-0.4,-0.2,0.0,0.2,0.4])
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
     ha.set_zlim([-0.5,0.5])
 
 
-    dz = np.reshape(np.asarray(input_matrix.imag), 16)
 
-    hb = hf.add_subplot(1,2,2, projection='3d')
-    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+    ##### commented out below is the treatment of the imaginary part of the dm.
+    # dz = np.reshape(np.asarray(input_matrix.imag), 16)
 
-    #### now plot the error bars if given as input
-    if dm_u_im != None:
-        dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
-        for i in np.arange(0,len(xpos)):
-            hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
+    # hb = hf.add_subplot(1,2,2, projection='3d')
+    # hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
 
-    hb.set_title('Imaginary part')
-    hb.set_xticklabels(ticks)
-    hb.set_yticklabels(ticks,
-                   verticalalignment='baseline',
-                   horizontalalignment='left')
-    hb.set_xticks([0.125,0.625,1.125,1.625])
-    hb.set_yticks([0.125,0.625,1.125,1.625])
-    hb.set_zlim([-0.5,0.5])
+    # #### now plot the error bars if given as input
+    # if dm_u_im != None:
+    #     dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
+    #     for i in np.arange(0,len(xpos)):
+    #         hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
+
+    # hb.set_title('Imaginary part')
+    # ha.set_xticklabels(xticks,va = 'center',size=  fontsize)
+    # ha.set_yticklabels(yticks,size=  fontsize,
+    #                verticalalignment='baseline',
+    #                horizontalalignment='left')
+    # hb.set_xticks([0.125,0.625,1.125,1.625])
+    # hb.set_yticks([0.125,0.625,1.125,1.625])
+    # hb.set_zlim([-0.5,0.5])
+    plt.savefig(os.path.join(save_folder,'dm_'+name+'.png'),format='png',bbox_inches = 'tight',pad_inches=0.4)
+    plt.savefig(os.path.join(save_folder,'dm_'+name+'.pdf'),format='pdf',bbox_inches = 'tight',pad_inches=0.4)
     plt.show()
 
 
