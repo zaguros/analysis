@@ -43,13 +43,13 @@ def get_correlations(**kw):
 
     ### pull data
     ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
+    search_string = kw.pop('search_string','el_13C_dm_')
 
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = tb.latest_data('SSROCalibration')
     else:
         ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = tb.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
-        print ssro_calib_folder
+        ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp)
 
     ### for basis assignment, see onenote 2016-08-24 or alternatively mathematica file E_13C_Bell_state.nb
     tomo_pulses_p = ['none','x','my'] ### used when looking for folders
@@ -67,10 +67,10 @@ def get_correlations(**kw):
     tomo_pulse_translation_dict = {'none': 'Z','X':'Z','x':'Y','mx':'Y','y':'X','my':'X'}
 
     for p,m in zip(tomo_pulses_p,tomo_pulses_m):
-        f_list_pos_p.append(tb.latest_data('el_13C_dm_'+p+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_p.append(tb.latest_data('el_13C_dm_'+p+'_negative' ,return_timestamp = False,**kw))
-        f_list_pos_m.append(tb.latest_data('el_13C_dm_'+m+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_m.append(tb.latest_data('el_13C_dm_'+m+'_negative' ,return_timestamp = False,**kw))
+        f_list_pos_p.append(tb.latest_data(search_string + p+'_positive' ,return_timestamp = False,**kw))
+        f_list_neg_p.append(tb.latest_data(search_string + p+'_negative' ,return_timestamp = False,**kw))
+        f_list_pos_m.append(tb.latest_data(search_string + m+'_positive' ,return_timestamp = False,**kw))
+        f_list_neg_m.append(tb.latest_data(search_string + m+'_negative' ,return_timestamp = False,**kw))
 
         #### now also calculate the measured contrast
         y_a,y_err_a = get_RO_results(f_list_pos_p[-1],ssro_calib_folder)
@@ -142,7 +142,7 @@ def carbon_ROC(exp,exp_u,folder):
         ROC_coeff =  0.978264
         ROC_coeff_u = 0.00194222
     else:
-        ROC_coeff = 0.972934
+        ROC_coeff = 0.972934 ### this value seems to low for that specific day of the measurement. See onenote Carbons LT4 / 2016-09-12
         ROC_coeff_u = 0.0028265
 
 
@@ -150,8 +150,13 @@ def carbon_ROC(exp,exp_u,folder):
     u = np.sqrt((ROC_coeff*exp_u)**2+(ROC_coeff_u*exp)**2)/ROC_coeff**2
     return exp/ROC_coeff,u
 
+####################
+#                  # 
+#   Plotting etc.  #
+#                  #
+####################
 
-def plot_dm(dm,dm_u_re = None,dm_u_im = None):
+def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     """
     routine for bar plotting
     """
@@ -159,13 +164,14 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None):
     alpha = 0.67
 
 
-    ticks = ['Z,Z','Z,-Z','-Z,Z','-Z,-Z']
-
-
-    hf = plt.figure(figsize=plt.figaspect(0.5))
+    xticks = [r'$|$Z,Z$\rangle$',r'$|$Z,-Z$\rangle$',r'$|$-Z,Z$\rangle$',r'$|$-Z,-Z$\rangle$']
+    yticks = [r'$\langle$Z,Z$|$',r'$\langle$Z,-Z$|$',r'$\langle$-Z,Z$|$',r'$\langle$-Z,-Z$|$']
+    fontsize = 11
+    hf = plt.figure(figsize=plt.figaspect(0.35))
     ha = plt.subplot(121, projection='3d')
-    ha.grid(False)
-    plt.gca().patch.set_facecolor('white')
+    ha.grid(True)
+    # plt.gca().patch.set_facecolor('white')
+    ha.pbaspect = [1.0, 1.0, 0.255]
     xpos, ypos = np.array(range(4)),np.array(range(4))
 
 
@@ -182,7 +188,6 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None):
     zpos = zpos.flatten()
     dz = np.reshape(np.asarray(np.abs(dm.real)), 16)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
 
     #### now plot the error bars if given as input
     if dm_u_re != None:
@@ -190,44 +195,51 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None):
         for i in np.arange(0,len(xpos)):
             ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black')
 
-    ha.set_title('abs(Real part)')
-    ha.set_xticklabels(ticks)
-    ha.set_yticklabels(ticks,
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+
+    # ha.set_title('abs(Real part)')
+    ha.set_xticklabels(xticks,va = 'center',size=  fontsize)
+    ha.set_yticklabels(yticks,size=  fontsize,
                    verticalalignment='baseline',
                    horizontalalignment='left')
+    ha.set_zticklabels([0.0,0.1,0.2,0.3,0.4,0.5],size=  fontsize,
+                   va='center',
+                   ha ='left')
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
     ha.set_zlim([-0.0,0.5])
 
+    if plot_im:
+        dz = np.reshape(np.asarray(np.abs(dm.imag)), 16)
 
-    dz = np.reshape(np.asarray(np.abs(dm.imag)), 16)
+        hb = hf.add_subplot(122, projection='3d')
+        hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
+        # hb.grid(False)
+        #### now plot the error bars if given as input
+        if dm_u_im != None:
+            dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
+            for i in np.arange(0,len(xpos)):
+                hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
 
-    hb = hf.add_subplot(122, projection='3d')
-    hb.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
-    # hb.grid(False)
-    #### now plot the error bars if given as input
-    if dm_u_im != None:
-        dm_err_im = np.reshape(np.asarray(dm_u_im), 16)
-        for i in np.arange(0,len(xpos)):
-            hb.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_im[i],dz[i]+dm_err_im[i]],marker="_",color = 'black')
-
-    hb.set_title('abs(Imaginary part)')
-    hb.set_xticklabels(ticks)
-    hb.set_yticklabels(ticks,
-                   verticalalignment='baseline',
-                   horizontalalignment='left')
-    hb.set_xticks([0.125,0.625,1.125,1.625])
-    hb.set_yticks([0.125,0.625,1.125,1.625])
-    hb.set_zlim([-0.0,0.5])
-    plt.show()
+        hb.set_title('abs(Imaginary part)')
+        hb.set_xticklabels(xticks,va='center',size = fontsize)
+        hb.set_yticklabels(yticks,size=  fontsize,
+                       verticalalignment='baseline',
+                       horizontalalignment='left')
+        hb.set_zticklabels([0.0,0.1,0.2,0.3,0.4,0.5],size=  fontsize,
+                       va='center',
+                       ha ='left')
+        hb.set_xticks([0.125,0.625,1.125,1.625])
+        hb.set_yticks([0.125,0.625,1.125,1.625])
+        hb.set_zlim([-0.0,0.5])
 
 def electron_carbon_density_matrix(**kw):
     """
-    This function currently neglects error propagation
+    This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
     """
 
     folder,sweep_pts,exp_values,exp_vals_u = get_correlations(**kw)
-    
+    print 'this is the folder', folder
 
     paulis = generate_pauli_matrices()
     ### initialize the dm via the identity correlations
@@ -277,5 +289,7 @@ def electron_carbon_density_matrix(**kw):
         print 'Eigenvalues'
         print np.linalg.eigh(dm)[0]
 
-
-    plot_dm(dm,dm_u_re,dm_u_im)
+    if kw.pop('plot_errors',True):
+        plot_dm(dm,dm_u_re,dm_u_im)
+    else:
+        plot_dm(dm)

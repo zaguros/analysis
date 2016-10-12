@@ -27,7 +27,6 @@ from tempfile import TemporaryFile
 # end of data
 
 def fit_B_msmt_loop(older_than = None, newer_than = None):
-    ''' Just loads the data and marks failed fits'''
     f0m = []; u_f0m = []; #f0p = [] ;u_f0p = []
     # Bx_field_measured = []
     # Bz_field_measured = []

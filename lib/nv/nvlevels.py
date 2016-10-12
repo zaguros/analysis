@@ -84,8 +84,8 @@ def get_ES_fast(f0,D):
                      f0 - 0 + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
                      f0 - 0 + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
 
-def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False, show_ms0_transitions=True,show_A_transitions=False,show_FB_E_transitions=False, 
-                            show_FB_A_transitions=False, show_m1_transitions=True,show_p1_transitions=False,show_E_prime_flip_transitions=False, return_dict=False):
+def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False, show_ms0_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
+                            show_FB_A_transitions=True, show_m1_transitions=True,show_p1_transitions=True,show_E_prime_flip_transitions=True, return_dict=False):
     """
     Returns the six transition energies in GHz of the ES of the NV centre, 
     when given the Energies of the Ex and Ey transitions in GHz
@@ -102,6 +102,7 @@ def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False, show_ms0_transitio
 
     else: 
         trans = get_optical_transitions(E_field=[strain,0,0],B_field=B_field,Ee0=offset-0.97,
+                            show_A_transitions = show_A_transitions,
                             show_ms0_transitions=show_ms0_transitions,show_m1_transitions=show_m1_transitions,show_p1_transitions=show_p1_transitions,
                             show_FB_E_transitions=show_FB_E_transitions, show_E_prime_flip_transitions=show_E_prime_flip_transitions,
                             show_FB_A_transitions=show_FB_A_transitions,return_dict=return_dict)
@@ -133,7 +134,7 @@ def get_transitions_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,300.],show_E_tran
     Ey transitions in GHz
     """
     x=get_transitions_ExEy(Ex,Ey,B_field=B_field,
-                            show_E_transitions=show_E_transitions,show_A_transitions=show_A_transitions,
+                            show_A_transitions=show_A_transitions, #show_E_transitions=show_E_transitions,
                             show_FB_E_transitions=show_FB_E_transitions,
                             show_FB_A_transitions=show_FB_A_transitions, 
                             show_E_prime_flip_transitions=show_E_prime_flip_transitions)
@@ -167,7 +168,7 @@ def get_ES(E_field=[0.,0.,0.],B_field=[0.,0.,0.],Ee0=-1.94,**kw):
     Bx = mu_B*B_field[0]*1e-4 #GHz
     By = mu_B*B_field[1]*1e-4 #GHz
     Bz = mu_B*B_field[2]*1e-4 #GHz
-    
+
     #Bfield
     lambdaA2=.1                  #observed, [1], however some discussion in supplementary material of [3] 
                                  #also, it might miss a factor 0.5! ie lambdaA2=0.05 

@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from analysis.lib.tools import plot
 from analysis.lib.m2.ssro import sequence
 from analysis.lib.tools import toolbox
-from analysis.lib.fitting import fit,esr
+from analysis.lib.fitting import fit,esr; reload(fit)
 
 
 def analyze_dark_esr(guess_ctr, guess_splitN,
@@ -299,9 +299,9 @@ do_plot = True,
 
     print 'running fit1'
     fit_result = fit.fit1d(x, y, None, p0 = [A_min, A_plus, o, ctr, width, Csplit],
-            fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
- 
+            fitfunc = fitfunc, do_print=False, ret=True, fixed=[])
     do_another_fit = False
+
     if fit_result['success'] == False:
             do_another_fit = True
     elif fit_result['error_dict']['ctr'] > 8e-6:
@@ -323,14 +323,13 @@ do_plot = True,
 
             print 'running fit2'
             fit_result = fit.fit1d(x, y, None, p0 = [A_min, A_plus, o, ctr, width, Csplit],
-                    fitfunc = fitfunc, do_print=True, ret=True, fixed=[])
+                    fitfunc = fitfunc, do_print=False, ret=True, fixed=[])
     
     if do_plot == True:        
         fig, ax = plt.subplots(1,1)
         plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=True, **kw)
 
-        plt.savefig(os.path.join(folder, 'darkesr_analysis.png'),
-        format='png')
+        plt.savefig(os.path.join(folder, 'darkesr_analysis.png'), format='png')
         #plt.show()
         plt.close(fig)
 
