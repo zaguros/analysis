@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-from measurement.lib.tools import toolbox
 from analysis.lib.nv import nvlevels
 
 
@@ -56,31 +55,36 @@ from analysis.lib.nv import nvlevels
 #E_x =    [53.2,	53.5,	53.9]
 
 
-gate_V = np.array(
-		 [-18,-36,-54,-72,-90])
-E_y =  	 [67.22,68.42,69.79,71.09,71.23]
-E_x =    [73.2,72.85,72.77,73.01,74.42]
-#gate_V = np.array([ -12,	-9,	-6,	0,	0,	0,	5,	9,	18])
-#E_y =  	 [74.37, 74.59, 74.41, 74.35, 74.51, 74.45, 74.51, 74.71, 75.06]
-#E_x =    [77.19, 77.10,  -1, -1 ,-1 , -1 , 76.5, 76.85, 77.93]
+#gate_V = np.array(
+#		 [-0,-9.0,-18.0,-27.0,-36.0])
+#E_y =  	 [68.7,68.92,68.17,67.1,65.9]
+#E_x =    [76.77,76.37,75.72,74.78,73.82]
+gate_V = np.array([0,-9,-13.5,-18,-22.5,-27,-36 ])
+E_y =  	 [72.15,72.51,72.55,72.59,72.49,72.18,71.58]
+E_x =    [74.11,73.46,73.15,72.87,72.85,72.97,73.22]
 #E_p = 	 [68.51, 68.68, 68.35, 68.14, 68.33, 68.33, -1, 68.62, 69.28]
 
 #Yellow_tuning_on_Ey = [27.66, 27.73, 26.56, 25.72,26.10,26.04, 26.36, 27.62, 30.64]
 #Yellow_tuning_on_Ex = [27.82, 28.06, -1,-1,-1,-1, 26.98,28.04, 30.80 ]
 
+#time =[0,4,9,12,16,18,28,32,36,43,55,60]
+#CR = [34,28,22,15,8]
+#Tail =[1400,1350,1200,1000,650]
+#deg = [-11.5,-9.5,-7.5,-5.5,-3.5]
+#strain_splitting = 
 
-title= 'the111no1 Sil8 gate 21 during SSRO'
+title= 'Pippin SIl1, tuning d1 while d3 at -27V'
 fig = plt.figure()
 ax = fig.add_subplot(111)
-#ax.set_ylim([73,8])
+#ax.set_xlim([-19,1])
 
-ax.plot(gate_V, E_x, 'bo', ms = 8, label = '$E_x$')
+#ax.plot(CR, Tail, 'bo', ms = 8, label = '$E_x$')
+#ax.plot(deg, Tail, 'go', ms = 8, label = '$E_y$')
 ax.plot(gate_V, E_y, 'ro', ms = 8, label = '$E_y$')
-#ax.plot(gate_V, E_p, 'go', ms = 8, label = '$E\'$')
+ax.plot(gate_V, E_x, 'bo', ms = 8, label = '$E_x$')
 
-
-ax.set_xlabel('gate voltage [uW]')
-ax.set_ylabel('frequency [GHz]')
+ax.set_xlabel('frequency [GHz]')
+ax.set_ylabel('gate [V]')
 ax.set_title(title)
 
 ax.legend(loc=0)

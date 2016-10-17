@@ -14,20 +14,23 @@ from analysis.lib.tools import toolbox as tb
 
 def _plot_photon_hist(ax, h, b, log=True, **kw):
     label = kw.pop('label', '')
-
+    x_label = kw.pop('x_label','time (ns)')
     _h = h.astype(float)
     _h[_h<=1e-1] = 1e-1
     _h = np.append(_h, _h[-1])
            
-    ax.plot(b, _h, drawstyle='steps-post', label=label)
+    ax.plot(b/1000., _h, drawstyle='steps-post', label=label)
     if log:
         ax.set_yscale('log')
-    ax.set_xlabel('time (ps)')
+    ax.set_xlabel(x_label)
     ax.set_ylabel('events')
     ax.set_ylim(bottom=0.1)
-    ax.set_xlim(min(b), max(b))
+    ax.set_xlim(min(b/1000.), max(b/1000.))
+    ax.grid(True)
 
 def plot_photon_hist(pqf, **kw):    
+
+
     ret = kw.pop('ret', 'subplots')
 
     (h0, b0), (h1, b1) = pq_tools.get_photon_hist(pqf, **kw)
@@ -35,7 +38,7 @@ def plot_photon_hist(pqf, **kw):
     fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
     _plot_photon_hist(ax0, h0, b0, **kw)
     _plot_photon_hist(ax1, h1, b1, **kw)
-
+    print np.sum(h0)+np.sum(h1)
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
 
@@ -45,8 +48,6 @@ def plot_photon_hist(pqf, **kw):
     
     if ret == 'subplots':
         return fig, (ax0, ax1)
-
-
 
     
 def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
@@ -62,8 +63,17 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     _plot_photon_hist(ax1, h1, b1, label='unfiltered', **kw)
     _plot_photon_hist(ax1, h1f, b1f, label='filtered', **kw)
     
+
+    if kw.get('plot_threshold_ch0', 0) !=0:
+        ax0.vlines([kw.get('plot_threshold_ch0', 0)],0,1000,color = 'r')
+    if kw.get('plot_threshold_ch1', 0) !=0:
+        ax1.vlines([kw.get('plot_threshold_ch1', 0)],0,1000,color='r')
+
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
+
+    ax0.legend()
+    ax1.legend()
 
     fp = pq_tools.fp_from_pqf(pqf)
 
@@ -72,6 +82,40 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     if ret=='subplots':
         return fig, (ax0, ax1)
 
+
+def plot_marker_filter_comparison(pqf,mrkr_chan = 2,**kw):
+
+    # get the PLU marked photons first
+    is_ph_ch0, is_ph_ch1 = pq_tools.get_photons(pqf)
+    is_ph = is_ph_ch0 | is_ph_ch1
+    is_ph_with_PLU_mrkr = is_ph & pq_tools.filter_marker(pqf, mrkr_chan)
+    plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
+
+
+def plot_autocorrelation_histogram(pqf,start = 0,length = 2000,index = 1,binsize = 1e3,**kw):
+    """
+    does not exlcude no photon (i.e. markers) events at the moment.
+    """
+    sync_time_name = '/PQ_sync_time-' + str(index)
+    tot_time_name =  '/PQ_time-' + str(index)
+    sync_num_name = '/PQ_sync_number-' + str(index)
+
+    tot_time_0 = np.append(np.array([0]),pqf[tot_time_name])
+    tot_time_1 = np.append(pqf[tot_time_name],np.array([0]))
+
+    time_diff = (tot_time_1-tot_time_0)/1e6
+
+    binedges = np.arange(start,start+length, binsize)
+    h0, b0 = np.histogram(time_diff, bins=binedges)
+
+    fig, ax0 = plt.subplots(1,1, figsize=(12,8))
+    _plot_photon_hist(ax0, h0, b0,x_label = 'time (s)',**kw)
+
+    fp = pq_tools.fp_from_pqf(pqf)
+
+    fig.suptitle(tb.get_msmt_header(fp) + ' -- autocorrelation hist in total time')
+
+    
 
 #def plot_tail(fp, **kw):
 #    ret = kw.pop('ret', 'subplots')
@@ -117,7 +161,7 @@ def plot_PLU_filter(pqf,chan = 2):
 
     # first window
     fig, (ax0, ax1) = plot_photon_hist_filter_comparison(
-        fp, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
+        pqf, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
         binedges=settings.PHOTONHIST_BINEDGES)
 
     ax0.axvline(settings.CH0_START, color='k', linestyle='--')
@@ -134,7 +178,7 @@ def plot_PLU_filter(pqf,chan = 2):
 
     # second window
     fig, (ax0, ax1) = plot_photon_hist_filter_comparison(
-        fp, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
+        pqf, save=False, fltr=is_ph_with_PLU_mrkr, log=True,
         binedges=settings.PHOTONHIST_BINEDGES + settings.PIPULSESEP)
 
     ax0.axvline(settings.CH0_START+settings.PIPULSESEP, color='k', linestyle='--')

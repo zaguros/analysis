@@ -12,6 +12,7 @@ class M2Analysis:
     plot_format = 'png'
 
     def __init__(self, folder, **kw):
+        #print 'analyzing in', folder
         self.folder = folder
         self.load_hdf5data(**kw)
         
@@ -20,11 +21,12 @@ class M2Analysis:
         self.h5filepath = toolbox.measurement_filename(self.folder)
         h5mode=kw.pop('hdf5_mode', 'r')
         self.f = h5py.File(self.h5filepath,h5mode)
+
         for k in self.f.keys():
-            if type(self.f[k])==h5py.Group:
+            if type(self.f[k])==h5py.Group and k in os.path.split(self.h5filepath)[1]: # PH added this check because sometimes additional files added to hdf5 file (06/16)
                 self.name = k
-                #print k
-        self.g = self.f[self.name]      
+                self.g = self.f[self.name]      
+                break
 
         self.measurementstring = os.path.split(self.folder)[1]
         self.timestamp = os.path.split(os.path.split(self.folder)[0])[1] \
@@ -36,6 +38,7 @@ class M2Analysis:
         self.f.close()
 
     def adwingrp(self, name=''):
+
         if name != '':
             adwingrpname = name
         else:
@@ -44,7 +47,6 @@ class M2Analysis:
             else:
                 logging.error("More than one measurement. Please give a name")
                 return False
-
         return self.g[adwingrpname]
 
     def analysis_h5data(self, name='analysis'):

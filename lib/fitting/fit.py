@@ -2,6 +2,7 @@ import numpy as np
 import os 
 from numpy import *
 from scipy import optimize
+import h5py
 # import pylab
 
 # taken from the scipy fitting cookbook:
@@ -25,6 +26,14 @@ class Parameter:
 # - fit should actually also be a class, and we want a simple function as
 # wrapper for interactive work; then we still need sth better for fixing,
 # though; good maybe: generally identify parameters by names
+
+# added capability to fit data using weights (error bars in datapoints): 
+# errors can be passed by a list err_y - Cristian 24/11/2014
+# THT: I had to remove this because it crashes many measurements, including the optimizOr
+
+
+
+
 def fit1d(x, y, fitmethod, *arg, **kw):
     """
     example: from analysis.lib.fitting import fit,common
@@ -32,13 +41,25 @@ def fit1d(x, y, fitmethod, *arg, **kw):
              y=np.array([2,12,22,32,42])
              fit_result=fit.fit1d(x,y,common.fit_line,2,8,ret=True,
                     fixed=[0],do_print=True)
+    Returns a dictionary with the results if ret=True (regardles of the sit success), None otherwise.
              
-    
     """
     # process known kws
     do_print = kw.pop('do_print', False)
-    ret = kw.pop('ret', False)
+    ret = kw.pop('ret', True)
     fixed = kw.pop('fixed', [])
+    VERBOSE= kw.pop('VERBOSE',False)
+
+
+    # err_y = kw.pop ('err_y', None)
+	#if False :
+	#    if (len(err_y) != len(y)):
+	#    	print 'Data and error arrays have non-matching lengths!'
+	#    	err_y = None
+
+    # if (len(err_y) != len(y)):
+    # 	print 'Data and error arrays have non-matching lengths!'
+    # 	err_y = None
 
     # use the standardized fitmethod: any arg is treated as initial guess
     if fitmethod != None:
@@ -62,34 +83,93 @@ def fit1d(x, y, fitmethod, *arg, **kw):
         for p in p0:
             p.set(params[i])
             i += 1
+
+        # if (err_y != None):
+        # 	return ((y-fitfunc(x))/(err_y))
+        # else:
+
         return y - fitfunc(x)
+
 
     if x is None: x = arange(y.shape[0])
     p = [param() for param in p0]
     
     # do the fit and process
-    p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True)
+    p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
     if not success or cov == None: # FIXME: find a better solution!!!
         success = False
-        print 'ERROR: Fit did not converge !'
-        #return False
+        if VERBOSE:
+            print 'ERROR: Fit did not converge !'
+            print 'reason: ',mesg
+        # return success    #commented out by THT and MA because it bvreaks all old automatic fitting code. 160802
+    
     result = result_dict(p1, cov, info, mesg, success, x, y, p0, 
             fitfunc, fitfunc_str)
-
     # package the result neatly
-    
-    #print 'info',info
-    #print 'p1',p1
-    #print 'cov',cov
-
-    #print 'dof',dof
     if do_print and success:
         print_fit_result(result)
+    if ret: #and success:
+        return result
 
-    if ret:
-        return result       
 
-    return
+def fit2d((meshx,meshy),z,fitmethod, *arg, **kw):
+    """
+    This function fits 2d data. It does so by raveling the data down to a 1 d array.
+    """
+    # process known kws
+    do_print = kw.pop('do_print', False)
+    ret = kw.pop('ret', False)
+    fixed = kw.pop('fixed', [])
+    VERBOSE= kw.pop('VERBOSE',False)
+
+    # use the standardized fitmethod: any arg is treated as initial guess
+    if fitmethod != None:
+        p0, fitfunc, fitfunc_str = fitmethod(*arg)
+    else:
+        p0 = kw.pop('p0')
+        fitfunc = kw.pop('fitfunc')
+        fitfunc_str = kw.pop('fitfunc_str', '')        
+ 
+ 
+    # general ability to fix parameters
+    fixedp = []
+    for i,p in enumerate(p0):
+        if i in fixed:
+            fixedp.append(p)
+    for p in fixedp:
+        p0.remove(p)
+
+    if ((meshx is None) or (meshy is None)): meshx,meshy = mgrid[0:z.shape[0], 0:z.shape[1]]
+   
+    # convenient fitting method with parameters; see scipy cookbook for details
+    def f(params):
+        i = 0
+        for p in p0:
+            p.set(params[i])
+            i += 1
+
+        return ravel(z) - ravel(fitfunc(ravel(meshx),ravel(meshy)))
+
+
+
+    p = [param() for param in p0]
+
+    # do the fit and process
+    p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(ravel(meshx))*20)
+    if not success or cov == None: # FIXME: find a better solution!!!
+        if VERBOSE:
+            print 'ERROR: Fit did not converge !'
+            print 'reason: ',mesg
+        return success
+    
+    result = result_dict(p1, cov, info, mesg, success, meshx, z, p0, 
+            fitfunc, fitfunc_str)    #if this 2d function becomes more commonly used, the dictionary should also have meshy as a key.
+
+    # package the result neatly
+    if do_print and success:
+        print_fit_result(result)
+    if ret and success:
+        return result
 
 
 ###############################################################################
@@ -190,7 +270,8 @@ def str_correlation_matrix(result):
     
 def print_fit_result(result):
     if result == False:
-       print "Could not fit data" 
+       print "Could not fit data"
+       return
     
     print "Converged with chi squared ", result['chisq']
     print "degrees of freedom, dof ", result['dof']
@@ -227,3 +308,17 @@ Fit results of: %s
 
     text_file.close() 
     
+def write_to_hdf(fitresult,fp):
+    f=h5py.File(fp, 'a')
+    g = f.create_group('fit_result')
+    for attr_key in ['success','dof', 'chisq','fitfunc_str','residuals_rms','reduced_chisq']:
+        g.attrs[attr_key] = fitresult[attr_key]
+    g['x'] = fitresult['x']
+    g['y'] = fitresult['y']
+    g_p = g.create_group('params_dict')
+    for k in fitresult['params_dict']:
+        g_p[k] = fitresult['params_dict'][k]
+    g_e = g.create_group('error_dict')
+    for k in fitresult['error_dict']:
+        g_e[k] = fitresult['params_dict'][k]
+    f.close()

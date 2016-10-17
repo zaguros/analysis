@@ -11,6 +11,8 @@ import matplotlib.cm as cm
 ### import the hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
+# hf = hf_params.SamSIL5_sim_params
+
 
 ### import the experimental values for tau and N ###
 # import measurement.scripts.lt2_scripts.setup.msmt_params as msmt_params; reload(msmt_params)
@@ -39,6 +41,8 @@ def basic_spin_rotations():
     x = (-1j*sx*np.pi/2).expm(); mx = (1j*sx*np.pi/2).expm()
     y = (-1j*sy*np.pi/2).expm(); my = (1j*sy*np.pi/2).expm()
     z = (-1j*sz*np.pi/2).expm(); mz = (1j*sz*np.pi/2).expm()
+    H = (-1j*(sx+sz)/np.sqrt(2)*np.pi).expm()
+
     return X,Y,Z,x,y,z,mX,mY,mZ,mx,my,mz
 
 def basic_spin_states():
@@ -95,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-def get_C13_hyperfine_params(carbon_nrs, ms = '+1'):
+def deleted_by_accident_by_someone():
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -147,7 +151,7 @@ def nuclear_gate(number_of_pulses, tau, omega_Larmor, A_par, A_perp):
 def Ren_gate(carbon_nr, B_field=304.22, phase=0):
     '''create a Ren gate for given carbon number'''
 
-    number_of_pulses = 16# mp['C' + str(carbon_nr) + '_Ren_N'][0]
+    number_of_pulses = mp['C' + str(carbon_nr) + '_Ren_N'][0]
     tau = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
     print number_of_pulses
     print tau
@@ -633,7 +637,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
 ### Experiments  ###
 ####################
 
-def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=304.22, ms='+1'):
+def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=403.554, ms='-1'):
     '''nuclear Rabi experiment without init
     scheme: x - Ren(N) - x - RO'''
 
@@ -763,7 +767,7 @@ def nuclear_ramsey_no_init_no_DD(carbon_nr, tau_wait_list, B_field=304.22):
     return S[i]
 
 def nuclear_evolution_during_DD(carbon_nr, electron_state = 'ms0', carbon_init_state='x',
-            tau=9.420e-6, N_list=np.linspace(0,80,41), B_field=304.74, ms='+1'):
+            tau=9.420e-6, N_list=np.linspace(0,300,151), B_field=403.554, ms='-1'):
 
     if carbon_init_state == '0':
         rho_init_nuclear = rho0
@@ -837,6 +841,37 @@ def nuclear_initialization(carbon_nrs, N, tau, B_field=304.74, ms='+1'):
 
     single_qubit_pauli(rho_final, do_plot = True)
 
+def nuclear_TomoZ(carbon_nrs,N,Tau,Bfield=304.74,ms='+1',input_state=qutip.tensor(rho1,rho1)):
+    """
+    Performs the gate sequence for the read-out of the carbon via a swap.
+    Prints fidelities with several output states.
+    """
+
+    rho_start = input_state
+    electron_x  = qutip.tensor(x,Id)
+    electron_y  = qutip.tensor(y,Id)
+    Rz          = qutip.tensor(Id,z)
+
+    #gates (make them ideal)
+    Ren0,Ren1,Ren0Id,Ren1Id = c13_gate(carbon_nrs[0], N, Tau, B_field=Bfield, ms=ms, return_indiv=True,return_id=True)
+
+    Ren = qutip.tensor(rho0,Ren0Id) + qutip.tensor(rho1,Ren1Id)
+
+    print 'Gate sequence used in the T1 measurements: [C_basis_Ren, C_RO_y, C_RO_Ren, C_RO_x, C_RO_Trigger]'
+
+    #sequence and result
+    seq       =   electron_x*Ren*(Rz.dag())*electron_y*Ren#electron_x*Ren*electron_y*Ren  # Define gate sequence
+    rho_final = seq*rho_start*seq.dag()                        # Apply gate sequence
+
+    print rho_final
+    psi_final = (qutip.tensor(ket0,ket0)+qutip.tensor(ket1,ket1))/np.sqrt(2)
+
+    #print psi_final*psi_final.dag()
+    print 'Fidelity with |1y>', qutip.fidelity(qutip.tensor(rho1,rhoy),rho_final)
+    print 'Fidelity with |0y>', qutip.fidelity(qutip.tensor(rho0,rhoy),rho_final)
+    print 'Fidelity with |1my>', qutip.fidelity(qutip.tensor(rho1,rhomy),rho_final)
+    print 'Fidelity with |0my>', qutip.fidelity(qutip.tensor(rho0,rhomy),rho_final)
+    #single_qubit_pauli(rho_final, do_plot = True)
 
 ######################
 ### Initialization ###
@@ -1453,7 +1488,7 @@ def Ren_id_gate_2qb(carbon_nr):
         gc = 1
     else:
         gc =0
-    Ren, Ren_id = c13_gate_multiqubit([1,4], number_of_pulses_Ren, tau_Ren, B_field, gate_on_C = [gc], return_for_one = True)    
+    Ren, Ren_id = c13_gate_multiqubit([1,4], number_of_pulses_Ren, tau_Ren, B_field, gate_on_C = [gc], return_for_one = True)
 
     return Ren_id
 
@@ -1462,7 +1497,7 @@ def C_id_phase_gate(carbon_nr,phase):
         gc = 1
     else:
         gc =0
-    Cp, Cp_id= c13_gate_multiqubit([1,4], 2, 1e6, B_field, gate_on_C = [gc], return_for_one = True)    
+    Cp, Cp_id= c13_gate_multiqubit([1,4], 2, 1e6, B_field, gate_on_C = [gc], return_for_one = True)
     return Cp_id
 
 
@@ -1481,7 +1516,7 @@ def initialize_simple_id(rho, carbon):
         gc = 0
     seq = Ren*Cz*xel*Ren*yel
 
-    rho_init = seq*rho*seq.dag() 
+    rho_init = seq*rho*seq.dag()
 
     ## measure electron
     el0 = qutip.tensor(rho0,Id,Id)
@@ -1524,7 +1559,7 @@ def ZZ_id():
     # el_state = rho_final.ptrace(0)
     # print 'ZI expectation'
     # print (qutip.fidelity(rho0,el_state)**2*2-1)
-    
+
     # ## IZ
     # Cz_a  = C_phase_gate(347e-9,4)
     # Ren = Ren_gate_2qb(1)
@@ -1541,7 +1576,7 @@ def ZZ_id():
     # ## ZZ
     # Cz_a4  = C_phase_gate(267e-9,8)
     # Cz_a1  = C_phase_gate(270e-9,8)
-    
+
     # Cz_b4  = C_phase_gate(193e-9,4)
     # Cz_b1  = C_phase_gate(260e-9,4)
 
@@ -1573,7 +1608,7 @@ def ZZ_ent_id():
     xC2 = qutip.tensor(Id,Id,x)
 
     ###initialize in YY
-    
+
     rho_init = xC1*xC2*rho_init*(xC1*xC2).dag()
 
     multi_qubit_pauli(rho_init.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons initialized')
@@ -1586,7 +1621,7 @@ def ZZ_ent_id():
     Ren4 = Ren_id_gate_2qb(4)
     Ren1 = Ren_id_gate_2qb(1)
     ### parity msmt
-    
+
     Cz4  = C_id_phase_gate(4,np.pi/2)
     Cz1  = C_id_phase_gate(1,np.pi/2)
 
@@ -1594,7 +1629,7 @@ def ZZ_ent_id():
 
     seq = yel*Ren1*Ren4*yel
 
-    rho_parity = seq*rho_init*seq.dag()    
+    rho_parity = seq*rho_init*seq.dag()
 
     ## measure electron in 0
     el0 = qutip.tensor(rho0,Id,Id)
@@ -1604,9 +1639,9 @@ def ZZ_ent_id():
     norm = qutip.fidelity(rho0,rho_parity0.ptrace([0]))
     rho_parity0 = 1/norm**2*rho_parity0
 
-    
+
     multi_qubit_pauli(rho_parity0.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons after parity  in 0')
-    
+
     ## measure electron in 1
     el1 = qutip.tensor(rho1,Id,Id)
     rho_parity1 = el1*rho_parity*el1.dag()
@@ -1615,7 +1650,7 @@ def ZZ_ent_id():
     norm = qutip.fidelity(rho1,rho_parity1.ptrace([0]))
     rho_parity1 = 1/norm**2*rho_parity1
 
-    
+
     multi_qubit_pauli(rho_parity1.ptrace([1,2]),carbon_nrs=[4,1],do_plot=True, give_fid = False, alpha=None, beta=None,use_el=False,title = 'two carbons after parity msmst in 1')
 
     ### TOMOGRAPHY
@@ -1632,7 +1667,7 @@ def ZZ_ent_id():
         el_state = rho_final.ptrace(0)
         print 'XX expectation'
         print (qutip.fidelity(rho0,el_state)**2*2-1)
-     
+
         ## YY
 
         seq = yel*Ren1*Cz1*Ren4*Cz4*yel
@@ -2908,11 +2943,166 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
 
     return Fidelity, M
 
-def C13_fingerprint(carbon_nrs, ms = '+1', B_field=304.22, tau_list = np.linspace(10e-9,5e-6,500), N=16, show_plot = True):
+def C13_fingerprint(carbon_nrs, ms='-1', B_field=403.553, tau_list = np.linspace(8.8e-6,9e-6,500), N=32, show_plot = True):
 
     A_par_list, A_perp_list = get_C13_hyperfine_params(carbon_nrs, ms = ms)
     print A_par_list
     DD_electron_coherence(A_par_list, A_perp_list, B_field = B_field, tau = tau_list, N = N, show_plot = show_plot)
+
+
+###########################################
+### Testing of alternative measurements ###
+###########################################
+
+def general_measurement():
+
+    ### input states
+    el_init_state = rho0
+    nu_init_state = (1 - 2/np.sqrt(2)*sx + 2/np.sqrt(2)*sy)/2
+    init_state = qutip.tensor(el_init_state, nu_init_state)
+
+    ### other input parameters
+
+
+    ### For the +/- x gate
+    carbon_nr = 5
+    number_of_pulses = 32
+    tau = 8.930e-6
+
+    ### For the hadamard gate
+    carbon_nr = 5
+    number_of_pulses = 46
+    tau = 8.940e-6
+
+    ### For some other tau
+    carbon_nr = 5
+    number_of_pulses = 34
+    tau = 8.936e-6
+
+    ### For some other tau2
+    carbon_nr = 5
+    number_of_pulses = 34
+    tau = 8.938e-6
+
+
+
+    ### the conditional gate
+    Ren = c13_gate(carbon_nr, number_of_pulses, tau,
+        B_field=403.555, return_indiv = False, return_id = False, phase = None, phase_y = True, ms='-1')
+
+    print 'Ren matrix = '
+    print_matrix(Ren)
+    print
+    print
+
+    Measurement_gates = qutip.tensor(x,Id)*Ren*qutip.tensor(y,Id)
+
+    Final_state =  Measurement_gates*init_state*Measurement_gates.dag()
+
+    # measure electron in 0 and renormalize
+    el0 = qutip.tensor(rho0,Id)
+    el1 = qutip.tensor(rho1,Id)
+
+    rho_final_0 = el0*Final_state*el0.dag()
+    rho_final_1 = el1*Final_state*el1.dag()
+
+    norm_0 = qutip.fidelity(rho0,rho_final_0.ptrace([0]))
+    norm_1 = qutip.fidelity(rho1,rho_final_1.ptrace([0]))
+
+    if norm_0 != 0:
+        rho_final_0 = 1/(norm_0**2)*rho_final_0.ptrace([1])
+    if norm_1 != 0:
+        rho_final_1 = 1/(norm_1**2)*rho_final_1.ptrace([1])
+
+    print 'final state'
+    print_matrix(Final_state)
+    print
+    print
+
+    print '0 outcome'
+    print_matrix(rho_final_0)
+    print
+    print 'prob.'
+    print norm_0**2
+    print
+    print
+
+    print '1 outcome'
+    print_matrix(rho_final_1)
+    print
+    print 'prob.'
+    print norm_1**2
+
+def QZ():
+    ''' fucntion to test if entanglement is generated in quantum zeno with two qubits'''
+    XX = qutip.tensor(X,X)
+    YY = qutip.tensor(Y,Y)
+    ZZ = qutip.tensor(Z,Z)
+    II = qutip.tensor(Id,Id)
+    rot_zz = qutip.tensor((-1j*sz*np.pi/5).expm(), (-1j*sz*np.pi/5).expm())
+    rot_yy = qutip.tensor((-1j*sy*np.pi/5).expm(), (-1j*sy*np.pi/5).expm())
+
+    rho_init = qutip.tensor(rho0, rho0)
+    print_matrix(rho_init)
+
+    rho_1 = rot_yy*rho_init*rot_yy.dag()
+    rho_2 = 0.5*(II*rho_1*II + ZZ*rho_1*ZZ.dag())
+    # rho2 = 0.5*(II*rho1*II + YY*rho1*YY.dag())
+    
+
+    for kk in range(1):
+
+        rho_1 = rot_yy*rho_2*rot_yy.dag()
+        rho_2 = 0.5*(II*rho_1*II + ZZ*rho_1*ZZ.dag())
+  
+    print_matrix(rho_1)
+    print_matrix(rho_2)
+
+def QZ2():
+    '''more test fucntions for QZ'''
+    XX = qutip.tensor(2*sx,2*sx)
+    YY = qutip.tensor(2*sy,2*sy)
+    ZZ = qutip.tensor(2*sz,2*sz)
+    II = qutip.tensor(Id,Id)
+
+    H = qutip.tensor(2*sz,Id) + qutip.tensor(Id,2*sz) + qutip.tensor(Id,2*sx)
+    H = qutip.tensor(Id,2*sx)
+    H = qutip.tensor(2*sz)
+    print 'Hamiltonian'
+    print_matrix(H)
+
+    print 'Projector'
+    P = (II + XX)/2 
+    P = Id/2+sz
+    print_matrix(P)
+
+    print 'Zeno Hamiltonian'
+    Hz = P*H*P.dag()
+    print_matrix(Hz)
+
+    print 'evolution operator'
+    print (-1j*Hz).expm()
+
+def QZ3():
+    XX = qutip.tensor(2*sx,2*sx)
+    II = qutip.tensor(Id,Id)
+
+    P = II+XX
+    Q = II-XX
+
+    # P = 
+
+    print_matrix(P)
+    print_matrix(Q)
+
+    J = Q - P
+    print_matrix(J) 
+
+
+
+
+
+
 
 
 

@@ -75,11 +75,12 @@ def analyse_dark_esr(**kw):
     ret           = kw.pop('ret', None)
     min_dip_depth = kw.pop('min_dip_depth', 0.85)
     do_print      = kw.pop('do_print', False)
+    plot_initial_guess = kw.pop('plot_initial_guess', False)
 
     guess_amplitude = kw.pop('guess_amplitude', 0.3)
     guess_width     = kw.pop('guess_width', 0.2e-3)
     guess_offset    = kw.pop('guess_offset', 1)
-    guess_x0        = kw.pop('guess_x0', 2.807)
+    guess_x0        = kw.pop('guess_x0', 2.805)
     guess_Nsplit    = kw.pop('guess_Nsplit', 2.196e-3)
 
     if timestamp != None:
@@ -93,7 +94,8 @@ def analyse_dark_esr(**kw):
 
     if ax == None:
         fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
+    ssro_calib_folder = toolbox.latest_data(contains='130113_AdwinSSRO_SSROCalibration')
+    print ssro_calib_folder
 
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
@@ -130,6 +132,11 @@ def analyse_dark_esr(**kw):
         
     plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
 
+
+    plot_initial_guess = False
+    if plot_initial_guess :
+        params_0, fitfunc_0, fitfunc_str = esr.fit_ESR_gauss (guess_offset,
+            guess_amplitude, guess_width, guess_ctr,(2, guess_splitC), (3, guess_splitN) )
 
     ax.set_xlabel('MW frq (GHz)')
     ax.set_ylabel(r'fidelity wrt. $|0\rangle$')
@@ -187,9 +194,9 @@ def analyse_pi2_pulse(**kw):
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
         if folder==None:
-            folder = toolbox.latest_data(timestamp) 
+            timestamp, folder = toolbox.latest_data(timestamp, return_timestamp = True) 
     else:
-        folder = toolbox.latest_data('Pi2')
+        timestamp, folder = toolbox.latest_data('Pi2', return_timestamp = True)
     
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
@@ -238,6 +245,8 @@ def analyse_pi2_pulse(**kw):
             ax2.axvline(x0(), c='k', lw=2)
             ax2.axhline(0.5, c='k', lw=2)
             ax2.set_title('X marks the spot')
+
+    plt.suptitle(timestamp)
     
     fig.savefig(os.path.join(folder, 'pi2_calibration.png'))
 

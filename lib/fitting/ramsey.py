@@ -55,7 +55,7 @@ def fit_ramsey_gaussian_decay(g_tau, g_a, *arg):
     frqs = []
     amplitudes = []
     phases = []
-    print arg
+    print 'arg2 =' + str(arg)
     for i, m in enumerate(arg):
         fitfunc_str += 'A%d*cos(2pi*f%d*x+phi%d)' % (i, i, i)
         frqs.append(fit.Parameter(m[0], 'f%d'%i))
@@ -101,7 +101,41 @@ def fit_ramsey_hyperfinelines_fixed(g_tau, g_A, g_a,g_det,g_hf,g_phi1,g_phi2,g_p
     return p0, fitfunc, fitfunc_str
 
 
-def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
+
+
+
+
+def fit_ramsey_hyperfinelines_fixed_6cos(g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C):
+    """
+    fitfunction for a gaussian decay,
+        y(x) = a + A*exp(-(x/tau)**2)
+
+    Initial guesses (in this order):
+        g_tau : decay constant
+        g_A : amplitude
+        g_a : offset
+    """
+    
+    tau = fit.Parameter(g_tau, 'tau')
+    A = fit.Parameter(g_A, 'A')
+    a = fit.Parameter(g_a, 'a')
+    det = fit.Parameter(g_det, 'det')
+    hf_N = fit.Parameter(g_hf_N, 'hf_N')
+    hf_C = fit.Parameter(g_hf_C, 'hf_C')
+    # phi1 = fit.Parameter(g_phi1, 'phi1')
+    # phi2 = fit.Parameter(g_phi2, 'phi2')
+    # phi3 = fit.Parameter(g_phi3, 'phi3')
+    p0 = [tau,A,a,det,hf_N,hf_C]
+    fitfunc_str = 'sumf of six cos and decay'
+
+    def fitfunc(x): 
+        return a() + A()*exp(-(x/tau())**2) * (cos(2*pi*(det()+hf_C())*x)+(cos(2*pi*(det()-hf_C())*x)+cos(2*pi*(det()+hf_N()+hf_C())*x)+cos(2*pi*(det()+hf_N()-hf_C())*x)+cos(2*pi*(-det()+hf_N()-hf_C())*x)+cos(2*pi*(-det()+hf_N()+hf_C())*x)))/6.
+
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N,g_phi1,g_phi2,g_phi3, *arg):
     """
     fitfunction for a gaussian decay,
         y(x) = a + A*exp(-(x/tau)**2)* \sum_n cos(2*pi*f_n x)
@@ -121,11 +155,11 @@ def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
     a = fit.Parameter(g_a, 'a')
     det = fit.Parameter(g_det, 'det')
     hf_N = fit.Parameter(g_hf_N, 'hf_N')
-    #phi1 = fit.Parameter(g_phi1, 'phi1')
-    #phi2 = fit.Parameter(g_phi2, 'phi2')
-    #phi3 = fit.Parameter(g_phi3, 'phi3')
-    p0 = [tau, A, a,det,hf_N]
-    fitfunc_str = 'a+A*exp(-(x/tau)**2)*(cos(2*pi*det)+cos(2*pi*(det+hf_N)+cos(2*pi*(det-hf_N))'
+    phi1 = fit.Parameter(g_phi1, 'phi1')
+    phi2 = fit.Parameter(g_phi2, 'phi2')
+    phi3 = fit.Parameter(g_phi3, 'phi3')
+    p0 = [tau, A, a,det,hf_N,phi1,phi2,phi3]
+    fitfunc_str = 'a+A*exp(-(x/tau)**2)*(cos(2*pi*det)+cos(2*pi*(det+hf_N))+cos(2*pi*(det-hf_N))'
 
 
     hf_C = []
@@ -153,15 +187,39 @@ def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N, *arg):
         #return a() + A()*exp(-(x/tau())**2) * (cos(2*pi*det()*x+cos(2*pi*(det()-hf_N())*x+cos(2*pi*(det()+hf_N())*x)/3.
         prd = exp(-(x/tau())**2)
         mod = 0
-        
+        phi=[phi1(),phi2(),phi3()]
         if no_hf_C == 0 :
             for j in range(-1,2,1):
                 mod += A() * (cos(2*pi*(det()+j*hf_N())*x))
         else:
             for i in range(no_hf_C):
                 for j in range(-1,2,1):
-                    mod += A() * (cos(2*pi*(det()+j*hf_N() +1/2.*hf_C[i]())*x))
-                    mod += A() * (cos(2*pi*(det()+j*hf_N() -1/2.*hf_C[i]())*x))
+                    mod += A() * (cos(2*pi*(det()+j*hf_N() +1/2.*hf_C[i]())*x+phi[j+1]))
+                    mod += A() * (cos(2*pi*(det()+j*hf_N() -1/2.*hf_C[i]())*x+phi[j+1]))
         return a() + prd*mod
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_gaussian_decaying_cos_withoffset(g_avg, g_A, g_t, g_a, g_f, g_phi, g_b):
+    '''
+    Fits cosine with offset modulated by Gaussian decay
+    Useful to fit e.g. electron Ramsey without nitrogen MBI
+    '''
+    fitfunc_str = 'A *exp(-(x/t)**2) * (a * cos(2pi * (f*x + phi/360) ) + b)'
+
+    avg = fit.Parameter(g_avg, 'avg')
+    A = fit.Parameter(g_A, 'A')
+    t = fit.Parameter(g_t, 't')
+    a = fit.Parameter(g_a, 'a')
+    f = fit.Parameter(g_f, 'f')
+    phi = fit.Parameter(g_phi, 'phi')
+    b = fit.Parameter(g_b, 'b')
+    
+    print 'guessed frequency is '+str(g_f)
+    
+    p0 = [avg, A, t, a, f, phi, b]
+
+    def fitfunc(x):
+        return avg() + A()*exp(-(x/t())**2) * ( a() * cos(2*pi*( f()*x + phi()/360.)) + b() )
 
     return p0, fitfunc, fitfunc_str
