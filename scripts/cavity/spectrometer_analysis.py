@@ -21,6 +21,7 @@ class spectrometer_analysis(object):
         #set some defaults for ana_pars
         self.ana_pars['minimum_peak_height']=0 #the minimum height above average
         self.ana_pars['minimum_peak_distance']=60 #units: number of datapoints
+        self.ana_pars['min_gamma']=0.0
         self.ana_pars['max_gamma']=2.4
         self.ana_pars['g_gamma']=0.2
         self.ana_pars['keep_same_height']=True #keep peaks closer together than min_peak_dist, if the same height(!)
@@ -163,7 +164,8 @@ class spectrometer_analysis(object):
         u_x0s =np.array([])
         g_gamma = kw.pop('g_gamma',self.ana_pars['g_gamma'])
         max_gamma = kw.pop('max_gamma',self.ana_pars['max_gamma'])
-         
+        min_gamma = kw.pop('min_gamma',self.ana_pars['min_gamma'])
+        
         frequency_range = np.abs(self.frequencies[-1]-self.frequencies[0])
         indices_around_peak = int((len(self.frequencies)/frequency_range)*g_gamma*6)
         success = np.zeros(len(indices))
@@ -203,6 +205,7 @@ class spectrometer_analysis(object):
 
             res_rms = fit_result['residuals_rms']/np.average(frequencies_around_peak)
             gamma = fit_result['params_dict']['gamma']
+            u_gamma = fit_result['error_dict']['gamma']
             x0 = fit_result['params_dict']['x0']
             u_x0 = fit_result['error_dict']['x0']
             A = fit_result['params_dict']['A']
@@ -222,18 +225,25 @@ class spectrometer_analysis(object):
             #     continue
 
             if u_x0 > np.abs(frequencies_around_peak[-1]-frequencies_around_peak[0]):
-                # print 'uncertainty in peak position too large; disregarding: ', 'x0', x0, '+-',u_x0 
+                if plot_fit:
+                    print 'uncertainty in peak position too large; disregarding: ', 'x0', x0, '+-',u_x0 
                 nr_fails+=1
                 continue 
+
+            if u_gamma > np.abs(gamma):
+                if plot_fit:
+                    print 'uncertainty in gamma too large; disregarding: ', 'gamma', gamma, '+-',u_gamma 
+                nr_fails+=1
+                continue                 
             
-            if max_gamma!=None:
-                if gamma>max_gamma: 
-                    # print 'ignoring this peak, since gamma is larger than max gamma:', gamma, '>', max_gamma
-                    nr_fails+=1
-                    continue
+            if ((gamma>max_gamma) or (gamma<min_gamma)): 
+                if plot_fit:
+                    print 'ignoring this peak, since gamma is not within specs:',min_gamma, '<',  gamma, '>', max_gamma
+                nr_fails+=1
+                continue
 
             if A*gamma < 0:
-                if report_fails:
+                if report_fails or plot_fit:
                     print 'ignoring since negative '
                 nr_fails+=1
                 continue
