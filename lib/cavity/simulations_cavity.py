@@ -192,16 +192,24 @@ class CavitySims ():
         """
         Input:
         wavelength - wavelength of the light in the cavity; default: self.wavelength_ZPL
+        dipole_orientation - orientation of the dipole w.r.t. cavity field, in degrees
+        spatial_mismatch - the amount by which the NV is not in the cavity maximum, in lambda.
         Uses:
         gamma_tot   - the total decay rate of the excited state  (1/lifetime)
         mode volume - the mode volume of the cavity 
         output:
         self.g = np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
         """
+        dipole_orientation = kw.pop('dipole_orientation', 0.)
+        spatial_mismatch = kw.pop('spatial_mismatch',0.)
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
 
         #albrecht et al:
-        self.g = np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
+
+        orientation_factor= (math.cos(math.pi/180.*dipole_orientation))
+        spatial_overlap = math.cos(2*math.pi*spatial_mismatch)
+        #print orientation_factor,spatial_overlap
+        self.g = orientation_factor*spatial_overlap*np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
         #kaupp et al (scaling laws)
         #self.g = np.sqrt((3.*math.pi*c*(wavelength**2)*self.gamma_tot)/(2.*self.mode_volume))
         #note that for an accurate treatment, we should perhaps use n_diamond in here. (mu~1/sqrt(n)()
