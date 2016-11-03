@@ -26,10 +26,12 @@ class DisplayScan(m2.M2Analysis):
 
         use_save_location = kw.pop('use_save_location',False)
         save_location = kw.pop('save_location',None)
-        fig = plt.figure()
+        colormap=kw.pop('colormap','afmhot')
+        grid = kw.pop('grid',False)
+        fig = plt.figure(**kw)
         ax = fig.add_subplot(1,1,1)
 
-        colormap=kw.pop('colormap','afmhot')
+        
         #colors=ax.pcolormesh(self.xvalues,self.yvalues,self.countrates, vmin=vmin,vmax=vmax,cmap=colormap)
         colors=ax.imshow(self.countrates, cmap=colormap, interpolation='none',
                         vmin=vmin,vmax=vmax, 
@@ -37,12 +39,15 @@ class DisplayScan(m2.M2Analysis):
 
         #ax.set_xlim([np.amin(self.xvalues),np.amax(self.xvalues)])
         #ax.set_ylim([np.amin(self.yvalues),np.amax(self.yvalues)])
-        ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
+        #ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
-        ax3 = fig.add_subplot(1,1,1)
+        if grid:
+            ax.grid(color='r',linestyle='-')
+        #ax3 = fig.add_subplot(1,1,1)
         # ax3.axis('off')
-        fig.colorbar(colors,ax=ax)
+        plt.colorbar(colors,ax = ax, fraction=0.046, pad=0.04)
+        #fig.colorbar(colors,ax=ax)
         plt.show()
 
 
@@ -59,7 +64,7 @@ class DisplayScan(m2.M2Analysis):
                         os.path.join(save_location, '%d,%d,%.2f%s.eps'%(min_x,min_y,self.zfocus,depth)))
             except:
                 print 'Figure has not been saved.'
-        return fig
+        return fig,ax
 
     def find_NV_locations(self,g_sigma = 0.2,**kw):
         plot_NV_zoom=kw.pop('plot_NV_zoom',False)
@@ -401,10 +406,13 @@ class DisplayScanFlim(DisplayScan):
 
     def get_flim_data(self):
         self.flim_data = self.f['flim_data'].value
-        self.flim_data_syncs = self.f['flim_data_syncs'].value
+        #self.flim_data_syncs = self.f['flim_data_syncs'].value
 
     def plot_flim_data(self,title,save=True, **kw):
-
+        self.zfocus = self.f['instrument_settings']['master_of_space'].attrs['z']
+        self.xvalues = self.f['x'].value
+        self.yvalues = self.f['y'].value
+        self.keyword = self.f['instrument_settings']['setup_controller'].attrs['keyword']
         if kw.pop('raw', False):
             flim_data =  self.flim_data
             title=title+'_raw'
@@ -413,7 +421,8 @@ class DisplayScanFlim(DisplayScan):
         
         rmin = kw.pop('rmin', 0)
         rmax = kw.pop('rmax', len(flim_data[0,0]))
-        title=title+'range: {%d} - {%d}'.format(rmin,rmax)
+        print rmax
+        title=title+'range: {} - {}'.format(rmin,rmax)
 
         title = title + ''
         self.flim_plot_data = np.sum(flim_data[:,:,rmin:rmax],axis=2)
@@ -422,18 +431,20 @@ class DisplayScanFlim(DisplayScan):
 
         use_save_location = kw.pop('use_save_location',False)
         save_location = kw.pop('save_location',None)
-        fig = plt.figure()
+        
+        fig = plt.figure(figsize=(8,8))
         ax = fig.add_subplot(1,1,1)
-        colorname='afmhot'
-        colors=ax.imshow(self.flim_plot_data, cmap=colorname, interpolation='none', vmin=vmin,vmax=vmax, 
-                         extent=[np.amin(self.xvalues),np.amax(self.xvalues),np.amin(self.yvalues),np.amax(self.yvalues)], origin='lower')
+        colorname='gist_earth'
+        colors=ax.imshow(self.flim_plot_data, cmap=colorname, interpolation='none', vmin=vmin,vmax=vmax, extent=[np.amin(self.xvalues),np.amax(self.xvalues),np.amin(self.yvalues),np.amax(self.yvalues)], origin='lower')
 
-        ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+        #ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
+        ax.set_xlabel('x', fontsize = '18' )
+        ax.set_ylabel('y', fontsize = '18')
         ax3 = fig.add_subplot(1,1,1)
-        # ax3.axis('off')
-        fig.colorbar(colors,ax=ax)
+        #ax3,axis('on')
+        #ax3.axis('off')
+        plt.colorbar(colors,ax = ax, fraction=0.046, pad=0.04)
+        #fig.colorbar(colors,ax=ax)
         plt.show()
 
 
@@ -455,18 +466,16 @@ class DisplayScanFlim(DisplayScan):
         ymin = kw.pop('ymin', 0)
         ymax = kw.pop('ymax', len(flim_data[:,1]))
 
-
-
-        fig = plt.figure()
+        fig = plt.figure(figsize=(10,6))
         ax = fig.add_subplot(1,1,1)
         ax.semilogy(np.sum(flim_data[ymin:ymax,xmin:xmax,:],axis=(0,1)))
         ax.set_xlabel('bin')
-        ax.set_ylabel(self.f.attrs['flim_units'])
+        ax.set_ylabel(self.f.attrs['flim_units'],fontsize = '14', fontweight = 'bold')
 
         if save:
             try:
                 fig.savefig(
-                    os.path.join(self.folder,colorname+'_histflim.png'))
+                    os.path.join(self.folder,'_histflim.png'))
             except:
                 print 'Figure has not been saved.'
         return ax
