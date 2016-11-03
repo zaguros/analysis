@@ -54,14 +54,14 @@ class DisplayScan(m2.M2Analysis):
         if save:
             try:
                 fig.savefig(
-                    os.path.join(self.folder,colormap+'_scan2d.png'))
+                    os.path.join(self.folder,colormap+'_scan2d.eps'))
                 if use_save_location and (save_location!=None):
                     min_x = min(self.xvalues)
                     min_y = min(self.yvalues)
                     depth = self.folder[-4:]
                     print '%d,%d,%.2f,%s'%(min_x,min_y,self.zfocus,depth)
                     fig.savefig(
-                        os.path.join(save_location, '%d,%d,%.2f%s.png'%(min_x,min_y,self.zfocus,depth)))
+                        os.path.join(save_location, '%d,%d,%.2f%s.eps'%(min_x,min_y,self.zfocus,depth)))
             except:
                 print 'Figure has not been saved.'
         return fig,ax
