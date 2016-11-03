@@ -50,8 +50,8 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         self.ana_pars['V_min']=0.
         self.ana_pars['V_max']=10
-        self.ana_pars['min_frq']=432
-        self.ana_pars['max_frq']=496
+        self.ana_pars['min_frq']=410
+        self.ana_pars['max_frq']=600
         self.ana_pars['laser_wavelength']= None  
 
         self.ana_pars['remove_hom']=True  #remove the higher order modes 
@@ -304,8 +304,8 @@ class spectrometer_2D_analysis(spectrometer_analysis):
     ##################################plotting functions##################################
 
     def set_axes_basics(self, ax):
-        ax.set_xlabel("Voltage (V)", fontsize = 14)
-        ax.set_ylabel("Frequency (THz)", fontsize = 14)
+        ax.set_xlabel("Voltage (V)", fontsize = 18)
+        ax.set_ylabel("Frequency (THz)", fontsize = 18)
 
         ax.grid(False)
         ax.set_axis_bgcolor('white')
@@ -381,7 +381,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         aspect = kw.pop('aspect','auto')
         save_fig = kw.pop('save_fig',False)
         if ax==None:
-            fig,ax = plt.subplots()
+            fig,ax = plt.subplots(figsize=(8,6))
 
 
         extent = [self.Vs[0]-self.V_extent_correction,self.Vs[-1]+self.V_extent_correction,\
@@ -396,7 +396,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         x,y = np.meshgrid(Vs_xl,frqs_xl) 
         im = ax.pcolormesh(x,y,self.intensities,vmax =vmax, vmin=vmin,cmap = cmap)
         ax = self.set_axes_basics(ax)
-        ax.set_title(self.plot_name+title)
+        #ax.set_title(self.plot_name+title)
         plt.colorbar(im)
 
         ax.set_xlim([self.Vs[0]-self.V_extent_correction,self.Vs[-1]+self.V_extent_correction])
