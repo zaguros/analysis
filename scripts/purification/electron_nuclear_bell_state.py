@@ -160,15 +160,15 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     """
     routine for bar plotting
     """
-    color = '#90C3D4'
+    color = '#3594F2'
     alpha = 0.67
 
 
     xticks = [r'$|$Z,Z$\rangle$',r'$|$Z,-Z$\rangle$',r'$|$-Z,Z$\rangle$',r'$|$-Z,-Z$\rangle$']
     yticks = [r'$\langle$Z,Z$|$',r'$\langle$Z,-Z$|$',r'$\langle$-Z,Z$|$',r'$\langle$-Z,-Z$|$']
-    fontsize = 11
-    hf = plt.figure(figsize=plt.figaspect(0.35))
-    ha = plt.subplot(121, projection='3d')
+    fontsize = 10
+    hf = plt.figure(figsize=plt.figaspect(0.3)/1.5)
+    ha = plt.subplot(122, projection='3d')
     ha.grid(True)
     # plt.gca().patch.set_facecolor('white')
     ha.pbaspect = [1.0, 1.0, 0.255]
@@ -198,10 +198,28 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
 
     # ha.set_title('abs(Real part)')
-    ha.set_xticklabels(xticks,va = 'center',size=  fontsize)
+    ha.set_xticklabels(xticks,va = 'baseline',size=  fontsize,rotation=40)
+
+    #### fine adjustment of the x label positions... thanks stackexchange
+    import types,matplotlib
+    SHIFTX = 0.008 # Data coordinates
+    SHIFTY = 0.003 # Data coordinates
+    for label in ha.xaxis.get_majorticklabels():
+        label.customShiftValueX = SHIFTX
+        label.customShiftValueY = SHIFTY
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValueX ), 
+                                        label, matplotlib.text.Text )
+        label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValueY ), 
+                                        label, matplotlib.text.Text )
+
     ha.set_yticklabels(yticks,size=  fontsize,
                    verticalalignment='baseline',
-                   horizontalalignment='left')
+                   horizontalalignment='left',rotation = -15)
+    SHIFT = 0.004 # Data coordinates
+    for label in ha.yaxis.get_majorticklabels():
+        label.customShiftValue = SHIFT
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValue ), 
+                                        label, matplotlib.text.Text )
     ha.set_zticklabels([0.0,0.1,0.2,0.3,0.4,0.5],size=  fontsize,
                    va='center',
                    ha ='left')
