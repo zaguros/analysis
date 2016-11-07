@@ -8,17 +8,8 @@ import sys, os
 import numpy as np
 import h5py
 from matplotlib import pyplot as plt
+from analysis.lib.tools import toolbox
 from tabulate import tabulate
-import pickle as pkl
-import h5py
-
-def get_AWG_seq_file(basedir,name):
-    name = os.path.splitext(name)[0]
-
-    with open(os.path.join(basedir,name+'.pickle'), 'rb') as f:  # Python 3: open(..., 'rb')
-        combined_seq,combined_list_of_elements = pkl.load(f)
-        f.close()
-    return combined_seq,combined_list_of_elements
 
 def get_pulse_elem_for_seq_element(seq_elem,combined_list_of_elements):
     return next((x for x in combined_list_of_elements if x.name == seq_elem['wfname']), None) # Pull out appropriate pulse sequence
@@ -156,66 +147,73 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
 def save_grouped_pulses(basedir,name,grouped_seq):
     
     name = os.path.splitext(name)[0]
-    
+    print os.path.join(basedir,name+'.h5')
     with h5py.File(os.path.join(basedir,name+'.h5'), 'w') as hf:
         
         for key in grouped_seq[0][0].keys():
             key_data = np.array([ item[key] for item in grouped_seq[0]])
-            hf.create_dataset('seq_overview/'+key, data= key_data)
+            hf.create_dataset('pulse_sim/seq_overview/'+key, data= key_data)
         
         for i,pulses in enumerate(grouped_seq[1]):
-            hf.create_dataset('pulses/'+str(i), data=pulses)
+            hf.create_dataset('pulse_sim/pulses/'+str(i), data=pulses)
 
-def load_grouped_pulses(basedir,name):
+def save_grouped_pulses_to_open_h5file(hf,grouped_seq):
     
-    name = os.path.splitext(name)[0]
+    for key in grouped_seq[0][0].keys():
+        key_data = np.array([ item[key] for item in grouped_seq[0]])
+        hf.create_dataset('pulse_sim/seq_overview/'+key, data= key_data)
     
-    with h5py.File(os.path.join(basedir,name+'.h5'), 'r') as hf:
+    for i,pulses in enumerate(grouped_seq[1]):
+        hf.create_dataset('pulse_sim/pulses/'+str(i), data=pulses)
+
+def load_grouped_pulses(contains="",filepath=""):
+    
+    filepath = filepath if filepath != "" else toolbox.measurement_filename(toolbox.latest_data(contains=contains))
+    
+    with h5py.File(filepath, 'r') as hf:
         
-        num_pulses = np.max(np.array(hf['pulses'].keys()).astype(int))
-        overview_keys = [str(j) for j in (hf['seq_overview'].keys())]
+        num_pulses = np.max(np.array(hf['pulse_sim/pulses'].keys()).astype(int))
+        overview_keys = [str(j) for j in (hf['pulse_sim/seq_overview'].keys())]
         overview_data = {}
         for key in overview_keys:
-            overview_data[key] = np.array(hf.get('seq_overview/'+key))
+            overview_data[key] = np.array(hf.get('pulse_sim/seq_overview/'+key))
         
         grouped_seq = []
         for i in range(num_pulses):
             overview = {}
             for key in overview_keys:
                 overview[key] = overview_data[key][i]
-            pulses = np.array(hf.get('pulses/'+str(i)))
+            pulses = np.array(hf.get('pulse_sim/pulses/'+str(i)))
             grouped_seq.append([overview,pulses])
     
     return grouped_seq
 
-def batch_process_folder(basedir, verbose = False):
-    for file in os.listdir(basedir):
-        if file.endswith(".pickle"):
-            if verbose:
-                print file
-            combined_seq,combined_list_of_elements = get_AWG_seq_file(basedir,file)
-            grouped_seq = group_seq_elems(combined_seq,combined_list_of_elements)
-            save_grouped_pulses(basedir,file,grouped_seq)
-
 def print_group_summaries(grouped_seq):
     print 'Extracted pulse groups'
     tab_data = []
-    for i, group in enumerate(grouped_seq[0]):
-        tab_data.append([i, group['name'][:30], group['trigger_wait'],\
-                         str(group['goto_target'])[:30], str(group['jump_target'])[:30]])
-    print tabulate(tab_data, headers=['#', 'First elem', 'Wait', 'Go To', 'Jump To'])
+    for i, group in enumerate(grouped_seq):
+        overview = group[0]
+        tab_data.append([i, overview['name'][:30], overview['trigger_wait'],\
+                         str(overview['goto_target'])[:30], str(overview['jump_target'])[:30], overview['final_time']*1e6])
+    print tabulate(tab_data, headers=['#', 'First elem', 'Wait', 'Go To', 'Jump To',u'Duration (\u03BCs)'])
 
         
 def draw_seq_element_pulses(pulses, start = 0, elem_length = 0, time_res = 1e-9):
     
-    total_duration =  elem_length if elem_length > 0 else (pulses[-1][0]+pulses[-1][1]/2 - start)
-    plot_duration = 1.1*total_duration
+    if np.shape(pulses)[0] == 2:  # If passed full seq element as opposed to just pulses 
+        total_duration =  elem_length if elem_length > 0 else pulses[0]['final_time']
+        pulses = pulses[1]   
+    else:
+        total_duration =  elem_length if elem_length > 0 else (pulses[-1][0]+pulses[-1][1]/2 - start)
+    plot_duration = 1.05*total_duration
     start_steps = int(start/time_res)
     time_steps = int(plot_duration/time_res)
     time = np.arange(time_steps)*time_res*1e6
     I_channel = np.zeros(time_steps)
     Q_channel = np.zeros(time_steps)
     repump_channel = np.zeros(time_steps)
+    sync_channel = np.zeros(time_steps)
+    
     for pulse in pulses:
         pulse_start = int((pulse[0]-pulse[1]/2)/time_res) - start_steps
         pulse_stop = int((pulse[0]+pulse[1]/2)/time_res) - start_steps
@@ -223,15 +221,18 @@ def draw_seq_element_pulses(pulses, start = 0, elem_length = 0, time_res = 1e-9)
         if pulse[4] == 0:
             I_channel[pulse_start:pulse_stop] = np.sin(pulse[2]) * pulse[3]/np.pi
             Q_channel[pulse_start:pulse_stop] = np.cos(pulse[2]) * pulse[3]/np.pi
-        else:
+        elif pulse[4] == 1:
             repump_channel[pulse_start:pulse_stop] = 1
+        elif pulse[4] == 2:
+            sync_channel[pulse_start:pulse_stop] = 1
             
     fig = plt.figure()
     ax = plt.subplot(111)
     plt.plot(time,I_channel, label='I mod')
     plt.plot(time,Q_channel, label='Q mod')
     plt.plot(time,repump_channel, label='repump')
-    plt.plot([total_duration*1e6,total_duration*1e6],[-1,1],'--k')
+    plt.plot(time,repump_channel, label='sync')
+    plt.plot([total_duration*1e6,total_duration*1e6],[-0.5,0.5],'--k')
 
     plt.ylim([-1.1,1.1])
     # Shrink current axis by 20%
@@ -244,4 +245,3 @@ def draw_seq_element_pulses(pulses, start = 0, elem_length = 0, time_res = 1e-9)
     plt.xlabel('Time ($\mu$s)')
     plt.ylabel('Pulse amplitude')
     plt.show()
-    plt.close()
