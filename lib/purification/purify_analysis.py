@@ -1428,7 +1428,7 @@ class purify_analysis(object):
         title = kw.pop('title',None)
 
         fig = plt.figure()
-        ax = plt.subplot()
+        ax = plt.subplot(1,1,1)
 
         if xlabel != None:
             plt.xlabel(xlabel)
@@ -1809,13 +1809,13 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     See also electron_nuclear_bell_state.py
     """
     save_folder = r'K:\ns\qt\Diamond\Projects\Purification\Paper\Plots'
-    color = '#90C3D4'
+    color = '#3594F2'
     alpha = 0.67
     fontsize = 10
     lw = 1 #  linewidths
     xticks = [r'$|$X,X$\rangle$',r'$|$X,-X$\rangle$',r'$|$-X,X$\rangle$',r'$|$-X,-X$\rangle$']
     yticks = [r'$\langle$X,X$|$',r'$\langle$X,-X$|$',r'$\langle$-X,X$|$',r'$\langle$-X,-X$|$']
-    hf = plt.figure(figsize=np.array(plt.figaspect(0.45))/1.5)
+    hf = plt.figure(figsize=np.array(plt.figaspect(0.5))/1.5)
     ha = plt.subplot(121, projection='3d')
     # ha.grid(False)
     plt.gca().patch.set_facecolor('white')
@@ -1839,9 +1839,9 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     if dm_u_re != None:
         dm_err_re = np.reshape(np.asarray(dm_u_re), 16)
         for i in np.arange(0,len(xpos)):
-            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black',mew=lw,zorder = 0)
+            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black',mew=lw,zorder=90)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha,linewidths=0.7,zorder= 1)
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha,linewidths=0.7,zorder= 100)
 
 
     # ha.set_title('Real part')
@@ -1870,13 +1870,13 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     #     label.customShiftValue = SHIFT
     #     label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValue ), 
     #                                     label, matplotlib.text.Text )
-    ha.set_zticklabels([-0.4,-0.2,0.0,0.2,0.4],size=  fontsize,
+    ha.set_zticklabels([-0.2,0.0,0.2,0.4],size=  fontsize,
                    va='center',
                    ha ='left')
-    ha.set_zticks([-0.4,-0.2,0.0,0.2,0.4])
+    ha.set_zticks([-0.2,0.0,0.2,0.4])
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
-    ha.set_zlim([-0.5,0.5])
+    ha.set_zlim([-0.3,0.5])
 
 
 
