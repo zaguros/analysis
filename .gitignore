@@ -9,3 +9,7 @@ output
 .ipynb
 .DS_Store
 .ipynb_checkpoints
+
+notebooks/QEC/NV gen.ipynb
+
+notebooks/QEC/QEC sim.ipynb

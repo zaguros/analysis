@@ -92,7 +92,11 @@ def Generate_NV(Carb_Conc=0.011,N_NV=1,N=25,do_sphere = True):
         Ap_NV =[ Ap[u] for u in Sel]
         Ao_NV =[ Ao[u] for u in Sel]
         r_NV = [ r[u] for u in Sel]
+        x_NV = [ x[u] for u in Sel]
+        y_NV = [ y[u] for u in Sel]
+        z_NV = [ z[u] for u in Sel]
+        
         # NV_list.append(A_NV[0]) #index 0 is to get rid of outher brackets in A_NV0
-    return Ap_NV[0], Ao_NV[0] , r_NV[0]
+    return Ap_NV[0], Ao_NV[0] , r_NV[0], x_NV[0], y_NV[0], z_NV[0]
 
 
