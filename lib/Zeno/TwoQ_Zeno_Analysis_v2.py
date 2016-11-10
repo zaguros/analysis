@@ -602,6 +602,8 @@ def calc_ro_correction(dict_val,dict_err,carbon_list = [1,2,5]):
 	#### print the RO correction values
 	return SolveDict
 
+
+
 #### these values have been obtained via tomography/DESR measurements. see onenote 2015-06-09 NK.
 
 
@@ -629,7 +631,7 @@ Dict['error']['nitrogen'] = 0.0149696842867#0.018270745207
 
 CarbonRO_Dict = calc_ro_correction(Dict['values'],Dict['error'])
 
-print CarbonRO_Dict
+# print CarbonRO_Dict
 
 
 ########################
@@ -3121,6 +3123,44 @@ def Zeno_3q_logicalFidelity_list(older_than_tstamp=None,msmts_list=['0'],eRO_lis
 	else:
 		return evo_time_arr,y_arr,y_u_arr,tstamp,folder
 
+
+def compare_time_shift_due_to_driving(filename,**kw):
+	"""
+	retrieves data from the acquired process fidelity (see also the noitebook Zeno 2Q analysis, last entry)
+	this raw data (saved in the pickle file) is then plotted in Paper_data_evaluation
+	"""
+
+
+	msmt_list = kw.get('msmt_list',[])
+
+	shifted_evo_time,shifted_proc_fid,shifted_proc_fid_u,folder = Zeno_proc_list(plot_results = False,subtract_drive_time = True,**kw)
+	unshifted_evo_time,unshifted_proc_fid,unshifted_proc_fid_u,folder = Zeno_proc_list(plot_results = False, subtract_drive_time = False, **kw)
+	
+	pickle_dict = {}
+	# print 'len_shifted proc fid',len(shifted_proc_fid)
+
+	### initialize dict
+	pickle_dict['shifted_proc_fid'] = {}
+	pickle_dict['unshifted_proc_fid'] = {}
+	### append results to pickle_dict
+	for i in range(len(msmt_list)):
+		pickle_dict['shifted_proc_fid'][msmt_list[i]] = make_pickle_dict(shifted_evo_time[i],shifted_proc_fid[i],shifted_proc_fid_u[i],timetrace_keylist)
+		pickle_dict['unshifted_proc_fid'][msmt_list[i]] = make_pickle_dict(unshifted_evo_time[i],unshifted_proc_fid[i],unshifted_proc_fid_u[i],timetrace_keylist)
+
+
+	print np.array(unshifted_evo_time)-np.array(shifted_evo_time)
+	# print pickle_dict
+	# print pickle_dict.keys()
+	save_data(pickle_dict,filename+".p")
+	# folder = r'D:\measuring\data\Zeno_results'
+
+	print 'data has been sucessfully saved'
+
+
+
+################################################################################
+"""These functions are deprecated or contained in paper_evaluation.py"""
+################################################################################
 def coherence_scaling():
 	data2Q = []
 	data2Q.append(pickle.load( open( "ZenData\Zeno_2Q_scaling_Z.p", "rb" ) ))

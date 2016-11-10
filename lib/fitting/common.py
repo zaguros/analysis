@@ -282,10 +282,10 @@ def fit_poly(*arg):
     for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
         idx = i
-
     def fitfunc(x):
         val = 0
-        for i in range(idx):
+        for i in range(idx+1):
+
             val += p0[i]() * x**i
         return val
 
@@ -293,7 +293,6 @@ def fit_poly(*arg):
 
 def fit_poly_shifted(g_x0,*arg):
     fitfunc_str = 'sum_n ( a[n] * (x-x0)**n )'
-
     idx = 0
     p0 = []
     x0 = fit.Parameter(g_x0, 'x0')
@@ -301,9 +300,10 @@ def fit_poly_shifted(g_x0,*arg):
     for i,a in enumerate(arg):
         p0.append(fit.Parameter(a, 'a%d'%i))
         idx = i
+
     def fitfunc(x):
-        val = 0
-        for i in range(idx):
+        val=0
+        for i in range(idx+1):
             val += p0[i+1]() * (x-x0())**i
         return val
 
@@ -569,8 +569,41 @@ def fit_5lorentz_symmetric_sym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2,g_A3, g
 
     return p0, fitfunc, fitfunc_str
 
+def fit_4lorentz_symmetric_sym_A(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_dx2, g_A2):  # fit for 4 lorentzians for EOM drive, symmetric around middle peak
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01-dx2)**2+gamma1**2) \
+            + 2*A1/np.pi*gamma1/(4*(x-x01-dx2)**2+gamma1**2) + 2*A2/np.pi*gamma1/(4*(x-x01+dx)**2+gamma1**2)\
+            + 2*A2/np.pi*gamma1/(4*(x-x01-dx2-dx)**2+gamma1**2)'
 
+    a1 = fit.Parameter(g_a1, 'a1')
+    A1 = fit.Parameter(g_A1, 'A1')
+    x01 = fit.Parameter(g_x01, 'x01')
+    gamma1 = fit.Parameter(g_gamma1, 'gamma1')
+    #gamma2 = fit.Parameter(g_gamma2,'gamma2')
 
+    dx = fit.Parameter(g_dx,'dx')
+    dx2 = fit.Parameter(g_dx2,'dx2')
+
+    A2 = fit.Parameter(g_A2, 'A2')
+    #A3 = fit.Parameter(g_A3, 'A3')
+    #A4 = fit.Parameter(g_A4, 'A4')
+    #A5 = fit.Parameter(g_A5, 'A5')
+
+    p0 = [a1, A1, x01, gamma1, dx, dx2, A2]
+    #p0 = [a1, A1, x01, gamma1, A2, x02, gamma2, A3, x03, gamma3]
+
+    #For when you have the x_01 as the min point in the center. 
+    # def fitfunc(x):
+    #     return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01()-dx2())**2+gamma1()**2)+\
+    #             2*A1()/np.pi*gamma1()/(4*(x-x01()+dx2())**2+gamma1()**2) + 2*A2()/np.pi*gamma1()/(4*(x-x01()-dx2()-dx())**2+gamma1()**2) +\
+    #             2*A2()/np.pi*gamma1()/(4*(x-x01()+dx()+dx2())**2+gamma1()**2)
+
+    #For when x_01 is the max point in the center (- sign here means fit to the right)
+    def fitfunc(x):
+        return a1()+2*A1()/np.pi*gamma1()/(4*(x-x01())**2+gamma1()**2)+\
+                2*A1()/np.pi*gamma1()/(4*(x-x01()-dx2())**2+gamma1()**2) + 2*A2()/np.pi*gamma1()/(4*(x-x01()+dx())**2+gamma1()**2) +\
+                2*A2()/np.pi*gamma1()/(4*(x-x01()-dx()-dx2())**2+gamma1()**2)
+
+    return p0, fitfunc, fitfunc_str
 
 
 def fit_2lorentz_splitting(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_dx2, g_gamma2):
@@ -835,4 +868,21 @@ def fit_2d_gaussian_circular(g_offset,g_A, g_x0, g_y0, g_sigma, *arg):
     def fitfunc(x,y):
         return offset()+A()*np.exp( - ((x-x0())**2/(2*sigma()**2)  + ((y-y0())**2)/(2*sigma()**2)))
 
+    return p0, fitfunc, fitfunc_str
+
+def fit_clipping_radius(g_ROC,g_rclip,g_Transmission,g_Loss, *arg):
+
+    fitfunc_str = '2*np.pi/(Transmission+Loss+exp(-2rclip**2/(wavelength/np.pi*(L*ROC)**0.5)))'
+
+    wavelength = 637e-9
+
+    ROC = fit.Parameter(g_ROC, 'ROC')
+    rclip = fit.Parameter(g_rclip, 'rclip')
+    Transmission = fit.Parameter(g_Transmission, 'Transmission')
+    Loss = fit.Parameter(g_Loss, 'Loss')
+
+    p0 = [ROC,rclip,Transmission,Loss]
+
+    def fitfunc(x):
+        return 2*np.pi/(Transmission()+Loss())+np.exp(-2*rclip()**2/(wavelength**2/np.pi**2*wavelength*x/2*(ROC()-wavelength*x/2)))
     return p0, fitfunc, fitfunc_str
