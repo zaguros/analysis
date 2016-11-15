@@ -1,19 +1,36 @@
 ### Functions for analysing oscilloscope data
-##SvD
+##SvD  September 2016
 ###
 import scipy
 import numpy as np 
-from mpl_toolkits.axes_grid1 import host_subplot
-import mpl_toolkits.axisartist as AA
+
 from matplotlib import pyplot as plt
 import os
 import json
-c = 2.997e8
+c = scipy.constants.c
+
+
+
+#functions for saving in json/txt
+def default(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    raise TypeError('Not serializable')
+
+def save_to_json_file(indir,filename,analysis_dict):
+    f = open(os.path.join(indir,filename+'.json'), 'w')
+    json.dump(analysis_dict,f,default=default)
+    f.close()
+
+def save_to_txt_file(indir,filename,nparray):
+    f = open(os.path.join(indir,filename+'.txt'), 'w')
+    np.savetxt(f,nparray)
+    f.close()
 
 
 #functions for analysis of linewidths from several files, 
-#taking into account the up down modulation
-
+#taking into account the ascending or descending (up or down) modulation of the cavity linewidth
+#in the cavity characterisation measurements of the summer of 2016, this is only relevant for the RT data 
 def get_up_down_lws(fitted_lws,first_lw_direction):
     even_lws=fitted_lws[::2]
     odd_lws = fitted_lws[1::2]
@@ -48,170 +65,7 @@ def print_results(analysis):
     print 'avg_down', analysis['avg_down'],analysis['u_avg_down']
     print 'avg_updown_mean', analysis['avg_updown_mean'],analysis['u_avg_updown_mean']
 
-#functions for saving in json/txt
-def default(obj):
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    raise TypeError('Not serializable')
 
-def save_to_json_file(indir,filename,analysis_dict):
-    f = open(os.path.join(indir,filename+'.json'), 'w')
-    json.dump(analysis_dict,f,default=default)
-    f.close()
-
-def save_to_txt_file(indir,filename,nparray):
-    f = open(os.path.join(indir,filename+'.txt'), 'w')
-    np.savetxt(f,nparray)
-    f.close()
-
-
-
-########functions to make a nice fit and plot of single linewidth data.
-###also
-
-def fit_single(x,y,conversion=1.0):
-    #print g_dx*conversion
-    #print 'g_x01',g_x01*conversion
-    #print 'x',x 
-    p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1*conversion, g_x01*conversion, g_gamma1*conversion, g_dx*conversion, g_A2*conversion)
-    fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, fixed=fixed)
-
-    dx = fit_result['params_dict']['dx']
-    gamma = fit_result['params_dict']['gamma1']
-    u_gamma = fit_result['error_dict']['gamma1']
-
-    x0 = fit_result['params_dict']['x01']
-    A1 = fit_result['params_dict']['A1']
-    A2 = fit_result['params_dict']['A2']
-    a1 = fit_result['params_dict']['a1']
-    #print dx
-    #print dx,gamma,x0,A1,A2,a1
-    return dx,gamma,u_gamma,x0,A1,A2,a1,fit_result
-
-
-def plot_single(x,y,conversion=1.0,x_name='datapoints',x_label='',rel_x_conversion=1.,rel_y_conversion=1.,ret_data=False):
-    dx,gamma,u_gamma,x0,A1,A2,a1,fit_result = fit_single(x,y,conversion=conversion)
-    gamma_GHz = gamma/dx*6.
-    u_gamma_GHz = u_gamma/dx*6.
-    dx_GHz = 6.
-    x0_GHz = 0.
-    #print 'conversion',conversion
-    #print 'rel_x_conversion',rel_x_conversion
-    print 'cavity linewidth is',gamma_GHz,'+-',u_gamma_GHz
-    x_GHz = (x-x0)/dx*6. #in GHz-> hardcodes a 6 GHz EOM frequency
-    fig,ax = plt.subplots()
-    ax.plot(x_GHz,y, 'o',color='orange',linewidth=4,label='data',zorder=1)
-    xs_fit = np.linspace(x[0],x[-1],10*len(x))
-    xs_fit_GHz = np.linspace(x_GHz[0],x_GHz[-1],10*len(x_GHz))
-    ys_fit = fit_result['fitfunc'](xs_fit)
-    ax.plot(xs_fit_GHz, ys_fit , color = 'darkblue', lw=1, label='fit',zorder=2 ) 
-
-    halfmax = (A1/(math.pi*gamma)+a1)
-    
-    head_width = 0.01*rel_y_conversion
-    head_length=12.5*conversion*rel_x_conversion/dx*6.
-    arrow_color = 'darkblue'
-    ax.arrow(-dx_GHz,halfmax/2,dx_GHz-head_length,0, width = head_width/5.,head_width=head_width, head_length=head_length,  fc=arrow_color,ec=arrow_color)
-    ax.arrow(0,halfmax/2,-dx_GHz+head_length,0, width = head_width/5.,head_width=head_width, head_length=head_length, fc=arrow_color, ec=arrow_color)
-    ax.text(-3*dx_GHz/4,halfmax/2+0.01*rel_y_conversion,'6 GHz',color=arrow_color)
-    
-    head_length2=7.*conversion*rel_x_conversion/dx*6.
-    arrow_length2 =20*conversion*rel_x_conversion/dx*6.
-    arrow_color2 = 'darkblue'
-    #print x0-gamma/2.
-    ax.arrow(-gamma_GHz/2.-arrow_length2,halfmax,arrow_length2-head_length2,0, width = head_width/5.,head_width=head_width, head_length=head_length2,  fc=arrow_color2,ec=arrow_color2)
-    ax.arrow(gamma_GHz/2.+arrow_length2,halfmax,-arrow_length2+head_length2,0,width = head_width/5., head_width=head_width, head_length=head_length2, fc=arrow_color2, ec=arrow_color2)
-    ax.text(x0+0.03*rel_x_conversion/dx*6.,halfmax+0.01*rel_y_conversion,'FWHM',color=arrow_color)
-        
-    #ax.legend()
-    ax.set_xlabel('detuning (GHz)',fontsize=14)
-    ax.set_ylabel('transmitted signal (V)',fontsize=14)
-    ax.set_xlim([x_GHz[0],x_GHz[-1]])
-    
-
-    print x_GHz[0], x_GHz[-1]
-    #print x_in_GHz 
-
-    ax2= ax.twiny()
-    ax2.set_xlim([x[0],x[-1]])
-    ax2.set_xlabel(x_label,fontsize=14)
-
-
-    plt.savefig(os.path.join(indir,filename+'single_example_lw_plot_vs_%s.eps'%(x_name)))
-    plt.savefig(os.path.join(indir,filename+'single_example_lw_plot_vs_%s.png'%(x_name)))
-    plt.show()
-
-    if ret_data:
-        return x,x_GHz, y,xs_fit_GHz,ys_fit
-    return ax
-
-
-def plot_both(x01,x1,y1,xfit1,yfit1,x02,x2,y2,xfit2,yfit2,dy2=0.):
-    #scale y2
-    normalise = (max(y1)-min(y1))/(max(y2)-min(y2))
-    y2 = y2 * normalise
-    yfit2 = yfit2 * normalise
-
-    plt.figure(figsize=[4,4])
-
-    host = host_subplot(111, axes_class=AA.Axes)
-    plt.subplots_adjust(top=0.75)
-
-    par1 = host.twiny()
-    par2 = host.twiny()
-
-    offset = 60
-    new_fixed_axis = par2.get_grid_helper().new_fixed_axis
-    par2.axis["top"] = new_fixed_axis(loc="top",
-                                        axes=par2,
-                                        offset=(0, offset))
-
-    par2.axis["top"].toggle(all=True)
-
-    host.set_xlim([x1[0],x1[-1]])
-
-    par1.set_xlim([x01[0]-x01[0],x01[-1]-x01[0]])
-    par2.set_xlim([x02[0]-x02[0],x02[-1]-x02[0]])
-
-    host.set_xlabel('detuning (GHz)',fontsize=14)
-    host.set_ylabel('transmitted signal (V)',fontsize=14)
-    par1.set_xlabel('scan time 1 (ms)',fontsize=14)
-    par2.set_xlabel('scan time 2 (ms)',fontsize=14)
-
-    host.plot(x1,y1, 'o',color='orange',linewidth=4,label='1',zorder=1)
-    host.plot(xfit1,yfit1, '-',color='orange',linewidth=4,zorder=1)
-    host.plot(x2,y2+dy2, 'o',color='blue',linewidth=4,label='2',zorder=1)
-    host.plot(xfit2,yfit2+dy2, '-',color='blue',linewidth=4,zorder=1)
-    host.legend()
-
-
-    # fig,ax = plt.subplots()
-
-
-    # ax.plot(x1,y1, 'o',color='orange',linewidth=4,label='data 1',zorder=1)
-    # ax.plot(xfit1,yfit1, '-',color='orange',linewidth=4,label='fit 1',zorder=1)
-    # ax.plot(x2,y2+dy2, 'o',color='blue',linewidth=4,label='data 2',zorder=1)
-    # ax.plot(xfit2,yfit2+dy2, '-',color='blue',linewidth=4,label='fit 2',zorder=1)
-   
-    # #ax.legend()
-    # ax.set_xlabel('detuning (GHz)',fontsize=14)
-    # ax.set_ylabel('transmitted signal (V)',fontsize=14)
-    # ax.set_xlim([x1[0],x1[-1]])
-    
-    # #print x_in_GHz 
-
-    # ax2= ax.twiny()
-    # ax2.set_xlim([x01[0],x01[-1]])
-    # ax2.set_xlabel('scan time 1 (ms)',fontsize=14)
-
-    # ax3= ax.twiny()
-    # ax3.set_xlim([x02[0],x02[-1]])
-    # ax3.set_xlabel('scan time 2 (ms)',fontsize=14)
-    print indir 
-    plt.savefig(os.path.join(indir,filename+'both_example_lw_plot.eps'))
-    plt.savefig(os.path.join(indir,filename+'both_example_lw_plot.png'))
-
-    return host
 
 
 
@@ -326,8 +180,8 @@ def get_averaged_finesses(avg_lws,u_avg_lws,Ns,lambda_c=636.6e-9):
     finesses, u_finesses = finesses_from_lws(avg_lws,u_avg_lws,Ns,lambda_c = lambda_c)#,lamba_c = 636.6e-9)
     #print np.histogram(Ns)
     bins = np.histogram(Ns)
-    range_Ns = np.arange(min(Ns),max(Ns))
-    
+    range_Ns = np.arange(min(Ns),max(Ns)+1)
+
     averaged_finesse=np.zeros(len(range_Ns))
     u_averaged_finesse = np.zeros(len(range_Ns))
     for i,N in enumerate(range_Ns):
@@ -431,7 +285,9 @@ def plot_avgd_finesse_vs_length(avg_lws,u_avg_lws,Ns,lambda_c=636.6e-9,ax=None,l
     return(ax)
 
 
+
 def fit_lws(linewidths,u_linewidths,Ns,g_Finesse,datapath,ax=None,lambda_c=636.6e-9):
+    #####fit the off-diamond linewidth to ~  *1/length
     #cavity_lengths =  Ns#636.6e-9*Ns/2 # in um
     g_a = 0#0.1*1.e9
     g_b = (c)/(2*g_Finesse)*1.e-9*2/lambda_c #*1.e9
@@ -460,39 +316,26 @@ def fit_lws(linewidths,u_linewidths,Ns,g_Finesse,datapath,ax=None,lambda_c=636.6
     return Finesse
 
 
-def plot_finesse_vs_airlikecharacter((RT_OFFD_POS0_avgs,RT_OFFD_POS0_Ns),(LT_OFFD_POS3_avg_array,LT_OFFD_POS3_u_avg_array,LT_OFFD_POS3_Ns),
-            (RT_OND_POS0_avgs,RT_OND_POS0_Ns),(RT_OND_POS1_avgs,RT_OND_POS1_Ns),(RT_OND_POS2_avgs,RT_OND_POS2_Ns),
-            (LT_OND_POS2_avg_array,LT_OND_POS2_u_avg_array,LT_OND_POS2_Ns),(LT_OND_POS4_avg_array,LT_OND_POS4_u_avg_array,LT_OND_POS4_Ns)):
-    Ns= np.arange(47,56)
-    #these things require global variables of 
-    avg_finesse_RT_OFFD = np.average(finesses_from_lws(RT_OFFD_POS0_avgs[:,4],RT_OFFD_POS0_avgs[:,5],RT_OFFD_POS0_Ns)[0])
-    avg_finesse_LT_OFFD = finesses_from_lws(LT_OFFD_POS3_avg_array,LT_OFFD_POS3_u_avg_array,LT_OFFD_POS3_Ns)[0][0]
-    u_avg_finesse_RT_OFFD = scipy.stats.sem(finesses_from_lws(RT_OFFD_POS0_avgs[:,4],RT_OFFD_POS0_avgs[:,5],RT_OFFD_POS0_Ns)[0])
-    u_avg_finesse_LT_OFFD = finesses_from_lws(LT_OFFD_POS3_avg_array,LT_OFFD_POS3_u_avg_array,LT_OFFD_POS3_Ns)[1][0]
 
-    F_RT_POS0_N, u_F_RT_POS0_N = get_finesse_at_Ns(RT_OND_POS0_avgs[:,4],RT_OND_POS0_avgs[:,5],RT_OND_POS0_Ns,Ns)
-    F_RT_POS1_N, u_F_RT_POS1_N = get_finesse_at_Ns(RT_OND_POS1_avgs[:,4],RT_OND_POS1_avgs[:,5],RT_OND_POS1_Ns,Ns)
-    F_RT_POS2_N, u_F_RT_POS2_N = get_finesse_at_Ns(RT_OND_POS2_avgs[:,4],RT_OND_POS2_avgs[:,5],RT_OND_POS2_Ns,Ns)
-    F_LT_POS2_N, u_F_LT_POS2_N = get_finesse_at_Ns(LT_OND_POS2_avg_array,LT_OND_POS2_u_avg_array,LT_OND_POS2_Ns,Ns)
-    F_LT_POS4_N, u_F_LT_POS4_N = get_finesse_at_Ns(LT_OND_POS4_avg_array,LT_OND_POS4_u_avg_array,LT_OND_POS4_Ns,Ns)
 
-    ####BELOW IS HARDCODED THE 'airlike character' of the modes as obtained for 2d plots in spectrometer analysis!
+def plot_finesse_vs_airlikecharacter((avg_finesse_RT_OFFD,u_avg_finesse_RT_OFFD),(avg_finesse_LT_OFFD,u_avg_finesse_LT_OFFD),
+            (F_RT_POS0_N,u_F_RT_POS0_N),(F_RT_POS1_N, u_F_RT_POS1_N),(F_RT_POS2_N, u_F_RT_POS2_N),
+            (F_LT_POS2_N, u_F_LT_POS2_N),(F_LT_POS4_N, u_F_LT_POS4_N),Ns):
+
+    ####below is HARDCODED the 'airlike character' of the modes as obtained for 2d plots in spectrometer analysis!
     RT_OND_POS0_ans=np.array([0.33,0.32,0.35])*2
     RT_OND_POS1_ans=np.array([0.29,0.26,0.25,0.25])*2
     RT_OND_POS2_ans=np.array([0.42,0.43,0.39,0.38,0.35,0.35,0.35])*2
     LT_OND_POS2_ans=np.array([0.14,0.19,0.1])*2
     LT_OND_POS4_ans=np.array([0.36,0.38,0.4,0.38])*2
 
-
     RT_finesses = np.array([F_RT_POS0_N,F_RT_POS1_N,F_RT_POS2_N])
     u_RT_finesses = np.array([u_F_RT_POS0_N,u_F_RT_POS1_N,u_F_RT_POS2_N])
-    RT_airnesses= [0.30,0.25,0.38]
     RT_airnesses =[np.average(an) for an in [RT_OND_POS0_ans,RT_OND_POS1_ans,RT_OND_POS2_ans]]
     u_RT_airnesses =[scipy.stats.sem(an) for an in [RT_OND_POS0_ans,RT_OND_POS1_ans,RT_OND_POS2_ans]]
 
     LT_finesses = np.array([F_LT_POS2_N,F_LT_POS4_N])
     u_LT_finesses = np.array([u_F_LT_POS2_N,u_F_LT_POS4_N])
-    LT_airnesses= [0.1,0.38]
     LT_airnesses =[np.average(an) for an in [LT_OND_POS2_ans,LT_OND_POS4_ans]]
     u_LT_airnesses = [scipy.stats.sem((an)) for an in [LT_OND_POS2_ans,LT_OND_POS4_ans]]
 
@@ -509,91 +352,5 @@ def plot_finesse_vs_airlikecharacter((RT_OFFD_POS0_avgs,RT_OFFD_POS0_Ns),(LT_OFF
     ax.set_ylim([0,30000])
 
     return ax
-
-if __name__=="__main__":
-
-    ###################values for single sweep at RT for cahraacterisation paper uncomment to use
-    #indir = 'K:/ns\qt\Diamond\Projects\Cavities\Cavity characterisation paper\data\data_for_cav_char_paper/20160822\RT_OND_POS1_L3\V3'
-    #NICE_LWS00076, second lw at datapoint 1627
-    #the sweep has 500 ms in 125000 data points, so we can convert the x-axis:
-    indir = 'K:/ns\qt\Diamond\Projects\Cavities\Cavity characterisation paper\data\data_for_cav_char_paper/20160822\RT_OND_POS1_L3\V3'
-    filename = 'NICE_LWS00076'
-    f = open(os.path.join(indir,filename+'single_example_lw_data.txt'), 'r')
-    x_single,y_single = np.loadtxt(f)
-    f.close()
-
-    conversion = 500/125000.
-
-    x_single=x_single-x_single[0] #start with datapoint 0
-    t_single = x_single*conversion #ms
-
- 
-
-    rel_x_conversion=1.
-    rel_y_conversion=1.
-
-
-
-
-    ###################values for singel sweep at LT for charactaritasiotn paper. uncomment to use
-    indir = 'K:/ns\qt\Diamond\Projects\Cavities\Cavity characterisation paper\data\data_for_cav_char_paper/20160905/LT_OND_POS2_L6/V2'
-    filename = 'LT_LWS024'  #first lw at 246
-    #the sweep has 500 ms in 125000 data points, so we can convert the x-axis:
-
-    f_LT = open(os.path.join(indir,filename+'single_example_lw_data.txt'), 'r')
-    x_single_LT,y_single_LT = np.loadtxt(f_LT)
-    f_LT.close()
-
-    conversion_LT = 200/125000.
-
-    cut_nr_datapoints=45
-    x_single_LT=x_single_LT-x_single_LT[0] #start with datapoint 0
-    x_single_LT=x_single_LT[cut_nr_datapoints:-cut_nr_datapoints]
-    y_single_LT=y_single_LT[cut_nr_datapoints:-cut_nr_datapoints]
-
-    t_single_LT = x_single_LT*conversion_LT #ms
-
-    rel_x_conversion_LT=200/500.
-    rel_y_conversion_LT=0.08/0.3
-    
-
-
-    g_a1 = 0.014
-    g_A1 = 4.5
-    g_x01= 160
-    g_gamma1=10
-    g_dx=89
-    g_A2 = 2.0
-    fixed =[]
-
-
-    x0_RT,x_RT,y_RT,xfit_RT,yfit_RT=plot_single(t_single,y_single,conversion=conversion,x_name='time',
-        x_label='time in scan (ms)',rel_x_conversion=rel_x_conversion,rel_y_conversion=rel_y_conversion,ret_data=True)
-    #plot_single(x_single,y_single,x_name='datapoints',x_label='datapoints')
-    
-    g_a1 = 0.01
-    g_A1 = 0.6
-    g_x01= 100
-    g_gamma1=6
-    g_dx=26
-    g_A2 = 0.2
-    fixed =[]
-    #print conversion_LT
-    #print rel_x_conversion_LT
-
-    x0_LT,x_LT,y_LT,xfit_LT,yfit_LT=plot_single(t_single_LT,y_single_LT,conversion=conversion_LT,x_name='time',
-        x_label='time in scan (ms)',rel_x_conversion=rel_x_conversion_LT,rel_y_conversion=rel_y_conversion_LT,ret_data=True)
-    #plot_single(x_single_LT,y_single_LT,x_name='datapoints',x_label='datapoints')
-
-
-    plot_both(x0_RT,x_RT,y_RT,xfit_RT,yfit_RT,x0_LT,x_LT,y_LT,xfit_LT,yfit_LT,dy2=0.3)
-
-
-
-
-
-
-
-
 
 

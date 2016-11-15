@@ -68,5 +68,4 @@ def analyse_pulse_calibration(angle='_pi_1', timestamp=None, guess_x0 = None):
     plt.savefig(os.path.join(folder, 'pulse_calibration.png'),
             format='png')
 
-if __name__ == '__main__':
-    analyse_pulse_calibration(angle='_pi_1')
+

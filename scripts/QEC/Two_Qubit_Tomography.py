@@ -35,11 +35,12 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	# a.p0 = a.normalized_ssro
 	# a.u_p0 = a.u_normalized_ssro
 	x_labels = a.sweep_pts.reshape(-1)
-	y= ((a.p0.reshape(-1))-0.5)*2
+	y= ((a.p0.reshape(-1))-0.5)*2 *-1.2
 	x = range(len(y)) 
 	y_err = 2*a.u_p0.reshape(-1)
 	# print 'y', y
 	# print 'err', y_err
+
 	if plot_fit ==True: 
 		fig,ax = plt.subplots() 
 		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
@@ -59,7 +60,7 @@ def BarPlotTomo(timestamp = None, measurement_name = ['adwindata'],folder_name =
 	        height = rect.get_height()
 	        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
 	            ha='center', va='bottom')
-	autolabel(rects)
+	# autolabel(rects)
 
 	if save and ax != None:
 		try:
@@ -428,5 +429,76 @@ def BarPlotTomoContrastFull_mult_msmts(timestamp = None, measurement_name = ['ad
 		try:
 		    fig.savefig(
 		        os.path.join(folder_a,'tomo.png'))
+		except:
+		    print 'Figure has not been saved.'
+
+
+
+
+
+
+
+
+def Two_qubit_tomo(timestamp = None, measurement_name = ['adwindata'],folder_name ='Tomo',
+		ssro_calib_timestamp =None, save = True,tag = '',
+		plot_fit = True) :
+	'''
+	Function that makes a bar plot with errorbars of MBI type data 
+	'''
+	if timestamp == None:
+		if tag != '':
+			timestamp,folder = toolbox.latest_data(contains=tag,return_timestamp=True)
+		else:
+			timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
+	else: 
+	    folder = toolbox.data_from_time(timestamp) 
+
+	if ssro_calib_timestamp == None: 
+	    ssro_calib_folder = toolbox.latest_data('SSROCalibration')
+	else:
+		ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
+		ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
+		print ssro_calib_folder
+
+	a = mbi.MBIAnalysis(folder)
+
+	a.get_sweep_pts()
+	a.get_readout_results(name=measurement_name[0])
+	a.get_electron_ROC(ssro_calib_folder)
+	# a.p0 = a.normalized_ssro
+	# a.u_p0 = a.u_normalized_ssro
+	x_labels = a.sweep_pts.reshape(-1)
+	y= ((a.p0.reshape(-1))-0.5)*2
+	x = range(len(y)) 
+	y_err = 2*a.u_p0.reshape(-1)
+	# print 'y', y
+	# print 'err', y_err
+	
+	if plot_fit ==True: 
+		fig,ax = plt.subplots() 
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		ax.set_xticks(x)
+		# ax.title = timestamp
+		print x_labels
+		ax.set_xticklabels(x_labels.tolist())
+		ax.set_ylim(-1.1,1.1)
+		ax.set_title(str(folder)+'/'+str(timestamp))
+		# ax.grid()
+		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+
+
+			# print values on bar plot
+	def autolabel(rects):
+	    for ii,rect in enumerate(rects):
+	        height = rect.get_height()
+	        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
+	            ha='center', va='bottom')
+	autolabel(rects)
+
+	if save and ax != None:
+		try:
+		    fig.savefig(
+		        os.path.join(folder,'tomo.png'))
+		    # fig.savefig(os.path.join(folder,'tomo.eps'))
 		except:
 		    print 'Figure has not been saved.'

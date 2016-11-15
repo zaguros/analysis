@@ -50,8 +50,8 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         self.ana_pars['V_min']=0.
         self.ana_pars['V_max']=10
-        self.ana_pars['min_frq']=432
-        self.ana_pars['max_frq']=496
+        self.ana_pars['min_frq']=410
+        self.ana_pars['max_frq']=600
         self.ana_pars['laser_wavelength']= None  
 
         self.ana_pars['remove_hom']=True  #remove the higher order modes 
@@ -466,7 +466,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         save_fig = kw.pop('save_fig',False)
         plot_x = kw.pop('plot_x','V')
         if ax==None:
-            fig,ax = plt.subplots()
+            fig,ax = plt.subplots(figsize=(8,6))
 
         if plot_x =='V':
             ax.set_xlim([self.Vs[0]-self.V_extent_correction,self.Vs[-1]+self.V_extent_correction])
@@ -490,7 +490,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         im = ax.pcolormesh(x,y,self.intensities,vmax =vmax, vmin=vmin,cmap = cmap)
         ax = self.set_axes_basics(ax,plot_x=plot_x)
-        ax.set_title(self.plot_name+title)
+        #ax.set_title(self.plot_name+title)
         plt.colorbar(im)
 
 

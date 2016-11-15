@@ -84,7 +84,7 @@ def create_plot(f,**kw):
     title = kw.pop('title',None)
 
     fig = plt.figure()
-    ax = plt.subplot()
+    ax = plt.subplot(111)
 
     if xlabel != None:
         plt.xlabel(xlabel)
