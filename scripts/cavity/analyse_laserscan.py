@@ -63,6 +63,11 @@ class laserscan_analysis(cga.cavity_analysis):
         return array[idx]
 
     def shift_centre(self,**kw):
+        """
+        function that produces new x-data, based on the detuning from the centre frequency.
+        Ouput:
+        self.x_data
+        """
         y=kw.pop('y',self.y_data)
         x=kw.pop('x',self.frq_data)
         FWHM,u_FWHM,x0 = self.fit_gaussian(**kw)
@@ -70,6 +75,14 @@ class laserscan_analysis(cga.cavity_analysis):
         return self.dx_data
 
     def bin_shifted_data(self,**kw):
+        """
+        function that bins the dx-data in the frequency domain 
+        (note: these are not the bins in time-after-pulsetube domain).
+        Always use after calling 'shift_centre', to determine the detuning from centre frequency.
+        Output:
+        self.binsGHz  - the x-bins
+        self.y_data_per_ms_binned_shifted  - the y's in the x-bins
+        """
         binsizeGHz = kw.pop('binsizeGHz',1.)#in GHz
         rangeGHz = kw.pop('rangeGHz',50)
         self.binsGHz = np.linspace(-rangeGHz/2.,rangeGHz/2,rangeGHz/binsizeGHz+1)
@@ -83,6 +96,9 @@ class laserscan_analysis(cga.cavity_analysis):
         return self.binsGHz, self.y_data_per_ms_binned_shifted
 
     def crop_data_around_centre(self,i_window=10,**kw):
+        """
+        function that crops that data i_window datapoints around the centre. Not used at the moment.
+        """
         ix_centre = int(np.where(self.dx_data==0.)[0])
         i_min = max(0,ix_centre-i_window)
         i_max = ix_centre+i_window+1 
@@ -96,6 +112,9 @@ class laserscan_analysis(cga.cavity_analysis):
         return self.dx_data_centred,self.y_data_centred
 
     def crop_binned_data_around_centre(self,i_window=10,**kw):
+        """
+        function that crops the binned data i_window datapoints around the fitted centre frequency. Not used at the moment.
+        """
         ix_centre = int(np.where(self.dx_data==0.)[0])
         i_min = max(0,ix_centre-i_window)
         i_max = ix_centre+i_window+1 
@@ -109,6 +128,10 @@ class laserscan_analysis(cga.cavity_analysis):
         return self.y_data_per_ms_binned_centred
 
     def fit_gaussian(self,ax=None,ret_ax =False,**kw):
+        """
+        function that fits a gaussian, and returns the FWHM (not sigma).
+        x and y can be given as input, ad well as all the parameter guesses.
+        """
         y=kw.pop('y',self.y_data)
         x=kw.pop('x',self.frq_data)
         g_sigma = kw.pop('g_sigma',10)
@@ -121,12 +144,11 @@ class laserscan_analysis(cga.cavity_analysis):
         g_A = max(y)-g_a
         g_x0= x[np.argmax(y)]
 
-
         p0, fitfunc, fitfunc_str = common.fit_gauss(g_a, g_A, g_x0, g_sigma)
         fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
         if 'sigma' not in fit_result['params_dict']:
             print 'WARNING: COULD NOT FIT sigma'
-            return 0,10
+            return 0,10,0
 
         sigma = np.abs(fit_result['params_dict']['sigma'])
         u_sigma = np.abs(fit_result['error_dict']['sigma'])
@@ -138,14 +160,14 @@ class laserscan_analysis(cga.cavity_analysis):
             if ax==None:
                 fig,ax = plt.subplots(figsize=(10,4))
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)*10),
-                ax=ax,label=label,show_guess=False, plot_data=True,print_info=False)
+                ax=ax,label=label,show_guess=False, plot_data=False,print_info=False)
             ax.set_title('FWHM = %.1f +- %.1f GHz %s'%(FWHM,u_FWHM,plot_title))
             if save_plot:
                 fig = ax.get_figure()
                 fig.savefig(self.folder+'/gaussian_fit_%s.png'%(plot_title))
 
             if ret_ax:
-                return ax
+                return FWHM,u_FWHM,ax
 
             plt.show(ax.get_figure())
             plt.close(ax.get_figure())
@@ -155,7 +177,7 @@ class laserscan_analysis(cga.cavity_analysis):
     def fit_lorentzian(self,**kw):
         y=kw.pop('y',self.y_data)
         x=kw.pop('x',self.frq_data)
-        g_gamma = kw.pop('g_gamma',10)
+        g_gamma = kw.pop('g_gamma',15)
         plot_title = kw.pop('plot_title','')
         plot_fit=kw.pop('plot_fit',False)
         fixed=kw.pop('fixed',[])
@@ -191,14 +213,19 @@ class laserscan_analysis(cga.cavity_analysis):
         return FWHM,u_FWHM
 
     def fit_bins(self,**kw):
+        """
+        function that fits a gaussian to all the bins in which the data is ordered.
+        """
         plot_sigmas = kw.pop('plot_sigmas',True)
         binned_data=kw.pop('binned_data',self.y_data_per_ms_binned)
+        g_sigmas = kw.pop('g_sigmas',np.ones(self.nr_bins)*10)
+        #print g_sigmas
 
         FWHMs=np.array([])
         u_FWHMs=np.array([])
 
         for i in np.arange(self.nr_bins):
-            FWHM,u_FWHM,x0 = self.fit_gaussian(x=self.frq_data, y=binned_data[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize),**kw )
+            FWHM,u_FWHM,x0 = self.fit_gaussian(x=self.frq_data, y=binned_data[:,i],plot_title ='bin_%d_binsize_%d.png'%(i,self.binsize), g_sigma=g_sigmas[i],**kw )
             
             FWHMs=np.append(FWHMs,FWHM)
             u_FWHMs=np.append(u_FWHMs,u_FWHM)

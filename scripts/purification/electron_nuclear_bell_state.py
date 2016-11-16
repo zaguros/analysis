@@ -49,8 +49,7 @@ def get_correlations(**kw):
         ssro_calib_folder = tb.latest_data('SSROCalibration')
     else:
         ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = tb.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Pippin_SIL2'
-        print ssro_calib_folder
+        ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp)
 
     ### for basis assignment, see onenote 2016-08-24 or alternatively mathematica file E_13C_Bell_state.nb
     tomo_pulses_p = ['none','x','my'] ### used when looking for folders
@@ -151,22 +150,28 @@ def carbon_ROC(exp,exp_u,folder):
     u = np.sqrt((ROC_coeff*exp_u)**2+(ROC_coeff_u*exp)**2)/ROC_coeff**2
     return exp/ROC_coeff,u
 
+####################
+#                  # 
+#   Plotting etc.  #
+#                  #
+####################
 
 def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     """
     routine for bar plotting
     """
-    color = '#90C3D4'
+    color = '#3594F2'
     alpha = 0.67
 
 
     xticks = [r'$|$Z,Z$\rangle$',r'$|$Z,-Z$\rangle$',r'$|$-Z,Z$\rangle$',r'$|$-Z,-Z$\rangle$']
     yticks = [r'$\langle$Z,Z$|$',r'$\langle$Z,-Z$|$',r'$\langle$-Z,Z$|$',r'$\langle$-Z,-Z$|$']
-    fontsize = 9
-    hf = plt.figure(figsize=plt.figaspect(0.5))
+    fontsize = 10
+    hf = plt.figure(figsize=plt.figaspect(0.3)/1.5)
     ha = plt.subplot(121, projection='3d')
     ha.grid(True)
     # plt.gca().patch.set_facecolor('white')
+    ha.pbaspect = [1.0, 1.0, 0.255]
     xpos, ypos = np.array(range(4)),np.array(range(4))
 
 
@@ -192,11 +197,27 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
 
     ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
 
-    ha.set_title('abs(Real part)')
-    ha.set_xticklabels(xticks,va = 'center',size=  fontsize)
+    # ha.set_title('abs(Real part)')
+    ha.set_xticklabels(xticks,va = 'baseline',size=  fontsize,rotation = 40)
+        #### fine adjustment of the x label positions... thanks stackexchange
+    import types,matplotlib
+    SHIFTX = 0.008 # Data coordinates
+    SHIFTY = 0.003 # Data coordinates
+    for label in ha.xaxis.get_majorticklabels():
+        label.customShiftValueX = SHIFTX
+        label.customShiftValueY = SHIFTY
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValueX ), 
+                                        label, matplotlib.text.Text )
+        label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValueY ), 
+                                        label, matplotlib.text.Text )
     ha.set_yticklabels(yticks,size=  fontsize,
                    verticalalignment='baseline',
-                   horizontalalignment='left')
+                   horizontalalignment='left',rotation =-15)
+    SHIFT = 0.004 # Data coordinates
+    for label in ha.yaxis.get_majorticklabels():
+        label.customShiftValue = SHIFT
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValue ), 
+                                        label, matplotlib.text.Text )
     ha.set_zticklabels([0.0,0.1,0.2,0.3,0.4,0.5],size=  fontsize,
                    va='center',
                    ha ='left')
@@ -230,7 +251,7 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
 
 def electron_carbon_density_matrix(**kw):
     """
-    This function currently neglects error propagation
+    This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
     """
 
     folder,sweep_pts,exp_values,exp_vals_u = get_correlations(**kw)
