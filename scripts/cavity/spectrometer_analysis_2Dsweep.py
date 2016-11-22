@@ -173,11 +173,12 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
             ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
             ax.set_title(self.plot_name)
-
+            ax.set_xlabel('frequency (THz)')
+            ax.set_ylabel('signal')
             if save_fig:
                 plt.savefig(os.path.join(self.folder,'plot_1D_peaks.png'))
             plt.show()
-            #plt.close()
+            plt.close()
 
         return x0s,u_x0s    
 
@@ -588,12 +589,14 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             axxticklabels = ax.get_xticklabels()
             ax2ticklocations=axticklocations
             ax2xticklabels = np.round((self.V_to_dL_conversion(ax2ticklocations)+air_length)*1.e6,1)
+            ax2.set_xlabel('cavity length (um)',fontsize=14)
 
         elif plot_x2 == 'V':
             Vticks = np.array([0,2,4,6,8,10])
             dLticks = self.V_to_dL_conversion(Vticks)
             ax2ticklocations = (((dLticks+air_length)*1.e6)-ax.get_xlim()[0])/(ax.get_xlim()[-1]-ax.get_xlim()[0])*(ax2.get_xlim()[-1]-ax2.get_xlim()[0])
             ax2xticklabels = [str(Vtick) for Vtick in Vticks]
+            ax2.set_xlabel('Voltage (V)',fontsize=14)
 
         ax2.set_xticks(ax2ticklocations)
         ax2.set_xticklabels(ax2xticklabels)
@@ -784,7 +787,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         rel_air_ness = (high_freq-self.laser_frq)/(high_freq-low_freq)
         if rel_air_ness > 0.5:
             rel_air_ness = 1- rel_air_ness
-        self.ana_pars['rel_air_ness'] = rel_air_ness
+        self.ana_pars['rel_air_ness'] = 2*rel_air_ness
         print 'relative air-ness is ', self.ana_pars['rel_air_ness']
 
         return self.ana_pars['rel_air_ness']
