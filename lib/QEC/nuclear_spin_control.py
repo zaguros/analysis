@@ -99,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-def deleted_by_accident_by_someone():
+def get_C13_hyperfine_params(carbon_nrs,ms = '+1'):
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
