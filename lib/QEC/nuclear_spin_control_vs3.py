@@ -3,6 +3,7 @@ under dynamical decoupling gates. By THT '''
 
 import numpy as np
 import qutip
+qutip = reload(qutip)
 import analysis.lib.QEC.hyperfine_params as hf
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
@@ -78,32 +79,10 @@ ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,
 ###  Helper functions   ###
 ###########################
 
-def any_pure_state(alpha,beta,return_psi = False,return_rho = True):
-	'''gives out your psi and if wanted your rho for a state alpha 0 + beta 1 '''
-	psi = alpha*ket0+beta*ket1
-	rho = psi*psi.dag()
-	# print psi
-	# print rho
-	if return_psi == True:
-		return psi
-	if return_rho == True:
-		return rho
-
-def any_mixed_state(alpha,beta):
-	'''gives out a mixture of rho0 and rho1'''
-	rho = alpha *rho0+beta*rho1
-	return rho
-
 def evolve(system,operator, norm = False):
 	sysout = operator * system * operator.dag()
 
 	return sysout.unit() if norm else sysout 
-
-def print_matrix(Qobject,div_by=100):
-
-	print np.round(Qobject.full()*div_by)/div_by
-	print type(np.round(Qobject.full()*div_by)/div_by)
-
 
 ###########################
 ### 	 Classes        ###
@@ -146,7 +125,15 @@ class NV_system(object):
 		self.ye = self.e_op(y)
 		self.mxe = self.e_op(mx)
 		self.mye = self.e_op(my)
-		
+
+		''' define some simple spin rotations in terms of their HAMILTONIANS'''
+		self.hXe = self.e_op(sx*np.pi)
+		self.hYe = self.e_op(sy*np.pi)
+		self.hxe = self.e_op(sx*np.pi/2)
+		self.hye = self.e_op(sy*np.pi/2)
+		self.hmxe = self.e_op(sx*np.pi/2)
+		self.hmye = self.e_op(sy*np.pi/2)
+
 	def set_initial_state(self, NV_state = rho0):
 		''' Helper function to give standard init state for system '''
 		self.initial_state = qutip.tensor([NV_state] + [rhom] * self.num_carbons)
@@ -184,14 +171,13 @@ class NV_system(object):
 	def NV_carbon_evolution_matrix(self,tau):
 		''' Function to calculate a C13 evolution matrix from the system Hamiltonian'''
 
-		#Evolution during tau for ms=0 and ms=+/-1
 		return (-1j*self.NV_carbon_system_Hamiltonian()*tau).expm(); 
 	
+
 	def nuclear_gate(self,N,tau,**kw):
 		'''Evolution during a decouple unit'''
-		tau_correction_factor = self.tau_correction_factor if hasattr(self,'tau_correction_factor') else 0
-
-		expH_tau = self.NV_carbon_evolution_matrix(0.5*(tau - tau_correction_factor))
+		
+		expH_tau = self.NV_carbon_evolution_matrix(nuclear_gate_tau(tau))
 		expH_2tau = expH_tau**2
 
 		scheme = kw.pop('scheme',self.decouple_scheme)
@@ -208,7 +194,28 @@ class NV_system(object):
 			raise Exception('Unknown scheme!')
 
 		return expHGate
- 
+		
+	def nuclear_gate_tau(self,tau):
+		tau_correction_factor = self.tau_correction_factor if hasattr(self,'tau_correction_factor') else 0
+		if tau_correction_factor > tau:
+			raise Exception('mw_duration too long!')
+		return 0.5*(tau - tau_correction_factor)
+
+	def assemble_ev_mat(self,gate_comps,comp_defs):
+		'''Helper function for gate assembly'''
+
+		ev_mat = self.e_op(Id) 
+		for comp in gate_comps:
+			ev_mat = ev_mat*comp_defs[comp]
+		return ev_mat
+
+	def assemble_Ham_list(self,gate_comps,comp_defs):
+		'''Helper function for gate assembly'''
+		Ham_list = []
+		for comp in gate_comps:
+			Ham_list.append(comp_defs[comp])
+		return Ham_list
+
 	def nuclear_phase_gate(self,carbon_nr, phase, state = 'sup'):
 		''' For small waits (no decoupling) '''
 		if state == 'sup':
@@ -221,6 +228,8 @@ class NV_system(object):
 		phase = (np.pi*float(-1*phase)/180)%(2*np.pi)
 		dec_time = 2*phase/precession_freq
 		return self.NV_carbon_evolution_matrix(dec_time)
+
+
 
 class noisy_NV_system(NV_system):
 
@@ -279,14 +288,17 @@ class NV_experiment(NV_system):
 #########################################
 
 ''' Here are different experiments that we commonly run on the system'''
+
+
 def C13_fingerprint(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7)):
 
 		exp0 = np.zeros(np.shape(tau_range))
 		
 		proj0 = NV_system.e_op(rho0)
-
+	
 		for i,tau in enumerate(tau_range):
-			gate_seq = NV_system.mxe*NV_system.nuclear_gate(N,tau)*NV_system.xe
+
+			gate_seq = NV_system.mxe*NV_system.nuclear_gate(N ,tau)*NV_system.xe
 			exp0[i] = np.real((proj0 * evolve(NV_system.initial_state,gate_seq)).tr())
 
 		plt.figure()
@@ -396,3 +408,96 @@ def prepare_X_measure_theta(NV_system,N = 32, tau = 6.51e-6,thetas = np.arange(0
 		plt.ylim([0,1.1])
 		plt.show()
 		plt.close()
+
+
+
+# The QUTIP solvers crash on this computer :( 	
+#
+# def Hamiltonian_callback(t,args):
+# 		'''To make things simple, we assume each H entry evolves the system for unit time, and so speed up the interaction strength'''
+
+# 		return args['Ham_list']	
+# def nuclear_gate(self,N,tau,**kw):
+# 	'''Evolution during a decouple unit'''
+
+# 	scheme = kw.pop('scheme',self.decouple_scheme)
+# 	return_option = kw.pop('return_option','ev_mat')
+	
+# 	tau_gate = self.nuclear_gate_tau(tau)
+
+# 	if scheme == 'XY4':
+# 		if N%4 != 0:
+# 			raise Exception('Incompatible number of pulses!')
+
+# 		gate_comps = ['sys_ev','Ye','sys_ev_2','Xe','sys_ev_2','Ye','sys_ev_2','Xe','sys_ev'] * (N/4)
+
+# 	elif scheme == 'simple': # CHECK THIS
+# 		dec_Hams = ['sys_ev','Xe','sys_ev'] * N
+		
+# 	else:
+# 		raise Exception('Unknown scheme!')
+
+# 	if return_option == 'Ham_list':
+
+# 		comp_defs = {}
+# 		comp_defs['sys_ev'] = tau_gate * self.NV_carbon_system_Hamiltonian()
+# 		comp_defs['sys_ev_2'] = comp_defs['sys_ev']*2
+# 		comp_defs['Xe'] = self.hXe
+# 		comp_defs['Ye'] = self.hYe
+# 		return self.assemble_Ham_list(gate_comps,comp_defs)
+	
+# 	elif return_option == 'ev_mat' or return_option == 'ev_mat_raw':
+
+# 		comp_defs = {}
+# 		comp_defs['sys_ev'] = self.NV_carbon_evolution_matrix(tau_gate)
+# 		comp_defs['sys_ev_2'] = comp_defs['sys_ev']**2
+# 		comp_defs['Xe'] = self.Xe
+# 		comp_defs['Ye'] = self.Ye
+
+# 		if return_option == 'ev_mat':
+# 			return self.assemble_ev_mat(gate_comps,comp_defs)
+# 		else:
+# 			return gate_comps,comp_defs
+	
+# def nuclear_gate_tau(self,tau):
+# 	tau_correction_factor = self.tau_correction_factor if hasattr(self,'tau_correction_factor') else 0
+# 	if tau_correction_factor > tau:
+# 		raise Exception('mw_duration too long!')
+# 	return 0.5*(tau - tau_correction_factor)
+
+# def assemble_ev_mat(self,gate_comps,comp_defs):
+# 	'''Helper function for gate assembly'''
+
+# 	ev_mat = self.e_op(Id) 
+# 	for comp in gate_comps:
+# 		ev_mat = ev_mat*comp_defs[comp]
+# 	return ev_mat
+
+# def assemble_Ham_list(self,gate_comps,comp_defs):
+# 	'''Helper function for gate assembly'''
+# 	Ham_list = []
+# 	for comp in gate_comps:
+# 		Ham_list.append(comp_defs[comp])
+# 	return Ham_list
+
+# def C13_fingerprint_ham_ev(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7)):
+
+# 		exp0 = np.zeros(np.shape(tau_range))
+		
+# 		proj0 = NV_system.e_op(rho0)
+	
+# 		# tlist = np.array([float(np.shape(Ham_list)[0])])
+# 		tlist = np.linspace(0,5,200)
+# 		# for i,tau in enumerate(tlist):
+
+# 		# Ham_list = [NV_system.hmxe] + NV_system.nuclear_gate(N ,tau,return_option = 'Ham_list')  + [NV_system.xe]
+		
+# 		args={'Ham_list' : qutip.sigmax().data}
+# 		exp0 = qutip.mesolve(Hamiltonian_callback , proj0,tlist,[],qutip.sigmaz(),args = args).expect[0]
+
+# 		plt.figure()
+# 		plt.plot(tlist*1e6,exp0)
+# 		plt.title('Signal'); plt.xlabel('Tau')
+# 		plt.ylim([0,1.1])
+# 		plt.show()
+# 		plt.close()
