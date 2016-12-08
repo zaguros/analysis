@@ -1,5 +1,5 @@
 '''
-Script to analyze the dynamical decoupling data
+Undocumented...
 '''
 
 import numpy as np
@@ -181,12 +181,8 @@ def plot_meas_B_loop():
     # plt.xlabel('binned relative Bz (G) (offset 304.21 G)')
     # plt.title('Mean '+str(mean_Bz+304.21)+' G, stdev '+str(stdev_Bz)+' G')
     # plt.savefig('binned_Bz',format='png')
+
 plot_meas_B_loop()
-
-
-
-
-
 # fit_B_msmt_loop(older_than = '20140428101106', newer_than = '20140426092819')
 
 

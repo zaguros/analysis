@@ -14,19 +14,19 @@ from analysis.lib.math import error
 import analysis.scripts.pulse_calibration.calibration_funcs as funcs; reload(funcs)
 
 
-def analyse_pulse_calibration(angle='_pi_1'):
+def analyse_pulse_calibration(angle='_pi_1', timestamp=None, guess_x0 = None):
     ### parameters
-    timestamp = None
-    if angle == '_pi_1':
-        guess_x0 = 0.38
-    elif angle == '_pi_o':
-        guess_x0 = 0.24
-    elif angle == '_pi_p1':
-        guess_x0 = 0.67   
-        angle='_pi_1'     
-    else:
-        guess_x0=0.5
-    msmt_type = 'mbi'
+    if guess_x0 == None:
+        if angle == '_pi_1':
+            guess_x0 = 0.38
+        elif angle == '_pi_o':
+            guess_x0 = 0.24
+        elif angle == '_pi_p1':
+            guess_x0 = 0.67   
+            angle='_pi_1'     
+        else:
+            guess_x0=0.5
+    msmt_type = 'sequence'
 
 
     guess_of = 0.973
@@ -68,5 +68,4 @@ def analyse_pulse_calibration(angle='_pi_1'):
     plt.savefig(os.path.join(folder, 'pulse_calibration.png'),
             format='png')
 
-if __name__ == '__main__':
-    analyse_pulse_calibration(angle='_pi_1')
+

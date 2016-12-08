@@ -9,7 +9,7 @@
 
 ### fitted to the ms = -1 data
 hyperfine_params_pippin_SIL1_msm1 = {}
-hyperfine_params_pippin_SIL1_msm1['C1']  = {'par' : -335e3 , 'perp':312.5e3}
+hyperfine_params_pippin_SIL1_msm1['C1']  = {'par' : -336.6e3 , 'perp':312.5e3}
 hyperfine_params_pippin_SIL1_msm1['C2']  = {'par' : -90e3  , 'perp':122.5e3} 
 hyperfine_params_pippin_SIL1_msm1['C3']  = {'par' : -92.5e3, 'perp':68.8e3}  
 hyperfine_params_pippin_SIL1_msm1['C4']  = {'par' : 22e3,    'perp':25e3}

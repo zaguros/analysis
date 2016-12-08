@@ -19,14 +19,14 @@ guess_offset = 1
 guess_x0 = 2. #central frequency
 #guess_splitB = 30.
 guess_splitN = 2.18e-3
-guess_splitC = 0.4e-3 
+guess_splitC = 0.8e-3 
 guess_width = 0.3e-3
 guess_amplitude = 0.15
 
 def analyze_dark_esr(folder, ax=None, **kw):
     if ax == None:
         fig, ax = plt.subplots(1,1)
-    ssro_calib_folder = toolbox.latest_data(contains='AdwinSSRO_SSROCalibration')
+    ssro_calib_folder = toolbox.latest_data(contains='SSROCalibration')
     print folder
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()

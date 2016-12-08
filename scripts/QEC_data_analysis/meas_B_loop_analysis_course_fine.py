@@ -1,5 +1,5 @@
 '''
-Script to analyze the dynamical decoupling data
+...
 '''
 
 import numpy as np

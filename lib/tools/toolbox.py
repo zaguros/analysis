@@ -12,7 +12,7 @@ import datetime
 try:
     import qt
     datadir = qt.config['datadir']
-    print datadir
+    #print datadir
 except:
     # Added Mac compatibility. Does require data to be saved in correct folder (as below).
     # Added Linux compatibility, as well
@@ -23,7 +23,7 @@ except:
             datadir = r'/Users/'+os.getlogin()+r'/Documents/teamdiamond/data'
     else:
         datadir = r'd:\measuring\data'
-    print datadir
+    #print datadir
 
 def nearest_idx(array, value):
     '''
@@ -76,7 +76,7 @@ def is_older(ts0, ts1):
 
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False,**kw):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -131,7 +131,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
                 if VERBOSE:
-                    print 'Timestamp not valid: ', dstamp,tstamp
+                    print 'Timestamp not valid: ', _timestamp
                 continue
             timestamp = dstamp+tstamp
 
@@ -486,34 +486,82 @@ def set_raw_data(fp, name, data):
     f.flush()
     f.close()        
     
-def set_analysis_data(fp, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
+def set_analysis_data(f, name, data, attributes, subgroup=None, ANALYSISGRP = 'analysis', permissions='r+'):
     """
     Save the data in a subgroup which is set to analysis by default and caries the name
     put in the function. Also saves the attributes.
     """
-    try:
-        f = h5py.File(fp, permissions)
-    except:
-        print "Cannot open file", fp
+        
+    if type(f) == str:
+        try:
+            pqf = h5py.File(f, permissions)
+        except:
+            print "Cannot open file", f
+            raise
+    
+    elif type(f) == h5py._hl.files.File:  
+        if f.mode == 'r':
+            print 'Wrong permissions to write to file!'
+            raise
+        pqf = f
+    else:
+        print 'Unknown argument type'
         raise
 
     try:
-        agrp = f.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
+        agrp = pqf.require_group(ANALYSISGRP + ('/' + subgroup if subgroup!=None else ''))
 
         
         if name in agrp.keys():
             del agrp[name]
         agrp[name] = data
-        f.flush()
+        pqf.flush()
         
         for k in attributes:
             agrp[name].attrs[k] = attributes[k]
             #print agrp[name].attrs[k]
         #    agrp[name].attrs[k] = kw[k]
         
-        f.flush()
-        f.close()        
+        pqf.flush()
+        pqf.close()        
     except:
-        f.close()
+        pqf.close()
         raise
 
+
+
+
+def copy_figure_to_clipboard(fig=None):
+    '''
+    copy a matplotlib figure to clipboard as BMP on windows
+    http://stackoverflow.com/questions/7050448/write-image-to-windows-clipboard-in-python-with-pil-and-win32clipboard
+    '''
+    from cStringIO import StringIO
+    from time import sleep
+
+    from PIL import Image
+    import win32clipboard
+    
+    output = StringIO()
+    # fig.savefig(output, format='bmp') # bmp not supported
+    buf = fig.canvas.buffer_rgba()
+    print len(buf)
+    w = int(fig.get_figwidth() * fig.dpi)
+    print w
+    h = int(fig.get_figheight() * fig.dpi)
+    print h
+    print w*h, len(buf)/(w*h)
+    im = Image.frombuffer('RGBA', (w,h), buf,"raw", 'RGBA', 0, 1)
+    im.convert("RGB").save(output, "BMP")
+    data = output.getvalue()[14:] # The file header off-set of BMP is 14 bytes
+    output.close()
+
+    try:
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        # win32clipboard.SetClipboardData(win32clipboard.CF_BITMAP, data) # did not work!
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data) # DIB = device independent bitmap 
+        win32clipboard.CloseClipboard()
+    except:
+        sleep(0.2)
+        copy2clipboard(fig)

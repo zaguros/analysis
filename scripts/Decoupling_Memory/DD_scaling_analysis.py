@@ -9,12 +9,18 @@ from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 from math import floor, log10
 
-
-
 if os.name == 'posix':
         DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
 else:
     DBdir = r'D:/jcramer3/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+
+DBdir = r'C:/Users/TUD277931/Dropbox/TaminiauLab/Projects/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+
+
+# if os.name == 'posix':
+#         DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/QEC LT/Decoupling memory/XYdata/'
+# else:
+#     DBdir = r'D:/Dropbox/QEC LT/Decoupling memory/XYdata/'
 
 reload(common)
 reload(mbi)
@@ -157,9 +163,19 @@ def DD_scaling_elec(msmts,
 
     plt.close('all')
     
-
     Nlist = [1,2,4,8,16,32,64,128,256,512,1024,2048]
     Nlist_1 = [1,2,4,8,16,32,64,128,256,512,1024,2048]
+    
+    Nlist = [64,128,256,512,1024,2048]
+    Nlist_1 = [64,128,256,512,1024,2048]
+
+    Nlist = [512,1024,2048]
+    Nlist_1 = [512,1024,2048]
+
+    Nlist = [8]
+    Nlist_1 = [8]
+
+
     # Nlist = [1]
     #Nlist = [1,32,1024]
     # decay_constants = [1.*x**0.77 for x in Nlist]
@@ -173,7 +189,8 @@ def DD_scaling_elec(msmts,
     # color = ['r','g','b','m','k','r']
     
     
-    fig = plt.figure(figsize=(7,6))
+    fig = plt.figure(figsize=(10,5))
+    fig5 = plt.figure(figsize=(30,15))
     # mpl.rcParams['axes.linewidth'] = 2
     min_x = 0.01
     max_x = 1000
@@ -187,6 +204,7 @@ def DD_scaling_elec(msmts,
 
 
     ax = fig.add_subplot('111')
+    ax5 = fig5.add_subplot('111')
     # ax3 = fig3.add_subplot(111)
     # p0 = [amplitude, decay_constant, exponent]
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
@@ -215,8 +233,8 @@ def DD_scaling_elec(msmts,
         array[:,1]=array[:,1][sorting_order]
         array[:,2]=array[:,2][sorting_order]
 
-        print array[:,1]
-        print array[:,0]
+        # print array[:,1]
+        # print array[:,0]
         if correct_dips:
             x_old = array[:,0]
             y_old = array[:,1]
@@ -322,10 +340,12 @@ def DD_scaling_elec(msmts,
                 # +', A=' '%.2f' % fit_result['params_dict']['A'] + '+-' + '%.2f' % fit_result['error_dict']['A'],color=color[ii])
                 if N > 1000:
                     ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='N=' + str(N)+ ', T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']) ,color=color[ii])
+                    ax5.plot(x[-1]/(2.0*N),y[-1],'-o',label='N=' + str(N)+ ', T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']) ,color=color[ii])
                     # ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='N=' + str(N)+ ', T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']) + ', A=' + un2str(fit_result['params_dict']['A'], fit_result['error_dict']['A']),color=color[ii])
                 else:
                     # ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='N=' + str(N)+ ',   T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']) + ', A=' + un2str(fit_result['params_dict']['A'], fit_result['error_dict']['A']),color=color[ii])
                     ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='N=' + str(N)+ ',   T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']),color=color[ii])
+                    ax5.plot(x[-1]/(2.0*N),y[-1],'-o', label='N=' + str(N)+ ',   T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']),color=color[ii])
                 print 'HELLO MOTO'
             else:
                 exps.append(fit_result['params_dict']['n'])
@@ -334,6 +354,7 @@ def DD_scaling_elec(msmts,
                 + ', A=' + un2str(fit_result['params_dict']['A'], fit_result['error_dict']['A']) +', n=' + un2str(fit_result['params_dict']['n'], fit_result['error_dict']['n'])
                 label = str(N)
                 ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label=label,color=color[ii])
+                ax5.plot(x[-1]/(2.0*N),y[-1],'-o', label=label,color=color[ii])
                 # if ii == 1:
                 #     ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='New msmt N=2048 T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T'])
                 #     +', n=' + un2str(fit_result['params_dict']['n'], fit_result['error_dict']['n']),color=color[ii])
@@ -369,20 +390,28 @@ def DD_scaling_elec(msmts,
 
     ax.hlines([1.],min_x,max_x,linestyles='dotted', linewidth = 2)
     ax.set_xlim(min_x,max_x)
+    ax5.set_xlim(0,0.3)
     ax.set_ylim(0.4,1.02)
+    ax5.set_ylim(0.4,1.02)
     ax.set_xlabel('Free evolution time (ms)',fontsize = 20)
+    ax5.set_xlabel('Tau (ms)',fontsize = 20)
     ax.set_ylabel('Fidelity',fontsize = 20)
+    ax5.set_ylabel('Fidelity',fontsize = 20)
     ax.tick_params(axis='x', which='major', labelsize=20)
+    ax5.tick_params(axis='x', which='major', labelsize=20)
     ax.tick_params(axis='y', which='major', labelsize=20)
+    ax5.tick_params(axis='y', which='major', labelsize=20)
     # ax.set_xticks([0,1,2,3])
     ax.set_yticks([0.5,0.75,1])
     for axis in ['top','bottom','left','right']:
         ax.spines[axis].set_linewidth(2)
     # plt.legend(loc = 'center left',fontsize = 16, bbox_to_anchor=(1, 0.5))
     # plt.legend(loc = 'center left',fontsize = 15,ncol=2,numpoints = 1,frameon = False,columnspacing=0.5,handletextpad=0.0)
-    plt.legend(loc = 'center left',fontsize = 15,ncol=2,numpoints = 1,frameon = False,columnspacing=0.5,handletextpad=0.0)
+    plt.legend(loc = 'top right',fontsize = 30,ncol=2,numpoints = 1,frameon = False,columnspacing=0.5,handletextpad=0.0)
     
-    plt.savefig(DBdir +'decoherence36dips.pdf', bbox_inches='tight')
+    print 'folder ='
+    print DBdir
+    plt.savefig(DBdir +'DD_vs_Tau_zoom.pdf', bbox_inches='tight')
     # plt.show()
     logx = np.log10(Nlist)
     def fit_func(x, a, b):
@@ -471,12 +500,9 @@ def DD_scaling_elec(msmts,
         ax2.spines[axis].set_linewidth(2)
     plt.savefig(DBdir +'scaling.pdf', bbox_inches='tight')
     plt.show()
-DD_scaling_elec(Elec_Michiel)
+# DD_scaling_elec(Elec_Michiel)
 
-if os.name == 'posix':
-        DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/QEC LT/Decoupling memory/XYdata/'
-else:
-    DBdir = r'D:/Dropbox/QEC LT/Decoupling memory/XYdata/'
+
 
 '''
 [1.75, 1.7909331125784853, 1.7915893653503197, 1.7916008481604302, 1.7916010404628977, 1.7916010388273684, 1.7916010491929206, 1.7916010432247202, 1.7916010386837486, 1.7916010457236426]
