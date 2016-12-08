@@ -36,9 +36,10 @@ def get_SSRO_MWInit_calibration(folder, readout_time,el_state):
 
 def get_SSRO_calibration(folder, readout_time):
     if 'analysis.hdf5' in str(folder):
-        fp = folder
+       fp = folder
     else:
-        fp = os.path.join(folder, 'analysis.hdf5')
+       fp = os.path.join(folder, 'analysis.hdf5')
+
     f = h5py.File(fp, 'r')
 
     times = f['fidelity/time'].value

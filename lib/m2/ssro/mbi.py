@@ -164,10 +164,10 @@ class MBIAnalysis(m2.M2Analysis):
             el_state = self.adgrp.attrs['electron_transition']
             # print 'MWInit, el_state: ' + str(el_state)
 
-        for i in range(len(self.normalized_ssro[0])):
-            roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
-                    ssro.get_SSRO_MWInit_calibration(ssro_calib_folder,
-                            ro_durations[i],el_state)
+            for i in range(len(self.normalized_ssro[0])):
+                roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
+                        ssro.get_SSRO_MWInit_calibration(ssro_calib_folder,
+                        ro_durations[i],el_state)
 
                 p0, u_p0 = roc.num_eval(self.normalized_ssro[:,i],
                         self.u_normalized_ssro[:,i])
