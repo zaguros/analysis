@@ -1,8 +1,8 @@
 """
-This file analyses the extracted data for the Zeno paper.
-Functions are executeable via an ipython notebook. 
+This file provides tools to analyse and plot the extracted data for the Zeno paper.
+Functions are executeable via an ipython/jupyter notebook. 
 It is assumed that the data is stored in pickle files in the folder '\Path_of_the_notebook\ZenData' . 
-Imports the raw data which was extracted by the file TwoQ_Zeno_Analysis_v2.py (see ZenData)
+Imports the data which was extracted by the file TwoQ_Zeno_Analysis_v2.py (see ZenData)
 """
 
 import numpy as np
@@ -1358,3 +1358,38 @@ def Protecting_XX():
 
 	THE_DATA.plot_title = r'$\langle XX \rangle $ averaged over six states'
 	THE_DATA.plot_timetrace(save_plot = True, legend = True,xlim=[0,60],xticks=[0,20,40,60],yticks=[0.0,0.4,0.8])
+
+
+def drive_time_comparison():
+	####
+	# raw data has been analyzed in the 
+	####
+	filename = 'SuppFig2_drive_time_comparison.p'
+
+	pickle_dict = open_data(filename)
+	# print pickle_dict
+
+
+	#### reorder the pickle dict such that if works for 'data_object'
+	### key idea here is that the keylist directly corresponds to label assigned in the plot
+
+	data_dict = {}
+	for msmts in pickle_dict['shifted_proc_fid'].keys():
+
+		data_dict.update({msmts + ' shifted' 	: pickle_dict['shifted_proc_fid'][msmts]})
+		data_dict.update({msmts + ' unshifted' : pickle_dict['unshifted_proc_fid'][msmts]})
+
+
+	THE_DATA = data_object("SuppM_Fig2_drive_time_comparison",data_dict,avg_fid = True)
+
+	THE_DATA.contrast = False
+	THE_DATA.use_fixed = False
+
+	THE_DATA.fit_offset = 0.0 ### force the gaussian to decay to 0.
+
+	THE_DATA.physical_model_fit = False
+	THE_DATA.pheno_physical_mode_fit = False
+	THE_DATA.set_do_fit(False)
+
+	THE_DATA.plot_timetrace(save_plot = True, legend = True,xlim=[0,60],xticks=[0,20,40,60],yticks=[0.55,0.7,0.85],ylabel = 'Average state fidelity',legend_ncol = 1)
+

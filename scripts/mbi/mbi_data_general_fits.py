@@ -49,13 +49,14 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
                 ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
             print 'starting fit.fit1d'
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+            fit_result['y_u'] = a.u_p0.reshape(-1)[:]
         elif len(frequency) == 2:
             p0, fitfunc, fitfunc_str = common.fit_gaussian_decaying_2cos(offset[0],amplitude[0],decay_constant[0],amplitude[0],
                 frequency[0],  phase[0], amplitude[1], frequency[1],  phase[1])
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
-
+            fit_result['y_u'] = a.u_p0.reshape(-1)[:]
             ### Also plot the individual curves
 
             # p0_0, fitfunc_0, fitfunc_str_0 = common.fit_double_decaying_cos(fit_result['params'][0], 0, phase[0], fit_result['params'][2], fit_result['params'][3], fit_result['params'][4], phase[1], fit_result['params'][5])

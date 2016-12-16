@@ -84,7 +84,7 @@ def create_plot(f,**kw):
     title = kw.pop('title',None)
 
     fig = plt.figure()
-    ax = plt.subplot()
+    ax = plt.subplot(111)
 
     if xlabel != None:
         plt.xlabel(xlabel)
@@ -260,23 +260,23 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
         contains = '_sweep_number_of_reps_'+contains
 
 
-	# older_than = kw.get('older_than',None) automatically handled by kws
-	### acquire data
-	f = toolbox.latest_data(contains,**kw)
-	a = mbi.MBIAnalysis(f)
-	
-	if '_Z' in f:
-		x,y,y_u = get_pos_neg_data(a,adwindata_str = 'Z_',**kw)
-		ylabel = 'Z'
-	else:
-		x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
-		if x_only:
-			y = y1; y_u = y1_u;
-			ylabel = 'X'
-		else:
-			x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
-			y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
-			ylabel = 'Bloch vector length'
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains,**kw)
+    a = mbi.MBIAnalysis(f)
+    
+    if '_Z' in f:
+        x,y,y_u = get_pos_neg_data(a,adwindata_str = 'Z_',**kw)
+        ylabel = 'Z'
+    else:
+        x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
+        if x_only:
+            y = y1; y_u = y1_u;
+            ylabel = 'X'
+        else:
+            x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
+            y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
+            ylabel = 'Bloch vector length'
 
 
 
@@ -353,6 +353,50 @@ def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
         print row_format.format(el+' |', *row)
 
 
+
+
+def el_to_c_swap_success(contains = '',input_el=['Z'], do_fit = False, **kw):
+    '''
+    gets data from a folder whose name contains the contains variable.
+    Does or does not fit the data with a gaussian function
+    '''
+
+    ### folder choice
+    if contains == '':
+        contains = 'SwapSuccess_el_to_C'
+
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains,**kw)
+    a = mbi.MBIAnalysis(f)
+    print 'this is the timestamp ',get_tstamp_from_folder(f)
+
+    # data = np.empty([3,len(input_el)],dtype=str)
+    data = []
+    for i in range(len(input_el)):
+        data.append([0,0,0])
+    for ii,el in enumerate(input_el):
+        # data.append([0,0,0])
+        data_strings = []
+        ro_str = 'el_state_'+el
+
+        a.get_readout_results(name = ro_str, CR_after_check=CR_after_check)
+        y = a.normalized_ssro[0]
+        y_u = a.u_normalized_ssro[0]
+        y = np.round(y,decimals = 2)
+        y_u = np.round(y_u,decimals=2)
+        
+        ### put output string together
+        for jj,res,res_u in zip(range(3),y,y_u):
+            data[ii][jj] = cp.deepcopy(str(res) + " +/- "+ str(res_u))
+
+    row_format ="{:>18}" * (2)
+    for el, row in zip(input_el, data):
+        print "--------------------------------------------------------------------------------------------------"
+        print row_format.format(el+' |', *row)
+
+
+
 def phase_offset_after_LDE(contains = '', **kw):
     '''
     gets data from a folder whose name contains the contains variable.
@@ -400,14 +444,15 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
         contains = 'LDE_phase_calibration'
 
 
-	# tomography 
-	tomo = kw.pop('tomo_basis','X')
-	# return fit
-	ret = kw.pop('ret', False)
-	# for fitting
-	freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
-	decay = kw.pop('decay',50)
-	phi0 = kw.pop('phi0',0)
+    # tomography 
+    tomo = kw.pop('tomo_basis','X')
+    # return fit
+    ret = kw.get('ret', False)
+    # for fitting
+    freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
+    decay = kw.pop('decay',50)
+    phi0 = kw.pop('phi0',0)
+    post_select_e_outcome = kw.pop('post_select_e_outcome',False)
 
     fixed = kw.pop('fixed', [1])
     show_guess = kw.pop('show_guess', False)
@@ -419,7 +464,11 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
     
     ro_array = ['positive','negative']
     # print ro_array
-    x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,**kw)
+    if tomo == '':
+        adwindata_str = tomo
+    else:
+        adwindata_str = tomo+'_'
+    x,y,y_u = get_pos_neg_data(a,adwindata_str = adwindata_str,ro_array = ro_array,**kw)
     ylabel = tomo
 
     ### create a plot
@@ -442,9 +491,9 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
             # print decay
             ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-		fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True,VERBOSE =True, fixed = fixed)
+        fit_result = fit.fit1d(x,y,None,p0 = p0, fitfunc = fitfunc, do_print = True, ret = True,VERBOSE =True, fixed = fixed)
 
-		plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, color = 'r', plot_data=False,add_txt = True, lw = 2)
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax, color = 'r', plot_data=False,add_txt = True, lw = 2)
 
         p_dict = fit_result['params_dict']
         e_dict = fit_result['error_dict']
@@ -464,9 +513,9 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
         ## save and close plot. We are done.
     if post_select_e_outcome:
         print 'and here is where i would post select the data'
-        x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,eRO_post_select = 0,**kw)
+        x,y,y_u = get_pos_neg_data(a,adwindata_str = adwindata_str,ro_array = ro_array,eRO_post_select = 0,**kw)
         plot_data(x,y,y_u=y_u,label = 'dark')
-        x,y,y_u = get_pos_neg_data(a,adwindata_str = tomo+'_',ro_array = ro_array,eRO_post_select = 1,**kw)
+        x,y,y_u = get_pos_neg_data(a,adwindata_str = adwindata_str,ro_array = ro_array,eRO_post_select = 1,**kw)
         plot_data(x,y,y_u=y_u,label = 'bright')
         plt.legend()
 
