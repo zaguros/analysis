@@ -134,6 +134,34 @@ def fit_ramsey_hyperfinelines_fixed_6cos(g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_ramsey_hyperfinelines_fixed_6sin(g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C):
+    """
+    fitfunction for a gaussian decay,
+        y(x) = a + A*exp(-(x/tau)**2)
+
+    Initial guesses (in this order):
+        g_tau : decay constant
+        g_A : amplitude
+        g_a : offset
+    """
+    
+    tau = fit.Parameter(g_tau, 'tau')
+    A = fit.Parameter(g_A, 'A')
+    a = fit.Parameter(g_a, 'a')
+    det = fit.Parameter(g_det, 'det')
+    hf_N = fit.Parameter(g_hf_N, 'hf_N')
+    hf_C = fit.Parameter(g_hf_C, 'hf_C')
+    # phi1 = fit.Parameter(g_phi1, 'phi1')
+    # phi2 = fit.Parameter(g_phi2, 'phi2')
+    # phi3 = fit.Parameter(g_phi3, 'phi3')
+    p0 = [tau,A,a,det,hf_N,hf_C]
+    fitfunc_str = 'sumf of six sin and decay'
+
+    def fitfunc(x): 
+        return a() + A()*exp(-(x/tau())**2) * (sin(2*pi*(det()+hf_C())*x)+(sin(2*pi*(det()-hf_C())*x)+sin(2*pi*(det()+hf_N()+hf_C())*x)+sin(2*pi*(det()+hf_N()-hf_C())*x)+sin(2*pi*(det()-hf_N()+hf_C())*x)+sin(2*pi*(det()-hf_N()-hf_C())*x)))/6.
+
+
+    return p0, fitfunc, fitfunc_str
 
 def fit_ramsey_14N_fixed_13C_opt(g_tau, g_A, g_a,g_det,g_hf_N,g_phi1,g_phi2,g_phi3, *arg):
     """
