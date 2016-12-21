@@ -683,8 +683,6 @@ class purify_analysis(object):
 
             i += 1
 
-    
-
     def correlate_RO_results(self,apply_ROC = False, verbose = True,return_value = False):
 
         self.RO_data_LT3_plus = []
@@ -931,7 +929,7 @@ class purify_analysis(object):
         """
 
         if np.sum(np.logical_not(np.in1d(filtered_sn,counted_awg_reps))) != 0:
-                    print 'Connecting pq syncs to adwin data seems to be going wrong!'
+            print 'Connecting pq syncs to adwin data seems to be going wrong!'
 
         # print 'elen', len(filtered_sn)
         insert_pos = np.searchsorted(counted_awg_reps,filtered_sn)
@@ -1669,25 +1667,6 @@ class purify_analysis(object):
         """
         pass
 
-
-    # def format_figure(fig,scaling):
-    #     ## writes a bunch of parameters to matplotlib config.
-    #     ## input: effective figure scaling factor
-    #     mpl.rcParams['axes.linewidth'] = 1.8*figscaling
-    #     mpl.rcParams['xtick.major.width'] = 1.8*figscaling
-    #     mpl.rcParams['ytick.major.width'] = 1.8*figscaling
-    #     mpl.rcParams['font.size'] = (22-8*(figscaling-0.66*0.72)/(1-0.66*0.72))*figscaling
-    #     mpl.rcParams['axes.titlesize'] = mpl.rcParams['font.size']
-    #     mpl.rcParams['legend.fontsize'] = mpl.rcParams['font.size']
-    #     mpl.rcParams['legend.labelspacing'] = 0.5*figscaling
-    #     mpl.rcParams['legend.columnspacing'] = 1.5*figscaling
-    #     mpl.rcParams['legend.handletextpad'] = 0.3*figscaling
-    #     mpl.rcParams['legend.handlelength'] = 1.*figscaling
-    #     mpl.rcParams['legend.borderpad'] = 0.2+0.2*(figscaling-0.66*0.72)/(1-0.66*0.72)
-    #     mpl.rcParams['lines.markersize'] = 13.5*figscaling#7*figscaling 
-    #     mpl.rcParams['figure.figsize'] = (6*figscaling,4*figscaling)
-    #     mpl.rcParams['lines.markeredgewidth'] = 0.3/figscaling
-
     ###########################################
     #### Misc functions not in class obj   ####
     ###########################################
@@ -1991,8 +1970,8 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     plt.show()
 
 
-############################################################
-### reloading bound methods without affecting attirbutes ###
-############################################################
+########################################################################################
+### reloading bound methods for class instances without affecting current attributes ###
+########################################################################################
 # note this can be done via weak references. See e.g. stackoverflow
 # http://stackoverflow.com/questions/1080669/in-python-how-do-you-change-an-instantiated-object-after-a-reload

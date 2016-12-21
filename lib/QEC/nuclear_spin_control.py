@@ -99,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-def deleted_by_accident_by_someone():
+def get_C13_hyperfine_params(carbon_nrs,ms = '+1'):
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -298,6 +298,133 @@ def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = 
     gate_id = gate_0_id+gate_1_id
 
     return gate, gate_id
+
+
+########################################
+### Simulations of ideal C13 readout ###
+########################################
+
+def simulate_readout():
+
+    ## Parameters:
+    ancilla1_init = rho0 ## changes XX and YY readout?
+    ancilla2_init = rho0
+
+    qubit1_orientation = 'pos' ## changing this changes the XX and YY readouts
+    qubit2_orientation = 'pos' ## changing this changes the XX and YY readouts
+
+    qubit1_precession = 'pos' ## Changes YY and ZZ readouts
+    qubit2_precession = 'pos' ## Chanes YY and ZZ readouts
+
+    ## Step 1: define initial states, defintion = ancilla1, ancilla2, qubit1, qubit2
+    rho00 = qutip.tensor(ancilla1_init, ancilla2_init,rho0,rho0)       
+    rho01 = qutip.tensor(ancilla1_init, ancilla2_init,rho0,rho1)       
+    rho10 = qutip.tensor(ancilla1_init, ancilla2_init,rho1,rho0)       
+    rho11 = qutip.tensor(ancilla1_init, ancilla2_init,rho1,rho1)       
+
+    rhoxx = qutip.tensor(ancilla1_init, ancilla2_init,rhox,rhox)       
+    rhoyy = qutip.tensor(ancilla1_init, ancilla2_init,rhoy,rhoy)       
+
+    ket_psi_plus = (qutip.tensor(ancilla1_init, ancilla2_init,ket0,ket0)
+                   +qutip.tensor(ancilla1_init, ancilla2_init,ket1,ket1))*1/np.sqrt(2)
+    rho_psi_plus = ket_psi_plus*ket_psi_plus.dag()    
+
+
+    # rho_init = rho00 
+    # rho_init = rhoxx 
+    rho_init = rhoyy 
+    rho_init = rho00 
+    # rho_init = rho_psi_plus
+
+
+
+    ## Step 2: Define gates
+        ## Ancilla/electron gates
+    xel1     = qutip.tensor(x,Id,Id,Id)
+    mxel1    = qutip.tensor(mx,Id,Id,Id)
+    yel1     = qutip.tensor(y,Id,Id,Id)
+    myel1    = qutip.tensor(my,Id,Id,Id)
+
+    xel2     = qutip.tensor(Id,x,Id,Id)
+    mxel2    = qutip.tensor(Id,mx,Id,Id)
+    yel2     = qutip.tensor(Id,y,Id,Id)
+    myel2    = qutip.tensor(Id,my,Id,Id)
+
+        ## single qubit gates
+    z_qubit1 = qutip.tensor(Id,Id,z,Id)
+    mz_qubit1 = qutip.tensor(Id,Id,mz,Id)
+    z_qubit2 = qutip.tensor(Id,Id,Id,z)
+    mz_qubit2 = qutip.tensor(Id,Id,Id,mz)
+
+        ## Two qubit gates
+    Ren_pos_1 = qutip.tensor(rho0,Id,x,Id) +qutip.tensor(rho1,Id,mx,Id)
+    Ren_neg_1 = qutip.tensor(rho0,Id,mx,Id)+qutip.tensor(rho1,Id,x,Id)
+
+    Ren_pos_2 = qutip.tensor(Id,rho0,Id,x)+qutip.tensor(Id,rho1,Id,mx)
+    Ren_neg_2 = qutip.tensor(Id,rho0,Id,mx)+qutip.tensor(Id,rho1,Id,x)
+
+    ## Step 3: Choose actual gates
+    if qubit1_orientation == 'pos':
+        Ren_1 = Ren_pos_1
+    elif qubit1_orientation == 'neg':
+        Ren_1 = Ren_neg_1
+
+    if qubit2_orientation == 'pos':
+        Ren_2 = Ren_pos_2
+    elif qubit2_orientation == 'neg':
+        Ren_2 = Ren_neg_2
+
+    if qubit1_precession == 'pos':
+        z_rot1 = z_qubit1
+    elif qubit1_precession == 'neg':
+        z_rot1 = mz_qubit1
+
+    if qubit2_precession == 'pos':
+        z_rot2 = z_qubit2
+    elif qubit2_precession == 'neg':
+        z_rot2 = mz_qubit2
+
+    ## Step 4: define sequences
+        ## Qubit 1
+    sequenceX1 = xel1 * Ren_1 * yel1                                     ## X readout
+    sequenceY1 = xel1 * Ren_1 * yel1 * z_rot1                            ## Y readout
+    if ancilla1_init == rho0: 
+        sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * z_rot1 * z_rot1 * Ren_1  ## Z readout
+        sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * Ren_1  ## Z readout
+    elif ancilla1_init == rho1: 
+        sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * Ren_1  ## Z readout
+
+        ## Qubit 2
+    sequenceX2 = xel2 * Ren_2 * yel2                                     ## X readout
+    sequenceY2 = xel2 * Ren_2 * yel2 * z_rot2                            ## Y readout
+    if ancilla2_init == rho0: 
+        sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * z_rot2 * z_rot2 * Ren_2  ## Z readout
+        sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * Ren_2  ## Z readout
+    elif ancilla2_init == rho1: 
+        sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * Ren_2  ## Z readout
+
+    ## Step 5: apply sequences
+
+        ## XX
+    rho_final_XX = sequenceX1*sequenceX2 * rho_init * sequenceX2.dag()*sequenceX1.dag()
+        ## YY
+    rho_final_YY = sequenceY1*sequenceY2 * rho_init * sequenceY2.dag()*sequenceY1.dag()
+        ## YY
+    rho_final_ZZ = sequenceZ1*sequenceZ2 * rho_init * sequenceZ2.dag()*sequenceZ1.dag()
+
+    # ## Step 6: electron states only
+
+    rho_el_XX = rho_final_XX.ptrace([0,1])
+    rho_el_YY = rho_final_YY.ptrace([0,1])
+    rho_el_ZZ = rho_final_ZZ.ptrace([0,1])
+
+    return rho_el_ZZ, rho_el_XX, rho_el_YY
+
+
+
+
+
+
 
 ###################
 ### Pauli Sets ###

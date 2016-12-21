@@ -67,7 +67,7 @@ class oscilloscope_analysis():
         else:
             x = np.arange(len(y))
 
-        mod = np.asarray(data['3'])
+        mod = np.asarray(data['mod'])
         self.mod = mod[x_min:x_max]
         self.x=x[x_min:x_max]
         self.y=y[x_min:x_max]
@@ -305,6 +305,7 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
     function that fits the resonances in an oscilloscope trace.
     for particularly noisy/'vibrating' data, it uses a first fit to put the resonance to the middle of the windows
     TODO: improve -> instead of fitting twice, use the highest point in the first window for the middle of the second window 
+                    -> have a noisy / clean data option for LT / RT measurements
     '''
     oa_single = oscilloscope_analysis(indir=indir,filename=filename)
 

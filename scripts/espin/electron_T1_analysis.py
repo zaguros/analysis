@@ -19,7 +19,7 @@ def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 0.1,
     if timestamp != None:
         folder = toolbox.data_from_time(timestamp)
     else:
-        folder = toolbox.latest_data('T1')
+        folder = toolbox.latest_data('ElectronT1')
 
     fit_results = []
     for k in range(0,len(measurement_name)):
@@ -33,7 +33,7 @@ def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 0.1,
         x = a.sweep_pts
         p0, fitfunc, fitfunc_str = common.fit_exp_decay_with_offset(offset, Amplitude, T1)
         y = a.p0
-        print y
+        #print y
         fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True)
         plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
         fit_results.append(fit_result)
@@ -45,6 +45,8 @@ def electron_T1_anal(timestamp=None, measurement_name = ['ms0'],Amplitude = 0.1,
 
 
     return fit_results
+
+
 
 def get_T1_data(folder):
     a = sequence.SequenceAnalysis(folder)

@@ -43,10 +43,12 @@ class CavitySims ():
         else:
             print 'Please give a valid parameter set!!! '
 
+
         self.A_tot = np.sum(self.A)
         self.epsilon = self.A/self.A_tot #relative strength transitions
         self.gamma_relative = self.gamma_tot*self.epsilon
         self.dfreq = self.freq-self.freq[0]
+        self.calc_bare_rates(bare_branchingratio=0.03) #calcualtes the rates into ZPL and PSB from gamma_tot and the bare_branchingratio (default: 0.03)
 
         # print 'brancing ratio ZPL to rest:',self.epsilon[0]
         print 'lifetime excited state:',str(round(1/self.gamma_tot*1.e9,1)),'ns'
@@ -113,7 +115,7 @@ class CavitySims ():
         self.gamma_star = value       
 
     def set_Q (self, value):
-        self.finesse = self.Q_to_finesse(value, self.FSR, self.freq[0])
+        self.finesse = self.Q_to_finesse(value, self.FSR, self.frequency_cav)
 
     def get_finesse(self):
         return self.finesse
@@ -150,15 +152,19 @@ class CavitySims ():
         self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
 
         """
-        wavelength = kw.pop('wavelength', self.wavelength_ZPL)
-        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
+        wavelength = kw.pop('wavelength', self.wavelength_cav)
+        #self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
+        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)/n_diamond
+
         return self.waist
 
     def calc_mode_volume(self):
         """
         self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
         """
-        self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
+        self.mode_volume = (np.pi*((0.5*self.waist)**2)*self.optical_length/n_diamond)#/(n_diamond**3)
+
+        self.mode_volume = (np.pi*((0.5*self.waist)**2)*(self.cavity_length+self.diamond_thickness))#to really calculate the physical mode volume
         return self.mode_volume
 
 
@@ -192,16 +198,24 @@ class CavitySims ():
         """
         Input:
         wavelength - wavelength of the light in the cavity; default: self.wavelength_ZPL
+        dipole_orientation - orientation of the dipole w.r.t. cavity field, in degrees
+        spatial_mismatch - the amount by which the NV is not in the cavity maximum, in lambda.
         Uses:
         gamma_tot   - the total decay rate of the excited state  (1/lifetime)
         mode volume - the mode volume of the cavity 
         output:
         self.g = np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
         """
+        dipole_orientation = kw.pop('dipole_orientation', 0.)
+        spatial_mismatch = kw.pop('spatial_mismatch',0.)
         wavelength = kw.pop('wavelength', self.wavelength_ZPL)
 
         #albrecht et al:
-        self.g = np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
+
+        orientation_factor= (math.cos(math.pi/180.*dipole_orientation))
+        spatial_overlap = math.cos(2*math.pi*spatial_mismatch)
+        #print orientation_factor,spatial_overlap
+        self.g = orientation_factor*spatial_overlap*np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
         #kaupp et al (scaling laws)
         #self.g = np.sqrt((3.*math.pi*c*(wavelength**2)*self.gamma_tot)/(2.*self.mode_volume))
         #note that for an accurate treatment, we should perhaps use n_diamond in here. (mu~1/sqrt(n)()
@@ -221,48 +235,175 @@ class CavitySims ():
         return self.g_i
 
 
-    def calc_purcell_factor_air(self, **kw):
+    def find_nearest(self, array,value):
+        idx = (np.abs(array-value)).argmin()
+        return idx, array[idx]
+
+    def calc_Fcav(self, **kw):
         """
-        Function that calculates the 'naive' version of the Purcell factor, 
+        Function that calculates the cavity Purcell factor, 
+        using the 'standard' Purcell factor formula (nd=1)
+        assuming an emitter with infinitely narrow linewidth
+        Input:
+        mode volume
+        Q
+        Output:
+        purcell factor (for a cavity with air) 
+        """
+        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.frequency_cav))
+        mode_volume = kw.pop('mode_volume', self.mode_volume)
+        wavelength_cav = kw.pop('wavelength_cav', self.wavelength_cav)
+
+        self.Fcav = 3. * Q * (wavelength_cav/n_diamond)**3. / (4.*math.pi**2 * mode_volume) 
+        return self.Fcav
+
+    def calc_Fcav_air(self, **kw):
+        """
+        Function that calculates the cavity Purcell factor, 
         for the 'air modes' as in Janitz et al.,
         assuming an emitter with infinitely narrow linewidth
         Input:
         mode volume
-        wavelength
         Q
         Output:
-        purcell factor (for a cavity with diamond) 
+        purcell factor (for a cavity with air) 
         """
-        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.freq[0]))
-        wavelength = kw.pop('wavelength', self.wavelength_ZPL)
+        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.frequency_cav))
         mode_volume = kw.pop('mode_volume', self.mode_volume)
+        wavelength_cav = kw.pop('wavelength_cav', self.wavelength_cav)
 
-        self.naive_FpA = 3. * Q * (wavelength)**3. / n_diamond**3. /(4.*math.pi**2 * mode_volume) 
-        return self.naive_FpA
-        # naive_Fp2= 4.*((g)**2)/(self.k*gamma_tot)
-        # naive_Fp3 = 3. * Q * (wavelength)**3. / (4.*(math.pi**2) * mode_volume) 
+        self.Fcav_air = 3. * Q * (wavelength_cav)**3. / n_diamond**3. /(4.*math.pi**2 * mode_volume) 
+        #print 'old F a = ',self.Fcav_air 
+        self.Fcav_air = self.finesse*6*(wavelength_cav)**2/ (n_diamond**3.*math.pi**3*self.waist**2)
+        #self.Fcav_air = self.finesse*6*(wavelength_cav)**2/ (n_diamond**3.*math.pi**3*(self.waist/n_diamond)**2)
+        #self.Fcav_air = self.finesse*6*(wavelength_cav)**2/ (n_diamond**3.*math.pi**3*self.waist**2)*n_diamond#SvD: I add n_diamond, because I think it could be that this does not cancel out in the length dependency.. ??
 
+        #print 'new F a = ',self.Fcav_air 
+        return self.Fcav_air
 
-    def calc_purcell_factor_diamond(self, **kw):
+    def calc_Fcav_diamond(self, **kw):
         """
-        Function that calculates the 'naive' version of the Purcell factor,
+        Function that calculates the cavity Purcell factor,
         for the 'diamond modes' as in Janitz et al.,
         assuming an emitter with infinitely narrow linewidth
         Input:
         mode volume
-        wavelength
         Q 
         Output:
         purcell factor (for a cavity with diamond) 
         """
-        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.freq[0]))
-        wavelength = kw.pop('wavelength', self.wavelength_ZPL)
+        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.frequency_cav))
         mode_volume = kw.pop('mode_volume', self.mode_volume)
+        wavelength_cav = kw.pop('wavelength_cav', self.wavelength_cav)
 
-        self.naive_FpD = 3. * Q * (wavelength)**3. /(n_diamond**3 - n_diamond)  /(4.*math.pi**2 * mode_volume) 
-        return self.naive_FpD
+        #self.Fcav_diamond = 3. * Q * (wavelength_cav)**3. /(n _diamond**3 + n_diamond)  /(4.*math.pi**2 * mode_volume) 
+        #print 'old F d = ',self.Fcav_diamond 
+        self.Fcav_diamond = self.finesse*12*wavelength_cav**2/((n_diamond**3+n_diamond)*math.pi**3*self.waist**2)
+        #self.Fcav_diamond = self.finesse*12*self.wavelength_cav**2/((n_diamond**3+n_diamond)*math.pi**3*(self.waist/n_diamond)**2)
+        #self.Fcav_diamond = self.finesse*12*wavelength_cav**2/((n_diamond**3+n_diamond)*math.pi**3*self.waist**2)*n_diamond
+
+        #print 'new F d = ',self.Fcav_diamond 
+
+        return self.Fcav_diamond
+
+
+    def calc_purcell_factor(self,**kw):
+        """
+        Function that calculates the 'standard' version of the Purcell factor,
+        assuming an emitter with infinitely narrow linewidth
+        Input:
+        type - air or diamond
+        mode volume
+        wavelength
+        dipole_orientation (in degrees)
+        spatial_mismatch (in lambda)
+        Q 
+        Output:
+        purcell factor
+        """
+        wavelength_ZPL = kw.pop('wavelength_ZPL', self.wavelength_ZPL)
+        wavelength_cav = kw.pop('wavelength_cav', self.wavelength_cav)
+        mode_volume = kw.pop('mode_volume', self.mode_volume)
+        Q = kw.pop('Q',self.finesse_to_Q(self.finesse,self.FSR,self.frequency_cav))
+
+        dipole_orientation = kw.pop('dipole_orientation', 0.)#in degrees
+        spatial_mismatch = kw.pop('spatial_mismatch',0.)#in lambda
+        mode_type = kw.pop('mode_type','air')
+        use_spectral_overlap = kw.pop('use_spectral_overlap',True)
+
+        orientation_factor= np.abs(math.cos(math.pi/180.*dipole_orientation))**2
+        spatial_overlap = np.abs(math.cos(2*math.pi*spatial_mismatch))**2
+        #print orientation_factor
+        #print spatial_overlap
+        #orientation_factor= (math.cos(math.pi/180.*dipole_orientation))
+        #spatial_overlap = math.cos(2*math.pi*spatial_mismatch)
+        if use_spectral_overlap:
+            spectral_overlap = 1./(1.+4*(Q**2)*((wavelength_ZPL/wavelength_cav)-1.)**2)
+        else:
+            spectral_overlap=1.
+        #print 'spectral_overlap',spectral_overlap
+
+        if mode_type == 'air':
+            Fcav = self.Fcav_air
+            #print 'use Fcav air:', Fcav
+        elif mode_type == 'diamond':
+            Fcav = self.Fcav_diamond
+        elif mode_type=='standardcav':
+            Fcav = self.Fcav
+            #print 'use Fcav diamond:', Fcav
+        else:
+            print 'WARNING: no valid type selected for calculating purcell factor'
+
+        Fp = orientation_factor*spatial_overlap*spectral_overlap*Fcav
+        return Fp
         # naive_Fp2= 4.*((g)**2)/(self.k*gamma_tot)
         # naive_Fp3 = 3. * Q * (wavelength)**3. / (4.*(math.pi**2) * mode_volume) 
+
+    def calc_bare_rates(self,**kw):
+        """
+        Function that calculates the bare gamma_ZPL and gamma_PSB from the NV lifetime
+        use: gamma_tot = gamma_PSB+gamma_ZPL
+        and: branchingratio = gamma_ZPL/gamma_tot = 0.03
+        """
+        bare_branchingratio = kw.pop('bare_branchingratio',0.03)
+        print 'bare branching ratio',bare_branchingratio
+        self.bare_gamma_ZPL = bare_branchingratio*self.gamma_tot
+        self.bare_gamma_PSB = self.gamma_tot - self.bare_gamma_ZPL
+        print 'total rate (MHz)', self.gamma_tot*1.e-6
+        print 'ZPL, PSB rates (MHz)',self.bare_gamma_ZPL*1.e-6,self.bare_gamma_PSB*1.e-6
+        print 'total lifetime', 1.e9/self.gamma_tot
+        print 'ZPL,PSB \'lifetimes\' (ns)', 1.e9/self.bare_gamma_ZPL,1.e9/self.bare_gamma_PSB
+        return self.bare_gamma_ZPL, self.bare_gamma_PSB
+
+    def calc_branching_ratio_standardcav(self,**kw):
+        """
+        Function that calculates the branching ratio from the Purcell factor
+        """
+        self.mod_branchingratio = (1.+self.Fp)*self.bare_gamma_ZPL/((1.+self.Fp)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+        return self.mod_branchingratio
+
+    def calc_branching_ratio_airmode(self,**kw):
+        """
+        Function that calculates the branching ratio from the Purcell factor
+        """
+        self.mod_branchingratio_A = (1.+self.FpA)*self.bare_gamma_ZPL/((1.+self.FpA)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+        return self.mod_branchingratio_A
+
+    def calc_branching_ratio_diamondmode(self,**kw):
+        """
+        Function that calculates the branching ratio from the Purcell factor
+        """
+        self.mod_branchingratio_D = (1.+self.FpD)*self.bare_gamma_ZPL/((1.+self.FpD)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+        return self.mod_branchingratio_D
+
+    def calc_lifetime_standardcav(self,**kw):
+        self.mod_lifetime = 1./((1.+self.Fp)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+
+    def calc_lifetime_airmode(self,**kw):
+        self.mod_lifetime_A = 1./((1.+self.FpA)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+
+    def calc_lifetime_diamondmode(self,**kw):
+        self.mod_lifetime_D = 1./((1.+self.FpD)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
 
     def calc_level_energies(self):
         """
@@ -315,18 +456,24 @@ class CavitySims ():
 
         return self.long_modes_lambda, self.long_modes_freq
 
+    def find_nearest_cav_mode(self):
+        modes_lambda, modes_freq = self.calc_longitudinal_cav_modes(reference = 'cavity_length')
+        i,self.wavelength_cav = self.find_nearest(modes_lambda,self.wavelength_ZPL)
+        self.frequency_cav = c/self.wavelength_cav
+        return self.wavelength_cav,self.frequency_cav
 
 
     def calculate_derived_params (self, verbose=False,**kw):
         self.calc_optical_length()    
         if (self.optical_length>self.radius_curvature-2e-6):
             print "WARNING: Cavity is unstable!", self.optical_length,'>',self.radius_curvature-2e-6 
-   
-        self.calc_waist(**kw)
-        self.calc_mode_volume()
 
         self.calc_FSR()
         self.calc_longitudinal_cav_modes(**kw)
+        self.find_nearest_cav_mode()
+
+        self.calc_waist(**kw)
+        self.calc_mode_volume()
 
         # calculate the cavity decay rate
         self.calc_k()
@@ -338,8 +485,21 @@ class CavitySims ():
         self.calc_gamma()
 
         #calculate_naive_pUrcell factors
-        self.calc_purcell_factor_air()
-        self.calc_purcell_factor_diamond()
+        self.calc_Fcav()
+        self.Fp=self.calc_purcell_factor(mode_type='standardcav',**kw)
+        self.calc_branching_ratio_standardcav(**kw)
+        self.calc_lifetime_standardcav()        
+
+        self.calc_Fcav_air()
+        self.FpA = self.calc_purcell_factor(mode_type='air',**kw)
+        self.calc_branching_ratio_airmode(**kw)
+        self.calc_lifetime_airmode()
+
+        self.calc_Fcav_diamond()
+        self.FpD = self.calc_purcell_factor(mode_type='diamond',**kw)
+        self.calc_branching_ratio_diamondmode(**kw)
+        self.calc_lifetime_diamondmode()
+
 
         self.calculate_detuning()
 
@@ -433,8 +593,83 @@ class CavitySims ():
             plt.ylabel ('probability of emission in the mode')
             plt.xlabel ('wavelength [nm]')
             plt.show()
+
+    def plot_branching_ratio_vs_cavity_length(self,min_val=0, max_val=20000, nr_points=201, **kw):
+        sweep_vals = np.linspace (min_val, max_val, nr_points)
+        branchingratio = np.zeros(nr_points)
+        branchingratio_A = np.zeros(nr_points)
+        branchingratio_D = np.zeros(nr_points)
+
+        for i,p in enumerate(sweep_vals):
+            self.set_cavity_length(p*1.e-6)
+
+            self.calculate_derived_params(**kw)
+            #print self.FpA
+            #print self.FpD
+            branchingratio[i] =self.mod_branchingratio
+            branchingratio_A[i] = self.mod_branchingratio_A
+            branchingratio_D[i] = self.mod_branchingratio_D
+
+        fig = plt.figure (figsize=(8,6))
+        ax = fig.add_subplot(111)
+
+        ax.plot(sweep_vals, branchingratio, color = 'Blue', linewidth = 4, label = 'branching ratio standard cav') 
+        #ax.plot(sweep_vals, branchingratio_A, color = 'DarkViolet', linewidth = 4, label = 'branching ratio airmode') 
+        #ax.plot(sweep_vals, branchingratio_D, color = 'Cyan', linewidth = 4, label = 'branching ratio diamondmode') 
+        ax.legend()
+        ax.set_xlabel('caivty length (um)', fontsize = 20)
+        ax.set_ylabel('branching ratio', fontsize = 20)
+        return sweep_vals, branchingratio, branchingratio_A, branchingratio_D,ax
             
-    
+    def plot_branching_ratio_vs_finesse(self,min_val=0, max_val=20000, nr_points=201, **kw):
+        sweep_vals = np.linspace (min_val, max_val, nr_points)
+        branchingratio = np.zeros(nr_points)
+        branchingratio_A = np.zeros(nr_points)
+        branchingratio_D = np.zeros(nr_points)
+
+        for i,p in enumerate(sweep_vals):
+            self.set_finesse(p)
+
+            self.calculate_derived_params(**kw)
+            branchingratio[i] =self.mod_branchingratio
+            branchingratio_A[i] = self.mod_branchingratio_A
+            branchingratio_D[i] = self.mod_branchingratio_D
+
+        fig = plt.figure (figsize=(8,6))
+        ax = fig.add_subplot(111)
+
+        ax.plot(sweep_vals, branchingratio, color = 'Blue', linewidth = 4, label = 'branching ratio standard cav') 
+        #ax.plot(sweep_vals, branchingratio_A, color = 'DarkViolet', linewidth = 4, label = 'branching ratio airmode') 
+        #ax.plot(sweep_vals, branchingratio_D, color = 'Cyan', linewidth = 4, label = 'branching ratio diamondmode') 
+        ax.legend()
+        ax.set_xlabel('finesse', fontsize = 20)
+        ax.set_ylabel('branching ratio', fontsize = 20)
+        return sweep_vals, branchingratio, branchingratio_A, branchingratio_D,ax
+
+    def plot_lifetime_vs_finesse(self,min_val=0, max_val=20000, nr_points=201, **kw):
+        sweep_vals = np.linspace (min_val, max_val, nr_points)
+        lifetime = np.zeros(nr_points)
+        lifetime_A = np.zeros(nr_points)
+        lifetime_D = np.zeros(nr_points)
+
+        for i,p in enumerate(sweep_vals):
+            self.set_finesse(p)
+
+            self.calculate_derived_params(**kw)
+            lifetime[i] = self.mod_lifetime
+            lifetime_A[i] = self.mod_lifetime_A
+            lifetime_D[i] = self.mod_lifetime_D
+
+        fig = plt.figure (figsize=(8,6))
+        ax = fig.add_subplot(111)
+
+        ax.plot(sweep_vals, lifetime, color = 'DarkViolet', linewidth = 4, label = 'lifetime in standard cav') 
+        ax.plot(sweep_vals, lifetime_A, color = 'DarkViolet', linewidth = 4, label = 'lifetime in airmode') 
+        ax.plot(sweep_vals, lifetime_D, color = 'Cyan', linewidth = 4, label = 'lifetime in diamondmode') 
+        ax.legend()
+        ax.set_xlabel('finesse', fontsize = 20)
+        ax.set_ylabel('branching ratio', fontsize = 20)
+        return sweep_vals,lifetime, lifetime_A, lifetime_D, ax
 
     def emission_in_ZPL (self, sweep_param = 'Cavity length (um)', min_val=0, max_val=15, nr_points=50, xlogscale=False,**kw):
         sweep_vals = np.linspace (min_val, max_val, nr_points)
@@ -488,8 +723,8 @@ class CavitySims ():
             emission_prob_PSB_nonzero[ind] = self.P_PSB_nonzero
             mode_vol[ind] = self.mode_volume
             purcell[ind] = self.F0
-            purcellA[ind] = self.naive_FpA
-            purcellD[ind] = self.naive_FpD
+            purcellA[ind] = self.FpA
+            purcellD[ind] = self.FpD
             rate_ZPL[ind] = self.R_plus_gm[0]
             rate_PSB[ind] = np.sum(self.R_plus_gm[1:])
             gamma_ZPL[ind] = self.gamma_relative[0]/float(np.sum(np.sum(self.R))+self.gamma_tot)
@@ -604,12 +839,13 @@ class CavitySims ():
 
     def Ltot_to_finesse(self,Ltot):
         """
+        calculating finesse from total losses, in the high-finesse limit.
         input:
         Ltot - total losses
         output:
         F - Finesse
         """
-        finesse = 2*math.pi/Ltot
+        finesse = 2.*math.pi/Ltot
         return finesse
 
     def F_to_Ltot(self,F):
@@ -619,7 +855,7 @@ class CavitySims ():
         output:
         Ltot - total losses
         """
-        Ltot = 2*math.pi/F
+        Ltot = 2.*math.pi/F
         return Ltot
 
     def optical_length_to_nuFSR(self,optical_length):
