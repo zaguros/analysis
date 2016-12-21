@@ -71,9 +71,9 @@ def dyn_dec_signal(HFs_par, HFs_orth, B_field, N ,tau):
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
 
 
-    print omega_larmor/(2*np.pi)
-    print HF_par*2*np.pi
-    print HFs_orth[0]*2*np.pi
+    # print omega_larmor/(2*np.pi)
+    # print HFs_par[0]*2*np.pi
+    # print HFs_orth[0]*2*np.pi
 
     #print 'tau larmor = %s' %tau_larmor
 
@@ -93,7 +93,7 @@ def dyn_dec_signal(HFs_par, HFs_orth, B_field, N ,tau):
         vec_term = mx**2 *((1-np.cos(alpha))*(1-np.cos(beta)))/(1+np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))
         angle_term = np.sin(N*np.arccos(np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))/2)**2
 
-        M[i,:]= 1-(vec_term*angle_term)
+        M[i,:]= 1-(vec_term*angle_term)/2
 
     # Signal = M.prod(axis=0)
     # F = ((M+1)/2)
