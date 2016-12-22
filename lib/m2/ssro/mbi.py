@@ -191,7 +191,6 @@ class MBIAnalysis(m2.M2Analysis):
                 self.u_p0[:,i] = u_p0
 
 
-
         self.result_corrected = True
 
     def get_N_ROC(self, P_min1=1, u_P_min1=0, P_0=1, u_P_0=0,

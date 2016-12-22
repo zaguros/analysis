@@ -1646,7 +1646,6 @@ def do_carbon_ROC_1q(expectation_value,uncertainty,key):
     """
     takes a two-partite expectation value and applies carbon read-out correction 
     Returns the corrected expectation value and a new uncertainty via error propagation
-    TODO: FILL IN PROPER VALUES
     """
     #### these values were measured on 15-08-2016
     ### see onenote/ carbon control LT3/LT4 for details
