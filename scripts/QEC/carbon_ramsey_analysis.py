@@ -40,6 +40,8 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
     else:
         folder = toolbox.latest_data(title)
 
+    print folder
+
     if ssro_calib_timestamp == None: 
         ssro_calib_folder = toolbox.latest_data('SSROCalibration')
 
@@ -88,6 +90,8 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
 
         # for item in fit_result['params_dict']:
         #     print item
+        # return fit_result
+        print folder
 
         if return_freq == True:
             f0 = fit_result['params_dict']['f']
@@ -444,11 +448,6 @@ def Carbon_Ramsey_DD_freq(older_than = None,
         folder2 = toolbox.latest_data(contains = 'evo_times_2_C' + str(carbon), older_than = older_than)
         folder3 = toolbox.latest_data(contains = 'evo_times_3_C' + str(carbon), older_than = older_than)
 
-
-
-
-    
-    
     a1 = mbi.MBIAnalysis(folder1)
     a1.get_sweep_pts()
     a1.get_readout_results(name='adwindata')
@@ -521,6 +520,7 @@ def Carbon_Ramsey_DD_freq(older_than = None,
 
    
     title = 'DD freq ramsey C' +str(carbon)
+    print folder1
     plt.savefig(os.path.join(folder1, title + '.pdf'),
     format='pdf')
     plt.savefig(os.path.join(folder1, title + '.png'),

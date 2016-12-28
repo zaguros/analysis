@@ -99,7 +99,7 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-def deleted_by_accident_by_someone():
+def get_C13_hyperfine_params(carbon_nrs,ms = '+1'):
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -307,14 +307,14 @@ def c13_gate_multiqubit(carbon_nrs, number_of_pulses, tau, B_field, gate_on_C = 
 def simulate_readout():
 
     ## Parameters:
-    ancilla1_init = rho0
+    ancilla1_init = rho0 ## changes XX and YY readout?
     ancilla2_init = rho0
 
     qubit1_orientation = 'pos' ## changing this changes the XX and YY readouts
     qubit2_orientation = 'pos' ## changing this changes the XX and YY readouts
 
-    qubit1_precession = 'neg' ## Changes YY and ZZ readouts
-    qubit2_precession = 'neg' ## Chanes YY and ZZ readouts
+    qubit1_precession = 'pos' ## Changes YY and ZZ readouts
+    qubit2_precession = 'pos' ## Chanes YY and ZZ readouts
 
     ## Step 1: define initial states, defintion = ancilla1, ancilla2, qubit1, qubit2
     rho00 = qutip.tensor(ancilla1_init, ancilla2_init,rho0,rho0)       
@@ -330,7 +330,10 @@ def simulate_readout():
     rho_psi_plus = ket_psi_plus*ket_psi_plus.dag()    
 
 
-    rho_init = rho00 #this one gives a surprise, both Y are negative! "fixed by changing qubit procession, but that cagnes Z readout
+    # rho_init = rho00 
+    # rho_init = rhoxx 
+    rho_init = rhoyy 
+    rho_init = rho00 
     # rho_init = rho_psi_plus
 
 
@@ -383,14 +386,22 @@ def simulate_readout():
 
     ## Step 4: define sequences
         ## Qubit 1
-    sequenceX1 = xel1 * Ren_1 * yel1                   ## X readout
-    sequenceY1 = xel1 * Ren_1 * yel1 * z_rot1          ## Y readout
-    sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * Ren_1  ## Z readout
+    sequenceX1 = xel1 * Ren_1 * yel1                                     ## X readout
+    sequenceY1 = xel1 * Ren_1 * yel1 * z_rot1                            ## Y readout
+    if ancilla1_init == rho0: 
+        sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * z_rot1 * z_rot1 * Ren_1  ## Z readout
+        sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * Ren_1  ## Z readout
+    elif ancilla1_init == rho1: 
+        sequenceZ1 = xel1 * Ren_1 * yel1 * z_rot1 * Ren_1  ## Z readout
 
         ## Qubit 2
-    sequenceX2 = xel2 * Ren_2 * yel2                   ## X readout
-    sequenceY2 = xel2 * Ren_2 * yel2 * z_rot2          ## Y readout
-    sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * Ren_2  ## Z readout
+    sequenceX2 = xel2 * Ren_2 * yel2                                     ## X readout
+    sequenceY2 = xel2 * Ren_2 * yel2 * z_rot2                            ## Y readout
+    if ancilla2_init == rho0: 
+        sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * z_rot2 * z_rot2 * Ren_2  ## Z readout
+        sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * Ren_2  ## Z readout
+    elif ancilla2_init == rho1: 
+        sequenceZ2 = xel2 * Ren_2 * yel2 * z_rot2 * Ren_2  ## Z readout
 
     ## Step 5: apply sequences
 
