@@ -11,6 +11,7 @@ import h5py
 from matplotlib import pyplot as plt
 from analysis.lib.tools import toolbox
 from analysis.lib.m2 import m2
+import copy as cp
 
 # Some general tools
 
@@ -73,6 +74,7 @@ class SSROAnalysis(m2.M2Analysis):
                 self.reps, grp.attrs['SSRO_duration'])
         self.cr_counts = grp['CR_after'].value
         self.sp_counts = grp['SP_hist'].value
+        self.ro_bare_counts = grp['RO_data'].value
 
     def cpsh_hist(self, ro_counts, reps, firstbin=0, lastbin=-1, plot=True, **kw):
         name = kw.pop('name', '')
@@ -101,8 +103,7 @@ class SSROAnalysis(m2.M2Analysis):
         if plot:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts',
-                    normed=True) # , stacked=True)
+            ax.hist(cpsh, np.arange(max(cpsh)+2)-0.5, align='mid', label='counts', normed=True) # , stacked=True)
             ax.set_xlabel('cts/shot')
             ax.set_ylabel('probability')
             ax.set_title(self.default_plot_title + title_suffix)
@@ -198,7 +199,6 @@ class SSROAnalysis(m2.M2Analysis):
         title_suffix = ': '+name if name != '' else ''
         fn_suffix = '_'+name if name != '' else ''
         dataset_name = name if name != '' else 'fidelity'
-
         if lastbin == None:
             lastbin = len(ro_counts[0,:])
 
@@ -210,7 +210,6 @@ class SSROAnalysis(m2.M2Analysis):
             # d: hist of counts, c: counts per shot
             d = np.sum(ro_counts[:,:i], axis=1)
             c = np.sum(d)/float(reps)
-
             # we get the fidelity from the probability to get zero counts in a
             # shot
             pzero = len(np.where(d==0)[0])/float(reps)
@@ -255,7 +254,8 @@ class SSROAnalysis(m2.M2Analysis):
 
         time = _fid0[:,0]
         fid0 = _fid0[:,1]
-        fid0_err = _fid0[:,2]
+        fid0_err = _fid0[:,2]  
+
         fid1 = _fid1[:,1]
         fid1_err = _fid1[:,2]
 
@@ -309,11 +309,13 @@ class SSROAnalysis(m2.M2Analysis):
             #     format='pdf')
 
         if plot_photon_ms0:
+
             fig = plt.figure()
             ax = fig.add_subplot(111)
             Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
             max_Prob_ms0 = Prob_ms0.max()
             time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            # print 'projectivity at current C13_MBI RO duration ', Prob_ms0[abs(time[1:]-40)<2]
             ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
             ax.set_xlabel('RO time (us)')
             ax.set_ylabel('Prob. photon came from ms=0')
@@ -437,7 +439,7 @@ class SSROAnalysis(m2.M2Analysis):
         if plot_photon_ms0:
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fid1[1:]))
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fidp1[1:]))
             max_Prob_ms0 = Prob_ms0.max()
             time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
             ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
@@ -450,8 +452,27 @@ class SSROAnalysis(m2.M2Analysis):
             ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
 
             fig.savefig(os.path.join(self.folder,
-                'projectivity.'+self.plot_format),
+                'projectivity_p1.'+self.plot_format),
                 format=self.plot_format)    
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            Prob_ms0 = (fid0[1:])/(fid0[1:]+(1-fidm1[1:]))
+            max_Prob_ms0 = Prob_ms0.max()
+            time_max_Prob_ms0 = time[Prob_ms0.argmax()+1]
+            ax.errorbar(time[1:], Prob_ms0, fmt='.', yerr=0*Prob_ms0)
+            ax.set_xlabel('RO time (us)')
+            ax.set_ylabel('Prob. photon came from ms=0')
+            ax.set_ylim((0.9,1))
+            plt.figtext(0.8, 0.5, "max. {:.2f} at t={:.0f} us".format(max_Prob_ms0*100., time_max_Prob_ms0),
+                    horizontalalignment='right')
+
+            ax.set_title(self.default_plot_title + ': Probability_photon_from_ms0')
+
+            fig.savefig(os.path.join(self.folder,
+                'projectivity_m1.'+self.plot_format),
+                format=self.plot_format)    
+
 
 
 def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True):
@@ -464,6 +485,7 @@ def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True):
 
     for n,ms in zip(['ms0', 'ms1'], [0,1]): #zip((['ms0'], [0]):#
         a.get_run(n)
+
         a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
         a.readout_relaxation(a.ro_time, a.ro_counts, a.reps, a.binsize, name=n, plot = plot)
         a.spinpumping(a.sp_time, a.sp_counts, a.reps, a.binsize, name=n, plot = plot)
@@ -480,7 +502,7 @@ def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
         folder=toolbox.latest_data('_SSRO_calib_MWInit_')
     a = SSROAnalysis(folder)
 
-    for n,ms in zip(['ms0','msp1','msm1'], [0,1,-1]): #zip((['ms0'], [0]):#
+    for n,ms in zip(['ms0','msp1','msm1'], [0,1,-1]):
         print n, ms
         a.get_run(n)
         a.cpsh_hist(a.ro_counts, a.reps, name=n, plot = plot)
@@ -493,6 +515,42 @@ def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
     a.mean_fidelity_MWInit(plot,plot_photon_ms0)
     a.finish()
     print 'Job\'s done!'
+
+
+def lump_multiple_SSROcalibs(folder_list,mwinit = False):
+    plot = False
+
+    if mwinit:
+        names = ['ms0','msp1','msm1']
+        signs = [0,1,-1]
+    else:
+        names = ['ms0','ms1']
+        signs = [0,1]
+    for n,ms in zip(names,signs):
+
+        for ii,f in enumerate(folder_list):
+            a = SSROAnalysis(f)
+            a.get_run(n)
+
+            if ii == 0:
+                b=SSROAnalysis(f)
+                b.get_run(n)
+            else:
+                b.ro_bare_counts = np.append(b.ro_bare_counts,a.ro_bare_counts)
+                b.reps = b.reps + a.reps
+        
+        b.ro_counts = b.ro_bare_counts.reshape(
+        b.reps, b.adwingrp(n).attrs['SSRO_duration'])
+        b.cpsh_hist(b.ro_counts,b.reps,name=n,plot=plot)
+
+        b.fidelity(b.ro_counts, b.reps, b.binsize, ms, name=n, plot = True)
+
+    plt.close('all')
+    if mwinit:
+        b.mean_fidelity_MWInit(True,True)
+    else:
+        b.mean_fidelity(True,True)
+    b.finish()
 
 def thcalib(folder='', analyze_probe = False):
     if folder=='':
