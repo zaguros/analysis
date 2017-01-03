@@ -97,7 +97,8 @@ def get_correlations(**kw):
 
         #### we also need to calculate the single qubit expectation values.
         #### easy for the electron spin. One simply adds the electron outcomes and divides by 2.
-        #### for the nuclear spin one has to add up several RO bases and look at the correlations there:
+        #### for the nuclear spin one has to add up several RO bases and look at the correlations there 
+        #### (because experiments are not grouped by RO basis):
         exp_val_sum = (y_pos_electron + y_neg_electron)/2.
         exp_val_sum_u = (y_pos_electron_u**2 + y_neg_electron_u**2)/4.
 
@@ -129,6 +130,10 @@ def get_correlations(**kw):
     ### and are now added to the results (square root still needs to be taken for the uncertainties)
     sweep_pts = np.append(sweep_pts,['IX','IY','IZ'])
     exp_values = np.append(exp_values,np.array([c_x,c_y,c_z]))
+    print 'Nuclear spin correlations',c_x,c_y,c_z
+    print sweep_pts
+    print np.round(exp_values,2)
+
     exp_vals_u = np.append(exp_vals_u,np.array([np.sqrt(c_x_u),np.sqrt(c_y_u),np.sqrt(c_z_u)]))
 
 
@@ -252,14 +257,15 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
 
 def electron_carbon_density_matrix(**kw):
     """
-    This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
+    Calculates a density matrix for our favourite nuclear spin-electron bell state
+    Addendum: This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
     """
 
     folder,sweep_pts,exp_values,exp_vals_u = get_correlations(**kw)
     print 'this is the folder', folder
 
     paulis = generate_pauli_matrices()
-    ### initialize the dm via the identity correlations
+    ### initialize the dm via the correlations of a fully mixed state
     dm = np.kron(paulis[0],paulis[0])/4.
     dm_u_re,dm_u_im = np.zeros((4,4),dtype = float),np.zeros((4,4),dtype = float)
     ### basis definition
@@ -273,7 +279,7 @@ def electron_carbon_density_matrix(**kw):
             sigma_kron = np.kron(paulis[t_dict[t[0]]],paulis[t_dict[t[1]]])
 
 
-            ### carbon ROC necessary?
+            ### carbon ROC necessary? YES
             if t[1] =='I':
                 dm +=exp*sigma_kron/4.
 
