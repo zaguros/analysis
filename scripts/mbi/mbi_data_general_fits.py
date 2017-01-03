@@ -12,16 +12,16 @@ reload(mbi)
 def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_folder = None,
             offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
             frequency = [1], phase =[0],
-            fixed = [], ylim = [-0.5, 1.05],ssro_tstamp ='',
+            fixed = [], ylim = [-0.5, 1.05],ssro_tstamp ='',base_folder = None,
             plot_fit = False, do_print = False, show_guess = True):
     ''' Function to fit mbi-type data with exponential and sinusoidal functions or combinations thereof.
     timestamp       : format yyyymmdd_hhmmss or hhmmss or None. None takes the last data.
     measurement_name: list of measurement names
     '''
     if timestamp != None:
-        folder = toolbox.data_from_time(timestamp)
+        folder = toolbox.data_from_time(timestamp,folder = base_folder)
     else:
-        folder = toolbox.latest_data(contains)
+        folder = toolbox.latest_data(contains,folder = base_folder)
 
     if ssro_folder == None:
         if ssro_tstamp == '':

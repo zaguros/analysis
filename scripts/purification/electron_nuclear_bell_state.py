@@ -1,8 +1,6 @@
 """
 Evaluates the density matrix of a combined electron nuclear spin state.
 Based upon 12 measurements for different initial measurements of the electron
-
-TODO: proper error propagation onto elements of the dnesity matrix.
 """
 
 
@@ -42,14 +40,17 @@ def get_RO_results(folder,ssro_calib_folder):
 def get_correlations(**kw):
 
     ### pull data
+    ssro_calib_folder = kw.pop('ssro_calib_folder',None)
     ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
     search_string = kw.pop('search_string','el_13C_dm_')
+    base_folder = kw.pop('base_folder',None)
 
-    if ssro_calib_timestamp == None: 
-        ssro_calib_folder = tb.latest_data('SSROCalibration')
-    else:
-        ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp)
+    if ssro_calib_folder == None:
+        if ssro_calib_timestamp == None: 
+            ssro_calib_folder = tb.latest_data('SSROCalibration')
+        else:
+            ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
+            ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp,folder = base_folder)
 
     ### for basis assignment, see onenote 2016-08-24 or alternatively mathematica file E_13C_Bell_state.nb
     tomo_pulses_p = ['none','x','my'] ### used when looking for folders
@@ -67,10 +68,10 @@ def get_correlations(**kw):
     tomo_pulse_translation_dict = {'none': 'Z','X':'Z','x':'Y','mx':'Y','y':'X','my':'X'}
 
     for p,m in zip(tomo_pulses_p,tomo_pulses_m):
-        f_list_pos_p.append(tb.latest_data(search_string + p+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_p.append(tb.latest_data(search_string + p+'_negative' ,return_timestamp = False,**kw))
-        f_list_pos_m.append(tb.latest_data(search_string + m+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_m.append(tb.latest_data(search_string + m+'_negative' ,return_timestamp = False,**kw))
+        f_list_pos_p.append(tb.latest_data(search_string + p+'_positive' ,folder = base_folder,return_timestamp = False,**kw))
+        f_list_neg_p.append(tb.latest_data(search_string + p+'_negative' ,folder = base_folder,return_timestamp = False,**kw))
+        f_list_pos_m.append(tb.latest_data(search_string + m+'_positive' ,folder = base_folder,return_timestamp = False,**kw))
+        f_list_neg_m.append(tb.latest_data(search_string + m+'_negative' ,folder = base_folder,return_timestamp = False,**kw))
 
         #### now also calculate the measured contrast
         y_a,y_err_a = get_RO_results(f_list_pos_p[-1],ssro_calib_folder)
@@ -142,7 +143,7 @@ def carbon_ROC(exp,exp_u,folder):
         ROC_coeff =  0.978264
         ROC_coeff_u = 0.00194222
     else:
-        ROC_coeff = 0.972934 ### this value seems to low for that specific day of the measurement. See onenote Carbons LT4 / 2016-09-12
+        ROC_coeff = 0.972934 
         ROC_coeff_u = 0.0028265
 
 
