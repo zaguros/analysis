@@ -6,8 +6,8 @@ import numpy as np
 filter_settings = {
 	
 	'st_start' 		: 2772.85e3,#4.5e3,
-	'st_len'		: 40e3,
-	'st_len_w2' 	: 40e3,
+	'st_len'		: 43.5e3,
+	'st_len_w2' 	: 43.5e3,
 	'min_cr_lt3_before'	: 1,
 	'min_cr_lt4_before'	: 1,
 	'min_cr_lt3_after'	: 1,
@@ -16,7 +16,7 @@ filter_settings = {
 	'min_reps_w1'	: 1,
 	'max_reps_w2'	: 500,
 	'min_reps_w2'	: 1,
-	'max_dt'		: 40e3,
+	'max_dt'		: 43.5e3,
 	'valid_reps'    : np.arange(0,100,1)
 }
 
