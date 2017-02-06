@@ -14,7 +14,7 @@ class purifyPQAnalysis(pqsequence.PQSequenceAnalysis):
 	Combines pq measurements with adwin ssro.
 	"""
 	def __init__(self,folder,**kw):
-		print folder
+		# print folder
 		pqsequence.PQSequenceAnalysis.__init__(self,folder,**kw)
 
 		self.agrp=self.adwingrp('adwindata')

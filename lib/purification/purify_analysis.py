@@ -358,7 +358,7 @@ class purify_analysis(object):
         return
 
 
-    def apply_sync_filter_w1_w2(self,verbose = True,max_w2 = None):
+    def apply_sync_filter_w1_w2(self,verbose = True,max_w2 = None,return_events = False):
         """
         checks if associated sync number corresponds to a click in entanglement generation 1 or 2 and alters self.st_fltr_w1 and self.st_fltr_w2
         is applied after temporal filtering.
@@ -415,7 +415,8 @@ class purify_analysis(object):
         if verbose:
             print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 
-
+        if return_events:
+            return no_w2
     def apply_is_purified_filter(self,signature = '11',verbose = True):
         """
         correlates the electron RO signature after the purification gate to "ms0 & ms0"
@@ -1376,8 +1377,9 @@ class purify_analysis(object):
         crude_click_prob = num_first_clicks/float(total_syncs)
         first_click_prob = 1/float(avg_attempts_per_first_click)
 
+        StorageSuccessProb = 0.88;
         # Times per success
-        est_succ_prob_given_first_click = (1-(1-first_click_prob)**max_w2)
+        est_succ_prob_given_first_click = StorageSuccessProb**2*(1-(1-first_click_prob)**max_w2)
         meas_succ_prob_given_first_click = num_successes/float(num_first_clicks)
 
         succ_prob_given_first_click = meas_succ_prob_given_first_click
@@ -1389,8 +1391,8 @@ class purify_analysis(object):
         est_time_per_success = entanglement_time + reset_time + store_time + msmt_time
 
         # B and K comparisons
-        tail_lt3 = 7.2 #9.1975 for SIL 3
-        tail_lt4 = 5.1514
+        tail_lt3 = 8.0 #9.1975 for SIL 3
+        tail_lt4 = 4.0
         click_prob_lt4 = first_click_prob*tail_lt4/(tail_lt4 + tail_lt4)
         click_prob_lt3 = first_click_prob*tail_lt3/(tail_lt4 + tail_lt4)
 
@@ -1430,7 +1432,7 @@ class purify_analysis(object):
             print 'TPQI expected disting clicks: ', expected_disting_clicks
 
         if return_click_prob:
-            return num_first_clicks, float(total_syncs)
+            return num_first_clicks, float(total_syncs), entanglement_time, reset_time, store_time, msmt_time
 
     def get_sequence_time(self):
         """
@@ -1702,7 +1704,6 @@ def do_carbon_ROC_1q(expectation_value,uncertainty,key):
     """
     takes a two-partite expectation value and applies carbon read-out correction 
     Returns the corrected expectation value and a new uncertainty via error propagation
-    TODO: FILL IN PROPER VALUES
     """
     #### these values were measured on 15-08-2016
     ### see onenote/ carbon control LT3/LT4 for details
@@ -1722,6 +1723,8 @@ def calculate_ebits(parity_ZZ,parity_YY,correlations_XX):
 
     del_p00,del_p01,del_p10,del_p11, del_c0110 = sp.symbols('del_p00,del_p01,del_p10,del_p11, del_c0110')
 
+    # log negativity!
+
     logNegSimp = parse_expr('log(p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2))/log(2)')
 
     error_p00 = parse_expr('p00/(sqrt(2) * sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))* (p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2))* log(2))')
@@ -1731,26 +1734,58 @@ def calculate_ebits(parity_ZZ,parity_YY,correlations_XX):
     error_c0110 = parse_expr('(sqrt(2) *c0110 * ((1+(-1+p01+p10)/sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4 *c0110**2+(-1+p01+p10+2* p11)**2))+(1+(-1+p01+p10)**2/sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2)))/sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))))/((p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2)) *log(2))')
 
 
-    error =  sp.sqrt((error_p00*del_p00)**2+(error_p01*del_p01)**2+(error_p10*del_p10)**2 +\
+    LNerror =  sp.sqrt((error_p00*del_p00)**2+(error_p01*del_p01)**2+(error_p10*del_p10)**2 +\
                      (error_p11*del_p11)**2 + (error_c0110*del_c0110)**2)
 
     logNegF = sp.lambdify([c0110, p00, p01, p10, p11],logNegSimp)
-    logNegU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110, del_p00,del_p01,del_p10,del_p11],error)
+    logNegU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110, del_p00,del_p01,del_p10,del_p11],LNerror)
+
+    # Von Neumann Entropy
+
+    VonNeumann = parse_expr('-(p00+p01) * log(p00+p01) -(p10+p11) * log(p10+p11) - 0.5* ((p01+p10) * log(4)-2 * p00 * log(p00)-2 * p11 * log(p11)+(-p01-p10+sqrt((p01-p10)**2+4 * c0110 **2)) * log(p01+p10-sqrt((p01-p10)**2+4 * c0110**2))-(p01+p10+sqrt((p01-p10)**2+4 * c0110**2)) * log(p01+p10+sqrt((p01-p10)**2+4 * c0110**2)))')
+    errorVN_p00 = parse_expr('-log(1+p01/p00)')
+    errorVN_p01 = parse_expr('(- log(p00+p01) - 1) - (1/(2 *sqrt(4 * c0110**2+(p01-p10)**2)))*(sqrt(4 * c0110**2+(p01-p10)**2) * (-2+log(4))-(-p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10) * log(p01-sqrt(4 * c0110**2+(p01-p10)**2)+p10)-(p01+sqrt(4 * c0110**2+(p01-p10)**2)-p10) * log(p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10))')
+    errorVN_p10 = parse_expr('(- log(p10+p11) - 1) - (1/(2 *sqrt(4 * c0110**2+(p01-p10)**2)))*(sqrt(4 * c0110**2+(p01-p10)**2) * (-2+log(4))-(p01+sqrt(4 * c0110**2+(p01-p10)**2)-p10) * log(p01-sqrt(4 * c0110**2+(p01-p10)**2)+p10)-(-p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10) * log(p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10))')
+    errorVN_p11 = parse_expr('-log(p10/p11+1)')
+    errorVN_c0110 = parse_expr('-(2 * c0110 * (log(p01-sqrt(4 *c0110**2+(p01-p10)**2)+p10)-log(p01+sqrt(4* c0110**2+(p01-p10)**2)+p10)))/sqrt(4* c0110**2+(p01-p10)**2)')
+    VNerror =  sp.sqrt((errorVN_p00*del_p00)**2+(errorVN_p01*del_p01)**2+(errorVN_p10*del_p10)**2 +\
+                     (errorVN_p11*del_p11)**2+ (errorVN_c0110*del_c0110)**2)
+
+    VonNeumannF = sp.lambdify([c0110, p00, p01, p10, p11],VonNeumann)
+    VonNeumannU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110,del_p00,del_p01,del_p10,del_p11],VNerror)
+
+    
 
     c0110 = (parity_ZZ[1] + parity_YY[1])/float(4)# Define correlations as even - odd
     c0110_u = np.sqrt(parity_ZZ[2]**2 + parity_YY[2]**2)/float(4)
 
-    p00,p01,p10,p11 = np.array(correlations_XX[0][0]),np.array(correlations_XX[0][1]),np.array(correlations_XX[0][2]),np.array(correlations_XX[0][3])
+    def checkpos(x):
+        x = np.array(x)
+        x[x<1e-9] = 1e-9
+        return x
+
+    p00,p01,p10,p11 = checkpos(np.array(correlations_XX[0][0])),checkpos(np.array(correlations_XX[0][1])),checkpos(np.array(correlations_XX[0][2])),checkpos(np.array(correlations_XX[0][3]))
+
     del_p00,del_p01,del_p10,del_p11 = np.array(correlations_XX[1][0]),np.array(correlations_XX[1][1]),np.array(correlations_XX[1][2]),np.array(correlations_XX[1][3])
 
-    ebits = []
-    ebits_u = []
+    ebitsLN = []
+    ebitsLN_u = []
+    ebitsVN = []
+    ebitsVN_u = []
     for c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind in zip(c0110,p00,p01,p10,p11,c0110_u,del_p00,del_p01,del_p10,del_p11):
 
-        ebits.append(logNegF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind))
-        ebits_u.append(logNegU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind))
+        ebitsLN.append(logNegF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind))
+        ebitsLN_u.append(logNegU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind))
+
+        # VNF= VonNeumannF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind)
+        # VNU = VonNeumannU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind)
+        # print VNF
+        # VNF = 0 if VNF < 0 else VNF
+        # VNU = 0 if VNU < 0 else VNU
+        ebitsVN.append(0)
+        ebitsVN_u.append(0)
     
-    return np.array(ebits), np.array(ebits_u)
+    return np.array(ebitsLN), np.array(ebitsLN_u),np.array(ebitsVN), np.array(ebitsVN_u)
 
 def convert_attrs_to_dict(attrManagerItems):
     data_attrs = dict([])

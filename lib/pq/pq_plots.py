@@ -92,13 +92,13 @@ def plot_marker_filter_comparison(pqf,mrkr_chan = 2,**kw):
     plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
 
 
-def plot_autocorrelation_histogram(pqf,start = 0,length = 2000,index = 1,binsize = 1e3,**kw):
+def plot_autocorrelation_histogram(pqf,start = 0,length = 2000,index = 1, pq_device = '', binsize = 1e3,**kw):
     """
     does not exlcude no photon (i.e. markers) events at the moment.
     """
-    sync_time_name = '/PQ_sync_time-' + str(index)
-    tot_time_name =  '/PQ_time-' + str(index)
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
+    tot_time_name =  pq_device + '/PQ_time-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
     tot_time_0 = np.append(np.array([0]),pqf[tot_time_name])
     tot_time_1 = np.append(pqf[tot_time_name],np.array([0]))

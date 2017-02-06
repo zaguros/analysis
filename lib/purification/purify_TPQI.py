@@ -94,26 +94,26 @@ def get_coincidences_and_adwin_data_from_folder(folder_primary,save = True,folde
     
     return co
 
-def filter_syncnum(pqf, mult, pq_file = True, index = 1):   
+
+def filter_syncnum(pqf, attempts, max_attempts, first, pq_file = True, index = 1):
+    """
+    Return a filter for sync times in between t0 and t1
+    """
 
     sync_num_name = '/PQ_sync_number-' + str(index)
 
-    if type(pqf) == h5py._hl.files.File: 
+    if pq_file:
         sync_num = pqf[sync_num_name].value
-
-    elif type(pqf) == str:
-        f = h5py.File(pqf, 'r')
-        sync_num = f[sync_num_name].value
-        f.close()
-    
     else:
-        print "Neither filepath nor file enetered in function please check:", pqf
-        raise
+        sync_num = pqf
+    if first ==1:
+        fltr = sync_num % attempts <= max_attempts 
+    elif first ==2:
+        fltr = sync_num % attempts >= max_attempts
+    return fltr
+ 
 
-    fltr = sync_num % mult == 1 
-
-def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
-
+def get_coincidences_from_folder(folder, attempts, max_attempts, first, index = 1,save = True,contains = '', force_coincidence_evaluation = False):
     sync_num_name = 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
     filepaths = tb.get_all_msmt_filepaths(folder) 
@@ -129,26 +129,33 @@ def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
     # print filepaths
     for i,f in enumerate(filepaths):
         if i == 0:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
 
-            makeValeriaFilter = filter_syncnum(pqf,50)
-            print 'the filter is', makeValeriaFilter
+            makeValeriaFilter = filter_syncnum(pqf,attempts,max_attempts, first)
+            # print 'the filter is', makeValeriaFilter
             if sync_num_name in pqf.keys():
-                co = get_coincidences(pqf)           
+                co = pq_tools.get_coincidences(pqf, fltr0 = makeValeriaFilter, fltr1 = makeValeriaFilter, force_coincidence_evaluation=force_coincidence_evaluation)  
+            # for j in makeValeriaFilter:
+            #     if j:
+            #         if sync_num_name in pqf.keys():
+            #             co = pq_tools.get_coincidences(pqf)                   
         else:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pq_tools.pqf_from_fp(f, rights = 'r+')
+            makeValeriaFilter = filter_syncnum(pqf,attempts,max_attempts,first)
+            # print 'the filter is', makeValeriaFilter
 
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:
-                    co = get_coincidences(pqf,save = save)
+                    co = pq_tools.get_coincidences(pqf, fltr0 = makeValeriaFilter, fltr1 = makeValeriaFilter,force_coincidence_evaluation=force_coincidence_evaluation,save = save)
                 else:
-                    co = np.vstack((co, get_coincidences(pqf,save = save)))
-                    
+                    co = np.vstack((co, pq_tools.get_coincidences(pqf, fltr0 = makeValeriaFilter, fltr1 = makeValeriaFilter,force_coincidence_evaluation=force_coincidence_evaluation,save = save)))
+               
+
     return co
 
 
 
-def _aggregated_coincidences(Base_Folder, **kw):
+def _aggregated_coincidences(Base_Folder, force_coincidence_evaluation = False,**kw):
 
     load_cr_check = kw.get('load_cr_check',False)
     load_adwin_comm_time = kw.get('load_adwin_comm_time',False)
@@ -158,7 +165,7 @@ def _aggregated_coincidences(Base_Folder, **kw):
 
     else:
         in_coincidences = np.empty((0,4))
-        in_coincidences = np.vstack((in_coincidences, pq_tools.get_coincidences_from_folder(Base_Folder,contains = contains,save=True)))
+        in_coincidences = np.vstack((in_coincidences, pq_tools.get_coincidences_from_folder(Base_Folder,contains = contains,save=True,force_coincidence_evaluation = force_coincidence_evaluation)))
 
     return in_coincidences
 
@@ -213,9 +220,10 @@ def filter_no_of_attempts(load_TPQI_attemtps,column_no_of_sequences,coincidences
 def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, 
                                     return_sn = False , 
                                     contains = 'TPQI',
-                                    Verbose = True, ):
+                                    force_coincidence_evaluation = False,
+                                    Verbose = True):
     # Gets coincident photons from Hydraharp data
-    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains)
+    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains,force_coincidence_evaluation = force_coincidence_evaluation)
 
     dt_index = 0
     column_st_0 = 1
@@ -246,12 +254,12 @@ def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_
 
     return dts, filtered_dts
 
-def TPQI_analysis_w_extra_filtering(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, 
+def TPQI_analysis_w_extra_filtering(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, attempts = 50, max_attempts = 1, first = 1,
                                     return_sn = False , 
-                                    contains = 'TPQI',
-                                    Verbose = True, ):
+                                    contains = 'TPQI', force_coincidence_evaluation = False,
+                                    Verbose = True ):
     # Gets coincident photons from Hydraharp data
-    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains)
+    coincidences = get_coincidences_from_folder(Base_Folder_primary, attempts, max_attempts, first, force_coincidence_evaluation =force_coincidence_evaluation,contains=contains)
 
     dt_index = 0
     column_st_0 = 1
@@ -271,7 +279,7 @@ def TPQI_analysis_w_extra_filtering(Base_Folder_primary, ch0_start, ch1_start, W
     #Filters the coincident photons by selecting only the photons emitted by the NV center
     is_sync_time_filter = filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
                                                  dif_win1_win2, noof_pulses, column_st_0, column_st_1)
-
+    
     filtered_dts = dts[is_sync_time_filter]
 
     if Verbose:
@@ -280,7 +288,8 @@ def TPQI_analysis_w_extra_filtering(Base_Folder_primary, ch0_start, ch1_start, W
         print '===================================='
         print
 
-    return dts, filtered_dts
+    return dts, filtered_dts    
+
 
 # Added code to analyse based on CR check counts
 def TPQI_analysis_w_CR_check_filtering(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, 
