@@ -25,7 +25,7 @@ def get_coincidences_and_adwin_data_from_folder(folder_primary,save = True,folde
 
     # print filepaths
     for i,fp in enumerate(filepaths_primary):
-        # print f
+        print f
         fp = os.path.split(fp)[0]
         
         purifyPQ_p = purify_pq.purifyPQAnalysis(fp)

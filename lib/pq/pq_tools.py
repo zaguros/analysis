@@ -411,6 +411,7 @@ def get_coincidences_from_folder(folder, index = 1, save = True, contains = '', 
     co = np.ones([1,4])
     # print filepaths
     for i,f in enumerate(filepaths):
+        
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
             if sync_num_name in pqf.keys():
