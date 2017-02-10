@@ -165,18 +165,19 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             peak_intensity_x0s = peak_intensity_x0s[np.where(hom_success >0)]
 
 
-
+        print self.folder
         # print len(peak_intensity),len(peak_intensity_x0s)
         if plot_peak_locations:
             fig, ax = plt.subplots()
             ax.plot(self.frequencies,intensity)
             # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
             ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
-            ax.set_title(self.plot_name)
-            ax.set_xlabel('frequency (THz)')
-            ax.set_ylabel('signal')
+            #ax.set_title(self.plot_name)
+            ax.set_xlabel('Frequency (THz)')
+            ax.set_ylabel('Transmitted signal (a.u.)')
             if save_fig:
                 plt.savefig(os.path.join(self.folder,'plot_1D_peaks.png'))
+                print self.folder
             plt.show()
             plt.close()
 
@@ -230,7 +231,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         relevant_indices = np.intersect1d(np.intersect1d(i_nrs,i_minf),i_maxf)
         # np.where((self.peak_frq>min_frequency) and (self.peak_frq<max_frequency))
         #relevant_indices = np.where(((self.peak_filenr>=min_fit_filenr) and (self.peak_frq>min_frequency) and (self.peak_frq < max_frequency)))
-        relevant_peak_frq = self.peak_frq[relevant_indices]
+        relevant_peak_frq = self.peak_frq[relevant_peak_frqt_indices]
         relevant_peak_filenr = self.peak_filenr[relevant_indices]
         #print relevant_peak_frq
         #print relevant_peak_filenr
