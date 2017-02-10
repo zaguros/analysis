@@ -1,5 +1,6 @@
 ''' A module to calculate the 13C nuclear and electron spin dynamics
-under dynamical decoupling gates. By THT '''
+under dynamical decoupling sequences and gates. 
+Based on the qutip module. By THT '''
 
 import numpy as np
 import qutip
@@ -8,7 +9,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
 
-### import the hyperfine parameters ###
+### import the experimental hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
 # hf = hf_params.SamSIL5_sim_params
@@ -99,11 +100,8 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
-<<<<<<< Updated upstream
 def get_C13_hyperfine_params(carbon_nrs,ms = '+1'):
-=======
-def get_C13_hyperfine_params(carbon_nrs, ms):
->>>>>>> Stashed changes
+
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
