@@ -498,20 +498,23 @@ def get_ExEy_from_Eprime_and_Ex_or_Ey(f_E_prime,f_Ex_or_Ey,Ex_or_Ey = 'Ex', prec
     """
     p1_or_m1 = 'm1' # At the moment this is hard coded, because I dont think it makes an important difference,
     # However, could be fed as a parameter 
+
     for str_split in np.linspace(0,20,20/precision):
 
         if p1_or_m1 == 'p1':
             levels = get_transitions_ExEy(0,str_split,show_ms0_transitions=True,show_p1_transitions=True, return_dict=True)
-            offset = f_E_prime - np.sort(levels['msp1'][0])
+            offset = f_E_prime - np.sort(levels['msp1'])[0]
         else:
             levels = get_transitions_ExEy(0,str_split,show_ms0_transitions=True,show_m1_transitions=True, return_dict=True)
-            offset = f_E_prime - np.sort(levels['msm1'][0])
+            offset = f_E_prime - np.sort(levels['msm1'])[0]
 
+        
         if Ex_or_Ey == 'Ey':
             levels_Ex_or_Ey = np.sort(levels['ms0'])[0]+offset
         else:
             levels_Ex_or_Ey = np.sort(levels['ms0'])[1]+offset
-           
+
+        # print offset,abs(f_Ex_or_Ey-levels_Ex_or_Ey),precision
         if abs(f_Ex_or_Ey-levels_Ex_or_Ey)<precision:
 
             return np.flipud(np.sort(levels['ms0'])) + offset
