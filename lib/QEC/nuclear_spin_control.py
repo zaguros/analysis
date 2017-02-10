@@ -99,7 +99,11 @@ def print_matrix(Qobject,div_by=100):
     print np.round(Qobject.full()*div_by)/div_by
     print type(np.round(Qobject.full()*div_by)/div_by)
 
+<<<<<<< Updated upstream
 def get_C13_hyperfine_params(carbon_nrs,ms = '+1'):
+=======
+def get_C13_hyperfine_params(carbon_nrs, ms):
+>>>>>>> Stashed changes
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -3048,18 +3052,16 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
     ### plotting
     if show_plot == True:
 
-        plt.figure(1)
+        plt.figure(1, figsize =(16,4))
         colors = cm.rainbow(np.linspace(0, 1, len(M[:,1])))
         for kk in range(len(M[:,1])):
             plt.plot(tau*1e6, M[kk][:], '-', lw=1, label = 'spin' + str(kk+1), color = colors[kk])
 
         plt.title('Signal'); plt.xlabel('Tau')
         plt.legend(loc = 4)
-        plt.ylim(-1,1)
+        plt.ylim(-1.1,1.1)
 
-
-
-        plt.figure(2)
+        plt.figure(2, figsize =(16,4))
         plt.plot(tau*1e6, Signal, '-', lw=1)
         plt.title('Signal'); plt.xlabel('Tau')
         plt.ylim(-1,1)

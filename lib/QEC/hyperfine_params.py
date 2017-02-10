@@ -19,12 +19,14 @@ hyperfine_params['C2']  = {'par' : 26.5e3, 'perp':30.0e3}
 # hyperfine_params['C8']  = {'par' : -20.5e3, 'perp':21.0e3}
 # hyperfine_params['C8']  = {'par' : 7.32e3, 'perp':5.0e3}
 
+### Adding some random test spins: spins 9 and 10 are not "real" spins obtained from data
+hyperfine_params['C9']  = {'par' : 0.32e3, 'perp':0.2e3}
+hyperfine_params['C10']  = {'par' : 3.32e3, 'perp':1.2e3}
+
 
 #########################################################
 ######### HANS SIL 1#####################################
 #########################################################
-
-
 
 ### fitted to the ms = +1 data
 # hyperfine_params_hans_SIL1_msp1 = {}
