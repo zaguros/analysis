@@ -162,7 +162,7 @@ class CavitySims ():
         """
         self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
         """
-        self.mode_volume = (np.pi*((0.5*self.waist)**2)*self.optical_length/n_diamond)#/(n_diamond**3)
+        #self.mode_volume = (np.pi*((0.5*self.waist)**2)*self.optical_length/n_diamond)#/(n_diamond**3)
 
         self.mode_volume = (np.pi*((0.5*self.waist)**2)*(self.cavity_length+self.diamond_thickness))#to really calculate the physical mode volume
         return self.mode_volume
@@ -215,7 +215,7 @@ class CavitySims ():
         orientation_factor= (math.cos(math.pi/180.*dipole_orientation))
         spatial_overlap = math.cos(2*math.pi*spatial_mismatch)
         #print orientation_factor,spatial_overlap
-        self.g = orientation_factor*spatial_overlap*np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))
+        self.g = orientation_factor*spatial_overlap*np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume*n_diamond**3))
         #kaupp et al (scaling laws)
         #self.g = np.sqrt((3.*math.pi*c*(wavelength**2)*self.gamma_tot)/(2.*self.mode_volume))
         #note that for an accurate treatment, we should perhaps use n_diamond in here. (mu~1/sqrt(n)()
@@ -457,10 +457,17 @@ class CavitySims ():
         return self.long_modes_lambda, self.long_modes_freq
 
     def find_nearest_cav_mode(self):
-        modes_lambda, modes_freq = self.calc_longitudinal_cav_modes(reference = 'cavity_length')
-        i,self.wavelength_cav = self.find_nearest(modes_lambda,self.wavelength_ZPL)
+        """
+        function finds longitudinal cavity mode nearest to ZPL. 
+        Returns:
+        self.i_mode_cav - corresponding index in long_modes_lambda array
+        self.wavelength_cav -nearest cavity mode in wavelength
+        self.frequency_cav - nearest cavity mode in frequency
+        """
+        #modes_lambda, modes_freq = self.calc_longitudinal_cav_modes(reference = 'cavity_length')
+        self.i_mode_cav,self.wavelength_cav = self.find_nearest(self.long_modes_lambda,self.wavelength_ZPL)
         self.frequency_cav = c/self.wavelength_cav
-        return self.wavelength_cav,self.frequency_cav
+        return self.i_mode_cav,self.wavelength_cav,self.frequency_cav
 
 
     def calculate_derived_params (self, verbose=False,**kw):
@@ -552,7 +559,7 @@ class CavitySims ():
 
         #the for us relevant factor - emission from ZPL into cavity mode (R[0,0]) compared to free speac emission gamma_tot
         self.F = self.R/float(self.gamma_tot)
-        self.F0 = self.R[0,0] #I don't think this factor means anything
+        self.F0 = self.R[0,self.i_mode_cav] #I don't think this factor means anything
 
         #probability of emission into all channels
         self.P = self.R/ float(np.sum(np.sum(self.R))+self.gamma_tot)
@@ -561,16 +568,26 @@ class CavitySims ():
 
         #sum over the PSB lines. Emission into the different longitudinal modes, per PSB
         self.P_PSB = np.sum(self.P[1:,:],axis=0) 
+        #self.P_PSB = np.sum(np.concatenate((self.P[:self.i_mode_cav,:],self.P[self.i_mode_cav+1:,:])),axis=0) 
         #Emission from all PSB lines into the 'zero-order' longitudinal mode; thus the one on resonance with NV
-        self.P_PSB_zero = self.P_PSB[0]
+        #self.P_PSB_zero = self.P_PSB[0]
+        self.P_PSB_zero = self.P_PSB[self.i_mode_cav]
         #Emission from all PSB into all other cavity modes than the 'zero-order' one
-        self.P_PSB_nonzero = np.sum(self.P_PSB[1:])
+        if self.i_mode_cav==0:
+            self.P_PSB_nonzero = np.sum(self.P_PSB[1:])
+        else:
+            self.P_PSB_nonzero = np.sum(self.P_PSB[:self.i_mode_cav]+self.P_PSB[self.i_mode_cav+1:])
         #Emission into the different longitudinal modes for the ZPL
         self.P_ZPL = self.P[0,:]
+        #self.P_ZPL = self.P[self.i_mode_cav,:]
         #emission from the ZPL into the 'zero-order' longitudinal cavity mode
-        self.P_ZPL_zero  = self.P_ZPL[0]
+        #self.P_ZPL_zero  = self.P_ZPL[0]
+        self.P_ZPL_zero  = self.P_ZPL[self.i_mode_cav]
         #Emission from the ZPL into all other cavity modes than the 'zero-order' one
-        self.P_ZPL_nonzero = np.sum(self.P_ZPL[1:])    
+        if self.i_mode_cav==0:
+            self.P_ZPL_nonzero = np.sum(self.P_ZPL[1:]) 
+        else:   
+            self.P_ZPL_nonzero = np.sum(self.P_ZPL[:self.i_mode_cav]+self.P_ZPL[self.i_mode_cav+1:])    
         #the total decay of the NV both into the cavity and outside of the cavity, per NV line   
         self.R_plus_gm = np.add(self.R_tot, self.gamma_relative)
         #the lifetime is the inverse of the total decay rate.
@@ -646,6 +663,32 @@ class CavitySims ():
         ax.set_ylabel('branching ratio', fontsize = 20)
         return sweep_vals, branchingratio, branchingratio_A, branchingratio_D,ax
 
+    def plot_lifetime_vs_cavity_length(self,min_val=0, max_val=5, nr_points=201, **kw):
+        sweep_vals = np.linspace (min_val, max_val, nr_points)
+        lifetime = np.zeros(nr_points)
+        lifetime_A = np.zeros(nr_points)
+        lifetime_D = np.zeros(nr_points)
+
+        for i,p in enumerate(sweep_vals):
+            self.set_cavity_length(p*1.e-6)
+
+            self.calculate_derived_params(**kw)
+            lifetime[i] = self.mod_lifetime
+            lifetime_A[i] = self.mod_lifetime_A
+            lifetime_D[i] = self.mod_lifetime_D
+
+        fig = plt.figure (figsize=(8,6))
+        ax = fig.add_subplot(111)
+
+        ax.plot(sweep_vals, lifetime*1.e9, color = 'DarkViolet', linewidth = 4, label = 'lifetime in standard cav') 
+        #ax.plot(sweep_vals, lifetime_A, color = 'Red', linewidth = 4, label = 'lifetime in airmode') 
+        #ax.plot(sweep_vals, lifetime_D, color = 'Cyan', linewidth = 4, label = 'lifetime in diamondmode') 
+        ax.legend()
+        ax.set_xlabel('cavity length', fontsize = 20)
+        ax.set_ylabel('lifetime (ns)', fontsize = 20)
+        return sweep_vals,lifetime, lifetime_A, lifetime_D, ax
+
+
     def plot_lifetime_vs_finesse(self,min_val=0, max_val=20000, nr_points=201, **kw):
         sweep_vals = np.linspace (min_val, max_val, nr_points)
         lifetime = np.zeros(nr_points)
@@ -664,8 +707,8 @@ class CavitySims ():
         ax = fig.add_subplot(111)
 
         ax.plot(sweep_vals, lifetime, color = 'DarkViolet', linewidth = 4, label = 'lifetime in standard cav') 
-        ax.plot(sweep_vals, lifetime_A, color = 'DarkViolet', linewidth = 4, label = 'lifetime in airmode') 
-        ax.plot(sweep_vals, lifetime_D, color = 'Cyan', linewidth = 4, label = 'lifetime in diamondmode') 
+        #ax.plot(sweep_vals, lifetime_A, color = 'Red', linewidth = 4, label = 'lifetime in airmode') 
+        #ax.plot(sweep_vals, lifetime_D, color = 'Cyan', linewidth = 4, label = 'lifetime in diamondmode') 
         ax.legend()
         ax.set_xlabel('finesse', fontsize = 20)
         ax.set_ylabel('branching ratio', fontsize = 20)
@@ -834,7 +877,7 @@ class CavitySims ():
 
          
         #for now always return x (the sweep paran), y3 (ZPL to zero mode) and y11 (lifetime)
-        return x,y3, y11
+        return x,y3,y10, y11
 
 
     def Ltot_to_finesse(self,Ltot):
