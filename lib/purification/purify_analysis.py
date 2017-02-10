@@ -31,7 +31,7 @@ class purify_analysis(object):
     general class that stores prefiltered data and serves as analysis suite for non-local correlation measurements
     """
 
-    def __init__(self,name,lt3_folder,lt4_folder,ROC_lt3_tstamp,ROC_lt4_tstamp,**kw):
+    def __init__(self,name,lt3_folder,lt4_folder,ROC_lt3_folder,ROC_lt4_folder,**kw):
         """
         data is in general stored in dictionaries associated with one of the two setups. each dictionary entry contains a list of np.arrays (each entry corresponding to one given timestamp)
         we additionally store the full purify_pq object for further processing of the raw data
@@ -66,8 +66,8 @@ class purify_analysis(object):
         self.lt3_folder = lt3_folder
         self.lt4_folder = lt4_folder
 
-        self.ROC_lt3_tstamp = ROC_lt3_tstamp
-        self.ROC_lt4_tstamp = ROC_lt4_tstamp
+        self.ROC_lt3_folder = ROC_lt3_folder
+        self.ROC_lt4_folder = ROC_lt4_folder
 
     def get_tstamps_and_offsets(self,contains = 'Purify',return_tstamps = False,verbose = False, unshifted_days = None,shifted_days = None,shifted_data_correction_time = None, shifted_data_start_offset_ch1 = None,unshifted_data_start_offset_ch1= None):
         all_lt3 , all_lt4 = [],[]
@@ -358,7 +358,7 @@ class purify_analysis(object):
         return
 
 
-    def apply_sync_filter_w1_w2(self,verbose = True,max_w2 = None):
+    def apply_sync_filter_w1_w2(self,verbose = True,max_w2 = None,return_events = False):
         """
         checks if associated sync number corresponds to a click in entanglement generation 1 or 2 and alters self.st_fltr_w1 and self.st_fltr_w2
         is applied after temporal filtering.
@@ -415,7 +415,8 @@ class purify_analysis(object):
         if verbose:
             print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
 
-
+        if return_events:
+            return no_w2
     def apply_is_purified_filter(self,signature = '11',verbose = True):
         """
         correlates the electron RO signature after the purification gate to "ms0 & ms0"
@@ -508,6 +509,45 @@ class purify_analysis(object):
             
             fltr_w1[fltr_w1] = cr_filter_w1
             fltr_w2[fltr_w2] = cr_filter_w2
+
+            self.st_fltr_w1.append(fltr_w1)
+            self.st_fltr_w2.append(fltr_w2)
+            
+            no_w1 += np.sum(fltr_w1)
+            no_w2 += np.sum(fltr_w2)
+        
+        if verbose:
+
+            print 'number of filtered detection events in each window w1 / w2: ', no_w1, ' / ', no_w2
+            print
+
+    def apply_phase_correction_reps_filter(self,valid_reps = None, verbose = True):
+        '''
+        Filters to only allow certain numbers of phase correction reps.
+        '''
+
+        if valid_reps == None:
+            valid_reps = analysis_params.filter_settings['valid_reps']
+
+        temp_fltr_w1 = cp.deepcopy(self.st_fltr_w1) ## store
+        temp_fltr_w2 = cp.deepcopy(self.st_fltr_w2) ## store
+
+        self.st_fltr_w1, self.st_fltr_w2 = [],[] ### reinitialize
+
+        loop_arrays = zip (temp_fltr_w1,temp_fltr_w2,self.lt4_dict['/PQ_sync_number-1'],self.lt4_dict['counted_awg_reps_w1'],self.lt4_dict['counted_awg_reps_w2'],self.lt3_dict['Phase_correction_repetitions'],self.lt4_dict['Phase_correction_repetitions'])
+        
+        no_w1, no_w2 = 0, 0
+
+        for fltr_w1,fltr_w2,sync_nrs,adwin_nrs_w1,adwin_nrs_w2,phase_correction_reps_lt3,phase_correction_reps_lt4 in loop_arrays:
+
+            adwin_indices_w1  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w1],adwin_nrs_w1)
+            adwin_indices_w2  = self.filter_adwin_data_from_pq_syncs(sync_nrs[fltr_w2],adwin_nrs_w2)
+            
+            pc_filter_w1 = np.logical_and(np.in1d(phase_correction_reps_lt3[adwin_indices_w1],valid_reps), np.in1d(phase_correction_reps_lt4[adwin_indices_w1],valid_reps))
+            pc_filter_w2 = np.logical_and(np.in1d(phase_correction_reps_lt3[adwin_indices_w2],valid_reps), np.in1d(phase_correction_reps_lt4[adwin_indices_w2],valid_reps))
+            
+            fltr_w1[fltr_w1] = pc_filter_w1
+            fltr_w2[fltr_w2] = pc_filter_w2
 
             self.st_fltr_w1.append(fltr_w1)
             self.st_fltr_w2.append(fltr_w2)
@@ -704,9 +744,9 @@ class purify_analysis(object):
 
         if apply_ROC: 
             ### get ssro_ROC for LT3 --> corresponds to setup B
-            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_folder,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
             ### get ssro_ROC for LT4 --> corresponds to setup A
-            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_folder,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
 
             ### apply ROC to the results --> input arrays for this function have to be reversed!
             corrected_psi_minus,u_minus = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(m_correlations[::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
@@ -740,9 +780,8 @@ class purify_analysis(object):
         if return_value:
             return m_correlations,[],p_correlations,[],np.sum(m_correlations),np.sum(p_correlations)
 
-    def find_RO_fidelities(self,timestamp,data_attrs,folder = ''):
+    def find_RO_fidelities(self,ssro_folder,data_attrs,folder = ''):
 
-        ssro_folder = tb.data_from_time(timestamp,folder = folder) 
         # print ssro_folder
         if 'MWInit' in ssro_folder:
             e_trans_string = data_attrs['electron_transition']
@@ -752,6 +791,8 @@ class purify_analysis(object):
         else:
             F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_calibration(ssro_folder,data_attrs['E_RO_durations'][0]) #we onlky have one RO time in E_RO_durations
 
+        # print 'mean fidelity for our RO time: ',(F_0+F_1)/2.,np.sqrt(u_F0**2+u_F1**2)/np.sqrt(2)
+        # print 'individual fidelities ', F_0,u_F0,F_1,u_F1
         return F_0,F_1
 
 
@@ -783,6 +824,7 @@ class purify_analysis(object):
             self.apply_is_purified_filter(verbose = False)
             self.apply_CR_before_filter(verbose=False)
             self.apply_CR_after_filter(verbose=False)
+            self.apply_phase_correction_reps_filter(verbose=False)
             self.attach_state_filtered_syncs(verbose = False)
             psi_m_corrs,minus_u, psi_p_corrs,plus_u,no_m,no_p = self.correlate_RO_results(verbose=False,return_value = True,apply_ROC = apply_ROC)
 
@@ -849,7 +891,10 @@ class purify_analysis(object):
         ### commence plotting
 
         ### check if we are dealing with timing or something else (like CR after...)
-        if max(parameter_range) > 1000:
+        if parameter_name == 'valid_reps':
+            x = np.arange(len(parameter_range))
+            x_units = ''
+        elif max(parameter_range) > 1000:
             x = parameter_range/1000
             x_units = ' (ns)'
         else:
@@ -950,9 +995,9 @@ class purify_analysis(object):
 
         if apply_ROC: 
             ### get ssro_ROC for LT3 --> corresponds to setup B
-            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_folder,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
             ### get ssro_ROC for LT4 --> corresponds to setup A
-            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_folder,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
 
             ### apply ROC to the results --> input arrays for this function have to be reversed!
             corrected_corrs,u_corrected_corrs = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(correlations[::-1]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,verbose = verbose,return_error_bars = True)
@@ -1042,9 +1087,9 @@ class purify_analysis(object):
         
         if apply_ROC:
             ### get ssro_ROC for LT3 --> corresponds to setup B
-            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_tstamp,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
+            F0_LT3,F1_LT3 = self.find_RO_fidelities(self.ROC_lt3_folder,self.lt3_dict['data_attrs'][0],folder = self.lt3_folder)
             ### get ssro_ROC for LT4 --> corresponds to setup A
-            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_tstamp,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
+            F0_LT4,F1_LT4 = self.find_RO_fidelities(self.ROC_lt4_folder,self.lt4_dict['data_attrs'][0],folder = self.lt4_folder)
 
             ### apply ROC to the results --> input arrays for this function have to be reversed!
 
@@ -1122,9 +1167,11 @@ class purify_analysis(object):
             dm_p_re_u,dm_m_re_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
             dm_p_im_u,dm_m_im_u = np.zeros((4,4),dtype = complex),np.zeros((4,4),dtype = complex)
 
-            t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z!
+            t_dict = {'I' : 0, 'X':3, 'Y':2, 'Z':1} # flip flop X and Z! 
 
-            paulis2[1] = -paulis2[1] #this fixes the state issue once we found out what the problem is...
+            ### changing the basis system leads to an effective flip of the Z operator. Rotating X to Z rotates Z to -X!
+            paulis2[1] = -paulis2[1] 
+            paulis[1] = -paulis[1] 
 
             for t in ['I','X','Y','Z']:
                 for t2 in ['I','X','Y','Z']:
@@ -1139,14 +1186,20 @@ class purify_analysis(object):
                             corrected_setup = 'lt4'
                         else:
                             corrected_setup = 'lt3'
-                        # print t+t2,self.correlation_dict_p[t+t2],self.correlation_dict_p_u[t+t2]
+
                         exp_p,exp_p_u = do_carbon_ROC_1q(*(get_1q_expectation_val(self.correlation_dict_p[t+t2],self.correlation_dict_p_u[t+t2])+(corrected_setup,)))
                         exp_m,exp_m_u = do_carbon_ROC_1q(*(get_1q_expectation_val(self.correlation_dict_m[t+t2],self.correlation_dict_m_u[t+t2])+(corrected_setup,)))
                     else:
                         exp_p,exp_p_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_p[t+t2], self.correlation_dict_p_u[t+t2]))
                         exp_m,exp_m_u = do_carbon_ROC(*get_2q_expectation_val(self.correlation_dict_m[t+t2], self.correlation_dict_m_u[t+t2]))
                     
-                    
+                    ### correct for the minus sign that we obtained by switching I & Q on the two sides...
+
+                    if t+t2 == 'ZZ':
+                        exp_p = -exp_p
+                        exp_m = -exp_m
+
+                    #### put matrices together.
                     dm_p +=(exp_p)*sigma_kron/4.
                     dm_p_re_u += (exp_p_u**2)*np.abs(sigma_kron.real)/16.
                     dm_p_im_u += (exp_p_u**2)*np.abs(sigma_kron.imag)/16.
@@ -1219,7 +1272,7 @@ class purify_analysis(object):
 
         return total_duration
 
-    def calculate_sequence_time(self,lt4_timestamps = None,offsets = None,offsets_ch1=None,st_start=None,st_len=None,max_w2 = None):
+    def calculate_sequence_time(self,print_details = True, return_click_prob = False, lt4_timestamps = None,offsets = None,offsets_ch1=None,st_start=None,st_len=None,max_w2 = None):
         """
         Approximates the time spent in the AWG sequence:
         Uses the fact that clicks picked up by the plu are always followed by a special sync to filter out clicks in w1 and w2, even if the ultimate second click was not successful.
@@ -1324,8 +1377,9 @@ class purify_analysis(object):
         crude_click_prob = num_first_clicks/float(total_syncs)
         first_click_prob = 1/float(avg_attempts_per_first_click)
 
+        StorageSuccessProb = 0.88;
         # Times per success
-        est_succ_prob_given_first_click = (1-(1-first_click_prob)**max_w2)
+        est_succ_prob_given_first_click = StorageSuccessProb**2*(1-(1-first_click_prob)**max_w2)
         meas_succ_prob_given_first_click = num_successes/float(num_first_clicks)
 
         succ_prob_given_first_click = meas_succ_prob_given_first_click
@@ -1337,44 +1391,48 @@ class purify_analysis(object):
         est_time_per_success = entanglement_time + reset_time + store_time + msmt_time
 
         # B and K comparisons
-        tail_lt3 = 7.2 #9.1975 for SIL 3
-        tail_lt4 = 5.1514
+        tail_lt3 = 8.0 #9.1975 for SIL 3
+        tail_lt4 = 4.0
         click_prob_lt4 = first_click_prob*tail_lt4/(tail_lt4 + tail_lt4)
         click_prob_lt3 = first_click_prob*tail_lt3/(tail_lt4 + tail_lt4)
 
         prob_successive_clicks =  (0.5*(click_prob_lt4*click_prob_lt3) + 0.25*click_prob_lt4**2 + 0.25*click_prob_lt3**2)
         expected_disting_clicks = prob_successive_clicks * total_syncs
 
-        print 'num_raw_successes: ', num_raw_successes
-        print 'num filtered successes: ', num_successes
-        print 'num_first_clicks: ', num_first_clicks
-        print 'num_syncs: ', total_syncs
+        if print_details:
+            print 'num_raw_successes: ', num_raw_successes
+            print 'num filtered successes: ', num_successes
+            print 'num_first_clicks: ', num_first_clicks
+            print 'num_syncs: ', total_syncs
 
-        print '\n'
-        print 'crude click_prob (first_clicks/syncs): ', crude_click_prob
-        print 'meas. first click prob: ', first_click_prob
-        print 'avg_attempts_per_first_click: ', avg_attempts_per_first_click
-        print 'est_resets_per_first_click: ', resets_per_first_click
-        print 'est. success prob given first click: ', est_succ_prob_given_first_click
-        print 'meas. success prob given first click: ', meas_succ_prob_given_first_click
-        print 'inferred storage success rate (per side): ', np.sqrt(meas_succ_prob_given_first_click/est_succ_prob_given_first_click)
-        print '\n'
-        print 'Times per successful event:'
-        print 'entanglement_time: ',entanglement_time 
-        print 'reset_time: ',reset_time
-        print 'store_time: ',store_time
-        print 'msmt_time: ',msmt_time
-        print 'est_total_time: ', num_successes * est_time_per_success
-        print 'elapsed_total_time: ', total_time
+            print '\n'
+            print 'crude click_prob (first_clicks/syncs): ', crude_click_prob
+            print 'meas. first click prob: ', first_click_prob
+            print 'avg_attempts_per_first_click: ', avg_attempts_per_first_click
+            print 'est_resets_per_first_click: ', resets_per_first_click
+            print 'est. success prob given first click: ', est_succ_prob_given_first_click
+            print 'meas. success prob given first click: ', meas_succ_prob_given_first_click
+            print 'inferred storage success rate (per side): ', np.sqrt(meas_succ_prob_given_first_click/est_succ_prob_given_first_click)
+            print '\n'
+            print 'Times per successful event:'
+            print 'entanglement_time: ',entanglement_time 
+            print 'reset_time: ',reset_time
+            print 'store_time: ',store_time
+            print 'msmt_time: ',msmt_time
+            print 'est_total_time: ', num_successes * est_time_per_success
+            print 'elapsed_total_time: ', total_time
+            
+            print '\n'
+            print 'est. rate (inc. purific. succ.): ',(0.2)*(1/est_time_per_success)
+            print 'crude rate from number of syncs (inc. purific. succ.): ',(0.2)*num_successes/(total_syncs*LDE_elem_length)
+            print 'actual rate (inc. purific. succ.): ',(0.2)*float(num_successes)/total_time
+            print 'est. duty cycle: ',(est_time_per_success*float(num_successes))/(total_time)
         
-        print '\n'
-        print 'est. rate (inc. purific. succ.): ',(0.2)*(1/est_time_per_success)
-        print 'crude rate from number of syncs (inc. purific. succ.): ',(0.2)*num_successes/(total_syncs*LDE_elem_length)
-        print 'actual rate (inc. purific. succ.): ',(0.2)*float(num_successes)/total_time
-        print 'est. duty cycle: ',(est_time_per_success*float(num_successes))/(total_time)
-    
-        print '\n'
-        print 'TPQI expected disting clicks: ', expected_disting_clicks
+            print '\n'
+            print 'TPQI expected disting clicks: ', expected_disting_clicks
+
+        if return_click_prob:
+            return num_first_clicks, float(total_syncs), entanglement_time, reset_time, store_time, msmt_time
 
     def get_sequence_time(self):
         """
@@ -1426,7 +1484,7 @@ class purify_analysis(object):
         title = kw.pop('title',None)
 
         fig = plt.figure()
-        ax = plt.subplot()
+        ax = plt.subplot(1,1,1)
 
         if xlabel != None:
             plt.xlabel(xlabel)
@@ -1646,7 +1704,6 @@ def do_carbon_ROC_1q(expectation_value,uncertainty,key):
     """
     takes a two-partite expectation value and applies carbon read-out correction 
     Returns the corrected expectation value and a new uncertainty via error propagation
-    TODO: FILL IN PROPER VALUES
     """
     #### these values were measured on 15-08-2016
     ### see onenote/ carbon control LT3/LT4 for details
@@ -1666,6 +1723,8 @@ def calculate_ebits(parity_ZZ,parity_YY,correlations_XX):
 
     del_p00,del_p01,del_p10,del_p11, del_c0110 = sp.symbols('del_p00,del_p01,del_p10,del_p11, del_c0110')
 
+    # log negativity!
+
     logNegSimp = parse_expr('log(p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2))/log(2)')
 
     error_p00 = parse_expr('p00/(sqrt(2) * sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))* (p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2))* log(2))')
@@ -1675,26 +1734,58 @@ def calculate_ebits(parity_ZZ,parity_YY,correlations_XX):
     error_c0110 = parse_expr('(sqrt(2) *c0110 * ((1+(-1+p01+p10)/sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10)* sqrt(4 *c0110**2+(-1+p01+p10+2* p11)**2))+(1+(-1+p01+p10)**2/sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2* p11)**2)))/sqrt(2 *c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4 *c0110**2+(-1+p01+p10+2 *p11)**2)))))/((p01+p10+sqrt(2 *c0110**2+p11**2+(-1+p01+p10+p11)**2+(-1+p01+p10) *sqrt(4 *c0110**2+(-1+p01+p10+2 *p11)**2))/sqrt(2)+sqrt(2* c0110**2+p00**2+p11**2+sqrt((-1+p01+p10)**2 *(4* c0110**2+(-1+p01+p10+2 *p11)**2)))/sqrt(2)) *log(2))')
 
 
-    error =  sp.sqrt((error_p00*del_p00)**2+(error_p01*del_p01)**2+(error_p10*del_p10)**2 +\
+    LNerror =  sp.sqrt((error_p00*del_p00)**2+(error_p01*del_p01)**2+(error_p10*del_p10)**2 +\
                      (error_p11*del_p11)**2 + (error_c0110*del_c0110)**2)
 
     logNegF = sp.lambdify([c0110, p00, p01, p10, p11],logNegSimp)
-    logNegU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110, del_p00,del_p01,del_p10,del_p11],error)
+    logNegU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110, del_p00,del_p01,del_p10,del_p11],LNerror)
+
+    # Von Neumann Entropy
+
+    VonNeumann = parse_expr('-(p00+p01) * log(p00+p01) -(p10+p11) * log(p10+p11) - 0.5* ((p01+p10) * log(4)-2 * p00 * log(p00)-2 * p11 * log(p11)+(-p01-p10+sqrt((p01-p10)**2+4 * c0110 **2)) * log(p01+p10-sqrt((p01-p10)**2+4 * c0110**2))-(p01+p10+sqrt((p01-p10)**2+4 * c0110**2)) * log(p01+p10+sqrt((p01-p10)**2+4 * c0110**2)))')
+    errorVN_p00 = parse_expr('-log(1+p01/p00)')
+    errorVN_p01 = parse_expr('(- log(p00+p01) - 1) - (1/(2 *sqrt(4 * c0110**2+(p01-p10)**2)))*(sqrt(4 * c0110**2+(p01-p10)**2) * (-2+log(4))-(-p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10) * log(p01-sqrt(4 * c0110**2+(p01-p10)**2)+p10)-(p01+sqrt(4 * c0110**2+(p01-p10)**2)-p10) * log(p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10))')
+    errorVN_p10 = parse_expr('(- log(p10+p11) - 1) - (1/(2 *sqrt(4 * c0110**2+(p01-p10)**2)))*(sqrt(4 * c0110**2+(p01-p10)**2) * (-2+log(4))-(p01+sqrt(4 * c0110**2+(p01-p10)**2)-p10) * log(p01-sqrt(4 * c0110**2+(p01-p10)**2)+p10)-(-p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10) * log(p01+sqrt(4 * c0110**2+(p01-p10)**2)+p10))')
+    errorVN_p11 = parse_expr('-log(p10/p11+1)')
+    errorVN_c0110 = parse_expr('-(2 * c0110 * (log(p01-sqrt(4 *c0110**2+(p01-p10)**2)+p10)-log(p01+sqrt(4* c0110**2+(p01-p10)**2)+p10)))/sqrt(4* c0110**2+(p01-p10)**2)')
+    VNerror =  sp.sqrt((errorVN_p00*del_p00)**2+(errorVN_p01*del_p01)**2+(errorVN_p10*del_p10)**2 +\
+                     (errorVN_p11*del_p11)**2+ (errorVN_c0110*del_c0110)**2)
+
+    VonNeumannF = sp.lambdify([c0110, p00, p01, p10, p11],VonNeumann)
+    VonNeumannU = sp.lambdify([c0110, p00, p01, p10, p11,del_c0110,del_p00,del_p01,del_p10,del_p11],VNerror)
+
+    
 
     c0110 = (parity_ZZ[1] + parity_YY[1])/float(4)# Define correlations as even - odd
     c0110_u = np.sqrt(parity_ZZ[2]**2 + parity_YY[2]**2)/float(4)
 
-    p00,p01,p10,p11 = np.array(correlations_XX[0][0]),np.array(correlations_XX[0][1]),np.array(correlations_XX[0][2]),np.array(correlations_XX[0][3])
+    def checkpos(x):
+        x = np.array(x)
+        x[x<1e-9] = 1e-9
+        return x
+
+    p00,p01,p10,p11 = checkpos(np.array(correlations_XX[0][0])),checkpos(np.array(correlations_XX[0][1])),checkpos(np.array(correlations_XX[0][2])),checkpos(np.array(correlations_XX[0][3]))
+
     del_p00,del_p01,del_p10,del_p11 = np.array(correlations_XX[1][0]),np.array(correlations_XX[1][1]),np.array(correlations_XX[1][2]),np.array(correlations_XX[1][3])
 
-    ebits = []
-    ebits_u = []
+    ebitsLN = []
+    ebitsLN_u = []
+    ebitsVN = []
+    ebitsVN_u = []
     for c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind in zip(c0110,p00,p01,p10,p11,c0110_u,del_p00,del_p01,del_p10,del_p11):
 
-        ebits.append(logNegF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind))
-        ebits_u.append(logNegU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind))
+        ebitsLN.append(logNegF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind))
+        ebitsLN_u.append(logNegU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind))
+
+        # VNF= VonNeumannF(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind)
+        # VNU = VonNeumannU(c0110_ind,p00_ind,p01_ind,p10_ind,p11_ind,c0110_u_ind,del_p00_ind,del_p01_ind,del_p10_ind,del_p11_ind)
+        # print VNF
+        # VNF = 0 if VNF < 0 else VNF
+        # VNU = 0 if VNU < 0 else VNU
+        ebitsVN.append(0)
+        ebitsVN_u.append(0)
     
-    return np.array(ebits), np.array(ebits_u)
+    return np.array(ebitsLN), np.array(ebitsLN_u),np.array(ebitsVN), np.array(ebitsVN_u)
 
 def convert_attrs_to_dict(attrManagerItems):
     data_attrs = dict([])
@@ -1749,6 +1840,8 @@ def get_2q_expectation_val(arr,arr_u):
 def get_photon_hists_from_tstamps(tstamps,base_folder, **kw):
     offsets = kw.pop('offsets', np.zeros(len(tstamps)))
     offsets_ch1 = kw.pop('offsets_ch1',  np.zeros(len(tstamps)))
+
+    fltr_plu = kw.pop('fltr_plu',False)
     
     '''
     return the cumulative photon histogram from all data contained in a folder
@@ -1758,23 +1851,51 @@ def get_photon_hists_from_tstamps(tstamps,base_folder, **kw):
         f = tb.get_msmt_fp(tb.data_from_time(t_lt4,folder = base_folder))
 
         f = pq_tools.pqf_from_fp(f, rights = 'r')
-        if i == 0:
-            (h0,b0),(h1,b1) = pq_tools.get_photon_hist(f, offset = offsets[i], offset_ch1 = offsets_ch1[i], **kw)
+
+        if fltr_plu:
+            mrkr_chan = 1 # this is the plu marker channel
+            fltr = pq_tools.filter_marker(f, mrkr_chan,VERBOSE=False)
         else:
-            (_h0,_b0),(_h1,_b1) = pq_tools.get_photon_hist(f, offset = offsets[i], offset_ch1 = offsets_ch1[i], **kw)
+            fltr = None    
+
+        if i == 0:
+            (h0,b0),(h1,b1) = pq_tools.get_photon_hist(f, offset = offsets[i], offset_ch1 = offsets_ch1[i],fltr=fltr, **kw)
+        else:
+            (_h0,_b0),(_h1,_b1) = pq_tools.get_photon_hist(f, offset = offsets[i], offset_ch1 = offsets_ch1[i],fltr=fltr, **kw)
             h0 += _h0
             h1 += _h1
         f.close()
     return (h0, b0*1e-3), (h1, b1*1e-3)
 
-def plot_photon_hist(ax, h, b, log=True, **kw):
+
+def get_no_of_syncs_from_tstamps(tstamps,base_folder,**kw):
+
+    syncs = 0
+
+    if tstamps == []:
+        return syncs
+
+    for i, t_lt4 in enumerate(tstamps):
+        f = tb.get_msmt_fp(tb.data_from_time(t_lt4,folder = base_folder))
+
+        f = pq_tools.pqf_from_fp(f, rights = 'r')
+        
+        syncs += (f['PQ_sync_number-1'].value)[-1]
+        f.close()
+
+    return syncs
+def plot_photon_hist(ax, h, b, log=True,normalized = False, **kw):
     label = kw.pop('label', '')
 
     _h = h.astype(float)
-    _h[_h<=1e-1] = 1e-1
+    if not normalized:
+        _h[_h<=1e-1] = 1e-1
+
+    else:
+        _h[_h<=1e-10] = 1e-10
     _h = np.append(_h, _h[-1])
            
-    ax.plot(b, _h, drawstyle='steps-post', label=label)
+    ax.plot(b, _h, drawstyle='steps-post', label=label,**kw)
     if log:
         ax.set_yscale('log')
     ax.set_xlabel('time (ns)')
@@ -1788,13 +1909,13 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     See also electron_nuclear_bell_state.py
     """
     save_folder = r'K:\ns\qt\Diamond\Projects\Purification\Paper\Plots'
-    color = '#90C3D4'
+    color = '#3594F2'
     alpha = 0.67
     fontsize = 10
     lw = 1 #  linewidths
     xticks = [r'$|$X,X$\rangle$',r'$|$X,-X$\rangle$',r'$|$-X,X$\rangle$',r'$|$-X,-X$\rangle$']
     yticks = [r'$\langle$X,X$|$',r'$\langle$X,-X$|$',r'$\langle$-X,X$|$',r'$\langle$-X,-X$|$']
-    hf = plt.figure(figsize=np.array(plt.figaspect(0.45))/1.5)
+    hf = plt.figure(figsize=np.array(plt.figaspect(0.5))/1.5)
     ha = plt.subplot(121, projection='3d')
     # ha.grid(False)
     plt.gca().patch.set_facecolor('white')
@@ -1818,9 +1939,9 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     if dm_u_re != None:
         dm_err_re = np.reshape(np.asarray(dm_u_re), 16)
         for i in np.arange(0,len(xpos)):
-            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black',mew=lw,zorder = 0)
+            ha.plot([dx[i]/2+xpos[i],dx[i]/2+xpos[i]],[dy[i]/2+ypos[i],dy[i]/2+ypos[i]],[dz[i]-dm_err_re[i],dz[i]+dm_err_re[i]],marker="_",color = 'black',mew=lw,zorder=90)
 
-    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha,linewidths=0.7,zorder= 1)
+    ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha,linewidths=0.7,zorder= 100)
 
 
     # ha.set_title('Real part')
@@ -1849,13 +1970,13 @@ def plot_3D_bars(input_matrix,dm_u_re = None,dm_u_im = None,name=''):
     #     label.customShiftValue = SHIFT
     #     label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValue ), 
     #                                     label, matplotlib.text.Text )
-    ha.set_zticklabels([-0.4,-0.2,0.0,0.2,0.4],size=  fontsize,
+    ha.set_zticklabels([-0.2,0.0,0.2,0.4],size=  fontsize,
                    va='center',
                    ha ='left')
-    ha.set_zticks([-0.4,-0.2,0.0,0.2,0.4])
+    ha.set_zticks([-0.2,0.0,0.2,0.4])
     ha.set_xticks([0.125,0.625,1.125,1.625])
     ha.set_yticks([0.125,0.625,1.125,1.625])
-    ha.set_zlim([-0.5,0.5])
+    ha.set_zlim([-0.3,0.5])
 
 
 

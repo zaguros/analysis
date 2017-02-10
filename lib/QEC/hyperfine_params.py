@@ -4,11 +4,14 @@
 
 # in Rad/Hz
 
+
 ### fitted to the ms = -1 data
+
 hyperfine_params = {}
-hyperfine_params['C1']  = {'par' : -53.0e3, 'perp':50.0e3}
-hyperfine_params['C2']  = {'par' : -45.0e3, 'perp':25.0e3}
-# hyperfine_params['C3']  = {'par' : 74.0e3, 'perp':20.0e3}
+hyperfine_params['espin_trans'] = '-1'
+hyperfine_params['C1']  = {'par' : 33.0e3, 'perp':35.0e3}
+hyperfine_params['C2']  = {'par' : 26.5e3, 'perp':30.0e3}
+# hyperfine_params['C3']  = {'par' : -365.0e3, 'perp':80.0e3}
 # hyperfine_params['C4']  = {'par' : 8.1e3, 'perp':21.0e3}
 # hyperfine_params['C5']  = {'par' : 24.7e3, 'perp':26.0e3}
 # hyperfine_params['C6']  = {'par' : -48.7e3, 'perp':12.0e3}
@@ -16,12 +19,14 @@ hyperfine_params['C2']  = {'par' : -45.0e3, 'perp':25.0e3}
 # hyperfine_params['C8']  = {'par' : -20.5e3, 'perp':21.0e3}
 # hyperfine_params['C8']  = {'par' : 7.32e3, 'perp':5.0e3}
 
+### Adding some random test spins: spins 9 and 10 are not "real" spins obtained from data
+hyperfine_params['C9']  = {'par' : 0.32e3, 'perp':0.2e3}
+hyperfine_params['C10']  = {'par' : 3.32e3, 'perp':1.2e3}
+
 
 #########################################################
 ######### HANS SIL 1#####################################
 #########################################################
-
-
 
 ### fitted to the ms = +1 data
 # hyperfine_params_hans_SIL1_msp1 = {}

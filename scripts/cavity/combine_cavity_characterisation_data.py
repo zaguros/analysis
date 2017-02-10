@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import analysis.scripts.cavity.functions_for_processing_linewidth_data as funcs
 
 datapath = 'K:ns\qt\Diamond\Projects\Cavities\Cavity characterisation paper\data/data_for_cav_char_paper/'
+datapath = 'W:Diamond\Projects\Cavities\Cavity characterisation paper\data/data_for_cav_char_paper/'
 
 
 

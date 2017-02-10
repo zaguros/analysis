@@ -26,16 +26,16 @@ def pauli():
 
 def basic_spin_rotations():
 	''' define some simple spin rotations'''
-	X = (-1j*sx*np.pi).expm();   
-	Y = (-1j*sy*np.pi).expm();   
-	Z = (-1j*sz*np.pi).expm();   
+	X = (-1j*sx*np.pi).expm(); mX = (1j*sx*np.pi).expm()   
+	Y = (-1j*sy*np.pi).expm(); mY = (1j*sx*np.pi).expm()   
+	Z = (-1j*sz*np.pi).expm(); mZ = (1j*sz*np.pi).expm()  
 	x = (-1j*sx*np.pi/2).expm(); mx = (1j*sx*np.pi/2).expm()
 	y = (-1j*sy*np.pi/2).expm(); my = (1j*sy*np.pi/2).expm()
 	z = (-1j*sz*np.pi/2).expm(); mz = (1j*sz*np.pi/2).expm()
-	return X,Y,Z,x,y,z,mx,my,mz
+	return X,Y,Z,mX,mY,mZ,x,y,z,mx,my,mz
 
-def spin_theta_rotation(theta, phi):
-	return (-1j*(np.cos(theta)*sx + np.sin(theta)*sy)*phi).expm()
+def spin_theta_rotation(phi, theta):
+	return (-1j*(np.cos(phi)*sx + np.sin(phi)*sy)*theta).expm()
 	
 def basic_spin_states():
 	'''define some basic spin states'''
@@ -62,12 +62,12 @@ def basic_spin_states():
 
 ### create a set of usefull simple states and gates
 Id, sx, sy, sz = pauli()                                # Electron spin operators
-X,Y,Z,x,y,z,mx,my,mz = basic_spin_rotations()  # Basic gates
+X,Y,Z,mX,mY,mZ,x,y,z,mx,my,mz = basic_spin_rotations()  # Basic gates
 ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy = basic_spin_states() # Basic states
 
 gamma_c = 1.0705e3
 
-def dyn_dec_signal(carbon_params,tau, N):
+def dyn_dec_signal(carbon_params,tau, N, sign = 1):
 	''' Useful for quick investigation of fingerprints etc.
 	'''
 	
@@ -77,8 +77,8 @@ def dyn_dec_signal(carbon_params,tau, N):
 		M = np.zeros([len(carbon_params),np.size(N)])
 	for i,carbon_param in enumerate(carbon_params):
 		omega_larmor = carbon_param[0]
-		HF_par = carbon_param[1]
-		HF_perp = carbon_param[2]
+		HF_par = sign*carbon_param[1]
+		HF_perp = sign*carbon_param[2]
 
 		omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_perp**2)
 
@@ -104,25 +104,34 @@ class NV_system(object):
 
 	def __init__(self,**kw):
 
-		self.decouple_scheme = 'XY4'
+		self.decouple_scheme = kw.pop('decouple_scheme','XY4')
 
-		self.B_field = kw.pop('B_field',414.1871869) # Not currently used, could be in theory useful
+		self.B_field = kw.pop('B_field',414.1871869) 
 		self.gamma_c = 1.0705e3 #g-factor for C13 in Hz/G
 
-		self.espin_trans = '+1' # Changes sign of A_par and A_perp
+		self.espin_trans = kw.pop('espin_trans','+1')  # Changes sign of A_par and A_perp
+		self.sign = -1 if self.espin_trans == '-1' else 1
 
 		if kw.pop('use_msmt_params',False):
 			raise Exception('Not written yet!')
 		else:
 			carbon_params = kw.pop('carbon_params',False)
 			if isinstance(carbon_params,list):
-				self.num_carbons = len(carbon_params) 
-				self.carbon_params = carbon_params
+				self.num_carbons = len(carbon_params)
+				self.carbon_params = []
+				for carbon_param in carbon_params:
+					self.carbon_params.append([2 * np.pi * self.B_field * self.gamma_c,2 * np.pi * carbon_param[0],2 * np.pi * carbon_param[1]])
+				self.calc_c_prec_freqs()
 
 			elif kw.pop('use_hf_library',False):
+
 				self.carbon_params = []
 				for C_key,C_val in sorted(hf.items()): # Sort to make sure alphabetical i.e. C1, C2 etc.
-					self.carbon_params.append([2 * np.pi * self.B_field * self.gamma_c,2 * np.pi * C_val['par'],2 * np.pi * C_val['perp']])
+					if C_key == 'espin_trans':
+						self.espin_trans = C_val
+						self.sign = -1 if self.espin_trans == '-1' else 1
+					else:
+						self.carbon_params.append([2 * np.pi * self.B_field * self.gamma_c,2 * np.pi * C_val['par'],2 * np.pi * C_val['perp']])
 				self.num_carbons = len(self.carbon_params)
 				self.calc_c_prec_freqs()
 
@@ -149,6 +158,8 @@ class NV_system(object):
 		''' Define commonly used electronic operations '''
 		self._Xe = self.e_op(X)
 		self._Ye = self.e_op(Y)
+		self._mXe = self.e_op(mX)
+		self._mYe = self.e_op(mY)
 		self._xe = self.e_op(x)
 		self._ye = self.e_op(y)
 		self._mxe = self.e_op(mx)
@@ -162,11 +173,13 @@ class NV_system(object):
 		''' This is written this way so that can be easily overwritten for more complex behaviour (say using Hamiltonians instead of unitaries)'''
 		self.Xe = lambda : self._Xe
 		self.Ye = lambda : self._Ye
+		self.mXe = lambda : self._mXe
+		self.mYe = lambda : self._mYe
 		self.xe = lambda : self._xe
 		self.ye = lambda : self._ye
 		self.mxe = lambda : self._mxe
 		self.mye = lambda : self._mye
-		self.re = lambda (theta, phi) : self.e_op(spin_theta_rotation(theta, phi))
+		self.re = lambda theta, phi : self.e_op(spin_theta_rotation(theta, phi))
 
 		self.proj0 = lambda : self.e_op(rho0)
 		self.proj1 = lambda : self.e_op(rho1)
@@ -225,10 +238,9 @@ class NV_system(object):
 		''' Function to calculate the NV C13 system Hamiltonian '''
 
 		if self.recalc_Hamiltonian == True:
-			sign = -1 if self.espin_trans == '-1' else 1
-
+			
 			self.Hsys = np.sum([self.e_C_op(rho0,carbon_param[0]*sz,i+1) \
-						 + self.e_C_op(rho1,((carbon_param[0]+ sign*carbon_param[1])*sz + sign * carbon_param[2] * sx),i+1) \
+						 + self.e_C_op(rho1,((carbon_param[0]+ self.sign*carbon_param[1])*sz + self.sign * carbon_param[2] * sx),i+1) \
 				   for i,carbon_param in enumerate(self.carbon_params)]).tidyup()
 
 			self.recalc_Hamiltonian = False
@@ -298,7 +310,8 @@ class noisy_NV_system(NV_system):
 		self.tau_correction_factor = self.mw_duration
 
 		NV_system.__init__(self,**kw)
-
+		self.define_useful_states_and_e_operators()
+		self.define_gates()
 
 	def set_noisy_params(self,**kw):
 
@@ -311,11 +324,10 @@ class noisy_NV_system(NV_system):
 			self.mw_duration = mw_duration
 			self.tau_correction_factor = self.mw_duration
 		
-		self.define_noisy_operators()
-		
+		self.define_useful_states_and_e_operators()
+		self.define_gates()
 	
 	def finite_microwave_pulse(self,duration,theta,phi):
-
 		Hsys = duration*self.NV_carbon_system_Hamiltonian()
 		Hint = self.e_op(phi*(np.cos(theta)*sx + np.sin(theta)*sy))
 
@@ -325,18 +337,93 @@ class noisy_NV_system(NV_system):
 		''' Override commonly used electronic gates '''
 		self._Xe = self.finite_microwave_pulse(self.mw_duration,0.0,np.pi * self.amp_val)
 		self._Ye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,np.pi * self.amp_val)
+		self._mXe = self.finite_microwave_pulse(self.mw_duration,0.0,-np.pi * self.amp_val)
+		self._mYe = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,-np.pi * self.amp_val)
 		self._xe = self.finite_microwave_pulse(self.mw_duration,0.0,0.5*np.pi * self.amp_val)
 		self._ye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,0.5*np.pi * self.amp_val)
 		self._mxe = self.finite_microwave_pulse(self.mw_duration,0.0,-0.5*np.pi * self.amp_val)
 		self._mye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,-0.5*np.pi * self.amp_val)
-		self.re = lambda (theta, phi) : self.finite_microwave_pulse(self.mw_duration,theta,phi * self.amp_val)
+		self.re = lambda theta, phi : self.finite_microwave_pulse(self.mw_duration,theta,phi * self.amp_val)
 		self._Ide = self.e_op(Id)
 
 		''' standard init state for system '''
 		self.initial_state = qutip.tensor([rho0] + [rhom] * self.num_carbons)
 
 
+def composite_gate_calc_p_q_for_f3DD(f3DD):
 
+		q1 = 4.0/(np.sqrt(5.0 + np.pi * f3DD) + -1.0)
+		q2 = 4.0/(np.sqrt(5.0 + np.pi * f3DD) + 1.0)
+
+ 		p = 20.0*(1/4.0 - 1.0/(2.0 * np.pi) * np.arctan(np.sqrt(q1**2 - 1.0)))
+ 		q = 20.0*(1/4.0 - 1.0/(2.0 * np.pi) * np.arctan(np.sqrt(q2**2 - 1.0)))
+ 		return p,q
+
+class composite_gate_NV_system(NV_system):
+
+	def __init__(self,**kw):
+
+		self.composite_scheme = kw.pop('composite_scheme','none')
+		self.r = kw.pop('r',0.31) # For 3 pulse scheme
+		self.f3DD = kw.pop('f3DD',0.1) # For 5 pulse scheme
+		
+		self.p, self.q = composite_gate_calc_p_q_for_f3DD(self.f3DD)
+
+		NV_system.__init__(self,**kw)
+
+	
+ 	def nuclear_gate(self,N,tau,**kw):
+		'''Evolution during a decouple unit'''
+
+		if self.composite_scheme == 'none':
+			return NV_system.nuclear_gate(self,N,tau,**kw)
+
+		if self.composite_scheme == '3_pulse':
+			
+			if N%3 != 0:
+				raise Exception('Incompatible number of pulses!')
+			
+			evNV_C_r = self.NV_carbon_ev(self.nuclear_gate_tau(6*tau*(0.5-self.r)))
+			evNV_C_t = self.NV_carbon_ev(self.nuclear_gate_tau(6*tau*self.r,double_sided = True))
+
+			gate = self.compile([evNV_C_r,self.Xe(),evNV_C_t,self.Xe(),evNV_C_t,self.Xe(),evNV_C_r],reps = N/3)
+			return gate
+
+		elif self.composite_scheme == '5_pulse_simple_pulses':
+
+			if N%8 != 0:
+				raise Exception('Incompatible number of pulses!')
+
+			pulse_tau = tau/5.0
+			evNV_C_q = self.NV_carbon_ev(self.nuclear_gate_tau(pulse_tau*self.p))
+			evNV_C_qp = self.NV_carbon_ev(self.nuclear_gate_tau(pulse_tau*(self.q-self.p),double_sided = True))
+			evNV_C_p = self.NV_carbon_ev(self.nuclear_gate_tau(pulse_tau*(5.0-self.q),double_sided = True))
+			pulse30 = self.re(0,np.pi)
+			pulse120 = self.re(0,np.pi)
+			
+			Xgate = self.compile([evNV_C_q,pulse30,evNV_C_qp,self.Xe(),evNV_C_p,self.Xe(),evNV_C_p,self.Xe(),evNV_C_qp,pulse30,evNV_C_q])
+			Ygate = self.compile([evNV_C_q,pulse120,evNV_C_qp,self.Xe(),evNV_C_p,self.Xe(),evNV_C_p,self.Xe(),evNV_C_qp,pulse30,evNV_C_q])
+
+			gate = self.compile([Xgate,Ygate,Xgate,Ygate,Ygate,Xgate,Ygate,Xgate],reps = N/8)
+			return gate
+
+		elif self.composite_scheme == '5_pulse':
+
+			if N%8 != 0:
+				raise Exception('Incompatible number of pulses!')
+
+			pulse_tau = tau/5.0
+			evNV_C_q = self.NV_carbon_ev(self.nuclear_gate_tau(pulse_tau*self.p))
+			evNV_C_qp = self.NV_carbon_ev(self.nuclear_gate_tau(pulse_tau*(self.q-self.p),double_sided = True))
+			evNV_C_p = self.NV_carbon_ev(self.nuclear_gate_tau(pulse_tau*(5.0-self.q),double_sided = True))
+			pulse30 = self.re(np.pi/3,np.pi)
+			pulse120 = self.re(np.pi/2 + np.pi/3,np.pi)
+			
+			Xgate = self.compile([evNV_C_q,pulse30,evNV_C_qp,self.Xe(),evNV_C_p,self.Ye(),evNV_C_p,self.Xe(),evNV_C_qp,pulse30,evNV_C_q])
+			Ygate = self.compile([evNV_C_q,pulse120,evNV_C_qp,self.Ye(),evNV_C_p,self.mXe(),evNV_C_p,self.Xe(),evNV_C_qp,pulse30,evNV_C_q])
+
+			gate = self.compile([Xgate,Ygate,Xgate,Ygate,Ygate,Xgate,Ygate,Xgate],reps = N/8)
+			return gate
 
 class NV_experiment(NV_system):
 
@@ -386,6 +473,13 @@ def C13_fingerprint(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7), ca
 					gate_seq = NV_system.compile([NV_system.xe(),NV_system.nuclear_gate(N ,tau),NV_system.mxe()]) 
 					exp0[i,j] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,gate_seq))
 
+			NV_system.carbon_params = carbon_params
+			NV_system.num_carbons = len(carbon_params)
+			NV_system.c_prec_freqs = c_prec_freqs
+			NV_system.recalc_Hamiltonian = True
+			NV_system.define_useful_states_and_e_operators()
+			NV_system.define_gates()
+
 		else:
 
 			exp0 = np.zeros((np.shape(tau_range)[0]))
@@ -396,13 +490,19 @@ def C13_fingerprint(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7), ca
 				exp0[i] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,gate_seq))
 
 	else:
-		exp0 = 0.5*(1+dyn_dec_signal(NV_system.carbon_params, tau_range, N)).T
-	plt.figure()
+		exp0 = 0.5*(1+dyn_dec_signal(NV_system.carbon_params, tau_range, N,sign = NV_system.sign)).T
+
+	width = 12
+	height = 4
+	plt.figure(figsize=(width, height))
 	plt.plot(tau_range*1e6,exp0)
-	plt.title('Signal'); plt.xlabel('Tau')
+	plt.title('Signal for N=%s'%(N)); plt.xlabel('Tau')
 	plt.ylim([-0.1,1.1])
 	plt.show()
 	plt.close()
+
+	
+				
 
 
 def prepare_X_and_measure_XY(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7),meas = 'eXY',**kw):
@@ -410,15 +510,17 @@ def prepare_X_and_measure_XY(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,
 	X = np.zeros(np.shape(tau_range))
 	Y = np.zeros(np.shape(tau_range))
 	
+	c_num = kw.pop('c_num',1)
+
 	for i,tau in enumerate(tau_range):
 		mbi_seq = NV_system.compile([NV_system.ye(),NV_system.nuclear_gate(N ,tau),NV_system.mxe()])
 		init_state = NV_system.evolve(NV_system.initial_state,NV_system.compile([mbi_seq,NV_system.proj0()]), norm = True)
-			
+		
 		if meas == 'eXY':
 			X[i] = NV_system.measure_e(NV_system.evolve(init_state,mbi_seq))
 			Y[i] = NV_system.measure_e(NV_system.evolve(init_state,NV_system.compile([NV_system.nuclear_phase_gate(1,90,state=0),mbi_seq])))
 		elif meas == 'nXY': 
-			c_num = kw.pop('c_num',1)
+			
 			X[i] = NV_system.measure_c(init_state,c_state = rhox,c_num=c_num)
 			Y[i] = NV_system.measure_c(init_state,c_state = rhoy,c_num=c_num)
 
@@ -498,43 +600,7 @@ def prepare_X_measure_theta(NV_system,N = 32, tau = 6.582e-6,thetas = np.arange(
 	plt.show()
 	plt.close()
 
-class composite_gate_NV_system(NV_system):
 
-	def __init__(self,**kw):
-
-		self.composite_scheme = kw.pop('composite_scheme','3_pulse')
-		self.r = kw.pop('r',0.31) # For 3 pulse scheme
-		self.p = kw.pop('p',0.209) # For 5 pulse scheme
-		self.q = kw.pop('q',0.384) # For 5 pulse scheme
-		
-		NV_system.__init__(self,**kw)
-
-	def nuclear_gate(self,N,tau,**kw):
-		'''Evolution during a decouple unit'''
-
-		
-		if self.composite_scheme == '3_pulse':
-			
-			if N%3 != 0:
-				raise Exception('Incompatible number of pulses!')
-			
-			evNV_C_r = self.NV_carbon_ev(self.nuclear_gate_tau(6*tau*(0.5-self.r)))
-			evNV_C_t = self.NV_carbon_ev(self.nuclear_gate_tau(6*tau*self.r,double_sided = True))
-
-			gate = self.compile([evNV_C_r,self.Xe(),evNV_C_t,self.Xe(),evNV_C_t,self.Xe(),evNV_C_r],reps = N/3)
-			return gate
-
-		elif self.composite_scheme == '5_pulse':
-
-			if N%5 != 0:
-				raise Exception('Incompatible number of pulses!')
-			
-			evNV_C_q = self.NV_carbon_ev(self.nuclear_gate_tau(10*tau*(0.5-self.q)))
-			evNV_C_qp = self.NV_carbon_ev(self.nuclear_gate_tau(10*tau*(self.q-self.p),double_sided = True))
-			evNV_C_p = self.NV_carbon_ev(self.nuclear_gate_tau(10*tau*self.p,double_sided = True))
-
-			gate = self.compile([evNV_C_q,self.Xe(),evNV_C_qp,self.Xe(),evNV_C_p,self.Xe(),evNV_C_p,self.Xe(),evNV_C_qp,self.Xe(),evNV_C_q],reps=N/5)
-			return gate
 
 # 		elif scheme == 'simple': # CHECK THIS
 # 			gate = self.compile([evNV_C_tau,self.Xe(),evNV_C_tau],reps = N)
