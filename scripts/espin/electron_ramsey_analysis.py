@@ -15,16 +15,16 @@ from analysis.lib.math import error
 
 def fit_Ramsey_3cos(timestamp = None,
 	ssro_calib_folder = None,
-	guess_f1 = 1/1000,
+	guess_f1 = 1/1000.,
 	guess_A1 = 0.5,
 	guess_phi1 = 0.,
 	guess_f2 = 0,
 	guess_A2 = 0.15,
-	guess_phi2 = 180,
-	guess_f3 = 1/1000, 
+	guess_phi2 = 180.,
+	guess_f3 = 1/1000., 
 	guess_A3 = 0.33,
 	guess_phi3 = 180.,
-	guess_tau = 5000,
+	guess_tau = 5000.,
 	guess_a = 0.5,
 	fixed = []):
 
@@ -160,7 +160,48 @@ def fit_Ramsey_6_cos(timestamp = None,
 	print fit_result
 
 
-def fit_Ramsey_6_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C):
+
+def fit_Ramsey_3_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,fixed=[]):
+
+
+
+	### script
+	if timestamp != None:
+	    folder = toolbox.data_from_time(timestamp)
+	else:
+	    folder = toolbox.latest_data('ElectronRamsey')
+
+	a = sequence.SequenceAnalysis(folder)
+	a.get_sweep_pts()
+	a.get_readout_results(name='ssro')
+	if ssro_calib_folder != None:
+		a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
+	else: 
+		a.get_electron_ROC()
+
+	# Plot data
+	ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
+
+
+
+	p0, fitfunc_0, fitfunc_str_0 = ramsey.fit_ramsey_hyperfinelines_fixed_3cos(g_tau, g_A, g_a,g_det,g_hf_N)
+	
+
+	fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_hyperfinelines_fixed_3cos,
+	       g_tau, g_A, g_a,g_det,g_hf_N, fixed = fixed, 
+	        do_print=False, ret=True)
+	if fit_result != False :
+		plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
+	        plot_data=False)
+
+	plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),
+	        format='png')
+
+	fit.print_fit_result(fit_result)	
+
+
+
+def fit_Ramsey_6_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C,fixed=[]):
 
 
 
@@ -187,7 +228,7 @@ def fit_Ramsey_6_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,
 	
 
 	fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_hyperfinelines_fixed_6cos,
-	       g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C, fixed = [], 
+	       g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C, fixed = fixed, 
 	        do_print=True, ret=True)
 	if fit_result != False :
 		plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
@@ -196,8 +237,45 @@ def fit_Ramsey_6_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,
 	plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),
 	        format='png')
 
-	print fit_result	
+	# fit.print_fit_result(fit_result)
 
+def fit_Ramsey_6_sin_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C,fixed=[]):
+
+
+
+	### script
+	if timestamp != None:
+	    folder = toolbox.data_from_time(timestamp)
+	else:
+	    folder = toolbox.latest_data('ElectronRamsey')
+
+	a = sequence.SequenceAnalysis(folder)
+	a.get_sweep_pts()
+	a.get_readout_results(name='ssro')
+	if ssro_calib_folder != None:
+		a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
+	else: 
+		a.get_electron_ROC()
+
+	# Plot data
+	ax = a.plot_result_vs_sweepparam(ret='ax', name='ssro')
+
+
+
+	p0, fitfunc_0, fitfunc_str_0 = ramsey.fit_ramsey_hyperfinelines_fixed_6sin(g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C)
+	
+
+	fit_result = fit.fit1d(a.sweep_pts, a.p0.reshape(-1), ramsey.fit_ramsey_hyperfinelines_fixed_6sin,
+	       g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C, fixed = fixed, 
+	        do_print=True, ret=True)
+	if fit_result != False :
+		plot.plot_fit1d(fit_result, np.linspace(0,a.sweep_pts[-1],201), ax=ax,
+	        plot_data=False)
+
+	plt.savefig(os.path.join(folder, 'electronramsey_analysis.png'),
+	        format='png')
+
+	# fit.print_fit_result(fit_result)
 
 
 

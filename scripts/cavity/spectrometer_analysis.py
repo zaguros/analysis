@@ -66,7 +66,6 @@ class spectrometer_analysis(object):
         self.wavelengths = np.array(intensity.index.tolist()[1:])
 
         self.frequencies = c/(self.wavelengths*1.e-9)/1.e12 #frequency in THz
-        
         intensity = intensity.as_matrix()
         #print len(intensity)
         intensity = intensity[1:]

@@ -21,6 +21,8 @@ from analysis.scripts.cavity.peakdetect import peakdet
 from analysis.lib import fitting
 from analysis.lib.fitting import fit, common
 from analysis.lib.tools import plot
+#from matplotlib.ticker import MaxNLocator
+
 
 import analysis.scripts.cavity.functions_for_processing_linewidth_data as funcs
 
@@ -28,8 +30,8 @@ reload(common)
 
 
 ### This is the only part where values should be inserted.#### 
-n_xticks = 5
-n_yticks = 8
+n_xticks = 1
+n_yticks = 4
  
 
 class oscilloscope_analysis():
@@ -163,22 +165,50 @@ class oscilloscope_analysis():
         linewidth_string = 'gamma = '+str(round(linewidth,2))+'+-'+str(round(u_linewidth,3))+'GHz'
         print linewidth_string
 
+        print gamma1
+
+        g_x01 = kw.pop('g_x01', 0)
+        g_dx = EOM_freq
+        g_gamma1 = gamma1*scaling
+
+        p0, fitfunc, fitfunc_str = common.fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2)
+        self.x = (self.x-x01)*scaling
+        self.fit_result = fit.fit1d(self.x,self.y, None, p0=p0, fitfunc=fitfunc, do_print=print_fit, ret=True, fixed=fixed)
+        
         #Plotting
 
         fig,ax = plt.subplots(figsize=(8,4))
-        plot.plot_fit1d(self.fit_result, np.linspace(self.x[0],self.x[-1],10*len(self.x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = '-', print_info= False)
+        
+        plot.plot_fit1d(self.fit_result, np.linspace(self.x[0],self.x[-1],10*len(self.x)),ax=ax, label='Fit',show_guess=True, plot_data=True,color='red', data_linestyle = 'o', print_info= False)
         if self.use_timetrace:
             ax.set_xlabel("Time (ms)", fontsize = 14)
         else:
-            ax.set_xlabel("datapoints", fontsize = 14)        
-        ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
-        ax.set_xlim(self.x[0],self.x[-1])
-        xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
-        #rescaling for x-axis in GHz
-        X_min_freq = ax.get_xlim()[0]*scaling
-        X_max_freq = ax.get_xlim()[-1]*scaling
+            ax.set_xlabel("Cavity detuning (GHz)", fontsize = 14)
 
-        ax.set_title(self.indir+'/'+self.filename+'\n'+linewidth_string)
+
+        ax.set_ylabel("Transmitted signal (a.u.)", fontsize = 14)
+
+        ax.set_xlim(self.x[0],self.x[-1])
+
+        #rescaling for x-axis in GHz
+
+        # X_min_freq = ax.get_xlim()[0]*scaling
+        # X_max_freq = ax.get_xlim()[-1]*scaling
+
+        # xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
+
+        # ticks = (ax.get_xticks()-x01)*scaling
+        # ticks = np.round(ticks,2)
+        xticks = np.linspace(-15,15,7)
+        xticks = np.round(xticks,2)
+
+        yticks = np.linspace(0,0.12,5)
+
+        ax.set_xticks(xticks)
+        ax.set_yticks(yticks)
+        # ax.set_xlim()
+
+        #ax.set_title(self.indir+'/'+self.filename+'\n'+linewidth_string)
         if save_fit:
             plt.savefig(os.path.join(self.indir,self.filename+'_fit_'+plot_name+'.png'))
 
@@ -242,7 +272,9 @@ class oscilloscope_analysis():
             ax.set_xlabel("datapoints", fontsize = 14)        
         ax.set_ylabel("Intensity (a.u.)", fontsize = 14)
         ax.set_xlim(self.x[0],self.x[-1])
+
         xticks = np.linspace(ax.get_xlim()[0],ax.get_xlim()[-1],n_xticks)
+
         #rescaling for x-axis in GHz
         X_min_freq = ax.get_xlim()[0]*scaling
         X_max_freq = ax.get_xlim()[-1]*scaling
@@ -305,6 +337,7 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
     function that fits the resonances in an oscilloscope trace.
     for particularly noisy/'vibrating' data, it uses a first fit to put the resonance to the middle of the windows
     TODO: improve -> instead of fitting twice, use the highest point in the first window for the middle of the second window 
+                    -> have a noisy / clean data option for LT / RT measurements
     '''
     oa_single = oscilloscope_analysis(indir=indir,filename=filename)
 
