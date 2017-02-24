@@ -321,7 +321,6 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     tot_time_name =  pq_device + '/PQ_time-' + str(index)
     sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
-
     if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
         return c    
@@ -331,7 +330,6 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     sync_number = pqf[sync_num_name].value
 
     is_ph0, is_ph1 = get_photons(pqf)
-
     # thin down a bit with loose filtering
     if fltr0 != None:
         fltr0 = is_ph0 & fltr0
@@ -397,7 +395,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     return coincidences
 
 
-def get_coincidences_from_folder(folder, index = 1,save = True,contains = '', pq_device = ''):
+def get_coincidences_from_folder(folder, index = 1,save = True,contains = '', force_coincidence_evaluation = False):
 
     sync_num_name = pq_device + 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
@@ -413,6 +411,7 @@ def get_coincidences_from_folder(folder, index = 1,save = True,contains = '', pq
     co = np.ones([1,4])
     # print filepaths
     for i,f in enumerate(filepaths):
+        
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
             if sync_num_name in pqf.keys():
@@ -422,9 +421,9 @@ def get_coincidences_from_folder(folder, index = 1,save = True,contains = '', pq
 
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:
-                    co = get_coincidences(pqf,save = save)
+                    co = get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)
                 else:
-                    co = np.vstack((co, get_coincidences(pqf,save = save)))
+                    co = np.vstack((co, get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)))
                     
     return co
 
