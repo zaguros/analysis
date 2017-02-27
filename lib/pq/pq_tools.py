@@ -415,7 +415,8 @@ def get_coincidences_from_folder(folder, index = 1, save = True, contains = '', 
         if i == 0:
             pqf = pqf_from_fp(f, rights = 'r+')
             if sync_num_name in pqf.keys():
-                co = get_coincidences(pqf)            
+                co = get_coincidences(pqf)
+                    
         else:
             pqf = pqf_from_fp(f, rights = 'r+')
 
@@ -424,6 +425,8 @@ def get_coincidences_from_folder(folder, index = 1, save = True, contains = '', 
                     co = get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)
                 else:
                     co = np.vstack((co, get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)))
+        
+        pqf.close()
                     
     return co
 
