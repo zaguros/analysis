@@ -1,16 +1,11 @@
-import qt
 import numpy as np
 import math
-from instrument import Instrument
-import plot as plt
+import matplotlib as plt
 import random
 import time
 import types
 import os
 import msvcrt
-from lib import config
-from analysis.lib.fitting import fit, common
-import instrument_helper
 
 class NV_energy_simulator(Instrument):
     def __init__(self, name, plot_name=''):
