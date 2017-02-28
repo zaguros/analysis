@@ -7,9 +7,8 @@ import types
 import os
 import msvcrt
 
-class NV_energy_simulator(Instrument):
+class NV_energy_simulator:
     def __init__(self, name, plot_name=''):
-        Instrument.__init__(self, name)
         # Gaussian related
         peak_width_gate = 1.0*10**6;
         peak_width_newfocus = 1.0*10**6; #GHz
@@ -47,12 +46,12 @@ class NV_energy_simulator(Instrument):
         do_CR_mod = 0
         state = 1
         peak_counts_cr_check = 35.0
-        peak counts_repump = 25
+        peak_counts_repump = 25
 
         while True:
             if (msvcrt.kbhit() and (msvcrt.getch() == 'q')): 
-            print 'Quit by user'
-            return False; 
+                print 'Quit by user'
+                return False; 
 
             self.NV_control()
 
@@ -63,8 +62,8 @@ class NV_energy_simulator(Instrument):
 
             while (t - time_start < count_duration):
                 if (msvcrt.kbhit() and (msvcrt.getch() == 'q')): 
-                print 'Quit by user'
-                return False;
+                    print 'Quit by user'
+                    return False;
                 if mode == 1: # Do charge repump
 
                     self.NV_control()
@@ -77,13 +76,13 @@ class NV_energy_simulator(Instrument):
                         state = -1
 
                     t += repump_duration
-                    if do_CR_mod=1:
+                    if (do_CR_mod == 1):
                         mode = 2
                     else:
                         mode = 3
 
                 if mode == 2: # Do CR mod
-
+                    print 'CR mod, apparently....'
                 if mode == 3: # Do CR check
 
                     self.NV_control()
@@ -105,14 +104,14 @@ class NV_energy_simulator(Instrument):
                         mode = 3
 
 
-            counts_per_repump = np.sum(counts_per_repump_array)
-            counts_per_cr_check = np.sum(counts_per_cr_check_array)
+            self.counts_per_repump = np.sum(counts_per_repump_array)
+            self.counts_per_cr_check = np.sum(counts_per_cr_check_array)
 
     def NV_control(self):
 
-        get yellow
-        get gate 
-        get newfocus 
+        gate = 57.0*10**6;
+        newfocus = 45.0*10**6; #GHz
+        yellow = 17.0*10**6;  
 
         self.gaussian_newfocus = (1/(peak_width_newfocus*math.sqrt(2*np.pi))) * math.exp( - (newfocus-resonance_newfocus)**2 /(2.0*(peak_width_newfocus**2)) )
         self.gaussian_newfocus_max = (1/(peak_width_newfocus*math.sqrt(2*np.pi)))
@@ -154,7 +153,6 @@ class NV_energy_simulator(Instrument):
         # # and drifts
         # resonance_gate += drift_gate
         # resonance_yellow += drift_yellow
-
 
 
 
