@@ -14,6 +14,17 @@ def get_levels(**kw):
     Ex=kw.pop('strainvals', np.linspace(0,8,50))
     return Ex,np.array([np.sort(get_ES(E_field=[i,0,0], **kw)[0]) for i in Ex])
 
+
+def get_ES_fast(f0,D):
+    D=D/0.749
+    return np.array([f0 - 0 - 3.8821 - 0.01856*D - 0.06452*D**2 + 0.00284*D**3 - 4.925e-5*D**4,
+                     f0 - 0 - 3.9021 + 0.0157*D  - 0.05397*D**2 + 0.00202*D**3 - 3.09e-5*D**4,
+                     f0 - 0.749*D,
+                     f0 + 0.749*D,
+                     f0 - 0 + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
+                     f0 - 0 + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
+
+
 def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.]):
     """
     Returns the six energies in GHz of the ES of the NV centre, 
@@ -30,6 +41,33 @@ def get_ES_ExEy(Ex,Ey,fast=False,B_field=[0.,0.,0.]):
     #XXXXXXXXXXXXXXXXXXX
     return np.sort(get_ES(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94)[0])
 
+def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
+    """
+    Returns an array plottable with qt.Plot2D of the six transition energies 
+    in GHz of the ES of the NV centre, when given the Energies of the Ex and 
+    Ey transitions in GHz
+    """
+    x=get_ES_ExEy(Ex,Ey,B_field=B_field)
+    y=np.zeros(3*len(x))
+    for ii in range(len(x)):
+        x=np.append(x,x[ii]-0.0001)
+        x=np.append(x,x[ii]+0.0001)
+        y[3*ii+1]=height
+    return [np.sort(x),y]
+    
+def GS_sort(energies,eigenstates):
+    #Note that code goes as ["A_0","E_+","E_-"]
+    order = [np.argmax(np.abs(eigenstates[i,:])**2) for i in range(3)]
+    energies = energies[order]
+    sorted_eigenstates = (eigenstates[:,order])
+    return energies, sorted_eigenstates
+
+def ES_sort(energies,eigenstates):
+    order = [np.argmax(np.abs(eigenstates[i,:])**2) for i in range(6)]
+    energies = energies[order]
+    sorted_eigenstates = (eigenstates[:,order])
+    return energies, sorted_eigenstates
+
 
 def get_ES_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.],trans_A_levels = False, conv_order = True, Ee0=-1.94, **kw):
     """
@@ -44,13 +82,15 @@ def get_ES_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.],trans_A_levels = False
         basis_transform = scipy.linalg.block_diag([[(1j/np.sqrt(2)), (1/np.sqrt(2))], [(1/np.sqrt(2)),(1j/np.sqrt(2))]],np.eye(2),
                         [[(1/np.sqrt(2)), (-1j/np.sqrt(2))], [(-1j/np.sqrt(2)),(1/np.sqrt(2))]])
 
-    v = basis_transform * v
+    v = np.array(basis_transform * v)
 
     if conv_order:
         #Note that code goes as ["E-'","E+'","Ex",'Ey','A1','A2']
         #This corrects to the conventional order
-        conventional_energy_order = [0,1,3,2,4,5]
-        v = v[conventional_energy_order]
+        conventional_order = [0,1,3,2,4,5]
+        v = v[conventional_order,:]
+
+    w,v = ES_sort(w,v)
     return w,v
 
 def get_ES_SpinComp_ExEy(Ex,Ey,B_field=[0.,0.,0.],**kw):
@@ -64,7 +104,7 @@ def get_ES_SpinComp_ExEy(Ex,Ey,B_field=[0.,0.,0.],**kw):
 
     return get_ES_SpinComp(E_field=[strain,0,0],B_field=B_field,Ee0=offset-1.94,**kw)
 
-def get_GS_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
+def get_GS_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.], conv_order =  True, **kw):
     """
     Returns the eigenenergies and eigenstates of the GS of the NV centre,
     however, with the Ex and Ey basis states transformed in spin up and spin down basis states
@@ -72,17 +112,18 @@ def get_GS_SpinComp(E_field=[0.,0.,0.],B_field=[0.,0.,0.], **kw):
 
     w,v = get_GS(E_field=E_field,B_field=B_field, **kw)
     basis_transform = scipy.linalg.block_diag(1,[[(1/np.sqrt(2)), (-1j/np.sqrt(2))], [(1/np.sqrt(2)),(1j/np.sqrt(2))]])
-    return w,basis_transform * v
 
+    v = np.array(basis_transform * v)
 
-def get_ES_fast(f0,D):
-    D=D/0.749
-    return np.array([f0 - 0 - 3.8821 - 0.01856*D - 0.06452*D**2 + 0.00284*D**3 - 4.925e-5*D**4,
-                     f0 - 0 - 3.9021 + 0.0157*D  - 0.05397*D**2 + 0.00202*D**3 - 3.09e-5*D**4,
-                     f0 - 0.749*D,
-                     f0 + 0.749*D,
-                     f0 - 0 + 5.1379 + 0.0159*D  + 0.06463*D**2 - 0.00287*D**3 + 4.959e-5*D**4,
-                     f0 - 0 + 8.2579 - 0.00975*D + 0.05384*D**2 - 0.00202*D**3 + 3.083e-5*D**4])
+    if conv_order:
+        #Note that code goes as ["E-'","E+'","Ex",'Ey','A1','A2']
+        #This corrects to the conventional order
+        conventional_order = [0,2,1]
+        v = v[conventional_order,:]
+    
+    w,v = GS_sort(w,v)
+    return w,v
+
 
 def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False, show_ms0_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
                             show_FB_A_transitions=True, show_m1_transitions=True,show_p1_transitions=True,show_E_prime_flip_transitions=True, return_dict=False):
@@ -112,19 +153,7 @@ def get_transitions_ExEy(Ex,Ey,B_field=[0.,0.,0.],fast=False, show_ms0_transitio
         else:
             return trans
 
-def get_ES_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,0.]):
-    """
-    Returns an array plottable with qt.Plot2D of the six transition energies 
-    in GHz of the ES of the NV centre, when given the Energies of the Ex and 
-    Ey transitions in GHz
-    """
-    x=get_ES_ExEy(Ex,Ey,B_field=B_field)
-    y=np.zeros(3*len(x))
-    for ii in range(len(x)):
-        x=np.append(x,x[ii]-0.0001)
-        x=np.append(x,x[ii]+0.0001)
-        y[3*ii+1]=height
-    return [np.sort(x),y]
+
 
 def get_transitions_ExEy_plottable(Ex,Ey,height,B_field=[0.,0.,300.],show_E_transitions=True,show_A_transitions=True,show_FB_E_transitions=True, 
                             show_FB_A_transitions=True, show_E_prime_flip_transitions=True, return_dict=False):
@@ -498,20 +527,23 @@ def get_ExEy_from_Eprime_and_Ex_or_Ey(f_E_prime,f_Ex_or_Ey,Ex_or_Ey = 'Ex', prec
     """
     p1_or_m1 = 'm1' # At the moment this is hard coded, because I dont think it makes an important difference,
     # However, could be fed as a parameter 
+
     for str_split in np.linspace(0,20,20/precision):
 
         if p1_or_m1 == 'p1':
             levels = get_transitions_ExEy(0,str_split,show_ms0_transitions=True,show_p1_transitions=True, return_dict=True)
-            offset = f_E_prime - np.sort(levels['msp1'][0])
+            offset = f_E_prime - np.sort(levels['msp1'])[0]
         else:
             levels = get_transitions_ExEy(0,str_split,show_ms0_transitions=True,show_m1_transitions=True, return_dict=True)
-            offset = f_E_prime - np.sort(levels['msm1'][0])
+            offset = f_E_prime - np.sort(levels['msm1'])[0]
 
+        
         if Ex_or_Ey == 'Ey':
             levels_Ex_or_Ey = np.sort(levels['ms0'])[0]+offset
         else:
             levels_Ex_or_Ey = np.sort(levels['ms0'])[1]+offset
-           
+
+        # print offset,abs(f_Ex_or_Ey-levels_Ex_or_Ey),precision
         if abs(f_Ex_or_Ey-levels_Ex_or_Ey)<precision:
 
             return np.flipud(np.sort(levels['ms0'])) + offset

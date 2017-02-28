@@ -25,7 +25,7 @@ def get_coincidences_and_adwin_data_from_folder(folder_primary,save = True,folde
 
     # print filepaths
     for i,fp in enumerate(filepaths_primary):
-        # print f
+        print f
         fp = os.path.split(fp)[0]
         
         purifyPQ_p = purify_pq.purifyPQAnalysis(fp)
@@ -94,61 +94,9 @@ def get_coincidences_and_adwin_data_from_folder(folder_primary,save = True,folde
     
     return co
 
-def filter_syncnum(pqf, mult, pq_file = True, index = 1):   
-
-    sync_num_name = '/PQ_sync_number-' + str(index)
-
-    if type(pqf) == h5py._hl.files.File: 
-        sync_num = pqf[sync_num_name].value
-
-    elif type(pqf) == str:
-        f = h5py.File(pqf, 'r')
-        sync_num = f[sync_num_name].value
-        f.close()
-    
-    else:
-        print "Neither filepath nor file enetered in function please check:", pqf
-        raise
-
-    fltr = sync_num % mult == 1 
-
-def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
-
-    sync_num_name = 'PQ_sync_number-' + str(index)
-    # print 'this is the save!', save
-    filepaths = tb.get_all_msmt_filepaths(folder) 
-
-    if contains != '':
-        new_fps = []
-        for f in filepaths:
-            if contains in f:
-                new_fps.append(f)
-        filepaths = new_fps
-
-    co = np.ones([1,4])
-    # print filepaths
-    for i,f in enumerate(filepaths):
-        if i == 0:
-            pqf = pqf_from_fp(f, rights = 'r+')
-
-            makeValeriaFilter = filter_syncnum(pqf,50)
-            print 'the filter is', makeValeriaFilter
-            if sync_num_name in pqf.keys():
-                co = get_coincidences(pqf)           
-        else:
-            pqf = pqf_from_fp(f, rights = 'r+')
-
-            if sync_num_name in pqf.keys():
-                if co[0,3] == 1:
-                    co = get_coincidences(pqf,save = save)
-                else:
-                    co = np.vstack((co, get_coincidences(pqf,save = save)))
-                    
-    return co
 
 
-
-def _aggregated_coincidences(Base_Folder, **kw):
+def _aggregated_coincidences(Base_Folder, force_coincidence_evaluation = False,**kw):
 
     load_cr_check = kw.get('load_cr_check',False)
     load_adwin_comm_time = kw.get('load_adwin_comm_time',False)
@@ -158,7 +106,7 @@ def _aggregated_coincidences(Base_Folder, **kw):
 
     else:
         in_coincidences = np.empty((0,4))
-        in_coincidences = np.vstack((in_coincidences, pq_tools.get_coincidences_from_folder(Base_Folder,contains = contains,save=True)))
+        in_coincidences = np.vstack((in_coincidences, pq_tools.get_coincidences_from_folder(Base_Folder,contains = contains,save=True,force_coincidence_evaluation = force_coincidence_evaluation)))
 
     return in_coincidences
 
@@ -189,6 +137,20 @@ def filter_cr_check(load_cr_check,columns_cr, coincidences, cr_check_min_p, cr_c
 
     return filter_col
 
+
+def filter_syncnum(coincidences, attempts_per_CR_check, min_filter_attempts = 1, delta_attempts = 50):
+    """
+    Return a filter for syncs based on the number of attempts since a CR check
+    """
+
+    sync_num = coincidences[:,3]
+
+    fltr = ((((sync_num-1) % attempts_per_CR_check) + 1) >= min_filter_attempts ) & ((((sync_num-1) % attempts_per_CR_check) + 1) < (min_filter_attempts + delta_attempts) )
+
+    return fltr
+ 
+
+
 def filter_adwin_comm_time(load_adwin_comm_time,columns_adwin_com, coincidences, adwin_com_max_p, adwin_com_max_s, load_secondary):
     
     column_adwin_com_p, column_adwin_com_s = columns_adwin_com
@@ -211,11 +173,13 @@ def filter_no_of_attempts(load_TPQI_attemtps,column_no_of_sequences,coincidences
     return (coincidences[:,column_no_of_sequences] >= min_attempts) & (coincidences[:,column_no_of_sequences] <= max_attempts)
 
 def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, 
+                                    filter_attempts = False, attempts_per_CR_check = 50, delta_attempts = 50, min_filter_attempts = 1,
                                     return_sn = False , 
                                     contains = 'TPQI',
-                                    Verbose = True, ):
+                                    force_coincidence_evaluation = False,
+                                    Verbose = True):
     # Gets coincident photons from Hydraharp data
-    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains)
+    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains,force_coincidence_evaluation = force_coincidence_evaluation)
 
     dt_index = 0
     column_st_0 = 1
@@ -236,41 +200,9 @@ def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_
     is_sync_time_filter = filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
                                                  dif_win1_win2, noof_pulses, column_st_0, column_st_1)
 
-    filtered_dts = dts[is_sync_time_filter]
-
-    if Verbose:
-        print
-        print 'Found {} coincident photons after filtering.'.format(int(sum(is_sync_time_filter)))
-        print '===================================='
-        print
-
-    return dts, filtered_dts
-
-def TPQI_analysis_w_extra_filtering(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, 
-                                    return_sn = False , 
-                                    contains = 'TPQI',
-                                    Verbose = True, ):
-    # Gets coincident photons from Hydraharp data
-    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains)
-
-    dt_index = 0
-    column_st_0 = 1
-    column_st_1 = 2
-    column_sync_num_ch0 = 3
-
-    # Defines the difference in arrival time between the coincident photons
-    dts = coincidences[:,dt_index] + (ch1_start - ch0_start)
-    dts = dts * 10**(-3)
-
-    if Verbose:
-        print
-        print 'Found {} coincident photons in all runs.'.format(int(len(coincidences)))
-        print '===================================='
-        print
-
-    #Filters the coincident photons by selecting only the photons emitted by the NV center
-    is_sync_time_filter = filter_coincidences(coincidences, ch0_start, ch1_start, WINDOW_LENGTH,
-                                                 dif_win1_win2, noof_pulses, column_st_0, column_st_1)
+    if filter_attempts:
+        filtered_attempts = filter_syncnum(coincidences, attempts_per_CR_check, min_filter_attempts = min_filter_attempts, delta_attempts = delta_attempts)
+        is_sync_time_filter = is_sync_time_filter & filtered_attempts
 
     filtered_dts = dts[is_sync_time_filter]
 

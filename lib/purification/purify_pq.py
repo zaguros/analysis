@@ -14,11 +14,21 @@ class purifyPQAnalysis(pqsequence.PQSequenceAnalysis):
 	Combines pq measurements with adwin ssro.
 	"""
 	def __init__(self,folder,**kw):
-		print folder
+		# print folder
 		pqsequence.PQSequenceAnalysis.__init__(self,folder,**kw)
 
-		self.agrp=self.adwingrp('adwindata')
-		self.joint_grp = self.adwingrp('joint_params')
+		if  'adwindata' in self.g.keys():
+			self.agrp=self.adwingrp('adwindata')
+		elif 'adwinadata' in self.g.keys(): # At some point this got misspelled! Annoying (PH)
+			self.agrp=self.adwingrp('adwinadata')
+		else:
+			print self.g.keys()
+			print folder
+			raise Exception('Cant find adwin data!')
+
+
+		if  'joint_params' in self.g.keys():
+			self.joint_grp = self.adwingrp('joint_params')
 
 	def filter_pq_data_from_adwin_syncs(self, adwin_syncs = None, pq_syncs = None):
 

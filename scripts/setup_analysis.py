@@ -1,6 +1,7 @@
 import sys
 import os
 sys.path.append("d:/measuring")
+sys.path.append("c:/measuring")
 sys.path.append("h:/My Documents/measuring")#only for local SvD
 import numpy as np
 import h5py
