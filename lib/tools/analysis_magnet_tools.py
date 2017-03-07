@@ -13,10 +13,10 @@ nm_per_step         = 73
 radius              = 5.
 thickness           = 4.
 strength_constant   = 1.3
-ZFS                 = 2.877480e9
+ZFS                 = 2.877623e9
 g_factor            = 2.8025e6
-current_f_msm1      = 2.024921e9
-current_f_msp1      = 3.730069e9
+current_f_msm1      = 1.746666e9
+current_f_msp1      = 4.008589e9
 current_B_field     = abs(ZFS-current_f_msp1)/g_factor
 
 ### Simple conversions
@@ -61,6 +61,7 @@ def get_magnet_position(msm1_freq=current_f_msm1,msp1_freq = current_f_msp1,ms =
         print B_field
     if ms is 'plus':
         B_field = convert_f_to_Bz(freq=msp1_freq)
+    print B_field
     if solve_by == 'list':
         d = np.linspace(10.0,10.1,10**5+1) # ! this is the right domain for B around 300 G
         B_field_difference = np.zeros(len(d))

@@ -1,0 +1,13 @@
+import qt
+import numpy as np
+import os,sys
+from matplotlib import pyplot as plt
+
+#Import data from folder
+
+warmup_folder=toolbox.latest_data(contains = 'monitor_warmup' )
+warmup_date=warmup_folder[0:5]
+
+
+
+

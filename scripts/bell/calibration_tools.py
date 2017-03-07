@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 
 from analysis.lib.fitting import fit
 from analysis.lib.tools import plot
-from measurement.lib.tools import toolbox
+from analysis.lib.tools import toolbox
 
 from analysis.lib.m2.ssro import sequence
+reload(sequence)
 from analysis.lib.m2.ssro import ssro
+reload(ssro)
 
 def fit_rabi(folder=None, ax = None, f_guess=0.9, A_guess=1,fit_phi = False,fit_k = False):
     """
@@ -83,18 +85,21 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
     """
     fit (1-of) + a (x-x0)**2 from Sequence in folder
     """
+    do_print      = kw.pop('do_print', False)
     a, ax, x, y = plot_result(folder,ax)
     x0 = fit.Parameter(x0_guess, 'x0')
     of = fit.Parameter(of_guess, 'of')
     a = fit.Parameter(a_guess, 'a')
+
     fitfunc_str = '(1-of) + a (x-x0)**2'
     def fitfunc_parabolic(x):
         return (1.-of()) + a() * (x-x0())**2
     
     fit_result = fit.fit1d(x,y, None, p0=[of, a, x0], fitfunc=fitfunc_parabolic,
-        fitfunc_str=fitfunc_str, do_print=True, ret=True)
+        fitfunc_str=fitfunc_str, do_print=do_print, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
         plot_data=False, **kw)
+        
         
     return fit_result
 
@@ -108,9 +113,11 @@ def plot_result(folder=None, ax = None, ret=True):
     a.get_readout_results(name='ssro')
     a.get_electron_ROC()
     a.plot_result_vs_sweepparam(ax=ax, name='ssro')
-
+    print a.normalized_ssro
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
+    print 'min x = ', x[np.argmin(y)]
+    print 'min y =', np.amin(y)
     ax.set_title(a.timestamp)
     if ret:
     	return a, ax, x, y

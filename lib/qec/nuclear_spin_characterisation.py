@@ -2,11 +2,7 @@
 import numpy as np
 
 #Physical constants needed in  module
-gamma_c = 1.071e3 #g-factor for C13 in Hz/G
-
-
-def fingerprint():
-    pass
+gamma_c = 1.0705e3 #g-factor for C13 in Hz/G
 
 def calc_hyperfine_from_tau(tau_k,k,B_field):
     '''
@@ -51,9 +47,10 @@ def calc_tau_from_HF(HF_par,k,B_field):
     tau_k = (2*k-1)*np.pi/(2*omega_L+HF_par)
     return tau_k
 
-def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
+def dyn_dec_signal(HFs_par, HFs_orth, B_field, N ,tau):
     '''
-    Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght and an array of times and returns the signal at those times for that specific spin.
+    Takes the HF interaction strengths (paralel and orthogonal), the magnetic field strenght
+    and an array of times and returns the signal at those times for that specific spin.
     ------
     inputs
     ------
@@ -74,7 +71,11 @@ def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
     tau_larmor = 2*np.pi/omega_larmor #time in seconds
 
 
-    print 'tau larmor = %s' %tau_larmor
+    # print omega_larmor/(2*np.pi)
+    # print HFs_par[0]*2*np.pi
+    # print HFs_orth[0]*2*np.pi
+
+    #print 'tau larmor = %s' %tau_larmor
 
     if np.size(tau)!=1:
         M=np.zeros([np.size(HFs_par),np.size(tau)])
@@ -84,6 +85,7 @@ def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
         HF_par = HF_par*2*np.pi #Convert to radial frequency
         HF_orth = HFs_orth[i]*2*np.pi #convert to radial frequency
         omega_tilde = np.sqrt((HF_par+omega_larmor)**2+HF_orth**2)
+
         alpha = omega_tilde*tau
         beta = omega_larmor*tau
         mx = HF_orth/omega_tilde
@@ -91,7 +93,7 @@ def dyn_dec_signal(HFs_par,HFs_orth,B_field,N,tau):
         vec_term = mx**2 *((1-np.cos(alpha))*(1-np.cos(beta)))/(1+np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))
         angle_term = np.sin(N*np.arccos(np.cos(alpha)*np.cos(beta)-mz*np.sin(alpha)*np.sin(beta))/2)**2
 
-        M[i,:]= 1-(vec_term*angle_term)
+        M[i,:]= 1-(vec_term*angle_term)/2
 
     # Signal = M.prod(axis=0)
     # F = ((M+1)/2)

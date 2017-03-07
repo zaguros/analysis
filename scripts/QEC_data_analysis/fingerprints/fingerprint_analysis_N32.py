@@ -10,11 +10,14 @@ import analysis.lib.QEC.nuclear_spin_characterisation as SC #used for simulating
 # import magnettools as mt # Does not work atm because of qt lab being imported in MT
 import matplotlib.cm as cm
 from matplotlib import pyplot as plt
-
+# import matplotlib as mpl; reload(mpl)
 import analysis.lib.QEC.hyperfine_params as module_hyperfine_params; reload(module_hyperfine_params)
-hf = module_hyperfine_params.hyperfine_params
+hf = module_hyperfine_params.hyperfine_params_hans_SIL1_msm1
 
-def fingerprint(disp_sim_spin = True):
+from analysis.scripts.QEC_data_analysis.fingerprints import fingerprint_funcs as fp_funcs; reload(fp_funcs)
+
+
+def fingerprint(disp_sim_spin = True,x_range = [12.3,21.5],n_sim_spins= 13):
 
 
     ###################
@@ -22,8 +25,9 @@ def fingerprint(disp_sim_spin = True):
     ###################
 
     if disp_sim_spin == True:
-            HF_par = [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par'], hf['C13']['par']]
-            HF_perp = [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp'], hf['C13']['perp']]
+            # HF_par = [hf['C1']['par'],hf['C2']['par'],hf['C3']['par'], hf['C4']['par'], hf['C5']['par'], hf['C6']['par'], hf['C7']['par'], hf['C8']['par'], hf['C9']['par'], hf['C10']['par'],   hf['C11']['par'],  hf['C12']['par'], hf['C13']['par']]
+            # HF_perp = [hf['C1']['perp'],hf['C2']['perp'],hf['C3']['perp'], hf['C4']['perp'], hf['C5']['perp'], hf['C6']['perp'], hf['C7']['perp'], hf['C8']['perp'], hf['C9']['perp'], hf['C10']['perp'],   hf['C11']['perp'], hf['C12']['perp'], hf['C13']['perp']]
+            HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = 'plus', NV = 'Hans')
             #msmp1_f from hdf5 file
             # msm1 from hdf5 file
             # ZFG g_factor from hdf5file
@@ -35,25 +39,74 @@ def fingerprint(disp_sim_spin = True):
 
     ## Data location ##
     timestamps =['20140418_185913', '20140419_233953']
-    ssro_calib_folders = ['d:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1',
+    if os.name =='posix':
+        ssro_calib_folders = ['//Users//Adriaan//Documents//teamdiamond//data//20140419//111949_AdwinSSRO_SSROCalibration_Hans_sil1',
+                            '//Users//Adriaan//Documents//teamdiamond//data//20140419//123556_AdwinSSRO_SSROCalibration_Hans_sil1']
+    else:
+        ssro_calib_folders = ['d:\\measuring\\data\\20140419\\111949_AdwinSSRO_SSROCalibration_Hans_sil1',
                         'd:\\measuring\\data\\20140419\\123556_AdwinSSRO_SSROCalibration_Hans_sil1']
     a, folder = load_mult_dat(timestamps = timestamps, number_of_msmts = [90,90], ssro_calib_folders =ssro_calib_folders)
 
     ############
     ## Plotting ###
     ############
+    
 
+    fig = a.default_fig(figsize=(15,5))
+    ax = a.default_ax(fig)
+
+    ax.set_xlim(x_range)
+    start, end = ax.get_xlim()
+    ax.xaxis.set_ticks(np.arange(14, 22, 2))
+
+    # ax.set_xlim(xrange)
+    ax.set_ylim(-0.05,1.05)
+
+    ax.yaxis.set_ticks([0,0.5,1])
+
+    # ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
+    ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.5,label = 'data')
+    colormap = plt.cm.rainbow
+    import matplotlib as mpl; reload(mpl)
+    mpl.rcParams['pdf.fonttype'] = 42
+
+    if disp_sim_spin == True:
+      colors = cm.rainbow(np.linspace(0, 1, n_sim_spins))
+      for tt in range(n_sim_spins):
+        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colormap(tt/float(n_sim_spins)))
+        
+        # plt.gca().set_color_cycle([colormap(i) for i in np.linspace(0, 0.9, n_sim_spins)])
+    if False:
+        tot_signal = np.ones(len(tau_lst))
+        for tt in range(n_sim_spins):
+          tot_signal = tot_signal * Mt16[tt,:]
+        fin_signal = (tot_signal+1)/2.0
+        ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
+
+    ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.5) #N = 16
+
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    folder = r'D:\measuring\data\Analyzed figures\Fingerprints'
+    print folder
+    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.pdf'),
+        format='pdf')
+    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint.png'),
+        format='png')
+
+
+    plt.show(block = False)
     # fig = a.default_fig(figsize=(35,5))
     # ax = a.default_ax(fig)
     # # ax.set_xlim(15.0,15.5)
-    # ax.set_xlim(0,20)
+    # ax.set_xlim(50,70)
     # start, end = ax.get_xlim()
     # ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
     # ax.set_ylim(-0.05,1.05)
-   
-    # ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data',color = 'magenta') #N = 16
-    
+
+    # ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
+
     # if disp_sim_spin == True:
     #   colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
     #   for tt in range(len(HF_par)):
@@ -62,48 +115,17 @@ def fingerprint(disp_sim_spin = True):
     #     tot_signal = np.ones(len(tau_lst))
     #     for tt in range(len(HF_par)):
     #       tot_signal = tot_signal * Mt16[tt,:]
-    #     fin_signal = (tot_signal+1)/2.0   
+    #     fin_signal = (tot_signal+1)/2.0
     #     ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
-    
+
 
     # # plt.legend(loc=4)
 
-    print folder
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_short.pdf'),
-        format='pdf')
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_short.png'),
-        format='png')
-
-    fig = a.default_fig(figsize=(35,5))
-    ax = a.default_ax(fig)
-    # ax.set_xlim(15.0,15.5)
-    ax.set_xlim(50,70)
-    start, end = ax.get_xlim()
-    ax.xaxis.set_ticks(np.arange(start, end, 0.5))
-
-    ax.set_ylim(-0.05,1.05)
-   
-    ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
-    
-    if disp_sim_spin == True:
-      colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
-      for tt in range(len(HF_par)):
-        ax.plot(tau_lst*1e6, FP_signal16[tt,:] ,'-',lw=.8,label = 'spin' + str(tt+1), color = colors[tt])
-    if False:
-        tot_signal = np.ones(len(tau_lst))
-        for tt in range(len(HF_par)):
-          tot_signal = tot_signal * Mt16[tt,:]
-        fin_signal = (tot_signal+1)/2.0   
-        ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
-    
-
-    # plt.legend(loc=4)
-
-    print folder
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_shortv2.pdf'),
-        format='pdf')
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_shortv2.png'),
-        format='png')
+    # print folder
+    # plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_shortv2.pdf'),
+    #     format='pdf')
+    # plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_shortv2.png'),
+    #     format='png')
 
     # fig = a.default_fig(figsize=(10,5))
     # ax = a.default_ax(fig)
@@ -113,9 +135,9 @@ def fingerprint(disp_sim_spin = True):
     # ax.xaxis.set_ticks(np.arange(start, end, 0.5))
 
     # ax.set_ylim(-0.05,1.05)
-   
+
     # ax.plot(a.sweep_pts, a.p0, '.-k', lw=0.4,label = 'data') #N = 16
-    
+
     # if disp_sim_spin == True:
     #   colors = cm.rainbow(np.linspace(0, 1, len(HF_par)))
     #   for tt in range(len(HF_par)):
@@ -124,17 +146,17 @@ def fingerprint(disp_sim_spin = True):
     #     tot_signal = np.ones(len(tau_lst))
     #     for tt in range(len(HF_par)):
     #       tot_signal = tot_signal * Mt16[tt,:]
-    #     fin_signal = (tot_signal+1)/2.0   
+    #     fin_signal = (tot_signal+1)/2.0
     #     ax.plot(tau_lst*1e6, fin_signal,':g',lw=.8,label = 'tot')
-    
+
 
     # plt.legend(loc=2)
 
-    print folder
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_vvshort.pdf'),
-        format='pdf')
-    plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_vvshort.png'),
-        format='png')
+    # print folder
+    # plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_vvshort.pdf'),
+    #     format='pdf')
+    # plt.savefig(os.path.join(folder, str(disp_sim_spin)+'fingerprint_vvshort.png'),
+    #     format='png')
 
 
 def load_mult_dat(timestamps, number_of_msmts, ssro_calib_folders=['']):
@@ -167,10 +189,6 @@ def load_mult_dat(timestamps, number_of_msmts, ssro_calib_folders=['']):
    a.u_p0  = cum_u_p0
 
    return a, folder
-
-# fingerprint(disp_sim_spin=True)
-fingerprint(disp_sim_spin=False)
-
 
 
 

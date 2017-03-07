@@ -358,7 +358,7 @@ def ssro_correct_twoqubit_state_photon_numbers(correlations, F0a, F0b, F1a, F1b,
     photon_numbers = [ #LT1 = 0 and LT2 = 0; #LT1 = 0 and LT2 > 0; 
     #LT1 > 0 and LT2 = 0; #LT1 > 0, LT2 > 0]. In ms terms this means
     [11;10;01;00], so the matrix is defined differently now. 
-
+    F0 is ms=0 RO fidelity, F1 is ms+-1 RO fidelity
     Photon numbers need not to be normalized.
 
     a = LT1, b = LT2
@@ -366,7 +366,7 @@ def ssro_correct_twoqubit_state_photon_numbers(correlations, F0a, F0b, F1a, F1b,
     
     if verbose:
         print 'Correcting for read-out...'
-        print 'Before correction: \n\tLT1=0,LT2=0\tLT1=0,LT2>0\tLT1>0,LT2=0\tLT1>0,LT2>0'
+        print 'Before correction: \n\tLT4=0,LT3=0\tLT4=0,LT3>0\tLT4>0,LT3=0\tLT4>0,LT3>0'
         string = str()
         for k in correlations/np.float(correlations.sum()):
             string += '\t'+num2str(k,3)+'\t'
@@ -391,7 +391,7 @@ def ssro_correct_twoqubit_state_photon_numbers(correlations, F0a, F0b, F1a, F1b,
         correlations_corrected = False
     
     if verbose:
-        print 'After correction:\n\tLT1=0,LT2=0\tLT1=0,LT2>0\tLT1>0,LT2=0\tLT1>0,LT2>0'
+        print 'After correction:\n\tLT4=0,LT3=0\tLT4=0,LT3>0\tLT4>0,LT3=0\tLT4>0,LT3>0'
         string = str()
         for k in correlations_corrected:
             string += '\t'+num2str(k,3)+'\t'
