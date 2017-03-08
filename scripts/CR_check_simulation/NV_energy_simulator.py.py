@@ -1,63 +1,65 @@
 import numpy as np
 import math
 from matplotlib import pyplot as plt
+from analysis.lib.tools import toolbox
+from analysis.lib.m2 import m2
 import random
 import time
 import types
 import os
 import msvcrt
-from scipy.stats import cauchy
 
 class NV_energy_simulator(object):
-
-    def __init__(self):
+    def __init__(self, name, plot_name=''):
         # Gaussian related
-        self.peak_width_gate = 0.05*10**6;
-        self.peak_width_newfocus = 0.3*10**6; #GHz
-        self.peak_width_yellow = 0.05*10**6;
-        self.peak_counts_cr_check = 0.13;
-        self.peak_counts_repump = 0.75;
-        self.dark_counts = 0.0002
+        peak_width_gate = 1.0*10**6;
+        peak_width_newfocus = 1.0*10**6; #GHz
+        peak_width_yellow = 0.5*10**6;
+        peak_counts_cr_check = 35.0;
+        peak_counts_repump = 25;
         resonance_start_gate = 57.0*10**6;
         resonance_start_newfocus = 45.0*10**6; #GHz
         resonance_start_yellow = 17.0*10**6;
-        self.ionisation_constant = 0.3
 
         # Time related
-        sleep_time = 1
+        sleep_time = 0.05
 
         # Jump and drift related
-        self.jump_chance = 0.005*sleep_time
-        self.drift_gate = 0*sleep_time
-        self.drift_yellow = 0*sleep_time
+        jump_chance = 0.005*sleep_time
+        drift_gate = 0*sleep_time
+        drift_yellow = 0*sleep_time
 
         # init of vars
-        self.resonance_gate = resonance_start_gate;
-        self.resonance_newfocus = resonance_start_newfocus;
-        self.resonance_yellow = resonance_start_yellow;
-        self.p_charge_repump = 1
+        resonance_gate = resonance_start_gate;
+        resonance_newfocus = resonance_start_newfocus;
+        resonance_yellow = resonance_start_yellow;
+        p_charge_repump = 1
+        print 'hey'
 
     def signal(self):
         # system simulated as we do a CR check
-        repump_duration = 0.0003                    # s, 300.0 * 10**(-6) SSRO value
-        CR_duration = 0.00005                       # s, 50.0 * 10**(-6) SSRO value
-        experiment_duration = 0.001                 # s, 
-        count_duration = 0.1                        # s, 0.1 SSRO value
+        repump_duration = 300.0 * 10**(-6)        # s, 300.0 * 10**(-6) SSRO value
+        CR_duration = 50.0 * 10**(-6)             # s, 50.0 * 10**(-6) SSRO value
+        experiment_duration = 0.001               # s, 
+        count_duration = 0.1                      # s, 0.1 SSRO value
         repump_threshold = 5
         experiment_threshold = 20
+        ionisation_constant = 0.03
         mode = 1
         do_CR_mod = 0
         state = 1
+        peak_counts_cr_check = 35.0
+        peak_counts_repump = 25
         step_increment = 0
         time_array = []
         counts_per_repump_graph = []
         counts_per_cr_check_graph = []
 
+        plt.axis([0, 10, 0, 10])
         plt.ion()
-        plt.show()
 
         while True:
-            if (msvcrt.kbhit() and (msvcrt.getch() == 'q')) or (step_increment>=1000): 
+            if (msvcrt.kbhit() and (msvcrt.getch() == 'q')): 
                 print 'Quit by user'
                 return False; 
 
@@ -70,15 +72,15 @@ class NV_energy_simulator(object):
 
             while (t - time_start < count_duration):
                 if (msvcrt.kbhit() and (msvcrt.getch() == 'q')): 
-                    print 'stopped'
+                    print 'Quit by user'
                     return False;
                 if mode == 1: # Do charge repump
 
                     self.NV_control()
                     if (state == 0):      
-                        counts_per_repump_array.append( np.random.exponential(self.lorentzian_yellow_normalized*self.peak_counts_repump) + self.dark_counts*random.random() )
+                        counts_per_repump_array.append( np.random.poisson(self.lorentzian_yellow_normalized*gate_counts_repump) + 0.01*random.random() )
                     else:
-                        counts_per_repump_array.append( self.dark_counts*random.random() )
+                        counts_per_repump_array.append( 0.01*random.random() )
 
                     if (self.p_charge_repump > random.random()):
                         state = -1
@@ -95,11 +97,11 @@ class NV_energy_simulator(object):
 
                     self.NV_control()
                     if (state == -1):
-                        counts_per_cr_check_array.append( np.random.exponential(self.peak_counts_cr_check*self.lorentzian_gate_normalized*self.p_spin_repump) + self.dark_counts*random.random() )
+                        counts_per_cr_check_array.append( np.random.poisson(peak_counts_cr_check*self.lorentzian_gate_normalized*self.p_spin_repump) + 0.01*random.random() )
                     else:
-                        counts_per_cr_check_array.append( self.dark_counts*random.random() )
+                        counts_per_cr_check_array.append( 0.01*random.random() )
 
-                    if (self.p_ionisation > random.random()):
+                    if (self.p_ionisation < random.random()):
                         state = 0
 
                     t += CR_duration
@@ -115,40 +117,54 @@ class NV_energy_simulator(object):
             counts_per_repump_graph.append(np.sum(counts_per_repump_array))
             counts_per_cr_check_graph.append(np.sum(counts_per_cr_check_array))
 
-            plt.subplot(211)
-            plt.plot(time_array,counts_per_cr_check_graph)
-            plt.subplot(212)
-            plt.plot(time_array,counts_per_repump_graph, 'r')
-            # plt.show()
+            plt.scatter(time_array,counts_per_cr_check_graph, 'r')
+            plt.scatter(time_array,counts_per_repump_graph, 'b')
+            plt.show()
 
 
     def NV_control(self):
-        gate = (57.0-0.0)*10**6;
-        newfocus = (45.0-0.0)*10**6; #GHz
-        yellow = (17.0-0.0)*10**6;   #GHz
+        
+        # Time related
+        sleep_time = 0.05
 
-        self.gaussian_newfocus = (1/(self.peak_width_newfocus*math.sqrt(2.0*np.pi))) * math.exp( - (newfocus-self.resonance_newfocus)**2 /(2.0*(self.peak_width_newfocus**2)) )
-        self.gaussian_newfocus_max = (1/(self.peak_width_newfocus*math.sqrt(2.0*np.pi)))
+        # Jump and drift related
+        jump_chance = 0.005*sleep_time
+        drift_gate = 0*sleep_time
+        drift_yellow = 0*sleep_time
+
+        # init of vars
+        resonance_gate = resonance_start_gate;
+        resonance_newfocus = resonance_start_newfocus;
+        resonance_yellow = resonance_start_yellow;
+        p_charge_repump = 1
+
+
+        gate = 57.0*10**6;
+        newfocus = 45.0*10**6; #GHz
+        yellow = 17.0*10**6;   #GHz
+
+        self.gaussian_newfocus = (1/(peak_width_newfocus*math.sqrt(2*np.pi))) * math.exp( - (newfocus-resonance_newfocus)**2 /(2.0*(peak_width_newfocus**2)) )
+        self.gaussian_newfocus_max = (1/(peak_width_newfocus*math.sqrt(2*np.pi)))
         self.gaussian_newfocus_normalized = self.gaussian_newfocus/self.gaussian_newfocus_max
         if (self.gaussian_newfocus_normalized > 0.5):
             self.p_spin_repump = 1
         else:
             self.p_spin_repump = 2*self.gaussian_newfocus_normalized
 
-        self.lorentzian_gate = (1/np.pi)*( (self.peak_width_gate/2.0) / ((gate-self.resonance_gate)**2 + (self.peak_width_gate/2.0)**2) )
-        self.lorentzian_gate_max = (1/np.pi)*( 1 / (self.peak_width_gate/2.0) )
+        self.lorentzian_gate = (1/np.pi)*( (peak_width_gate/2.0) / ((gate-resonance_gate)**2 + (peak_width_gate/2.0)**2) )
+        self.lorentzian_gate_max = (1/np.pi)*( 1 / (peak_width_gate/2.0) )
         self.lorentzian_gate_normalized = self.lorentzian_gate/self.lorentzian_gate_max
 
-        self.p_ionisation = self.ionisation_constant*self.lorentzian_gate_normalized*self.p_spin_repump
+        self.p_ionisation = ionisation_constant*lorentzian_gate_normalized*p_spin_repump
 
 
-        self.lorentzian_yellow = (1/np.pi)*( (self.peak_width_yellow/2.0) / ((yellow-self.resonance_yellow)**2 + (self.peak_width_yellow/2.0)**2) )
-        self.lorentzian_yellow_max = (1/np.pi)*( 1 / (self.peak_width_yellow/2.0) )
+        self.lorentzian_yellow = (1/np.pi)*( (peak_width_yellow/2.0) / ((yellow-resonance_yellow)**2 + (peak_width_yellow/2.0)**2) )
+        self.lorentzian_yellow_max = (1/np.pi)*( 1 / (peak_width_yellow/2.0) )
         self.lorentzian_yellow_normalized = self.lorentzian_yellow/self.lorentzian_yellow_max
-        if (self.lorentzian_yellow_normalized > 1):
+        if (self.lorentzian_yellow_normalized > 0.5):
             self.p_charge_repump = 1
         else:
-            self.p_charge_repump = self.lorentzian_yellow_normalized
+            self.p_charge_repump = 2*self.lorentzian_yellow_normalized
 
         #  # jumps 
         # p_jump = random.random()
@@ -164,9 +180,9 @@ class NV_energy_simulator(object):
         #             p_yellow_resonance = random.uniform(-0.8,-1)
         #         resonance_yellow += 0.5 * (10**6) *p_yellow_resonance
 
-        # and drifts
-        self.resonance_gate += self.drift_gate
-        self.resonance_yellow += self.drift_yellow
+        # # and drifts
+        # resonance_gate += drift_gate
+        # resonance_yellow += drift_yellow
 
 
 
