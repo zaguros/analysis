@@ -93,6 +93,7 @@ class purify_analysis(object):
                 if verbose:
                         print d
                 tstamp_lt3,tstamp_lt4 = self.tstamps_for_both_setups(d,contains = contains)
+
                 #,newest_tstamp = '110000') ### newest timestamp allows for only taking parts of a day.
                 all_lt3.extend(tstamp_lt3)
                 all_lt4.extend(tstamp_lt4)
@@ -154,6 +155,7 @@ class purify_analysis(object):
         for t_lt3,t_lt4 in zip(lt3_timestamps,lt4_timestamps):
             
             lt3_folder = tb.data_from_time(t_lt3,folder = self.lt3_folder)
+
             lt4_folder = tb.data_from_time(t_lt4,folder = self.lt4_folder)
             cleaned_data_lt4 = os.path.join(lt4_folder,'cleaned_data.hdf5')
             if check_if_file_exists(cleaned_data_lt4):
@@ -1602,14 +1604,14 @@ class purify_analysis(object):
 
         while tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
 
-            latest_t,f = tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
-            
+            latest_t,f = tb.latest_data(contains,older_than=latest_t,folder=analysis_folder,newer_than=newer_than,
+                return_timestamp = True,raise_exc=False,VERBOSE=False)
+
             ### debug statement that prints the full timestamp and the relevant identifier.
             # print latest_t[8:],latest_t
 
             ### append found timestamp to list of timestamps
             ts_list.append(latest_t) 
-
         return ts_list
 
     def verify_tstamp_lists(self,lt3_t_list,lt4_t_list,date):
@@ -1626,31 +1628,37 @@ class purify_analysis(object):
 
         ### check for contents
         newer_than = date+'_000000'
+        i = 0
         for t_lt3,t_lt4 in zip(lt3_t_list,lt4_t_list):
+            i +=1
             f_lt3 = tb.data_from_time(t_lt3,folder = self.lt3_folder)
             f_lt4 = tb.data_from_time(t_lt4,folder = self.lt4_folder)
 
             ## get file path and open file
             Datafile_lt3 = h5py.File(f_lt3+f_lt3[len(self.lt3_folder)+9:] + '.hdf5','r') 
-            Datafile_lt4 = h5py.File(f_lt3+f_lt3[len(self.lt4_folder)+9::] + '.hdf5','r') 
+            Datafile_lt4 = h5py.File(f_lt4+f_lt4[len(self.lt4_folder)+9:] + '.hdf5','r') 
 
-            if (not u'PQ_hist' in Datafile_lt3.keys()) or (not u'PQ_hist' in Datafile_lt4.keys()): ### did we actually detect any clicks what so ever?
+            if (not u'PQ_hist' in Datafile_lt4.keys()): ### did we actually detect any clicks what so ever?
                 continue
+
 
             ### we exploit the fact that .keys is ordered according to what is saved last.
             ### --> adwin data is saved last: therefore if the last key contains pq --> no adwin data
 
-            if ('PQ' in Datafile_lt3.keys()[-1]) or ('PQ' in Datafile_lt4.keys()[-1]):
+            if ('PQ' in Datafile_lt3.keys()[-1]) or (len(Datafile_lt4.keys())<2):
                 continue
 
             ### check if there are adwin ssro events and if they have the same length for both files
-            ssros_lt3 = Datafile_lt4[Datafile_lt4.keys()[-1]]['adwindata']['ssro_results'].value
-            ssros_lt4 = Datafile_lt4[Datafile_lt4.keys()[-1]]['adwindata']['ssro_results'].value
+            ssros_lt3 = Datafile_lt3[Datafile_lt3.keys()[-1]]['adwindata']['ssro_results'].value
+            ssros_lt4 = Datafile_lt4[Datafile_lt4.keys()[0]]['adwindata']['ssro_results'].value
 
             if (len(ssros_lt4) == len(ssros_lt3)) and (len(ssros_lt3) !=0):
                 ### timestamp contains valuable information, add to clean lists
                 clean_t_list_lt3.append(t_lt3)
                 clean_t_list_lt4.append(t_lt4)
+            else:
+                print 'shit just hit the fan!!!!!'
+                print 'data ran out of sync!'
     
         ### return clean timestamp lists
 
