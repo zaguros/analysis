@@ -10,73 +10,84 @@ import numpy as np
 import os,h5py
 
 class purifyPQAnalysis(pqsequence.PQSequenceAnalysis):
-	"""
-	Combines pq measurements with adwin ssro.
-	"""
-	def __init__(self,folder,**kw):
-		pqsequence.PQSequenceAnalysis.__init__(self,folder,**kw)
+    """
+    Combines pq measurements with adwin ssro.
+    """
+    def __init__(self,folder,**kw):
+        # print folder
+        pqsequence.PQSequenceAnalysis.__init__(self,folder,**kw)
 
-		self.agrp=self.adwingrp('adwindata')
-		self.joint_grp = self.adwingrp('joint_params')
+        if  'adwindata' in self.g.keys():
+            self.agrp=self.adwingrp('adwindata')
+        elif 'adwinadata' in self.g.keys(): # At some point this got misspelled! Annoying (PH)
+            self.agrp=self.adwingrp('adwinadata')
+        else:
+            print self.g.keys()
+            print folder
+            raise Exception('Cant find adwin data!')
 
-	def filter_pq_data_from_adwin_syncs(self, adwin_syncs = None, pq_syncs = None):
 
-		"""
-		returns a boolean numpy array.
-		True if the recored sync is in the adwin adwin_syncs
-		False if the recored sync is not in the adwin_syncs (agrp['counted_awg_reps'])
+        if  'joint_params' in self.g.keys():
+            self.joint_grp = self.adwingrp('joint_params')
 
-		TODO: Needs to be generalized for longer PQ meausrements with more data sets.
-		"""
+    def filter_pq_data_from_adwin_syncs(self, adwin_syncs = None, pq_syncs = None):
 
-		if adwin_syncs == None:
-			adwin_syncs = self.agrp['counted_awg_reps'].value
+        """
+        returns a boolean numpy array.
+        True if the recored sync is in the adwin adwin_syncs
+        False if the recored sync is not in the adwin_syncs (agrp['counted_awg_reps'])
 
-		if pq_syncs == None:
-			pq_syncs = self.pqf['/PQ_sync_number-1'].value
+        TODO: Needs to be generalized for longer PQ meausrements with more data sets.
+        """
 
-		return np.in1d(pq_syncs,adwin_syncs) ## CHANGE back
+        if adwin_syncs == None:
+            adwin_syncs = self.agrp['counted_awg_reps'].value
 
-	def filter_adwin_data_from_pq_syncs(self,filtered_sn):
-		"""
-		takes the filtered pq syncs as input and returns a boolean array.
-		This array serves as filter for the adwin RO results
+        if pq_syncs == None:
+            pq_syncs = self.pqf['/PQ_sync_number-1'].value
 
-		TODO: generalize for arbitrary PQ data size
-		"""
-		adwin_syncs = self.agrp['counted_awg_reps'].value
-		# print 'elen', len(filtered_sn)
-		insert_pos = np.searchsorted(adwin_syncs,filtered_sn)
-		#insert_pos = np.searchsorted(filtered_sn,adwin_syncs)
+        return np.in1d(pq_syncs,adwin_syncs) ## CHANGE back
 
-		return insert_pos, adwin_syncs[insert_pos] #does not return what we want.
+    def filter_adwin_data_from_pq_syncs(self,filtered_sn):
+        """
+        takes the filtered pq syncs as input and returns a boolean array.
+        This array serves as filter for the adwin RO results
+        """
 
-	def get_adwin_data_from_pq_syncs(self,filtered_syncs):
-		"""
-		takes the filtered pq syncs as input and returns a boolean array.
-		This array serves as filter for the adwin RO results
+        adwin_syncs = self.agrp['counted_awg_reps'].value
+        # print 'elen', len(filtered_sn)
+        insert_pos = np.searchsorted(adwin_syncs,filtered_sn)
+        #insert_pos = np.searchsorted(filtered_sn,adwin_syncs)
 
-		TODO: generalize for arbitrary PQ data size
-		"""
-		sn_lt = self.pqf['/PQ_sync_number-1'].value
-		adwin_syncs = self.agrp['counted_awg_reps'].value
+        return insert_pos, adwin_syncs[insert_pos] #does not return what we want.
 
-		return np.searchsorted(adwin_syncs,sn_lt[filtered_syncs]) #does not return what we want.
+    def get_adwin_data_from_pq_syncs(self,filtered_syncs):
+        """
+        takes the filtered pq syncs as input and returns a boolean array.
+        This array serves as filter for the adwin RO results
+        """
 
-	def get_filtered_ROC(normalized_ssro,u_normalized_ssro):
-		"""
-		Applies electron RO correction to a filtered data set.
-		Should really make the class above also a child of 'mbi' or 'ssro'
-		So far implemented in ipython notebooks
-		"""
-		pass
+        if np.sum(np.logical_not(np.in1d(filtered_sn,counted_awg_reps))) != 0:
+            print 'Connecting pq syncs to adwin data seems to be going wrong!'
 
-	def get_analysed_ssro_calibration(self,ssro_calib_folder):
-		"""
-		returns calibrated fidelities and uncertainties for ms = 0 and the dark state.
-		"""
+        adwin_syncs = self.agrp['counted_awg_reps'].value
 
-def get_analysed_fast_ssro_calibration(folder, readout_time=None, e_transition = None, sweep_index=None):
+        return np.searchsorted(adwin_syncs,sn_lt[filtered_syncs]) #does not return what we want.
+
+    def get_filtered_ROC(normalized_ssro,u_normalized_ssro):
+        """
+        Applies electron RO correction to a filtered data set.
+        Should really make the class above also a child of 'mbi' or 'ssro'
+        So far implemented in ipython notebooks
+        """
+        pass
+
+    def get_analysed_ssro_calibration(self,ssro_calib_folder):
+        """
+        returns calibrated fidelities and uncertainties for ms = 0 and the dark state.
+        """
+
+def get_analysed_ssro_calibration(folder, readout_time=None, e_transition = None, sweep_index=None):
 
     fp = os.path.join(folder, 'analysis.hdf5')
     f = h5py.File(fp, 'r')
@@ -93,10 +104,10 @@ def get_analysed_fast_ssro_calibration(folder, readout_time=None, e_transition =
     g=f[key]
 
     if e_transition == None:
-    	trans = 'ms1'
+        trans = 'ms1'
     else:
-    	trans = e_transition
-    	
+        trans = e_transition
+        
     times = g['ms0'].value[:,0]
     fids0 = g['ms0'].value
     fids1 = g[trans].value

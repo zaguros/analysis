@@ -1,8 +1,6 @@
 """
 Evaluates the density matrix of a combined electron nuclear spin state.
 Based upon 12 measurements for different initial measurements of the electron
-
-TODO: proper error propagation onto elements of the dnesity matrix.
 """
 
 
@@ -42,14 +40,17 @@ def get_RO_results(folder,ssro_calib_folder):
 def get_correlations(**kw):
 
     ### pull data
+    ssro_calib_folder = kw.pop('ssro_calib_folder',None)
     ssro_calib_timestamp = kw.pop('ssro_calib_timestamp',None)
     search_string = kw.pop('search_string','el_13C_dm_')
+    base_folder = kw.pop('base_folder',None)
 
-    if ssro_calib_timestamp == None: 
-        ssro_calib_folder = tb.latest_data('SSROCalibration')
-    else:
-        ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
-        ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp)
+    if ssro_calib_folder == None:
+        if ssro_calib_timestamp == None: 
+            ssro_calib_folder = tb.latest_data('SSROCalibration')
+        else:
+            ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_calib_timestamp)
+            ssro_calib_folder = tb.latest_data(contains = ssro_tstmp,older_than = str(int(ssro_dstmp)+1)+'_'+ssro_tstmp,folder = base_folder)
 
     ### for basis assignment, see onenote 2016-08-24 or alternatively mathematica file E_13C_Bell_state.nb
     tomo_pulses_p = ['none','x','my'] ### used when looking for folders
@@ -67,10 +68,10 @@ def get_correlations(**kw):
     tomo_pulse_translation_dict = {'none': 'Z','X':'Z','x':'Y','mx':'Y','y':'X','my':'X'}
 
     for p,m in zip(tomo_pulses_p,tomo_pulses_m):
-        f_list_pos_p.append(tb.latest_data(search_string + p+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_p.append(tb.latest_data(search_string + p+'_negative' ,return_timestamp = False,**kw))
-        f_list_pos_m.append(tb.latest_data(search_string + m+'_positive' ,return_timestamp = False,**kw))
-        f_list_neg_m.append(tb.latest_data(search_string + m+'_negative' ,return_timestamp = False,**kw))
+        f_list_pos_p.append(tb.latest_data(search_string + p+'_positive' ,folder = base_folder,return_timestamp = False,**kw))
+        f_list_neg_p.append(tb.latest_data(search_string + p+'_negative' ,folder = base_folder,return_timestamp = False,**kw))
+        f_list_pos_m.append(tb.latest_data(search_string + m+'_positive' ,folder = base_folder,return_timestamp = False,**kw))
+        f_list_neg_m.append(tb.latest_data(search_string + m+'_negative' ,folder = base_folder,return_timestamp = False,**kw))
 
         #### now also calculate the measured contrast
         y_a,y_err_a = get_RO_results(f_list_pos_p[-1],ssro_calib_folder)
@@ -96,7 +97,8 @@ def get_correlations(**kw):
 
         #### we also need to calculate the single qubit expectation values.
         #### easy for the electron spin. One simply adds the electron outcomes and divides by 2.
-        #### for the nuclear spin one has to add up several RO bases and look at the correlations there:
+        #### for the nuclear spin one has to add up several RO bases and look at the correlations there 
+        #### (because experiments are not grouped by RO basis):
         exp_val_sum = (y_pos_electron + y_neg_electron)/2.
         exp_val_sum_u = (y_pos_electron_u**2 + y_neg_electron_u**2)/4.
 
@@ -128,6 +130,10 @@ def get_correlations(**kw):
     ### and are now added to the results (square root still needs to be taken for the uncertainties)
     sweep_pts = np.append(sweep_pts,['IX','IY','IZ'])
     exp_values = np.append(exp_values,np.array([c_x,c_y,c_z]))
+    print 'Nuclear spin correlations',c_x,c_y,c_z
+    print sweep_pts
+    print np.round(exp_values,2)
+
     exp_vals_u = np.append(exp_vals_u,np.array([np.sqrt(c_x_u),np.sqrt(c_y_u),np.sqrt(c_z_u)]))
 
 
@@ -142,7 +148,7 @@ def carbon_ROC(exp,exp_u,folder):
         ROC_coeff =  0.978264
         ROC_coeff_u = 0.00194222
     else:
-        ROC_coeff = 0.972934 ### this value seems to low for that specific day of the measurement. See onenote Carbons LT4 / 2016-09-12
+        ROC_coeff = 0.972934 
         ROC_coeff_u = 0.0028265
 
 
@@ -160,14 +166,14 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     """
     routine for bar plotting
     """
-    color = '#90C3D4'
+    color = '#3594F2'
     alpha = 0.67
 
 
     xticks = [r'$|$Z,Z$\rangle$',r'$|$Z,-Z$\rangle$',r'$|$-Z,Z$\rangle$',r'$|$-Z,-Z$\rangle$']
     yticks = [r'$\langle$Z,Z$|$',r'$\langle$Z,-Z$|$',r'$\langle$-Z,Z$|$',r'$\langle$-Z,-Z$|$']
-    fontsize = 11
-    hf = plt.figure(figsize=plt.figaspect(0.35))
+    fontsize = 10
+    hf = plt.figure(figsize=plt.figaspect(0.3)/1.5)
     ha = plt.subplot(121, projection='3d')
     ha.grid(True)
     # plt.gca().patch.set_facecolor('white')
@@ -198,10 +204,26 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
     ha.bar3d(xpos, ypos, zpos, dx, dy,dz, color=color,alpha = alpha)
 
     # ha.set_title('abs(Real part)')
-    ha.set_xticklabels(xticks,va = 'center',size=  fontsize)
+    ha.set_xticklabels(xticks,va = 'baseline',size=  fontsize,rotation = 40)
+        #### fine adjustment of the x label positions... thanks stackexchange
+    import types,matplotlib
+    SHIFTX = 0.008 # Data coordinates
+    SHIFTY = 0.003 # Data coordinates
+    for label in ha.xaxis.get_majorticklabels():
+        label.customShiftValueX = SHIFTX
+        label.customShiftValueY = SHIFTY
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValueX ), 
+                                        label, matplotlib.text.Text )
+        label.set_y = types.MethodType( lambda self, x: matplotlib.text.Text.set_y(self, x-self.customShiftValueY ), 
+                                        label, matplotlib.text.Text )
     ha.set_yticklabels(yticks,size=  fontsize,
                    verticalalignment='baseline',
-                   horizontalalignment='left')
+                   horizontalalignment='left',rotation =-15)
+    SHIFT = 0.004 # Data coordinates
+    for label in ha.yaxis.get_majorticklabels():
+        label.customShiftValue = SHIFT
+        label.set_x = types.MethodType( lambda self, x: matplotlib.text.Text.set_x(self, x-self.customShiftValue ), 
+                                        label, matplotlib.text.Text )
     ha.set_zticklabels([0.0,0.1,0.2,0.3,0.4,0.5],size=  fontsize,
                    va='center',
                    ha ='left')
@@ -235,14 +257,15 @@ def plot_dm(dm,dm_u_re = None,dm_u_im = None,plot_im = False):
 
 def electron_carbon_density_matrix(**kw):
     """
-    This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
+    Calculates a density matrix for our favourite nuclear spin-electron bell state
+    Addendum: This function implements error propagation in the gaussian way and by assuming independence of measurement outcomes.
     """
 
     folder,sweep_pts,exp_values,exp_vals_u = get_correlations(**kw)
     print 'this is the folder', folder
 
     paulis = generate_pauli_matrices()
-    ### initialize the dm via the identity correlations
+    ### initialize the dm via the correlations of a fully mixed state
     dm = np.kron(paulis[0],paulis[0])/4.
     dm_u_re,dm_u_im = np.zeros((4,4),dtype = float),np.zeros((4,4),dtype = float)
     ### basis definition
@@ -256,7 +279,7 @@ def electron_carbon_density_matrix(**kw):
             sigma_kron = np.kron(paulis[t_dict[t[0]]],paulis[t_dict[t[1]]])
 
 
-            ### carbon ROC necessary?
+            ### carbon ROC necessary? YES
             if t[1] =='I':
                 dm +=exp*sigma_kron/4.
 

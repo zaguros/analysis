@@ -84,7 +84,7 @@ def create_plot(f,**kw):
     title = kw.pop('title',None)
 
     fig = plt.figure()
-    ax = plt.subplot()
+    ax = plt.subplot(111)
 
     if xlabel != None:
         plt.xlabel(xlabel)
@@ -351,6 +351,50 @@ def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
     for el, row in zip(input_el, data):
         print "--------------------------------------------------------------------------------------------------"
         print row_format.format(el+' |', *row)
+
+
+
+
+def el_to_c_swap_success(contains = '',input_el=['Z'], do_fit = False, **kw):
+    '''
+    gets data from a folder whose name contains the contains variable.
+    Does or does not fit the data with a gaussian function
+    '''
+
+    ### folder choice
+    if contains == '':
+        contains = 'SwapSuccess_el_to_C'
+
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains,**kw)
+    a = mbi.MBIAnalysis(f)
+    print 'this is the timestamp ',get_tstamp_from_folder(f)
+
+    # data = np.empty([3,len(input_el)],dtype=str)
+    data = []
+    for i in range(len(input_el)):
+        data.append([0,0,0])
+    for ii,el in enumerate(input_el):
+        # data.append([0,0,0])
+        data_strings = []
+        ro_str = 'el_state_'+el
+
+        a.get_readout_results(name = ro_str, CR_after_check=CR_after_check)
+        y = a.normalized_ssro[0]
+        y_u = a.u_normalized_ssro[0]
+        y = np.round(y,decimals = 2)
+        y_u = np.round(y_u,decimals=2)
+        
+        ### put output string together
+        for jj,res,res_u in zip(range(3),y,y_u):
+            data[ii][jj] = cp.deepcopy(str(res) + " +/- "+ str(res_u))
+
+    row_format ="{:>18}" * (2)
+    for el, row in zip(input_el, data):
+        print "--------------------------------------------------------------------------------------------------"
+        print row_format.format(el+' |', *row)
+
 
 
 def phase_offset_after_LDE(contains = '', **kw):

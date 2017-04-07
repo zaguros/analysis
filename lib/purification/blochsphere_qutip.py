@@ -129,7 +129,8 @@ class Bloch():
         self.point_size = [25, 32, 35, 45]
         # Shape of point markers, default = ['o','^','d','s']
         self.point_marker = ['o', 's', 'd', '^']
-
+        self.invert_colors = [] # this gets added when a list of points is being added
+        self.color2 = []
         # ---data lists---
         # Data for point markers
         self.points = []
@@ -254,7 +255,7 @@ class Bloch():
         self.point_style = []
         self.annotations = []
 
-    def add_points(self, points, meth='m'):
+    def add_points(self, points, meth='m',invert_colors = False,color2 = False):
         """Add a list of data points to bloch sphere.
 
         Parameters
@@ -286,6 +287,9 @@ class Bloch():
             self.points.append(points)
             self.point_style.append('m')
 
+
+        self.invert_colors.append(invert_colors)
+        self.color2.append(color2)
     def add_states(self, state, kind=''):
         """Add a state vector Qobj to Bloch sphere.
 
@@ -391,11 +395,12 @@ class Bloch():
 
         self.axes.grid(False)
         self.plot_back()
-        self.plot_points()
+        
         self.plot_vectors()
         self.plot_front()
         self.plot_axes_labels()
         self.plot_annotations()
+        self.plot_points()
 
     def plot_back(self):
         # back half of sphere
@@ -521,6 +526,7 @@ class Bloch():
             else:
                 indperm = arange(num)
             if self.point_style[k] == 's':
+
                 self.axes.scatter(
                     real(self.points[k][1][indperm]),
                     - real(self.points[k][0][indperm]),
@@ -533,9 +539,15 @@ class Bloch():
                     marker=self.point_marker[mod(k, len(self.point_marker))])
 
             elif self.point_style[k] == 'm':
-                pnt_colors = array(self.point_color *
-                                   ceil(num / float(len(self.point_color))))
 
+                if self.color2[k]:
+                    pnt_colors = array(self.point_color2 *
+                                       ceil(num / float(len(self.point_color2))))
+                else:
+                    pnt_colors = array(self.point_color *
+                                       ceil(num / float(len(self.point_color))))
+                if self.invert_colors[k]:
+                    pnt_colors = pnt_colors[::-1] #invert the color array
                 pnt_colors = pnt_colors[0:num]
                 pnt_colors = list(pnt_colors[indperm])
                 marker = self.point_marker[mod(k, len(self.point_marker))]
@@ -543,9 +555,14 @@ class Bloch():
                 self.axes.scatter(real(self.points[k][1][indperm]),
                                   -real(self.points[k][0][indperm]),
                                   real(self.points[k][2][indperm]),
-                                  s=s, alpha=1, edgecolor='none',
-                                  zdir='z', color=pnt_colors,
+                                  s=s, alpha=1, edgecolor='black',linewidths =0.5,
+                                   c=pnt_colors,#zdir='z',
                                   marker=marker)
+                # self.axes.scatter(real(self.points[k][1][indperm]),
+                #                   -real(self.points[k][0][indperm]),
+                #                   real(self.points[k][2][indperm]),marker=marker,
+                #                   s=s, alpha=1, edgecolor='black',linewidths =0.5,
+                #                   zdir='z', c=pnt_colors)
 
             elif self.point_style[k] == 'l':
                 color = self.point_color[mod(k, len(self.point_color))]
@@ -608,6 +625,7 @@ class Bloch():
                             '.' + format)
         else:
             plt.savefig(name)
+            plt.show()
         self.savenum += 1
         if self.fig:
             plt.close(self.fig)

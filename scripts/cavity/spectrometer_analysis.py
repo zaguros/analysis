@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from analysis.scripts.cavity import peakdetect; reload(peakdetect)
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
-c=3.e8#speed of light
+c=2.997e8#speed of light
 
 class spectrometer_analysis(object):
     def __init__(self,folder):
@@ -66,7 +66,6 @@ class spectrometer_analysis(object):
         self.wavelengths = np.array(intensity.index.tolist()[1:])
 
         self.frequencies = c/(self.wavelengths*1.e-9)/1.e12 #frequency in THz
-        
         intensity = intensity.as_matrix()
         #print len(intensity)
         intensity = intensity[1:]

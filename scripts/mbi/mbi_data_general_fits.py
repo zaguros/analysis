@@ -9,28 +9,34 @@ reload(fit)
 reload(common)
 reload(mbi)
 
-def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
+def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_folder = None,
             offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
             frequency = [1], phase =[0],
-            fixed = [], ylim = [-0.5, 1.05],
-            plot_fit = False, do_print = False, show_guess = True):
+            fixed = [], ylim = [-0.5, 1.05],ssro_tstamp ='',base_folder = None,
+            plot_fit = False, do_print = False, show_guess = True,correct_ionization = True):
     ''' Function to fit mbi-type data with exponential and sinusoidal functions or combinations thereof.
     timestamp       : format yyyymmdd_hhmmss or hhmmss or None. None takes the last data.
     measurement_name: list of measurement names
     '''
     if timestamp != None:
-        folder = toolbox.data_from_time(timestamp)
+        folder = toolbox.data_from_time(timestamp,folder = base_folder)
     else:
-        folder = toolbox.latest_data(contains)
+        folder = toolbox.latest_data(contains,folder = base_folder)
+    print folder
+    if ssro_folder == None:
+        if ssro_tstamp == '':
+            ssro_folder = ssro_tstamp
 
-
+        else:
+            ssro_folder = toolbox.data_from_time(ssro_tstamp)
+        
     fit_results = []
 
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
-        a.get_readout_results(name=measurement_name[k])
-        a.get_electron_ROC()
+        a.get_readout_results(name=measurement_name[k],CR_after_check = correct_ionization)
+        a.get_electron_ROC(ssro_folder)
         ax = a.plot_results_vs_sweepparam(ret='ax')
 
         if ylim != None:

@@ -97,7 +97,10 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     else:
         search_dir = folder
 
-    daydirs = os.listdir(search_dir)
+    dir_entries = os.listdir(search_dir)
+    is_directory = lambda d: os.path.isdir(os.path.join(search_dir, d))
+
+    daydirs = [dir for dir in dir_entries if is_directory(dir)]
 
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
@@ -125,7 +128,6 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
         for d in all_measdirs[::-1]:
             # this routine verifies that any output directory is a 'valid' directory
-            #_timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
             _timestamp = daydir + d[:6]
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
@@ -166,7 +168,6 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         else:
             return False
     else:
-        "there is data"
         measdirs.sort()
         if return_all:
             return valid_folders
@@ -174,7 +175,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         measdir = measdirs[-1]
         if return_timestamp == False:
             return os.path.join(search_dir,daydir,measdir)
-        else:
+        else: 
             return str(daydir)+str(measdir[:6]) , os.path.join(search_dir,daydir,measdir)
 
 def data_from_time(timestamp, folder = None):
@@ -291,7 +292,7 @@ def file_in_folder(folder, timestamp):
 
 
 
-############### 2014-06-11, Hannes: here i am putting some of wolgang's teleporation tools: file management etc. 
+############### 2014-06-11, Hannes: here i am putting some of wolfgang's teleporation tools: file management etc. 
 
 def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     filepaths = []
