@@ -125,7 +125,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
         for d in all_measdirs[::-1]:
             # this routine verifies that any output directory is a 'valid' directory
-            # _timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
+            #_timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
             _timestamp = daydir + d[:6]
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
@@ -166,6 +166,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         else:
             return False
     else:
+        "there is data"
         measdirs.sort()
         if return_all:
             return valid_folders
@@ -173,7 +174,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         measdir = measdirs[-1]
         if return_timestamp == False:
             return os.path.join(search_dir,daydir,measdir)
-        else: 
+        else:
             return str(daydir)+str(measdir[:6]) , os.path.join(search_dir,daydir,measdir)
 
 def data_from_time(timestamp, folder = None):

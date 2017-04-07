@@ -26,7 +26,7 @@ class DisplayScan(m2.M2Analysis):
 
         use_save_location = kw.pop('use_save_location',False)
         save_location = kw.pop('save_location',None)
-        fig = plt.figure()
+        fig = plt.figure(figsize=(12,8))
         ax = fig.add_subplot(1,1,1)
 
         colormap=kw.pop('colormap','afmhot')
