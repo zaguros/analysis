@@ -69,6 +69,9 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     if kw.get('plot_threshold_ch1', 0) !=0:
         ax1.vlines([kw.get('plot_threshold_ch1', 0)],0,1000,color='r')
 
+    # if kw.get('window_ch0',[0,0]) != [0,0]:
+    #     ax0.
+
     ax0.set_title('photons channel 0')
     ax1.set_title('photons channel 1')
 
@@ -83,13 +86,17 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
         return fig, (ax0, ax1)
 
 
-def plot_marker_filter_comparison(pqf,mrkr_chan = 2,**kw):
+def plot_marker_filter_comparison(pqf,mrkr_chan = 2,ret=False,**kw):
 
     # get the PLU marked photons first
     is_ph_ch0, is_ph_ch1 = pq_tools.get_photons(pqf)
     is_ph = is_ph_ch0 | is_ph_ch1
     is_ph_with_PLU_mrkr = is_ph & pq_tools.filter_marker(pqf, mrkr_chan)
-    plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
+    if ret:
+        return plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
+    else:
+        plot_photon_hist_filter_comparison(pqf,fltr =is_ph_with_PLU_mrkr,**kw)
+    
 
 
 def plot_autocorrelation_histogram(pqf,start = 0,length = 2000,index = 1, pq_device = '', binsize = 1e3,**kw):
