@@ -309,6 +309,7 @@ class MBIAnalysis(m2.M2Analysis):
     def plot_results_vs_sweepparam(self, name='', save=True, **kw):
         mode = kw.get('mode', 'ssro_results')
         labels = kw.get('labels', None)
+        ylabel = kw.get('ylabel',None)
         ret = kw.get('ret', None)
         ylim = kw.get('ylim', (-0.05, 1.05))
         ax = kw.get('ax', None)
@@ -345,10 +346,13 @@ class MBIAnalysis(m2.M2Analysis):
                         yerr=self.u_p0[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                     ax.axhspan(0,1,fill=False,ls='dotted')
 
-            if not self.result_corrected:
-                ax.set_ylabel('avg (uncorrected) outcome')
+            if ylabel == None:
+                if not self.result_corrected:
+                    ax.set_ylabel('avg (uncorrected) outcome')
+                else:
+                    ax.set_ylabel(r'$F(|0\rangle)$')
             else:
-                ax.set_ylabel(r'$F(|0\rangle)$')
+                ax.set_ylabel(ylabel)
 
         else:
             for i in range(len(self.correlation_names)):

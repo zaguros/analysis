@@ -1,5 +1,5 @@
 """
-This file provides tools to analyze Spin photon correlations as  a function of theta
+This file provides tools to analyze Spin photon correlations as a function of the superposition angle 'theta'
 Functions should be executed on the computer that stores the PQ data (othewise use pq_folder = 'xxxx' when calling instances of purify_pq)
 Based on the analysis class purify_pq
 
@@ -22,7 +22,7 @@ def analyze_spcorrs(contains,is_remote_lt3_measurement = False,**kw):
 
     analysis_file,filtering_file,ssro_calib_folder,trans = get_data_objects(contains,is_remote_lt3_measurement,**kw)
 
-    sn_lt,st_fltr = temporal_filtering(analysis_file,filtering_file,plot_filter = plot_filter)
+    sn_lt,st_fltr = temporal_filtering(filtering_file,plot_filter = plot_filter)
 
     analysis_file.sn_filtered = sn_lt[st_fltr]
     
@@ -161,11 +161,16 @@ def get_data_objects(contains,is_remote_lt3_measurement,**kw):
     a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
 
     if is_remote_lt3_measurement:
+        lt3_folder = tb.latest_data(contains, folder ='Z:\data')
         b = ppq.purifyPQAnalysis(lt3_folder, hdf5_mode='r')
         analysis_file = b
         filtering_file = a
         ssro_calib_folder  = tb.latest_data('SSROCalib', folder ='Z:\data')
-        trans = 'msp1'
+        if 'p' in a.g.attrs['electron_transition']:
+            trans = 'msp1'
+        else:
+            trans = 'msm1'
+
     else:
         analysis_file = a
         filtering_file = a
@@ -175,7 +180,7 @@ def get_data_objects(contains,is_remote_lt3_measurement,**kw):
     return analysis_file,filtering_file,ssro_calib_folder,trans
 
 
-def temporal_filtering(analysis_file,filtering_file,plot_filter = False):
+def temporal_filtering(filtering_file,plot_filter = False):
 
 
     if plot_filter:
