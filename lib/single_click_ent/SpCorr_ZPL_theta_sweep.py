@@ -161,6 +161,7 @@ def get_data_objects(contains,is_remote_lt3_measurement,**kw):
     a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
 
     if is_remote_lt3_measurement:
+        lt3_folder = tb.latest_data(contains, folder ='Z:\data')
         b = ppq.purifyPQAnalysis(lt3_folder, hdf5_mode='r')
         analysis_file = b
         filtering_file = a
@@ -191,15 +192,22 @@ def temporal_filtering(analysis_file,filtering_file,plot_filter = False):
     photon_channel =  analysis_params.SPCorr_settings['photon_channel'] # 0 or 1; 2 means both HH detectors
     st_start = analysis_params.SPCorr_settings['st_start']
     st_len       =  analysis_params.SPCorr_settings['st_len']
+    ch1_offset = analysis_params.SPCorr_settings['ch1_offset']
 
-
+    print photon_channel,st_start,st_len,ch1_offset
 
     ### filter the PQ data: Return an array which is True at each position where an event was in a window
     if (photon_channel == 0) or (photon_channel == 1):
+        if photon_channel == 0:
+            ch1_offset=  0
+        else:
+            st_start = st_start+ch1_offset
         st_fltr = (ch_lt == photon_channel)  & (st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt ==0)
     else:
-        st_fltr = (st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
+        st_fltr_c0 = (ch_lt == 0)&(st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
+        st_fltr_c1 = (ch_lt == 1)&(st_lt > st_start+ch1_offset)  & (st_lt < (st_start  + st_len+ch1_offset)) & (sp_lt == 0) 
 
+        st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
     return sn_lt,st_fltr
 
 
@@ -210,8 +218,9 @@ def plot_ph_hist_and_fltr(a):
     f,(ax0,ax1) = pq_plots.plot_marker_filter_comparison(a.pqf,
                           mrkr_chan = 1,
                           start = st_start-20e3,
-                          length= st_len+40e3,
+                          length= st_len+100e3,
                           hist_binsize = 1e2,save = False,log=True,ret=True)
     ax0.vlines(np.array([st_start,st_start+st_len])/1e3,0,1000,color='r',lw=2)
     ax1.vlines(np.array([st_start+ch1_offset,st_start+st_len+ch1_offset])/1e3,0,1000,color= 'r',lw=2)
+    # ax1.set_xlim([(st_start-20e3+ch1_offset)*1e-3,(st_start+st_len+40e3+ch1_offset)*1e-3])
     f

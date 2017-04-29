@@ -216,6 +216,10 @@ class TailAnalysis(PQSequenceAnalysis):
             save = False
 
         xx=self.tail_hist_b[:-1]
+
+        if np.amax(xx) > 1e5:
+            xx = xx*1e-3
+
         yy=np.sum(self.tail_hist_h, axis=0)
         if log_plot:
             ax.semilogy(xx,yy,'-', color = 'k')
@@ -246,6 +250,8 @@ class TailAnalysis(PQSequenceAnalysis):
             save = False
         xx=self.tail_hist_b[:-1]
         
+        if np.amax(xx) > 1e5:
+            xx = xx*1e-3
         for i in indices:
             
             yy=self.tail_hist_h[i]+offset*i
