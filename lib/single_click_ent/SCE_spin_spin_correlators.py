@@ -36,6 +36,7 @@ def get_data_objects(contains,**kw):
 def analyze_spspcorrs(contains,**kw):
     """
     TO DO: ability to pass analysis_params via kwargs
+    Plotting
     """
 
     #### kws
@@ -70,8 +71,17 @@ def analyze_spspcorrs(contains,**kw):
     exp_values,exp_values_u = get_exp_value_from_spin_spin_corr(norm_correlators,norm_correlators_u)
 
     if plot_raw_correlators:
-        print 'THIS FUNCTION STILL NEEDS IMPLEMENTATION'
-
+        ### transpose the functions to be plotted.
+        exp_values_trans = map(list, zip(*exp_values))
+        exp_values_u_trans= map(list, zip(*exp_values_u))
+        labels  = ['11','10','01','00']
+        fig = plt.figure()
+        ax = plt.subplot()
+        for e,e_u,l in zip(exp_values_trans,exp_values_u_trans,labels):
+            ax.errorbar(a.sweep_pts,e,e_u,label=l,fmt='o')
+        plt.legend()
+        ax.set_ylim([-1,1])
+        plt.show()
     if do_plot:
         #### plot exp value
         a_lt4.result_corrected = True
