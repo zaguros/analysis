@@ -14,13 +14,15 @@ import analysis.lib.purification.purify_analysis as purify_analysis
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.m2.ssro import ssro
 from matplotlib import pyplot as plt
+import os
 
 from SpCorr_ZPL_theta_sweep import temporal_filtering ### note that this function uses the same analysis parameters as SPCORRS!!!
 
-def get_data_objects(contains,**kw):
-    folder=tb.latest_data(contains,**kw)
+
+def get_data_objects(contains_lt3, contains_lt4,**kw):
+    folder=tb.latest_data(contains_lt4,**kw)
     a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
-    lt3_folder=tb.latest_data(contains,folder =r'Z:\data',**kw)
+    lt3_folder=tb.latest_data(contains_lt3,folder =r'Z:\data',**kw)
     b = ppq.purifyPQAnalysis(lt3_folder, hdf5_mode='r')
     ssro_b  = tb.latest_data('SSROCalib', folder =r'Z:\data')
     ### lt3 should use SSRO with MW init. We therefore also supply the microwave transition.
@@ -39,57 +41,106 @@ def analyze_spspcorrs(contains,**kw):
     Plotting
     """
 
+    if (isinstance(contains, list)):
+        contains_lt3 = contains[0]
+        contains_lt4 = contains[1]
+    else:
+        contains_lt3 = contains
+        contains_lt4 = contains
+
     #### kws
     plot_filter = kw.pop('plot_filter',False)
     do_plot = kw.pop('do_plot',False)
     plot_raw_correlators = kw.pop('plot_raw_correlators',False)
 
     #### get files
-    a_lt4,a_lt3,ssro_f_lt4,ssro_f_lt3,trans_lt3,folder_lt4 = get_data_objects(contains,**kw)
+    a_lt4,a_lt3,ssro_f_lt4,ssro_f_lt3,trans_lt3,folder_lt4 = get_data_objects(contains_lt3, contains_lt4,**kw)
 
     ### temporal filtering
-    sn_lt,st_fltr = temporal_filtering(a_lt4,plot_filter = plot_filter)
-
+    sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(a_lt4,plot_filter = plot_filter)
+    st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
+    st_fltr_c0 = st_fltr_c0[st_fltr]
+    st_fltr_c1 = st_fltr_c1[st_fltr]
+    
     ### prepare filtered sync numbers
     for a in [a_lt3]:#,a_lt4]: for later functionatlity this could be extended to both files. Not sure if necessary yet.
         a.sn_filtered = sn_lt[st_fltr]
         adwin_filter,adwin_syncs = a.filter_adwin_data_from_pq_syncs(a.sn_filtered) ## adwin syncs within window
         results = a.agrp['ssro_results'].value
-        adwin_filt_bool = np.in1d(range(len(results)),adwin_filter) ### convert the adwin filter to boolean
-
+        adwin_filt_bool_psi0 = np.in1d(range(len(results)),adwin_filter[st_fltr_c0]) ### convert the adwin filter to boolean
+        adwin_filt_bool_psi1 = np.in1d(range(len(results)),adwin_filter[st_fltr_c1]) ### convert the adwin filter to boolean
+        if (a.g.attrs['PLU_during_LDE'] != 1):
+            adwin_filt_bool= np.array([1]*len(results))
         
         ####################################
         ##### electron RO correlations #####
         ####################################
-
-    correlators_per_sweep_pt = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool)
-
+    correlators_per_sweep_pt_psi0 = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool_psi0)
+    correlators_per_sweep_pt_psi1 = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool_psi1)
+    print np.sum(st_fltr)
+    
+    a_lt4.get_sweep_pts()
     ### do ROC
-    norm_correlators, norm_correlators_u = RO_correction_of_correlators(correlators_per_sweep_pt,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
+    norm_correlators_psi0, norm_correlators_psi0_u = RO_correction_of_correlators(correlators_per_sweep_pt_psi0,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
+    norm_correlators_psi1, norm_correlators_psi1_u = RO_correction_of_correlators(correlators_per_sweep_pt_psi1,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
 
     ### extract spin-spin expectation value from correlators
-    exp_values,exp_values_u = get_exp_value_from_spin_spin_corr(norm_correlators,norm_correlators_u)
+    exp_values_psi0,exp_values_psi0_u = get_exp_value_from_spin_spin_corr(norm_correlators_psi0,norm_correlators_psi0_u)
+    exp_values_psi1,exp_values_psi1_u = get_exp_value_from_spin_spin_corr(norm_correlators_psi1,norm_correlators_psi1_u)
 
     if plot_raw_correlators:
         ### transpose the functions to be plotted.
-        exp_values_trans = map(list, zip(*exp_values))
-        exp_values_u_trans= map(list, zip(*exp_values_u))
+
+        exp_values_psi0_trans = map(list, zip(*norm_correlators_psi0))
+        exp_values_psi0_u_trans= map(list, zip(*norm_correlators_psi0_u))
+        exp_values_psi1_trans = map(list, zip(*norm_correlators_psi1))
+        exp_values_psi1_u_trans= map(list, zip(*norm_correlators_psi1_u))
+        
         labels  = ['11','10','01','00']
         fig = plt.figure()
         ax = plt.subplot()
-        for e,e_u,l in zip(exp_values_trans,exp_values_u_trans,labels):
-            ax.errorbar(a.sweep_pts,e,e_u,label=l,fmt='o')
+        for e,e_u,l in zip(exp_values_psi0_trans,exp_values_psi0_u_trans,labels):
+            ax.errorbar(a_lt4.sweep_pts,e,e_u,fmt='o',label=l)
         plt.legend()
-        ax.set_ylim([-1,1])
+        ax.set_xlabel(a_lt4.sweep_name)
+        ax.set_ylabel('Probability')
+        ax.set_ylim([0,1])
+        ax.set_title(a_lt4.timestamp+'\n'+a_lt4.measurementstring+ '\n' + 'psi0')
         plt.show()
+        fig.savefig(
+                    os.path.join(a_lt4.folder, '_probabilty_psi0.png'),
+                    format='png')
+
+        labels  = ['11','10','01','00']
+        fig = plt.figure()
+        ax = plt.subplot()
+        for e,e_u,l in zip(exp_values_psi1_trans,exp_values_psi1_u_trans,labels):
+            ax.errorbar(a_lt4.sweep_pts,e,e_u,fmt='o',label=l)
+        plt.legend()
+        ax.set_xlabel(a_lt4.sweep_name)
+        ax.set_ylabel('Probability')
+        ax.set_ylim([0,1])
+        ax.set_title(a_lt4.timestamp+'\n'+a_lt4.measurementstring + '\n' + 'psi1')
+        plt.show()
+        fig.savefig(
+                    os.path.join(a_lt4.folder, '_probabilty_psi1.png'),
+                    format='png')
+
     if do_plot:
         #### plot exp value
+        # fig = plt.figure()
+        # ax = plt.subplot()
         a_lt4.result_corrected = True
-        a_lt4.p0 = exp_values
-        a_lt4.u_p0 = exp_values_u
-        a_lt4.plot_results_vs_sweepparam(ylabel = 'Expectation value',**kw)
+        
+        a_lt4.p0 = (np.array(exp_values_psi0)+1)/2.
+        a_lt4.u_p0 = exp_values_psi0_u
+        ax = a_lt4.plot_results_vs_sweepparam(ylabel = 'Expectation value',ret = 'ax', labels = 'psi0', save=False,**kw)
+        a_lt4.readouts = 2
+        a_lt4.p0 = (np.array(exp_values_psi1)+1)/2.
+        a_lt4.u_p0 = exp_values_psi1_u
+        a_lt4.plot_results_vs_sweepparam(ylabel = 'Expectation value', ax = ax, labels = 'psi1', save=True,**kw)
     else:
-        return exp_values,exp_values_u
+        return exp_values_psi0,exp_values_psi0_u
 
 
 

@@ -22,9 +22,9 @@ def analyze_spcorrs(contains,is_remote_lt3_measurement = False,**kw):
 
     analysis_file,filtering_file,ssro_calib_folder,trans = get_data_objects(contains,is_remote_lt3_measurement,**kw)
 
-    sn_lt,st_fltr = temporal_filtering(filtering_file,plot_filter = plot_filter)
+    sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(filtering_file,plot_filter = plot_filter)
 
-    analysis_file.sn_filtered = sn_lt[st_fltr]
+    analysis_file.sn_filtered = sn_lt[np.logical_or(st_fltr_c0,st_fltr_c1)]
     
     #################################
     ##### electron RO filtering #####
@@ -134,9 +134,9 @@ def get_sweep_analysis_results(analysis_file,filtering_file,parameter_name,param
         ### do one analysis cycle for the chosen parameter setting
 
         #  temporal filtering
-        sn_lt,st_fltr = temporal_filtering(analysis_file,filtering_file,plot_filter = False)
+        sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(analysis_file,filtering_file,plot_filter = False)
 
-        analysis_file.sn_filtered = sn_lt[st_fltr]
+        analysis_file.sn_filtered = sn_lt[np.logical_or(st_fltr_c0,st_fltr_c1)]
 
         #RO filtering and read-out correction
         adwin_filter,adwin_syncs = analysis_file.filter_adwin_data_from_pq_syncs(analysis_file.sn_filtered) ## adwin syncs within window
@@ -200,19 +200,10 @@ def temporal_filtering(filtering_file,plot_filter = False):
 
     print photon_channel,st_start,st_len,ch1_offset
 
-    ### filter the PQ data: Return an array which is True at each position where an event was in a window
-    if (photon_channel == 0) or (photon_channel == 1):
-        if photon_channel == 0:
-            ch1_offset=  0
-        else:
-            st_start = st_start+ch1_offset
-        st_fltr = (ch_lt == photon_channel)  & (st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt ==0)
-    else:
-        st_fltr_c0 = (ch_lt == 0)&(st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
-        st_fltr_c1 = (ch_lt == 1)&(st_lt > st_start+ch1_offset)  & (st_lt < (st_start  + st_len+ch1_offset)) & (sp_lt == 0) 
+    st_fltr_c0 = (ch_lt == 0)&(st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
+    st_fltr_c1 = (ch_lt == 1)&(st_lt > st_start+ch1_offset)  & (st_lt < (st_start  + st_len+ch1_offset)) & (sp_lt == 0) 
 
-        st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
-    return sn_lt,st_fltr
+    return sn_lt,st_fltr_c0,st_fltr_c1
 
 
 def plot_ph_hist_and_fltr(a):
