@@ -38,7 +38,6 @@ def get_data_objects(contains_lt3, contains_lt4,**kw):
 def analyze_spspcorrs(contains,**kw):
     """
     TO DO: ability to pass analysis_params via kwargs
-    Plotting
     """
 
     if (isinstance(contains, list)):
@@ -75,72 +74,60 @@ def analyze_spspcorrs(contains,**kw):
         ####################################
         ##### electron RO correlations #####
         ####################################
-    correlators_per_sweep_pt_psi0 = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool_psi0)
-    correlators_per_sweep_pt_psi1 = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool_psi1)
-    print np.sum(st_fltr)
-    
+    adwin_record_filter = filter_on_adwin_parameters(a_lt3 = a_lt3,a_lt4 = a_lt3)
+    adwin_filt_bool_psi0 = np.logical_and(adwin_record_filter,adwin_filt_bool_psi0)
+    adwin_filt_bool_psi1 = np.logical_and(adwin_record_filter,adwin_filt_bool_psi1)
+
+    p0 = []
+    u_p0 = []
     a_lt4.get_sweep_pts()
-    ### do ROC
-    norm_correlators_psi0, norm_correlators_psi0_u = RO_correction_of_correlators(correlators_per_sweep_pt_psi0,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
-    norm_correlators_psi1, norm_correlators_psi1_u = RO_correction_of_correlators(correlators_per_sweep_pt_psi1,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
+    for i, adwin_filt_bool in zip([0,1],[adwin_filt_bool_psi0,adwin_filt_bool_psi1]):
 
-    ### extract spin-spin expectation value from correlators
-    exp_values_psi0,exp_values_psi0_u = get_exp_value_from_spin_spin_corr(norm_correlators_psi0,norm_correlators_psi0_u)
-    exp_values_psi1,exp_values_psi1_u = get_exp_value_from_spin_spin_corr(norm_correlators_psi1,norm_correlators_psi1_u)
+        correlators_per_sweep_pt = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool_psi)
 
-    if plot_raw_correlators:
-        ### transpose the functions to be plotted.
+        ### do ROC
+        norm_correlators, norm_correlators = RO_correction_of_correlators(correlators_per_sweep_pt,
+                                                                    a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
 
-        exp_values_psi0_trans = map(list, zip(*norm_correlators_psi0))
-        exp_values_psi0_u_trans= map(list, zip(*norm_correlators_psi0_u))
-        exp_values_psi1_trans = map(list, zip(*norm_correlators_psi1))
-        exp_values_psi1_u_trans= map(list, zip(*norm_correlators_psi1_u))
-        
-        labels  = ['11','10','01','00']
-        fig = plt.figure()
-        ax = plt.subplot()
-        for e,e_u,l in zip(exp_values_psi0_trans,exp_values_psi0_u_trans,labels):
-            ax.errorbar(a_lt4.sweep_pts,e,e_u,fmt='o',label=l)
-        plt.legend()
-        ax.set_xlabel(a_lt4.sweep_name)
-        ax.set_ylabel('Probability')
-        ax.set_ylim([0,1])
-        ax.set_title(a_lt4.timestamp+'\n'+a_lt4.measurementstring+ '\n' + 'psi0')
-        plt.show()
-        fig.savefig(
-                    os.path.join(a_lt4.folder, '_probabilty_psi0.png'),
-                    format='png')
+        ### extract spin-spin expectation value from correlators
+        exp_values,exp_values_u = get_exp_value_from_spin_spin_corr(norm_correlators,norm_correlators_u)
 
-        labels  = ['11','10','01','00']
-        fig = plt.figure()
-        ax = plt.subplot()
-        for e,e_u,l in zip(exp_values_psi1_trans,exp_values_psi1_u_trans,labels):
-            ax.errorbar(a_lt4.sweep_pts,e,e_u,fmt='o',label=l)
-        plt.legend()
-        ax.set_xlabel(a_lt4.sweep_name)
-        ax.set_ylabel('Probability')
-        ax.set_ylim([0,1])
-        ax.set_title(a_lt4.timestamp+'\n'+a_lt4.measurementstring + '\n' + 'psi1')
-        plt.show()
-        fig.savefig(
-                    os.path.join(a_lt4.folder, '_probabilty_psi1.png'),
-                    format='png')
+        p0.append(exp_values)
+        p0_u.append(exp_values_u)
+
+        if plot_raw_correlators:
+            ### transpose the functions to be plotted.
+            correlators_trans = map(list, zip(*norm_correlators_psi))
+            correlators_u_trans= map(list, zip(*norm_correlators_u_psi))
+
+            labels  = ['11','10','01','00']
+            fig = plt.figure()
+            ax = plt.subplot()
+            for e,e_u,l in zip(correlators_trans,correlators_u_trans,labels):
+                ax.errorbar(a_lt4.sweep_pts,e,e_u,fmt='o',label=l)
+            plt.legend()
+            ax.set_xlabel(a_lt4.sweep_name)
+            ax.set_ylabel('Probability')
+            ax.set_ylim([0,1])
+            ax.set_title(a_lt4.timestamp+'\n'+a_lt4.measurementstring+ '\n' + 'psi'+str(i))
+            plt.show()
+            fig.savefig(
+                        os.path.join(a_lt4.folder, '_probabilty_psi_' +str(i) +'.png'),format='png')
+    
+    a_lt4.result_corrected = True
+    a_lt4.p0 = np.array(p0)
+    a_lt4.U_p0 = np.array(u_p0)
 
     if do_plot:
         #### plot exp value
-        # fig = plt.figure()
-        # ax = plt.subplot()
-        a_lt4.result_corrected = True
-        
-        a_lt4.p0 = (np.array(exp_values_psi0)+1)/2.
-        a_lt4.u_p0 = exp_values_psi0_u
-        ax = a_lt4.plot_results_vs_sweepparam(ylabel = 'Expectation value',ret = 'ax', labels = 'psi0', save=False,**kw)
-        a_lt4.readouts = 2
-        a_lt4.p0 = (np.array(exp_values_psi1)+1)/2.
-        a_lt4.u_p0 = exp_values_psi1_u
-        a_lt4.plot_results_vs_sweepparam(ylabel = 'Expectation value', ax = ax, labels = 'psi1', save=True,**kw)
+        a_lt4.plot_results_vs_sweepparam(   ylabel = 'Expectation value', 
+                                            labels = ['psi0','psi1'], 
+                                            mode = 'correlations'
+                                            ylim = (-1.05,1.05),
+                                            save=True,
+                                            **kw)
     else:
-        return exp_values_psi0,exp_values_psi0_u
+        return a_lt4
 
 
 
@@ -149,6 +136,8 @@ def sweep_analysis_parameter():
     Needs to be programmed!!!
     """
     pass
+
+
 
 def get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool,**kw):
     """
@@ -203,6 +192,24 @@ def get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool,**kw):
 
     return return_list
 
+def filter_on_adwin_parameters(a_lt3,a_lt4):
+    """
+    creates a filter on the adwin RO array which is based on filters as specified in the analysis parameters
+    Each filter parameters should exist in the hdf5 file as an adwin group and should have the same length as the 
+    number of ssros
+    """
+    fltr = np.array([True]*len(a_lt3.agrp['ssro_results'].value)) ### initially everything true
+
+
+    for a,suffix in zip([a_lt3,a_lt4],['_lt3','_lt4']): ### loop over both files
+
+        for key in Analysis_params_SCE.SPSP_fltr_adwin_settings['list_of_adwin_params']: ### loop over the list of filter parameters
+            minimum = Analysis_params_SCE.SPSP_fltr_adwin_settings['fltr_minima_dict'+suffic][key] 
+            maximum = Analysis_params_SCE.SPSP_fltr_adwin_settings['fltr_maxima_dict'+suffic][key]
+            values = a.agrp[key].value
+            fltr = np.logical_and(fltr,(values > minimum) & ( values < maximum)) ### update filter
+
+    return fltr
 
 def RO_correction_of_correlators(correlators_per_sweep_pt,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw):
 
