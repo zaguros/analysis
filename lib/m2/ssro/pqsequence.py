@@ -134,7 +134,6 @@ class TailAnalysis(PQSequenceAnalysis):
         hist_bins = np.arange(self.start_ns-hist_binsize_ns*.5,self.start_ns+1*tail_length_ns+hist_binsize_ns,hist_binsize_ns)
         
         self.tail_hist_h=np.zeros((self.sweep_length,len(hist_bins)-1))
-        
         st_fltr = (self.start_ns  <= sync_time_ns) &  (sync_time_ns< (self.start_ns + tail_length_ns))
         if verbose:
             print 'total_photons in channel', channel, ':', len(sync_time_ns[np.where(is_ph)])  
@@ -217,6 +216,10 @@ class TailAnalysis(PQSequenceAnalysis):
             save = False
 
         xx=self.tail_hist_b[:-1]
+
+        if np.amax(xx) > 1e5:
+            xx = xx*1e-3
+
         yy=np.sum(self.tail_hist_h, axis=0)
         if log_plot:
             ax.semilogy(xx,yy,'-', color = 'k')
@@ -247,6 +250,8 @@ class TailAnalysis(PQSequenceAnalysis):
             save = False
         xx=self.tail_hist_b[:-1]
         
+        if np.amax(xx) > 1e5:
+            xx = xx*1e-3
         for i in indices:
             
             yy=self.tail_hist_h[i]+offset*i
