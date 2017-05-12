@@ -63,9 +63,7 @@ class purifyPQAnalysis(pqsequence.PQSequenceAnalysis,):
         # print 'elen', len(filtered_sn)
         insert_pos = np.searchsorted(adwin_syncs,filtered_sn)
         #insert_pos = np.searchsorted(filtered_sn,adwin_syncs)
-        print np.amax(filtered_sn)
-        print np.amax(adwin_syncs)
-        return insert_pos, adwin_syncs[insert_pos] #does not return what we want.
+        return insert_pos, adwin_syncs[insert_pos] 
 
     def get_adwin_data_from_pq_syncs(self,filtered_syncs):
         """
