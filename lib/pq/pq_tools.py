@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import h5py
 from analysis.lib.tools import toolbox as tb
-
+reload(tb)
 def get_photons(pqf, index = 1, pq_device = ''):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
@@ -395,30 +395,22 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     return coincidences
 
 
-def get_coincidences_from_folder(folder, index = 1, save = True, contains = '', force_coincidence_evaluation = False, pq_device = ''):
+def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',older_than = None, newer_than = None, force_coincidence_evaluation = False, pq_device = ''):
 
     sync_num_name = pq_device + 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
-    filepaths = tb.get_all_msmt_filepaths(folder) 
-
-    if contains != '':
-        new_fps = []
-        for f in filepaths:
-            if contains in f:
-                new_fps.append(f)
-        filepaths = new_fps
-
+    filepaths = tb.latest_data(folder = folder,contains =contains,return_all= True, older_than = older_than, newer_than = newer_than,folder_is_daydir = True) 
     co = np.ones([1,4])
     # print filepaths
     for i,f in enumerate(filepaths):
         
         if i == 0:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+')
             if sync_num_name in pqf.keys():
                 co = get_coincidences(pqf)
                     
         else:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+')
 
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:

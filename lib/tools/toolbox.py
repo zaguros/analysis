@@ -73,10 +73,9 @@ def is_older(ts0, ts1):
 
         dstamp0, tstamp0 = verify_timestamp(ts0)
         dstamp1, tstamp1 = verify_timestamp(ts1)
-
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False,**kw):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None,folder_is_daydir = False, return_all=False, VERBOSE=False,**kw):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -97,11 +96,15 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
     else:
         search_dir = folder
 
-    dir_entries = os.listdir(search_dir)
-    is_directory = lambda d: os.path.isdir(os.path.join(search_dir, d))
+    if folder_is_daydir == False:
+        dir_entries = os.listdir(search_dir)
+        is_directory = lambda d: os.path.isdir(os.path.join(search_dir, d))
 
-    daydirs = [dir for dir in dir_entries if is_directory(dir)]
-
+        daydirs = [dir for dir in dir_entries if is_directory(dir)]
+    else:
+        split_folder = os.path.split(folder)
+        daydirs = [split_folder[1]]
+        search_dir = os.path.join(split_folder[0])
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
         return None
@@ -129,6 +132,7 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         for d in all_measdirs[::-1]:
             # this routine verifies that any output directory is a 'valid' directory
             _timestamp = daydir + d[:6]
+
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
