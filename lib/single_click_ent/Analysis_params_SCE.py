@@ -11,19 +11,16 @@ SPCorr_settings = {
 	'ch1_offset'	: 34.3e3 
 }
 
-SPSP_fltr_adwin_settings = {
-	'list_of_adwin_params' : ['CR_after','CR_before','elapsed_since_phase_stab']
-
-	}
+SPSP_fltr_adwin_settings = {}
 
 SPSP_fltr_adwin_settings['fltr_dict_lt3'] = {
-				'CR_before'  : [2,2000],
-				'CR_after'  : [10,2000],
-				'elapsed_since_phase_stab' : [0e3,1000e3]
+				'CR_before'  : [1,2,2000],
+				'CR_after'  : [1,10,2000],
 			}
 
 SPSP_fltr_adwin_settings['fltr_dict_lt4'] = 	{
-				'CR_before'  : [2,2000],
-				'CR_after'  : [10,2000],
-				'elapsed_since_phase_stab' : [0e3,1000e3]
+				'CR_before'  : [1,2,2000],
+				'CR_after'  : [1,10,2000],
+				'elapsed_since_phase_stab' : [0,0e3,200e3],
+				'repetition_number'		   : [0,0,2000]
 			}
