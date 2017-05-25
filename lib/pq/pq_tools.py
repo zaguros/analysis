@@ -320,7 +320,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     tot_time_name =  pq_device + '/PQ_time-' + str(index)
     sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
-    if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
+    if not force_coincidence_evaluation and has_analysis_data(pqf, 'coincidences'):
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
         return c    
 
@@ -396,7 +396,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
 
 
 def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',older_than = None, newer_than = None, force_coincidence_evaluation = False, pq_device = ''):
-
+    
     sync_num_name = pq_device + 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
     filepaths = tb.latest_data(folder = folder,contains =contains,return_all= True, older_than = older_than, newer_than = newer_than,folder_is_daydir = True) 
@@ -405,12 +405,12 @@ def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',o
     for i,f in enumerate(filepaths):
         
         if i == 0:
-            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+' if save else 'r')
             if sync_num_name in pqf.keys():
-                co = get_coincidences(pqf)
+                co = get_coincidences(pqf, save = save, force_coincidence_evaluation = force_coincidence_evaluation)
                     
         else:
-            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+' if save else 'r')
 
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:

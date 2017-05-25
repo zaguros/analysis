@@ -314,6 +314,10 @@ def filter_on_adwin_parameters(a_lt3,a_lt4,**kw):
             if filter_on:
                 if key == 'repetition_number':
                     values = np.array([i for i in range(len(fltr)/a.g.attrs['sweep_length']) for _ in range(a.g.attrs['sweep_length'])]) ### Make an array of values corresponding to the current rep
+                elif key == 'LDE_attempts':
+                    reps = a.agrp['counted_awg_reps'].value
+                    reps = reps - np.append([0],reps[:-1]) ### Calculate reps since last click
+                    values = reps % a.g.attrs['LDE_attempts'] ### Take mod with 
                 else:
                     values = a.agrp[key].value
 

@@ -90,6 +90,7 @@ def _aggregated_coincidences(Base_Folder,**kw):
         in_coincidences = get_coincidences_and_adwin_data_from_folder(Base_Folder,folder_secondary = folder_secondary,syncs_per_CR_check = syncs_per_CR_check,
             use_invalid_data_marker = True,force_coincidence_evaluation =force_coincidence_evaluation,save = save,Verbose = Verbose, contains = contains)
     else:
+
         in_coincidences = pq_tools.get_coincidences_from_folder(Base_Folder,force_coincidence_evaluation =force_coincidence_evaluation,save = save, contains  = contains, older_than = older_than, newer_than = newer_than)
 
     return in_coincidences
@@ -163,9 +164,10 @@ def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_
                                     older_than = None,
                                     newer_than = None,
                                     force_coincidence_evaluation = False,
+                                    save = True,
                                     Verbose = True):
     # Gets coincident photons from Hydraharp data
-    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains,force_coincidence_evaluation = force_coincidence_evaluation,older_than = older_than, newer_than = newer_than)
+    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains,force_coincidence_evaluation = force_coincidence_evaluation,save = save,older_than = older_than, newer_than = newer_than)
 
     dt_index = 0
     column_st_0 = 1

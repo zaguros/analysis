@@ -22,5 +22,6 @@ SPSP_fltr_adwin_settings['fltr_dict_lt4'] = 	{
 				'CR_before'  : [1,2,2000],
 				'CR_after'  : [1,10,2000],
 				'elapsed_since_phase_stab' : [0,0e3,200e3],
-				'repetition_number'		   : [0,0,2000]
+				'repetition_number'		   : [0,0,2000],
+				'LDE_attempts'			   : [0,0,250]
 			}
