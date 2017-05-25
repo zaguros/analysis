@@ -24,7 +24,12 @@ def analyze_spcorrs(contains,is_remote_lt3_measurement = False,**kw):
 
     sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(filtering_file,plot_filter = plot_filter)
 
-    analysis_file.sn_filtered = sn_lt[np.logical_or(st_fltr_c0,st_fltr_c1)]
+    if analysis_params.SPCorr_settings['photon_channel'] == 0:
+        analysis_file.sn_filtered = sn_lt[st_fltr_c0]
+    elif analysis_params.SPCorr_settings['photon_channel'] == 1:
+        analysis_file.sn_filtered = sn_lt[st_fltr_c1]
+    else:
+        analysis_file.sn_filtered = sn_lt[np.logical_or(st_fltr_c0,st_fltr_c1)]
     
     #################################
     ##### electron RO filtering #####

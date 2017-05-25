@@ -395,11 +395,11 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     return coincidences
 
 
-def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',older_than = None, newer_than = None, force_coincidence_evaluation = False, pq_device = ''):
+def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',older_than = None, newer_than = None, force_coincidence_evaluation = False, pq_device = '',**kw):
 
     sync_num_name = pq_device + 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
-    filepaths = tb.latest_data(folder = folder,contains =contains,return_all= True, older_than = older_than, newer_than = newer_than,folder_is_daydir = True) 
+    filepaths = tb.latest_data(folder = folder,contains =contains,return_all= True, older_than = older_than, newer_than = newer_than,**kw) 
     co = np.ones([1,4])
     # print filepaths
     for i,f in enumerate(filepaths):

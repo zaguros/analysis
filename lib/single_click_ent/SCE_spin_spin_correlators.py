@@ -188,8 +188,8 @@ def analyze_spspcorrs(contains,**kw):
             phi[0] = np.mod(-phi[0],360)
             phi[1] = np.mod(-phi[1]+180,360)
             avg_phi = np.mean(phi)
-            if verbose: print 'Phi angle ', phi
-            if verbose: print 'Avg phi ', avg_phi
+            print 'Phi angle ', phi
+            print 'Avg phi ', avg_phi
         if save_figs:
             fig.savefig(
                 os.path.join(a_lt4.folder, '{}_vs_sweepparam.'.format('correlations') + a_lt4.plot_format),
@@ -298,6 +298,7 @@ def filter_on_adwin_parameters(a_lt3,a_lt4,**kw):
     """
 
     filter_params = kw.pop('adwin_filter_params',{})
+
     if len(filter_params):
         old_params = analysis_params.SPSP_fltr_adwin_settings
     
@@ -312,8 +313,18 @@ def filter_on_adwin_parameters(a_lt3,a_lt4,**kw):
             [filter_on,minimum,maximum] = val
 
             if filter_on:
+                ### This is terrible Peter code. Dont ever ever ever ever copy it. Bodged. 
                 if key == 'repetition_number':
                     values = np.array([i for i in range(len(fltr)/a.g.attrs['sweep_length']) for _ in range(a.g.attrs['sweep_length'])]) ### Make an array of values corresponding to the current rep
+                elif key == 'pst_msmt_phase':
+                    g_0 = a.g.attrs['Phase_Msmt_g_0']
+                    visibility = a.g.attrs['Phase_Msmt_Vis']
+                    counts_1 = a.agrp['sampling_counts_1'].value
+                    counts_2 = a.agrp['sampling_counts_2'].value
+                    cosvals = [2*(float(n0)/(float(n0)+float(n1)*g_0)-0.5)*visibility for n0,n1 in zip(counts_1,counts_2)]
+                    cosvals = [cosval if np.abs(cosval) < 1 else (1.0 * np.sign(cosval)) for cosval in cosvals]
+                    values = 180*np.arccos(cosvals)/np.pi
+
                 else:
                     values = a.agrp[key].value
 
