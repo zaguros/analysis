@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import h5py
 from analysis.lib.tools import toolbox as tb
-
+reload(tb)
 def get_photons(pqf, index = 1, pq_device = ''):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
@@ -316,7 +316,6 @@ def get_multiple_photon_syncs(pqf, index = 1, pq_device = ''):
     return is_multiple_photon_sync
 
 def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True, pq_device = ''):
-
     sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
     tot_time_name =  pq_device + '/PQ_time-' + str(index)
     sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
@@ -348,7 +347,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     st1 = sync_time[fltr1]
     t1  = total_time[fltr1]
     sn1 = sync_number[fltr1]
-    #print len(st0),len(t0),len(sn0),len(st1),len(t1),len(sn1),
+    # print len(st0),len(t0),len(sn0),len(st1),len(t1),len(sn1),
 
     samesync0 = np.in1d(sn0, sn1)
     samesync1 = np.in1d(sn1, sn0)
@@ -360,6 +359,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     c_t1 = t1[samesync1]
     c_sn1 = sn1[samesync1]
     
+
     ### Code for afterpulsing (PH 16) - also need to uncomment one line in for loop
     # unique_vals, uniq_counts = np.unique(sn1, return_counts = True)
     # repeated = np.in1d(sn1,unique_vals[uniq_counts > 1])
@@ -395,35 +395,30 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     return coincidences
 
 
-def get_coincidences_from_folder(folder, index = 1,save = True,contains = '', force_coincidence_evaluation = False):
+def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',older_than = None, newer_than = None, force_coincidence_evaluation = False, pq_device = '',**kw):
 
     sync_num_name = pq_device + 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
-    filepaths = tb.get_all_msmt_filepaths(folder) 
-
-    if contains != '':
-        new_fps = []
-        for f in filepaths:
-            if contains in f:
-                new_fps.append(f)
-        filepaths = new_fps
-
+    filepaths = tb.latest_data(folder = folder,contains =contains,return_all= True, older_than = older_than, newer_than = newer_than,**kw) 
     co = np.ones([1,4])
     # print filepaths
     for i,f in enumerate(filepaths):
         
         if i == 0:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+')
             if sync_num_name in pqf.keys():
-                co = get_coincidences(pqf)           
+                co = get_coincidences(pqf)
+                    
         else:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+')
 
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:
                     co = get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)
                 else:
                     co = np.vstack((co, get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)))
+        
+        pqf.close()
                     
     return co
 
@@ -896,9 +891,11 @@ def get_photon_hists_from_folder(folder, **kw):
     filepaths = tb.get_all_msmt_filepaths(folder)
     for i,f in enumerate(filepaths):
         if i == 0:
-            (h0,b0),(h1,b1) = get_photon_hist(f, **kw)
+            pqf = pqf_from_fp(f, rights = 'r+')
+            (h0,b0),(h1,b1) = get_photon_hist(pqf, **kw)
         else:
-            (_h0,_b0),(_h1,_b1) = get_photon_hist(f, **kw)
+            pqf = pqf_from_fp(f, rights = 'r+')
+            (_h0,_b0),(_h1,_b1) = get_photon_hist(pqf, **kw)
             h0 += _h0
             h1 += _h1
     return (h0, b0), (h1, b1)
@@ -941,3 +938,23 @@ def plot_photon_hist(pqf, **kw):
     
     if ret == 'subplots':
         return fig, (ax0, ax1)
+
+
+def plot_photon_hist_folder(folder, **kw):    
+    ret = kw.pop('ret', 'subplots')
+
+    (h0, b0), (h1, b1) = get_photon_hists_from_folder(folder, **kw)
+   
+    fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
+    _plot_photon_hist(ax0, h0, b0)
+    _plot_photon_hist(ax1, h1, b1)
+
+    ax0.set_title('photons channel 0')
+    ax1.set_title('photons channel 1')
+
+    # fp = fp_from_pqf(pqf)
+    
+    # fig.suptitle(tb.get_msmt_header(fp) + ' -- Photon histogram')
+    
+    if ret == 'subplots':
+        return fig, (ax0, ax1)        

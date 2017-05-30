@@ -73,7 +73,6 @@ def is_older(ts0, ts1):
 
         dstamp0, tstamp0 = verify_timestamp(ts0)
         dstamp1, tstamp1 = verify_timestamp(ts1)
-
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
 def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False,**kw):
@@ -91,14 +90,22 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     return_all = True: returns all the folders that satisfy the requirements (Cristian)
     '''
-
+    folder_is_daydir = kw.pop('folder_is_daydir', False)
+    
     if (folder==None):
         search_dir = datadir
     else:
         search_dir = folder
 
-    daydirs = os.listdir(search_dir)
+    if folder_is_daydir == False:
+        dir_entries = os.listdir(search_dir)
+        is_directory = lambda d: os.path.isdir(os.path.join(search_dir, d))
 
+        daydirs = [dir for dir in dir_entries if is_directory(dir)]
+    else:
+        split_folder = os.path.split(folder)
+        daydirs = [split_folder[1]]
+        search_dir = os.path.join(split_folder[0])
     if len(daydirs) == 0:
         logging.warning('No data found in datadir')
         return None
@@ -125,8 +132,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
         for d in all_measdirs[::-1]:
             # this routine verifies that any output directory is a 'valid' directory
-            # _timestamp = daydir + d[9:15] ### doing it like this breaks all other analysis scripts. Sorry cavities
             _timestamp = daydir + d[:6]
+
             try:
                 dstamp,tstamp = verify_timestamp(_timestamp)
             except:
@@ -290,7 +297,7 @@ def file_in_folder(folder, timestamp):
 
 
 
-############### 2014-06-11, Hannes: here i am putting some of wolgang's teleporation tools: file management etc. 
+############### 2014-06-11, Hannes: here i am putting some of wolfgang's teleporation tools: file management etc. 
 
 def get_all_msmt_filepaths(folder, suffix='hdf5', pattern=''):
     filepaths = []

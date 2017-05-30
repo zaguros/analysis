@@ -11,14 +11,14 @@ hf = module_hyperfine_params.hyperfine_params
 
 
 def load_mult_dat(timestamp,   
-      ssro_calib_folder =''):
+      ssro_calib_folder ='', data_folder = None):
   ''' 
   function to load and combine multiple msmts. 
   '''
   cum_pts = 0
   kk = 0
   while True:
-    folder = toolbox.data_from_time(timestamp)
+    folder = toolbox.data_from_time(timestamp, folder=data_folder)
     a = mbi.MBIAnalysis(folder)
     a.get_sweep_pts()
     try:

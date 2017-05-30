@@ -30,15 +30,15 @@ timestamps = {}
 
 #### Pippin sil 3 timestamps
 
-# timestamps['min'] = 	{'N8' : ['20160614_181449'],#'20160420_183630'],
-# 					 	'N16' : ['20160614_201116'],#'20160420_200748'],
-# 					 	'N32' : ['20160614_214742'],#'20160420_222506'],
-# 						'N64' : ['20160614_231213']}#'20160421_004107']}
-# timestamps['plus'] = 	{'N8' : [''],#'20160420_183630'],
-# 					 	'N16' : ['20160703_095309'],#['20160614_201116'],#'20160420_200748'],
-# 					 	'N32' : ['20160703_103852'],#['20160614_214742'],#'20160420_222506'],
-# 						'N64' : ['20160703_113235']}#'20160421_004107']}
-# ssro_calib_folder = 'd:\\measuring\\data\\20160614\\170041_AdwinSSRO_SSROCalibration_Pippin_SIL1'
+# timestamps['min'] = 	{'N8' : ['20170228_184913'],
+# 					 	'N16' : ['20170228_193016'],
+# 					 	'N32' : ['20170228_201540'],
+# 						'N64' : ['20170228_211001']}
+# timestamps['plus'] = 	{'N8' : ['20170228_231052'],
+# 					 	'N16' : ['20170301_001356'],
+# 					 	'N32' : ['20170301_012432'],
+# 						'N64' : ['20170301_025042']}
+# ssro_calib_folder = 'd:\\measuring\\data\\20170228\\172427_AdwinSSRO_SSROCalibration_Pippin_SIL3'
 
 
 ####################################
@@ -77,7 +77,7 @@ timestamps['plus'] = 	{'N8'  : ['20160324_181353'],
 ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
 
 
-
+data_folder = None
 
 
 
@@ -90,7 +90,7 @@ def load_data(N = [8], el_trans = 'min'):
 		print 'loading data'
 		for ii,tstamp in enumerate(timestamps[el_trans]['N'+str(N[i])]):
 			a_temp, folder_temp = fp_funcs.load_mult_dat(tstamp, 
-					ssro_calib_folder=ssro_calib_folder)
+					ssro_calib_folder=ssro_calib_folder, data_folder=data_folder)
 
 			if ii == 0:
 				sweep_pts = a_temp.sweep_pts
@@ -130,7 +130,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		if (HF_perp == None) & (HF_par == None):
 			HF_perp, HF_par = fp_funcs.get_hyperfine_params(ms = el_trans, NV = 'Pippin_SIL1')
 		elif el_trans == 'min':
-			print 'I did a thing!@'
+			# print 'I did a thing!@'
 			# needs to be flipped for simulation
 			HF_par =  [x * (-1) for x in HF_par]
 
@@ -140,17 +140,17 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		else:
 			print 'Unequal amount of Parallel and Perpendicular HF parameters'
 
-		print 'HF_perp = ' + str(HF_perp)
-		print 'HF_par = ' + str(HF_par)
+		# print 'HF_perp = ' + str(HF_perp)
+		# print 'HF_par = ' + str(HF_par)
 
 	else:
 		print 'No HF simulation'
 
 	
-	print 'N = ' + str(N)
+	# print 'N = ' + str(N)
 
 	N_keys = ['N'+str(pulse_no) for pulse_no in N]
-	print N_keys
+	# print N_keys
 	for pulses,data,datafolder in zip(N,[a[x] for x in N_keys],[folder[x] for x in N_keys]):
 
 		##########################
@@ -174,15 +174,15 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 			ax.xaxis.set_ticks(np.arange(start, end, xticks))
 		ax.set_ylim(-0.05,1.05)
 		ax.plot(data.sweep_pts, data.p0, '.-k', lw=0.4,label = 'data')
-		print 'these are the sweep_pts',data.sweep_pts
+		# print 'these are the sweep_pts',data.sweep_pts
 
 		#######################
 		# Add simulated spins #
 		#######################
 		if disp_sim_spin == True:
-			print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
+			# print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
 			B_Field = 416.52 # in gauss
-			print B_Field
+			# print B_Field
 			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
 				B_field = B_Field, N = pulses, tau = tau_lst)
@@ -205,10 +205,10 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 			plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
 		print datafolder
-		plt.savefig(os.path.join(datafolder, str(disp_sim_spin)+'fingerprint.pdf'),
-		    format='pdf')
-		plt.savefig(os.path.join(datafolder, str(disp_sim_spin)+'fingerprint.png'),
-		    format='png')
+		# plt.savefig(os.path.join(datafolder, str(disp_sim_spin)+'fingerprint.pdf'),
+		#     format='pdf')
+		# plt.savefig(os.path.join(datafolder, str(disp_sim_spin)+'fingerprint.png'),
+		    # format='png')
 
 def fingerprint_v2(a = None, folder = None, disp_sim_spin = True, N = [8], 
 	el_trans = 'min', HF_perp = None, HF_par = None,xlim=None,xticks=None):
