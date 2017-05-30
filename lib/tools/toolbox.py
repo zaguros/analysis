@@ -75,7 +75,7 @@ def is_older(ts0, ts1):
         dstamp1, tstamp1 = verify_timestamp(ts1)
         return (dstamp0+tstamp0) < (dstamp1+tstamp1)
 
-def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None,folder_is_daydir = False, return_all=False, VERBOSE=False,**kw):
+def latest_data(contains='', older_than=None, newer_than=None,return_timestamp = False,raise_exc = True, folder=None, return_all=False, VERBOSE=False,**kw):
     '''
     finds the latest taken data with <contains> in its name.
     returns the full path of the data directory.
@@ -90,7 +90,8 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
 
     return_all = True: returns all the folders that satisfy the requirements (Cristian)
     '''
-
+    folder_is_daydir = kw.pop('folder_is_daydir', False)
+    
     if (folder==None):
         search_dir = datadir
     else:
