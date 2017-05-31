@@ -24,7 +24,12 @@ def analyze_spcorrs(contains,is_remote_lt3_measurement = False,**kw):
 
     sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(filtering_file,plot_filter = plot_filter)
 
-    analysis_file.sn_filtered = sn_lt[np.logical_or(st_fltr_c0,st_fltr_c1)]
+    if analysis_params.SPCorr_settings['photon_channel'] == 0:
+        analysis_file.sn_filtered = sn_lt[st_fltr_c0]
+    elif analysis_params.SPCorr_settings['photon_channel'] == 1:
+        analysis_file.sn_filtered = sn_lt[st_fltr_c1]
+    else:
+        analysis_file.sn_filtered = sn_lt[np.logical_or(st_fltr_c0,st_fltr_c1)]
     
     #################################
     ##### electron RO filtering #####
@@ -180,25 +185,34 @@ def get_data_objects(contains,is_remote_lt3_measurement,**kw):
     return analysis_file,filtering_file,ssro_calib_folder,trans
 
 
-def temporal_filtering(filtering_file,plot_filter = False):
+def temporal_filtering(filtering_file,plot_filter = False, **kw):
+    """ 
+    Apply temporal filtering
+    Can manually override the dict by passing the arguement temporal_filter_params in the form {'param (e.g. st_start)' : value}
+    """
 
+    filter_params = kw.pop('temporal_filter_params',{})
+    if len(filter_params):
+        old_params = analysis_params.SPCorr_settings
+    for key,value in filter_params.iteritems():
+        analysis_params.SPCorr_settings[key] = value
 
     if plot_filter:
         plot_ph_hist_and_fltr(filtering_file)
-
-
-    sp_lt = filtering_file.pqf['/PQ_special-1'].value # Special: marker channel
-    ch_lt = filtering_file.pqf['/PQ_channel-1'].value # Channel: photon channel
-    sn_lt = filtering_file.pqf['/PQ_sync_number-1'].value # Sync number: the number of the last sync signal
-    st_lt = filtering_file.pqf['/PQ_sync_time-1'].value # Sync time: time that has passed since the last sync signal
-    LDE_attempts = float(filtering_file.g.attrs['LDE_attempts'])
 
     photon_channel =  analysis_params.SPCorr_settings['photon_channel'] # 0 or 1; 2 means both HH detectors
     st_start = analysis_params.SPCorr_settings['st_start']
     st_len       =  analysis_params.SPCorr_settings['st_len']
     ch1_offset = analysis_params.SPCorr_settings['ch1_offset']
 
-    print photon_channel,st_start,st_len,ch1_offset
+    if len(filter_params):
+        analysis_params.SPCorr_settings = old_params
+
+    sp_lt = filtering_file.pqf['/PQ_special-1'].value # Special: marker channel
+    ch_lt = filtering_file.pqf['/PQ_channel-1'].value # Channel: photon channel
+    sn_lt = filtering_file.pqf['/PQ_sync_number-1'].value # Sync number: the number of the last sync signal
+    st_lt = filtering_file.pqf['/PQ_sync_time-1'].value # Sync time: time that has passed since the last sync signal
+    LDE_attempts = float(filtering_file.g.attrs['LDE_attempts'])
 
     st_fltr_c0 = (ch_lt == 0)&(st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
     st_fltr_c1 = (ch_lt == 1)&(st_lt > st_start+ch1_offset)  & (st_lt < (st_start  + st_len+ch1_offset)) & (sp_lt == 0) 
