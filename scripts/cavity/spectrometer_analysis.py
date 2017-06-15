@@ -235,7 +235,7 @@ class spectrometer_analysis(object):
                 nr_fails+=1
                 continue                 
             
-            if ((gamma>max_gamma) or (gamma<min_gamma)): 
+            if ((np.abs(gamma)>max_gamma) or (np.abs(gamma)<min_gamma)): 
                 if plot_fit:
                     print 'ignoring this peak, since gamma is not within specs:',min_gamma, '<',  gamma, '>', max_gamma
                 nr_fails+=1

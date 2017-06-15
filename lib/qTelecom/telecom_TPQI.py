@@ -80,6 +80,9 @@ def _aggregated_coincidences(Base_Folder,**kw):
     syncs_per_CR_check = kw.pop('syncs_per_CR_check', 1)
     Verbose = kw.pop('Verbose', False)
     contains = kw.pop('contains', '')
+    older_than = kw.pop('older_than', None)
+    newer_than = kw.pop('newer_than', None)
+
     if use_invalid_data_marker and folder_secondary == None:
         raise Exception('No secondary folder passed')
 
@@ -87,7 +90,7 @@ def _aggregated_coincidences(Base_Folder,**kw):
         in_coincidences = get_coincidences_and_adwin_data_from_folder(Base_Folder,folder_secondary = folder_secondary,syncs_per_CR_check = syncs_per_CR_check,
             use_invalid_data_marker = True,force_coincidence_evaluation =force_coincidence_evaluation,save = save,Verbose = Verbose, contains = contains)
     else:
-        in_coincidences = pq_tools.get_coincidences_from_folder(Base_Folder,force_coincidence_evaluation =force_coincidence_evaluation,save = save, contains  = contains)
+        in_coincidences = pq_tools.get_coincidences_from_folder(Base_Folder,force_coincidence_evaluation =force_coincidence_evaluation,save = save, contains  = contains, older_than = older_than, newer_than = newer_than,**kw)
 
     return in_coincidences
 
@@ -154,13 +157,16 @@ def filter_no_of_attempts(load_TPQI_attemtps,column_no_of_sequences,coincidences
     return (coincidences[:,column_no_of_sequences] >= min_attempts) & (coincidences[:,column_no_of_sequences] <= max_attempts)
 
 def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_win1_win2, noof_pulses, 
-                                    filter_attempts = False, syncs_per_CR_check = 50, delta_attempts = 50, min_filter_attempts = 1,
+                                    filter_attempts = False, syncs_per_CR_check = 50, delta_attempts = 50, min_filter_attempts = 1, max_dt = -1,
                                     return_sn = False , 
                                     contains = 'TPQI',
+                                    folder_is_daydir = False,
+                                    older_than = None,
+                                    newer_than = None,
                                     force_coincidence_evaluation = False,
                                     Verbose = True):
     # Gets coincident photons from Hydraharp data
-    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains,force_coincidence_evaluation = force_coincidence_evaluation)
+    coincidences = _aggregated_coincidences(Base_Folder_primary,contains=contains,force_coincidence_evaluation = force_coincidence_evaluation,older_than = older_than, newer_than = newer_than,folder_is_daydir = folder_is_daydir)
 
     dt_index = 0
     column_st_0 = 1
@@ -187,9 +193,13 @@ def TPQI_analysis(Base_Folder_primary, ch0_start, ch1_start, WINDOW_LENGTH, dif_
 
     filtered_dts = dts[is_sync_time_filter]
 
+    if max_dt != -1:
+        dt_filter = np.abs(np.mod(filtered_dts+0.5*dif_win1_win2/1e3,dif_win1_win2/1e3)-0.5*dif_win1_win2/1e3) < max_dt/1e3
+        filtered_dts =filtered_dts[dt_filter]
+
     if Verbose:
         print
-        print 'Found {} coincident photons after filtering.'.format(int(sum(is_sync_time_filter)))
+        print 'Found {} coincident photons after filtering.'.format(int(len(filtered_dts)))
         print '===================================='
         print
 

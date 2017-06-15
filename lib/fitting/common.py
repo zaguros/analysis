@@ -227,6 +227,34 @@ def fit_exp_decay_shifted_with_offset(g_a, g_A, g_tau, g_x0, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_double_exp_decay_shifted_with_offset(g_a, g_A, g_tau,  g_x0,g_A2, g_tau2,*arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-(x-x0)/tau)+ A2 * exp(-(x-x0=)/tau2) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+        g_A2 : initial Amplitude 2
+        g_tau2 : decay constant 2
+    """
+    fitfunc_str = 'A * exp(-x/tau)+ A2 * exp(-x/tau2) + a'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    tau = fit.Parameter(g_tau, 'tau')
+    A2 = fit.Parameter(g_A2, 'A2')
+    tau2 = fit.Parameter(g_tau2, 'tau2')
+    x0 = fit.Parameter(g_x0, 'x0')
+
+    p0 = [a, A, tau,x0, A2, tau2]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-(x-x0())/tau()) + A2() * np.exp(-(x-x0())/tau2())
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_saturation(g_A, g_xsat, *arg):
     """
     fitfunction for a saturation (e.g., the NV PL)
@@ -867,5 +895,38 @@ def fit_2d_gaussian_circular(g_offset,g_A, g_x0, g_y0, g_sigma, *arg):
 
     def fitfunc(x,y):
         return offset()+A()*np.exp( - ((x-x0())**2/(2*sigma()**2)  + ((y-y0())**2)/(2*sigma()**2)))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_clipping_radius(g_ROC,g_rclip,g_Transmission,g_Loss, *arg):
+
+    fitfunc_str = '2*np.pi/(Transmission+Loss+exp(-2rclip**2/(wavelength/np.pi*(L*ROC)**0.5)))'
+
+    wavelength = 637e-9
+
+    ROC = fit.Parameter(g_ROC, 'ROC')
+    rclip = fit.Parameter(g_rclip, 'rclip')
+    Transmission = fit.Parameter(g_Transmission, 'Transmission')
+    Loss = fit.Parameter(g_Loss, 'Loss')
+
+    p0 = [ROC,rclip,Transmission,Loss]
+
+    def fitfunc(x):
+        return 2*np.pi/(Transmission()+Loss())+np.exp(-2*rclip()**2/(wavelength**2/np.pi**2*wavelength*x/2*(ROC()-wavelength*x/2)))
+    return p0, fitfunc, fitfunc_str
+
+def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
+    fitfunc_str = 'g_A*(1-(1+a)*exp(-|x-x0|/tau1)+a*exp(-|x-x0|/tau2))'
+
+    x0 = fit.Parameter(g_x0,'x0')
+    A = fit.Parameter(g_A,'A')
+    a = fit.Parameter(g_a,'a')
+    tau1 = fit.Parameter(g_tau1,'tau1')
+    tau2 = fit.Parameter(g_tau2,'tau2')
+
+    p0 = [x0,A,a,tau1,tau2]
+
+    def fitfunc(x):
+        return A()*(1-(1+a())*np.exp(-np.abs(x-x0())/tau1())+a()*np.exp(-(np.abs(x-x0())/tau2())))
 
     return p0, fitfunc, fitfunc_str
