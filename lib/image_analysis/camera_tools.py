@@ -7,8 +7,6 @@ NK 2017
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-# filename = r'D:\measuring\Labview\CCDcamera\Bitmarker_field_of_view.dat'
-# filename = r'D:\measuring\Labview\CCDcamera\Bitmarker_and_stripline.dat'
 from itertools import compress
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
@@ -50,8 +48,6 @@ def make_brightness_hist(array2d, rng = (0,255)):
     n,bins = np.histogram(array2d,bins=255,range=rng)
     fig = plt.figure()
     ax = plt.subplot()
-    if 0 in x or 0.0 in x:
-        np.indices(len(x))[x ==0]
     x = (bins[1:]-(bins[1]-bins[0])/2.)[1:] ### exclude 0
     plt.plot(x,n[1:]) ### exclude 0
     ax.set_xlabel('Pixel brightness')
@@ -59,16 +55,17 @@ def make_brightness_hist(array2d, rng = (0,255)):
     
     return x,n[1:]
 
-def show_image(array2d,size = 7):
+def show_image(array2d,size = 7,no_col_bar = False):
     fig = plt.figure(figsize = (size,size))
     ax = plt.subplot()
-    im = plt.imshow(array2d,cmap='gray')
-    fig.colorbar(im) 
+    im = plt.imshow(array2d,cmap='gray',interpolation='none')
+    if not no_col_bar:
+        fig.colorbar(im) 
     plt.show()
     plt.close('all')
 
 def make_binary(array2d,threshold_min):
-    return array2d>threshold_min
+    return (array2d>threshold_min)*np.ones(np.shape(array2d))
 
 
 def rescale_to_8_bit_grayscale(img):
@@ -147,40 +144,46 @@ def fit_1D_lines_to_clusters(x,y,cluster_positions):
         fit_results.append(fit_result)
         
     return fit_offsets,fit_slopes,fit_results
-def find_marker_grid_via_blob_finder(filtered_laplacian_img):
-	laplace_8bit = rescale_to_8_bit_grayscale(filtered_laplacian_img)
+def find_marker_grid_via_blob_finder(filtered_laplacian_img,plot_histogram = False):
+    laplace_8bit = rescale_to_8_bit_grayscale(filtered_laplacian_img)
+    laplace_8bit  = apply_brightness_filter(laplace_8bit,54)
 
-	####
-	# blob detector params
-	####
-
-	blob_params = cv2.SimpleBlobDetector_Params()
-
-	blob_params.minThreshold = 5
-	blob_params.maxThreshold = 300
-	# Filter by area
-	blob_params.filterByArea = True
-	blob_params.minArea = 0
-	blob_params.maxArea = 30
-	#Filter by Circularity
-	blob_params.filterByCircularity = True
-	blob_params.minCircularity = 0.1
-
-	#Filter by Converxity
-	blob_params.filterByConvexity = True
-	blob_params.minConvexity = 0.6
-
-	# Filter by Inertia
-	blob_params.filterByInertia = True
-	blob_params.minInertiaRatio = 0.3
+    ####
+    # blob detector params
+    ####
+    if plot_histogram:
+        x,y = make_brightness_hist(laplace_8bit)
 
 
-	detector = cv2.SimpleBlobDetector_create(blob_params)
-	keypoints = detector.detect(laplace_8bit)
-	im_with_keypoints = cv2.drawKeypoints(laplace_8bit,keypoints,np.array([]),
-	                                      (0,0,255),cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    blob_params = cv2.SimpleBlobDetector_Params()
+    blob_params.filterByColor = False
 
-	return im_with_keypoints, keypoints
+    blob_params.minThreshold =55
+    blob_params.maxThreshold = 256
+    # Filter by area
+    blob_params.filterByArea = True
+    blob_params.minArea = 0
+    blob_params.maxArea = 30
+    #Filter by Circularity
+    blob_params.filterByCircularity = True
+    blob_params.minCircularity = 0.5
+
+    #Filter by Converxity
+    blob_params.filterByConvexity = True
+    blob_params.minConvexity = 1.0
+
+    # Filter by Inertia
+    blob_params.filterByInertia = True
+    blob_params.minInertiaRatio = 0.3
+
+
+    detector = cv2.SimpleBlobDetector_create(blob_params)
+    keypoints = detector.detect(laplace_8bit)
+    print len(keypoints)
+    im_with_keypoints = cv2.drawKeypoints(laplace_8bit,keypoints,np.array([]),
+                                          (255,0,0),cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+    return im_with_keypoints, keypoints,laplace_8bit
 
 def estimate_grid_from_keypts(im,keypoints,plot_fitted_lines = False,verbose = False):
     """
@@ -211,13 +214,13 @@ def estimate_grid_from_keypts(im,keypoints,plot_fitted_lines = False,verbose = F
             ymin = np.amin(key_ys).astype(np.uint16)
             ymax = np.amax(key_ys).astype(np.uint16)
             cv2.line(im,(fit_result['fitfunc'](ymin).astype(np.uint16),ymin),
-                               (fit_result['fitfunc'](ymax).astype(np.uint16),ymax),(255,0,255),1)
+                               (fit_result['fitfunc'](ymax).astype(np.uint16),ymax),(255,0,0),1)
             
         for ycent,fit_result in zip(ycentres,y_fits):
             ymin = np.amin(key_xs).astype(np.uint16)
             ymax = np.amax(key_xs).astype(np.uint16)
             cv2.line(im,(ymin,fit_result['fitfunc'](ymin).astype(np.uint16)),
-                               (ymax,fit_result['fitfunc'](ymax).astype(np.uint16)),(0,255,0),1)
+                               (ymax,fit_result['fitfunc'](ymax).astype(np.uint16)),(255,0,0),1)
     
     
     ### average over all the slopes:
@@ -340,16 +343,26 @@ def find_bit_marker_in_image(filtered_img):
     
     return bit_x,bit_y
 
+def distance_bitm_and_laserspot(bit_x,bit_y,spot_x,spot_y):
+    """
+    Assumes a resolution of the camera image of 200 nm per pixel.
+    returns the distance in microns between detected marker shape (bit marker) and a calibrated position on the camera (ideally this is the laser spot)
+    """
+    return int((bit_x-spot_x/2.)/5),int((bit_y-spot_y/2.)/5)
+
+
 def zoom_in_on_bitmarker(img,bit_x,bit_y):
+    """
+    takes cam image and cuts out the bitmarker. Assumes a resoultion of 200 nm per pixel and that the image is prerotated.
+    """
+    xlen,ylen = np.shape(img)
+    xoff = int(bit_x - xlen/2.)-16
+    yoff = int(bit_y - ylen/2.)
 
-	xlen,ylen = np.shape(img)
-	xoff = int(bit_x - xlen/2.)-16
-	yoff = int(bit_y - ylen/2.)
 
-
-	bit_marker_img = stamp_out_relevant_field_of_view(img,xsize = 25,ysize = 25,xoffset = xoff,yoffset = yoff)
-	bit_marker_img = rescale_to_8_bit_grayscale(bit_marker_img)
-	return make_binary(bit_marker_img,100)
+    bit_marker_img = stamp_out_relevant_field_of_view(img,xsize = 25,ysize = 25,xoffset = xoff,yoffset = yoff)
+    bit_marker_img = rescale_to_8_bit_grayscale(bit_marker_img)
+    return make_binary(bit_marker_img,100)
 
 
 def generate_marker_shape(img,xpos,ypos,size):
@@ -364,7 +377,7 @@ def generate_marker_shape(img,xpos,ypos,size):
     
     return new_img*x_filt*y_filt
     
-def get_bit_marker_string(binary_bit_marker_img):
+def get_bit_marker_array(binary_bit_marker_img):
     """
     compares a given BINARY bit marker image with marker shapes at several different positions
     """
@@ -382,15 +395,103 @@ def get_bit_marker_string(binary_bit_marker_img):
             ii+=1
     return np.round(bit_mrkr_string/np.amax(bit_mrkr_string))
 
+def get_bitm_xy_from_array(bitm_array):
+    """converts a bitmarker pattern (that is ideally received from camera) into x,y relative position of the bitm"""
+    bity = bitm_array[-2,0]*2**0 + bitm_array[-3,0]*2**1 + bitm_array[-4,0]*2**2 + bitm_array[-4,1]*2**3 + bitm_array[-4,2]*2**4 + bitm_array[-3,1]*2**5 
+    bitx = bitm_array[-1,1]*2**0 + bitm_array[-1,2]*2**1 + bitm_array[-1,3]*2**2 + bitm_array[-2,3]*2**3 + bitm_array[-3,3]*2**4 + bitm_array[-2,2]*2**5 
+    return bitx,bity
 
 
 ######
-# drawing the ebeam pattern
+# drawing & manioulating the ebeam pattern
 ######
 
-def generate_bitm_array(bit_number):
-    bitm_string = '{0:012b}'.format(bit_number)
-    return np.array([[bitm_string[-10],bitm_string[-11],bitm_string[-12],1],[bitm_string[-7],bitm_string[-8],1,bitm_string[-9]],
-                            [bitm_string[-4],1,bitm_string[-5],bitm_string[-6]],[1,bitm_string[-1],bitm_string[-2],bitm_string[-3]]],dtype=int)
+def generate_bitm_array(bit_x,bit_y):
+    bitx_string = '{0:06b}'.format(bit_x)
+    bity_string = '{0:06b}'.format(bit_y)
 
+    return np.array([[bity_string[-3],bity_string[-4],bity_string[-5],1],[bity_string[-2],bity_string[-6],1,bitx_string[-5]],
+                            [bity_string[-1],1,bitx_string[-6],bitx_string[-4]],[1,bitx_string[-1],bitx_string[-2],bitx_string[-3]],
+                            [0,0,0,0],
+                            [1,1,1,1]],dtype=int)
+
+
+def generate_idealized_ebeam_pattern(small_marker_pitch=5,bit_x_max = 36,bit_y_max = 15,pitch_bitm = 60):
+    """
+    generates the marker pattern from a few simple codewords
+    Assumes an array resolution of 1 um.
+    """
+    x_dim = bit_x_max*pitch_bitm + 6 ## 6 is the size of a bitmarker in micron.
+    y_dim = bit_y_max*pitch_bitm + 6 
+    full_img = np.ones((y_dim,x_dim))
+    x_inds,y_inds = np.indices((y_dim,x_dim))
+    marker_image = full_img*(np.mod(np.flipud(x_inds)-2,small_marker_pitch) == 0) * (np.mod(y_inds,small_marker_pitch) == 0)
+    
+    current_bit_m_number = 0
+    for y in range(bit_y_max):
+        for x in range(bit_x_max):
+            x_start = x*pitch_bitm
+            y_start = y_dim - y*pitch_bitm
+            
+            marker_image[y_start-6:y_start,x_start:x_start+4] = generate_bitm_array(x,y)
+            current_bit_m_number +=1
+            
+    return marker_image
+
+def add_striplines_to_img(img,stripline_width = 30,stripline_centre = [240+4,244+474]):
+    """always assumes that the stripline is horizontal."""
+    x_ind,y_ind = np.indices(np.shape(img))
+    for c in stripline_centre:
+        line = np.ones(np.shape(img))*(x_ind > c-stripline_width/2.)*(x_ind < c+stripline_width/2.)
+        img = np.logical_or(img,np.flipud(line))
+    return img*np.ones(np.shape(img))
+
+
+def correct_faulty_lift_off(bitm_x,bitm_y,bitm_pitch,x_dim,y_dim):
+    """
+    some times bitmarkers might not make sense! Then we need to correct the detected bitmarker pattern
+    """
+    if bitm_x*bitm_pitch > x_dim:
+        bitm_x = bitm_x - 32 
+    if bitm_y*bitm_pitch > y_dim : ### note that the output image will always be 90 degrees rotated....
+        bitm_y = bitm_y - 32
+    return bitm_x,bitm_y
+
+def pattern_zoom_on_bitm(ebeam_pattern,bitm_x,bitm_y,bitm_pitch = 60,rel_size = 1,rel_shift_x = 0,rel_shift_y = 0,correct_lift_off_problems = True):
+    """ returns a cut out of the size of the bitm_pitch """
+
+
+    rel_shift_y = -rel_shift_y
+
+    y_dim,x_dim = np.shape(ebeam_pattern)
+    if correct_lift_off_problems:
+        bitm_x,bitm_y = correct_faulty_lift_off(bitm_x,bitm_y,bitm_pitch,x_dim,y_dim)
+
+    if bitm_y == 0: ## got to shift the image because the lowest row is 
+        bitm_y = 1
+    if bitm_x == 0: ## got to shift the image because the lowest row is 
+        bitm_x = 1
+
+    ymin = y_dim-int((0.5*rel_size+bitm_y)*bitm_pitch) + rel_shift_y
+    ymax = y_dim+int((1/2.*rel_size-bitm_y)*bitm_pitch) + rel_shift_y
+    xmin = int((bitm_x-0.5*rel_size)*bitm_pitch) + rel_shift_x
+    xmax = int((1/2.*rel_size+bitm_x)*bitm_pitch) + rel_shift_x
+    return ebeam_pattern[ymin:ymax,xmin:xmax] ### note that arrays are flipped by 90 degrees when plotting with imshow
+
+def draw_spot_onto_pattern(pattern,brightness,bitm_x,bitm_y,rel_x,rel_y,bitm_pitch = 60,correct_lift_off_problems=True):
+    """
+    does this need a resolution? should be handled by a different function that forwards indices. We assume a micron
+    """
+    rel_y = -rel_y
+    y_dim,x_dim = np.shape(pattern)
+    
+    if correct_lift_off_problems:
+        bitm_x,bitm_y = correct_faulty_lift_off(bitm_x,bitm_y,bitm_pitch,x_dim,y_dim)
+
+    y = int(y_dim-bitm_y*bitm_pitch + rel_y)
+    x = int(bitm_x*bitm_pitch + rel_x)
+    pattern[y,x] = brightness
+
+    print pattern[y,x]
+    return pattern
 
