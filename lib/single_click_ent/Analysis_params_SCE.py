@@ -5,10 +5,10 @@ import numpy as np
 
 
 SPCorr_settings = {
-	'st_start'		: 2865e3,
-	'st_len'		: 1000e3,
+	'st_start'		: 2833e3,
+	'st_len'		: 20e3,
 	'photon_channel'		: 2, ### 2 for both channels. 0 or 1 one corresponds to one HH channel.
-	'ch1_offset'	: 20.0e3 
+	'ch1_offset'	: 18.0e3 
 }
 
 """
@@ -37,10 +37,10 @@ data_settings = {
 	'base_folder_lt3' : r'D:\measuring\data\Single_click_expm\LT3_data',
 	'base_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data',
 	
-	'filenames_for_expms' : {'SweepXY_0p1Theta' : 'EntangleXsweepY',
-							 'SweepXY_0p3Theta' : 'EntangleXsweepY',
-							 'SweepXY_0p5Theta' : 'EntangleXsweepY',
-							 'SweepThetaXX'		: 'Entangle_SweepTheta',
-							 'SweepThetaZZ'		: 'eta_from_theta_sweep'}
+	'filenames_for_expms' : {'SweepXY_0p1Theta' : r'EntangleXsweepY',
+							 'SweepXY_0p3Theta' : r'EntangleXsweepY',
+							 'SweepXY_0p5Theta' : r'EntangleXsweepY',
+							 'SweepThetaXX'		: r'Entangle_SweepTheta',
+							 'SweepThetaZZ'		: r'eta_from_theta_sweep'}
 
 }
