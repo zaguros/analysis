@@ -92,6 +92,9 @@ class purifyPQAnalysis(pqsequence.PQSequenceAnalysis,):
         self.pts = self.g.attrs['sweep_length']
         results = self.agrp['ssro_results'].value
         self.readouts = self.g.attrs['nr_of_ROsequences']
+        results = results[:(self.pts*(len(results)/self.pts))]
+        adwin_filt_bool = adwin_filt_bool[:(self.pts*(len(results)/self.pts))]
+        
         sorted_results = results.reshape((-1,self.pts,self.readouts))
         sorted_adwin_fltr = adwin_filt_bool.reshape((-1,self.pts,self.readouts))
         

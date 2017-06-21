@@ -5,10 +5,10 @@ import numpy as np
 
 
 SPCorr_settings = {
-	'st_start'		: 1865e3,
-	'st_len'		: 30e3,
-	'photon_channel'		: 1, ### 2 for both channels. 0 or 1 one corresponds to one HH channel.
-	'ch1_offset'	: 34.95e3 
+	'st_start'		: 2865e3,
+	'st_len'		: 1000e3,
+	'photon_channel'		: 2, ### 2 for both channels. 0 or 1 one corresponds to one HH channel.
+	'ch1_offset'	: 20.0e3 
 }
 
 """
@@ -29,3 +29,18 @@ SPSP_fltr_adwin_settings['fltr_dict_lt4'] = 	{
 				'repetition_number'		   : [0,0,2000],
 				'pst_msmt_phase'		   : [0,85,95]
 			}
+
+
+
+data_settings = {
+
+	'base_folder_lt3' : r'D:\measuring\data\Single_click_expm\LT3_data',
+	'base_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data',
+	
+	'filenames_for_expms' : {'SweepXY_0p1Theta' : 'EntangleXsweepY',
+							 'SweepXY_0p3Theta' : 'EntangleXsweepY',
+							 'SweepXY_0p5Theta' : 'EntangleXsweepY',
+							 'SweepThetaXX'		: 'Entangle_SweepTheta',
+							 'SweepThetaZZ'		: 'eta_from_theta_sweep'}
+
+}

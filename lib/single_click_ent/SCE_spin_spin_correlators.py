@@ -28,106 +28,259 @@ def get_data_objects(contains,**kw):
 
     analysis_computer = kw.pop('analysis_computer', 'lt4')
 
-
     if (isinstance(contains, list)):
-        contains_lt3 = contains[0]
-        contains_lt4 = contains[1]
+        if len(contains) == 2:
+            contains_lt3 = contains[0]
+            contains_lt4 = contains[1]
+            contains_lt3_ssro = 'SSROCalib'
+            contains_lt4_ssro = 'SSROCalib'
+        elif len(contains) == 4:
+            contains_lt3 = contains[0]
+            contains_lt4 = contains[1]
+            contains_lt3_ssro = contains[2]
+            contains_lt4_ssro = contains[3]
     else:
         contains_lt3 = contains
         contains_lt4 = contains
+        contains_lt3_ssro = 'SSROCalib'
+        contains_lt4_ssro = 'SSROCalib'
 
     if analysis_computer == 'lt4':
-        folder=tb.latest_data(contains_lt4,**kw)
-        lt3_folder=tb.latest_data(contains_lt3,folder =r'Z:\data',**kw)
-        ssro_b  = tb.latest_data('SSROCalib', folder =r'Z:\data')
-        ssro_a  = tb.latest_data('SSROCalib')
+        folder_a =tb.latest_data(contains_lt4,**kw)
+        folder_b =tb.latest_data(contains_lt3,folder =r'Z:\data',**kw)
+        ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Z:\data')
+        ssro_a  = tb.latest_data(contains_lt4_ssro)
 
     if analysis_computer == 'lt3_analysis':
-        folder=tb.latest_data(contains_lt4,folder= r'X:\data',**kw)
-        lt3_folder=tb.latest_data(contains_lt3,folder =r'Y:\data',**kw)
-        ssro_b  = tb.latest_data('SSROCalib', folder =r'Y:\data')
-        ssro_a  = tb.latest_data('SSROCalib',  folder =r'X:\data')
+        folder_a =tb.latest_data(contains_lt4,folder= r'X:\data',**kw)
+        folder_b =tb.latest_data(contains_lt3,folder =r'Y:\data',**kw)
+        ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Y:\data')
+        ssro_a  = tb.latest_data(contains_lt4_ssro,  folder =r'X:\data')
+
+    return folder_a,folder_b,ssro_a,ssro_b
+
+class twoSetupAnalysis:
+    # Skeleton class combining the files from two setups into one analysis
+
+    def __init__(self,folder_a,folder_b):
+        print folder_a
+        print folder_b
+        self.a = ppq.purifyPQAnalysis(folder_a, hdf5_mode='r') 
+        self.b = ppq.purifyPQAnalysis(folder_b, hdf5_mode='r')
+
+class singleClickAnalysis(twoSetupAnalysis):
+    # Each run of the expm is analyzed in this class
+
+    def process_correlations(self,**kw):
+
+        verbose = kw.get('verbose',False)
+
+        if self.a.g.attrs['sweep_length'] != self.b.g.attrs['sweep_length']:
+            raise(Exception('Different sweep lengths for lt3 and lt4!'))
+
+        if self.a.agrp['completed_reps'].value  != self.a.agrp['completed_reps'].value :
+            raise(Exception('Different reps for lt3 and lt4!'))
+
+        self.sweep_pts = self.a.g.attrs['sweep_pts'] # Specified in lt4
+        self.sweep_length = self.a.g.attrs['sweep_length']
+        
+        ### temporal filtering of HH data
+        sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(self.a,**kw)
+        st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
+        self.st_fltr_c0 = st_fltr_c0[st_fltr]
+        self.st_fltr_c1 = st_fltr_c1[st_fltr]
+        ### prepare filtered sync numbers
+        self.sn_filtered = sn_lt[st_fltr]
+
+        if verbose: print 'Time filtered events ', np.sum(st_fltr_c0), np.sum(st_fltr_c1)
+
+        self.completed_reps = self.a.agrp['completed_reps'].value 
+
+        ####################################
+        ##### electron RO correlations #####
+        ####################################
+   
+        # Apply adwin filter to data and combine with earlier temporal fitering
+        self.filter_on_adwin_parameters(**kw) 
+        adwin_filter,adwin_syncs = self.a.filter_adwin_data_from_pq_syncs(self.sn_filtered) ## adwin syncs within window
+        self.combined_filt = [np.logical_and(self.adwin_fltr,np.in1d(range(self.completed_reps),adwin_filter[st_fltr])) for st_fltr in [self.st_fltr_c0, self.st_fltr_c1]] ### convert the adwin filter to boolean
+        
+        if verbose: print 'Adwin filtered events ', np.sum(self.combined_filt[0]), np.sum(self.combined_filt[1])
+
+        self.get_correlations()
+        self.counts_per_pt = (np.sum(self.correlators_per_sweep_pt, axis=2))
+        self.get_tail_counts()
 
 
-    a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
-    b = ppq.purifyPQAnalysis(lt3_folder, hdf5_mode='r')
-    ### lt3 should use SSRO with MW init. We therefore also supply the microwave transition.
-    if 'p' in a.g.attrs['electron_transition']:
-        trans_b = 'msp1'
-    else:
-        trans_b = 'msm1'
+    def filter_on_adwin_parameters(self,**kw):
+        """
+        creates a filter on the adwin RO array which is based on filters as specified in the analysis parameters
+        Each filter parameters should exist in the hdf5 file as an adwin group and should have the same length as the 
+        number of ssros. Prime example: CR_after and CR_before
+
+        Can manually override the dict by passing the arguement adwin_filter_params in the form {'setup_key (e.g. lt3)' : {'param (e.g. CR_after)' : [enabled, min, max]}}
+        """
+        
+        filter_params = kw.pop('adwin_filter_params',{})
+        if len(filter_params):
+            old_params = analysis_params.SPSP_fltr_adwin_settings
+        
+        for setup_key,setup_dict in filter_params.iteritems():
+            for key,params in setup_dict.iteritems():
+                analysis_params.SPSP_fltr_adwin_settings['fltr_dict_'+setup_key][key] = params
+
+        self.adwin_fltr = np.array([True]*self.completed_reps) ### initially everything true
+
+        for a,suffix in zip([self.a,self.b],['lt4','lt3']): ### loop over both files
+            for key,val in analysis_params.SPSP_fltr_adwin_settings['fltr_dict_'+suffix].iteritems(): ### loop over the list of filter parameters
+                [filter_on,minimum,maximum] = val
+
+                if filter_on:
+                    if key == 'repetition_number':
+                        values = np.array([i for i in range(self.completed_reps/self.sweep_length) for _ in range(self.sweep_length)]) ### Make an array of values corresponding to the current rep
+                    elif key == 'LDE_attempts':
+                        reps = a.agrp['counted_awg_reps'].value
+                        reps = reps - np.append([0],reps[:-1]) ### Calculate reps since last click
+                        values = reps % a.g.attrs['LDE_attempts'] ### Take mod with 
+                    else:
+                        values = a.agrp[key].value
+
+                    self.adwin_fltr = np.logical_and(self.adwin_fltr,(values >= minimum) & ( values <= maximum)) ### update filter
+
+        if len(filter_params):
+            analysis_params.SPSP_fltr_adwin_settings = old_params
+        
 
 
-    return a,b,ssro_a,ssro_b,trans_b,folder
+    def get_correlations(self,**kw):
+        """
+        Note that the raw data is handled in terms of photon numbers! I.e. 1 == ms=0 and 0 == ms=+-1
 
-def analyze_spspcorrs(contains,**kw):
+        Output: A 2D list with shape (nr_of_sweep_points,4)
+                Each entry in the list contains the correlator: (LT3 ms=1 & LT4 ms = 1 // LT3 ms=1 & LT4 ms=0 // LT3 ms=0 & LT4 ms=1 // LT3 ms=0 & LT4 ms=)
+                Or in short [11;10;01;00].
+                One can then use these entries for two qubit RO Correction.
+        """
+        verbose = kw.pop('verbose',False)
+        ### prepare RO results and sort them according to sweep point
+        for a in [self.a,self.b]:
+            a.ssros = a.agrp['ssro_results'].value
+            
+        ### correlate the ROs with each other by making a boolean filter:
+        ### variables here are described in terms of spin states!
+        m00 = (self.b.ssros == 1)*(self.a.ssros == 1)
+        m10 = (self.b.ssros == 1)*(self.a.ssros == 0)
+        m01 = (self.b.ssros == 0)*(self.a.ssros == 1)
+        m11 = (self.b.ssros == 0)*(self.a.ssros == 0)
+        
+        ### now define unique identifiers for each Ro correlation and recast the correlations into a single array.
+        ### As identifieres I choose 1 = index 0 in the output list, i.e. 11; 2 = index 1 in the output list ... and so forth
+        RO_correlators =  np.array(self.completed_reps*[1])*m11 \
+                        + np.array(self.completed_reps*[2])*m10 \
+                        + np.array(self.completed_reps*[3])*m01 \
+                        + np.array(self.completed_reps*[4])*m00 
+        ### PH - added to make sure that has a full set of repetitions
+        completed_points = (self.sweep_length*(self.completed_reps/self.sweep_length))
+        RO_correlators = RO_correlators[:completed_points]
+        self.combined_filt =  self.combined_filt[:completed_points]
+
+        
+        ### now sort the correlators and the adwin fltr according to the sweep pts
+        sorted_RO_correlators = RO_correlators.reshape((-1,self.sweep_length))
+        
+        self.correlators_per_sweep_pt = np.zeros([2,self.sweep_length,4])
+
+        for k, combined_filt in zip([0,1],self.combined_filt):
+            sorted_combined_filt = combined_filt.reshape((-1,self.sweep_length))
+            ### from now on: no numpy magic anymore. from here it is brutforce 'for-looping'
+            ### (all conceived arrays will have different lengths due to temporal filtering. this break most np methods)
+            ### although vstack and hstack would probably work...
+            
+            for i in range(self.sweep_length): 
+                for j in [1,2,3,4]: ### loop over the correlator identifiers
+                    self.correlators_per_sweep_pt[k][i][j-1] = np.sum(np.logical_and(sorted_combined_filt[:,i],sorted_RO_correlators[:,i]==j)) ## exclude adwin filter and do a logical and with the correlator identifier. Then sum over the number of occurences
+
+    def get_tail_counts(self):
+
+        counted_awg_reps = self.a.agrp['counted_awg_reps'].value
+
+        awg_reps_per_attempt = counted_awg_reps - np.append([0],counted_awg_reps[:-1])
+        ### PH - added to make sure that has a full set of repetitions
+        awg_reps_per_attempt = awg_reps_per_attempt[: (self.sweep_length*(self.completed_reps/self.sweep_length))]
+        repsPerClick = np.sum(np.reshape(awg_reps_per_attempt,[self.sweep_length,-1]),axis=1)
+        counts_per_pt = (np.sum(self.counts_per_pt,axis=0)).astype(np.float)
+        self.tail_per_pt = 10**4 * counts_per_pt/repsPerClick
+        self.tail_per_pt_u = 10**4 * np.sqrt(counts_per_pt)/repsPerClick
+        
+def run_analysis(contains, **kw):
+
+    folder_a,folder_b,ssro_a,ssro_b =  get_data_objects(contains,**kw)
+    singleClick = singleClickAnalysis(folder_a,folder_b)
+    singleClick.process_correlations(**kw)
+    analyze_spspcorrs(singleClick,ssro_a,ssro_b,**kw)
+
+def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
     """
-    TO DO: ability to pass analysis_params via kwargs. e.g. for temporal filtering PH DONE
     """
-
 
     #### kws
-    input_data_files     = kw.pop('input_data_files',())
-    plot_filter          = kw.pop('plot_filter',False)
     plot_correlations    = kw.pop('plot_correlations',True)
     plot_raw_correlators = kw.pop('plot_raw_correlators',False)
     verbose              = kw.pop('verbose',False)
     do_sine_fit          = kw.pop('do_sine_fit',False)
     flip_psi0            = kw.pop('flip_psi0',False)
     ret                  = kw.pop('ret',False)
-    ret_files            = kw.pop('ret_files',False)
     save_corrs           = kw.pop('save_corrs',False)
     save_figs            = kw.pop('save_figs',False)
     
-    #### get files
-    if len(input_data_files) != 0:
-        (a_lt4,a_lt3,ssro_f_lt4,ssro_f_lt3,trans_lt3,folder_lt4) =  input_data_files 
-    else:
-        (a_lt4,a_lt3,ssro_f_lt4,ssro_f_lt3,trans_lt3,folder_lt4) =  get_data_objects(contains,**kw)
-
-    if ret_files: #### Sometimes useful for debugging
-        return a_lt3, a_lt4
-
-    ### temporal filtering
-    sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(a_lt4,plot_filter = plot_filter,**kw)
-    st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
-    st_fltr_c0 = st_fltr_c0[st_fltr]
-    st_fltr_c1 = st_fltr_c1[st_fltr]
     
-    if verbose: print 'Time filtered events ', np.sum(st_fltr_c0), np.sum(st_fltr_c1)
-    ### prepare filtered sync numbers
-    for a in [a_lt3]:#,a_lt4]: for later functionatlity this could be extended to both files. Not sure if necessary yet.
-        a.sn_filtered = sn_lt[st_fltr]
-        adwin_filter,adwin_syncs = a.filter_adwin_data_from_pq_syncs(a.sn_filtered) ## adwin syncs within window
-        results = a.agrp['ssro_results'].value
-        adwin_filt_bool_psi0 = np.in1d(range(len(results)),adwin_filter[st_fltr_c0]) ### convert the adwin filter to boolean
-        adwin_filt_bool_psi1 = np.in1d(range(len(results)),adwin_filter[st_fltr_c1]) ### convert the adwin filter to boolean
-        if (a.g.attrs['PLU_during_LDE'] != 1):
-            adwin_filt_bool= np.array([1]*len(results))
-        
-        ####################################
-        ##### electron RO correlations #####
-        ####################################
-    adwin_record_filter = filter_on_adwin_parameters(a_lt3 = a_lt3,a_lt4 = a_lt4,**kw)
-    adwin_filt_bool_psi0 = np.logical_and(adwin_record_filter,adwin_filt_bool_psi0)
-    adwin_filt_bool_psi1 = np.logical_and(adwin_record_filter,adwin_filt_bool_psi1)
+    if isinstance(singleClickAnalyses,singleClickAnalysis): # Make sure in an array
 
-    if verbose: print 'Adwin filtered events ', np.sum(adwin_filt_bool_psi0), np.sum(adwin_filt_bool_psi1)
+        sweep_name = singleClickAnalyses.a.g.attrs['sweep_name']
+        timestamp = singleClickAnalyses.a.timestamp
+        measurementstring = singleClickAnalyses.a.measurementstring
+        save_folder = singleClickAnalyses.a.folder
+
+        singleClickAnalyses = [singleClickAnalyses]
+    else:
+        print 'Gotta fix this!'
+        
+    
+
+    num_files = len(singleClickAnalyses)
+    sweep_pts = singleClickAnalyses[0].sweep_pts
+
+    electron_transitions = [singleClickAnalyses[0].a.g.attrs['electron_transition'], singleClickAnalyses[0].b.g.attrs['electron_transition']]
+    E_RO_durations = [singleClickAnalyses[0].a.g.attrs['E_RO_durations'][0], singleClickAnalyses[0].b.g.attrs['E_RO_durations'][0]]
+
+    correlators_per_sweep_pt = np.zeros([2,len(sweep_pts),4])
+    counts_per_pt = np.zeros([2,len(sweep_pts)])
+    tail_per_pt = np.zeros(len(sweep_pts))
+    tail_per_pt_u = np.zeros(len(sweep_pts))
+
+    for sca in singleClickAnalyses:
+        if (sca.sweep_pts != sweep_pts).any():
+            raise(Exception('Mismatched sweep pts between runs!'))
+
+        correlators_per_sweep_pt += sca.correlators_per_sweep_pt
+        counts_per_pt += sca.counts_per_pt
+        tail_per_pt += sca.tail_per_pt
+        tail_per_pt_u += sca.tail_per_pt_u**2
+
+    tail_per_pt = tail_per_pt/num_files
+    tail_per_pt_u = np.sqrt(tail_per_pt_u)/num_files
+
+    ### do ROC
+    norm_correlators, norm_correlators_u = RO_correction_of_correlators(correlators_per_sweep_pt,
+                                                                    electron_transitions,E_RO_durations,ssro_a,ssro_b,**kw)
 
     p0 = []
     p0_u = []
-    counts_per_pt = []
-    a_lt4.get_sweep_pts()
-    for i, adwin_filt_bool in zip([0,1],[adwin_filt_bool_psi0,adwin_filt_bool_psi1]):
 
-        correlators_per_sweep_pt = get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool)
-        counts_per_pt.append(np.sum(correlators_per_sweep_pt, axis=1))
-        ### do ROC
-        norm_correlators, norm_correlators_u = RO_correction_of_correlators(correlators_per_sweep_pt,
-                                                                    a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
+    for i,corrs,corrs_u in zip([0,1],norm_correlators,norm_correlators_u):
 
         ### extract spin-spin expectation value from correlators
-        exp_values,exp_values_u = get_exp_value_from_spin_spin_corr(norm_correlators,norm_correlators_u)
+        exp_values,exp_values_u = get_exp_value_from_spin_spin_corr(corrs,corrs_u)
 
         if flip_psi0 and i == 0:
             exp_values = -1.0*np.array(exp_values)
@@ -138,36 +291,39 @@ def analyze_spspcorrs(contains,**kw):
 
         if plot_raw_correlators:
             ### transpose the functions to be plotted.
-            correlators_trans = map(list, zip(*norm_correlators))
-            correlators_u_trans= map(list, zip(*norm_correlators_u))
+            correlators_trans = map(list, zip(*corrs))
+            correlators_u_trans= map(list, zip(*corrs_u))
 
             labels  = ['11','10','01','00']
             fig = plt.figure()
             ax = plt.subplot()
             for e,e_u,l in zip(correlators_trans,correlators_u_trans,labels):
-                ax.errorbar(a_lt4.sweep_pts,e,e_u,fmt='o',label=l)
+                ax.errorbar(sweep_pts,e,e_u,fmt='o',label=l)
             plt.legend()
-            ax.set_xlabel(a_lt4.sweep_name)
+            ax.set_xlabel(sweep_name)
             ax.set_ylabel('Probability')
             ax.set_ylim([0,1])
-            ax.set_title(a_lt4.timestamp+'\n'+a_lt4.measurementstring+ '\n' + 'psi'+str(i))
+            ax.set_title(timestamp+'\n'+measurementstring+ '\n' + 'psi'+str(i))
             plt.show()
             if save_figs:
                 fig.savefig(
-                        os.path.join(a_lt4.folder, 'probabilty_psi_' +str(i) +'.png'),format='png')
+                        os.path.join(save_folder, 'probabilty_psi_' +str(i) +'.png'),format='png')
     
-    a_lt4.result_corrected = True
-    a_lt4.result_correlation_corrected = True
-    a_lt4.p_correlations = np.transpose(np.array(p0)) ##XXXXXX CHECK IF THIS REALLY DOES THE THING without inversion of x
-    a_lt4.u_p_correlations = np.transpose(np.array(p0_u))
-    a_lt4.readouts = len(p0)
-
-    tail_counts, tail_counts_u = get_tail_counts(a_lt4,counts_per_pt)
+    p0 = np.transpose(np.array(p0))
+    p0_u = np.transpose(np.array(p0_u))
 
     if plot_correlations:
         #### plot exp value
-        a_lt4.correlation_names = ['psi0','psi1']
-        fig = a_lt4.plot_results_vs_sweepparam(   ylabel = 'Expectation value', 
+        a = singleClickAnalyses[0].b
+        a.result_corrected = True
+        a.result_correlation_corrected = True
+        a.p_correlations = p0 ##XXXXXX CHECK IF THIS REALLY DOES THE THING without inversion of x
+        a.u_p_correlations = p0_u
+        a.sweep_pts = sweep_pts
+        a.sweep_name = sweep_name
+        a.readouts = len(p0)
+        a.correlation_names = ['psi0','psi1']
+        fig = a.plot_results_vs_sweepparam(   ylabel = 'Expectation value', 
                                             mode = 'correlations',
                                             ylim = [-1.05,1.05],
                                             save=False,
@@ -176,9 +332,9 @@ def analyze_spspcorrs(contains,**kw):
         if do_sine_fit:
             ax = fig.gca()
             phi = []
-            for jj,p in zip(range(len(p0)),np.array(p0)):
+            for jj,p in zip(range(len(p0)),np.transpose(p0)):
                 y = np.array(p)
-                x = a_lt4.sweep_pts
+                x = sweep_pts
 
                 info_x = ax.get_xlim()[1] + (ax.get_xlim()[-1]-ax.get_xlim()[0])*0.02
                 info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02 + 0.5*jj
@@ -192,23 +348,23 @@ def analyze_spspcorrs(contains,**kw):
             if verbose: print 'Avg phi ', avg_phi
         if save_figs:
             fig.savefig(
-                os.path.join(a_lt4.folder, '{}_vs_sweepparam.'.format('correlations') + a_lt4.plot_format),
-                format=a_lt4.plot_format)
+                os.path.join(save_folder, '{}_vs_sweepparam.'.format('correlations') + a.plot_format),
+                format=a.plot_format)
 
     if save_corrs:
 
-        name = os.path.join(a_lt4.folder, 'correlations.h5')
+        name = os.path.join(save_folder, 'correlations.h5')
         with h5py.File(name, 'w') as hf:
             
-            hf.create_dataset('correlations', data=a_lt4.p_correlations)
-            hf.create_dataset('correlations_u', data=a_lt4.u_p_correlations)
+            hf.create_dataset('correlations', data=p0)
+            hf.create_dataset('correlations_u', data=p0_u)
             hf.create_dataset('norm_correlators', data=norm_correlators)
             hf.create_dataset('norm_correlators_u', data=norm_correlators_u)
             hf.create_dataset('counts_per_pt', data=counts_per_pt)
             hf.create_dataset('tail_counts', data=counts_per_pt)
         
     if ret:
-        return a_lt4.p_correlations,a_lt4.u_p_correlations,tail_counts, tail_counts_u
+        return p0,p0_u,tail_counts, tail_counts_u
 
 
 def fit_and_plot_sine(x,y,ax,info_xy,**kw):
@@ -231,127 +387,37 @@ def fit_and_plot_sine(x,y,ax,info_xy,**kw):
     return fit_result['params_dict']['phi']
 
 
-def get_time_filtered_correlations(a_lt3,a_lt4,adwin_filt_bool,**kw):
-    """
-    Note that the raw data is handled in terms of photon numbers! I.e. 1 == ms=0 and 0 == ms=+-1
-
-    Input: this function takes two data objects and a boolen list (adwin_filt_bool)
-
-    Output: A 2D list with shape (nr_of_sweep_points,4)
-            Each entry in the list contains the correlator: (LT3 ms=1 & LT4 ms = 1 // LT3 ms=1 & LT4 ms=0 // LT3 ms=0 & LT4 ms=1 // LT3 ms=0 & LT4 ms=)
-            Or in short [11;10;01;00].
-            One can then use these entries for two qubit RO Correction.
-    """
-    verbose = kw.pop('verbose',False)
-    ### prepare RO results and sort them according to sweep point
-    for a in [a_lt3,a_lt4]:
-        a.pts = a.g.attrs['sweep_length']
-        a.ssros = a.agrp['ssro_results'].value
-        a.readouts = a.g.attrs['nr_of_ROsequences']
-        # a.sorted_results = a_ssros.reshape((-1,a.pts,a.readouts))
 
 
-    ### correlate the ROs with each other by making a boolean filter:
-    ### variables here are described in terms of spin states!
-    m00 = (a_lt3.ssros == 1)*(a_lt4.ssros == 1)
-    m10 = (a_lt3.ssros == 1)*(a_lt4.ssros == 0)
-    m01 = (a_lt3.ssros == 0)*(a_lt4.ssros == 1)
-    m11 = (a_lt3.ssros == 0)*(a_lt4.ssros == 0)
-    
-    ### now define unique identifiers for each Ro correlation and recast the correlations into a single array.
-    ### As identifieres I choose 1 = index 0 in the output list, i.e. 11; 2 = index 1 in the output list ... and so forth
-    RO_correlators =  np.array(len(a_lt3.ssros)*[1])*m11 \
-                    + np.array(len(a_lt3.ssros)*[2])*m10 \
-                    + np.array(len(a_lt3.ssros)*[3])*m01 \
-                    + np.array(len(a_lt3.ssros)*[4])*m00 
-    ### PH - added to make sure that has a full set of repetitions
-    RO_correlators = RO_correlators[:(a.g.attrs['sweep_length']*(len(RO_correlators)/a.g.attrs['sweep_length']))]
-    adwin_filt_bool =  adwin_filt_bool[:(a.g.attrs['sweep_length']*(len(RO_correlators)/a.g.attrs['sweep_length']))]
-
-    
-    ### now sort the correlators and the adwin fltr according to the sweep pts
-    sorted_RO_correlators = RO_correlators.reshape((-1,a_lt3.pts,a_lt3.readouts))
-    sorted_adwin_fltr = adwin_filt_bool.reshape((-1,a_lt3.pts,a_lt3.readouts))
-
-    ### from now on: no numpy magic anymore. from here it is brutforce 'for-looping'
-    ### (all conceived arrays will have different lengths due to temporal filtering. this break most np methods)
-    ### although vstack and hstack would probably work...
-    
-    return_list = range(a_lt3.pts) ## all of these pts will be substituted with the correlator occurence
-    for i in range(a_lt3.pts): 
-        correlators_at_sweep_pt = [0,0,0,0]
-        for j in [1,2,3,4]: ### loop over the correlator identifiers
-            correlators_at_sweep_pt[j-1] = np.sum(np.logical_and(sorted_adwin_fltr[:,i,:],sorted_RO_correlators[:,i,:]==j)) ## exclude adwin filter and do a logical and with the correlator identifier. Then sum over the number of occurences
-
-
-        return_list[i] = correlators_at_sweep_pt
-
-    return return_list
-
-def filter_on_adwin_parameters(a_lt3,a_lt4,**kw):
-    """
-    creates a filter on the adwin RO array which is based on filters as specified in the analysis parameters
-    Each filter parameters should exist in the hdf5 file as an adwin group and should have the same length as the 
-    number of ssros. Prime example: CR_after and CR_before
-
-    Can manually override the dict by passing the arguement adwin_filter_params in the form {'setup_key (e.g. lt3)' : {'param (e.g. CR_after)' : [enabled, min, max]}}
-    """
-
-    filter_params = kw.pop('adwin_filter_params',{})
-    if len(filter_params):
-        old_params = analysis_params.SPSP_fltr_adwin_settings
-    
-    for setup_key,setup_dict in filter_params.iteritems():
-        for key,params in setup_dict.iteritems():
-            analysis_params.SPSP_fltr_adwin_settings['fltr_dict_'+setup_key][key] = params
-
-    fltr = np.array([True]*len(a_lt3.agrp['ssro_results'].value)) ### initially everything true
-
-    for a,suffix in zip([a_lt3,a_lt4],['lt3','lt4']): ### loop over both files
-        for key,val in analysis_params.SPSP_fltr_adwin_settings['fltr_dict_'+suffix].iteritems(): ### loop over the list of filter parameters
-            [filter_on,minimum,maximum] = val
-
-            if filter_on:
-                if key == 'repetition_number':
-                    values = np.array([i for i in range(len(fltr)/a.g.attrs['sweep_length']) for _ in range(a.g.attrs['sweep_length'])]) ### Make an array of values corresponding to the current rep
-                elif key == 'LDE_attempts':
-                    reps = a.agrp['counted_awg_reps'].value
-                    reps = reps - np.append([0],reps[:-1]) ### Calculate reps since last click
-                    values = reps % a.g.attrs['LDE_attempts'] ### Take mod with 
-                else:
-                    values = a.agrp[key].value
-
-                fltr = np.logical_and(fltr,(values >= minimum) & ( values <= maximum)) ### update filter
-
-    if len(filter_params):
-        analysis_params.SPSP_fltr_adwin_settings = old_params
-
-    return fltr
-
-def RO_correction_of_correlators(correlators_per_sweep_pt,a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw):
+def RO_correction_of_correlators(correlators_per_sweep_pt,electron_transitions,E_RO_durations,ssro_a,ssro_b,**kw):
 
     verbose = kw.pop('verbose',False)
     do_ROC = kw.pop('do_ROC',True)
-    ### to store the estimated statistical uncertainty
-    norm_correlators_u = range(len(correlators_per_sweep_pt))
-    norm_correlators = range(len(correlators_per_sweep_pt))
-    ### get ssro_ROC for LT3 --> corresponds to setup B
-    if do_ROC:
-        F0_LT3,F1_LT3 = get_RO_fildeities(ssro_f_lt3,a_lt3.g.attrs['electron_transition'],a_lt3.g.attrs['E_RO_durations'][0])
-        ### get ssro_ROC for LT4 --> corresponds to setup A
-        F0_LT4,F1_LT4 = get_RO_fildeities(ssro_f_lt4,a_lt4.g.attrs['electron_transition'],a_lt4.g.attrs['E_RO_durations'][0])
 
-        for i in range(len(correlators_per_sweep_pt)):
-            #### note that the function below assumes an error of 1% on the SSRO fidelities!
-            norm_correlator,norm_correlator_u = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(correlators_per_sweep_pt[i]),F0_LT4,F0_LT3,F1_LT4,F1_LT3,
-                                                                                                    verbose = verbose,return_error_bars = True)
-            norm_correlators[i] = np.squeeze(norm_correlator)
-            norm_correlators_u[i] = norm_correlator_u
+    ### to store the estimated statistical uncertainty
+    norm_correlators_u = np.zeros(np.shape(correlators_per_sweep_pt))
+    norm_correlators = np.zeros(np.shape(correlators_per_sweep_pt))
+
+    
+    if do_ROC:
+        ### get ssro_ROC for LT3 --> corresponds to setup B
+        F0_LT3,F1_LT3 = get_RO_fildeities(ssro_b,electron_transitions[1],E_RO_durations[1])
+        ### get ssro_ROC for LT4 --> corresponds to setup A
+        F0_LT4,F1_LT4 = get_RO_fildeities(ssro_a,electron_transitions[0],E_RO_durations[0])
+
+        for j, corrs in zip([0,1],correlators_per_sweep_pt):
+            for i, corr in enumerate(corrs):
+                #### note that the function below assumes an error of 1% on the SSRO fidelities!
+                norm_correlator,norm_correlator_u = sscorr.ssro_correct_twoqubit_state_photon_numbers(np.array(corr),F0_LT4,F0_LT3,F1_LT4,F1_LT3,
+                                                                                                        verbose = verbose,return_error_bars = True)
+                norm_correlators[j,i] = np.squeeze(norm_correlator)
+                norm_correlators_u[j,i] = norm_correlator_u
 
     else: 
-        for i in range(len(correlators_per_sweep_pt)):
-            norm_correlators[i] = np.array(correlators_per_sweep_pt[i],dtype = np.float64)/np.sum(np.array(correlators_per_sweep_pt[i]))
-            norm_correlators_u[i] = np.array(np.sqrt(correlators_per_sweep_pt[i]),dtype = np.float64)/np.sum(np.array(correlators_per_sweep_pt[i]))
+        for j, corrs in zip([0,1],correlators_per_sweep_pt):
+            for i, corr in enumerate(corrs):
+                norm_correlators[j,i] = np.array(corr,dtype = np.float64)/np.sum(np.array(corr))
+                norm_correlators_u[j,i] = np.array(np.sqrt(corr),dtype = np.float64)/np.sum(np.array(corr))
 
     return norm_correlators,norm_correlators_u
 
@@ -386,20 +452,6 @@ def get_exp_value_from_spin_spin_corr(norm_correlators,norm_correlators_u):
 
     return exp_vals,exp_vals_u
 
-def get_tail_counts(a,counts_per_pt):
-
-    counted_awg_reps = a.agrp['counted_awg_reps'].value
-
-    awg_reps_per_attempt = counted_awg_reps - np.append([0],counted_awg_reps[:-1])
-    sweep_length = a.g.attrs['sweep_length']
-    repetitions = a.g.attrs['repetitions']
-    ### PH - added to make sure that has a full set of repetitions
-    awg_reps_per_attempt = awg_reps_per_attempt[:(sweep_length*(len(awg_reps_per_attempt)/sweep_length))]
-    repsPerClick = np.sum(np.reshape(awg_reps_per_attempt,[sweep_length,-1]),axis=1)
-    counts_per_pt = (np.sum(counts_per_pt,axis=0)).astype(np.float)
-    tail_per_pt = 10**4 * counts_per_pt/repsPerClick
-    tail_per_pt_u = 10**4 * np.sqrt(counts_per_pt)/repsPerClick
-    return tail_per_pt, tail_per_pt_u
 
 def get_sweep_analysis_results(input_data_files,parameter_name,parameter_range,parameter_kind,**kw):
     
