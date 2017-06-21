@@ -166,6 +166,7 @@ class NV_energy_simulator(object):
                 display.clear_output(wait=True)
                 display.display(plt.gcf())
                 do_plot += 1.0
+                # print do_plot
             
             if time.time() < (cur_time+0.1):
                 time.sleep((0.1 - (time.time()-cur_time)))
