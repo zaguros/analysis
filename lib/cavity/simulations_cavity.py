@@ -146,6 +146,7 @@ class CavitySims ():
 
     def calc_waist(self,**kw):
         """
+        calculate 'optical waist'
         Input:
         wavelength   -  wavelength of the light in the cavity; default: self.wavelength_ZPL
         output:
@@ -154,17 +155,18 @@ class CavitySims ():
         """
         wavelength = kw.pop('wavelength', self.wavelength_cav)
         #self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
-        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)/n_diamond
+        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)#/n_diamond
 
         return self.waist
 
     def calc_mode_volume(self):
         """
+        calcuate 'optical' mode volume
         self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
         """
         #self.mode_volume = (np.pi*((0.5*self.waist)**2)*self.optical_length/n_diamond)#/(n_diamond**3)
 
-        self.mode_volume = (np.pi*((0.5*self.waist)**2)*(self.cavity_length+self.diamond_thickness))#to really calculate the physical mode volume
+        self.mode_volume = (np.pi*((0.5*self.waist)**2)*2*self.optical_length)/(n_diamond**3)#(self.cavity_length+self.diamond_thickness*))#to really calculate the physical mode volume
         return self.mode_volume
 
 
@@ -215,7 +217,7 @@ class CavitySims ():
         orientation_factor= (math.cos(math.pi/180.*dipole_orientation))
         spatial_overlap = math.cos(2*math.pi*spatial_mismatch)
         #print orientation_factor,spatial_overlap
-        self.g = orientation_factor*spatial_overlap*np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_hoursvolume*n_diamond**3))
+        self.g = orientation_factor*spatial_overlap*np.sqrt((3.*c*(wavelength**2)*self.gamma_tot/2.)/(4.*math.pi*self.mode_volume))#*n_diamond**3))
         #kaupp et al (scaling laws)
         #self.g = np.sqrt((3.*math.pi*c*(wavelength**2)*self.gamma_tot)/(2.*self.mode_volume))
         #note that for an accurate treatment, we should perhaps use n_diamond in here. (mu~1/sqrt(n)()
@@ -255,6 +257,8 @@ class CavitySims ():
         wavelength_cav = kw.pop('wavelength_cav', self.wavelength_cav)
 
         self.Fcav = 3. * Q * (wavelength_cav/n_diamond)**3. / (4.*math.pi**2 * mode_volume) 
+        # self.Fcav = 3. * Q * (wavelength_cav/1)**3. / (4.*math.pi**2 * mode_volume) 
+
         return self.Fcav
 
     def calc_Fcav_air(self, **kw):
