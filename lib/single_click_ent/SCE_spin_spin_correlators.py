@@ -30,24 +30,35 @@ def get_data_objects(contains,**kw):
 
 
     if (isinstance(contains, list)):
-        contains_lt3 = contains[0]
-        contains_lt4 = contains[1]
+        if len(contains) == 4:
+            contains_lt3 = contains[0]
+            contains_lt4 = contains[1]
+            contains_lt3_ssro = contains[2]
+            contains_lt4_ssro =contains[3]
+        elif len(contains) == 2:
+            contains_lt3 = contains[0]
+            contains_lt4 = contains[1]
+            contains_lt3_ssro = 'SSROCalib'
+            contains_lt4_ssro = 'SSROCalib'
     else:
         contains_lt3 = contains
         contains_lt4 = contains
+        contains_lt3_ssro = 'SSROCalib'
+        contains_lt4_ssro = 'SSROCalib'
+
+
 
     if analysis_computer == 'lt4':
         folder=tb.latest_data(contains_lt4,**kw)
         lt3_folder=tb.latest_data(contains_lt3,folder =r'Z:\data',**kw)
-        ssro_b  = tb.latest_data('SSROCalib', folder =r'Z:\data')
-        ssro_a  = tb.latest_data('SSROCalib')
+        ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Z:\data')
+        ssro_a  = tb.latest_data(contains_lt4_ssro)
 
     if analysis_computer == 'lt3_analysis':
         folder=tb.latest_data(contains_lt4,folder= r'X:\data',**kw)
         lt3_folder=tb.latest_data(contains_lt3,folder =r'Y:\data',**kw)
-        ssro_b  = tb.latest_data('SSROCalib', folder =r'Y:\data')
-        ssro_a  = tb.latest_data('SSROCalib',  folder =r'X:\data')
-
+        ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Y:\data')
+        ssro_a  = tb.latest_data(contains_lt4_ssro,  folder =r'X:\data')
 
     a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
     b = ppq.purifyPQAnalysis(lt3_folder, hdf5_mode='r')
@@ -73,6 +84,7 @@ def analyze_spspcorrs(contains,**kw):
     plot_raw_correlators = kw.pop('plot_raw_correlators',False)
     verbose              = kw.pop('verbose',False)
     do_sine_fit          = kw.pop('do_sine_fit',False)
+    combine_data_for_fit = kw.pop('combine_data_for_fit',True)
     flip_psi0            = kw.pop('flip_psi0',False)
     ret                  = kw.pop('ret',False)
     ret_files            = kw.pop('ret_files',False)
@@ -117,6 +129,9 @@ def analyze_spspcorrs(contains,**kw):
     p0 = []
     p0_u = []
     counts_per_pt = []
+    norm_correlators_array = []
+    norm_correlators_array_u = []
+
     a_lt4.get_sweep_pts()
     for i, adwin_filt_bool in zip([0,1],[adwin_filt_bool_psi0,adwin_filt_bool_psi1]):
 
@@ -125,6 +140,8 @@ def analyze_spspcorrs(contains,**kw):
         ### do ROC
         norm_correlators, norm_correlators_u = RO_correction_of_correlators(correlators_per_sweep_pt,
                                                                     a_lt3,a_lt4,ssro_f_lt3,ssro_f_lt4,**kw)
+        norm_correlators_array.append(norm_correlators)
+        norm_correlators_array_u.append(norm_correlators_u)
 
         ### extract spin-spin expectation value from correlators
         exp_values,exp_values_u = get_exp_value_from_spin_spin_corr(norm_correlators,norm_correlators_u)
@@ -163,7 +180,7 @@ def analyze_spspcorrs(contains,**kw):
     a_lt4.readouts = len(p0)
 
     tail_counts, tail_counts_u = get_tail_counts(a_lt4,counts_per_pt)
-
+    print np.sum(counts_per_pt)
     if plot_correlations:
         #### plot exp value
         a_lt4.correlation_names = ['psi0','psi1']
@@ -174,22 +191,50 @@ def analyze_spspcorrs(contains,**kw):
                                             ret = 'fig',
                                             **kw)
         if do_sine_fit:
-            ax = fig.gca()
-            phi = []
-            for jj,p in zip(range(len(p0)),np.array(p0)):
+            if combine_data_for_fit:
+
+                fig = a_lt4.default_fig(figsize=(6,4))
+                ax = a_lt4.default_ax(fig)
+
+                p =np.array(p0)
+                p =(p[0] - p[1])/2.0
+                p_u = np.array(p0_u)
+                p_u = np.sqrt(p_u[0]**2 + p_u[1]**2)/2.0
+
                 y = np.array(p)
                 x = a_lt4.sweep_pts
 
+                ax.errorbar(x, y,
+                        fmt='o', yerr=p_u,markersize=6,capsize=3,label= a_lt4.correlation_names)
+                ax.set_ylabel('Probability')
+                ax.axhspan(0,1,fill=False,ls='dotted')
+                plt.ylim( [-1.05,1.05])
                 info_x = ax.get_xlim()[1] + (ax.get_xlim()[-1]-ax.get_xlim()[0])*0.02
-                info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02 + 0.5*jj
+                info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02
                 info_xy = [info_x,info_y]
                 ### estimate guess:
-                phi.append(fit_and_plot_sine(x,y,fig.gca(),info_xy = info_xy,**kw))
-            phi[0] = np.mod(-phi[0],360)
-            phi[1] = np.mod(-phi[1]+180,360)
-            avg_phi = np.mean(phi)
-            print 'Phi angle ', phi
-            print 'Avg phi ', avg_phi
+                phi = fit_and_plot_sine(x,y,fig.gca(),info_xy = info_xy,**kw)
+                phi = np.mod(-phi,360)
+                print 'Phi angle ', phi
+                
+            else:
+
+                ax = fig.gca()
+                phi = []
+                for jj,p in zip(range(len(p0)),np.array(p0)):
+                    y = np.array(p)
+                    x = a_lt4.sweep_pts
+
+                    info_x = ax.get_xlim()[1] + (ax.get_xlim()[-1]-ax.get_xlim()[0])*0.02
+                    info_y = ax.get_ylim()[0] + (ax.get_ylim()[-1]-ax.get_ylim()[0])*0.02 + 0.5*jj
+                    info_xy = [info_x,info_y]
+                    ### estimate guess:
+                    phi.append(fit_and_plot_sine(x,y,fig.gca(),info_xy = info_xy,**kw))
+                phi[0] = np.mod(-phi[0],360)
+                phi[1] = np.mod(-phi[1]+180,360)
+                avg_phi = np.mean(phi)
+                print 'Phi angle ', phi
+                print 'Avg phi ', avg_phi
         if save_figs:
             fig.savefig(
                 os.path.join(a_lt4.folder, '{}_vs_sweepparam.'.format('correlations') + a_lt4.plot_format),
@@ -199,11 +244,12 @@ def analyze_spspcorrs(contains,**kw):
 
         name = os.path.join(a_lt4.folder, 'correlations.h5')
         with h5py.File(name, 'w') as hf:
-            
             hf.create_dataset('correlations', data=a_lt4.p_correlations)
             hf.create_dataset('correlations_u', data=a_lt4.u_p_correlations)
-            hf.create_dataset('norm_correlators', data=norm_correlators)
-            hf.create_dataset('norm_correlators_u', data=norm_correlators_u)
+            hf.create_dataset('norm_correlators_psi0', data=norm_correlators_array[0])
+            hf.create_dataset('norm_correlators_u_psi0', data=norm_correlators_array_u[0])
+            hf.create_dataset('norm_correlators_psi1', data=norm_correlators_array[1])
+            hf.create_dataset('norm_correlators_u_psi1', data=norm_correlators_array_u[1])
             hf.create_dataset('counts_per_pt', data=counts_per_pt)
             hf.create_dataset('tail_counts', data=counts_per_pt)
         
@@ -315,7 +361,8 @@ def filter_on_adwin_parameters(a_lt3,a_lt4,**kw):
             if filter_on:
                 ### This is terrible Peter code. Dont ever ever ever ever copy it. Bodged. 
                 if key == 'repetition_number':
-                    values = np.array([i for i in range(len(fltr)/a.g.attrs['sweep_length']) for _ in range(a.g.attrs['sweep_length'])]) ### Make an array of values corresponding to the current rep
+                    values = np.array([i for i in range(1+len(fltr)/a.g.attrs['sweep_length']) for _ in range(a.g.attrs['sweep_length'])]) ### Make an array of values corresponding to the current rep
+                    values = values[:len(fltr)]
                 elif key == 'pst_msmt_phase':
                     g_0 = a.g.attrs['Phase_Msmt_g_0']
                     visibility = a.g.attrs['Phase_Msmt_Vis']
