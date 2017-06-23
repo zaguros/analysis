@@ -86,7 +86,8 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
     fit (1-of) + a (x-x0)**2 from Sequence in folder
     """
     do_print      = kw.pop('do_print', False)
-    a, ax, x, y = plot_result(folder,ax)
+    fixed = kw.pop('fixed', [])
+    a0, ax, x, y = plot_result(folder,ax,**kw)
     x0 = fit.Parameter(x0_guess, 'x0')
     of = fit.Parameter(of_guess, 'of')
     a = fit.Parameter(a_guess, 'a')
@@ -113,23 +114,25 @@ def fit_parabolic(folder=None, ax = None,x0_guess=0., of_guess=0.5, a_guess=1.,*
     
     fit_result = fit.fit1d(fit_x, fit_y, None, p0=[of, a, x0], fitfunc=fitfunc_parabolic,
         fitfunc_str=fitfunc_str, do_print=do_print, ret=True)
+    fit_result['u_y'] = a0.u_p0
     plot.plot_fit1d(fit_result, np.linspace(np.min(fit_x), np.max(fit_x), 201), ax=ax,
         plot_data=False, **kw)
         
         
     return fit_result
 
-def plot_result(folder=None, ax = None, ret=True):
+def plot_result(folder=None, ax = None, ret=True, save_name = 'ssro',**kw):
     if folder==None:
         folder= tb.latest_data('CORPSEPiCalibration')
     if ax == None:
         fig, ax = plt.subplots(1,1, figsize=(4.5,4))
     a = sequence.SequenceAnalysis(folder)
     a.get_sweep_pts()
-    a.get_readout_results(name='ssro')
+    a.get_readout_results(name=save_name)
     a.get_electron_ROC()
-    a.plot_result_vs_sweepparam(ax=ax, name='ssro')
-    print a.normalized_ssro
+    print len(a.p0),len(a.sweep_pts)
+    a.plot_result_vs_sweepparam(ax=ax, name=save_name)
+    # print a.normalized_ssro
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
     print 'min x = ', x[np.argmin(y)]

@@ -11,7 +11,7 @@ reload(common)
 def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offset = 0.5, 
                         amplitude = 0.5, position =0, T2 = 800, 
                         power=2, plot_fit = True, do_print = False, 
-                        show_guess = False):
+                        show_guess = False,do_a_single_fit = False):
     ''' Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
     timestamp: list of timestamps in format in format yyyymmdd_hhmmss or hhmmss or None. (Added: List functionality. NK 20150320)
@@ -30,6 +30,9 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
         folder_list = [toolbox.latest_data('Decoupling')]
 
     fit_results = []
+    all_x = []
+    all_y = []
+
     for ii,f in enumerate(folder_list):
         for k in range(0,len(measurement_name)):
             a = mbi.MBIAnalysis(f)
@@ -42,20 +45,46 @@ def electron_DD_analysis(timestamp=None, measurement_name = ['adwindata'], offse
                 ax.errorbar(a.sweep_pts.reshape(-1)[:],a.p0.reshape(-1)[:],yerr=a.u_p0.reshape(-1)[:],fmt='o')
             x = a.sweep_pts.reshape(-1)[:]
             y = a.p0.reshape(-1)[:]
+            all_x.extend(x)
+            all_y.extend(y)
 
-            p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
 
-            #plot the initial guess
-            if show_guess:
-                ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+            if not do_a_single_fit:
 
-            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=[0,2])
+                p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
 
-            ## plot data and fit as function of total time
-            if plot_fit == True:
-                plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+                #plot the initial guess
+                if show_guess:
+                    ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
 
-            fit_results.append(fit_result)
+                fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=[0,2])
+
+                ## plot data and fit as function of total time
+                if plot_fit == True:
+                    plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+
+                fit_results.append(fit_result)
+
+
+    if do_a_single_fit:
+        x = np.array(all_x)
+        y = np.array(all_y)
+        print x,np.shape(x)
+        print y,np.shape(y)
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
+
+        #plot the initial guess
+        if show_guess:
+            ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=[0,2])
+
+        ## plot data and fit as function of total time
+        if plot_fit == True:
+            plot.plot_fit1d(fit_result, np.linspace(0,x[-1],201), ax=ax, plot_data=False)
+
+        fit_results.append(fit_result)
+
 
     plt.savefig(os.path.join(folder_list[0], 'analyzed_result.pdf'),
     format='pdf')
