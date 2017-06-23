@@ -6,6 +6,7 @@
 import numpy as np
 import scipy as sc
 import scipy.constants
+import scipy.linalg
 import math 
 import os
 
@@ -42,6 +43,7 @@ class Cavity():
         self.cav_type = kw.pop('cav_type','hybrid') #cavity type. can be hybrid or air
         self.lambda_i = kw.pop('lambda_i', 637.e-9)
         self.ns_in_cavity()
+        self.res_search_range = kw.pop('res_search_range',100e-9)
 
         if self.cav_type == 'hybrid':
             self.n_z0 = n_diamond
@@ -134,7 +136,8 @@ class Cavity():
         find the resonance condition by varying t_a around t_a_g
         uses two consecutive optimisation steps
         """
-        t_as = np.linspace(self.t_a_g-10e-9,self.t_a_g+10e-9,nr_pts)
+        
+        t_as = np.linspace(self.t_a_g-(self.res_search_range),self.t_a_g+self.res_search_range,nr_pts)
         r_is = np.zeros(len(t_as))
         for i,t_ai in enumerate(t_as):
             self.t_a = t_ai
@@ -151,7 +154,7 @@ class Cavity():
             plt.show()
             plt.close()
         
-        t_as = np.linspace(t_ai-1e-10,t_ai+1e-10,2*nr_pts)
+        t_as = np.linspace(t_ai-self.res_search_range/100.,t_ai+self.res_search_range/100.,2*nr_pts)
         r_iis = np.zeros(len(t_as))
         for i,t_aii in enumerate(t_as):
             self.t_a = t_aii
