@@ -94,7 +94,7 @@ class BK_analysis(object):
             plt.errorbar(x,y,y_u,fmt = 'x',label = label,**kw)
         else: plt.plot(x,y,'x',label = label)
 
-    def tstamps_for_both_setups(self,day_string,newest_tstamp = '235959'):
+    def tstamps_for_both_setups(self,day_string,newest_tstamp = '235959', oldest_tstamp = '000000'):
         """
         takes a date as input and scans lt3 and lt4 for appropriate timestamps
         will throw an error if both setups have run the experiment an unequal amount of times!
@@ -103,15 +103,15 @@ class BK_analysis(object):
         output: lt3_t_list,lt4_t_list
         """
 
-        lt3_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt3_folder ,newest_tstamp = newest_tstamp)
-        lt4_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt4_folder, newest_tstamp = newest_tstamp)
+        lt3_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt3_folder ,newest_tstamp = newest_tstamp, oldest_tstamp = oldest_tstamp)
+        lt4_t_list = self.find_tstamps_of_day([],day_string,analysis_folder = self.lt4_folder, newest_tstamp = newest_tstamp, oldest_tstamp = oldest_tstamp)
 
         return self.verify_tstamp_lists(lt3_t_list,lt4_t_list,day_string)
 
 
-    def find_tstamps_of_day(self,ts_list,day_string,analysis_folder = 'throw exception',newest_tstamp = '235959'):
+    def find_tstamps_of_day(self,ts_list,day_string,analysis_folder = 'throw exception',newest_tstamp = '235959', oldest_tstamp = '000000'):
         latest_t = day_string + newest_tstamp # where in the day do you want to begin? 235959 mean: take the whole day
-        newer_than = day_string+'_000000'
+        newer_than = day_string+oldest_tstamp
         while tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc = False) != False:
             latest_t,f = tb.latest_data('XX',older_than=latest_t,folder=analysis_folder,newer_than=newer_than,return_timestamp = True,raise_exc=False)
             ### debug statement that prints the full timestamp and the relevant identifier.
@@ -136,6 +136,7 @@ class BK_analysis(object):
         ### check for contents
         newer_than = date+'_000000'
         for t_lt3,t_lt4 in zip(lt3_t_list,lt4_t_list):
+
             f_lt3 = tb.latest_data(t_lt3,folder = self.lt3_folder,newer_than = newer_than)
             f_lt4 = tb.latest_data(t_lt4,folder = self.lt4_folder,newer_than = newer_than)
 
@@ -153,6 +154,7 @@ class BK_analysis(object):
                 continue
 
             ### check if there are adwin ssro events and if they have the same length for both files
+            
             ssros_lt3 = Datafile_lt3[Datafile_lt3.keys()[-1]]['adwindata']['ssro_results'].value
             ssros_lt4 = Datafile_lt4[Datafile_lt4.keys()[0]]['adwindata']['ssro_results'].value
 
@@ -581,8 +583,11 @@ class BK_analysis(object):
 
         ssro_folder = tb.data_from_time(timestamp,folder = folder) 
 
-        F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_calibration(ssro_folder,raw_data.g.attrs['E_RO_durations'][0]) #we onlky have one RO time in E_RO_durations
-
+        if 'MWInit' in ssro_folder:
+            F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_MWInit_calibration(ssro_folder,raw_data.g.attrs['E_RO_durations'][0],raw_data.g.attrs['electron_transition'])
+        else:
+            F_0,u_F0,F_1,u_F1 = ssro.get_SSRO_calibration(ssro_folder,raw_data.g.attrs['E_RO_durations'][0])
+         
         return F_0,F_1
 
     def sweep_filter_parameter_vs_correlations(self,parameter_name,parameter_range):
