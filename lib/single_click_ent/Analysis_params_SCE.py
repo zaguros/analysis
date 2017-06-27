@@ -41,6 +41,14 @@ data_settings = {
 							 'SweepXY_0p3Theta' : r'EntangleXsweepY',
 							 'SweepXY_0p5Theta' : r'EntangleXsweepY',
 							 'SweepThetaXX'		: r'Entangle_SweepTheta',
-							 'SweepThetaZZ'		: r'eta_from_theta_sweep'}
+							 'SweepThetaZZ'		: r'eta_from_theta_sweep'},
+
+	'timestamps_to_roll' : {'SweepXY_0p1Theta' : ['162538','163440'],
+							 'SweepXY_0p3Theta' : [],
+							 'SweepXY_0p5Theta' : [],
+							 'SweepThetaXX'		: [],
+							 'SweepThetaZZ'		: []}
+
+
 
 }

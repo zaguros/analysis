@@ -8,11 +8,21 @@ from analysis.lib.tools import toolbox as tb
 from analysis.lib.m2.ssro import ssro
 from analysis.lib.purification import purify_pq as ppq; reload(ppq)
 from analysis.lib.tools import plot; reload(plot)
+import Analysis_params_SCE as analysis_params; reload(analysis_params)
 import scipy.fftpack
 
 def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
     # Import
-    folder= tb.latest_data(contains)
+    lt3_analysis = kw.pop('lt3_analysis', False)
+
+    if not(lt3_analysis):
+        folder= tb.latest_data(contains)
+    else:
+        base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
+        lt4_folder = os.path.join(base_folder_lt4,contains)
+        filename_str = kw.pop('filename_str', analysis_params.data_settings['filenames_for_expms'][contains])
+        a_list=tb.latest_data(contains = filename_str,folder =lt4_folder,**kw)
+
     a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
 
     # general params

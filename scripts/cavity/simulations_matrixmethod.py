@@ -6,6 +6,7 @@
 import numpy as np
 import scipy as sc
 import scipy.constants
+import scipy.linalg
 import math 
 import os
 
@@ -42,11 +43,13 @@ class Cavity():
         self.cav_type = kw.pop('cav_type','hybrid') #cavity type. can be hybrid or air
         self.lambda_i = kw.pop('lambda_i', 637.e-9)
         self.ns_in_cavity()
+        self.res_search_range = kw.pop('res_search_range',100e-9)
 
         if self.cav_type == 'hybrid':
             self.n_z0 = n_diamond
         elif self.cav_type == 'air':
             self.n_z0 = n_air
+            self.t_d= 0
         else:
             self.n_z0 = 0
             'specify valid cavity type (hybrid or air)'
@@ -133,7 +136,8 @@ class Cavity():
         find the resonance condition by varying t_a around t_a_g
         uses two consecutive optimisation steps
         """
-        t_as = np.linspace(self.t_a_g-100e-9,self.t_a_g+100e-9,nr_pts)
+        
+        t_as = np.linspace(self.t_a_g-(self.res_search_range),self.t_a_g+self.res_search_range,nr_pts)
         r_is = np.zeros(len(t_as))
         for i,t_ai in enumerate(t_as):
             self.t_a = t_ai
@@ -150,7 +154,7 @@ class Cavity():
             plt.show()
             plt.close()
         
-        t_as = np.linspace(t_ai-1e-9,t_ai+1e-9,2*nr_pts)
+        t_as = np.linspace(t_ai-self.res_search_range/100.,t_ai+self.res_search_range/100.,2*nr_pts)
         r_iis = np.zeros(len(t_as))
         for i,t_aii in enumerate(t_as):
             self.t_a = t_aii
@@ -167,6 +171,7 @@ class Cavity():
             plt.show()
             plt.close()
         
+        self.optical_length = self.t_a + self.t_d
         return self.t_a,self.r,r_iis#,t_ai,r_i,r_is#,
 
 
@@ -245,7 +250,7 @@ class Cavity():
         calculate energy distribution length int((n(z)^2)*(E(z))^2 dz)/(n(z0))^2*E(z0)^2
         """
         dz = np.abs(self.zs[0]-self.zs[1])
-        self.effective_length = 2*np.real(np.sum((self.ns_vs_z**2)*(self.Etot_vs_z**2))*dz/(self.n_z0**2*self.E_z0**2))#note factor 2 that seems necessary...
+        self.effective_length = np.real(np.sum((self.ns_vs_z**2)*(self.Etot_vs_z**2))*dz/((self.n_z0**2)*(self.E_z0**2)))#note factor 2 that seems necessary...
 
     def calculate_w0(self):
         """
@@ -254,7 +259,7 @@ class Cavity():
         L  optical cavity length
         R  radius of curvature
         """
-        self.w0 = ((self.lambda_i/math.pi)**0.5)*(self.effective_length*(self.R-self.effective_length))**(1/4.)
+        self.w0 = ((self.lambda_i/math.pi)**0.5)*(self.optical_length*(self.R-self.optical_length))**(1/4.)/self.n_z0
 
     def calculate_mode_volume(self):
         self.mode_volume = math.pi*self.w0**2/4.*self.effective_length
@@ -263,7 +268,7 @@ class Cavity():
         """
         Uses the mode volume to determine the maximum vacuum electric field (hbar omega/(epsilon*V)) (epsilon = n^2*epsilon_0)
         """
-        self.Evac_max = np.sqrt(sc.constants.hbar*2*math.pi*(sc.constants.c/self.lambda_i)/(2*sc.constants.epsilon_0*self.mode_volume))/self.n_z0
+        self.Evac_max = np.sqrt(sc.constants.hbar*2*math.pi*(sc.constants.c/self.lambda_i)/(2*sc.constants.epsilon_0*self.mode_volume))
 
     def calculate_energy_in_m(self,n_m):
         """
@@ -294,7 +299,7 @@ class Cavity():
         if plot_Evac:
             print 'energy distribution length = ',self.effective_length*1.e6, 'um'
             print 'beam waist', self.w0*1.e6, 'um'
-            print 'mode volume', self.mode_volume*(1.e6)**3, 'um^3'
+            print 'mode volume', self.mode_volume*(1.e6)**3, 'um^3 = ', self.mode_volume/(self.lambda_i**3), 'lambda^3'
             print 'max Evac',self.Evac_max/1000.,'kV/m' 
             today = tb.get_timestamp_from_now()[:8]
             title_string = today+'_td_%.2f_ta_%.2f_lambdai_%.1f_R_%.1f'%(self.t_d*1.e6,self.t_a*1.e6,self.lambda_i*1.e9,self.R*1.e6)
@@ -316,7 +321,7 @@ class Cavity():
             plt.show()
             plt.close()
 
-        # return self.zs,self.ns_vs_z,self.Etot_vs_z,self.Evac_max,self.z0,self.dz0,self.Etot_diamond,self.Etot_air
+        return self.zs,self.ns_vs_z,self.Etot_vs_z,self.Evac_max,self.z0,self.dz0,self.Etot_diamond,self.Etot_air
 
 
 
