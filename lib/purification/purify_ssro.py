@@ -452,6 +452,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
     freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
     decay = kw.pop('decay',50)
     phi0 = kw.pop('phi0',0)
+    offset = kw.pop('offset',0)
+    A0 = kw.pop('A0',None)
     post_select_e_outcome = kw.pop('post_select_e_outcome',False)
 
     fixed = kw.pop('fixed', [1])
@@ -482,8 +484,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 
         ### fitting if you feel like it / still needs implementation
     if do_fit:
-        A0 = max(y)
-        offset = 0
+        if A0 is None:
+            A0 = max(y)
 
         p0,fitfunc,fitfunc_str = common.fit_decaying_cos(freq,offset,A0,phi0,decay)
 
