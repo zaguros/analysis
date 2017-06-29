@@ -42,7 +42,6 @@ class Cavity():
         self.M = kw.pop('M', 10) #number of mirror layers
         self.cav_type = kw.pop('cav_type','hybrid') #cavity type. can be hybrid or air
         self.lambda_i = kw.pop('lambda_i', 637.e-9)
-        self.ns_in_cavity()
         self.res_search_range = kw.pop('res_search_range',100e-9)
 
         if self.cav_type == 'hybrid':
@@ -50,9 +49,18 @@ class Cavity():
         elif self.cav_type == 'air':
             self.n_z0 = n_air
             self.t_d= 0
+        elif self.cav_type == 'test1':
+            print 'cav type is tst1'
+            self.n_z0 = n_air      
+            self.M1 = kw.pop('M1', 10) #number of mirror layers, first mirror 
+            self.M2 = kw.pop('M2', 10) #number of mirror layers, second mirror
+            self.t_s = kw.pop('t_s',5e-6)
+            self.t_d = 0
         else:
             self.n_z0 = 0
             'specify valid cavity type (hybrid or air)'
+
+        self.ns_in_cavity()
 
     def boundary_matrix(self,n1,n2):
         rho = (n1-n2)/(n1+n2)
@@ -78,6 +86,12 @@ class Cavity():
             ns_mirror = np.append(np.array((self.n_1,self.n_2)*self.M),np.array((self.n_1)))
             ns_cav = np.array([n_air])
             self.ns = np.concatenate((ns_mirror,ns_cav,ns_mirror)) 
+        elif self.cav_type == 'test1':
+            ts_substrate = np.array([n_diamond])
+            ns_mirror1 = np.append(np.array((self.n_1,self.n_2)*self.M1),np.array((self.n_1)))
+            ns_mirror2 = np.append(np.array((self.n_1,self.n_2)*self.M2),np.array((self.n_1)))
+            ns_cav = np.array([n_air])
+            self.ns = np.concatenate((ts_substrate,ns_mirror1,ns_cav,ns_mirror2))  
         else:
             'specify valid cavity type (hyrbid or air)!'
             return
@@ -92,6 +106,13 @@ class Cavity():
             ts_mirror = np.append(np.array((self.lambda_cav/(4*self.n_1),self.lambda_cav/(4*self.n_2))*self.M),np.array(self.lambda_cav/(4*self.n_1)))
             ts_cav = np.array([self.t_a])
             self.ts = np.concatenate((ts_mirror,ts_cav,ts_mirror))
+        elif self.cav_type == 'test1':
+            ts_substrate = np.array([self.t_s])
+            ts_mirror1 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.lambda_cav/(4*self.n_2))*self.M1),np.array(self.lambda_cav/(4*self.n_1)))
+            ts_mirror2 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.lambda_cav/(4*self.n_2))*self.M2),np.array(self.lambda_cav/(4*self.n_1)))
+            ts_cav = np.array([self.t_a])
+            self.ts = np.concatenate((ts_substrate,ts_mirror1,ts_cav,ts_mirror2))        
+
         else:
             'specify valid cavity type (hyrbid or air)!'
             return
