@@ -13,3 +13,5 @@ output
 notebooks/QEC/NV gen.ipynb
 
 notebooks/QEC/QEC sim.ipynb
+custom_config.*
+custom_setup_analysis.*

@@ -59,6 +59,22 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_decaying_cos_with_phase_errors(g_f, g_a, g_A, g_phi,g_t,phase_errors):
+    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + (phi + phi_err/360) ) + a'
+
+    f = fit.Parameter(g_f, 'f')
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    phi = fit.Parameter(g_phi, 'phi')
+    t   = fit.Parameter(g_t, 't')
+    # print 'guessed frequency is '+str(g_f)
+    p0 = [f, a, A,phi,t]
+
+    def fitfunc(x, phi_err=phase_errors):
+        return a() + A()*np.exp(-x/t()) * np.cos(2*np.pi*( f()*x + (phi()+phi_err)/360.))
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     fitfunc_str = 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a'
 
