@@ -3,6 +3,8 @@ analysis of DD files to extract T2 for a certain number of pulses
 NK 2017
 """
 import numpy as np
+import os
+from analysis.lib.tools import plot
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
@@ -69,7 +71,7 @@ def compile_xy_values_of_datasets(f_list,ssro_tstamp = None,**kw):
 
     return x,y,y_u,a
 
-def sort_for_best_signal(x_list,y_list,y_u_list):
+def sort_for_best_signal(x_list,y_list,y_u_list,**kw):
     """
     compares rows in the y matrix and returns only the best values
     all other values are returned as a sorted 1D list to plot as well
@@ -79,6 +81,9 @@ def sort_for_best_signal(x_list,y_list,y_u_list):
     best_y = np.amax(y_list.T,axis = 1)
     best_x = x_list.T[range(s),np.argmax(y_list.T,axis = 1)]
     best_y_u = y_u_list.T[range(s),np.argmax(y_list.T,axis = 1)]
+    if kw.pop('print_best', False):
+        print 'Best decoupling times:'
+        print best_x
 
     return best_x,best_y,best_y_u
 
@@ -108,14 +113,14 @@ def analyse_dataset(contains,**kw):
 
     x_list,y_list,y_u_list = np.array(x_list),np.array(y_list),np.array(y_u_list) ## conver tto array
 
-    best_x,best_y,best_y_u = sort_for_best_signal(x_list,y_list,y_u_list)
+    best_x,best_y,best_y_u = sort_for_best_signal(x_list,y_list,y_u_list,**kw)
     ax.set_xlabel(a.sweep_name)
     ax.set_ylabel(r'$F(|0\rangle)$')
     ax.set_xlim([0,np.amax(best_x)*1.05])
     ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
 
     ########## time to fit the best results
-    p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 2.,2) ## one could start to make cool guesses based on the data but i refrain
+    p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 200.,2) ## one could start to make cool guesses based on the data but i refrain
     fit_result = fit.fit1d(best_x,best_y,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,fixed = [0,1,2,4])
 
     plot.plot_fit1d(fit_result,np.linspace(0,np.amax(best_x)*1.05,201),ax=ax,plot_data=False)

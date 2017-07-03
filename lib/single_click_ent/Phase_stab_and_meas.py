@@ -11,7 +11,7 @@ from analysis.lib.tools import plot; reload(plot)
 import Analysis_params_SCE as analysis_params; reload(analysis_params)
 import scipy.fftpack
 
-def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
+def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
     # Import
     lt3_analysis = kw.pop('lt3_analysis', False)
 
@@ -44,18 +44,16 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
     g_0 = a.g.attrs['Phase_Msmt_g_0']
     visibility = a.g.attrs['Phase_Msmt_Vis']
 
-    pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
-    sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
-    pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
-    sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
-
-    pid_counts_1 = pid_counts_1[(start_rep_no - 1)*pid_cycles:]
-    pid_counts_2 = pid_counts_2[(start_rep_no - 1)*pid_cycles:]
-    sample_counts_1 = sample_counts_1[(start_rep_no - 1)*sample_cycles:]
-    sample_counts_2 = sample_counts_2[(start_rep_no - 1)*sample_cycles:]
-
+    
+   
     if mode == 'only_meas':
-        
+    
+        sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
+        sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
+        sample_counts_1 = sample_counts_1[(start_rep_no - 1)*sample_cycles:]
+        sample_counts_2 = sample_counts_2[(start_rep_no - 1)*sample_cycles:]
+
+    
         delay = delay_meas
         total_cycles = sample_cycles
 
@@ -67,6 +65,11 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
 
     elif mode == 'only_stab':
 
+        pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
+        pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
+        pid_counts_1 = pid_counts_1[(start_rep_no - 1)*pid_cycles:]
+        pid_counts_2 = pid_counts_2[(start_rep_no - 1)*pid_cycles:]
+
         delay = delay_stable
         total_cycles = pid_cycles
 
@@ -77,7 +80,15 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
 
 
     else:
-        
+        pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
+        pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
+        sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
+        sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
+        sample_counts_1 = sample_counts_1[(start_rep_no - 1)*sample_cycles:]
+        sample_counts_2 = sample_counts_2[(start_rep_no - 1)*sample_cycles:]
+        pid_counts_1 = pid_counts_1[(start_rep_no - 1)*pid_cycles:]
+        pid_counts_2 = pid_counts_2[(start_rep_no - 1)*pid_cycles:]
+
         v_1 = []
         v_2 = []
         t = []
@@ -182,7 +193,8 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
     plot.plot_fit1d(fit_result, np.linspace(center[0],center[-1],201), ax=ax, 
                         plot_data=False,print_info = True)
     fig.savefig(os.path.join(folder, 'histogram.png'))
-    print 'x0, sigma ', fit_result['params_dict']['x0'] , fit_result['params_dict']['sigma'] 
+    if len(fit_result['params_dict']):
+        print 'x0, sigma ', fit_result['params_dict']['x0'] , fit_result['params_dict']['sigma'] 
 
     # standard dev
     fig = plt.figure()
