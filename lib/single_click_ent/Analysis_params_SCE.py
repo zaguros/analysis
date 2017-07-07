@@ -5,10 +5,10 @@ import numpy as np
 
 
 SPCorr_settings = {
-	'st_start'		: 2826e3,
-	'st_len'		: 20e3,
+	'st_start'		: 2825e3,
+	'st_len'		: 28e3,
 	'photon_channel'		: 2, ### 2 for both channels. 0 or 1 one corresponds to one HH channel.
-	'ch1_offset'	: 18.0e3 
+	'ch1_offset'	: 17.5e3 
 }
 
 """
@@ -28,7 +28,7 @@ SPSP_fltr_adwin_settings['fltr_dict_lt4'] = 	{
 				'elapsed_since_phase_stab' : [0,0e3,50e3],
 				'repetition_number'		   : [0,00,1000],
 				'pst_msmt_phase'		   : [0,80,100],
-				'DD_repetitions' 		   : [0,100,200]		
+				'DD_repetitions' 		   : [0,10,400]		
 			}
 
 

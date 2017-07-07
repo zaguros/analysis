@@ -39,6 +39,8 @@ class singleClickAnalysis(twoSetupAnalysis):
     def process_correlations(self,**kw):
 
         verbose = kw.get('verbose',False)
+        ignore_HH = kw.pop('ignore_HH',False)
+
         # print self.a.g
         # print self.a.g.attrs['sweep_length']
         # print self.b.g.attrs['sweep_length']
@@ -61,6 +63,7 @@ class singleClickAnalysis(twoSetupAnalysis):
         st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
         self.st_fltr_c0 = st_fltr_c0[st_fltr]
         self.st_fltr_c1 = st_fltr_c1[st_fltr]
+        
         ### prepare filtered sync numbers
         self.sn_filtered = sn_lt[st_fltr]
 
@@ -69,12 +72,24 @@ class singleClickAnalysis(twoSetupAnalysis):
         ####################################
         ##### electron RO correlations #####
         ####################################
-   
         # Apply adwin filter to data and combine with earlier temporal fitering
         self.filter_on_adwin_parameters(**kw) 
         adwin_filter,adwin_syncs = self.a.filter_adwin_data_from_pq_syncs(self.sn_filtered) ## adwin syncs within window
+        # if ignore_HH:
+        #     adwin_filter = np.array(range(self.completed_reps))
+        #     print np.shape(self.st_fltr_c0)
+        #     print self.st_fltr_c0
         self.combined_filt = np.array([np.logical_and(self.adwin_fltr,np.in1d(range(self.completed_reps),adwin_filter[st_fltr])) for st_fltr in [self.st_fltr_c0, self.st_fltr_c1]]) ### convert the adwin filter to boolean
-        
+        self.failed_events = np.logical_and(self.adwin_fltr,np.logical_not(np.logical_or(self.combined_filt[0],self.combined_filt[1]))) # where didnt get a plu signal
+
+        if verbose: print 'Num failed events ', np.sum(self.failed_events)
+
+        if ignore_HH:
+            psi0_or_psi1_failed = np.random.rand(len(self.combined_filt[0])) > 0.5
+            self.combined_filt[0] = np.logical_or(np.logical_and(self.failed_events,psi0_or_psi1_failed == 0),self.combined_filt[0])
+            self.combined_filt[1] = np.logical_or(np.logical_and(self.failed_events,psi0_or_psi1_failed == 1),self.combined_filt[1])
+            # self.combined_filt[0] = self.failed_events
+
         if verbose: print 'Adwin filtered events ', np.sum(self.combined_filt[0]), np.sum(self.combined_filt[1])
 
         self.get_correlations()
@@ -257,6 +272,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
     plot_temporal_filter = kw.pop('plot_temporal_filter', False)
     plot_correlations    = kw.pop('plot_correlations',True)
     plot_raw_correlators = kw.pop('plot_raw_correlators',False)
+    plot_tail            = kw.pop('plot_tail',False)
     verbose              = kw.pop('verbose',False)
     do_sine_fit          = kw.pop('do_sine_fit',False)
     combine_correlation_data = kw.pop('combine_correlation_data', False)
@@ -312,6 +328,15 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
     if plot_temporal_filter:
         plot_ph_hist_and_fltr(singleClickAnalyses)
 
+    if plot_tail:
+        fig = singleClickAnalyses[0].a.default_fig(figsize=(6,4))
+        ax = singleClickAnalyses[0].a.default_ax(fig)
+        plt.errorbar(sweep_pts, tail_per_pt,
+                         fmt='o', yerr=tail_per_pt_u,markersize=6,capsize=3)
+        xlims = plt.xlim()
+        newxlims = [xlims[0] - 0.1*(xlims[1] - xlims[0]), xlims[1] + 0.1*(xlims[1] - xlims[0])]
+        plt.xlim(newxlims)
+
     ### do ROC
     norm_correlators, norm_correlators_u = RO_correction_of_correlators(correlators_per_sweep_pt,
                                                                     electron_transitions,E_RO_durations,ssro_a,ssro_b,**kw)
@@ -345,6 +370,9 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
             ax.set_ylabel('Probability')
             ax.set_ylim([0,1])
             ax.set_title(timestamp+'\n'+measurementstring+ '\n' + 'psi'+str(i))
+            xlims = plt.xlim()
+            newxlims = [xlims[0] - 0.1*(xlims[1] - xlims[0]), xlims[1] + 0.1*(xlims[1] - xlims[0])]
+            plt.xlim(newxlims)
             plt.show()
             if save_figs:
                 fig.savefig(
@@ -373,6 +401,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
             ax = []
             for n in range(len(singleClickAnalyses[0].a.g.attrs['general_sweep_pts2'])):
                 ax.append(fig.add_subplot(len(singleClickAnalyses[0].a.g.attrs['general_sweep_pts2']),1,n+1))
+            ax[0].set_title(singleClickAnalyses[0].a.timestamp+'\n'+singleClickAnalyses[0].a.measurementstring)
         else:
             fig = singleClickAnalyses[0].a.default_fig(figsize=(6,4))
             ax = singleClickAnalyses[0].a.default_ax(fig)
@@ -407,6 +436,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
                     ax[z].set_xlabel(sweep_name)
                     ax[z].axhspan(0,1,fill=False,ls='dotted')
                 print (1+np.sum(np.abs(p_plot),axis =1))/4
+                print np.sqrt(np.sum(p_u**2,axis = 1))/4
                 print p_plot
             else:
                 ax.errorbar(x, p_plot,
@@ -418,7 +448,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
                 xlims = plt.xlim()
                 newxlims = [xlims[0] - 0.1*(xlims[1] - xlims[0]), xlims[1] + 0.1*(xlims[1] - xlims[0])]
                 plt.xlim(newxlims)
-
+                print 'fidelity', (1+np.sum(np.abs(p_plot)))/4,  np.sqrt(np.sum(p_u**2))/4
                 plt.legend()
 
         if do_sine_fit:    
