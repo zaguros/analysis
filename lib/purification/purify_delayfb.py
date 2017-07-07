@@ -7,7 +7,7 @@ All data are analyzed according to the MBI analysis class with varying input nam
 import numpy as np
 import os
 from analysis.lib.tools import toolbox, plot;
-from analysis.lib.m2.ssro import mbi
+from analysis.lib.m2.ssro import mbi, sequence
 from matplotlib import pyplot as plt
 # import matplotlib as mpl
 from analysis.lib.fitting import fit, common
@@ -715,3 +715,51 @@ def analyse_delay_feedback_phase_error(contains='', name='ssro', **kw):
 
     if kw.get('ret_data', False):
         return x, y, y_u
+
+def repump_speed(contains='repump_speed', name='adwindata', do_fit=False, **kw):
+    show_guess = kw.pop('show_guess', False)
+    g_a = kw.pop('offset', 0.0)
+    g_A = kw.pop('A', 1.0)
+    g_tau = kw.pop('tau', 100.0)
+    fixed = kw.pop('fixed', [0])
+
+    ### acquire data
+    f = toolbox.latest_data(contains, **kw)
+    a = mbi.MBIAnalysis(f)
+    a.get_sweep_pts()
+    a.get_readout_results(name=name)
+    a.get_electron_ROC(**kw)
+
+    x = a.sweep_pts.reshape(-1)
+    y = 1.0 - a.p0.reshape(-1)
+    y_u = a.u_p0.reshape(-1)
+
+    xlabel = a.sweep_name
+    ylabel = r'$1 - p(|0\rangle)$'
+
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='repump speed')
+
+    plot_data(x, y, y_u=y_u)
+
+    if do_fit:
+
+        p0, fitfunc, fitfunc_str = common.fit_exp_decay_with_offset(g_a, g_A, g_tau)
+
+        if show_guess:
+            # print decay
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, fixed=fixed, ret=True)
+
+        if isinstance(fit_result, int):
+            print "Fit failed!"
+        else:
+            plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+
+    save_and_close_plot(f)
+
+    if kw.get('ret_data', False):
+        return x, y, y_u
+
+    if kw.get('ret', False):
+        return fit_result
