@@ -249,11 +249,14 @@ def temporal_filtering(filtering_file, **kw):
     sn_lt = filtering_file.pqf['/PQ_sync_number-1'].value # Sync number: the number of the last sync signal
     st_lt = filtering_file.pqf['/PQ_sync_time-1'].value # Sync time: time that has passed since the last sync signal
     
+    plu_filter =  np.in1d(sn_lt,sn_lt[sp_lt == 1]) # Find syncs that match syncs from the plu
     uniqueVals, uniqueCounts = np.unique(sn_lt[(sp_lt == 0)], return_counts  = True) # Remove syncs with two clicks
     dupVals = uniqueVals[uniqueCounts>1]
     uniqueSync = np.logical_not(np.in1d(sn_lt,dupVals))
-    st_fltr_c0 = uniqueSync & (ch_lt == 0)&(st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
-    st_fltr_c1 = uniqueSync & (ch_lt == 1)&(st_lt > st_start+ch1_offset)  & (st_lt < (st_start  + st_len+ch1_offset)) & (sp_lt == 0) 
+    st_fltr_c0 = plu_filter & uniqueSync & (ch_lt == 0)&(st_lt > st_start)  & (st_lt < (st_start  + st_len)) & (sp_lt == 0)  
+    st_fltr_c1 = plu_filter & uniqueSync & (ch_lt == 1)&(st_lt > st_start+ch1_offset)  & (st_lt < (st_start  + st_len+ch1_offset)) & (sp_lt == 0) 
+
+   
 
     return sn_lt,st_fltr_c0,st_fltr_c1
 

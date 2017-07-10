@@ -39,37 +39,57 @@ class singleClickAnalysis(twoSetupAnalysis):
     def process_correlations(self,**kw):
 
         verbose = kw.get('verbose',False)
+        ignore_HH = kw.pop('ignore_HH',False)
 
+        # print self.a.g
+        # print self.a.g.attrs['sweep_length']
+        # print self.b.g.attrs['sweep_length']
         if self.a.g.attrs['sweep_length'] != self.b.g.attrs['sweep_length']:
             raise(Exception('Different sweep lengths for lt3 and lt4!'))
+        if self.a.agrp['completed_reps'].value  != self.b.agrp['completed_reps'].value :
+            print 'Different reps for lt3 and lt4!'
 
-        if self.a.agrp['completed_reps'].value  != self.a.agrp['completed_reps'].value :
-            raise(Exception('Different reps for lt3 and lt4!'))
+        if np.any(self.a.agrp['counted_awg_reps'].value != self.b.agrp['counted_awg_reps'].value):
+            print 'Fix your syncs you fool'
 
+        self.completed_reps = np.min([self.a.agrp['completed_reps'].value ,self.b.agrp['completed_reps'].value ])
+            
         self.sweep_pts = self.a.g.attrs['sweep_pts'] # Specified in lt4
         self.sweep_length = self.a.g.attrs['sweep_length']
         
         ### temporal filtering of HH data
         sn_lt,st_fltr_c0,st_fltr_c1 = temporal_filtering(self.a,**kw)
+
         st_fltr = np.logical_or(st_fltr_c0,st_fltr_c1)
         self.st_fltr_c0 = st_fltr_c0[st_fltr]
         self.st_fltr_c1 = st_fltr_c1[st_fltr]
+        
         ### prepare filtered sync numbers
         self.sn_filtered = sn_lt[st_fltr]
 
         if verbose: print 'Time filtered events ', np.sum(st_fltr_c0), np.sum(st_fltr_c1)
 
-        self.completed_reps = self.a.agrp['completed_reps'].value 
-
         ####################################
         ##### electron RO correlations #####
         ####################################
-   
         # Apply adwin filter to data and combine with earlier temporal fitering
         self.filter_on_adwin_parameters(**kw) 
         adwin_filter,adwin_syncs = self.a.filter_adwin_data_from_pq_syncs(self.sn_filtered) ## adwin syncs within window
+        # if ignore_HH:
+        #     adwin_filter = np.array(range(self.completed_reps))
+        #     print np.shape(self.st_fltr_c0)
+        #     print self.st_fltr_c0
         self.combined_filt = np.array([np.logical_and(self.adwin_fltr,np.in1d(range(self.completed_reps),adwin_filter[st_fltr])) for st_fltr in [self.st_fltr_c0, self.st_fltr_c1]]) ### convert the adwin filter to boolean
-        
+        self.failed_events = np.logical_and(self.adwin_fltr,np.logical_not(np.logical_or(self.combined_filt[0],self.combined_filt[1]))) # where didnt get a plu signal
+
+        if verbose: print 'Num failed events ', np.sum(self.failed_events)
+
+        if ignore_HH:
+            psi0_or_psi1_failed = np.random.rand(len(self.combined_filt[0])) > 0.5
+            self.combined_filt[0] = np.logical_or(np.logical_and(self.failed_events,psi0_or_psi1_failed == 0),self.combined_filt[0])
+            self.combined_filt[1] = np.logical_or(np.logical_and(self.failed_events,psi0_or_psi1_failed == 1),self.combined_filt[1])
+            # self.combined_filt[0] = self.failed_events
+
         if verbose: print 'Adwin filtered events ', np.sum(self.combined_filt[0]), np.sum(self.combined_filt[1])
 
         self.get_correlations()
@@ -104,12 +124,22 @@ class singleClickAnalysis(twoSetupAnalysis):
                     if key == 'repetition_number':
                         values = np.array([i for i in range(self.completed_reps/self.sweep_length) for _ in range(self.sweep_length)]) ### Make an array of values corresponding to the current rep
                     elif key == 'LDE_attempts':
-                        reps = a.agrp['counted_awg_reps'].value
+                        reps = a.agrp['counted_awg_reps'].value # I feel like a dirty person
                         reps = reps - np.append([0],reps[:-1]) ### Calculate reps since last click
                         values = reps % a.g.attrs['LDE_attempts'] ### Take mod with 
+                    elif key == 'pst_msmt_phase':
+                        v_1 = a.agrp['sampling_counts_1'].value
+                        v_2 = a.agrp['sampling_counts_2'].value
+                        g_0 = a.agrp.attrs['Phase_Msmt_g_0']
+                        visibility = a.agrp.attrs['Phase_Msmt_Vis']
+                        
+                        cosvals = [2*(float(n0)/(float(n0)+float(n1)*g_0)-0.5)*visibility for n0,n1 in zip(v_1,v_2)]
+                        cosvals = [cosval if np.abs(cosval) < 1 else (1.0 * np.sign(cosval)) for cosval in cosvals]
+                        values = 180*np.arccos(cosvals)/np.pi
+                    
                     else:
                         values = a.agrp[key].value
-
+                    values = values[:self.completed_reps]
                     self.adwin_fltr = np.logical_and(self.adwin_fltr,(values >= minimum) & ( values <= maximum)) ### update filter
 
         if len(filter_params):
@@ -130,6 +160,7 @@ class singleClickAnalysis(twoSetupAnalysis):
         ### prepare RO results and sort them according to sweep point
         for a in [self.a,self.b]:
             a.ssros = a.agrp['ssro_results'].value
+            a.ssros = a.ssros[:self.completed_reps]
             
         ### correlate the ROs with each other by making a boolean filter:
         ### variables here are described in terms of spin states!
@@ -180,10 +211,15 @@ class singleClickAnalysis(twoSetupAnalysis):
 def run_analysis(contains, **kw):
     ### This is a simple helper function for when only analysing one file
 
-    folder_a,folder_b,ssro_a,ssro_b =  get_data_objects(contains,**kw)
-    singleClick = singleClickAnalysis(folder_a,folder_b)
-    singleClick.process_correlations(**kw)
-    analyze_spspcorrs(singleClick,ssro_a,ssro_b,**kw)
+    a_list,b_list,ssro_a,ssro_b =  get_data_objects(contains,**kw)
+
+    sca_list = []
+    for i, (folder_a,folder_b) in enumerate(zip(a_list,b_list)):
+        sca = singleClickAnalysis(folder_a,folder_b)
+        sca.process_correlations(**kw)
+        sca_list.append(sca)
+
+    analyze_spspcorrs(sca_list,ssro_a,ssro_b,**kw)
 
 
 def get_data_objects(contains,**kw):
@@ -211,6 +247,10 @@ def get_data_objects(contains,**kw):
     if analysis_computer == 'lt4':
         folder_a =tb.latest_data(contains_lt4,**kw)
         folder_b =tb.latest_data(contains_lt3,folder =r'Z:\data',**kw)
+
+        folder_a = folder_a if isinstance(folder_a, list) else [folder_a]
+        folder_b = folder_b if isinstance(folder_b, list) else [folder_b]
+        
         ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Z:\data')
         ssro_a  = tb.latest_data(contains_lt4_ssro)
 
@@ -232,15 +272,16 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
     plot_temporal_filter = kw.pop('plot_temporal_filter', False)
     plot_correlations    = kw.pop('plot_correlations',True)
     plot_raw_correlators = kw.pop('plot_raw_correlators',False)
+    plot_tail            = kw.pop('plot_tail',False)
     verbose              = kw.pop('verbose',False)
     do_sine_fit          = kw.pop('do_sine_fit',False)
     combine_correlation_data = kw.pop('combine_correlation_data', False)
     flip_psi1            = kw.pop('flip_psi1',False)
+    abs_corrs            = kw.pop('abs_corrs', False)
     ret                  = kw.pop('ret',False)
     save_corrs           = kw.pop('save_corrs',False)
     save_figs            = kw.pop('save_figs',False)
-    timestamps_to_roll   = kw.pop('timestamps_to_roll', []) # Nasty hack
-    
+
     if isinstance(singleClickAnalyses,singleClickAnalysis): # Make sure in an array
 
         sweep_name = singleClickAnalyses.a.g.attrs['sweep_name']
@@ -261,25 +302,21 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
     # Combine files together
     num_files = len(singleClickAnalyses)
     sweep_pts = singleClickAnalyses[0].sweep_pts
-
+    sweep_length = singleClickAnalyses[0].sweep_length
+    gen_sweep_pts = singleClickAnalyses[0].a.g.attrs['general_sweep_pts']
+    
     electron_transitions = [singleClickAnalyses[0].a.g.attrs['electron_transition'], singleClickAnalyses[0].b.g.attrs['electron_transition']]
     E_RO_durations = [singleClickAnalyses[0].a.g.attrs['E_RO_durations'][0], singleClickAnalyses[0].b.g.attrs['E_RO_durations'][0]]
 
-    correlators_per_sweep_pt = np.zeros([2,len(sweep_pts),4])
-    counts_per_pt = np.zeros([2,len(sweep_pts)])
-    tail_per_pt = np.zeros(len(sweep_pts))
-    tail_per_pt_u = np.zeros(len(sweep_pts))
+    correlators_per_sweep_pt = np.zeros([2,sweep_length,4])
+    counts_per_pt = np.zeros([2,sweep_length])
+    tail_per_pt = np.zeros(sweep_length)
+    tail_per_pt_u = np.zeros(sweep_length)
 
     for sca in singleClickAnalyses:
-        if (sca.sweep_pts != sweep_pts).any():
-            raise(Exception('Mismatched sweep pts between runs!'))
-        if sca.a.timestamp[-6:] in timestamps_to_roll: # PH temporary bodge to deal with offset in some files
-            print 'rollin, ' , sca.a.timestamp[-6:]
-            sca.correlators_per_sweep_pt = np.roll(sca.correlators_per_sweep_pt,5,axis=1)
-            sca.counts_per_pt = np.roll(sca.counts_per_pt,5,axis=1)
-            sca.tail_per_pt = np.roll(sca.tail_per_pt,5,axis=0)
-            sca.tail_per_pt_u = np.roll(sca.tail_per_pt_u,5,axis=0)
-
+    #     if (sca.sweep_pts != sweep_pts).any():
+    #         raise(Exception('Mismatched sweep pts between runs!'))
+        
         correlators_per_sweep_pt += sca.correlators_per_sweep_pt
         counts_per_pt += sca.counts_per_pt
         tail_per_pt += sca.tail_per_pt
@@ -290,6 +327,15 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
 
     if plot_temporal_filter:
         plot_ph_hist_and_fltr(singleClickAnalyses)
+
+    if plot_tail:
+        fig = singleClickAnalyses[0].a.default_fig(figsize=(6,4))
+        ax = singleClickAnalyses[0].a.default_ax(fig)
+        plt.errorbar(sweep_pts, tail_per_pt,
+                         fmt='o', yerr=tail_per_pt_u,markersize=6,capsize=3)
+        xlims = plt.xlim()
+        newxlims = [xlims[0] - 0.1*(xlims[1] - xlims[0]), xlims[1] + 0.1*(xlims[1] - xlims[0])]
+        plt.xlim(newxlims)
 
     ### do ROC
     norm_correlators, norm_correlators_u = RO_correction_of_correlators(correlators_per_sweep_pt,
@@ -324,6 +370,9 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
             ax.set_ylabel('Probability')
             ax.set_ylim([0,1])
             ax.set_title(timestamp+'\n'+measurementstring+ '\n' + 'psi'+str(i))
+            xlims = plt.xlim()
+            newxlims = [xlims[0] - 0.1*(xlims[1] - xlims[0]), xlims[1] + 0.1*(xlims[1] - xlims[0])]
+            plt.xlim(newxlims)
             plt.show()
             if save_figs:
                 fig.savefig(
@@ -345,21 +394,62 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
 
     if plot_correlations:
 
-        fig = singleClickAnalyses[0].a.default_fig(figsize=(6,4))
-        ax = singleClickAnalyses[0].a.default_ax(fig)
+        
+        
+        if len(gen_sweep_pts) == 0:
+            fig = singleClickAnalyses[0].a.default_fig(figsize=(6,8))
+            ax = []
+            for n in range(len(singleClickAnalyses[0].a.g.attrs['general_sweep_pts2'])):
+                ax.append(fig.add_subplot(len(singleClickAnalyses[0].a.g.attrs['general_sweep_pts2']),1,n+1))
+            ax[0].set_title(singleClickAnalyses[0].a.timestamp+'\n'+singleClickAnalyses[0].a.measurementstring)
+        else:
+            fig = singleClickAnalyses[0].a.default_fig(figsize=(6,4))
+            ax = singleClickAnalyses[0].a.default_ax(fig)
+
 
     phi = []
+    phi_u = []
 
     for jj,(p,p_u) in enumerate(zip(plot_p0,plot_p0_u)):
         x = sweep_pts
+
         if plot_correlations:
-            ax.errorbar(x, p,
-                    fmt='o', yerr=p_u,markersize=6,capsize=3,label= labels[jj])
-            ax.set_ylabel('Correlations')
-            ax.set_xlabel(sweep_name)
-            ax.axhspan(0,1,fill=False,ls='dotted')
-            plt.ylim( [-1.05,1.05])
-            plt.legend()
+            if abs_corrs:
+                p_plot = np.abs(p)
+                lims =  [0.,1.05]
+            else:
+                p_plot = p
+                lims =  [-1.05,1.05]
+
+            # Cleverness for if is a 2d sweep
+            if len(gen_sweep_pts) == 0:
+                general_sweep_pts1 = singleClickAnalyses[0].a.g.attrs['general_sweep_pts1']
+                general_sweep_pts2 = singleClickAnalyses[0].a.g.attrs['general_sweep_pts2']
+                x  =general_sweep_pts1
+
+                p_plot = np.reshape(p_plot, [len(general_sweep_pts1),len(general_sweep_pts2)])
+                p_u = np.reshape(p_u, [len(general_sweep_pts1),len(general_sweep_pts2)])
+                for z, (lab, pp, pu) in enumerate(zip(general_sweep_pts2, p_plot.T, p_u.T)):
+                    ax[z].errorbar(x, pp,
+                         fmt='o', yerr=pu,markersize=6,capsize=3)
+                    ax[z].set_ylabel('Correlations')
+                    ax[z].set_xlabel(sweep_name)
+                    ax[z].axhspan(0,1,fill=False,ls='dotted')
+                print (1+np.sum(np.abs(p_plot),axis =1))/4
+                print np.sqrt(np.sum(p_u**2,axis = 1))/4
+                print p_plot
+            else:
+                ax.errorbar(x, p_plot,
+                         fmt='o', yerr=p_u,markersize=6,capsize=3,label= labels[jj])
+                ax.set_ylabel('Correlations')
+                ax.set_xlabel(sweep_name)
+                ax.axhspan(0,1,fill=False,ls='dotted')
+                plt.ylim(lims)
+                xlims = plt.xlim()
+                newxlims = [xlims[0] - 0.1*(xlims[1] - xlims[0]), xlims[1] + 0.1*(xlims[1] - xlims[0])]
+                plt.xlim(newxlims)
+                print 'fidelity', (1+np.sum(np.abs(p_plot)))/4,  np.sqrt(np.sum(p_u**2))/4
+                plt.legend()
 
         if do_sine_fit:    
             g_a = 0.0
@@ -376,20 +466,29 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
                 plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, 
                     plot_data=False,print_info = False)
                 print 'A,phi ', fit_result['params_dict']['A'], np.mod(-fit_result['params_dict']['phi'],360)
+            
+            phi_t = fit_result['params_dict']['phi']
+            if fit_result['params_dict']['A'] < 0:
+                phi_t = phi_t + 180
 
-            phi.append(np.mod(-fit_result['params_dict']['phi'],360))
+            phi.append(np.mod(-phi_t,360))
+            phi_u.append(fit_result['error_dict']['phi'])
 
     if do_sine_fit:
         if not(combine_correlation_data):
             phi[1] = np.mod(-phi[1]+180,360)
         
         phi = np.mean(phi)
-        print 'Phi angle ', phi
+        phi_u = np.sqrt(np.mean(np.array(phi_u)**2))
+        print 'Phi angle ', phi, phi_u
             
     if plot_correlations and save_figs:
         fig.savefig(
             os.path.join(save_folder, '{}_vs_sweepparam.'.format('correlations') + a.plot_format),
             format=a.plot_format)
+
+    # from analysis.lib.single_click_ent import Phase_stab_and_meas as psm; reload(psm)
+    # psm.analyze_phase(contains = 'Xsweep', mode  = 'only_stab', plot_zoomed  = [0,20],start_rep_no = 3)
 
     if save_corrs:
 
@@ -405,7 +504,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
             hf.create_dataset('tail_counts_u', data=tail_per_pt_u)
   
     if ret:
-        return sweep_pts,p0,p0_u,norm_correlators,norm_correlators_u,counts_per_pt,tail_per_pt, tail_per_pt_u, phi
+        return sweep_pts,p0,p0_u,norm_correlators,norm_correlators_u,counts_per_pt,tail_per_pt, tail_per_pt_u, phi, phi_u
 
 
 
@@ -632,27 +731,47 @@ def run_multi_file_analysis(expm_name, **kw):
                 hf.create_dataset('counts_per_pt', data=counts_per_pt)
                 hf.create_dataset('tail_counts', data=tail_per_pt)
                 hf.create_dataset('tail_counts_u', data=tail_per_pt_u)
-  
-def calc_MW_phases(expm_name,**kw):
+ 
 
-    a_list,b_list,ssro_a,ssro_b =  get_multiple_files(expm_name,filename_str = 'EntangleXsweepXY',**kw)
+def calc_MW_phases(expm_name,single_file=True,save = False,plot_corrs = False,**kw):
+    ### Helper function to get the phases from MW phase angle sweeps
 
-    timestamps = []
-    for i, (folder_a,folder_b) in enumerate(zip(a_list,b_list)):
-        timestamps.append(os.path.split(folder_a)[1][:6])
-        print timestamps[-1]
-        sca = singleClickAnalysis(folder_a,folder_b)
-        sca.process_correlations(**kw)
-        _,_,_,_,_,_,_,_,phi = analyze_spspcorrs(sca,ssro_a,ssro_b,combine_correlation_data = True,flip_psi1 = True,do_sine_fit = True, ret= True, plot_correlations = True, **kw)
+    if single_file:
+           
+        folder_a,folder_b,ssro_a,ssro_b =  get_data_objects(expm_name,**kw)
+        singleClick = singleClickAnalysis(folder_a,folder_b)
+        singleClick.process_correlations(**kw)
+        _,_,_,_,_,_,_,_,phi,phi_u = analyze_spspcorrs(sca,ssro_a,ssro_b,combine_correlation_data = True,flip_psi1 = True,do_sine_fit = True, ret= True, plot_correlations = plot_corrs, **kw)
         
-    base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
-    lt4_folder = os.path.join(base_folder_lt4,expm_name)
-    
-    name = os.path.join(lt4_folder, 'measured_calib_phases.h5')
-    with h5py.File(name, 'w') as hf:
+        if save:
+            name = os.path.join(folder_a, 'measured_calib_phase.h5')
+            with h5py.File(name, 'w') as hf:
+                hf.create_dataset('phi', data=phi) 
+
+        return phi, phi_u  
+    else:
+
+        a_list,b_list,ssro_a,ssro_b =  get_multiple_files(expm_name,filename_str = 'EntangleXsweepXY',**kw)
+
+        timestamps = []
+        phis = []
+        for i, (folder_a,folder_b) in enumerate(zip(a_list,b_list)):
+            timestamps.append(os.path.split(folder_a)[1][:6])
+            print timestamps[-1]
+            sca = singleClickAnalysis(folder_a,folder_b)
+            sca.process_correlations(**kw)
+            _,_,_,_,_,_,_,_,phi = analyze_spspcorrs(sca,ssro_a,ssro_b,combine_correlation_data = True,flip_psi1 = True,do_sine_fit = True, ret= True, plot_correlations = True, **kw)
+            phis.append(phi)
+
+        base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
+        lt4_folder = os.path.join(base_folder_lt4,expm_name)
         
-        hf.create_dataset('timestamps', data=timestamps)
-        hf.create_dataset('phi', data=phi)
+        if save:
+            name = os.path.join(lt4_folder, 'measured_calib_phases.h5')
+            with h5py.File(name, 'w') as hf:
+                
+                hf.create_dataset('timestamps', data=timestamps)
+                hf.create_dataset('phi', data=phis)
            
 
 def extract_pqf_from_sca_list(sca_list):
