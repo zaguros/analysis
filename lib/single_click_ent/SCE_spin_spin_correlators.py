@@ -278,8 +278,10 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
     combine_correlation_data = kw.pop('combine_correlation_data', False)
     flip_psi1            = kw.pop('flip_psi1',False)
     abs_corrs            = kw.pop('abs_corrs', False)
+    print_fids           = kw.pop('print_fids', False)
     ret                  = kw.pop('ret',False)
     save_corrs           = kw.pop('save_corrs',False)
+    save_folder          = kw.pop('save_folder',False)
     save_figs            = kw.pop('save_figs',False)
 
     if isinstance(singleClickAnalyses,singleClickAnalysis): # Make sure in an array
@@ -291,12 +293,10 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
 
         singleClickAnalyses = [singleClickAnalyses]
     else:
-        print 'Gotta fix this!'
-
         sweep_name = singleClickAnalyses[0].a.g.attrs['sweep_name']
         timestamp = singleClickAnalyses[0].a.timestamp
         measurementstring = singleClickAnalyses[0].a.measurementstring
-        save_folder = singleClickAnalyses[0].a.folder
+        save_folder = save_folder if save_folder else singleClickAnalyses[0].a.folder
         
     
     # Combine files together
@@ -392,7 +392,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
         plot_p0_u = p0_u
         labels = ['psi0','psi1']
 
-    if plot_correlations:
+    if plot_correlations: 
 
         
         
@@ -429,15 +429,16 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
 
                 p_plot = np.reshape(p_plot, [len(general_sweep_pts1),len(general_sweep_pts2)])
                 p_u = np.reshape(p_u, [len(general_sweep_pts1),len(general_sweep_pts2)])
+                
+                if print_fids: print (1+np.sum(np.abs(p_plot),axis=1))/4
+
                 for z, (lab, pp, pu) in enumerate(zip(general_sweep_pts2, p_plot.T, p_u.T)):
                     ax[z].errorbar(x, pp,
                          fmt='o', yerr=pu,markersize=6,capsize=3)
                     ax[z].set_ylabel('Correlations')
                     ax[z].set_xlabel(sweep_name)
                     ax[z].axhspan(0,1,fill=False,ls='dotted')
-                print (1+np.sum(np.abs(p_plot),axis =1))/4
-                print np.sqrt(np.sum(p_u**2,axis = 1))/4
-                print p_plot
+               
             else:
                 ax.errorbar(x, p_plot,
                          fmt='o', yerr=p_u,markersize=6,capsize=3,label= labels[jj])
@@ -492,9 +493,30 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
 
     if save_corrs:
 
-        name = os.path.join(save_folder, 'correlations.h5')
+        # Cleverness for if is a 2d sweep
+        if len(gen_sweep_pts) == 0:
+            general_sweep_pts1 = singleClickAnalyses[0].a.g.attrs['general_sweep_pts1']
+            general_sweep_pts2 = singleClickAnalyses[0].a.g.attrs['general_sweep_pts2']
+           
+            p0 = np.reshape(p0, [len(p0),len(general_sweep_pts1),len(general_sweep_pts2)])
+            p0_u = np.reshape(p0_u, [len(p0),len(general_sweep_pts1),len(general_sweep_pts2)])
+            norm_correlators = np.reshape(norm_correlators, [len(p0),len(general_sweep_pts1),len(general_sweep_pts2),4])
+            norm_correlators_u = np.reshape(norm_correlators_u, [len(p0),len(general_sweep_pts1),len(general_sweep_pts2),4])
+            tail_per_pt = np.reshape(tail_per_pt, [len(general_sweep_pts1),len(general_sweep_pts2)])
+            tail_per_pt_u = np.reshape(tail_per_pt_u, [len(general_sweep_pts1),len(general_sweep_pts2)])
+
+            name = os.path.join(save_folder, 'correlations_2d.h5')
+           
+        else:    
+            name = os.path.join(save_folder, 'correlations.h5')
+
         with h5py.File(name, 'w') as hf:
-            hf.create_dataset('sweep_pts', data=sweep_pts)
+            if len(gen_sweep_pts) == 0:
+                hf.create_dataset('sweep_pts1', data=general_sweep_pts1)
+                hf.create_dataset('sweep_pts2', data=general_sweep_pts2)
+            else:
+                hf.create_dataset('sweep_pts', data=gen_sweep_pts)
+
             hf.create_dataset('correlations', data=p0)
             hf.create_dataset('correlations_u', data=p0_u)
             hf.create_dataset('norm_correlators', data=norm_correlators)
@@ -684,7 +706,6 @@ def get_multiple_files(expm_name,**kw):
     lt4_ssro_folder = os.path.join(base_folder_lt4,'SSROs')
 
     filename_str = kw.pop('filename_str', analysis_params.data_settings['filenames_for_expms'][expm_name])
-    print lt3_folder
     b_list=tb.latest_data(contains = filename_str,folder= lt3_folder,return_all = True,**kw)
     a_list=tb.latest_data(contains = filename_str,folder =lt4_folder,return_all = True,**kw)
 
@@ -700,7 +721,7 @@ def get_multiple_files(expm_name,**kw):
 
 def run_multi_file_analysis(expm_name, **kw):
     combine_files = kw.pop('combine_files', True)
-    save_corrs = kw.pop('save_corrs', False)
+    save_corrs = kw.get('save_corrs', False)
 
     a_list,b_list,ssro_a,ssro_b =  get_multiple_files(expm_name,**kw)
 
@@ -714,24 +735,15 @@ def run_multi_file_analysis(expm_name, **kw):
             analyze_spspcorrs(sca,ssro_a,ssro_b,**kw)
     
     if combine_files:
-        sweep_pts,p0,p0_u,norm_correlators,norm_correlators_u,counts_per_pt,tail_per_pt, tail_per_pt_u, phi = analyze_spspcorrs(sca_list,ssro_a,ssro_b,ret=True,**kw)
-        print p0
-        print (1+np.sum(np.abs(p0),axis=1))/4
-        if save_corrs:
+        
+        if save_corrs:        
             base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
-            lt4_folder = os.path.join(base_folder_lt4,expm_name)    
-            name = os.path.join(lt4_folder, 'correlations.h5')
+            save_folder = os.path.join(base_folder_lt4,expm_name)  
 
-            with h5py.File(name, 'w') as hf:
-                hf.create_dataset('sweep_pts', data=sweep_pts)
-                hf.create_dataset('correlations', data=p0)
-                hf.create_dataset('correlations_u', data=p0_u)
-                hf.create_dataset('norm_correlators', data=norm_correlators)
-                hf.create_dataset('norm_correlators_u', data=norm_correlators_u)
-                hf.create_dataset('counts_per_pt', data=counts_per_pt)
-                hf.create_dataset('tail_counts', data=tail_per_pt)
-                hf.create_dataset('tail_counts_u', data=tail_per_pt_u)
- 
+        else:
+            save_folder = False
+        analyze_spspcorrs(sca_list,ssro_a,ssro_b,save_folder = save_folder,**kw)
+
 
 def calc_MW_phases(expm_name,single_file=True,save = False,plot_corrs = False,**kw):
     ### Helper function to get the phases from MW phase angle sweeps
