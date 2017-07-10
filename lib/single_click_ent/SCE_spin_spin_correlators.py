@@ -355,7 +355,7 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
         if plot_correlations:
             ax.errorbar(x, p,
                     fmt='o', yerr=p_u,markersize=6,capsize=3,label= labels[jj])
-            ax.set_ylabel('Probability')
+            ax.set_ylabel('Correlations')
             ax.set_xlabel(sweep_name)
             ax.axhspan(0,1,fill=False,ls='dotted')
             plt.ylim( [-1.05,1.05])
@@ -585,7 +585,7 @@ def get_multiple_files(expm_name,**kw):
     lt4_ssro_folder = os.path.join(base_folder_lt4,'SSROs')
 
     filename_str = kw.pop('filename_str', analysis_params.data_settings['filenames_for_expms'][expm_name])
-
+    print lt3_folder
     b_list=tb.latest_data(contains = filename_str,folder= lt3_folder,return_all = True,**kw)
     a_list=tb.latest_data(contains = filename_str,folder =lt4_folder,return_all = True,**kw)
 
@@ -615,9 +615,9 @@ def run_multi_file_analysis(expm_name, **kw):
             analyze_spspcorrs(sca,ssro_a,ssro_b,**kw)
     
     if combine_files:
-        timestamps_to_roll = analysis_params.data_settings['timestamps_to_roll'][expm_name]
-        sweep_pts,p0,p0_u,norm_correlators,norm_correlators_u,counts_per_pt,tail_per_pt, tail_per_pt_u, phi = analyze_spspcorrs(sca_list,ssro_a,ssro_b,ret=True,timestamps_to_roll = timestamps_to_roll,**kw)
-
+        sweep_pts,p0,p0_u,norm_correlators,norm_correlators_u,counts_per_pt,tail_per_pt, tail_per_pt_u, phi = analyze_spspcorrs(sca_list,ssro_a,ssro_b,ret=True,**kw)
+        print p0
+        print (1+np.sum(np.abs(p0),axis=1))/4
         if save_corrs:
             base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
             lt4_folder = os.path.join(base_folder_lt4,expm_name)    
