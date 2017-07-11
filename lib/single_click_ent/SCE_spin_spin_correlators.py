@@ -1,7 +1,12 @@
 """
-provides functions to analyze spin-spin correlators between two NV centres
-Functions should be executed on the computer that stores the PQ data, i.e. LT4. (othewise use pq_folder = 'xxxx' when calling instances of purify_pq)
-Based on the analysis class purify_pq and some functionalities from purify_analysis.py
+Provides functions to analyze spin-spin correlators between two NV centres (PH and NK 2017)
+
+Quite substantial code now, uses several class structures 
+    - One skeleton class (twoSetupMsmt) for two setup experiments (in the future I would like this to be a general thing)
+    - A class(singleClickMsmt) that builds on this for single click entanglement. This class holds the results of each individual experimental run
+    - An analysis class (singleClickAnalysis) that combines all of this into one entity. This is the class to interact with, and it has lots of nice plotting functions
+
+To see what can be achieved, and how to achieve it, refer to the high level helper functions run_analysis and analyze_entanglement_on_demand at the bottom of the script
 """
 
 import os
@@ -17,8 +22,6 @@ from analysis.lib.m2.ssro import ssro
 from matplotlib import pyplot as plt
 import h5py
 from analysis.lib.fitting import fit, common
-
-
 
 from SpCorr_ZPL_theta_sweep import temporal_filtering ### note that this function uses the same analysis parameters as SPCORRS!!!
 import SpCorr_ZPL_theta_sweep
