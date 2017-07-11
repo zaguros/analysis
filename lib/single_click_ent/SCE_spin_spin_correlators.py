@@ -302,16 +302,19 @@ class SingleClickAnalysis:
             self.tail_per_pt = np.reshape(self.tail_per_pt, [len(self.gen_sweep_pts1),len(self.gen_sweep_pts2)])
             self.tail_per_pt_u = np.reshape(self.tail_per_pt_u, [len(self.gen_sweep_pts1),len(self.gen_sweep_pts2)])
 
-    def save_corrs(self):
+    def save_corrs(self,**kw):
+        save_name = kw.pop('save_name', False)
+        
+        if not(save_name):
+            if self.sweep_2d:
+                # Useful to distinguish files so that obvious that a different kind of data
+                save_path = os.path.join(self.save_folder, 'correlations_2d.h5')
+            else:    
+                save_path = os.path.join(self.save_folder, 'correlations.h5')
+        else:
+            save_path = os.path.join(self.save_folder,save_name)
 
-        if self.sweep_2d:
-            # Useful to distinguish files so that obvious that a different kind of data
-            name = os.path.join(self.save_folder, 'correlations_2d.h5')
-           
-        else:    
-            name = os.path.join(self.save_folder, 'correlations.h5')
-
-        with h5py.File(name, 'w') as hf:
+        with h5py.File(save_path, 'w') as hf:
             if self.sweep_2d:
                 hf.create_dataset('sweep_pts1', data=self.gen_sweep_pts1)
                 hf.create_dataset('sweep_pts2', data=self.gen_sweep_pts2)
@@ -474,14 +477,14 @@ class SingleClickAnalysis:
                 ax.set_xlabel(self.sweep_name)
                 plt.legend()
 
-                if print_fids: print 'Fidelity ', (1+np.sum(np.abs(plot_p0)))/4,  np.sqrt(np.sum(plot_p0_u**2))/4
+                if print_fids: print 'Fidelity ', (1+np.sum(np.abs(p)))/4,  np.sqrt(np.sum(p_u**2))/4
                 
 
                 if do_sine_fit:    
                     phi,phi_u = fit_sin_and_calc_phi(x,p,ax = ax)
                     phis.append(phi)
                     phis_u.append(phi_u)
-
+            plt.show()
         if do_sine_fit:
             
             if np.size(phi) > 1:
@@ -493,6 +496,56 @@ class SingleClickAnalysis:
             fig.savefig(
                 os.path.join(self.save_folder, 'correlations_vs_sweepparam.pdf'),
                 format='pdf')
+
+    def get_adwin_var_distribution(self,adwin_var,**kw):
+        """ Pull the adwin data for all of the files and plot in a histogram.
+        Not infinitely clever - if don't specify bins, will only uses the bins from the first file
+
+        """
+        specified_bins = kw.pop('specified_bins',False)
+        normed = kw.pop('normed',False)
+        plot = kw.pop('plot', True)
+
+        for ii, scm in enumerate(self.singleClickMsmts):
+            if ii == 0:
+                if np.shape(specified_bins) or specified_bins:
+                    kw['bins'] = specified_bins
+                (hist_data,bin_edges) = scm.a.hist_adwin_var(adwin_var,plot=False,**kw)
+            else:
+                kw['bins'] = bin_edges
+                (hist,_) = scm.a.hist_adwin_var(adwin_var, plot=False,**kw)
+                hist_data += hist
+
+        if normed:
+            hist_data = np.array(hist_data)/np.float(np.sum(hist_data))
+
+        width = 0.9 * (bin_edges[1] - bin_edges[0])
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        if plot:
+            plt.figure()
+            plt.bar(bin_centers, hist_data, align='center', width=width)
+            plt.xlabel(adwin_var)
+            plt.ylabel('# Occurences')
+            plt.show()
+
+        return hist_data, bin_centers
+
+    def save_adwin_var_distribution(self,adwin_vars,**kw):
+        save_name = kw.pop('save_name', False)
+        bins = kw.pop('bins',[False] * len(adwin_vars))
+        
+        if save_name:
+            save_path = os.path.join(self.save_folder, save_name)
+        else:
+            save_path = os.path.join(self.save_folder, 'adwin_vars.h5')
+        with h5py.File(save_path, 'w') as hf:
+            for adwin_var,bin in zip(adwin_vars, bins):
+                hist_data, bin_centers = self.get_adwin_var_distribution(adwin_var, specified_bins = bin)
+                hf.create_dataset(adwin_var, data=hist_data)
+                hf.create_dataset(adwin_var + '_centers', data=bin_centers)
+                
+
 
 ############################# HELPER FUNCTIONS #############################################
 
@@ -803,7 +856,7 @@ def run_analysis(contains, **kw):
     plot_tail = kw.pop('plot_tail',False)
     plot_raw_correlators = kw.pop('plot_raw_correlators',False)
     plot_correlations = kw.pop('plot_correlations',False)
-
+    ret_sca = kw.pop('ret_sca',False)
     sca_folders,ssro_a,ssro_b =  get_data_objects(contains,**kw)
 
     if use_file_library:    
@@ -820,13 +873,30 @@ def run_analysis(contains, **kw):
     if plot_correlations: sca.plot_correlations(**kw)
     
     if save_corrs:
-        sca.save_corrs() 
+        sca.save_corrs(**kw) 
+
+    if ret_sca:
+        return sca
         
-def check_phase_calibration(**kw):
-    run_analysis(kw.pop('contains', 'XsweepY'),plot_correlations =True,do_ROC = True,do_sine_fit = True,flip_psi1=True,combine_correlation_data=True, **kw)
+def check_phase_calibration(contains = 'XsweepY',**kw):
+    ''' Little helper function for quickly running phase calibrations '''
+
+    run_analysis(contains,plot_correlations =True,do_ROC = True,do_sine_fit = True,flip_psi1=True,combine_correlation_data=True, **kw)
+
+def analyze_entanglement_on_demand(contains = 'EntangleOnDemandInclCR',**kw):
+    ''' Analyzes all the data for entanglement on demand and saves it '''
+
+    print '###Outcomes for only runs with APD clicks'
+    save_name = 'correlations_only_APD.h5'
+    run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=False,save_corrs = True ,save_name = save_name,print_fids =True, **kw)
+
+    print 'Outcomes for all runs'
+    sca = run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=True,save_corrs = True,ret_sca = True,print_fids =True, **kw)
+    # Save the adwin data we want
+    sca.save_adwin_var_distribution(['DD_repetitions','time_in_cr_and_comm'],bins = [np.arange(201)-0.5,100*(np.arange(231)-0.5)])
 
 def calc_MW_phases(expm_name,single_file=True,save = False,plot_corrs = False,**kw):
-    ### Helper function to get the phases from MW phase angle sweeps NOTE NOT TESTED SINCE REWRITE
+    ''' Helper function to get the phases from MW phase angle sweeps NOTE NOT TESTED SINCE REWRITE'''
 
     if single_file:
            
