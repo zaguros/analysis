@@ -248,18 +248,18 @@ def get_data_objects(contains,**kw):
         folder_a =tb.latest_data(contains_lt4,**kw)
         folder_b =tb.latest_data(contains_lt3,folder =r'Z:\data',**kw)
 
-        folder_a = folder_a if isinstance(folder_a, list) else [folder_a]
-        folder_b = folder_b if isinstance(folder_b, list) else [folder_b]
-        
         ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Z:\data')
         ssro_a  = tb.latest_data(contains_lt4_ssro)
 
-    if analysis_computer == 'lt3_analysis':
+    elif analysis_computer == 'lt3_analysis':
         folder_a =tb.latest_data(contains_lt4,folder= r'X:\data',**kw)
         folder_b =tb.latest_data(contains_lt3,folder =r'Y:\data',**kw)
         ssro_b  = tb.latest_data(contains_lt3_ssro, folder =r'Y:\data')
         ssro_a  = tb.latest_data(contains_lt4_ssro,  folder =r'X:\data')
 
+    folder_a = folder_a if isinstance(folder_a, list) else [folder_a]
+    folder_b = folder_b if isinstance(folder_b, list) else [folder_b]
+    
     return folder_a,folder_b,ssro_a,ssro_b
 
 def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
@@ -438,6 +438,29 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
                     ax[z].set_ylabel('Correlations')
                     ax[z].set_xlabel(sweep_name)
                     ax[z].axhspan(0,1,fill=False,ls='dotted')
+
+                    if do_sine_fit:    
+                        g_a = 0.0
+                        g_A = np.amax(pp)-g_a
+                        g_phi = x[np.argmax(pp)] 
+                        ### frequency guess is hardcoded as this is mainly intended for specific entangling oscillations.
+                        g_f = 1/360.
+                        p0s, fitfunc,fitfunc_str = common.fit_cos(g_f,g_a,g_A,g_phi)
+
+                        fit_result = fit.fit1d(x,pp, None, p0=p0s, fitfunc=fitfunc,
+                             ret=True,fixed=[0,1])
+
+                        if plot_correlations:
+                            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax[z], 
+                                plot_data=False,print_info = False)
+                            print 'A,phi ', fit_result['params_dict']['A'], np.mod(-fit_result['params_dict']['phi'],360)
+                        
+                        phi_t = fit_result['params_dict']['phi']
+                        if fit_result['params_dict']['A'] < 0:
+                            phi_t = phi_t + 180
+
+                        phi.append(np.mod(-phi_t,360))
+                        phi_u.append(fit_result['error_dict']['phi'])
                
             else:
                 ax.errorbar(x, p_plot,
@@ -452,28 +475,30 @@ def analyze_spspcorrs(singleClickAnalyses,ssro_a,ssro_b,**kw):
                 print 'fidelity', (1+np.sum(np.abs(p_plot)))/4,  np.sqrt(np.sum(p_u**2))/4
                 plt.legend()
 
-        if do_sine_fit:    
-            g_a = 0.0
-            g_A = np.amax(p)-g_a
-            g_phi = x[np.argmax(p)] 
-            ### frequency guess is hardcoded as this is mainly intended for specific entangling oscillations.
-            g_f = 1/360.
-            p0s, fitfunc,fitfunc_str = common.fit_cos(g_f,g_a,g_A,g_phi)
+                if do_sine_fit:    
+                    g_a = 0.0
+                    g_A = np.amax(p)-g_a
+                    g_phi = x[np.argmax(p)] 
+                    ### frequency guess is hardcoded as this is mainly intended for specific entangling oscillations.
+                    g_f = 1/360.
+                    p0s, fitfunc,fitfunc_str = common.fit_cos(g_f,g_a,g_A,g_phi)
 
-            fit_result = fit.fit1d(x,p, None, p0=p0s, fitfunc=fitfunc,
-                 ret=True,fixed=[0,1])
+                    fit_result = fit.fit1d(x,p, None, p0=p0s, fitfunc=fitfunc,
+                         ret=True,fixed=[0,1])
 
-            if plot_correlations:
-                plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, 
-                    plot_data=False,print_info = False)
-                print 'A,phi ', fit_result['params_dict']['A'], np.mod(-fit_result['params_dict']['phi'],360)
-            
-            phi_t = fit_result['params_dict']['phi']
-            if fit_result['params_dict']['A'] < 0:
-                phi_t = phi_t + 180
+                    if plot_correlations:
+                        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, 
+                            plot_data=False,print_info = False)
+                        print 'A,phi ', fit_result['params_dict']['A'], np.mod(-fit_result['params_dict']['phi'],360)
+                    
+                    phi_t = fit_result['params_dict']['phi']
+                    if fit_result['params_dict']['A'] < 0:
+                        phi_t = phi_t + 180
 
-            phi.append(np.mod(-phi_t,360))
-            phi_u.append(fit_result['error_dict']['phi'])
+                    phi.append(np.mod(-phi_t,360))
+                    phi_u.append(fit_result['error_dict']['phi'])
+
+
 
     if do_sine_fit:
         if not(combine_correlation_data):
