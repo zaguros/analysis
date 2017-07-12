@@ -888,16 +888,17 @@ def check_phase_calibration(contains = 'XsweepY',**kw):
 
 def analyze_entanglement_on_demand(contains = 'EntangleOnDemandInclCR',**kw):
     ''' Analyzes all the data for entanglement on demand and saves it '''
-
+    save_corrs = kw.pop('save_corrs',False)
     print '###Outcomes for only runs with APD clicks'
     save_name = 'correlations_only_APD.h5'
-    run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=False,save_corrs = True ,save_name = save_name,print_fids =True, **kw)
+    run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=False,save_corrs = save_corrs ,save_name = save_name,print_fids =True, **kw)
 
     print 'Outcomes for all runs'
-    sca = run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=True,save_corrs = True,ret_sca = True,print_fids =True, **kw)
+    sca = run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=True,save_corrs = save_corrs,ret_sca = True,print_fids =True, **kw)
     # Save the adwin data we want
     sca.save_adwin_var_distribution(['DD_repetitions','time_in_cr_and_comm'],bins = [np.arange(201)-0.5,100*(np.arange(231)-0.5)])
-
+    sca.get_adwin_var_distribution('DD_repetitions',normed = True)
+    
 def calc_MW_phases(expm_name,single_file=True,save = False,plot_corrs = False,**kw):
     ''' Helper function to get the phases from MW phase angle sweeps NOTE NOT TESTED SINCE REWRITE'''
 
