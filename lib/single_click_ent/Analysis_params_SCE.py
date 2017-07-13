@@ -39,6 +39,7 @@ data_settings = {
 	'base_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data\EntOnDemand20170705',
 	
 	'filenames_for_expms' : {'SweepPhase0p05' : r'EntangleXsweepY',
+							 'SweepPhase0p1' : r'EntangleXsweepY',
 							 'SweepTheta'	  : r'EntangleSweepEverything',
 							 'EntOnDemand0p15_14k' : r'EntangleOnDemandInclCR',
 							 'EntOnDemand0p15_18k' : r'EntangleOnDemandInclCR',
