@@ -58,6 +58,16 @@ def get_seq_element_pulses(elem, elem_start = 0, verbose = False):
             entry = np.array((pulse_mid_point,pulse_length,\
                     phase, rotation,special)).reshape(-1,1).T
             pulses = np.vstack([pulses,entry])
+
+        elif 'AOM_Matisse' in val.channels and has_amplitude:
+            rotation = 0
+            phase = 0
+            special = 3
+            pulse_mid_point = elem_start + (val.effective_start()+val.effective_stop())/2 
+            pulse_length = (val.effective_stop()-val.effective_start())
+            entry = np.array((pulse_mid_point,pulse_length,\
+                    phase, rotation,special)).reshape(-1,1).T
+            pulses = np.vstack([pulses,entry])
             
     pulses = pulses[pulses[:,0].argsort()]   # Sort by pulse start
     return pulses
@@ -88,7 +98,9 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
         
         if seq_elem['goto_target'] != None or seq_elem['jump_target'] != None:
             reps = 1 # Dont repeat an element if you can jump out of it.
-            
+        
+        old_time = time
+
         pulses = np.array([]).reshape(0,5)
             
         for x in range(reps):
@@ -110,8 +122,9 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
                 sequence_overview.append({'name' : first_group_elem_name,\
                                'trigger_wait' : int(trigger_wait),\
                                'goto_target' : str(seq_elem['goto_target']),\
-                               'jump_target' : str(seq_elem['jump_target']), 'final_time' : float(time)}) 
+                               'jump_target' : str(seq_elem['jump_target']), 'final_time' : float(old_time)}) 
                 pulse_array.append(current_group_pulses)
+                time = time - old_time
             first_group_elem_name = seq_elem['name']
             trigger_wait = seq_elem['trigger_wait']
             current_group_pulses = pulses
@@ -169,7 +182,7 @@ def save_grouped_pulses_to_open_h5file(hf,grouped_seq):
 def load_grouped_pulses(contains="",filepath=""):
     
     filepath = filepath if filepath != "" else toolbox.measurement_filename(toolbox.latest_data(contains=contains))
-    
+    print filepath
     with h5py.File(filepath, 'r') as hf:
         
         num_pulses = np.max(np.array(hf['pulse_sim/pulses'].keys()).astype(int))
@@ -193,8 +206,8 @@ def print_group_summaries(grouped_seq):
     tab_data = []
     for i, group in enumerate(grouped_seq):
         overview = group[0]
-        tab_data.append([i, overview['name'][:30], overview['trigger_wait'],\
-                         str(overview['goto_target'])[:30], str(overview['jump_target'])[:30], overview['final_time']*1e6])
+        tab_data.append([i, overview['name'][:25], overview['trigger_wait'],\
+                         str(overview['goto_target'])[:25], str(overview['jump_target'])[:25], overview['final_time']*1e6])
     print tabulate(tab_data, headers=['#', 'First elem', 'Wait', 'Go To', 'Jump To',u'Duration (\u03BCs)'])
 
         
@@ -213,7 +226,8 @@ def draw_seq_element_pulses(pulses, start = 0, elem_length = 0, time_res = 1e-9)
     Q_channel = np.zeros(time_steps)
     repump_channel = np.zeros(time_steps)
     sync_channel = np.zeros(time_steps)
-    
+    matisse_channel =  np.zeros(time_steps)
+
     for pulse in pulses:
         pulse_start = int((pulse[0]-pulse[1]/2)/time_res) - start_steps
         pulse_stop = int((pulse[0]+pulse[1]/2)/time_res) - start_steps
@@ -222,16 +236,23 @@ def draw_seq_element_pulses(pulses, start = 0, elem_length = 0, time_res = 1e-9)
             I_channel[pulse_start:pulse_stop] = np.sin(pulse[2]) * pulse[3]/np.pi
             Q_channel[pulse_start:pulse_stop] = np.cos(pulse[2]) * pulse[3]/np.pi
         elif pulse[4] == 1:
-            repump_channel[pulse_start:pulse_stop] = 1
+            repump_channel[pulse_start:pulse_stop] = 0.9
         elif pulse[4] == 2:
-            sync_channel[pulse_start:pulse_stop] = 1
-            
+            sync_channel[pulse_start:pulse_stop] = 0.8
+        elif pulse[4] == 3:
+            matisse_channel[pulse_start:pulse_stop] = 0.8
+
     fig = plt.figure()
     ax = plt.subplot(111)
     plt.plot(time,I_channel, label='I mod')
     plt.plot(time,Q_channel, label='Q mod')
-    plt.plot(time,repump_channel, label='repump')
-    plt.plot(time,repump_channel, label='sync')
+    if np.sum(np.abs(repump_channel)) != 0:
+        plt.plot(time,repump_channel, label='repump')
+    if np.sum(np.abs(sync_channel)) != 0:
+        plt.plot(time,sync_channel, label='sync')
+    if np.sum(np.abs(matisse_channel)) != 0:
+        plt.plot(time,matisse_channel, label='matisse')
+        
     plt.plot([total_duration*1e6,total_duration*1e6],[-0.5,0.5],'--k')
 
     plt.ylim([-1.1,1.1])

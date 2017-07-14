@@ -9,28 +9,34 @@ reload(fit)
 reload(common)
 reload(mbi)
 
-def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
+def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_folder = None,
             offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
             frequency = [1], phase =[0],
-            fixed = [], ylim = [-0.5, 1.05],
-            plot_fit = False, do_print = False, show_guess = True):
+            fixed = [], ylim = [-0.5, 1.05],ssro_tstamp ='',base_folder = None,
+            plot_fit = False, do_print = False, show_guess = True,correct_ionization = True):
     ''' Function to fit mbi-type data with exponential and sinusoidal functions or combinations thereof.
     timestamp       : format yyyymmdd_hhmmss or hhmmss or None. None takes the last data.
     measurement_name: list of measurement names
     '''
     if timestamp != None:
-        folder = toolbox.data_from_time(timestamp)
+        folder = toolbox.data_from_time(timestamp,folder = base_folder)
     else:
-        folder = toolbox.latest_data(contains)
+        folder = toolbox.latest_data(contains,folder = base_folder)
+    print folder
+    if ssro_folder == None:
+        if ssro_tstamp == '':
+            ssro_folder = ssro_tstamp
 
-
+        else:
+            ssro_folder = toolbox.data_from_time(ssro_tstamp)
+        
     fit_results = []
 
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
-        a.get_readout_results(name=measurement_name[k])
-        a.get_electron_ROC()
+        a.get_readout_results(name=measurement_name[k],CR_after_check = correct_ionization)
+        a.get_electron_ROC(ssro_folder)
         ax = a.plot_results_vs_sweepparam(ret='ax')
 
         if ylim != None:
@@ -79,6 +85,64 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],
         plt.show()
     return fit_results
 
+
+def general_exponential(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_folder = None,
+            offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
+            fixed = [], ylim = [-0.5, 1.05],ssro_tstamp ='',base_folder = None,
+            plot_fit = False, do_print = False, show_guess = True):
+    
+    if timestamp != None:
+        folder = toolbox.data_from_time(timestamp,folder = base_folder)
+    else:
+        folder = toolbox.latest_data(contains,folder = base_folder)
+
+    if ssro_folder == None:
+        if ssro_tstamp == '':
+            ssro_folder = ssro_tstamp
+
+        else:
+            ssro_folder = toolbox.data_from_time(ssro_tstamp)
+        
+    fit_results = []
+
+    for k in range(0,len(measurement_name)):
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name=measurement_name[k])
+        a.get_electron_ROC(ssro_folder)
+        ax = a.plot_results_vs_sweepparam(ret='ax')
+
+        if ylim != None:
+            ax.set_ylim(ylim[0],ylim[1])
+
+        x = a.sweep_pts.reshape(-1)[:]
+        y = a.p0.reshape(-1)[:]
+
+
+        p0, fitfunc, fitfunc_str = common.fit_general_exponential_fixed_offset(offset,
+                amplitude, center, decay_constant, exp_power)
+
+        if show_guess:
+            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
+
+        print 'starting fit.fit1d'
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+        fit_result['y_u'] = a.u_p0.reshape(-1)[:]
+
+        ## plot fit
+        if plot_fit == True:
+
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
+
+        fit_results.append(fit_result)
+        print folder
+        plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
+        format='pdf')
+        plt.savefig(os.path.join(folder, 'analyzed_result.png'),
+        format='png')
+
+        plt.show()
+    return fit_result
 
 def get_CR_histos(contains='',timestamp = None,):
     if timestamp != None:

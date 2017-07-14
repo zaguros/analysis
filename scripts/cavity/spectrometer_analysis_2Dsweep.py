@@ -88,12 +88,12 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         self.intensities=self.intensities[i_max:i_min,:]
 
         #initialise some useful parameters
-        self.nr_files = len(self.filenumbers)
+        self.ana_pars['nr_files'] = len(self.filenumbers)
 
-        self.Vs = np.linspace(self.ana_pars['V_min'],self.ana_pars['V_max'],self.nr_files)
+        self.Vs = np.linspace(self.ana_pars['V_min'],self.ana_pars['V_max'],self.ana_pars['nr_files'])
         self.V_range=np.ptp(self.Vs)#np.abs(self.ana_pars['V_max']-self.ana_pars['V_min'])
 
-        self.V_extent_correction = self.V_range/float((self.nr_files-1))/2.
+        self.V_extent_correction = self.V_range/float((self.ana_pars['nr_files']-1))/2.
         self.frq_range = abs(self.frequencies[-1]-self.frequencies[0])
         self.frq_extent_correction = self.frq_range/(float(len(self.frequencies)-1))/2.
 
@@ -112,6 +112,21 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
 
         ############################################getting the peaks fromt eh data###########################
+    def calc_dnu_trans(self,x0s,u_x0s,hom_max =10,**kw):
+        """
+        function that calculates the average distance between the fundamental mode and the first higher order mode
+        """
+        indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
+        indices_hom = np.append(indices_fund[0]-1,-1)
+        dnu_trans_all = np.abs(np.diff(x0s)[indices_hom])
+        print dnu_trans_all
+        dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all<hom_max)] #filter out too far away peaks
+        dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all>1.)] #filter out too near peaks
+        dnu_trans_avg = np.average(dnu_trans_all)
+        u_dnu_trans_avg = scipy.stats.sem(dnu_trans_all)
+        print dnu_trans_all
+        return dnu_trans_avg,u_dnu_trans_avg
+
 
     def remove_higher_order_modes(self,x0s,u_x0s,hom_max =10,**kw):
         """
@@ -160,26 +175,30 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             success = np.ones(len(peak_frequencies))
         peak_intensity_x0s = peak_intensity[np.where(success >0)]
 
+        dnu_trans, u_dnu_trans = self.calc_dnu_trans(x0s,u_x0s,hom_max=hom_max)
+
         if remove_hom:
             x0s,u_x0s,hom_success = self.remove_higher_order_modes(x0s,u_x0s,hom_max=hom_max,**kw)
             peak_intensity_x0s = peak_intensity_x0s[np.where(hom_success >0)]
 
 
-
+        # print self.folder
         # print len(peak_intensity),len(peak_intensity_x0s)
         if plot_peak_locations:
             fig, ax = plt.subplots()
             ax.plot(self.frequencies,intensity)
             # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
             ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
-            ax.set_title(self.plot_name)
-
+            #ax.set_title(self.plot_name)
+            ax.set_xlabel('Frequency (THz)')
+            ax.set_ylabel('Transmitted signal (a.u.)')
             if save_fig:
                 plt.savefig(os.path.join(self.folder,'plot_1D_peaks.png'))
+                print self.folder
             plt.show()
-            #plt.close()
+            plt.close()
 
-        return x0s,u_x0s    
+        return x0s,u_x0s,dnu_trans,u_dnu_trans    
 
     def peaks_from_2D_data(self,**kw):
         '''
@@ -191,25 +210,66 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         x=np.array([])
         u_x = np.array([])
         y=np.array([])
+        dnus_trans = np.zeros(self.ana_pars['nr_files'])
+        u_dnus_trans = np.zeros(self.ana_pars['nr_files'])
 
         print 'getting peak locations'
         for i,intensity in enumerate(np.transpose(self.intensities)):
             # print i,'/',len(np.transpose(self.intensities))
             # if i>0:
             #     break
-            x0s,u_x0s = self.peaks_from_1D_data(intensity,**kw)
+            x0s,u_x0s,dnu_trans,u_dnu_trans = self.peaks_from_1D_data(intensity,**kw)
             x = np.append(x,x0s)
             u_x = np.append(u_x,u_x0s)
+            dnus_trans[i]= dnu_trans
+            u_dnus_trans[i] = u_dnu_trans
             for j in np.arange(len(x0s)):
                 y = np.append(y,i)
 
         self.peak_frq = x
         self.u_peak_frq = u_x
-        self.peak_V = y /(self.nr_files-1)*self.V_range+self.Vs[0]
+        self.peak_V = np.take(self.Vs,y.astype('int'))
         self.peak_filenr = y
+
+        self.dnus_trans = dnus_trans
+        self.u_dnus_trans = u_dnus_trans
 
         if return_peak_locations:
             return self.peak_frq, self.peak_V
+
+    def ROC_from_dnu_trans(self,**kw):
+        '''
+        calculate radius of curvature from dnu_trans and cavity length.
+        only works after the air_length and dLs are calculated. 
+        '''
+
+        Ls = kw.pop('Ls',(self.ana_pars['air_length']+self.dLs))
+        print Ls
+        eff_nu_fsrs = c/(2*Ls)
+        ROCs = Ls*1./(1-(np.cos(self.dnus_trans*1.e12/eff_nu_fsrs*math.pi)**2 ))
+        u_ROCs = np.abs(Ls*(-1./(1-(np.cos(self.dnus_trans*1.e12/eff_nu_fsrs*math.pi)**2 ))**2)*\
+            -2*np.cos(self.dnus_trans*1.e12/eff_nu_fsrs*math.pi)*\
+            -np.sin(self.dnus_trans*1.e12/eff_nu_fsrs*math.pi)*\
+            math.pi/eff_nu_fsrs *self.u_dnus_trans*1.e12)
+        fig,ax = plt.subplots()
+        ax.errorbar(Ls*1.e6,self.dnus_trans,yerr=self.u_dnus_trans,fmt='o')
+        ax.set_title(self.folder+'dnutrans_vs_L.png')
+        ax.set_xlabel('air length (um)')
+        ax.set_ylabel('distance between higher order modes (THz)')
+        plt.savefig(os.path.join(self.folder, 'dnu_trans_vs_L.png'))
+        plt.show()
+
+        fig,ax = plt.subplots()
+        ax.errorbar(Ls*1.e6,ROCs*1.e6,yerr=u_ROCs*1.e6,fmt='o')
+        ax.set_xlabel('air length (um)')
+        ax.set_ylabel('effective radius of curvature (um)')
+        ax.set_title(self.folder+'ROC_vs_L.png')
+        plt.savefig(os.path.join(self.folder, 'ROC_vs_L.png'))
+        plt.show()
+        plt.close()
+
+        return ROCs
+
 
         ############################### finding best overlap #######################################
     def find_best_overlap_peaks_and_modes(self,ax=None,**kw):
@@ -221,7 +281,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         max_frequency = kw.pop('max_frequency', self.ana_pars['max_fit_frequency'])
 
 
-        min_fit_filenr = int((min_fit_voltage - self.Vs[0])/float((self.V_range))*(self.nr_files))
+        min_fit_filenr = int((min_fit_voltage - self.Vs[0])/float((self.V_range))*(self.ana_pars['nr_files']))
 
         i_nrs = np.where(self.peak_filenr>=min_fit_filenr)
         i_minf = np.where(self.peak_frq>min_frequency)
@@ -243,11 +303,11 @@ class spectrometer_2D_analysis(spectrometer_analysis):
                 cavity_length = diamond_thickness + air_length
                 if mode_type == 'diamond_air_modes':
                     modes = self.diamond_air_modes(air_length = air_length,diamond_thickness=diamond_thickness,
-                        nr_points=self.nr_files) 
+                        nr_points=self.ana_pars['nr_files']) 
                         #important to take same nr_points for the modes as filenumbers
                 elif mode_type == 'air_modes':
                     modes = self.pure_air_modes(cavity_length=cavity_length,
-                        nr_points=self.nr_files)
+                        nr_points=self.ana_pars['nr_files'])
                 else: 
                     print 'enter valid mode_type!'
                     return 0,0
@@ -275,6 +335,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         self.ana_pars['diamond_thickness'] = diamond_thicknesses[ix_min_mean_square_overlap[0]]
         self.ana_pars['air_length']=air_lengths[ix_min_mean_square_overlap[1]]
         self.ana_pars['total_cavity_length']=self.ana_pars['diamond_thickness']+self.ana_pars['air_length']
+        self.ana_pars['air_lengths']=self.ana_pars['air_length']+self.dLs
         print 'lowest mean square error (',round(self.ana_pars['min_ms_error'],3), '+-',round(self.ana_pars['u_min_ms_error'],3),') is found for:'
         print 'diamond thickness: ',self.ana_pars['diamond_thickness']
         print 'air length: ',self.ana_pars['air_length']
@@ -344,7 +405,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         min_voltage = kw.pop('min_voltage', self.ana_pars['min_fit_voltage'])
         max_error_distance= kw.pop('max_error_distance', self.ana_pars['max_error_distance'])
 
-        nr_scans_to_disregard = int((min_voltage - self.Vs[0])/float((self.V_range))*(self.nr_files))
+        nr_scans_to_disregard = int((min_voltage - self.Vs[0])/float((self.V_range))*(self.ana_pars['nr_files']))
         squared_errors = []
         tot_nr_errors = 0
         for i in self.filenumbers:
@@ -588,12 +649,15 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             axxticklabels = ax.get_xticklabels()
             ax2ticklocations=axticklocations
             ax2xticklabels = np.round((self.V_to_dL_conversion(ax2ticklocations)+air_length)*1.e6,1)
+            ax2.set_xlabel('cavity length (um)',fontsize=14)
 
         elif plot_x2 == 'V':
-            Vticks = np.array([0,2,4,6,8,10])
+            # Vticks = np.array([0,2,4,6,8,10])
+            Vticks = np.linspace(self.ana_pars['V_min'],self.ana_pars['V_max'],5)
             dLticks = self.V_to_dL_conversion(Vticks)
             ax2ticklocations = (((dLticks+air_length)*1.e6)-ax.get_xlim()[0])/(ax.get_xlim()[-1]-ax.get_xlim()[0])*(ax2.get_xlim()[-1]-ax2.get_xlim()[0])
             ax2xticklabels = [str(Vtick) for Vtick in Vticks]
+            ax2.set_xlabel('Voltage (V)',fontsize=14)
 
         ax2.set_xticks(ax2ticklocations)
         ax2.set_xticklabels(ax2xticklabels)
@@ -603,9 +667,9 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         if mode_type == 'diamond_air_modes':
             print 'overlapping diamond air modes'
             modes,ax = self.plot_diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,
-                ax=ax,nr_points=self.nr_files, return_modes=True,x=x,**kw)
+                ax=ax,nr_points=self.ana_pars['nr_files'], return_modes=True,x=x,**kw)
         elif mode_type == 'air_modes':
-            modes,ax = self.plot_air_modes(air_length=air_length,nr_points = self.nr_files,ax=ax,return_modes=True,x=x,**kw)
+            modes,ax = self.plot_air_modes(air_length=air_length,nr_points = self.ana_pars['nr_files'],ax=ax,return_modes=True,x=x,**kw)
         elif mode_type == 'diamond_modes':
             modes,ax = self.plot_diamond_modes(diamond_thickness=diamond_thickness,ax=ax,return_modes=True,x=x,**kw)
                         
@@ -784,7 +848,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         rel_air_ness = (high_freq-self.laser_frq)/(high_freq-low_freq)
         if rel_air_ness > 0.5:
             rel_air_ness = 1- rel_air_ness
-        self.ana_pars['rel_air_ness'] = rel_air_ness
+        self.ana_pars['rel_air_ness'] = 2*rel_air_ness
         print 'relative air-ness is ', self.ana_pars['rel_air_ness']
 
         return self.ana_pars['rel_air_ness']
@@ -798,20 +862,24 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         return frq_nearest
 
     def get_V_intersects(self,frq=470,dfrq=10,**kw):
-
+        min_V_int_distance = abs(self.ana_pars['V_max'] -self.ana_pars['V_min'])/(self.ana_pars['nr_files']-1)
         idxs_near_frq = np.where( np.abs(self.peak_frq - frq) < dfrq)[0]
         Vs_near_frq = self.peak_V[idxs_near_frq]
+        print Vs_near_frq
+        print np.diff(Vs_near_frq)
 
         #remove others if there were multiple in the vicinity. 
         #could improve by checking which one is nearer
         del_is = np.array([])
-        for i in np.where(np.diff(Vs_near_frq)<0.21)[0]: 
+        for i in np.where(abs(np.diff(Vs_near_frq))<min_V_int_distance)[0]: 
             del_is = np.append(del_is,i)
         idxs_near_frq = np.delete(idxs_near_frq,del_is)
 
         self.Vs_at_frq=np.array([])
         dV = self.V_range/float(len(self.Vs)-1)
 
+        print 'deleting ', len(del_is), 'intersects'
+        
         for i in idxs_near_frq:
             frq_nearest = self.peak_frq[i]
             V_nearest = self.peak_V[i]
@@ -831,7 +899,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
                 frq_first = self.find_nearest_peak_frq_at_V(frq,V_first)
                 V_last = V_nearest
                 frq_last = frq_nearest
-           
+        
             rel_distance_from_first = (frq-frq_first)/(frq_last-frq_first) #dividing two negative numbers
             V_at_frq = V_first + dV*rel_distance_from_first
             self.Vs_at_frq = np.append(self.Vs_at_frq,V_at_frq)
@@ -845,7 +913,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         self.plot_V_intersects(frq = frq,**kw)
 
         dpeaks = np.diff(Vs)
-        centrepeaks = Vs[:-1]+dpeaks/2.
+        centrepeaks = (Vs[:-1]+dpeaks/2.)-self.ana_pars['V_min']
         local_conversionfactors = (c/(frq*1.e12))/2/dpeaks*1.e9 # in nm/V
             
         return centrepeaks,local_conversionfactors
@@ -891,9 +959,9 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         fig,ax= plt.subplots()
         ax.plot(centrepeaks,local_conversionfactors,'o')
-        ax.set_xlabel('V')
-        ax.set_ylabel('local conversion factor (dL/dV)')
-        plot.plot_fit1d(fit_result, np.linspace(-2,10,101),ax=ax)
+        ax.set_xlabel('V - V_min (V)')
+        ax.set_ylabel('local conversion factor (dL/dV) (nm/V)')
+        plot.plot_fit1d(fit_result, np.linspace(0,self.ana_pars['V_max']-self.ana_pars['V_min'],101),ax=ax)
         print os.path.join(self.folder,'conversion_factor.png' )
         plt.savefig(os.path.join(self.folder,'conversion_factor.png' ))
 
@@ -911,7 +979,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         conversion_factor = kw.pop('conversion_factor',self.ana_pars['conversion_factor'])
         quadratic_conversion_factor = kw.pop('quadratic_conversion_factor',self.ana_pars['quadratic_conversion_factor'])
         cubic_conversion_factor = kw.pop('cubic_conversion_factor',self.ana_pars['cubic_conversion_factor'])
-        self.dLs = conversion_factor*self.Vs + quadratic_conversion_factor*(self.Vs**2)+ cubic_conversion_factor*(self.Vs**3)
+        self.dLs = conversion_factor*(self.Vs-self.ana_pars['V_min']) + quadratic_conversion_factor*((self.Vs-self.ana_pars['V_min'])**2)+ cubic_conversion_factor*((self.Vs-self.ana_pars['V_min'])**3)
         return self.dLs 
 
 
@@ -919,7 +987,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         conversion_factor = kw.pop('conversion_factor',self.ana_pars['conversion_factor'])
         quadratic_conversion_factor = kw.pop('quadratic_conversion_factor',self.ana_pars['quadratic_conversion_factor'])
         cubic_conversion_factor = kw.pop('cubic_conversion_factor',self.ana_pars['cubic_conversion_factor'])
-        dL = conversion_factor*V + quadratic_conversion_factor*(V**2)+ cubic_conversion_factor*(V**3)
+        dL = conversion_factor*(V-self.ana_pars['V_min']) + quadratic_conversion_factor*((V-self.ana_pars['V_min'])**2)+ cubic_conversion_factor*((V-self.ana_pars['V_min'])**3)
         return dL
 
     def pure_diamond_modes(self, diamond_thickness=4.e-6):
@@ -997,7 +1065,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         lengths = cavity_length + self.dLs 
 
-        max_nr_modes = 85
+        max_nr_modes = 850
         mode_nrs = np.arange(max_nr_modes)
 
         Ls,Ns = np.meshgrid(lengths,mode_nrs)
@@ -1017,6 +1085,8 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         if ax == None:
             fig,ax = plt.subplots()
         nu_diamond_air = self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
+
+        print nu_diamond_air
 
         for N,nu in enumerate(nu_diamond_air):
             if N==0:
@@ -1089,6 +1159,17 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         except:
             print 'could not save ms errors'
 
+        if f.__contains__('/2d_plot_result/dnus_trans'):
+            del f['/2d_plot_result/dnus_trans']
+        if f.__contains__('/2d_plot_result/u_dnus_trans'):
+            del f['/2d_plot_result/u_dnus_trans']
+        try:
+            f['/2d_plot_result/dnus_trans'] = self.dnus_trans
+            f['/2d_plot_result/u_dnus_trans'] = self.u_dnus_trans
+        except:
+            print 'could not save dnus trans'
+
+
         ########################saving parameters in dictionary
 
         for k in self.ana_pars:
@@ -1126,6 +1207,13 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             self.u_ms_errors = f['/2d_plot_result/u_ms_errors'][:]
         except:
             print 'could not load ms errors'
+
+        try:
+            self.dnus_trans = f['/2d_plot_result/dnus_trans'][:]
+            self.u_dnus_trans = f['/2d_plot_result/u_dnus_trans'][:]
+        except:
+            print 'could not load dnus trans'
+
 
         for k in f['/2d_plot_result'].attrs:
             if f['/2d_plot_result'].attrs[k] == 'None': #hdf5 file cannot contain attribute of type None
