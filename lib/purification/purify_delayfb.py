@@ -7,7 +7,7 @@ All data are analyzed according to the MBI analysis class with varying input nam
 import numpy as np
 import os
 from analysis.lib.tools import toolbox, plot;
-from analysis.lib.m2.ssro import mbi, sequence
+from analysis.lib.m2.ssro import mbi, sequence, pqsequence
 from matplotlib import pyplot as plt
 # import matplotlib as mpl
 from analysis.lib.fitting import fit, common
@@ -21,15 +21,22 @@ reload(toolbox)
 CR_after_check = False  # global variable that let's us post select whether or not the NV was ionized
 
 class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
-    def get_phase_errors(self, name='', return_aggregate_results=True, carbon_idx=0, **kw):
+    max_nuclei = 6
+
+    def get_phase_errors(self, name='', return_aggregate_results=True, carbon_idx=0, all_carbons_saved=True, **kw):
         agrp = self.adwingrp(name)
         reps = agrp.attrs['reps_per_ROsequence']
         pts = agrp.attrs['sweep_length']
         sweep_pts = agrp.attrs['sweep_pts']
         sweep_name = agrp.attrs['sweep_name']
 
-        feedback_delay_cycles = agrp['feedback_delay_cycles'].value.reshape((pts, reps), order='F')
-        input_phases = agrp['compensated_phase'].value.reshape((pts, reps), order='F')
+        if all_carbons_saved:
+            feedback_delay_cycles = agrp['feedback_delay_cycles'].value.reshape((self.max_nuclei, pts, reps), order='F')[carbon_idx]
+            input_phases = agrp['compensated_phase'].value.reshape((self.max_nuclei,pts, reps), order='F')[carbon_idx]
+        else:
+            feedback_delay_cycles = agrp['feedback_delay_cycles'].value.reshape((pts, reps), order='F')
+            input_phases = agrp['compensated_phase'].value.reshape((pts, reps), order='F')
+
 
         delay_feedback_N = agrp.attrs['delay_feedback_N']
         delay_clock_cycle_time = agrp.attrs['delay_clock_cycle_time']
@@ -37,7 +44,7 @@ class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
         delay_time_offset = agrp.attrs['delay_time_offset']
 
         nuclear_frequency = agrp.attrs['nuclear_frequencies'][carbon_idx]
-        print "Carbon idx: ", carbon_idx
+        # print "Carbon idx: ", carbon_idx
 
         feedback_delay_times = 2.0 * delay_feedback_N * (feedback_delay_cycles * delay_clock_cycle_time + delay_time_offset)
 
@@ -55,6 +62,32 @@ class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
             return x, y, y_u
         else:
             return final_phase_errors
+
+class PurificationDelayFBPQAnalysis(PurificationDelayFBAnalysis, pqsequence.PQSequenceAnalysis):
+    def __init__(self, folder, **kw):
+        PurificationDelayFBAnalysis.__init__(self, folder, **kw)
+        self.pqf = self.f
+
+    def select_dataset(self, name):
+        # the pq_device attribute gets prepended to all group selections, perfect for us
+        self.pq_device = "pq_data/" + name
+        self.selected_dataset = name
+
+    def extract_pulse_data(self, pulse_pts = None):
+        sweep_pts = self.pts
+        if pulse_pts is None:
+            agrp = self.adwingrp(self.selected_dataset)
+            pulse_pts = agrp.attrs['delay_feedback_N'] * 6
+
+        self.pulse_pts = pulse_pts
+
+        self.pulse_sweep_idxs = self.sweep_idxs.reshape((pulse_pts, sweep_pts, -1), order='F')
+
+        self.pulse_sync_times = self.pqf[self.pq_device + '/PQ_sync_time-1'].value.reshape((pulse_pts, sweep_pts, -1), order='F')
+        self.pulse_channels = self.pqf[self.pq_device + '/PQ_channel-1'].value.reshape((pulse_pts, sweep_pts, -1), order='F')
+        self.pulse_sync_number = self.pqf[self.pq_device + '/PQ_sync_number-1'].value.reshape((pulse_pts, sweep_pts, -1),
+                                                                                   order='F')
+
 
 def get_tstamp_from_folder(folder):
     measurementstring = os.path.split(folder)[1]
@@ -561,14 +594,14 @@ def analyse_sequence_phase(contains='phase_fb_delayline', do_fit=False, **kw):
 
         if show_guess:
             # print decay
-            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201), phi_err=0.0), ':', lw=2)
 
         fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, VERBOSE=True, fixed=fixed)
 
         plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 1001), ax=ax, color='r', plot_data=False, add_txt=True,
                         lw=2, fitfunc_params={'phi_err': 0.0})
 
-        plt.errorbar(x, fit_result['fitfunc'](x), y_u, fmt='x', label='fit with phase errors')
+        plt.errorbar(x, fit_result['fitfunc'](x), y_u, fmt='x', label='fit with phase errors', color='r', zorder=10)
 
         p_dict = fit_result['params_dict']
         e_dict = fit_result['error_dict']
