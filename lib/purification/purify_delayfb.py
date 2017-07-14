@@ -330,6 +330,12 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     if kw.get('ret_data', False):
         return x, y, y_u
 
+    if kw.get('ret', False):
+        return fit_result
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
+
 
 def el_to_c_swap(contains='', input_el=['Z'], do_fit=False, **kw):
     '''
@@ -721,6 +727,12 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
 
     if kw.get('ret_data', False):
         return x, y, y_u
+
+    if kw.get('ret', False):
+        return fit_result
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
 
 
 def analyse_delay_feedback_phase_error(contains='', name='ssro', **kw):
