@@ -5,8 +5,8 @@ import numpy as np
 
 
 SPCorr_settings = {
-	'st_start'		: 2825e3,
-	'st_len'		: 28e3,
+	'st_start'		: 2826e3,
+	'st_len'		: 26e3,
 	'photon_channel'		: 2, ### 2 for both channels. 0 or 1 one corresponds to one HH channel.
 	'ch1_offset'	: 17.5e3 
 }
@@ -35,21 +35,19 @@ SPSP_fltr_adwin_settings['fltr_dict_lt4'] = 	{
 
 data_settings = {
 
-	'base_folder_lt3' : r'D:\measuring\data\Single_click_expm\LT3_data',
-	'base_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data',
+	'base_folder_lt3' : r'D:\measuring\data\Single_click_expm\LT3_data\EntOnDemand20170705',
+	'base_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data\EntOnDemand20170705',
 	
-	'filenames_for_expms' : {'SweepXY_0p1Theta' : r'EntangleXsweepY',
-							 'SweepXY_0p3Theta' : r'EntangleXsweepY',
-							 'SweepXY_0p5Theta' : r'EntangleXsweepY',
-							 'SweepThetaXX'		: r'Entangle_SweepTheta',
-							 'SweepThetaZZ'		: r'eta_from_theta_sweep'},
-
-	'timestamps_to_roll' : {'SweepXY_0p1Theta' : ['162538','163440'],
-							 'SweepXY_0p3Theta' : [],
-							 'SweepXY_0p5Theta' : [],
-							 'SweepThetaXX'		: [],
-							 'SweepThetaZZ'		: []}
-
+	'filenames_for_expms' : {'SweepPhase0p05' : r'EntangleXsweepY',
+							 'SweepPhase0p1' : r'EntangleXsweepY',
+							 'SweepTheta'	  : r'EntangleSweepEverything',
+							 'EntOnDemand0p15_14k' : r'EntangleOnDemandInclCR',
+							 'EntOnDemand0p15_18k' : r'EntangleOnDemandInclCR',
+							 'EntOnDemand0p15_22k' : r'EntangleOnDemandInclCR',
+							 'EntOnDemand0p2_11p5k' : r'EntangleOnDemandInclCR',
+							 'EntOnDemand0p2_14k' : r'EntangleOnDemandInclCR',
+							 'EntOnDemand0p2_16p5k' : r'EntangleOnDemandInclCR',
+							 'EntOnDemand0p2_19k' : r'EntangleOnDemandInclCR',},
 
 
 }

@@ -16,14 +16,14 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
     lt3_analysis = kw.pop('lt3_analysis', False)
 
     if not(lt3_analysis):
-        folder= tb.latest_data(contains)
+        measfile= tb.latest_data(contains)
     else:
         base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
-        lt4_folder = os.path.join(base_folder_lt4,contains)
+        folder = os.path.join(base_folder_lt4,contains)
         filename_str = kw.pop('filename_str', analysis_params.data_settings['filenames_for_expms'][contains])
-        a_list=tb.latest_data(contains = filename_str,folder =lt4_folder,**kw)
+        measfile=tb.latest_data(contains = filename_str,folder =folder,**kw)
 
-    a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
+    a = ppq.purifyPQAnalysis(measfile, hdf5_mode='r')
 
     # general params
     
@@ -160,7 +160,7 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
 
     if mode == 'only_meas' or mode == 'only_stab':
 
-        yf = scipy.fftpack.fft(angle)
+        yf = np.abs(scipy.fftpack.fft(angle))
         xf = np.linspace(0, 1.0/(2*delay*1e-6), len(angle)/2)
 
         fig, ax = plt.subplots()
@@ -192,6 +192,8 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
                          ret=True,fixed=[])
     plot.plot_fit1d(fit_result, np.linspace(center[0],center[-1],201), ax=ax, 
                         plot_data=False,print_info = True)
+
+    ax.set_xlabel('Phase')
     fig.savefig(os.path.join(folder, 'histogram.png'))
     if len(fit_result['params_dict']):
         print 'x0, sigma ', fit_result['params_dict']['x0'] , fit_result['params_dict']['sigma'] 

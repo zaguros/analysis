@@ -98,6 +98,34 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         if ret == 'fig':
             return fig
 
+    def hist_adwin_var(self,adwin_var, **kw):
+        # PH helper function to quickly plot the distribution of arbitrary adwin variables.
+        bins = kw.pop('bins',60)
+        plot = kw.pop('plot', True)
+        xlabel = kw.pop('xlabel',adwin_var)
+        diff = kw.pop('diff',False)
+        remove_zeros = kw.pop('remove_zeros',False)
+
+        vals = self.g['adwindata'][adwin_var].value
+        vals = vals if not (diff) else np.diff(vals)
+        vals = vals if not(remove_zeros) else vals[vals!=0]
+        
+        
+        if kw.pop('normed',False): # Hack to overwrite the normalisation behaviour
+            weights = np.ones(len(vals))/np.float(len(vals))
+            kw['weights'] = weights
+        
+        if plot:
+            ax = self.default_ax(figsize = (6,4))
+            hist_vals = plt.hist(vals,bins = bins,**kw)
+            plt.xlabel(xlabel)
+            plt.ylabel('# Occurences')
+            plt.show()
+        else:
+            hist_vals = np.histogram(vals,bins = bins,**kw) 
+       
+
+        return hist_vals
 
 class TailAnalysis(PQSequenceAnalysis):
 
