@@ -1,8 +1,21 @@
 import sys
 import os
-sys.path.append("d:/measuring")
-sys.path.append("c:/measuring")
-sys.path.append("h:/My Documents/measuring")#only for local SvD
+
+try:
+    measuring_root
+except NameError:
+    measuring_root = None
+
+if measuring_root is None:
+    measuring_root = "d:/measuring"
+
+if os.name == 'nt':
+    sys.path.append("d:/measuring")
+    sys.path.append("c:/measuring")
+    sys.path.append("h:/My Documents/measuring")#only for local SvD
+else:
+    sys.path.append(measuring_root)
+
 import numpy as np
 import h5py
 
@@ -27,3 +40,7 @@ reload(pqsequence)
 reload(tail)
 reload(pq_tools)
 reload(pq_plots)
+
+custom_setup_script = os.path.join(measuring_root, "analysis/scripts/custom_setup_analysis.py")
+if os.path.isfile(custom_setup_script):
+    execfile(custom_setup_script)

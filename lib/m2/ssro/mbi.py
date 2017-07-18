@@ -152,7 +152,7 @@ class MBIAnalysis(m2.M2Analysis):
 
     def get_electron_ROC(self, ssro_calib_folder='',**kw):
         if ssro_calib_folder == '':
-            ssro_calib_folder = toolbox.latest_data('SSROCalibration')
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration', **kw)
 
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
@@ -328,7 +328,7 @@ class MBIAnalysis(m2.M2Analysis):
             ax = self.default_ax(fig)
         else:
             ax.set_title(self.timestamp+'\n'+self.measurementstring)
-
+        print labels
         if labels == None:
             if mode != 'correlations':
                 labels = ['RO #%d' % i for i in range(self.readouts)]
@@ -365,10 +365,13 @@ class MBIAnalysis(m2.M2Analysis):
                         yerr=self.u_p_correlations[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                     ax.axhspan(0,1,fill=False,ls='dotted')
 
-            if not self.result_correlation_corrected:
-                ax.set_ylabel('avg (uncorrected) outcome')
+            if ylabel == None:
+                if not self.result_correlation_corrected:
+                    ax.set_ylabel('avg (uncorrected) outcome')
+                else:
+                    ax.set_ylabel('Probability')
             else:
-                ax.set_ylabel('Probability')
+                ax.set_ylabel(ylabel)
 
 
         ax.set_xlabel(self.sweep_name)

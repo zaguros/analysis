@@ -452,6 +452,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
     freq = kw.pop('freq',1/12.) # voll auf die zwoelf.
     decay = kw.pop('decay',50)
     phi0 = kw.pop('phi0',0)
+    offset = kw.pop('offset',0)
+    A0 = kw.pop('A0',None)
     post_select_e_outcome = kw.pop('post_select_e_outcome',False)
 
     fixed = kw.pop('fixed', [1])
@@ -482,8 +484,8 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
 
         ### fitting if you feel like it / still needs implementation
     if do_fit:
-        A0 = max(y)
-        offset = 0
+        if A0 is None:
+            A0 = max(y)
 
         p0,fitfunc,fitfunc_str = common.fit_decaying_cos(freq,offset,A0,phi0,decay)
 
@@ -524,3 +526,78 @@ def calibrate_LDE_phase(contains = '', do_fit = False, **kw):
     if kw.get('ret',False):
         return fit_result
 
+
+def calibrate_phase_offset(contains='', do_fit=False, **kw):
+    '''
+    gets data from a folder whose name contains the contains variable.
+    Does or does not fit the data with a gaussian function
+    '''
+
+    ### folder choice
+    if contains == '':
+        contains = 'phase_offset'
+
+    # tomography
+    tomo = kw.pop('tomo_basis', 'X')
+    # return fit
+    ret = kw.get('ret', False)
+    # for fitting
+    offset = kw.pop('offset', 1.0)
+    coeff = kw.pop('coeff', -1e-4)
+    center = kw.pop('center', 0.0)
+    post_select_e_outcome = kw.pop('post_select_e_outcome', False)
+
+    fixed = kw.pop('fixed', [])
+    show_guess = kw.pop('show_guess', False)
+
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains, **kw)
+    a = PostSelectedSSRO(f)
+
+    ro_array = ['positive', 'negative']
+    # print ro_array
+    if tomo == '':
+        adwindata_str = tomo
+    else:
+        adwindata_str = tomo + '_'
+    x, y, y_u = get_pos_neg_data(a, adwindata_str=adwindata_str, ro_array=ro_array, **kw)
+    ylabel = tomo
+
+    ### create a plot
+    xlabel = a.g.attrs['sweep_name']
+    x = a.g.attrs['sweep_pts']  # could potentially be commented out?
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Acquired phase')
+
+    ## plot data
+    plot_data(x, y, y_u=y_u)
+
+    ### fitting if you feel like it / still needs implementation
+    if do_fit:
+
+        p0, fitfunc, fitfunc_str = common.fit_parabole(offset, coeff, center)
+
+        if show_guess:
+            # print decay
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, VERBOSE=True, fixed=fixed)
+
+        plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 1001), ax=ax, color='r', plot_data=False, add_txt=True,
+                        lw=2)
+
+        # p_dict = fit_result['params_dict']
+        # e_dict = fit_result['error_dict']
+            ## save and close plot. We are done.
+    if post_select_e_outcome:
+        print 'and here is where i would post select the data'
+        x, y, y_u = get_pos_neg_data(a, adwindata_str=adwindata_str, ro_array=ro_array, eRO_post_select=0, **kw)
+        plot_data(x, y, y_u=y_u, label='dark')
+        x, y, y_u = get_pos_neg_data(a, adwindata_str=adwindata_str, ro_array=ro_array, eRO_post_select=1, **kw)
+        plot_data(x, y, y_u=y_u, label='bright')
+        plt.legend()
+
+    save_and_close_plot(f)
+
+    if ret:
+        return fit_result
