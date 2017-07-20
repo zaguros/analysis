@@ -655,6 +655,7 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only', False)
+    tomo_basis = kw.pop('tomo_basis', None)
 
     ### folder choice
     if contains == '':
@@ -681,7 +682,11 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     y_u = np.array([])
 
     for a in multi_as:
-        if '_Z' in f and x_only == False:
+        if tomo_basis is not None:
+            x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str=tomo_basis + '_', use_preceding_ssro_calib=True,
+            **kw)
+            ylabel = tomo_basis
+        elif '_Z' in f and x_only == False:
             x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str='Z_', use_preceding_ssro_calib=True, **kw)
             ylabel = 'Z'
         else:
