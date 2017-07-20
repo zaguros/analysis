@@ -118,10 +118,11 @@ def create_plot(f, **kw):
     return fig, ax
 
 
-def save_and_close_plot(f):
+def save_and_close_plot(f, show=True):
     plt.savefig(os.path.join(f, 'Results.pdf'), format='pdf')
     plt.savefig(os.path.join(f, 'Results.png'), format='png')
-    plt.show()
+    if show:
+        plt.show()
     plt.close('all')
 
 
@@ -177,7 +178,7 @@ def get_pos_neg_data(a, adwindata_str='', ro_array=['positive', 'negative'], **k
         a.get_readout_results(name=adwindata_str + ro, CR_after_check=CR_after_check, **kw)
         a.get_electron_ROC(ssro_calib_folder, **kw)
 
-        x_labels = a.sweep_pts.reshape(-1)
+        x_labels = a.sweep_pts
         if i == 0:
             res = ((a.p0.reshape(-1)) - 0.5) * 2
             res_u = 2 * a.u_p0.reshape(-1)
@@ -471,11 +472,12 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
     # return fit
     ret = kw.get('ret', False)
     # for fitting
-    freq = kw.pop('freq', 1 / 12.)  # voll auf die zwoelf.
+    freq = kw.pop('freq', None)
     decay = kw.pop('decay', 50)
     phi0 = kw.pop('phi0', 0)
     offset = kw.pop('offset', 0)
     A0 = kw.pop('A0', None)
+    show_plot = kw.pop('show_plot', True)
 
     fixed = kw.pop('fixed', [1])
     show_guess = kw.pop('show_guess', False)
@@ -484,6 +486,12 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
     ### acquire data
     f = toolbox.latest_data(contains, **kw)
     a = mbi.MBIAnalysis(f)
+
+    if freq is None:
+        try:
+            freq = a.g.attrs['phase_detuning'] / 360.0
+        except:
+            freq = 1./12. # voll auf die zwoelf.
 
     ro_array = ['positive', 'negative']
     # print ro_array
@@ -521,12 +529,15 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
         p_dict = fit_result['params_dict']
         e_dict = fit_result['error_dict']
 
+        fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+
         if p_dict['A'] < 0:
             p_dict['phi'] = p_dict['phi'] + 180
             p_dict['A'] = p_dict['A'] * (-1)
 
         try:
             detuning = a.g.attrs['phase_detuning']
+            fit_result['detuning'] = detuning
             print 'This is the phase detuning', detuning
             print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(
                 round(360 * (p_dict['f']), 3) - detuning, round(360 * (e_dict['f']), 3))
@@ -535,7 +546,7 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
             print 'no phase detuning found'
             ## save and close plot. We are done.
 
-    save_and_close_plot(f)
+    save_and_close_plot(f, show=show_plot)
 
     if kw.get('ret', False):
         return fit_result
@@ -813,3 +824,34 @@ def repump_speed(contains='repump_speed', name='adwindata', do_fit=False, **kw):
 
     if kw.get('ret', False):
         return fit_result
+
+def tomo_analysis(contains="tomo", name="", **kw):
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains, **kw)
+    a = mbi.MBIAnalysis(f)
+
+    ro_array = ['positive', 'negative']
+    x, y, y_u = get_pos_neg_data(a, adwindata_str=name, ro_array=ro_array, **kw)
+    x = ["".join(bases) for bases in x]
+
+    xlabel = a.g.attrs['sweep_name']
+    ylabel = "Expectation value"
+
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Delay feedback + tomography')
+
+    fake_x = np.arange(len(x))
+    rects = ax.bar(fake_x, y, yerr=y_u, align='center', ecolor='k')
+    ax.set_xticks(fake_x)
+    ax.set_xticklabels(x)
+    ax.set_ylim(-1.0, 1.0)
+
+    def autolabel(rects):
+        for ii, rect in enumerate(rects):
+            height = rect.get_height()
+            plt.text(rect.get_x() + rect.get_width() / 2., 1.02 * height,
+                     str(round(y[ii], 2)) + '(' + str(int(round(y_u[ii] * 100))) + ')',
+                     ha='center', va='bottom')
+    autolabel(rects)
+
+    save_and_close_plot(f)

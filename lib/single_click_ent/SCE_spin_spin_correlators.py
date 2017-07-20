@@ -266,7 +266,6 @@ class SingleClickAnalysis:
         self.tail_per_pt_u = np.zeros(self.sweep_length)
 
         for scm in self.singleClickMsmts:
-            
             self.correlators_per_sweep_pt += scm.correlators_per_sweep_pt
             self.counts_per_pt += scm.counts_per_pt
             self.tail_per_pt += scm.tail_per_pt
@@ -749,6 +748,11 @@ def get_data_objects(contains,**kw):
     b_list = b_list if isinstance(b_list, list) else [b_list]
     
     if len(b_list) != len(a_list):
+        for b in b_list:
+            print b
+        for a in a_list:
+            print a
+        print a_list
         raise(Exception('Different number of files for lt3 and lt4!'))
 
     sca_folders = zip(a_list,b_list)
@@ -865,10 +869,11 @@ def run_analysis(contains, **kw):
     if use_file_library:    
             base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
             save_folder = os.path.join(base_folder_lt4,contains)
+            sca = SingleClickAnalysis(sca_folders,ssro_a,ssro_b,save_folder = save_folder,**kw)
     else:
-        save_folder = False
+        sca = SingleClickAnalysis(sca_folders,ssro_a,ssro_b,**kw)
 
-    sca = SingleClickAnalysis(sca_folders,ssro_a,ssro_b,save_folder = save_folder,**kw)
+    
 
     if plot_temporal_filter: sca.plot_temporal_filter()
     if plot_tail: sca.plot_tail()
