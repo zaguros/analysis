@@ -123,37 +123,37 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
     fig = plt.figure(figsize=(17,6))
     ax = plt.subplot(211)
     plt.plot(t, v_1, 'b')
-    plt.title('Counts ZPL detector 1 {0}'.format(folder))
+    plt.title('Counts ZPL detector 1 {0}'.format(a.folder))
     ax.set_xlabel('elapsed time (ms)')
     ax.set_ylabel('counts')
     ax2 = plt.subplot(212)
     plt.plot(t, v_2, 'b')
-    plt.title('Counts ZPL detector 2 {0}'.format(folder))
+    plt.title('Counts ZPL detector 2 {0}'.format(a.folder))
     ax2.set_xlabel('elapsed time (ms)')
     ax2.set_ylabel('counts')
     plt.tight_layout()  
-    fig.savefig(os.path.join(folder, 'trace_counts.png'))
+    fig.savefig(os.path.join(a.folder, 'trace_counts.png'))
 
     if len(plot_zoomed):
         
         fig = plt.figure(figsize=(17,6))
         ax = plt.subplot(111)
         plt.plot(t[total_cycles*plot_zoomed[0]:total_cycles*plot_zoomed[1]], angle[total_cycles*plot_zoomed[0]:total_cycles*plot_zoomed[1]])
-        plt.title('Zoomed trace {0}'.format(folder))
+        plt.title('Zoomed trace {0}'.format(a.folder))
         ax.set_xlabel('elapsed time (milliseconds)')
         ax.set_ylabel('Phase')
         plt.tight_layout()
-        fig.savefig(os.path.join(folder, 'trace_zoomed.png'))
+        fig.savefig(os.path.join(a.folder, 'trace_zoomed.png'))
 
     # phase
     fig = plt.figure(figsize=(17,6))
     ax = plt.subplot(111)
     plt.plot(t, angle, 'r')
-    plt.title('Phase of ZPL photons {0}'.format(folder))
+    plt.title('Phase of ZPL photons {0}'.format(a.folder))
     plt.ylim([0,180])
     ax.set_xlabel('elapsed time (ms)')
     ax.set_ylabel('angle ($^o$)')
-    fig.savefig(os.path.join(folder, 'trace_angle.png'))
+    fig.savefig(os.path.join(a.folder, 'trace_angle.png'))
 
 
     # fft
@@ -170,10 +170,10 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
         xlim = plt.xlim()
         if (xlim[1]>1000):
             plt.xlim(0,1000)
-        plt.title('FFT {0}'.format(folder))
+        plt.title('FFT {0}'.format(a.folder))
         ax.set_xlabel('frequency (Hz)')
         ax.set_ylabel('Amplitude (a.u.)')
-        fig.savefig(os.path.join(folder, 'fft.png'))
+        fig.savefig(os.path.join(a.folder, 'fft.png'))
 
     # histogram
     fig = plt.figure()
@@ -194,7 +194,7 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
                         plot_data=False,print_info = True)
 
     ax.set_xlabel('Phase')
-    fig.savefig(os.path.join(folder, 'histogram.png'))
+    fig.savefig(os.path.join(a.folder, 'histogram.png'))
     if len(fit_result['params_dict']):
         print 'x0, sigma ', fit_result['params_dict']['x0'] , fit_result['params_dict']['sigma'] 
 
@@ -209,7 +209,7 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
 
 
     plt.plot(binsize*t[0:(int(np.floor(total_cycles/binsize)))], var_array)
-    plt.title('Standard deviation of Phase {0}'.format(folder))
+    plt.title('Standard deviation of Phase {0}'.format(a.folder))
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('std dev ($^o$)')
     # fig.savefig(os.path.join(folder, 'standard_dev.png'))

@@ -49,6 +49,7 @@ do_fit = False):
 	plt.savefig(os.path.join(folder, 'sweep_tau.png'),
 	        format='png')
 
-# fig = a.default_fig(figsize=(6,4))
-# ax = a.default_ax(fig)
-# ax.plot(a.sweep_pts, a.p0, '-ob', lw=1)
+	# fig = a.default_fig(figsize=(6,4))
+	# ax = a.default_ax(fig)
+	# ax.plot(a.sweep_pts, a.p0, '-ob', lw=1)
+	# plt.show()

@@ -7,7 +7,7 @@ All data are analyzed according to the MBI analysis class with varying input nam
 import numpy as np
 import os
 from analysis.lib.tools import toolbox, plot;
-from analysis.lib.m2.ssro import mbi, sequence
+from analysis.lib.m2.ssro import mbi, sequence, pqsequence
 from matplotlib import pyplot as plt
 # import matplotlib as mpl
 from analysis.lib.fitting import fit, common
@@ -21,15 +21,22 @@ reload(toolbox)
 CR_after_check = False  # global variable that let's us post select whether or not the NV was ionized
 
 class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
-    def get_phase_errors(self, name='', return_aggregate_results=True, carbon_idx=0, **kw):
+    max_nuclei = 6
+
+    def get_phase_errors(self, name='', return_aggregate_results=True, carbon_idx=0, all_carbons_saved=True, **kw):
         agrp = self.adwingrp(name)
         reps = agrp.attrs['reps_per_ROsequence']
         pts = agrp.attrs['sweep_length']
         sweep_pts = agrp.attrs['sweep_pts']
         sweep_name = agrp.attrs['sweep_name']
 
-        feedback_delay_cycles = agrp['feedback_delay_cycles'].value.reshape((pts, reps), order='F')
-        input_phases = agrp['compensated_phase'].value.reshape((pts, reps), order='F')
+        if all_carbons_saved:
+            feedback_delay_cycles = agrp['feedback_delay_cycles'].value.reshape((self.max_nuclei, pts, reps), order='F')[carbon_idx]
+            input_phases = agrp['compensated_phase'].value.reshape((self.max_nuclei,pts, reps), order='F')[carbon_idx]
+        else:
+            feedback_delay_cycles = agrp['feedback_delay_cycles'].value.reshape((pts, reps), order='F')
+            input_phases = agrp['compensated_phase'].value.reshape((pts, reps), order='F')
+
 
         delay_feedback_N = agrp.attrs['delay_feedback_N']
         delay_clock_cycle_time = agrp.attrs['delay_clock_cycle_time']
@@ -37,7 +44,7 @@ class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
         delay_time_offset = agrp.attrs['delay_time_offset']
 
         nuclear_frequency = agrp.attrs['nuclear_frequencies'][carbon_idx]
-        print "Carbon idx: ", carbon_idx
+        # print "Carbon idx: ", carbon_idx
 
         feedback_delay_times = 2.0 * delay_feedback_N * (feedback_delay_cycles * delay_clock_cycle_time + delay_time_offset)
 
@@ -55,6 +62,32 @@ class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
             return x, y, y_u
         else:
             return final_phase_errors
+
+class PurificationDelayFBPQAnalysis(PurificationDelayFBAnalysis, pqsequence.PQSequenceAnalysis):
+    def __init__(self, folder, **kw):
+        PurificationDelayFBAnalysis.__init__(self, folder, **kw)
+        self.pqf = self.f
+
+    def select_dataset(self, name):
+        # the pq_device attribute gets prepended to all group selections, perfect for us
+        self.pq_device = "pq_data/" + name
+        self.selected_dataset = name
+
+    def extract_pulse_data(self, pulse_pts = None):
+        sweep_pts = self.pts
+        if pulse_pts is None:
+            agrp = self.adwingrp(self.selected_dataset)
+            pulse_pts = agrp.attrs['delay_feedback_N'] * 6
+
+        self.pulse_pts = pulse_pts
+
+        self.pulse_sweep_idxs = self.sweep_idxs.reshape((pulse_pts, sweep_pts, -1), order='F')
+
+        self.pulse_sync_times = self.pqf[self.pq_device + '/PQ_sync_time-1'].value.reshape((pulse_pts, sweep_pts, -1), order='F')
+        self.pulse_channels = self.pqf[self.pq_device + '/PQ_channel-1'].value.reshape((pulse_pts, sweep_pts, -1), order='F')
+        self.pulse_sync_number = self.pqf[self.pq_device + '/PQ_sync_number-1'].value.reshape((pulse_pts, sweep_pts, -1),
+                                                                                   order='F')
+
 
 def get_tstamp_from_folder(folder):
     measurementstring = os.path.split(folder)[1]
@@ -85,10 +118,11 @@ def create_plot(f, **kw):
     return fig, ax
 
 
-def save_and_close_plot(f):
+def save_and_close_plot(f, show=True):
     plt.savefig(os.path.join(f, 'Results.pdf'), format='pdf')
     plt.savefig(os.path.join(f, 'Results.png'), format='png')
-    plt.show()
+    if show:
+        plt.show()
     plt.close('all')
 
 
@@ -144,7 +178,7 @@ def get_pos_neg_data(a, adwindata_str='', ro_array=['positive', 'negative'], **k
         a.get_readout_results(name=adwindata_str + ro, CR_after_check=CR_after_check, **kw)
         a.get_electron_ROC(ssro_calib_folder, **kw)
 
-        x_labels = a.sweep_pts.reshape(-1)
+        x_labels = a.sweep_pts
         if i == 0:
             res = ((a.p0.reshape(-1)) - 0.5) * 2
             res_u = 2 * a.u_p0.reshape(-1)
@@ -297,6 +331,12 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     if kw.get('ret_data', False):
         return x, y, y_u
 
+    if kw.get('ret', False):
+        return fit_result
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
+
 
 def el_to_c_swap(contains='', input_el=['Z'], do_fit=False, **kw):
     '''
@@ -432,11 +472,12 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
     # return fit
     ret = kw.get('ret', False)
     # for fitting
-    freq = kw.pop('freq', 1 / 12.)  # voll auf die zwoelf.
+    freq = kw.pop('freq', None)
     decay = kw.pop('decay', 50)
     phi0 = kw.pop('phi0', 0)
     offset = kw.pop('offset', 0)
     A0 = kw.pop('A0', None)
+    show_plot = kw.pop('show_plot', True)
 
     fixed = kw.pop('fixed', [1])
     show_guess = kw.pop('show_guess', False)
@@ -445,6 +486,12 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
     ### acquire data
     f = toolbox.latest_data(contains, **kw)
     a = mbi.MBIAnalysis(f)
+
+    if freq is None:
+        try:
+            freq = a.g.attrs['phase_detuning'] / 360.0
+        except:
+            freq = 1./12. # voll auf die zwoelf.
 
     ro_array = ['positive', 'negative']
     # print ro_array
@@ -482,12 +529,15 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
         p_dict = fit_result['params_dict']
         e_dict = fit_result['error_dict']
 
+        fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+
         if p_dict['A'] < 0:
             p_dict['phi'] = p_dict['phi'] + 180
             p_dict['A'] = p_dict['A'] * (-1)
 
         try:
             detuning = a.g.attrs['phase_detuning']
+            fit_result['detuning'] = detuning
             print 'This is the phase detuning', detuning
             print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(
                 round(360 * (p_dict['f']), 3) - detuning, round(360 * (e_dict['f']), 3))
@@ -496,7 +546,7 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
             print 'no phase detuning found'
             ## save and close plot. We are done.
 
-    save_and_close_plot(f)
+    save_and_close_plot(f, show=show_plot)
 
     if kw.get('ret', False):
         return fit_result
@@ -561,14 +611,14 @@ def analyse_sequence_phase(contains='phase_fb_delayline', do_fit=False, **kw):
 
         if show_guess:
             # print decay
-            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201), phi_err=0.0), ':', lw=2)
 
         fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, VERBOSE=True, fixed=fixed)
 
         plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 1001), ax=ax, color='r', plot_data=False, add_txt=True,
                         lw=2, fitfunc_params={'phi_err': 0.0})
 
-        plt.errorbar(x, fit_result['fitfunc'](x), y_u, fmt='x', label='fit with phase errors')
+        plt.errorbar(x, fit_result['fitfunc'](x), y_u, fmt='x', label='fit with phase errors', color='r', zorder=10)
 
         p_dict = fit_result['params_dict']
         e_dict = fit_result['error_dict']
@@ -616,6 +666,7 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only', False)
+    tomo_basis = kw.pop('tomo_basis', None)
 
     ### folder choice
     if contains == '':
@@ -642,7 +693,11 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     y_u = np.array([])
 
     for a in multi_as:
-        if '_Z' in f and x_only == False:
+        if tomo_basis is not None:
+            x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str=tomo_basis + '_', use_preceding_ssro_calib=True,
+            **kw)
+            ylabel = tomo_basis
+        elif '_Z' in f and x_only == False:
             x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str='Z_', use_preceding_ssro_calib=True, **kw)
             ylabel = 'Z'
         else:
@@ -688,6 +743,12 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
 
     if kw.get('ret_data', False):
         return x, y, y_u
+
+    if kw.get('ret', False):
+        return fit_result
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
 
 
 def analyse_delay_feedback_phase_error(contains='', name='ssro', **kw):
@@ -763,3 +824,34 @@ def repump_speed(contains='repump_speed', name='adwindata', do_fit=False, **kw):
 
     if kw.get('ret', False):
         return fit_result
+
+def tomo_analysis(contains="tomo", name="", **kw):
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains, **kw)
+    a = mbi.MBIAnalysis(f)
+
+    ro_array = ['positive', 'negative']
+    x, y, y_u = get_pos_neg_data(a, adwindata_str=name, ro_array=ro_array, **kw)
+    x = ["".join(bases) for bases in x]
+
+    xlabel = a.g.attrs['sweep_name']
+    ylabel = "Expectation value"
+
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Delay feedback + tomography')
+
+    fake_x = np.arange(len(x))
+    rects = ax.bar(fake_x, y, yerr=y_u, align='center', ecolor='k')
+    ax.set_xticks(fake_x)
+    ax.set_xticklabels(x)
+    ax.set_ylim(-1.0, 1.0)
+
+    def autolabel(rects):
+        for ii, rect in enumerate(rects):
+            height = rect.get_height()
+            plt.text(rect.get_x() + rect.get_width() / 2., 1.02 * height,
+                     str(round(y[ii], 2)) + '(' + str(int(round(y_u[ii] * 100))) + ')',
+                     ha='center', va='bottom')
+    autolabel(rects)
+
+    save_and_close_plot(f)

@@ -1,5 +1,5 @@
 ''' A module to calculate the 13C nuclear and electron spin dynamics
-under dynamical decoupling gates. By THT '''
+under dynamical decoupling gates. By THT, version 2 is by JC (unfinished) '''
 
 import numpy as np
 import qutip
