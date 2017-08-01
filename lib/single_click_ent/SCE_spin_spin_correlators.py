@@ -54,8 +54,8 @@ class singleClickMsmt(twoSetupMsmt):
         if self.a.agrp['completed_reps'].value  != self.b.agrp['completed_reps'].value :
             print 'Different reps for lt3 and lt4!'
 
-        if np.any(self.a.agrp['counted_awg_reps'].value != self.b.agrp['counted_awg_reps'].value):
-            print 'Fix your syncs you fool'
+        # if np.any(self.a.agrp['counted_awg_reps'].value != self.b.agrp['counted_awg_reps'].value):
+        #     print 'Fix your syncs you fool'
 
         self.completed_reps = np.min([self.a.agrp['completed_reps'].value ,self.b.agrp['completed_reps'].value ])
             
@@ -226,6 +226,7 @@ class SingleClickAnalysis:
         self.sca_folders = sca_folders
 
         self.process_single_click_msmts(**kw)
+        self.save_folder  = kw.pop('save_folder',self.singleClickMsmts[0].a.folder)
         self.calculate_corrs(**kw)
 
     def process_single_click_msmts(self,**kw):
@@ -238,7 +239,6 @@ class SingleClickAnalysis:
             self.singleClickMsmts.append(scm)
         
         # Now aggregate the results together
-        self.save_folder  = kw.pop('save_folder',self.singleClickMsmts[0].a.folder)
         self.sweep_name = self.singleClickMsmts[0].a.g.attrs['sweep_name']
         self.timestamp = self.singleClickMsmts[0].a.timestamp
         self.measurementstring = self.singleClickMsmts[0].a.measurementstring
@@ -544,12 +544,140 @@ class SingleClickAnalysis:
             save_path = os.path.join(self.save_folder, 'adwin_vars.h5')
         with h5py.File(save_path, 'w') as hf:
             for adwin_var,bin in zip(adwin_vars, bins):
-                hist_data, bin_centers = self.get_adwin_var_distribution(adwin_var, specified_bins = bin)
+                hist_data, bin_centers = self.get_adwin_var_distribution(adwin_var, specified_bins = bin,plot=False)
                 hf.create_dataset(adwin_var, data=hist_data)
                 hf.create_dataset(adwin_var + '_centers', data=bin_centers)
                 
 
+    def get_sweep_analysis_results(self,parameter_name,parameter_range,**kw):
+        
+        parameter_kind = kw.pop('parameter_kind', 'SpCorr')
+        min_or_max = kw.pop('min_or_max','min')
 
+        y = parameter_range
+        z = []
+        u_z = []
+        tail = []
+        u_tail = []
+        
+        for p in parameter_range:
+            if parameter_kind == 'SPCorr':
+                analysis_params.SPCorr_settings[parameter_name] = p
+            elif parameter_kind == 'fltr_dict_lt3' or 'fltr_dict_lt4':
+                if min_or_max == 'min':
+                    analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name] = [1,p,analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name][2]]
+                elif min_or_max == 'max':
+                    analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name] = [1,analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name][1],p]
+                elif min_or_max == 'both':
+                    analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name] = [1,p[0],p[1]]
+            
+            self.process_single_click_msmts(**kw) # Have to reprocess with new filter values
+            self.calculate_corrs(**kw)
+
+            ### store sweep results
+            z.append(self.p0)
+            u_z.append(self.p0_u)
+            tail.append(self.tail_per_pt)
+            u_tail.append(self.tail_per_pt_u)
+
+        #restore analysis parameters
+        reload(analysis_params)
+        return y,z,u_z,tail,u_tail
+
+    def sweep_analysis_parameter(self,parameter_name, parameter_range, **kw):
+       
+        do_plot = kw.pop('do_plot', True)
+        plot_tail = kw.pop('plot_tail', False)
+        plot_vs_sweep = kw.pop('plot_vs_sweep',False) # switch plotting to plot vs parameter range
+        ret = kw.pop('ret', False)
+        save_corrs = kw.pop('save_sweep_param_corrs', False)
+        save_name = kw.pop('save_name', False)
+
+        y,z_list,u_z_list,tail_list,u_tail_list= self.get_sweep_analysis_results(parameter_name,parameter_range, **kw)
+       
+        if do_plot:
+            ylim = (-1,1)
+            fig1,ax1 = plt.subplots(1,1)
+            
+            ax1.set_title(self.timestamp+'\n'+self.measurementstring + '\n sweep: ' + ' ' + parameter_name)
+
+            if np.shape(z_list)[1] == 1:
+                z_list = np.squeeze(z_list)
+                u_z_list = np.squeeze(u_z_list)
+
+                ax1.errorbar(y,z_list[:,0],u_z_list[:,0],label = 'psi0 ',fmt = '-o')
+                ax1.errorbar(y,z_list[:,1],u_z_list[:,1],label = 'psi1 ',fmt = '-o')
+                ax1.set_xlabel(parameter_name)          
+            else:
+                
+
+                if plot_vs_sweep:
+                    z_list = np.transpose(z_list,[2,1,0])
+                    u_z_list = np.transpose(u_z_list,[2,1,0])
+
+                    if np.shape(y)[1] == 2:
+                        y = y[:,0]
+
+                    for i,z,u_z,sweep_param in zip(range(len(z_list)),z_list,u_z_list,self.sweep_pts):
+                                       
+                        ax1.errorbar(y,z[0],u_z[0],label = 'psi0 ' + str(sweep_param),fmt = '-o',color = (float(i)/len(z_list),0.1,0.1))
+                        ax1.errorbar(y,z[1],u_z[1],label = 'psi1 ' + str(sweep_param),fmt = '--o',color = (float(i)/len(z_list),0.1,0.1))
+                     
+
+                else:
+                    for i,z,u_z,yparam in zip(range(len(z_list)),z_list,u_z_list,y):
+                                       
+                        ax1.errorbar(self.sweep_pts,z[0],u_z[0],label = 'psi0 ' + str(yparam),fmt = '-o',color = (float(i)/len(z_list),0.1,0.1))
+                        ax1.errorbar(self.sweep_pts,z[1],u_z[1],label = 'psi1 ' + str(yparam),fmt = '--o',color = (float(i)/len(z_list),0.1,0.1))
+                                
+                    ax1.set_xlabel(self.sweep_name)
+
+            ## formatting
+            ax1.set_ylabel(r'Correlations')
+            ax1.set_ylim(ylim)
+
+            plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+            if plot_tail:
+                fig3,ax3 = plt.subplots(1,1)
+
+                if np.shape(tail_list)[1] == 1:
+                    ax3.errorbar(y,tail_list,u_tail_list,fmt = '-o')
+                    ax3.set_xlabel(parameter_name)
+                else:
+                    for i,t,u_t,yparam in zip(range(len(z_list)),tail_list,u_tail_list,y):
+                        ax3.errorbar(self.sweep_pts,t,u_t,label = str(yparam),fmt = '-o',color = (float(i)/len(z_list),0.1,0.1))
+                    ax3.set_xlabel(self.sweep_name)
+                    ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+
+                ## formatting
+                ax3.set_ylabel(r'Tail counts *10^4')
+                ax3.set_title(self.timestamp+'\n'+self.measurementstring + '\n' + 'parameter_name: ' + parameter_name)
+
+       
+        if save_corrs:
+            
+            if not(save_name):
+                save_path = os.path.join(self.save_folder, 'sweep_' + parameter_name + '.h5')
+            else:
+                save_path = os.path.join(self.save_folder,save_name)
+
+            with h5py.File(save_path, 'w') as hf:
+                if self.sweep_2d:
+                    hf.create_dataset('sweep_pts1', data=self.gen_sweep_pts1)
+                    hf.create_dataset('sweep_pts2', data=self.gen_sweep_pts2)
+                else:
+                    hf.create_dataset('sweep_pts', data=self.gen_sweep_pts)
+
+                hf.create_dataset('parameter_range', data=parameter_range)
+                hf.create_dataset('correlators', data=z_list)
+                hf.create_dataset('correlators_u', data=u_z_list)
+
+        if ret:
+            return self.sweep_pts,y,z_list,u_z_list,tail_list,u_tail_list
+
+                
 ############################# HELPER FUNCTIONS #############################################
 
 def set_corr_plot_properties(ax,ylims):
@@ -755,97 +883,6 @@ def get_data_objects(contains,**kw):
     return sca_folders,ssro_a,ssro_b
 
 
-def get_sweep_analysis_results(sca,parameter_name,parameter_range,parameter_kind,**kw):
-    
-    min_or_max = kw.pop('min_or_max','min')
-
-    y = parameter_range
-    z = []
-    u_z = []
-    tail = []
-    u_tail = []
-
-    x = sca.sweep_pts
-    xlabel = sca.sweep_name
-    
-    for p in parameter_range:
-        if parameter_kind == 'SPCorr':
-            analysis_params.SPCorr_settings[parameter_name] = p
-        elif parameter_kind == 'fltr_dict_lt3' or 'fltr_dict_lt4':
-            if min_or_max == 'min':
-                analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name] = [1,p,analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name][2]]
-            elif min_or_max == 'max':
-                analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name] = [1,analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name][1],p]
-            elif min_or_max == 'both':
-                analysis_params.SPSP_fltr_adwin_settings[parameter_kind][parameter_name] = [1,p[0],p[1]]
-        
-        sca.process_single_click_msmts(**kw) # Have to reprocess with new filter values
-        sca.calculate_corrs(**kw)
-
-        ### store sweep results
-        z.append(sca.p0)
-        u_z.append(sca.p0_u)
-        tail.append(sca.tail_cts)
-        u_tail.append(sca.tail_cts_u)
-
-    #restore analysis parameters
-    reload(analysis_params)
-    return xlabel,x,y,z,u_z,tail,u_tail
-
-def sweep_analysis_parameter(contains,parameter_name, parameter_range, **kw):
-    # Note that not tested since extensive rewrite
-
-    parameter_kind = kw.pop('parameter_kind','SPCorr')
-    plot_tail = kw.pop('plot_tail', True)
-    
-    sca_folders,ssro_a,ssro_b =  get_data_objects(contains,**kw)
-    sca = SingleClickAnalysis(sca_folders,ssro_a,ssro_b)
-    xlabel,x,y,z_list,u_z_list,tail_list,u_tail_list= get_sweep_analysis_results(sca,parameter_name,parameter_range,parameter_kind, **kw)
-   
-    ylim = (-1,1)
-    fig1,ax1 = plt.subplots(1,1)
-    
-    ax1.set_title(sca.timestamp+'\n'+sca.measurementstring + '\n sweep: ' + parameter_kind + ' ' + parameter_name)
-
-    if np.shape(z_list)[1] == 1:
-        z_list = np.squeeze(z_list)
-        u_z_list = np.squeeze(u_z_list)
-
-        ax1.errorbar(y,z_list[:,0],u_z_list[:,0],label = 'psi0 ',fmt = '-o')
-        ax1.errorbar(y,z_list[:,1],u_z_list[:,1],label = 'psi1 ',fmt = '-o')
-        ax1.set_xlabel(parameter_name)          
-    else:
-        for i,z,u_z,yparam in zip(range(len(z_list)),z_list,u_z_list,y):
-
-            ax1.errorbar(x,z[:,0],u_z[:,0],label = 'psi0 ' + str(yparam),fmt = '-o',color = (float(i)/len(z_list),0.1,0.1))
-            ax1.errorbar(x,z[:,1],u_z[:,1],label = 'psi1 ' + str(yparam),fmt = '--o',color = (float(i)/len(z_list),0.1,0.1))
-                    
-        ax1.set_xlabel(xlabel)
-
-    ## formatting
-    ax1.set_ylabel(r'Correlations')
-    ax1.set_ylim(ylim)
-
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-
-    if plot_tail:
-        fig3,ax3 = plt.subplots(1,1)
-
-        if np.shape(tail_list)[1] == 1:
-            ax3.errorbar(y,tail_list,u_tail_list,fmt = '-o')
-            ax3.set_xlabel(parameter_name)
-        else:
-            for i,t,u_t,yparam in zip(range(len(z_list)),tail_list,u_tail_list,y):
-                ax3.errorbar(x,t,u_t,label = str(yparam),fmt = '-o',color = (float(i)/len(z_list),0.1,0.1))
-            ax3.set_xlabel(xlabel)
-            ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-
-
-        ## formatting
-        ax3.set_ylabel(r'Tail counts *10^4')
-        ax3.set_title(input_data_files[0].timestamp+'\n'+input_data_files[0].measurementstring + '\n' + 'parameter_name: ' + parameter_name)
-
-      
 
 ############################# HIGH LEVEL ANALYSIS FUNCTIONS #############################################
 
@@ -863,8 +900,10 @@ def run_analysis(contains, **kw):
     sca_folders,ssro_a,ssro_b =  get_data_objects(contains,**kw)
 
     if use_file_library:    
-            base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
+            base_folder_lt4 = analysis_params.data_settings['save_folder_lt4']
             save_folder = os.path.join(base_folder_lt4,contains)
+            if not os.path.exists(save_folder):
+                os.makedirs(save_folder)
     else:
         save_folder = False
 
@@ -887,18 +926,31 @@ def check_phase_calibration(contains = 'XsweepY',**kw):
     run_analysis(contains,plot_correlations =True,do_ROC = True,do_sine_fit = True,flip_psi1=True,combine_correlation_data=True, **kw)
 
 def analyze_entanglement_on_demand(contains = 'EntangleOnDemandInclCR',**kw):
-    ''' Analyzes all the data for entanglement on demand and saves it '''
+    ''' Analyzes all the bits of data for entanglement on demand and saves it '''
     save_corrs = kw.pop('save_corrs',False)
     print '###Outcomes for only runs with APD clicks'
     save_name = 'correlations_only_APD.h5'
-    run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=False,save_corrs = save_corrs ,save_name = save_name,print_fids =True, **kw)
+    run_analysis(contains,do_ROC = True,ignore_HH=False,save_corrs = save_corrs ,save_name = save_name, **kw)
 
     print 'Outcomes for all runs'
-    sca = run_analysis(contains,plot_correlations =True,do_ROC = True,ignore_HH=True,save_corrs = save_corrs,ret_sca = True,print_fids =True, **kw)
+    sca = run_analysis(contains,do_ROC = True,ignore_HH=True,save_corrs = save_corrs,ret_sca = True, **kw)
     # Save the adwin data we want
     sca.save_adwin_var_distribution(['DD_repetitions','time_in_cr_and_comm'],bins = [np.arange(201)-0.5,100*(np.arange(231)-0.5)])
-    sca.get_adwin_var_distribution('DD_repetitions',normed = True)
-    
+
+def bulk_analyze_entanglement_on_demand():
+    for expm in analysis_params.data_settings['ent_on_demand_runs']:
+        analyze_entanglement_on_demand(expm,use_file_library=True,save_corrs=True)
+
+  
+def analyze_eod_sweep_dd_reps(contains = 'EntangleOnDemandInclCR',**kw):
+    save_sweep_param_corrs = kw.pop('save_sweep_param_corrs',False)
+    sca = run_analysis(contains,do_ROC = True,ret_sca=True,**kw)
+    sca.sweep_analysis_parameter('DD_repetitions', np.transpose([np.arange(10,200,20),np.arange(10,200,20)+19]),plot_vs_sweep = True,min_or_max = 'both',parameter_kind = 'fltr_dict_lt4',save_sweep_param_corrs=save_sweep_param_corrs, **kw)
+
+def bulk_analyze_eod_sweep_dd_reps():
+    for expm in analysis_params.data_settings['ent_on_demand_runs']:
+        analyze_eod_sweep_dd_reps(expm,use_file_library=True,save_sweep_param_corrs=True,do_plot=False)
+
 def calc_MW_phases(expm_name,single_file=True,save = False,plot_corrs = False,**kw):
     ''' Helper function to get the phases from MW phase angle sweeps NOTE NOT TESTED SINCE REWRITE'''
 
@@ -938,4 +990,31 @@ def calc_MW_phases(expm_name,single_file=True,save = False,plot_corrs = False,**
                 
                 hf.create_dataset('timestamps', data=timestamps)
                 hf.create_dataset('phi', data=phis)
-           
+
+
+def save_DD_data():  
+    from analysis.lib.m2.ssro import mbi; reload(mbi)
+    base_folder_lt3 = analysis_params.data_settings['base_folder_lt3']
+    lt3_folder = os.path.join(base_folder_lt3,'DDCalib')
+    lt3_ssro_folder = os.path.join(base_folder_lt3,'SSROs')
+    base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
+    lt4_folder = os.path.join(base_folder_lt4,'DDCalib')
+    lt4_ssro_folder = os.path.join(base_folder_lt4,'SSROs')
+
+    file_b = tb.latest_data(contains = 'sweep_decoupling',folder= lt3_folder)
+    file_a = tb.latest_data(contains = 'sweep_decoupling',folder =lt4_folder)
+    ssro_b  = tb.latest_data(contains = 'SSROCalib', folder = lt3_ssro_folder)
+    ssro_a  = tb.latest_data(contains = 'SSROCalib',  folder = lt4_ssro_folder)
+    print file_b
+    a = mbi.MBIAnalysis(file_b)
+    a.get_sweep_pts()
+    a.get_readout_results(name='adwindata',CR_after_check = True)
+    a.get_electron_ROC(ssro_b)
+    a.save('ssro_results')
+   
+    a = mbi.MBIAnalysis(file_a)
+    a.get_sweep_pts()
+    a.get_readout_results(name='adwindata',CR_after_check = True)
+    a.get_electron_ROC(ssro_a)
+    a.save('ssro_results')
+   
