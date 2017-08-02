@@ -18,7 +18,7 @@ reload(mbi)
 reload(common)
 reload(toolbox)
 
-CR_after_check = False  # global variable that let's us post select whether or not the NV was ionized
+CR_after_check = True  # global variable that let's us post select whether or not the NV was ionized
 
 class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
     max_nuclei = 6
@@ -648,7 +648,7 @@ def analyse_sequence_phase(contains='phase_fb_delayline', do_fit=False, **kw):
     if kw.get('ret_fit_data', False):
         return fit_result, x, y, y_u
 
-def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **kw):
+def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, multi_contains=None, **kw):
     '''
     gets data from a folder whose name contains the contains variable.
     Does or does not fit the data with a gaussian function
@@ -666,6 +666,7 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only', False)
+    tomo_basis = kw.pop('tomo_basis', None)
 
     ### folder choice
     if contains == '':
@@ -680,19 +681,34 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     multi_fs = []
     multi_as = []
 
-    for ot in older_thans:
-        f = toolbox.latest_data(contains, older_than=ot, **kw)
-        a = mbi.MBIAnalysis(f)
+    if older_thans is not None:
+        for ot in older_thans:
+            f = toolbox.latest_data(contains, older_than=ot, **kw)
+            a = mbi.MBIAnalysis(f)
 
-        multi_fs.append(f)
-        multi_as.append(a)
+            multi_fs.append(f)
+            multi_as.append(a)
+    elif multi_contains is not None:
+        for containy in multi_contains:
+            f = toolbox.latest_data(containy, **kw)
+            a = mbi.MBIAnalysis(f)
+
+            multi_fs.append(f)
+            multi_as.append(a)
+    else:
+        print("What do you want?")
+        return
 
     x = np.array([])
     y = np.array([])
     y_u = np.array([])
 
     for a in multi_as:
-        if '_Z' in f and x_only == False:
+        if tomo_basis is not None:
+            x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str=tomo_basis + '_', use_preceding_ssro_calib=True,
+            **kw)
+            ylabel = tomo_basis
+        elif '_Z' in f and x_only == False:
             x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str='Z_', use_preceding_ssro_calib=True, **kw)
             ylabel = 'Z'
         else:
