@@ -254,6 +254,9 @@ def average_repump_time(contains='', do_fit=False, **kw):
     ## save and close plot. We are done.
     save_and_close_plot(f)
 
+    if kw.get('ret_data_fit'):
+        return x, y, y_u, fit_result
+
 
 def number_of_repetitions(contains='', do_fit=False, **kw):
     '''
