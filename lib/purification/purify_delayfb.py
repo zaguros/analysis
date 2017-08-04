@@ -487,7 +487,10 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
 
     # older_than = kw.get('older_than',None) automatically handled by kws
     ### acquire data
-    f = toolbox.latest_data(contains, **kw)
+    if 'folder' in kw:
+        f = kw.pop('folder')
+    else:
+        f = toolbox.latest_data(contains, **kw)
     a = mbi.MBIAnalysis(f)
 
     if freq is None:
@@ -541,9 +544,11 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
         try:
             detuning = a.g.attrs['phase_detuning']
             fit_result['detuning'] = detuning
+            fit_result['acq_phase_per_rep'] = 360 * (p_dict['f']) - detuning
+            fit_result['u_acq_phase_per_rep'] = 360 * (e_dict['f'])
             print 'This is the phase detuning', detuning
             print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(
-                round(360 * (p_dict['f']), 3) - detuning, round(360 * (e_dict['f']), 3))
+                round(fit_result['acq_phase_per_rep'], 3), round(fit_result['u_acq_phase_per_rep'], 3))
             print 'phase offset ', round(p_dict['phi'], 3)
         except:
             print 'no phase detuning found'
