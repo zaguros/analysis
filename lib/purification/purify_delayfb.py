@@ -18,7 +18,7 @@ reload(mbi)
 reload(common)
 reload(toolbox)
 
-CR_after_check = False  # global variable that let's us post select whether or not the NV was ionized
+CR_after_check = True  # global variable that let's us post select whether or not the NV was ionized
 
 class PurificationDelayFBAnalysis(mbi.MBIAnalysis):
     max_nuclei = 6
@@ -254,6 +254,9 @@ def average_repump_time(contains='', do_fit=False, **kw):
     ## save and close plot. We are done.
     save_and_close_plot(f)
 
+    if kw.get('ret_data_fit'):
+        return x, y, y_u, fit_result
+
 
 def number_of_repetitions(contains='', do_fit=False, **kw):
     '''
@@ -484,7 +487,10 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
 
     # older_than = kw.get('older_than',None) automatically handled by kws
     ### acquire data
-    f = toolbox.latest_data(contains, **kw)
+    if 'folder' in kw:
+        f = kw.pop('folder')
+    else:
+        f = toolbox.latest_data(contains, **kw)
     a = mbi.MBIAnalysis(f)
 
     if freq is None:
@@ -538,9 +544,11 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
         try:
             detuning = a.g.attrs['phase_detuning']
             fit_result['detuning'] = detuning
+            fit_result['acq_phase_per_rep'] = 360 * (p_dict['f']) - detuning
+            fit_result['u_acq_phase_per_rep'] = 360 * (e_dict['f'])
             print 'This is the phase detuning', detuning
             print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(
-                round(360 * (p_dict['f']), 3) - detuning, round(360 * (e_dict['f']), 3))
+                round(fit_result['acq_phase_per_rep'], 3), round(fit_result['u_acq_phase_per_rep'], 3))
             print 'phase offset ', round(p_dict['phi'], 3)
         except:
             print 'no phase detuning found'
@@ -648,7 +656,7 @@ def analyse_sequence_phase(contains='phase_fb_delayline', do_fit=False, **kw):
     if kw.get('ret_fit_data', False):
         return fit_result, x, y, y_u
 
-def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **kw):
+def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, multi_contains=None, **kw):
     '''
     gets data from a folder whose name contains the contains variable.
     Does or does not fit the data with a gaussian function
@@ -657,7 +665,7 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     ### kw for fitting
 
     g_a = kw.pop('fit_a', 0)
-    g_A = kw.pop('fit_A', 1)
+    g_A = kw.pop('fit_A', None)
     g_x0 = kw.pop('fit_x0', 0)
     g_T = kw.pop('fit_T', 500)
     g_n = kw.pop('fit_n', 1)
@@ -681,12 +689,23 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     multi_fs = []
     multi_as = []
 
-    for ot in older_thans:
-        f = toolbox.latest_data(contains, older_than=ot, **kw)
-        a = mbi.MBIAnalysis(f)
+    if older_thans is not None:
+        for ot in older_thans:
+            f = toolbox.latest_data(contains, older_than=ot, **kw)
+            a = mbi.MBIAnalysis(f)
 
-        multi_fs.append(f)
-        multi_as.append(a)
+            multi_fs.append(f)
+            multi_as.append(a)
+    elif multi_contains is not None:
+        for containy in multi_contains:
+            f = toolbox.latest_data(containy, **kw)
+            a = mbi.MBIAnalysis(f)
+
+            multi_fs.append(f)
+            multi_as.append(a)
+    else:
+        print("What do you want?")
+        return
 
     x = np.array([])
     y = np.array([])
@@ -719,6 +738,10 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=[], **
     xlabel = multi_as[0].g.attrs['sweep_name']
     fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
 
+    if g_A is None:
+        min_x_pos = np.argmin(x)
+        g_A = y[min_x_pos]
+        print("Starting amplitude: %.3f" % g_A)
     ## plot data
     plot_data(x, y, y_u=y_u)
 
