@@ -423,11 +423,6 @@ def simulate_readout():
     return rho_el_ZZ, rho_el_XX, rho_el_YY
 
 
-
-
-
-
-
 ###################
 ### Pauli Sets ###
 ###################
@@ -763,7 +758,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
         return pauli_set, ii_list, final_x_tick_list
 
 ####################
-### Experiments  ###
+### Simulate C13 Experiments  ###
 ####################
 
 def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=403.554, ms='-1'):
@@ -1003,7 +998,7 @@ def nuclear_TomoZ(carbon_nrs,N,Tau,Bfield=304.74,ms='+1',input_state=qutip.tenso
     #single_qubit_pauli(rho_final, do_plot = True)
 
 ######################
-### Initialization ###
+### C13 Initialization ###
 ######################
 
 def nuclear_init_single(carbon_nr, state = 'up', do_plot = False, method = 'SWAP', phase_state = False):
@@ -1604,9 +1599,9 @@ def ZZ_ent_XY_parity():
     Cz_b4  = C_phase_gate(217e-9,4)
     Cz_b1  = C_phase_gate(347e-9,4)
 
-########################
-##### Ideal Experiment###
-########################
+#####################################
+##### Ideal versions of Experiment###
+#####################################
 
 B_field = 304.36
 
@@ -1818,9 +1813,9 @@ def ZZ_ent_id():
         print (qutip.fidelity(rho0,el_state)**2*2-1)
 
 
-######################
-##### Add other spins#
-######################
+########################
+##### Add other spins ##
+########################
 
 def Ren_gate_multispin(carbon_nr, carbon_nrs):
     tau_Ren = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
@@ -3224,6 +3219,10 @@ def QZ3():
 
     J = Q - P
     print_matrix(J) 
+
+
+
+
 
 
 

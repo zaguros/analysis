@@ -161,15 +161,14 @@ def fit_Ramsey_6_cos(timestamp = None,
 
 
 
-def fit_Ramsey_3_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,fixed=[]):
+def fit_Ramsey_3_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,fixed=[], folder=None):
 
 
-
-	### script
-	if timestamp != None:
-	    folder = toolbox.data_from_time(timestamp)
-	else:
-	    folder = toolbox.latest_data('ElectronRamsey')
+	if folder is None:
+		if timestamp != None:
+		    folder = toolbox.data_from_time(timestamp)
+		else:
+		    folder = toolbox.latest_data('ElectronRamsey')
 
 	a = sequence.SequenceAnalysis(folder)
 	a.get_sweep_pts()
@@ -201,15 +200,14 @@ def fit_Ramsey_3_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,
 
 
 
-def fit_Ramsey_6_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C,fixed=[]):
+def fit_Ramsey_6_cos_hf_fixed(timestamp,ssro_calib_folder,g_tau, g_A, g_a,g_det,g_hf_N,g_hf_C,fixed=[], folder=None):
 
 
-
-	### script
-	if timestamp != None:
-	    folder = toolbox.data_from_time(timestamp)
-	else:
-	    folder = toolbox.latest_data('ElectronRamsey')
+	if folder is None:
+		if timestamp != None:
+		    folder = toolbox.data_from_time(timestamp)
+		else:
+		    folder = toolbox.latest_data('ElectronRamsey')
 
 	a = sequence.SequenceAnalysis(folder)
 	a.get_sweep_pts()

@@ -49,20 +49,33 @@ def plot_photon_hist(pqf, **kw):
     if ret == 'subplots':
         return fig, (ax0, ax1)
 
-    
+
 def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     ret = kw.pop('ret', 'subplots')
     
-    (h0, b0), (h1, b1) = pq_tools.get_photon_hist(pqf, **kw)
-    (h0f, b0f), (h1f, b1f) = pq_tools.get_photon_hist(pqf, fltr=fltr, **kw)
+    if isinstance(pqf, list): # PH added functionality to deal with a list of pqf files
+        if len(pqf) != len(fltr):
+            raise(Exception('pqf list must be matched with filter list!'))
+    else:
+        pqf = [pqf]
+        fltr = [fltr]    
+
+    for i, (pq,flt) in enumerate(zip(pqf,fltr)):
+        (h0, b0), (h1, b1) = pq_tools.get_photon_hist(pq, **kw)
+        (h0f, b0f), (h1f, b1f) = pq_tools.get_photon_hist(pq, fltr=flt, **kw)
+
+        if i == 0:
+            h0_total,h1_total,h0f_total,h1f_total = h0,h1,h0f,h1f
+        else:
+            h0_total += h0; h1_total += h1; h0f_total += h0f; h1f_total += h1f
     
     fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
-    _plot_photon_hist(ax0, h0, b0, label='unfiltered', **kw)
-    _plot_photon_hist(ax0, h0f, b0f, label='filtered', **kw)
+    _plot_photon_hist(ax0, h0_total, b0, label='unfiltered', **kw)
+    _plot_photon_hist(ax0, h0f_total, b0f, label='filtered', **kw)
 
-    _plot_photon_hist(ax1, h1, b1, label='unfiltered', **kw)
-    _plot_photon_hist(ax1, h1f, b1f, label='filtered', **kw)
-    
+    _plot_photon_hist(ax1, h1_total, b1, label='unfiltered', **kw)
+    _plot_photon_hist(ax1, h1f_total, b1f, label='filtered', **kw)
+    fig.subplots_adjust(hspace=.3)
 
     if kw.get('plot_threshold_ch0', 0) !=0:
         ax0.vlines([kw.get('plot_threshold_ch0', 0)],0,1000,color = 'r')
@@ -78,13 +91,14 @@ def plot_photon_hist_filter_comparison(pqf, fltr, **kw):
     ax0.legend()
     ax1.legend()
 
-    fp = pq_tools.fp_from_pqf(pqf)
+    if len(pqf) == 1:
+        fp = pq_tools.fp_from_pqf(pqf[0])
+        fig.suptitle(tb.get_msmt_header(fp) + ' -- Photon histogram, comparison w/ filter')
+    else:
+        fig.suptitle('Photon histogram, comparison w/ filter')
 
-    fig.suptitle(tb.get_msmt_header(fp) + ' -- Photon histogram, comparison w/ filter')
-        
     if ret=='subplots':
         return fig, (ax0, ax1)
-
 
 def plot_marker_filter_comparison(pqf,mrkr_chan = 2,ret=False,**kw):
 
