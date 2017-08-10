@@ -53,7 +53,7 @@ def compile_xy_values_of_datasets(f_list,ssro_tstamp = None,**kw):
     if ssro_tstamp == None: 
         ssro_calib_folder = tb.latest_data('SSROCalib')
     else:
-        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_tstamp)
+        ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_tstamp)
         ssro_calib_folder = tb.latest_data(ssro_tstmp)
 
     x = []
@@ -95,7 +95,9 @@ def sort_for_best_signal(x_list,y_list,y_u_list,**kw):
 
 
 def analyse_dataset(contains,**kw):
-
+    """
+    see the notebook purification/LT3/Espin_DD_w_switch.ipynb for example uses.
+    """
     f_list = get_tstamps_dsets(contains,**kw)
     x_list,y_list,y_u_list = [],[],[]
 
@@ -105,7 +107,7 @@ def analyse_dataset(contains,**kw):
         x_list.append(x); y_list.append(y); y_u_list.append(y_u)
 
 
-    if kw.pop('plot_raw',True):
+    if kw.pop('plot_raw',True) and kw.get('do_plot',True):
         ax = a.default_ax(figsize = (7,4))
 
         for x,y, y_u in zip(x_list,y_list,y_u_list):
@@ -114,22 +116,30 @@ def analyse_dataset(contains,**kw):
     x_list,y_list,y_u_list = np.array(x_list),np.array(y_list),np.array(y_u_list) ## conver tto array
 
     best_x,best_y,best_y_u = sort_for_best_signal(x_list,y_list,y_u_list,**kw)
-    ax.set_xlabel(a.sweep_name)
-    ax.set_ylabel(r'$F(|0\rangle)$')
-    ax.set_xlim([0,np.amax(best_x)*1.05])
-    ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
+
 
     ########## time to fit the best results
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 200.,2) ## one could start to make cool guesses based on the data but i refrain
     fit_result = fit.fit1d(best_x,best_y,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,fixed = [0,1,2,4])
 
-    plot.plot_fit1d(fit_result,np.linspace(0,np.amax(best_x)*1.05,201),ax=ax,plot_data=False)
-    plt.savefig(os.path.join(a.folder, 'analyzed_result.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(a.folder, 'analyzed_result.png'),
-    format='png')
+    if kw.pop('do_plot',True):
 
-    print 'plots are saved in'
-    print a.folder
+        ax.set_xlabel(a.sweep_name)
+        ax.set_ylabel(r'$F(|0\rangle)$')
+        ax.set_xlim([0,np.amax(best_x)*1.05])
+        ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
 
-    plt.show()
+        plot.plot_fit1d(fit_result,np.linspace(0,np.amax(best_x)*1.05,201),ax=ax,plot_data=False)
+        plt.savefig(os.path.join(a.folder, 'analyzed_result.pdf'),
+        format='pdf')
+        plt.savefig(os.path.join(a.folder, 'analyzed_result.png'),
+        format='png')
+        plt.show()
+        print 'plots are saved in'
+        print a.folder
+
+    if kw.pop('return_fit',False):
+        fit_result['y_u'] = best_y_u
+        return fit_result
+
+
