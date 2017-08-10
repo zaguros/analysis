@@ -64,15 +64,15 @@ timestamps = {}
 ####################################
 
 
-timestamps['min'] = 	{'N8' : ['20160420_183630'],
-					 	'N16' : ['20160420_200748'],
-					 	'N32' : ['20160420_222506'],
-						'N64' : ['20160421_004107']}
+timestamps['min'] = 	{'N8' : ['20170809_132903'],#['20160420_183630'],
+					 	'N16' : ['20170809_145256'],#['20160420_200748'],
+					 	'N32' : ['20170809_162715'],#['20160420_222506'],
+						'N64' : ['20170809_183126']}#['20160421_004107']}
 
-timestamps['plus'] = 	{'N8'  : ['20160309_173550'],
-						 'N16' : ['20160309_193753'],
-						 'N32' : ['20160309_220938'],
-						 'N64' : ['20160310_012834']}
+timestamps['plus'] = 	{'N8'  : ['20170804_083153'],#'N8'  : ['20160309_173550'],
+						 'N16' : ['20170804_090407'],#'N16' : ['20160309_193753'],
+						 'N32' : ['20170804_090407'],# 32 has not been taken in the latest data set'N32' : ['20160309_220938'],
+						 'N64' : ['20170804_094039']}#'N64' : ['20160310_012834']}
 
 ssro_calib_folder = 'd:\\measuring\\data\\20160413\\162401_AdwinSSRO_SSROCalibration_111no2_SIL2'
 
@@ -181,7 +181,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		#######################
 		if disp_sim_spin == True:
 			# print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
-			B_Field = 412.311#416.52 # in gauss
+			B_Field = 414.5 # in gauss
 			# print B_Field
 			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
