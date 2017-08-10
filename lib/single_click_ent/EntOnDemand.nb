@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    446140,      10153]
-NotebookOptionsPosition[    438968,       9979]
-NotebookOutlinePosition[    439404,       9998]
-CellTagsIndexPosition[    439361,       9995]
+NotebookDataLength[    445021,      10088]
+NotebookOptionsPosition[    437850,       9914]
+NotebookOutlinePosition[    438286,       9933]
+CellTagsIndexPosition[    438243,       9930]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -4266,450 +4266,372 @@ EntOnDemand.pdf\>\"", ",", "fig"}], "]"}], ";"}]}]}]], "Input",
 
 Cell[BoxData[
  TagBox[
-  TemplateBox[{GraphicsBox[{{{}, {{{}, {}, {
-          Hue[0.67, 0.6, 0.6], 
-          Directive[
-           PointSize[0.012833333333333334`], 
-           AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-           FontFamily -> "Helvetica", 
-           Thickness[0.004], 
-           RGBColor[0.368417, 0.506779, 0.709798]], 
-          LineBox[CompressedData["
+  TagBox[GridBox[{
+     {
+      GraphicsBox[{{{}, {{}, {}, 
+          {RGBColor[0.368417, 0.506779, 0.709798], PointSize[
+           0.012833333333333334`], Thickness[0.004], 
+           StyleBox[LineBox[CompressedData["
 1:eJxTTMoPSmViYGAQBWIQDQYFxx34LwmuFZx5zx7Mn3PCoXa+ckKW1H0I/8RJ
 h59uci7FE6H8L6ccbLierT7+D8pXOOPw4mcmW63hAwjf56zDs6WaDl7xUH7F
 OYffG9nn83RC+UvOO0ie7W9nXA/lZ1xweNjhczfpIpT/74KD1eXPpukfoPwp
 Fx0Wvl3C6cTzEMLXuuTAppf8QFkVyj9wyeGW6bcaK2soP+yyg4BAGOtGPyj/
 zWWHbO/jGhviofymKw5PNU86x+VB+RJXHUK+fW28XwXlr7vqcH/b57+hrVC+
 yzWHTbsm3n/YC+XfuuYgeFm3YuEUKL/gusOEhqrYjTMf2gMAy6d5Iw==
-           "]]}, {
-          Hue[0.9060679774997897, 0.6, 0.6], 
-          Directive[
-           PointSize[0.012833333333333334`], 
-           AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-           FontFamily -> "Helvetica", 
-           RGBColor[0.560181, 0.691569, 0.194885], 
-           Dashing[{Small, Small}]], 
-          LineBox[CompressedData["
+             "]],
+            FontFamily->"Helvetica",
+            FontSize->16,
+            FontWeight->Plain]}, 
+          {RGBColor[0.560181, 0.691569, 0.194885], PointSize[
+           0.012833333333333334`], AbsoluteThickness[1.6], 
+           Dashing[{Small, Small}], 
+           StyleBox[LineBox[CompressedData["
 1:eJxTTMoPSmViYGAQBWIQDQYFxx3cA/iMslif2YP5c044nF3swbfo6VMI/8RJ
 h1nKL8/LHYPyv5xyWHhQd8f9ZVC+whkHt4WbuJ+0Q/k+Zx0mTEwW0s6E8ivO
 OUisyRXf4gXlLznvcELCMLNOB8rPuOBw86tRZCcflP/vgoNVCr/NlQ9PIPwp
 Fx2kd2Rnxl2G8rUuOTicfWGtvg3KP3DJQateVFBvJpQfdtmBzzXRs6gGyn9z
 2eHvBz6Pz/FQftMVhzWT1Is3OEP5ElcdwmpzjVeqQ/nrrjqcKfD/cocbyne5
 5tD49Lay94fHEP6taw4N1VuMPl+B8guuO1j2ME65svOxPQCL2HXe
-           
-           "]]}}}, {}, {}, {{}, {}}, {{}, {}}}, {{}, 
-       GraphicsComplexBox[{{14000., 0.4765063469005353}, {18000., 
-        0.5220668094487226}, {22000., 0.5170602654765117}, {14000., 
-        0.6481155425314854}, {18000., 0.6313761900746826}, {22000., 
-        0.6026496871882578}, {14000., 0.4765063469005353}, {18000., 
-        0.5220668094487226}, {22000., 0.5170602654765117}, {14000., 
-        0.6481155425314854}, {18000., 0.6313761900746826}, {22000., 
-        0.6026496871882578}}, {{{
-           Directive[
-            AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-            FontFamily -> "Helvetica", 
-            PointSize[0.02], 
-            RGBColor[0.368417, 0.506779, 0.709798], 
-            AbsolutePointSize[6]], {
-            InsetBox[
-             GraphicsBox[{
-               Directive[
-                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-                FontFamily -> "Helvetica", 
-                PointSize[0.02], 
-                RGBColor[0.368417, 0.506779, 0.709798], 
-                AbsolutePointSize[6]], 
-               DiskBox[{0, 0}]}], 7, Automatic, 
-             Scaled[{0.04, 0.04}]], {
-             
-             LineBox[{{14000., 0.48844256840933786`}, {14000., 
-              0.4645701253917327}}], {
-              Thickness[0.003], 
-              
-              LineBox[{{13900., 0.4645701253917327}, {14100., 
-               0.4645701253917327}}]}, {
-              Thickness[0.003], 
-              
-              LineBox[{{13900., 0.48844256840933786`}, {14100., 
-               0.48844256840933786`}}]}}}, {
-            InsetBox[
-             GraphicsBox[{
-               Directive[
-                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-                FontFamily -> "Helvetica", 
-                PointSize[0.02], 
-                RGBColor[0.368417, 0.506779, 0.709798], 
-                AbsolutePointSize[6]], 
-               DiskBox[{0, 0}]}], 8, Automatic, 
-             Scaled[{0.04, 0.04}]], {
-             
-             LineBox[{{18000., 0.5340652085376615}, {18000., 
-              0.5100684103597838}}], {
-              Thickness[0.003], 
-              
-              LineBox[{{17900., 0.5100684103597838}, {18100., 
-               0.5100684103597838}}]}, {
-              Thickness[0.003], 
-              
-              LineBox[{{17900., 0.5340652085376615}, {18100., 
-               0.5340652085376615}}]}}}, {
-            InsetBox[
-             GraphicsBox[{
-               Directive[
-                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-                FontFamily -> "Helvetica", 
-                PointSize[0.02], 
-                RGBColor[0.368417, 0.506779, 0.709798], 
-                AbsolutePointSize[6]], 
-               DiskBox[{0, 0}]}], 9, Automatic, 
-             Scaled[{0.04, 0.04}]], {
-             
-             LineBox[{{22000., 0.5290298390323186}, {22000., 
-              0.5050906919207049}}], {
-              Thickness[0.003], 
-              
-              LineBox[{{21900., 0.5050906919207049}, {22100., 
-               0.5050906919207049}}]}, {
-              Thickness[0.003], 
-              
-              LineBox[{{21900., 0.5290298390323186}, {22100., 
-               0.5290298390323186}}]}}}}, {
-           Directive[
-            AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-            FontFamily -> "Helvetica", 
-            PointSize[0.02], 
-            RGBColor[0.560181, 0.691569, 0.194885], 
-            AbsolutePointSize[6]], {
-            InsetBox[
-             GraphicsBox[{
-               Directive[
-                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-                FontFamily -> "Helvetica", 
-                PointSize[0.02], 
-                RGBColor[0.560181, 0.691569, 0.194885], 
-                AbsolutePointSize[6]], 
-               PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 10, 
-             Automatic, 
-             Scaled[{0.04, 0.04}]], {
-             
-             LineBox[{{14000., 0.662186213202158}, {14000., 
-              0.6340448718608128}}], {
-              Thickness[0.003], 
-              
-              LineBox[{{13900., 0.6340448718608128}, {14100., 
-               0.6340448718608128}}]}, {
-              Thickness[0.003], 
-              
-              LineBox[{{13900., 0.662186213202158}, {14100., 
-               0.662186213202158}}]}}}, {
-            InsetBox[
-             GraphicsBox[{
-               Directive[
-                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-                FontFamily -> "Helvetica", 
-                PointSize[0.02], 
-                RGBColor[0.560181, 0.691569, 0.194885], 
-                AbsolutePointSize[6]], 
-               PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 11, 
-             Automatic, 
-             Scaled[{0.04, 0.04}]], {
-             
-             LineBox[{{18000., 0.6446131261108534}, {18000., 
-              0.6181392540385118}}], {
-              Thickness[0.003], 
-              
-              LineBox[{{17900., 0.6181392540385118}, {18100., 
-               0.6181392540385118}}]}, {
-              Thickness[0.003], 
-              
-              LineBox[{{17900., 0.6446131261108534}, {18100., 
-               0.6446131261108534}}]}}}, {
-            InsetBox[
-             GraphicsBox[{
-               Directive[
-                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-                FontFamily -> "Helvetica", 
-                PointSize[0.02], 
-                RGBColor[0.560181, 0.691569, 0.194885], 
-                AbsolutePointSize[6]], 
-               PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 12, 
-             Automatic, 
-             Scaled[{0.04, 0.04}]], {
-             
-             LineBox[{{22000., 0.6157515185235639}, {22000., 
-              0.5895478558529518}}], {
-              Thickness[0.003], 
-              
-              LineBox[{{21900., 0.5895478558529518}, {22100., 
-               0.5895478558529518}}]}, {
-              Thickness[0.003], 
-              
-              LineBox[{{21900., 0.6157515185235639}, {22100., 
-               0.6157515185235639}}]}}}}, {}}}], {}, {}, {{}, {}}, {{}, \
-{}}}}, {DisplayFunction -> Identity, PlotRangePadding -> {{0, 0}, {0, 0}}, 
-      AxesOrigin -> {12060., 0.4612}, 
-      PlotRange -> {{12000, 24000}, {0.46, 0.7}}, PlotRangeClipping -> True, 
-      ImagePadding -> {{70, 30}, {50, 30}}, DisplayFunction -> Identity, 
-      AspectRatio -> NCache[GoldenRatio^(-1), 0.6180339887498948], 
-      Axes -> {True, True}, AxesLabel -> {None, None}, 
-      AxesOrigin -> {12060., 0.4612}, 
-      BaseStyle -> {
-       FontSize -> 16, FontWeight -> Plain, FontFamily -> "Helvetica"}, 
-      DisplayFunction :> Identity, Epilog -> {
-        Directive[
-         Dashing[{Small, Small}]], 
-        LineBox[{{12000, 0.5}, {24000, 0.5}}]}, 
-      Frame -> {{True, True}, {True, True}}, FrameLabel -> {{
-         FormBox["\"Fidelity\"", TraditionalForm], None}, {
-         FormBox["\"Max entangling attempts\"", TraditionalForm], 
-         FormBox[
-          StyleBox[
-          "\"0.15 bright-state population \[Alpha]\"", Bold, StripOnInput -> 
-           False], TraditionalForm]}}, 
-      FrameTicks -> {{Automatic, Automatic}, {Automatic, Automatic}}, 
-      GridLines -> {None, None}, GridLinesStyle -> Directive[
-        GrayLevel[0.5, 0.4]], ImagePadding -> {{70, 30}, {50, 30}}, ImageSize -> 
-      500, Method -> {"CoordinatesToolOptions" -> {"DisplayFunction" -> ({
-            (Identity[#]& )[
-             Part[#, 1]], 
-            (Identity[#]& )[
-             Part[#, 2]]}& ), "CopiedValueFunction" -> ({
-            (Identity[#]& )[
-             Part[#, 1]], 
-            (Identity[#]& )[
-             Part[#, 2]]}& )}}, PlotRange -> {{12000, 24000}, {0.46, 0.7}}, 
-      PlotRangeClipping -> True, PlotRangePadding -> {{0, 0}, {0, 0}}, 
-      Ticks -> {Automatic, Automatic}}],TagBox[
-     GraphicsBox[{{{{}, {{{}, {}, {
-            Hue[0.67, 0.6, 0.6], 
-            Directive[
-             PointSize[0.012833333333333334`], 
-             AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-             FontFamily -> "Helvetica", 
-             Thickness[0.004], 
-             RGBColor[0.368417, 0.506779, 0.709798]], 
-            LineBox[CompressedData["
+             "]],
+            FontFamily->"Helvetica",
+            FontSize->16,
+            FontWeight->Plain]}}, {}, {}, {{}, {}}, {{}, {}}}, {{}, 
+         GraphicsComplexBox[{{14000., 0.4765063469005353}, {18000., 
+          0.5220668094487226}, {22000., 0.5170602654765117}, {14000., 
+          0.6481155425314854}, {18000., 0.6313761900746826}, {22000., 
+          0.6026496871882578}, {14000., 0.4765063469005353}, {18000., 
+          0.5220668094487226}, {22000., 0.5170602654765117}, {14000., 
+          0.6481155425314854}, {18000., 0.6313761900746826}, {22000., 
+          0.6026496871882578}}, {
+           {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[6], 
+            AbsoluteThickness[1.6], 
+            StyleBox[{{InsetBox[
+                GraphicsBox[
+                 {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                  6], AbsoluteThickness[1.6], 
+                  StyleBox[DiskBox[{0, 0}],
+                   FontFamily->"Helvetica",
+                   FontSize->16,
+                   FontWeight->Plain]}], 7, Automatic, 
+                Scaled[{0.04, 0.04}]], {
+                LineBox[{{14000., 0.48844256840933786`}, {14000., 
+                 0.4645701253917327}}], 
+                {Thickness[0.003], 
+                 LineBox[{{13900., 0.4645701253917327}, {14100., 
+                  0.4645701253917327}}]}, 
+                {Thickness[0.003], 
+                 LineBox[{{13900., 0.48844256840933786`}, {14100., 
+                  0.48844256840933786`}}]}}}, {InsetBox[
+                GraphicsBox[
+                 {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                  6], AbsoluteThickness[1.6], 
+                  StyleBox[DiskBox[{0, 0}],
+                   FontFamily->"Helvetica",
+                   FontSize->16,
+                   FontWeight->Plain]}], 8, Automatic, 
+                Scaled[{0.04, 0.04}]], {
+                LineBox[{{18000., 0.5340652085376615}, {18000., 
+                 0.5100684103597838}}], 
+                {Thickness[0.003], 
+                 LineBox[{{17900., 0.5100684103597838}, {18100., 
+                  0.5100684103597838}}]}, 
+                {Thickness[0.003], 
+                 LineBox[{{17900., 0.5340652085376615}, {18100., 
+                  0.5340652085376615}}]}}}, {InsetBox[
+                GraphicsBox[
+                 {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                  6], AbsoluteThickness[1.6], 
+                  StyleBox[DiskBox[{0, 0}],
+                   FontFamily->"Helvetica",
+                   FontSize->16,
+                   FontWeight->Plain]}], 9, Automatic, 
+                Scaled[{0.04, 0.04}]], {
+                LineBox[{{22000., 0.5290298390323186}, {22000., 
+                 0.5050906919207049}}], 
+                {Thickness[0.003], 
+                 LineBox[{{21900., 0.5050906919207049}, {22100., 
+                  0.5050906919207049}}]}, 
+                {Thickness[0.003], 
+                 LineBox[{{21900., 0.5290298390323186}, {22100., 
+                  0.5290298390323186}}]}}}},
+             FontFamily->"Helvetica",
+             FontSize->16,
+             FontWeight->Plain]}, 
+           {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[6], 
+            AbsoluteThickness[1.6], 
+            StyleBox[{{InsetBox[
+                GraphicsBox[
+                 {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                  6], AbsoluteThickness[1.6], 
+                  StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                   FontFamily->"Helvetica",
+                   FontSize->16,
+                   FontWeight->Plain]}], 10, Automatic, 
+                Scaled[{0.04, 0.04}]], {
+                LineBox[{{14000., 0.662186213202158}, {14000., 
+                 0.6340448718608128}}], 
+                {Thickness[0.003], 
+                 LineBox[{{13900., 0.6340448718608128}, {14100., 
+                  0.6340448718608128}}]}, 
+                {Thickness[0.003], 
+                 LineBox[{{13900., 0.662186213202158}, {14100., 
+                  0.662186213202158}}]}}}, {InsetBox[
+                GraphicsBox[
+                 {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                  6], AbsoluteThickness[1.6], 
+                  StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                   FontFamily->"Helvetica",
+                   FontSize->16,
+                   FontWeight->Plain]}], 11, Automatic, 
+                Scaled[{0.04, 0.04}]], {
+                LineBox[{{18000., 0.6446131261108534}, {18000., 
+                 0.6181392540385118}}], 
+                {Thickness[0.003], 
+                 LineBox[{{17900., 0.6181392540385118}, {18100., 
+                  0.6181392540385118}}]}, 
+                {Thickness[0.003], 
+                 LineBox[{{17900., 0.6446131261108534}, {18100., 
+                  0.6446131261108534}}]}}}, {InsetBox[
+                GraphicsBox[
+                 {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                  6], AbsoluteThickness[1.6], 
+                  StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                   FontFamily->"Helvetica",
+                   FontSize->16,
+                   FontWeight->Plain]}], 12, Automatic, 
+                Scaled[{0.04, 0.04}]], {
+                LineBox[{{22000., 0.6157515185235639}, {22000., 
+                 0.5895478558529518}}], 
+                {Thickness[0.003], 
+                 LineBox[{{21900., 0.5895478558529518}, {22100., 
+                  0.5895478558529518}}]}, 
+                {Thickness[0.003], 
+                 LineBox[{{21900., 0.6157515185235639}, {22100., 
+                  0.6157515185235639}}]}}}},
+             FontFamily->"Helvetica",
+             FontSize->16,
+             FontWeight->Plain]}, {}}], {}, {}, {{}, {}}, {{}, {}}}},
+       AspectRatio->NCache[GoldenRatio^(-1), 0.6180339887498948],
+       Axes->{True, True},
+       AxesLabel->{None, None},
+       AxesOrigin->{12060., 0.4612},
+       BaseStyle->{
+        FontSize -> 16, FontWeight -> Plain, FontFamily -> "Helvetica"},
+       DisplayFunction->Identity,
+       Epilog->{
+         Directive[
+          Dashing[{Small, Small}]], 
+         LineBox[{{12000, 0.5}, {24000, 0.5}}]},
+       Frame->{{True, True}, {True, True}},
+       FrameLabel->{{
+          FormBox["\"Fidelity\"", TraditionalForm], None}, {
+          FormBox["\"Max entangling attempts\"", TraditionalForm], 
+          FormBox[
+           StyleBox[
+           "\"0.15 bright-state population \[Alpha]\"", Bold, StripOnInput -> 
+            False], TraditionalForm]}},
+       FrameTicks->{{Automatic, Automatic}, {Automatic, Automatic}},
+       GridLines->{None, None},
+       GridLinesStyle->Directive[
+         GrayLevel[0.5, 0.4]],
+       ImagePadding->{{70, 30}, {50, 30}},
+       ImageSize->500,
+       Method->{"CoordinatesToolOptions" -> {"DisplayFunction" -> ({
+             (Identity[#]& )[
+              Part[#, 1]], 
+             (Identity[#]& )[
+              Part[#, 2]]}& ), "CopiedValueFunction" -> ({
+             (Identity[#]& )[
+              Part[#, 1]], 
+             (Identity[#]& )[
+              Part[#, 2]]}& )}},
+       PlotRange->{{12000, 24000}, {0.46, 0.7}},
+       PlotRangeClipping->True,
+       PlotRangePadding->{{0, 0}, {0, 0}},
+       Ticks->{Automatic, Automatic}]},
+     {
+      TagBox[
+       GraphicsBox[{{{{}, {{}, {}, 
+            {RGBColor[0.368417, 0.506779, 0.709798], PointSize[
+             0.012833333333333334`], Thickness[0.004], 
+             StyleBox[LineBox[CompressedData["
 1:eJxTTMoPSmViYGAQBWIQDQYdhx3envn5cfuFB/ZgftMRh8NxeayqDA8h/Jqj
 DmlxjUeqtaD8smMOb/QZZeQDoPyC4w57yjYuyiqE8rNOOKTlZ6ls7oPyU046
 FHx9puS+AsqPO+Xgks7qm78Pyo847fBKwvBt3kUoP+iMw+ekOf4tD6F8n7MO
 L149U3j5Dsp3O+dwW/fA0Us/oXyH8w6PJnKvKWJ6BOHLXnDYlcU47RsHlD/r
 gkOZ/P77HbxQvvhFh12mG/YHCED5Uy46NPIbNRUJQvmClxxu/z1zgB/G77vk
 sK82bKo7P5TPfdlhgYPXSTMeKL/jssPy2wsZf7A/sgcA9J913Q==
-             "]]}, {
-            Hue[0.9060679774997897, 0.6, 0.6], 
-            Directive[
-             PointSize[0.012833333333333334`], 
-             AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-             FontFamily -> "Helvetica", 
-             RGBColor[0.560181, 0.691569, 0.194885], 
-             Dashing[{Small, Small}]], 
-            LineBox[CompressedData["
+               "]],
+              FontFamily->"Helvetica",
+              FontSize->16,
+              FontWeight->Plain]}, 
+            {RGBColor[0.560181, 0.691569, 0.194885], PointSize[
+             0.012833333333333334`], AbsoluteThickness[1.6], 
+             Dashing[{Small, Small}], 
+             StyleBox[LineBox[CompressedData["
 1:eJxTTMoPSmViYGAQBWIQDQYdhx3U71YWnJj+xB7Mbzri0P9gl+XXeii/5qiD
 iNuyZz4ZUH7ZMQfBy9VC5wOg/ILjDtP5/0RWW0L5WSccpn5Lig5UgvJTTjrc
 2pC0LYAbyo875fAxSo6n8stjCD/itMO0qyr/T96F8oPOOCgtzDZ2Pg7l+5x1
 aDjs6fdkA5Tvds5h1Y6ib2tmQfkO5x1e5n68PKcFype94FDrrjxhcx6UP+uC
 w3mDzVc/RED54hcdJLdPCQhxhvKnXHRo1Pu/9q4ulC94yaHyYcacHgkov++S
 wyavptMJzFA+92UH7UjDN5HvHkH4HZcdFu/r2VB+85E9AAVFecE=
-             
-             "]]}}}, {}, {}, {{}, {}}, {{}, {}}}, {{}, 
-         GraphicsComplexBox[{{11500., 0.5274918611520919}, {14000., 
-          0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
-          0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
-          0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
-          0.5706323691137881}, {11500., 0.5274918611520919}, {14000., 
-          0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
-          0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
-          0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
-          0.5706323691137881}}, {{{
-             Directive[
-              AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-              FontFamily -> "Helvetica", 
-              PointSize[0.02], 
-              RGBColor[0.368417, 0.506779, 0.709798], 
-              AbsolutePointSize[6]], {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.368417, 0.506779, 0.709798], 
-                  AbsolutePointSize[6]], 
-                 DiskBox[{0, 0}]}], 9, Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{11500., 0.5394469756252984}, {11500., 
-                0.5155367466788854}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{11400., 0.5155367466788854}, {11600., 
-                 0.5155367466788854}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{11400., 0.5394469756252984}, {11600., 
-                 0.5394469756252984}}]}}}, {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.368417, 0.506779, 0.709798], 
-                  AbsolutePointSize[6]], 
-                 DiskBox[{0, 0}]}], 10, Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{14000., 0.5777200157697651}, {14000., 
-                0.5537885957659474}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{13900., 0.5537885957659474}, {14100., 
-                 0.5537885957659474}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{13900., 0.5777200157697651}, {14100., 
-                 0.5777200157697651}}]}}}, {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.368417, 0.506779, 0.709798], 
-                  AbsolutePointSize[6]], 
-                 DiskBox[{0, 0}]}], 11, Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{16500., 0.5636334651844302}, {16500., 
-                0.5396006176062139}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{16400., 0.5396006176062139}, {16600., 
-                 0.5396006176062139}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{16400., 0.5636334651844302}, {16600., 
-                 0.5636334651844302}}]}}}, {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.368417, 0.506779, 0.709798], 
-                  AbsolutePointSize[6]], 
-                 DiskBox[{0, 0}]}], 12, Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{19000., 0.5465230599848283}, {19000., 
-                0.5280400475739144}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{18900., 0.5280400475739144}, {19100., 
-                 0.5280400475739144}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{18900., 0.5465230599848283}, {19100., 
-                 0.5465230599848283}}]}}}}, {
-             Directive[
-              AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-              FontFamily -> "Helvetica", 
-              PointSize[0.02], 
-              RGBColor[0.560181, 0.691569, 0.194885], 
-              AbsolutePointSize[6]], {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.560181, 0.691569, 0.194885], 
-                  AbsolutePointSize[6]], 
-                 PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 13, 
-               Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{11500., 0.6553182979034411}, {11500., 
-                0.6287446870574378}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{11400., 0.6287446870574378}, {11600., 
-                 0.6287446870574378}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{11400., 0.6553182979034411}, {11600., 
-                 0.6553182979034411}}]}}}, {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.560181, 0.691569, 0.194885], 
-                  AbsolutePointSize[6]], 
-                 PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 14, 
-               Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{14000., 0.6467607123295966}, {14000., 
-                0.6211201420806192}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{13900., 0.6211201420806192}, {14100., 
-                 0.6211201420806192}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{13900., 0.6467607123295966}, {14100., 
-                 0.6467607123295966}}]}}}, {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.560181, 0.691569, 0.194885], 
-                  AbsolutePointSize[6]], 
-                 PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 15, 
-               Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               
-               LineBox[{{16500., 0.6129687766151112}, {16500., 
-                0.5874485834151025}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{16400., 0.5874485834151025}, {16600., 
-                 0.5874485834151025}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{16400., 0.6129687766151112}, {16600., 
-                 0.6129687766151112}}]}}}, {
-              InsetBox[
-               GraphicsBox[{
-                 Directive[
-                  AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain,
-                   FontFamily -> "Helvetica", 
-                  PointSize[0.02], 
-                  RGBColor[0.560181, 0.691569, 0.194885], 
-                  AbsolutePointSize[6]], 
-                 PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 16, 
-               Automatic, 
-               Scaled[{0.04, 0.04}]], {
-               LineBox[{{19000., 0.5802544243847854}, {19000., 
-                0.5610103138427909}}], {
-                Thickness[0.003], 
-                
-                LineBox[{{18900., 0.5610103138427909}, {19100., 
-                 0.5610103138427909}}]}, {
-                Thickness[0.003], 
-                
-                LineBox[{{18900., 0.5802544243847854}, {19100., 
-                 0.5802544243847854}}]}}}}, {}}}], {}, {}, {{}, {}}, {{}, \
-{}}}}, {
-        InsetBox[
-         FormBox[
-          
-          TemplateBox[{"\"On demand\"", "\"Only success\""}, "PointLegend", 
-           DisplayFunction -> (FormBox[
+               "]],
+              FontFamily->"Helvetica",
+              FontSize->16,
+              FontWeight->Plain]}}, {}, {}, {{}, {}}, {{}, {}}}, {{}, 
+           GraphicsComplexBox[{{11500., 0.5274918611520919}, {14000., 
+            0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
+            0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
+            0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
+            0.5706323691137881}, {11500., 0.5274918611520919}, {14000., 
+            0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
+            0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
+            0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
+            0.5706323691137881}}, {
+             {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[6], 
+              AbsoluteThickness[1.6], 
+              StyleBox[{{InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[DiskBox[{0, 0}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 9, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{11500., 0.5394469756252984}, {11500., 
+                   0.5155367466788854}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{11400., 0.5155367466788854}, {11600., 
+                    0.5155367466788854}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{11400., 0.5394469756252984}, {11600., 
+                    0.5394469756252984}}]}}}, {InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[DiskBox[{0, 0}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 10, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{14000., 0.5777200157697651}, {14000., 
+                   0.5537885957659474}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{13900., 0.5537885957659474}, {14100., 
+                    0.5537885957659474}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{13900., 0.5777200157697651}, {14100., 
+                    0.5777200157697651}}]}}}, {InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[DiskBox[{0, 0}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 11, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{16500., 0.5636334651844302}, {16500., 
+                   0.5396006176062139}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{16400., 0.5396006176062139}, {16600., 
+                    0.5396006176062139}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{16400., 0.5636334651844302}, {16600., 
+                    0.5636334651844302}}]}}}, {InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.368417, 0.506779, 0.709798], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[DiskBox[{0, 0}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 12, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{19000., 0.5465230599848283}, {19000., 
+                   0.5280400475739144}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{18900., 0.5280400475739144}, {19100., 
+                    0.5280400475739144}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{18900., 0.5465230599848283}, {19100., 
+                    0.5465230599848283}}]}}}},
+               FontFamily->"Helvetica",
+               FontSize->16,
+               FontWeight->Plain]}, 
+             {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[6], 
+              AbsoluteThickness[1.6], 
+              StyleBox[{{InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 13, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{11500., 0.6553182979034411}, {11500., 
+                   0.6287446870574378}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{11400., 0.6287446870574378}, {11600., 
+                    0.6287446870574378}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{11400., 0.6553182979034411}, {11600., 
+                    0.6553182979034411}}]}}}, {InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 14, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{14000., 0.6467607123295966}, {14000., 
+                   0.6211201420806192}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{13900., 0.6211201420806192}, {14100., 
+                    0.6211201420806192}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{13900., 0.6467607123295966}, {14100., 
+                    0.6467607123295966}}]}}}, {InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 15, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{16500., 0.6129687766151112}, {16500., 
+                   0.5874485834151025}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{16400., 0.5874485834151025}, {16600., 
+                    0.5874485834151025}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{16400., 0.6129687766151112}, {16600., 
+                    0.6129687766151112}}]}}}, {InsetBox[
+                  GraphicsBox[
+                   {RGBColor[0.560181, 0.691569, 0.194885], AbsolutePointSize[
+                    6], AbsoluteThickness[1.6], 
+                    StyleBox[PolygonBox[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}],
+                    FontFamily->"Helvetica",
+                    FontSize->16,
+                    FontWeight->Plain]}], 16, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  LineBox[{{19000., 0.5802544243847854}, {19000., 
+                   0.5610103138427909}}], 
+                  {Thickness[0.003], 
+                   LineBox[{{18900., 0.5610103138427909}, {19100., 
+                    0.5610103138427909}}]}, 
+                  {Thickness[0.003], 
+                   LineBox[{{18900., 0.5802544243847854}, {19100., 
+                    0.5802544243847854}}]}}}},
+               FontFamily->"Helvetica",
+               FontSize->16,
+               FontWeight->Plain]}, {}}], {}, {}, {{}, {}}, {{}, {}}}}, 
+         InsetBox[
+          TemplateBox[{"\"On demand\"","\"Only success\""},
+           "PointLegend",
+           DisplayFunction->(FormBox[
              StyleBox[
               StyleBox[
                PaneBox[
@@ -4803,8 +4725,9 @@ wyavptMJzFA+92UH7UjDN5HvHkH4HZcdFu/r2VB+85E9AAVFecE=
                 "ResizeToFit"], LineIndent -> 0, StripOnInput -> False], {
               FontSize -> 14, Background -> GrayLevel[1], FontFamily -> 
                "Arial"}, Background -> Automatic, StripOnInput -> False], 
-             TraditionalForm]& ), 
-           InterpretationFunction :> (RowBox[{"PointLegend", "[", 
+             TraditionalForm]& ),
+           Editable->True,
+           InterpretationFunction:>(RowBox[{"PointLegend", "[", 
               RowBox[{
                 RowBox[{"{", 
                   RowBox[{
@@ -4954,324 +4877,335 @@ wyavptMJzFA+92UH7UjDN5HvHkH4HZcdFu/r2VB+85E9AAVFecE=
                     Automatic, Method -> "Preemptive"], 
                     GrayLevel[1], Editable -> False, Selectable -> False]}]}],
                      "}"}]}], ",", 
-                RowBox[{"LegendLayout", "\[Rule]", "\"Column\""}]}], "]"}]& ),
-            Editable -> True], TraditionalForm], 
-         Scaled[{0.84, 0.84}], 
-         ImageScaled[{0.5, 0.5}], FormatType -> StandardForm, 
-         BaseStyle -> {FontSize -> Larger}]}}, {
-      DisplayFunction -> Identity, DisplayFunction -> Identity, 
-       PlotRangePadding -> {{0, 0}, {0, 0}}, AxesOrigin -> {10050., 0.4612}, 
-       PlotRange -> {{10000, 20000}, {0.46, 0.7}}, PlotRangeClipping -> True, 
-       ImagePadding -> {{40, 60}, {50, 30}}, DisplayFunction -> Identity, 
-       AspectRatio -> NCache[GoldenRatio^(-1), 0.6180339887498948], 
-       Axes -> {True, True}, AxesLabel -> {None, None}, 
-       AxesOrigin -> {10050., 0.4612}, 
-       BaseStyle -> {
-        FontSize -> 16, FontWeight -> Plain, FontFamily -> "Helvetica"}, 
-       DisplayFunction :> Identity, Epilog -> {
-         Directive[
-          Dashing[{Small, Small}]], 
-         LineBox[{{10000, 0.5}, {20000, 0.5}}]}, 
-       Frame -> {{True, True}, {True, True}}, FrameLabel -> {{None, None}, {
-          FormBox["\"Max entangling attempts\"", TraditionalForm], 
-          FormBox[
-           StyleBox[
-           "\"0.2 bright-state population \[Alpha]\"", Bold, StripOnInput -> 
-            False], TraditionalForm]}}, 
-       FrameTicks -> {{Automatic, Automatic}, {Automatic, Automatic}}, 
-       GridLines -> {None, None}, GridLinesStyle -> Directive[
-         GrayLevel[0.5, 0.4]], ImagePadding -> {{40, 60}, {50, 30}}, 
-       ImageSize -> 500, 
-       Method -> {"CoordinatesToolOptions" -> {"DisplayFunction" -> ({
-             (Identity[#]& )[
-              Part[#, 1]], 
-             (Identity[#]& )[
-              Part[#, 2]]}& ), "CopiedValueFunction" -> ({
-             (Identity[#]& )[
-              Part[#, 1]], 
-             (Identity[#]& )[
-              Part[#, 2]]}& )}}, PlotRange -> {{10000, 20000}, {0.46, 0.7}}, 
-       PlotRangeClipping -> True, PlotRangePadding -> {{0, 0}, {0, 0}}, 
-       Ticks -> {Automatic, Automatic}}], 
-     InterpretTemplate[Legended[
-       Graphics[{{{}, {{{}, {}, {
-             Hue[0.67, 0.6, 0.6], 
-             Directive[
-              PointSize[0.012833333333333334`], 
-              AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-              FontFamily -> "Helvetica", 
-              Thickness[0.004], 
-              RGBColor[0.368417, 0.506779, 0.709798]], 
-             Line[CompressedData["
+                RowBox[{"LegendLayout", "\[Rule]", "\"Column\""}]}], 
+              "]"}]& )], Scaled[{0.84, 0.84}], ImageScaled[{0.5, 0.5}],
+          BaseStyle->{FontSize -> Larger},
+          FormatType->StandardForm]},
+        AspectRatio->NCache[GoldenRatio^(-1), 0.6180339887498948],
+        Axes->{True, True},
+        AxesLabel->{None, None},
+        AxesOrigin->{10050., 0.4612},
+        BaseStyle->{
+         FontSize -> 16, FontWeight -> Plain, FontFamily -> "Helvetica"},
+        DisplayFunction->Identity,
+        Epilog->{
+          Directive[
+           Dashing[{Small, Small}]], 
+          LineBox[{{10000, 0.5}, {20000, 0.5}}]},
+        Frame->{{True, True}, {True, True}},
+        FrameLabel->{{None, None}, {
+           FormBox["\"Max entangling attempts\"", TraditionalForm], 
+           FormBox[
+            StyleBox[
+            "\"0.2 bright-state population \[Alpha]\"", Bold, StripOnInput -> 
+             False], TraditionalForm]}},
+        FrameTicks->{{Automatic, Automatic}, {Automatic, Automatic}},
+        GridLines->{None, None},
+        GridLinesStyle->Directive[
+          GrayLevel[0.5, 0.4]],
+        ImagePadding->{{40, 60}, {50, 30}},
+        ImageSize->500,
+        Method->{"CoordinatesToolOptions" -> {"DisplayFunction" -> ({
+              (Identity[#]& )[
+               Part[#, 1]], 
+              (Identity[#]& )[
+               Part[#, 2]]}& ), "CopiedValueFunction" -> ({
+              (Identity[#]& )[
+               Part[#, 1]], 
+              (Identity[#]& )[
+               Part[#, 2]]}& )}},
+        PlotRange->{{10000, 20000}, {0.46, 0.7}},
+        PlotRangeClipping->True,
+        PlotRangePadding->{{0, 0}, {0, 0}},
+        Ticks->{Automatic, Automatic}],
+       InterpretTemplate[Legended[
+         Graphics[{{{}, {{{}, {}, {
+               Hue[0.67, 0.6, 0.6], 
+               Directive[
+                PointSize[0.012833333333333334`], 
+                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
+                FontFamily -> "Helvetica", 
+                Thickness[0.004], 
+                RGBColor[0.368417, 0.506779, 0.709798]], 
+               Line[CompressedData["
 1:eJxTTMoPSmViYGAQBWIQDQYdhx3envn5cfuFB/ZgftMRh8NxeayqDA8h/Jqj
 DmlxjUeqtaD8smMOb/QZZeQDoPyC4w57yjYuyiqE8rNOOKTlZ6ls7oPyU046
 FHx9puS+AsqPO+Xgks7qm78Pyo847fBKwvBt3kUoP+iMw+ekOf4tD6F8n7MO
 L149U3j5Dsp3O+dwW/fA0Us/oXyH8w6PJnKvKWJ6BOHLXnDYlcU47RsHlD/r
 gkOZ/P77HbxQvvhFh12mG/YHCED5Uy46NPIbNRUJQvmClxxu/z1zgB/G77vk
 sK82bKo7P5TPfdlhgYPXSTMeKL/jssPy2wsZf7A/sgcA9J913Q==
-              "]]}, {
-             Hue[0.9060679774997897, 0.6, 0.6], 
-             Directive[
-              PointSize[0.012833333333333334`], 
-              AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-              FontFamily -> "Helvetica", 
-              RGBColor[0.560181, 0.691569, 0.194885], 
-              Dashing[{Small, Small}]], 
-             Line[CompressedData["
+                "]]}, {
+               Hue[0.9060679774997897, 0.6, 0.6], 
+               Directive[
+                PointSize[0.012833333333333334`], 
+                AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
+                FontFamily -> "Helvetica", 
+                RGBColor[0.560181, 0.691569, 0.194885], 
+                Dashing[{Small, Small}]], 
+               Line[CompressedData["
 1:eJxTTMoPSmViYGAQBWIQDQYdhx3U71YWnJj+xB7Mbzri0P9gl+XXeii/5qiD
 iNuyZz4ZUH7ZMQfBy9VC5wOg/ILjDtP5/0RWW0L5WSccpn5Lig5UgvJTTjrc
 2pC0LYAbyo875fAxSo6n8stjCD/itMO0qyr/T96F8oPOOCgtzDZ2Pg7l+5x1
 aDjs6fdkA5Tvds5h1Y6ib2tmQfkO5x1e5n68PKcFype94FDrrjxhcx6UP+uC
 w3mDzVc/RED54hcdJLdPCQhxhvKnXHRo1Pu/9q4ulC94yaHyYcacHgkov++S
 wyavptMJzFA+92UH7UjDN5HvHkH4HZcdFu/r2VB+85E9AAVFecE=
-              
-              "]]}}}, {}, {}, {{}, {}}, {{}, {}}}, {{}, 
-          
-          GraphicsComplex[{{11500., 0.5274918611520919}, {14000., 
-           0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
-           0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
-           0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
-           0.5706323691137881}, {11500., 0.5274918611520919}, {14000., 
-           0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
-           0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
-           0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
-           0.5706323691137881}}, {{{
-              Directive[
-               AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-               FontFamily -> "Helvetica", 
-               PointSize[0.02], 
-               RGBColor[0.368417, 0.506779, 0.709798], 
-               AbsolutePointSize[6]], {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.368417, 0.506779, 0.709798], 
-                   AbsolutePointSize[6]], 
-                  Disk[{0, 0}]}], 9, Automatic, 
-                Scaled[{0.04, 0.04}]], {
                 
-                Line[{{11500., 0.5394469756252984}, {11500., 
-                 0.5155367466788854}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{11400., 0.5155367466788854}, {11600., 
-                  0.5155367466788854}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{11400., 0.5394469756252984}, {11600., 
-                  0.5394469756252984}}]}}}, {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.368417, 0.506779, 0.709798], 
-                   AbsolutePointSize[6]], 
-                  Disk[{0, 0}]}], 10, Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                
-                Line[{{14000., 0.5777200157697651}, {14000., 
-                 0.5537885957659474}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{13900., 0.5537885957659474}, {14100., 
-                  0.5537885957659474}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{13900., 0.5777200157697651}, {14100., 
-                  0.5777200157697651}}]}}}, {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.368417, 0.506779, 0.709798], 
-                   AbsolutePointSize[6]], 
-                  Disk[{0, 0}]}], 11, Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                
-                Line[{{16500., 0.5636334651844302}, {16500., 
-                 0.5396006176062139}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{16400., 0.5396006176062139}, {16600., 
-                  0.5396006176062139}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{16400., 0.5636334651844302}, {16600., 
-                  0.5636334651844302}}]}}}, {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.368417, 0.506779, 0.709798], 
-                   AbsolutePointSize[6]], 
-                  Disk[{0, 0}]}], 12, Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                
-                Line[{{19000., 0.5465230599848283}, {19000., 
-                 0.5280400475739144}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{18900., 0.5280400475739144}, {19100., 
-                  0.5280400475739144}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{18900., 0.5465230599848283}, {19100., 
-                  0.5465230599848283}}]}}}}, {
-              Directive[
-               AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-               FontFamily -> "Helvetica", 
-               PointSize[0.02], 
-               RGBColor[0.560181, 0.691569, 0.194885], 
-               AbsolutePointSize[6]], {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.560181, 0.691569, 0.194885], 
-                   AbsolutePointSize[6]], 
-                  Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 13, 
-                Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                
-                Line[{{11500., 0.6553182979034411}, {11500., 
-                 0.6287446870574378}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{11400., 0.6287446870574378}, {11600., 
-                  0.6287446870574378}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{11400., 0.6553182979034411}, {11600., 
-                  0.6553182979034411}}]}}}, {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.560181, 0.691569, 0.194885], 
-                   AbsolutePointSize[6]], 
-                  Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 14, 
-                Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                
-                Line[{{14000., 0.6467607123295966}, {14000., 
-                 0.6211201420806192}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{13900., 0.6211201420806192}, {14100., 
-                  0.6211201420806192}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{13900., 0.6467607123295966}, {14100., 
-                  0.6467607123295966}}]}}}, {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.560181, 0.691569, 0.194885], 
-                   AbsolutePointSize[6]], 
-                  Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 15, 
-                Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                Line[{{16500., 0.6129687766151112}, {16500., 
-                 0.5874485834151025}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{16400., 0.5874485834151025}, {16600., 
-                  0.5874485834151025}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{16400., 0.6129687766151112}, {16600., 
-                  0.6129687766151112}}]}}}, {
-               Inset[
-                Graphics[{
-                  Directive[
-                   AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
-                   Plain, FontFamily -> "Helvetica", 
-                   PointSize[0.02], 
-                   RGBColor[0.560181, 0.691569, 0.194885], 
-                   AbsolutePointSize[6]], 
-                  Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 16, 
-                Automatic, 
-                Scaled[{0.04, 0.04}]], {
-                
-                Line[{{19000., 0.5802544243847854}, {19000., 
-                 0.5610103138427909}}], {
-                 Thickness[0.003], 
-                 
-                 Line[{{18900., 0.5610103138427909}, {19100., 
-                  0.5610103138427909}}]}, {
-                 Thickness[0.003], 
-                 
-                 Line[{{18900., 0.5802544243847854}, {19100., 
-                  0.5802544243847854}}]}}}}, {}}}], {}, {}, {{}, {}}, {{}, \
+                "]]}}}, {}, {}, {{}, {}}, {{}, {}}}, {{}, 
+            
+            GraphicsComplex[{{11500., 0.5274918611520919}, {14000., 
+             0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
+             0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
+             0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
+             0.5706323691137881}, {11500., 0.5274918611520919}, {14000., 
+             0.5657543057678562}, {16500., 0.5516170413953221}, {19000., 
+             0.5372815537793714}, {11500., 0.6420314924804394}, {14000., 
+             0.6339404272051079}, {16500., 0.6002086800151069}, {19000., 
+             0.5706323691137881}}, {{{
+                Directive[
+                 AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
+                 FontFamily -> "Helvetica", 
+                 PointSize[0.02], 
+                 RGBColor[0.368417, 0.506779, 0.709798], 
+                 AbsolutePointSize[6]], {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.368417, 0.506779, 0.709798], 
+                    AbsolutePointSize[6]], 
+                    Disk[{0, 0}]}], 9, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{11500., 0.5394469756252984}, {11500., 
+                   0.5155367466788854}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{11400., 0.5155367466788854}, {11600., 
+                    0.5155367466788854}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{11400., 0.5394469756252984}, {11600., 
+                    0.5394469756252984}}]}}}, {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.368417, 0.506779, 0.709798], 
+                    AbsolutePointSize[6]], 
+                    Disk[{0, 0}]}], 10, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{14000., 0.5777200157697651}, {14000., 
+                   0.5537885957659474}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{13900., 0.5537885957659474}, {14100., 
+                    0.5537885957659474}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{13900., 0.5777200157697651}, {14100., 
+                    0.5777200157697651}}]}}}, {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.368417, 0.506779, 0.709798], 
+                    AbsolutePointSize[6]], 
+                    Disk[{0, 0}]}], 11, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{16500., 0.5636334651844302}, {16500., 
+                   0.5396006176062139}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{16400., 0.5396006176062139}, {16600., 
+                    0.5396006176062139}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{16400., 0.5636334651844302}, {16600., 
+                    0.5636334651844302}}]}}}, {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.368417, 0.506779, 0.709798], 
+                    AbsolutePointSize[6]], 
+                    Disk[{0, 0}]}], 12, Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{19000., 0.5465230599848283}, {19000., 
+                   0.5280400475739144}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{18900., 0.5280400475739144}, {19100., 
+                    0.5280400475739144}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{18900., 0.5465230599848283}, {19100., 
+                    0.5465230599848283}}]}}}}, {
+                Directive[
+                 AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
+                 FontFamily -> "Helvetica", 
+                 PointSize[0.02], 
+                 RGBColor[0.560181, 0.691569, 0.194885], 
+                 AbsolutePointSize[6]], {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.560181, 0.691569, 0.194885], 
+                    AbsolutePointSize[6]], 
+                    Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 13, 
+                  Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{11500., 0.6553182979034411}, {11500., 
+                   0.6287446870574378}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{11400., 0.6287446870574378}, {11600., 
+                    0.6287446870574378}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{11400., 0.6553182979034411}, {11600., 
+                    0.6553182979034411}}]}}}, {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.560181, 0.691569, 0.194885], 
+                    AbsolutePointSize[6]], 
+                    Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 14, 
+                  Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{14000., 0.6467607123295966}, {14000., 
+                   0.6211201420806192}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{13900., 0.6211201420806192}, {14100., 
+                    0.6211201420806192}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{13900., 0.6467607123295966}, {14100., 
+                    0.6467607123295966}}]}}}, {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.560181, 0.691569, 0.194885], 
+                    AbsolutePointSize[6]], 
+                    Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 15, 
+                  Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{16500., 0.6129687766151112}, {16500., 
+                   0.5874485834151025}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{16400., 0.5874485834151025}, {16600., 
+                    0.5874485834151025}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{16400., 0.6129687766151112}, {16600., 
+                    0.6129687766151112}}]}}}, {
+                 Inset[
+                  Graphics[{
+                    Directive[
+                    AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> 
+                    Plain, FontFamily -> "Helvetica", 
+                    PointSize[0.02], 
+                    RGBColor[0.560181, 0.691569, 0.194885], 
+                    AbsolutePointSize[6]], 
+                    Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 16, 
+                  Automatic, 
+                  Scaled[{0.04, 0.04}]], {
+                  
+                  Line[{{19000., 0.5802544243847854}, {19000., 
+                   0.5610103138427909}}], {
+                   Thickness[0.003], 
+                   
+                   Line[{{18900., 0.5610103138427909}, {19100., 
+                    0.5610103138427909}}]}, {
+                   Thickness[0.003], 
+                   
+                   Line[{{18900., 0.5802544243847854}, {19100., 
+                    0.5802544243847854}}]}}}}, {}}}], {}, {}, {{}, {}}, {{}, \
 {}}}}, {DisplayFunction -> Identity, PlotRangePadding -> {{0, 0}, {0, 0}}, 
-         AxesOrigin -> {10050., 0.4612}, 
-         PlotRange -> {{10000, 20000}, {0.46, 0.7}}, PlotRangeClipping -> 
-         True, ImagePadding -> {{40, 60}, {50, 30}}, DisplayFunction -> 
-         Identity, AspectRatio -> GoldenRatio^(-1), Axes -> {True, True}, 
-         AxesLabel -> {None, None}, AxesOrigin -> {10050., 0.4612}, 
-         BaseStyle -> {
-          FontSize -> 16, FontWeight -> Plain, FontFamily -> "Helvetica"}, 
-         DisplayFunction :> Identity, Epilog -> {
-           Directive[
-            Dashing[{Small, Small}]], 
-           Line[{{10000, 0.5}, {20000, 0.5}}]}, 
-         Frame -> {{True, True}, {True, True}}, 
-         FrameLabel -> {{None, None}, {"Max entangling attempts", 
-            Style["0.2 bright-state population \[Alpha]", Bold]}}, 
-         FrameTicks -> {{Automatic, Automatic}, {Automatic, Automatic}}, 
-         GridLines -> {None, None}, GridLinesStyle -> Directive[
-           GrayLevel[0.5, 0.4]], ImagePadding -> {{40, 60}, {50, 30}}, 
-         ImageSize -> 500, 
-         Method -> {"CoordinatesToolOptions" -> {"DisplayFunction" -> ({
-               (Identity[#]& )[
-                Part[#, 1]], 
-               (Identity[#]& )[
-                Part[#, 2]]}& ), "CopiedValueFunction" -> ({
-               (Identity[#]& )[
-                Part[#, 1]], 
-               (Identity[#]& )[
-                Part[#, 2]]}& )}}, PlotRange -> {{10000, 20000}, {0.46, 0.7}},
-          PlotRangeClipping -> True, PlotRangePadding -> {{0, 0}, {0, 0}}, 
-         Ticks -> {Automatic, Automatic}}], 
-       Placed[
-        Unevaluated[
-         PointLegend[{
-           Directive[
-            AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-            FontFamily -> "Helvetica", 
-            PointSize[0.02], 
-            RGBColor[0.368417, 0.506779, 0.709798]], 
-           Directive[
-            AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
-            FontFamily -> "Helvetica", 
-            PointSize[0.02], 
-            RGBColor[0.560181, 0.691569, 0.194885]]}, {
-          "On demand", "Only success"}, LegendMarkers -> {{
-             Graphics[{
-               Disk[{0, 0}]}], 0.05}, {
-             Graphics[{
-               Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 0.05}}, 
-          Joined -> {False, False}, 
-          LabelStyle -> {14, Background -> GrayLevel[1]}, LegendLayout -> 
-          "Column"]], {0.84, 0.84}, Identity]]& ], Editable -> True, 
-     Selectable -> True, SelectWithContents -> False, AutoDelete -> True]},
-   "RowDefault"],
+           AxesOrigin -> {10050., 0.4612}, 
+           PlotRange -> {{10000, 20000}, {0.46, 0.7}}, PlotRangeClipping -> 
+           True, ImagePadding -> {{40, 60}, {50, 30}}, DisplayFunction -> 
+           Identity, AspectRatio -> GoldenRatio^(-1), Axes -> {True, True}, 
+           AxesLabel -> {None, None}, AxesOrigin -> {10050., 0.4612}, 
+           BaseStyle -> {
+            FontSize -> 16, FontWeight -> Plain, FontFamily -> "Helvetica"}, 
+           DisplayFunction :> Identity, Epilog -> {
+             Directive[
+              Dashing[{Small, Small}]], 
+             Line[{{10000, 0.5}, {20000, 0.5}}]}, 
+           Frame -> {{True, True}, {True, True}}, 
+           FrameLabel -> {{None, None}, {"Max entangling attempts", 
+              Style["0.2 bright-state population \[Alpha]", Bold]}}, 
+           FrameTicks -> {{Automatic, Automatic}, {Automatic, Automatic}}, 
+           GridLines -> {None, None}, GridLinesStyle -> Directive[
+             GrayLevel[0.5, 0.4]], ImagePadding -> {{40, 60}, {50, 30}}, 
+           ImageSize -> 500, 
+           Method -> {"CoordinatesToolOptions" -> {"DisplayFunction" -> ({
+                 (Identity[#]& )[
+                  Part[#, 1]], 
+                 (Identity[#]& )[
+                  Part[#, 2]]}& ), "CopiedValueFunction" -> ({
+                 (Identity[#]& )[
+                  Part[#, 1]], 
+                 (Identity[#]& )[
+                  Part[#, 2]]}& )}}, 
+           PlotRange -> {{10000, 20000}, {0.46, 0.7}}, PlotRangeClipping -> 
+           True, PlotRangePadding -> {{0, 0}, {0, 0}}, 
+           Ticks -> {Automatic, Automatic}}], 
+         Placed[
+          Unevaluated[
+           PointLegend[{
+             Directive[
+              AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
+              FontFamily -> "Helvetica", 
+              PointSize[0.02], 
+              RGBColor[0.368417, 0.506779, 0.709798]], 
+             Directive[
+              AbsoluteThickness[1.6], FontSize -> 16, FontWeight -> Plain, 
+              FontFamily -> "Helvetica", 
+              PointSize[0.02], 
+              RGBColor[0.560181, 0.691569, 0.194885]]}, {
+            "On demand", "Only success"}, LegendMarkers -> {{
+               Graphics[{
+                 Disk[{0, 0}]}], 0.05}, {
+               Graphics[{
+                 Polygon[{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}]}], 0.05}}, 
+            Joined -> {False, False}, 
+            LabelStyle -> {14, Background -> GrayLevel[1]}, LegendLayout -> 
+            "Column"]], {0.84, 0.84}, Identity]]& ],
+       AutoDelete->True,
+       Editable->True,
+       SelectWithContents->False,
+       Selectable->True]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Left}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+   "Column"],
   Function[BoxForm`e$, 
    MatrixForm[BoxForm`e$]]]], "Output",
  CellChangeTimes->{{3.7088525320447474`*^9, 3.7088525461661587`*^9}, {
@@ -5297,8 +5231,9 @@ wyavptMJzFA+92UH7UjDN5HvHkH4HZcdFu/r2VB+85E9AAVFecE=
    3.709885982336164*^9, {3.709886027915422*^9, 3.70988623343576*^9}, {
    3.709886295297275*^9, 3.709886317817686*^9}, 3.709886389357368*^9, 
    3.709887976302745*^9, {3.709888008431594*^9, 3.7098880115293837`*^9}, 
-   3.709888278773782*^9},ExpressionUUID->"f6ab8d86-1bc2-49f9-a12b-\
-1529585d658b"]
+   3.709888278773782*^9, 
+   3.709888381785462*^9},ExpressionUUID->"1934f0c0-1839-47be-92b8-\
+6b6d738a5cf0"]
 }, Open  ]]
 }, Open  ]],
 
@@ -10109,48 +10044,48 @@ Cell[158838, 3893, 2535, 47, 87, "Input", "ExpressionUUID" -> \
 Cell[CellGroupData[{
 Cell[161398, 3944, 13203, 320, 372, "Input", "ExpressionUUID" -> \
 "08f9f7dd-394f-4e90-aa43-2f66fed03d11"],
-Cell[174604, 4266, 48681, 1034, 310, "Output", "ExpressionUUID" -> \
-"f6ab8d86-1bc2-49f9-a12b-1529585d658b"]
+Cell[174604, 4266, 47563, 969, 644, "Output", "ExpressionUUID" -> \
+"1934f0c0-1839-47be-92b8-6b6d738a5cf0"]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[223334, 5306, 94, 1, 31, "Subsubsection", "ExpressionUUID" -> \
+Cell[222216, 5241, 94, 1, 31, "Subsubsection", "ExpressionUUID" -> \
 "eac71e02-1877-474c-a3e6-cc5c51818474"],
 Cell[CellGroupData[{
-Cell[223453, 5311, 11647, 287, 638, "Input", "ExpressionUUID" -> \
+Cell[222335, 5246, 11647, 287, 638, "Input", "ExpressionUUID" -> \
 "a5c4686f-27d0-4d25-a954-c823959fa297"],
-Cell[235103, 5600, 45826, 986, 248, "Output", "ExpressionUUID" -> \
+Cell[233985, 5535, 45826, 986, 248, "Output", "ExpressionUUID" -> \
 "61b7f274-7239-4d32-862e-4a5647574d0f"],
-Cell[280932, 6588, 41970, 889, 248, "Output", "ExpressionUUID" -> \
+Cell[279814, 6523, 41970, 889, 248, "Output", "ExpressionUUID" -> \
 "76e18f19-02ad-4a70-8832-5c53f4db8c87"]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[322951, 7483, 238, 4, 31, "Subsubsection", "ExpressionUUID" -> \
+Cell[321833, 7418, 238, 4, 31, "Subsubsection", "ExpressionUUID" -> \
 "8b6addc7-9b02-46ef-b055-f9526da80db0"],
 Cell[CellGroupData[{
-Cell[323214, 7491, 14821, 396, 640, "Input", "ExpressionUUID" -> \
+Cell[322096, 7426, 14821, 396, 640, "Input", "ExpressionUUID" -> \
 "5ffb1c1f-34c6-4ba7-9b59-fbdecd4ca7e5"],
 Cell[CellGroupData[{
-Cell[338060, 7891, 894, 13, 23, "Print", "ExpressionUUID" -> \
+Cell[336942, 7826, 894, 13, 23, "Print", "ExpressionUUID" -> \
 "410bfa3d-d102-4827-96a7-4cce50bd07b0"],
-Cell[338957, 7906, 895, 13, 23, "Print", "ExpressionUUID" -> \
+Cell[337839, 7841, 895, 13, 23, "Print", "ExpressionUUID" -> \
 "50f58f3f-b32b-464e-b8f6-9753d62030c5"]
 }, Open  ]],
-Cell[339867, 7922, 74476, 1444, 642, "Output", "ExpressionUUID" -> \
+Cell[338749, 7857, 74476, 1444, 642, "Output", "ExpressionUUID" -> \
 "77f934c1-21ab-4c95-ab04-13ffa44701b8"]
 }, Open  ]],
-Cell[414358, 9369, 597, 9, 29, "Input", "ExpressionUUID" -> \
+Cell[413240, 9304, 597, 9, 29, "Input", "ExpressionUUID" -> \
 "b8be60fa-1d6b-48bc-8ca3-ec97a3d27db1"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[414992, 9383, 110, 1, 31, "Subsubsection", "ExpressionUUID" -> \
+Cell[413874, 9318, 110, 1, 31, "Subsubsection", "ExpressionUUID" -> \
 "8453a2f6-dea7-4acc-aba9-846a48ac6b05"],
-Cell[415105, 9386, 2798, 64, 106, "Input", "ExpressionUUID" -> \
+Cell[413987, 9321, 2798, 64, 106, "Input", "ExpressionUUID" -> \
 "0abd0fd8-6b3b-4864-a032-58d592820a6e"],
-Cell[417906, 9452, 3855, 90, 201, "Input", "ExpressionUUID" -> \
+Cell[416788, 9387, 3855, 90, 201, "Input", "ExpressionUUID" -> \
 "5a5c7278-13c2-42ec-aa49-a16f687f79e9"],
-Cell[421764, 9544, 17164, 430, 990, "Input", "ExpressionUUID" -> \
+Cell[420646, 9479, 17164, 430, 990, "Input", "ExpressionUUID" -> \
 "f85681ea-24f6-4143-b166-2c3c5f811328"]
 }, Open  ]]
 }, Open  ]]

@@ -202,7 +202,7 @@ def average_repump_time(contains='', do_fit=False, **kw):
 
     fit_offset = kw.pop('fit_offset', 0)
     fit_amplitude = kw.pop('fit_amplitude', 1)
-    fit_x0 = kw.pop('fit_x0', 0.2)
+    fit_x0 = kw.pop('fit_x0', None)
     fit_sigma = kw.pop('fit_sigma', 0.2)
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
@@ -234,7 +234,12 @@ def average_repump_time(contains='', do_fit=False, **kw):
     ### create a plot
     xlabel = a.g.attrs['sweep_name']
     x = a.g.attrs['sweep_pts']  # could potentially be commented out?
-    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='avg repump time')
+    title = kw.pop("title", "avg repump time")
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title=title)
+
+    if fit_x0 is None:
+        max_idx = np.argmax(y)
+        fit_x0 = x[max_idx]
 
     ## plot data
     plot_data(x, y, y_u=y_u)
@@ -253,6 +258,9 @@ def average_repump_time(contains='', do_fit=False, **kw):
 
     ## save and close plot. We are done.
     save_and_close_plot(f)
+
+    if kw.get('ret_data_fit'):
+        return x, y, y_u, fit_result
 
 
 def number_of_repetitions(contains='', do_fit=False, **kw):
@@ -484,7 +492,10 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
 
     # older_than = kw.get('older_than',None) automatically handled by kws
     ### acquire data
-    f = toolbox.latest_data(contains, **kw)
+    if 'folder' in kw:
+        f = kw.pop('folder')
+    else:
+        f = toolbox.latest_data(contains, **kw)
     a = mbi.MBIAnalysis(f)
 
     if freq is None:
@@ -538,9 +549,11 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
         try:
             detuning = a.g.attrs['phase_detuning']
             fit_result['detuning'] = detuning
+            fit_result['acq_phase_per_rep'] = 360 * (p_dict['f']) - detuning
+            fit_result['u_acq_phase_per_rep'] = 360 * (e_dict['f'])
             print 'This is the phase detuning', detuning
             print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(
-                round(360 * (p_dict['f']), 3) - detuning, round(360 * (e_dict['f']), 3))
+                round(fit_result['acq_phase_per_rep'], 3), round(fit_result['u_acq_phase_per_rep'], 3))
             print 'phase offset ', round(p_dict['phi'], 3)
         except:
             print 'no phase detuning found'
@@ -870,3 +883,132 @@ def tomo_analysis(contains="tomo", name="", **kw):
     autolabel(rects)
 
     save_and_close_plot(f)
+
+def calibrate_LDE_phase_stitched(contains='', do_fit=False, older_thans=None, multi_contains=None, **kw):
+    '''
+    gets data from a folder whose name contains the contains variable.
+    Does or does not fit the data with a gaussian function
+    '''
+
+    ### folder choice
+    if contains == '':
+        contains = 'LDE_phase_calibration'
+
+    # tomography
+    tomo = kw.pop('tomo_basis', 'X')
+    # return fit
+    ret = kw.get('ret', False)
+    # for fitting
+    freq = kw.pop('freq', None)
+    decay = kw.pop('decay', 50)
+    phi0 = kw.pop('phi0', 0)
+    offset = kw.pop('offset', 0)
+    A0 = kw.pop('A0', None)
+    show_plot = kw.pop('show_plot', True)
+
+    fixed = kw.pop('fixed', [1])
+    show_guess = kw.pop('show_guess', False)
+
+    if freq is None:
+        try:
+            freq = a.g.attrs['phase_detuning'] / 360.0
+        except:
+            freq = 1./12. # voll auf die zwoelf.
+
+    ro_array = ['positive', 'negative']
+
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    multi_fs = []
+    multi_as = []
+
+    if older_thans is not None:
+        for ot in older_thans:
+            f = toolbox.latest_data(contains, older_than=ot, **kw)
+            a = mbi.MBIAnalysis(f)
+
+            multi_fs.append(f)
+            multi_as.append(a)
+    elif multi_contains is not None:
+        for containy in multi_contains:
+            f = toolbox.latest_data(containy, **kw)
+            a = mbi.MBIAnalysis(f)
+
+            multi_fs.append(f)
+            multi_as.append(a)
+    else:
+        print("What do you want?")
+        return
+
+    x = np.array([])
+    y = np.array([])
+    y_u = np.array([])
+
+    for a in multi_as:
+        x_new, y_new, y_u_new = get_pos_neg_data(a, adwindata_str=tomo + '_', use_preceding_ssro_calib=True,
+                                                 **kw)
+        ylabel = tomo
+
+        x = np.append(x, x_new)
+        y = np.append(y, y_new)
+        y_u = np.append(y_u, y_u_new)
+
+    ### create a plot
+    xlabel = a.g.attrs['sweep_name']
+    # x = a.g.attrs['sweep_pts']  # could potentially be commented out?
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Acquired phase')
+
+    ## plot data
+    plot_data(x, y, y_u=y_u)
+
+    ### fitting if you feel like it / still needs implementation
+    if do_fit:
+        if A0 is None:
+            A0 = 1.2*np.max(np.abs(y))
+
+        p0, fitfunc, fitfunc_str = common.fit_decaying_cos(freq, offset, A0, phi0, decay)
+
+        if show_guess:
+            # print decay
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True, VERBOSE=True, fixed=fixed)
+
+        plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 1001), ax=ax, color='r', plot_data=False, add_txt=True,
+                        lw=2)
+
+        p_dict = fit_result['params_dict']
+        e_dict = fit_result['error_dict']
+
+        fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+
+        if p_dict['A'] < 0:
+            p_dict['phi'] = p_dict['phi'] + 180
+            p_dict['A'] = p_dict['A'] * (-1)
+
+        try:
+            detuning = a.g.attrs['phase_detuning']
+            fit_result['detuning'] = detuning
+            fit_result['acq_phase_per_rep'] = 360 * (p_dict['f']) - detuning
+            fit_result['u_acq_phase_per_rep'] = 360 * (e_dict['f'])
+            print 'This is the phase detuning', detuning
+            print 'Acquired phase per repetition (compensating for phase_detuning=) {:3.3f} +/- {:3.3f}'.format(
+                round(fit_result['acq_phase_per_rep'], 3), round(fit_result['u_acq_phase_per_rep'], 3))
+            print 'phase offset ', round(p_dict['phi'], 3)
+        except:
+            print 'no phase detuning found'
+            ## save and close plot. We are done.
+
+    save_and_close_plot(f, show=show_plot)
+
+    if kw.get('ret', False):
+        return fit_result
+
+    if kw.get('ret_data', False):
+        return x, y, y_u
+
+    if kw.get('ret_fit_data', False):
+        return fit_result, x, y, y_u
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
