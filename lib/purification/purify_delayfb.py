@@ -540,7 +540,14 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
         p_dict = fit_result['params_dict']
         e_dict = fit_result['error_dict']
 
-        fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+        if 'carbons' in a.g.attrs:
+            fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+        elif 'dps_carbons' in a.g.attrs:
+            fit_result['carbon_id'] = a.g.attrs['dps_carbons'][0]
+        elif 'carbon' in a.g.attrs:
+            fit_result['carbon_id'] = a.g.attrs['carbon']
+        else:
+            fit_result['carbon_id'] = None
 
         if p_dict['A'] < 0:
             p_dict['phi'] = p_dict['phi'] + 180
@@ -569,6 +576,9 @@ def calibrate_LDE_phase(contains='', do_fit=False, **kw):
 
     if kw.get('ret_fit_data', False):
         return fit_result, x, y, y_u
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
 
 def analyse_sequence_phase(contains='phase_fb_delayline', do_fit=False, **kw):
     '''
@@ -884,7 +894,8 @@ def tomo_analysis(contains="tomo", name="", **kw):
 
     save_and_close_plot(f)
 
-def calibrate_LDE_phase_stitched(contains='', do_fit=False, older_thans=None, multi_contains=None, **kw):
+def calibrate_LDE_phase_stitched(contains='', do_fit=False, older_thans=None, multi_contains=None, multi_folders=None,
+                                                                                                                 **kw):
     '''
     gets data from a folder whose name contains the contains variable.
     Does or does not fit the data with a gaussian function
@@ -925,20 +936,20 @@ def calibrate_LDE_phase_stitched(contains='', do_fit=False, older_thans=None, mu
     if older_thans is not None:
         for ot in older_thans:
             f = toolbox.latest_data(contains, older_than=ot, **kw)
-            a = mbi.MBIAnalysis(f)
-
             multi_fs.append(f)
-            multi_as.append(a)
     elif multi_contains is not None:
         for containy in multi_contains:
             f = toolbox.latest_data(containy, **kw)
-            a = mbi.MBIAnalysis(f)
-
             multi_fs.append(f)
-            multi_as.append(a)
+    elif multi_folders is not None:
+        multi_fs.extend(multi_folders)
     else:
         print("What do you want?")
         return
+
+    for f in multi_fs:
+        a = mbi.MBIAnalysis(f)
+        multi_as.append(a)
 
     x = np.array([])
     y = np.array([])
