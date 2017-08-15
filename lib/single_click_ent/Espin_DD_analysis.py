@@ -23,18 +23,16 @@ def get_tstamps_dsets(contains,older_than = '',newer_than = '',n_datasets = 5,su
     Counting start from new and goes towards old.
     returns a list of folder_lists (divided into datasets and subsets)
     """
-
-
     i_dataset = 0
     f_list = []
     while tb.latest_data(contains=contains,older_than = older_than,newer_than = newer_than,
-                raise_exc = False) != False and (i_dataset< n_datasets):
+                raise_exc = False,**kw) != False and (i_dataset< n_datasets):
 
         subset_f_list = []
         for i_subset in np.array(range(subsets))+1:
             latest_tstamp, f_sub = tb.latest_data(contains=contains+str(i_subset),older_than = older_than,
                                             newer_than = newer_than,
-                raise_exc = False,return_timestamp = True)
+                raise_exc = False,return_timestamp = True,**kw)
 
             subset_f_list.append(f_sub)
         older_than = latest_tstamp
@@ -121,7 +119,7 @@ def analyse_dataset(contains,**kw):
     ########## time to fit the best results
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 200.,2) ## one could start to make cool guesses based on the data but i refrain
     fit_result = fit.fit1d(best_x,best_y,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,fixed = [0,1,2,4])
-
+    fit_result['all_x'] = x_list; fit_result['all_y'] = y_list;fit_result['all_y_u'] = y_u_list
     if kw.pop('do_plot',True):
 
         ax.set_xlabel(a.sweep_name)
