@@ -159,7 +159,8 @@ def get_pos_neg_data(a, adwindata_str='', ro_array=['positive', 'negative'], **k
     if ssro_calib_folder is None:
         use_preceding_ssro_calib = kw.pop('use_preceding_ssro_calib', False)
         if use_preceding_ssro_calib:
-            ssro_calib_folder = toolbox.latest_data('SSROCalib', older_than=a.timestamp.replace('/', ''), **kw)
+            kw['older_than'] = a.timestamp.replace('/', '')
+            ssro_calib_folder = toolbox.latest_data('SSROCalib', **kw)
         else:
             ssro_calib_timestamp = kw.pop('ssro_calib_timestamp', None)
 
@@ -690,6 +691,7 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only', False)
     tomo_basis = kw.pop('tomo_basis', None)
+    T2star_correction = kw.pop('T2star_correction', False)
 
     ### folder choice
     if contains == '':
@@ -748,6 +750,70 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
         x = np.append(x, x_new)
         y = np.append(y, y_new)
         y_u = np.append(y_u, y_u_new)
+
+    if T2star_correction:
+        from measurement.scripts.lt4_scripts.setup import msmt_params
+        reload(msmt_params)
+        import scipy.stats
+        carbons = multi_as[0].g.attrs['carbons']
+
+        sample = msmt_params.cfg['samples']['current']
+        m_params = msmt_params.cfg['samples'][sample]
+        e_trans = m_params['electron_transition']
+
+        T2stars = []
+        for c in carbons:
+            T2star_0 = m_params['C%d_T2star_0' % c]
+            T2star_1 = m_params['C%d_T2star_1%s' % (c, e_trans)]
+
+            T2star_arr = np.array([T2star_0, T2star_1])
+
+            # take the sqrt of the harmonic mean of the squared T2stars
+            # I hope this is correct
+            T2star = np.sqrt(scipy.stats.hmean(T2star_arr ** 2))
+            print("avg. T2* for C%d: %.2f" % (c, T2star * 1e3))
+
+            T2stars += [T2star]
+
+        T2stars = np.array(T2stars)
+
+        if kw.pop("T2star_gate_duration", True):
+            print("Taking gate duration into account for T2* correction")
+            T2star_envelope = np.ones_like(y)
+
+            LDE_duration = kw.pop('LDE_element_length')
+            LDE_total_duration = x*LDE_duration
+
+            m_attrs = multi_as[0].g.attrs
+
+            sequence_type = m_attrs['sequence_type']
+            gates_per_carbon = {
+                'serial_swap':  3,  # 2 swap gates and 1 tomo gate
+                'MBE':          2,  # 1 MBE gate and 1 tomo gate
+            }
+
+            gates_duration = 0.0
+            for i_c, c in enumerate(carbons):
+                sequence_duration = LDE_total_duration + gates_duration
+                T2star_envelope *= np.exp(-(sequence_duration / T2stars[i_c]) ** 2)
+                gate_tau = m_attrs['C%d_Ren_tau%s' % (c, e_trans)][0]
+                gate_N = m_attrs['C%d_Ren_N%s' % (c, e_trans)][0]
+                gates_duration += gates_per_carbon[sequence_type] * 2.0 * gate_N * gate_tau
+
+        else:
+            combined_T2star = 1. / np.sqrt( np.sum(1./T2stars**2) )
+            print("combined T2* for carbons %s: %.2f" % (str(carbons), combined_T2star * 1e3))
+
+            def T2star_envelope(t, T2star):
+                return np.exp(-(t / T2star) ** 2)
+
+            LDE_duration = kw.pop('LDE_element_length')
+            sequence_duration = x*LDE_duration
+
+            T2star_envelope = np.exp(-(sequence_duration / T2star) ** 2)
+
+        y = y / T2star_envelope
+        y_u = y_u / T2star_envelope
 
     ### create a plot
     xlabel = multi_as[0].g.attrs['sweep_name']
