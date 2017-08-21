@@ -23,6 +23,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
     data_lw  = kw.pop('data_lw',1)
     color = kw.pop('color','r')
     label = kw.pop('label',None)
+    fitfunc_params = kw.pop('fitfunc_params', {})
 
     if res == None or res == False:
         print 'plot_fit1d: No fit result.'
@@ -39,7 +40,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
             ax.plot(res['x'], res['y'], data_linestyle, color = data_color, lw= data_lw)
     if fit_xvals == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
-    ax.plot(fit_xvals, res['fitfunc'](fit_xvals), linestyle,color = color, lw=lw, label=label ) 
+    ax.plot(fit_xvals, res['fitfunc'](fit_xvals, **fitfunc_params), linestyle,color = color, lw=lw, label=label )
     
     if print_info and res['success']:
         params_str = res['fitfunc_str'] + '\n' + fit.str_fit_params(res)

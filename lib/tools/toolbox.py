@@ -25,6 +25,13 @@ except:
         datadir = r'd:\measuring\data'
     #print datadir
 
+try:
+    import analysis.custom_config as custom_config
+    reload(custom_config)
+    datadir = custom_config.custom_msmt_datadir
+except:
+    pass
+
 def nearest_idx(array, value):
     '''
     find the index of the value closest to the specified value.

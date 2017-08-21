@@ -58,7 +58,7 @@ def fit_linear(folder=None, ax = None, a_guess=1., b_guess=0.):
         
     return fit_result
 
-def fit_gaussian(folder=None, ax = None, x0_guess=0., a_guess=0.5, c_guess=15):
+def fit_gaussian(folder=None, ax = None, x0_guess=0., a_guess=0.5, c_guess=15,**kw):
     """
     fit o + a * exp( - ( (x-x0)/c )^2) from Sequence in folder
     """
@@ -68,16 +68,16 @@ def fit_gaussian(folder=None, ax = None, x0_guess=0., a_guess=0.5, c_guess=15):
     a = fit.Parameter(a_guess, 'a')
     o = fit.Parameter(0.5, 'o')
     c = fit.Parameter(c_guess, 'c')
-
+    fixed = kw.pop('fixed',[])
     fitfunc_str = 'o + a * exp( - ( (x-x0)/c )^2) '
 
     def fitfunc(x):
         return o() + a() * np.exp( -((x-x0())/ c())**2)
 
-    fit_result = fit.fit1d(x,y, None, p0=[o,x0,a,c], fixed = [], fitfunc=fitfunc,
+    fit_result = fit.fit1d(x,y, None, p0=[o,x0,a,c], fixed = fixed, fitfunc=fitfunc,
             fitfunc_str=fitfunc_str, do_print=True, ret=True)
     plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax,
-            plot_data=False)
+            plot_data=False,**kw)
 
     return fit_result
 

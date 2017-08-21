@@ -39,7 +39,7 @@ class DisplayScan(m2.M2Analysis):
 
         #ax.set_xlim([np.amin(self.xvalues),np.amax(self.xvalues)])
         #ax.set_ylim([np.amin(self.yvalues),np.amax(self.yvalues)])
-        #ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
+        ax.set_title('z = {:.2f}'.format(self.zfocus)+'_'+self.keyword+'_\n' + title)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         if grid:

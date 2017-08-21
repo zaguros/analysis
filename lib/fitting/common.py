@@ -59,6 +59,22 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_decaying_cos_with_phase_errors(g_f, g_a, g_A, g_phi,g_t,phase_errors):
+    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + (phi + phi_err/360) ) + a'
+
+    f = fit.Parameter(g_f, 'f')
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    phi = fit.Parameter(g_phi, 'phi')
+    t   = fit.Parameter(g_t, 't')
+    # print 'guessed frequency is '+str(g_f)
+    p0 = [f, a, A,phi,t]
+
+    def fitfunc(x, phi_err=phase_errors):
+        return a() + A()*np.exp(-x/t()) * np.cos(2*np.pi*( f()*x + (phi()+phi_err)/360.))
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     fitfunc_str = 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a'
 
@@ -518,6 +534,23 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_2lorentz_symmetric(g_a, g_A, g_x0, g_gamma, dx):
+    fitfunc_str = 'a + 2*A/np.pi*gamma/(4*(x-x01)**2+gamma**2) \
+            + 2*A/np.pi*gamma/(4*(x-x02)**2+gamma**2)'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    gamma = fit.Parameter(g_gamma, 'gamma')
+    dx = fit.Parameter(dx, 'dx')
+
+    p0 = [a, A, x0, gamma, dx]
+
+    def fitfunc(x):
+        return a()+2*A()/np.pi*gamma()/(4*(x-x0()-(dx()/2))**2+gamma()**2)+\
+                2*A()/np.pi*gamma()/(4*(x-x0()+(dx()/2))**2+gamma()**2)
+
+    return p0, fitfunc, fitfunc_str
 
 def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
     fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
@@ -654,6 +687,33 @@ def fit_2lorentz_splitting(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_dx2, g_gamma2):
                 2*A2()/np.pi*gamma2()/(4*(x-(x01()+dx2()))**2+gamma2()**2)
 
     return p0, fitfunc, fitfunc_str
+
+def fit_esr(g_a,g_A1,g_A2,g_x0,g_dx,g_gamma,g_dxN):
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01-dx/2-dxN)**2+gamma**2) \
+            +2*A1/np.pi*gamma1/(4*(x-x01-dx/2)**2+gamma**2) \
+            2*A1/np.pi*gamma1/(4*(x-x01-dx/2+dxN)**2+gamma**2) \
+            2*A2/np.pi*gamma1/(4*(x-x01+dx/2-dxN)**2+gamma**2) \
+            2*A2/np.pi*gamma1/(4*(x-x01+dx/2)**2+gamma**2) \
+            2*A2/np.pi*gamma1/(4*(x-x01+dx/2+dxN)**2+gamma**2) '
+    a = fit.Parameter(g_a, 'a')
+    A1 = fit.Parameter(g_A1, 'A1')
+    A2 = fit.Parameter(g_A2, 'A2')
+    x0 = fit.Parameter(g_x0, 'x0')
+    dx = fit.Parameter(g_dx, 'dx')
+    gamma = fit.Parameter(g_gamma, 'gamma')
+    dxN = fit.Parameter(g_dxN, 'dxN') 
+
+    p0 = [a, A1, A2, x0, dx, gamma, dxN]
+    def fitfunc(x):
+        return a()+2*A1()/np.pi*gamma()/(4*(x-x0()-dx()/2-dxN())**2+gamma()**2)+\
+            2*A1()/np.pi*gamma()/(4*(x-x0()-dx()/2)**2+gamma()**2)+\
+            2*A1()/np.pi*gamma()/(4*(x-x0()-dx()/2+dxN())**2+gamma()**2)+\
+            2*A2()/np.pi*gamma()/(4*(x-x0()+dx()/2-dxN())**2+gamma()**2)+\
+            2*A2()/np.pi*gamma()/(4*(x-x0()+dx()/2)**2+gamma()**2)+\
+            2*A2()/np.pi*gamma()/(4*(x-x0()+dx()/2+dxN())**2+gamma()**2)
+
+    return p0, fitfunc, fitfunc_str
+
 
 
 def fit_line(g_a, g_b, *arg):

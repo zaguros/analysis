@@ -165,7 +165,9 @@ class SequenceAnalysis(m2.M2Analysis):
                 format='png')
         
     def get_electron_ROC(self, **kw):
-        ssro_calib_folder = kw.pop('ssro_calib_folder', toolbox.latest_data('SSROCalibration'))
+        ssro_calib_folder = kw.pop('ssro_calib_folder', None)
+        if ssro_calib_folder is None:
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration')
         # print ssro_calib_folder
         if ssro_calib_folder == '':
                 ssro_calib_folder = toolbox.latest_data('SSROCalibration')
@@ -225,6 +227,7 @@ class SequenceAnalysis(m2.M2Analysis):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
         ylim = kw.get('ylim', (-0.05, 1.05))
+        label = kw.get('label', None)
        
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(len(self.ssro_results)) + 1
@@ -238,10 +241,10 @@ class SequenceAnalysis(m2.M2Analysis):
         
         if not self.result_corrected:
             ax.errorbar(self.sweep_pts, self.normalized_ssro, fmt='o-',
-                yerr=self.u_normalized_ssro)
+                yerr=self.u_normalized_ssro, label=label)
         else:
             ax.errorbar(self.sweep_pts, self.p0, fmt='o',
-                yerr=self.u_p0)
+                yerr=self.u_p0, label=label)
     
         ax.set_xlabel(self.sweep_name)
 

@@ -690,7 +690,7 @@ def filter_on_same_sync_number(source_sync_numbers, target_sync_numbers):
     """
     return np.in1d(target_sync_numbers, source_sync_numbers)
 
-def filter_marker(pqf, chan, index = 1, pq_device = '', VERBOSE = True):
+def filter_marker(pqf, chan, index = 1, pq_device = '', VERBOSE = False):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
