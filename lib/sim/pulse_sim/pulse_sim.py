@@ -98,7 +98,10 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
         
         if seq_elem['goto_target'] != None or seq_elem['jump_target'] != None:
             reps = 1 # Dont repeat an element if you can jump out of it.
-            
+        
+        if seq_elem['trigger_wait'] != False:
+            time = 0
+
         pulses = np.array([]).reshape(0,5)
             
         for x in range(reps):
