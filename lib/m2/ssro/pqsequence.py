@@ -18,6 +18,10 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
     def __init__(self, folder, **kw):
         sequence.SequenceAnalysis.__init__(self,folder, **kw)
         pq_folder=kw.pop('pq_folder', None)
+
+        pq_device=kw.pop('pq_device', '')
+        self.pq_device = pq_device
+
         if pq_folder != None:
             if pq_folder =='bs_remote':
                 h5filepath = 'X:' + self.g.attrs['bs_data_path'][12:]
@@ -29,6 +33,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         else:
             self.pqf=self.f
 
+
     def get_sweep_idxs(self,  noof_syncs_per_sweep_pt=1):
         """
         Calculate the sweep-index for each PQ event, 
@@ -38,10 +43,10 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         if not hasattr(self, 'sweep_pts'):
             self.sweep_pts = np.arange(len(self.ssro_results)) + 1
             self.sweep_name = 'sweep parameter'
-        self.sync_nrs=self.pqf['/PQ_sync_number-1'].value  
+        self.sync_nrs=self.pqf[self.pq_device + '/PQ_sync_number-1'].value  
         if str(self.f.keys()).count('sync_number') > 1 :
             for i in np.arange(str(self.f.keys()).count('sync_time')-1):
-                ds_name = 'PQ_sync_number-{}'.format(i+2)
+                ds_name = self.pq_device + '/PQ_sync_number-{}'.format(i+2)
                 sync_nrs_add=self.pqf[ds_name].value
                 self.sync_nrs = np.append(self.sync_nrs, sync_nrs_add)  
 
@@ -49,7 +54,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         self.syncs_per_sweep = noof_syncs_per_sweep_pt
         self.sweep_idxs=np.mod(np.floor((self.sync_nrs-1)/self.syncs_per_sweep),self.sweep_length)
 
-    def plot_histogram(self,channel,start=None,length=None,fltr=None,hist_binsize=1,save=True, **kw):
+    def plot_histogram(self,channel, start=None,length=None,fltr=None,hist_binsize=1,save=True, **kw):
         ret = kw.get('ret', None)
         ax = kw.get('ax', None)
         log_plot=kw.get('log_plot',True)
@@ -73,7 +78,7 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
             fltr=fltr & is_ph
 
         bins = np.arange(start-.5,stop,hist_binsize)
-        y,x=np.histogram(self.pqf['/PQ_sync_time-1'].value[np.where(fltr)], bins=bins)
+        y,x=np.histogram(self.pqf[self.pq_device + '/PQ_sync_time-1'].value[np.where(fltr)], bins=bins)
         x=x[:-1]
         print 'Total clicks:', np.sum(y)
         y=y/float(self.reps)
@@ -93,6 +98,34 @@ class PQSequenceAnalysis(sequence.SequenceAnalysis):
         if ret == 'fig':
             return fig
 
+    def hist_adwin_var(self,adwin_var, **kw):
+        # PH helper function to quickly plot the distribution of arbitrary adwin variables.
+        bins = kw.pop('bins',60)
+        plot = kw.pop('plot', True)
+        xlabel = kw.pop('xlabel',adwin_var)
+        diff = kw.pop('diff',False)
+        remove_zeros = kw.pop('remove_zeros',False)
+
+        vals = self.g['adwindata'][adwin_var].value
+        vals = vals if not (diff) else np.diff(vals)
+        vals = vals if not(remove_zeros) else vals[vals!=0]
+        
+        
+        if kw.pop('normed',False): # Hack to overwrite the normalisation behaviour
+            weights = np.ones(len(vals))/np.float(len(vals))
+            kw['weights'] = weights
+        
+        if plot:
+            ax = self.default_ax(figsize = (6,4))
+            hist_vals = plt.hist(vals,bins = bins,**kw)
+            plt.xlabel(xlabel)
+            plt.ylabel('# Occurences')
+            plt.show()
+        else:
+            hist_vals = np.histogram(vals,bins = bins,**kw) 
+       
+
+        return hist_vals
 
 class TailAnalysis(PQSequenceAnalysis):
 
@@ -113,23 +146,22 @@ class TailAnalysis(PQSequenceAnalysis):
 
         self.start_ns = start_ns
 
-        is_ph = pq_tools.get_photons(self.pqf)[channel]
-        sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
+        is_ph = pq_tools.get_photons(self.pqf, pq_device = self.pq_device)[channel]
+        sync_time_ns = self.pqf[self.pq_device + '/PQ_sync_time-1'].value * pq_binsize_ns
         print len(is_ph), len(sync_time_ns)
 
         if str(self.f.keys()).count('sync_time') > 1 :
             for i in np.arange(str(self.f.keys()).count('sync_time')-1):
-                ds_name = '/PQ_sync_time-' + str(i+2)
+                ds_name = self.pq_device + '/PQ_sync_time-' + str(i+2)
                 sync_time_ns_add = self.pqf[ds_name].value * pq_binsize_ns
                 sync_time_ns = np.append(sync_time_ns,sync_time_ns_add)
-                is_ph = np.append(is_ph, pq_tools.get_photons(self.pqf, index = i+2)[channel])
+                is_ph = np.append(is_ph, pq_tools.get_photons(self.pqf, index = i+2, pq_device = self.pq_device)[channel])
 
         self.sync_time_ns = sync_time_ns
 
         hist_bins = np.arange(self.start_ns-hist_binsize_ns*.5,self.start_ns+1*tail_length_ns+hist_binsize_ns,hist_binsize_ns)
         
         self.tail_hist_h=np.zeros((self.sweep_length,len(hist_bins)-1))
-        
         st_fltr = (self.start_ns  <= sync_time_ns) &  (sync_time_ns< (self.start_ns + tail_length_ns))
         if verbose:
             print 'total_photons in channel', channel, ':', len(sync_time_ns[np.where(is_ph)])  
@@ -212,6 +244,10 @@ class TailAnalysis(PQSequenceAnalysis):
             save = False
 
         xx=self.tail_hist_b[:-1]
+
+        if np.amax(xx) > 1e5:
+            xx = xx*1e-3
+
         yy=np.sum(self.tail_hist_h, axis=0)
         if log_plot:
             ax.semilogy(xx,yy,'-', color = 'k')
@@ -242,6 +278,8 @@ class TailAnalysis(PQSequenceAnalysis):
             save = False
         xx=self.tail_hist_b[:-1]
         
+        if np.amax(xx) > 1e5:
+            xx = xx*1e-3
         for i in indices:
             
             yy=self.tail_hist_h[i]+offset*i
@@ -344,7 +382,7 @@ class TailAnalysisIntegrated(TailAnalysis):
         start=np.floor(start_ns/pq_binsize_ns)
         length=np.floor(tail_length_ns/pq_binsize_ns)
 
-        self.tail_hist_h = (self.pqf['PQ_hist{}'.format(channel)].value)[start:start+length,:]
+        self.tail_hist_h = (self.pqf[self.pq_device + '/PQ_hist{}'.format(channel)].value)[start:start+length,:]
         self.tail_hist_b = np.linspace(start_ns, start_ns+tail_length_ns, len(self.tail_hist_h[:,0]))
         self.tail_cts_per_sweep_idx = np.sum(self.tail_hist_h, axis=0) / float(self.reps*self.syncs_per_sweep/self.sweep_length)
        
@@ -364,13 +402,13 @@ class FastSSROAnalysis(PQSequenceAnalysis):
         if not hasattr(self, 'sweep_idxs'):
             print 'get_sweep_idxs first'
             return
-        sync_nrs=self.pqf['/PQ_sync_number-1'].value
+        sync_nrs=self.pqf[self.pq_device + '/PQ_sync_number-1'].value
         if sync_nrs[-1] != self.reps:
             print 'WARNING last sync number ({}) != noof reps ({})! Sync error?'.format(sync_nrs[-1],self.reps)
         self.reps_per_sweep = float(self.reps)/len(self.sweep_pts)
         self.is_ph = pq_tools.get_photons(self.pqf)[channel]
         self.hist_binsize_ns = hist_binsize_ns
-        self.sync_time_ns = self.pqf['/PQ_sync_time-1'].value * pq_binsize_ns
+        self.sync_time_ns = self.pqf[self.pq_device + '/PQ_sync_time-1'].value * pq_binsize_ns
         self.extra_time_ns = (self.g.attrs['wait_length'])*1e9-100 #self.g.attrs['pq_sync_length']+
 
     def _get_relaxation(self, ms, sweep_index, start, length):
@@ -678,7 +716,7 @@ class FastSSROAnalysisIntegrated(FastSSROAnalysis):
 
     def get_fastssro_results(self,channel,pq_binsize_ns):
         self.hist_binsize_ns = pq_binsize_ns
-        self.hist = self.pqf['PQ_hist{}'.format(channel)].value
+        self.hist = self.pqf[self.pq_device + '/PQ_hist{}'.format(channel)].value
     
     def _get_relaxation(self, ms, sweep_index, start, length):
         start = np.floor(start / self.hist_binsize_ns)

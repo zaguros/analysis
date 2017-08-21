@@ -2,14 +2,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 import h5py
 from analysis.lib.tools import toolbox as tb
-
-def get_photons(pqf, index = 1):
+reload(tb)
+def get_photons(pqf, index = 1, pq_device = ''):
     """
     returns two filters (1d-arrays): whether events are ch0-photons/ch1-photons
     """
 
-    chan_name = '/PQ_channel-' + str(index)
-    spec_name = '/PQ_special-' + str(index)
+    chan_name = pq_device + '/PQ_channel-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
 
     if type(pqf) == h5py._hl.files.File:
 
@@ -37,11 +37,11 @@ def get_photons(pqf, index = 1):
     
     return is_photon_0, is_photon_1
 
-def get_length_block(pqf, index = 1):
+def get_length_block(pqf, index = 1,  pq_device = ''):
     """
     Returns the number of elements in one block
     """
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name =  pq_device + '/PQ_sync_number-' + str(index)
     
     # Determines how long the block is
     if type(pqf) == h5py._hl.files.File: 
@@ -61,13 +61,13 @@ def get_length_block(pqf, index = 1):
 
 
 
-def get_markers(pqf, chan, index = 1):
+def get_markers(pqf, chan, index = 1, pq_device = ''):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
 
-    chan_name = '/PQ_channel-' + str(index)
-    spec_name = '/PQ_special-' + str(index)
+    chan_name = pq_device + '/PQ_channel-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
     
     if type(pqf) == h5py._hl.files.File:
 
@@ -90,13 +90,13 @@ def get_markers(pqf, chan, index = 1):
 
     return (is_special & is_channel)
 
-def get_markers_with_num_markers(pqf, chan, index = 1):
+def get_markers_with_num_markers(pqf, chan, index = 1, pq_device = ''):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
 
-    chan_name = '/PQ_channel-' + str(index)
-    spec_name = '/PQ_special-' + str(index)
+    chan_name = pq_device + '/PQ_channel-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
     
     if type(pqf) == h5py._hl.files.File:
 
@@ -122,16 +122,16 @@ def get_markers_with_num_markers(pqf, chan, index = 1):
     return is_marker, num_markers
 
 
-def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, index = 1):
+def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, index = 1, pq_device = ''):
     """
     returns a filter (1d-array): whether events are markers on the given channel
     """
 
     add_seg_length = 0
 
-    chan_name = '/PQ_channel-' + str(index)
-    spec_name = '/PQ_special-' + str(index)
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    chan_name = pq_device + '/PQ_channel-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
     
     if index != num_blocks:
         if type(pqf) == h5py._hl.files.File:
@@ -160,9 +160,9 @@ def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, in
         last_sync_num = sync_num[-1]
 
         index = index + 1
-        chan_name = '/PQ_channel-' + str(index)
-        spec_name = '/PQ_special-' + str(index)
-        sync_num_name = '/PQ_sync_number-' + str(index)
+        chan_name = pq_device + '/PQ_channel-' + str(index)
+        spec_name = pq_device + '/PQ_special-' + str(index)
+        sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
         
         if type(pqf) == h5py._hl.files.File:
@@ -298,10 +298,10 @@ def get_rndm_num(pqf, chan_rnd_0, chan_rnd_1, num_blocks, add_seg_length_old, in
 
     return is_rnd_0, is_rnd_1, add_seg_length
 
-def get_multiple_photon_syncs(pqf, index = 1):
+def get_multiple_photon_syncs(pqf, index = 1, pq_device = ''):
 
-    spec_name = '/PQ_special-' + str(index)
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
     special = pqf[spec_name].value
     sync_numbers = pqf[sync_num_name].value
@@ -315,14 +315,12 @@ def get_multiple_photon_syncs(pqf, index = 1):
 
     return is_multiple_photon_sync
 
-def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True):
+def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_evaluation = False, save = True, pq_device = ''):
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
+    tot_time_name =  pq_device + '/PQ_time-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
-    sync_time_name = '/PQ_sync_time-' + str(index)
-    tot_time_name =  '/PQ_time-' + str(index)
-    sync_num_name = '/PQ_sync_number-' + str(index)
-
-
-    if has_analysis_data(pqf, 'coincidences') and not force_coincidence_evaluation:
+    if not force_coincidence_evaluation and has_analysis_data(pqf, 'coincidences'):
         c, c_attrs = get_analysis_data(pqf, 'coincidences')
         return c    
 
@@ -331,7 +329,6 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     sync_number = pqf[sync_num_name].value
 
     is_ph0, is_ph1 = get_photons(pqf)
-
     # thin down a bit with loose filtering
     if fltr0 != None:
         fltr0 = is_ph0 & fltr0
@@ -350,7 +347,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     st1 = sync_time[fltr1]
     t1  = total_time[fltr1]
     sn1 = sync_number[fltr1]
-    #print len(st0),len(t0),len(sn0),len(st1),len(t1),len(sn1),
+    # print len(st0),len(t0),len(sn0),len(st1),len(t1),len(sn1),
 
     samesync0 = np.in1d(sn0, sn1)
     samesync1 = np.in1d(sn1, sn0)
@@ -362,6 +359,7 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     c_t1 = t1[samesync1]
     c_sn1 = sn1[samesync1]
     
+
     ### Code for afterpulsing (PH 16) - also need to uncomment one line in for loop
     # unique_vals, uniq_counts = np.unique(sn1, return_counts = True)
     # repeated = np.in1d(sn1,unique_vals[uniq_counts > 1])
@@ -397,45 +395,41 @@ def get_coincidences(pqf, index = 1, fltr0=None, fltr1=None, force_coincidence_e
     return coincidences
 
 
-def get_coincidences_from_folder(folder, index = 1,save = True,contains = ''):
-
-    sync_num_name = 'PQ_sync_number-' + str(index)
+def get_coincidences_from_folder(folder, index = 1, save = True, contains = '',older_than = None, newer_than = None, force_coincidence_evaluation = False, pq_device = '',**kw):
+    
+    sync_num_name = pq_device + 'PQ_sync_number-' + str(index)
     # print 'this is the save!', save
-    filepaths = tb.get_all_msmt_filepaths(folder) 
-
-    if contains != '':
-        new_fps = []
-        for f in filepaths:
-            if contains in f:
-                new_fps.append(f)
-        filepaths = new_fps
-
+    filepaths = tb.latest_data(folder = folder,contains =contains,return_all= True, older_than = older_than, newer_than = newer_than,**kw) 
     co = np.ones([1,4])
     # print filepaths
     for i,f in enumerate(filepaths):
+        
         if i == 0:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+' if save else 'r')
             if sync_num_name in pqf.keys():
-                co = get_coincidences(pqf)           
+                co = get_coincidences(pqf, save = save, force_coincidence_evaluation = force_coincidence_evaluation)
+                    
         else:
-            pqf = pqf_from_fp(f, rights = 'r+')
+            pqf = pqf_from_fp(tb.get_msmt_fp(f), rights = 'r+' if save else 'r')
 
             if sync_num_name in pqf.keys():
                 if co[0,3] == 1:
-                    co = get_coincidences(pqf,save = save)
+                    co = get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)
                 else:
-                    co = np.vstack((co, get_coincidences(pqf,save = save)))
+                    co = np.vstack((co, get_coincidences(pqf,save = save, force_coincidence_evaluation = force_coincidence_evaluation)))
+        
+        pqf.close()
                     
     return co
 
-def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_min, second_win_max, index = 1, VERBOSE = True):
+def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_min, second_win_max, index = 1, pq_device = '', VERBOSE = True):
     """
     Returns two filters whether events are in the first or 
     in the second time window.
     """
 
-    sync_time_name = '/PQ_sync_time-' + str(index)
-    spec_name = '/PQ_special-' + str(index)
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
         sync_time = pqf[sync_time_name].value
@@ -469,15 +463,15 @@ def get_photons_in_sync_windows(pqf, first_win_min, first_win_max, second_win_mi
     
     return is_photon_first_window, is_photon_second_window
 
-def get_tail_filtered_photons(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, VERBOSE = True):
+def get_tail_filtered_photons(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, pq_device = '', VERBOSE = True):
     """
     Returns two filters whether events are in the first or 
     in the second tail.
     """
 
-    chan_name = '/PQ_channel-' + str(index)
-    sync_time_name = '/PQ_sync_time-' + str(index)
-    spec_name = '/PQ_special-' + str(index)
+    chan_name = pq_device + '/PQ_channel-' + str(index)
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
+    spec_name = pq_device + '/PQ_special-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
         channel = pqf[chan_name].value
@@ -527,11 +521,11 @@ def get_tail_filtered_photons(pqf, first_win_min_ch0, dif_win1_win2, window_leng
 
     return is_ph_first_tail, is_ph_second_tail
 
-def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1, VERBOSE = True):
+def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1, pq_device = '', VERBOSE = True):
     """
     Returns a list with the unique sync numbers with a marker on a specific marker channel.
     """
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
         sync_numbers = pqf[sync_num_name].value
@@ -547,9 +541,9 @@ def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1,
 
 
     if sync_time_lim > 0:
-        sync_num_with_markers = sync_numbers[filter_marker_time_lim(pqf,marker_chan, sync_time_lim, index = index, VERBOSE = VERBOSE)]
+        sync_num_with_markers = sync_numbers[filter_marker_time_lim(pqf,marker_chan, sync_time_lim, index = index, pq_device = pq_device, VERBOSE = VERBOSE)]
     else:
-        sync_num_with_markers = sync_numbers[filter_marker(pqf,marker_chan, index = index, VERBOSE = VERBOSE)]
+        sync_num_with_markers = sync_numbers[filter_marker(pqf,marker_chan, index = index, pq_device = pq_device, VERBOSE = VERBOSE)]
 
     unique_sync_num_with_markers = np.unique(sync_num_with_markers)
 
@@ -559,13 +553,13 @@ def get_un_sync_num_with_markers(pqf, marker_chan, sync_time_lim = 0, index = 1,
 
     return unique_sync_num_with_markers
 
-def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_win_min, second_win_max, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, VERBOSE = True):
+def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_win_min, second_win_max, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, pq_device = '', VERBOSE = True):
     """
     Retuns the total number of shots, total number of photons per shot, and the tailcounts per shot for the different tails which are filtered using
     the arguments of the function. Finally it returns the total tailcounts per shot
     """
 
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
         sync_num = pqf[sync_num_name]
@@ -587,7 +581,8 @@ def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_
                                                                                     first_win_max,
                                                                                     second_win_min,
                                                                                     second_win_max,
-                                                                                    index = index, 
+                                                                                    index = index,
+                                                                                    pq_device = pq_device,
                                                                                     VERBOSE = VERBOSE)
 
     if VERBOSE:
@@ -601,7 +596,8 @@ def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_
                                                                                  dif_win1_win2,
                                                                                  window_length,
                                                                                  dif_ch0_ch1,
-                                                                                 index = index, 
+                                                                                 index = index,
+                                                                                 pq_device = pq_device,
                                                                                  VERBOSE = VERBOSE)
 
     TC_p_shot_first_tail = ((np.sum(is_photon_first_tail))/float(Total_shots))
@@ -611,12 +607,12 @@ def get_combined_tail_counts_per_shot(pqf, first_win_min, first_win_max, second_
     return Total_shots, Tot_ph_per_shot, TC_p_shot_first_tail, TC_p_shot_second_tail, TC_p_shot
     
 
-def get_tail_filtered_ph_sync_num(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, VERBOSE = True):
+def get_tail_filtered_ph_sync_num(pqf, first_win_min_ch0, dif_win1_win2, window_length, dif_ch0_ch1, index = 1, pq_device = '', VERBOSE = True):
     """
     Returns the sync numbers of the photons in the first and second tail. The input necessary is the start of the first
     tail of channel 0, the difference between the two tails, the difference between the two channels and the length of the tial.
     """
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
 
     if type(pqf) == h5py._hl.files.File: 
         sync_num = pqf[sync_num_name].value
@@ -666,12 +662,12 @@ def get_tail_filtered_ph_sync_num(pqf, first_win_min_ch0, dif_win1_win2, window_
 ##############################################################################
 
 
-def filter_synctimes(pqf, t0, t1, window_reps=1, window_period=None, pq_file = True, index = 1):
+def filter_synctimes(pqf, t0, t1, window_reps=1, window_period=None, pq_file = True, pq_device = '', index = 1):
     """
     Return a filter for sync times in between t0 and t1
     """
 
-    sync_time_name = '/PQ_sync_time-' + str(index)
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
 
     if pq_file:
         sync_time = pqf[sync_time_name].value
@@ -694,12 +690,12 @@ def filter_on_same_sync_number(source_sync_numbers, target_sync_numbers):
     """
     return np.in1d(target_sync_numbers, source_sync_numbers)
 
-def filter_marker(pqf, chan, index = 1, VERBOSE = True):
+def filter_marker(pqf, chan, index = 1, pq_device = '', VERBOSE = False):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
 
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
     
     if type(pqf) == h5py._hl.files.File: 
         sync_numbers = pqf[sync_num_name].value
@@ -711,7 +707,7 @@ def filter_marker(pqf, chan, index = 1, VERBOSE = True):
         print "Neither filepath nor file enetered in function please check:", pqf
         raise
 
-    is_mrkr = get_markers(pqf, chan, index = index)
+    is_mrkr = get_markers(pqf, chan, index = index, pq_device = pq_device)
     marker_sync_numbers = sync_numbers[is_mrkr]
 
     if VERBOSE:
@@ -719,13 +715,13 @@ def filter_marker(pqf, chan, index = 1, VERBOSE = True):
 
     return filter_on_same_sync_number(marker_sync_numbers, sync_numbers)
 
-def filter_marker_time_lim(pqf, chan, sync_time_lim, index = 1, VERBOSE = True):
+def filter_marker_time_lim(pqf, chan, sync_time_lim, index = 1, pq_device = '', VERBOSE = True):
     """
     Note: at the moment this filter includes the marker events on which we filter.
     """
 
-    sync_time_name = '/PQ_sync_time-' + str(index)
-    sync_num_name = '/PQ_sync_number-' + str(index)
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
+    sync_num_name = pq_device + '/PQ_sync_number-' + str(index)
     
     if type(pqf) == h5py._hl.files.File: 
         sync_numbers = pqf[sync_num_name].value
@@ -741,7 +737,7 @@ def filter_marker_time_lim(pqf, chan, sync_time_lim, index = 1, VERBOSE = True):
 
     is_small_sync_time = sync_times <= sync_time_lim
     is_large_sync_time = sync_times > sync_time_lim
-    is_mrkr = get_markers(pqf, chan, index = index)
+    is_mrkr = get_markers(pqf, chan, index = index, pq_device = pq_device)
     if VERBOSE:
         print "The number of markers is:", len(sync_numbers[is_mrkr])
 
@@ -838,7 +834,8 @@ def delete_analysis_data(pqf, name, analysisgrp = 'analysis', subgroup=None):
 
 def get_photon_hist(pqf, index = 1, **kw):
     
-    sync_time_name = '/PQ_sync_time-' + str(index)
+    pq_device = kw.pop('pq_device', '')
+    sync_time_name = pq_device + '/PQ_sync_time-' + str(index)
 
     save = kw.pop('save', False)
     fltr = kw.pop('fltr', None)
@@ -858,7 +855,7 @@ def get_photon_hist(pqf, index = 1, **kw):
     
     sync_time = pqf[sync_time_name].value
     
-    ph0, ph1 = get_photons(pqf, index = index)
+    ph0, ph1 = get_photons(pqf, index = index, pq_device = pq_device)
 
     if fltr != None:
         _fltr0 = (ph0 & fltr)
@@ -894,9 +891,11 @@ def get_photon_hists_from_folder(folder, **kw):
     filepaths = tb.get_all_msmt_filepaths(folder)
     for i,f in enumerate(filepaths):
         if i == 0:
-            (h0,b0),(h1,b1) = get_photon_hist(f, **kw)
+            pqf = pqf_from_fp(f, rights = 'r+')
+            (h0,b0),(h1,b1) = get_photon_hist(pqf, **kw)
         else:
-            (_h0,_b0),(_h1,_b1) = get_photon_hist(f, **kw)
+            pqf = pqf_from_fp(f, rights = 'r+')
+            (_h0,_b0),(_h1,_b1) = get_photon_hist(pqf, **kw)
             h0 += _h0
             h1 += _h1
     return (h0, b0), (h1, b1)
@@ -939,3 +938,23 @@ def plot_photon_hist(pqf, **kw):
     
     if ret == 'subplots':
         return fig, (ax0, ax1)
+
+
+def plot_photon_hist_folder(folder, **kw):    
+    ret = kw.pop('ret', 'subplots')
+
+    (h0, b0), (h1, b1) = get_photon_hists_from_folder(folder, **kw)
+   
+    fig, (ax0, ax1) = plt.subplots(2,1, figsize=(12,8))
+    _plot_photon_hist(ax0, h0, b0)
+    _plot_photon_hist(ax1, h1, b1)
+
+    ax0.set_title('photons channel 0')
+    ax1.set_title('photons channel 1')
+
+    # fp = fp_from_pqf(pqf)
+    
+    # fig.suptitle(tb.get_msmt_header(fp) + ' -- Photon histogram')
+    
+    if ret == 'subplots':
+        return fig, (ax0, ax1)        

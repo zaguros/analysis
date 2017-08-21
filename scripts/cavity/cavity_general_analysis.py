@@ -1,42 +1,29 @@
 ####################################################################################################################################################################
-# A.M.J. Zwerver
-#a.m.j.zwerver@student.tudelft.nl
-# October 2015
+# general analysis script for cavity measurements. 
+# SvD, 2016
 
-import os
-import h5py
 import numpy as np
-from analysis.lib.tools import toolbox
-from analysis.lib.tools import plot
-import pylab as plt
-from analysis.lib import fitting
-from analysis.lib.fitting import esr, common
-from analysis.lib.fitting import fit,esr, common
-from matplotlib import rc, cm
-from scipy import interpolate
-from scipy.optimize import curve_fit
-import operator
 
 from analysis.lib.m2 import m2;reload(m2)
 
 class cavity_analysis(m2.M2Analysis):
 
     def get_x_pts(self):
-        self.nr_x_pts = self.f.attrs['nr_steps']
-        self.x_pts = np.linspace(self.f.attrs['start_voltage'],self.f.attrs['end_voltage'],self.f.attrs['nr_steps'])
+        self.nr_x_pts = self.g.attrs['nr_steps']
+        self.x_pts = np.linspace(self.g.attrs['start_voltage'],self.g.attrs['end_voltage'],self.g.attrs['nr_steps'])
 
     def get_sweep_pts(self):
-        self.sweep_name = self.f.attrs['sweep_name']
-        self.sweep_pts = self.f.attrs['sweep_pts']
-        self.nr_syncs_per_pt = self.f.attrs['nr_syncs_per_pt']
+        self.sweep_name = self.g.attrs['sweep_name']
+        self.sweep_pts = self.g.attrs['sweep_pts']
+        self.nr_syncs_per_pt = self.g.attrs['nr_syncs_per_pt']
         print self.sweep_name, self.sweep_pts
 
     def get_sweep_data (self):
         """
         function that loads the data from a sweep measurement
         """
-        self.nr_scans = self.f.attrs['nr_scans']
-        self.nr_repetitions = self.f.attrs['nr_repetitions']
+        self.nr_scans = self.g.attrs['nr_scans']
+        self.nr_repetitions = self.g.attrs['nr_repetitions']
 
         self.sweep_data=np.zeros([len(self.sweep_pts),self.nr_repetitions,self.nr_x_pts])
 
@@ -55,28 +42,32 @@ class cavity_analysis(m2.M2Analysis):
 
         return self.sweep_data
 
-    def get_lengthscan_data(self,**kw):
+    def get_scan_data(self, name):
+        grp = self.adwingrp(name) 
+        self.frq_data = grp['laser_frequency']
+        self.x_data = np.linspace(self.g.attrs['start_voltage'], self.g.attrs['end_voltage'], self.g.attrs['nr_steps'])
+        self.y_data = np.reshape(np.array(grp['photodiode_voltage']),(self.g.attrs['nr_scans'], self.g.attrs['nr_steps']))
+        self.y_data_per_ms = np.reshape(grp['photodiode_voltage_ms'], (self.g.attrs['nr_scans'], self.g.attrs['nr_steps'], self.g.attrs['nr_ms_per_point']))
+        self.average_data() #necessary since nr_scans can be >1
+        return self.x_data,self.y_data,self.frq_data,self.y_data_per_ms
+
+    def get_lengthscan_data(self):
         """
         function that loads the data from a single length scan measurement
         """
-        old_style=kw.pop('old_style',False)
-        if old_style:
-            self.x_data = self.f['/length_scan_processed_data__single/piezo_voltage']
-            self.y_data = self.f['length_scan_processed_data__single/PD_signal']
-        else:
-            self.x_data = self.g['piezo_voltage']
-            self.y_data = self.g['PD_signal']
+        self.get_scan_data('lengthscan')
         return self.x_data,self.y_data
 
     def get_laserscan_data(self):
         """
         function that loads the data from a single laserscan measurement
         """
-        self.frq_data = self.g['laser_frequency']
-        self.x_data = self.g['laser_tuning_voltage']
-        self.y_data = np.array(self.g['PD_signal'])
-        self.y_data_per_ms = self.g['PD_signal_per_ms'][:]
+        self.get_scan_data('laserscan')
         return self.x_data,self.y_data,self.frq_data,self.y_data_per_ms
+
+    def average_data(self):
+        self.y_data = np.mean(self.y_data,axis=0)
+        self.y_data_per_ms = np.mean(self.y_data_per_ms,axis=0)
 
     def bin_data_per_ms(self,binsize=100):
         self.binsize = binsize
@@ -104,5 +95,5 @@ class cavity_analysis(m2.M2Analysis):
         return self.y_data_per_ms_binned
 
     def calc_sweeptime(self):
-        self.total_sweep_time = self.f.attrs['nr_steps']*(self.f.attrs['ADC_averaging_cycles']+self.f.attrs['wait_cycles'])/self.f.attrs['cycle_duration']*3/100 # in seconds
+        self.total_sweep_time = self.g.attrs['nr_steps']*(self.g.attrs['ADC_averaging_cycles']+self.g.attrs['wait_cycles'])/self.g.attrs['cycle_duration']*3/100 # in seconds
         return self.total_sweep_time

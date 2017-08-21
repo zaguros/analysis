@@ -33,7 +33,7 @@ def get_seq_element_pulses(elem, elem_start = 0, verbose = False):
             else:
                 rotation = np.pi
             special = 0
-            pulse_mid_point = elem_start + (val.effective_start()+val.effective_stop())/2 
+            pulse_mid_point = elem_start + (val.effective_start()+val.effective_stop())/2
             pulse_length = (val.effective_stop()-val.effective_start())
             entry = np.array((pulse_mid_point,pulse_length,\
                     np.pi * val.phase/180, rotation,special)).reshape(-1,1).T
@@ -99,38 +99,40 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
         if seq_elem['goto_target'] != None or seq_elem['jump_target'] != None:
             reps = 1 # Dont repeat an element if you can jump out of it.
         
-        if seq_elem['trigger_wait'] != False:
-            time = 0
-
+        old_time = time
         pulses = np.array([]).reshape(0,5)
-            
+
         for x in range(reps):
             if np.size(current_elem_pulses):
                 temp_pulses = np.copy(current_elem_pulses)
                 temp_pulses[:,0] += time
                 pulses = np.vstack([pulses,temp_pulses])
             time += elem.length()
+
+        # print seq_elem['name'], pulses[:, 0]
             
         if first_group_elem_name == None:
             first_group_elem_name = seq_elem['name']
-        
+
         start_of_group = False
         end_of_group = False
-        
+
         if seq_elem['trigger_wait'] != False or seq_elem['name'] in jumps_or_go_tos: # Start of new group!
-            
             if np.size(current_group_pulses):
                 sequence_overview.append({'name' : first_group_elem_name,\
                                'trigger_wait' : int(trigger_wait),\
                                'goto_target' : str(seq_elem['goto_target']),\
-                               'jump_target' : str(seq_elem['jump_target']), 'final_time' : float(time)}) 
+                               'jump_target' : str(seq_elem['jump_target']), 'final_time' : float(old_time)}) 
                 pulse_array.append(current_group_pulses)
+                # print first_group_elem_name + ':', old_time, time
+                # time = time - old_time # THIS IS WRONG!
+
             first_group_elem_name = seq_elem['name']
             trigger_wait = seq_elem['trigger_wait']
             current_group_pulses = pulses
             
             start_of_group = True
-         
+        
         if seq_elem['goto_target'] != None or seq_elem['jump_target'] != None:
             end_of_group = True
             
@@ -139,7 +141,7 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
                                'trigger_wait' : int(trigger_wait),\
                                'goto_target' : str(seq_elem['goto_target']),\
                                'jump_target' : str(seq_elem['jump_target']), 'final_time' : float(time)}) 
-            pulse_array.append(current_group_pulses) 
+            pulse_array.append(current_group_pulses)
             time = 0
             first_group_elem_name = None
             trigger_wait = False
@@ -155,6 +157,7 @@ def group_seq_elems(combined_seq,combined_list_of_elements):
                                'jump_target' : str(seq_elem['jump_target']), 'final_time' : float(time)}) 
                 pulse_array.append(current_group_pulses)
 
+    # print sequence_overview
     return [sequence_overview,pulse_array]
 
 def save_grouped_pulses(basedir,name,grouped_seq):

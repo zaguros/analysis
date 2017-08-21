@@ -1,5 +1,6 @@
 ''' A module to calculate the 13C nuclear and electron spin dynamics
-under dynamical decoupling gates. By THT '''
+under dynamical decoupling sequences and gates. 
+Based on the qutip module. By THT '''
 
 import numpy as np
 import qutip
@@ -8,7 +9,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
 
-### import the hyperfine parameters ###
+### import the experimental hyperfine parameters ###
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
 # hf = hf_params.SamSIL5_sim_params
@@ -100,6 +101,7 @@ def print_matrix(Qobject,div_by=100):
     print type(np.round(Qobject.full()*div_by)/div_by)
 
 def get_C13_hyperfine_params(carbon_nrs,ms = '+1'):
+
     '''
     load hyperfine paramters for a given list of carbon_nrs
     ms = '+1' or '-1' indicates which electron transition is used
@@ -419,11 +421,6 @@ def simulate_readout():
     rho_el_ZZ = rho_final_ZZ.ptrace([0,1])
 
     return rho_el_ZZ, rho_el_XX, rho_el_YY
-
-
-
-
-
 
 
 ###################
@@ -761,7 +758,7 @@ def multi_qubit_pauli(rho,carbon_nrs=[1,1],do_plot=False, give_fid = False, alph
         return pauli_set, ii_list, final_x_tick_list
 
 ####################
-### Experiments  ###
+### Simulate C13 Experiments  ###
 ####################
 
 def nuclear_rabi_no_init(carbon_nrs, tau, nr_of_pulses_list=np.linspace(0,300,76), B_field=403.554, ms='-1'):
@@ -1001,7 +998,7 @@ def nuclear_TomoZ(carbon_nrs,N,Tau,Bfield=304.74,ms='+1',input_state=qutip.tenso
     #single_qubit_pauli(rho_final, do_plot = True)
 
 ######################
-### Initialization ###
+### C13 Initialization ###
 ######################
 
 def nuclear_init_single(carbon_nr, state = 'up', do_plot = False, method = 'SWAP', phase_state = False):
@@ -1602,9 +1599,9 @@ def ZZ_ent_XY_parity():
     Cz_b4  = C_phase_gate(217e-9,4)
     Cz_b1  = C_phase_gate(347e-9,4)
 
-########################
-##### Ideal Experiment###
-########################
+#####################################
+##### Ideal versions of Experiment###
+#####################################
 
 B_field = 304.36
 
@@ -1816,9 +1813,9 @@ def ZZ_ent_id():
         print (qutip.fidelity(rho0,el_state)**2*2-1)
 
 
-######################
-##### Add other spins#
-######################
+########################
+##### Add other spins ##
+########################
 
 def Ren_gate_multispin(carbon_nr, carbon_nrs):
     tau_Ren = mp['C' + str(carbon_nr) + '_Ren_tau'][0]
@@ -3048,18 +3045,16 @@ def DD_electron_coherence(A_par_list, A_per_list, B_field, tau, N, show_plot = F
     ### plotting
     if show_plot == True:
 
-        plt.figure(1)
+        plt.figure(1, figsize =(16,4))
         colors = cm.rainbow(np.linspace(0, 1, len(M[:,1])))
         for kk in range(len(M[:,1])):
             plt.plot(tau*1e6, M[kk][:], '-', lw=1, label = 'spin' + str(kk+1), color = colors[kk])
 
         plt.title('Signal'); plt.xlabel('Tau')
         plt.legend(loc = 4)
-        plt.ylim(-1,1)
+        plt.ylim(-1.1,1.1)
 
-
-
-        plt.figure(2)
+        plt.figure(2, figsize =(16,4))
         plt.plot(tau*1e6, Signal, '-', lw=1)
         plt.title('Signal'); plt.xlabel('Tau')
         plt.ylim(-1,1)
@@ -3224,6 +3219,10 @@ def QZ3():
 
     J = Q - P
     print_matrix(J) 
+
+
+
+
 
 
 

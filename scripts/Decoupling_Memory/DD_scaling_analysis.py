@@ -9,12 +9,15 @@ from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 from math import floor, log10
 
+
 if os.name == 'posix':
-        DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+        print 'posix'
+        DBdir = r'/Users/'+os.getlogin()+r'/Dropbox/TaminiauLab/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+        DBdir = r'/Users/tim_taminiau/Dropbox/TaminiauLab/Projects/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+
 else:
     DBdir = r'D:/jcramer3/Dropbox/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
-
-DBdir = r'C:/Users/TUD277931/Dropbox/TaminiauLab/Projects/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
+    DBdir = r'C:/Users/TUD277931/Dropbox/TaminiauLab/Projects/QEC LT/Decoupling memory/Electron_DD_Data_NEW/'
 
 
 # if os.name == 'posix':
@@ -166,20 +169,10 @@ def DD_scaling_elec(msmts,
     Nlist = [1,2,4,8,16,32,64,128,256,512,1024,2048]
     Nlist_1 = [1,2,4,8,16,32,64,128,256,512,1024,2048]
     
-    Nlist = [64,128,256,512,1024,2048]
-    Nlist_1 = [64,128,256,512,1024,2048]
-
-    Nlist = [512,1024,2048]
-    Nlist_1 = [512,1024,2048]
-
-    Nlist = [8]
-    Nlist_1 = [8]
-
-
     # Nlist = [1]
     #Nlist = [1,32,1024]
     # decay_constants = [1.*x**0.77 for x in Nlist]
-    color = plt.get_cmap('rainbow')(np.linspace(0, 1.0, len(Nlist_1)))
+    color = plt.get_cmap('rainbow')(np.linspace(0, 1.0, len(Nlist)))
     # print color
     # color = ['b','g','r']
 
@@ -189,8 +182,14 @@ def DD_scaling_elec(msmts,
     # color = ['r','g','b','m','k','r']
     
     
-    fig = plt.figure(figsize=(10,5))
-    fig5 = plt.figure(figsize=(30,15))
+    ### Make figure ###
+    # fig = plt.figure(figsize=(10,5))
+    # plt.title('vs total time')
+    fig5 = plt.figure(figsize=(10,5))
+    # plt.title('vs tau')
+    # fig6 = plt.figure(figsize=(30,15))
+
+
     # mpl.rcParams['axes.linewidth'] = 2
     min_x = 0.01
     max_x = 1000
@@ -202,10 +201,11 @@ def DD_scaling_elec(msmts,
     exps_Tot = []
     exps_err_Tot = []
 
-
-    ax = fig.add_subplot('111')
-    ax5 = fig5.add_subplot('111')
-    # ax3 = fig3.add_subplot(111)
+    ### Make ax
+    # ax = fig.add_subplot('111')             ## Normal graph
+    ax5 = fig5.add_subplot('111')           ## vs tau
+    # ax6 = fig6.add_subplot('111')           ## vs scaling
+    # # ax3 = fig3.add_subplot(111)
     # p0 = [amplitude, decay_constant, exponent]
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, 
              x0, decay_constant,exponent)
@@ -278,12 +278,10 @@ def DD_scaling_elec(msmts,
         # print y_err
         # optimize.leastsq(fit_func,x,y,p0)
             if correct_dips:
-                fit_result = fit.fit1d(x[-1],y[-1], None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+                fit_result = fit.fit1d(x[-1],y[-1], None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
             else:
-                fit_result = fit.fit1d(array[:,0],array[:,1], None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+                fit_result = fit.fit1d(array[:,0],array[:,1], None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
             
-
-
             if correct_dips2:
                 xold = array[:,0]
                 yold = array[:,1]
@@ -336,6 +334,7 @@ def DD_scaling_elec(msmts,
             
 
             if 4 in fixed:
+                print "4 is fixed !!"
                 # ax.errorbar(x,y,fmt='o',yerr=y_err, label='N=' + str(N)+' T=' + '%.2f' % fit_result['params_dict']['T'] + '+-' + '%.2f' % fit_result['error_dict']['T']
                 # +', A=' '%.2f' % fit_result['params_dict']['A'] + '+-' + '%.2f' % fit_result['error_dict']['A'],color=color[ii])
                 if N > 1000:
@@ -353,8 +352,11 @@ def DD_scaling_elec(msmts,
                 label = 'N=' + str(N)+', T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T']) \
                 + ', A=' + un2str(fit_result['params_dict']['A'], fit_result['error_dict']['A']) +', n=' + un2str(fit_result['params_dict']['n'], fit_result['error_dict']['n'])
                 label = str(N)
-                ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label=label,color=color[ii])
+                
+                # ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label=label,color=color[ii])
                 ax5.plot(x[-1]/(2.0*N),y[-1],'-o', label=label,color=color[ii])
+                # ax6.plot(x[-1]/(2.0*N),y[-1],'-o', label=label,color=color[ii])
+                
                 # if ii == 1:
                 #     ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='New msmt N=2048 T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T'])
                 #     +', n=' + un2str(fit_result['params_dict']['n'], fit_result['error_dict']['n']),color=color[ii])
@@ -364,8 +366,8 @@ def DD_scaling_elec(msmts,
                 
                 # ax.errorbar(x[-1],y[-1],fmt='o',yerr=y_err[-1], label='N=' + str(N)+', T=' + un2str(fit_result['params_dict']['T'], fit_result['error_dict']['T'])
                 #  +', n=' + un2str(fit_result['params_dict']['n'], fit_result['error_dict']['n']),color=color[ii])
-            plot.plot_fit1d(fit_result, np.linspace(0.,max_x,10001), ax=ax, plot_data=False,print_info=False,color=color[ii])
-            # plot.plot_fit1d(fit_result, np.linspace(0.,max_x,10001), ax=ax, plot_data=False,print_info=False,color='0.25')
+            
+            # plot.plot_fit1d(fit_result, np.linspace(0.,max_x,10001), ax=ax, plot_data=False,print_info=False,color=color[ii])
         
         Amps_Tot.append(Amps)
         Amps_err_Tot.append(Amps_err)
@@ -384,34 +386,50 @@ def DD_scaling_elec(msmts,
     Ts_err_Tot = list(map(list, zip(*Ts_err_Tot)))
     exps_Tot = list(map(list, zip(*exps_Tot)))
     exps_err_Tot = list(map(list, zip(*exps_err_Tot)))
-    ax.set_xscale('log')
-    #max_x=3
-    ax.hlines([0.5],min_x,max_x,linestyles='dotted', linewidth = 2)
+    
 
-    ax.hlines([1.],min_x,max_x,linestyles='dotted', linewidth = 2)
-    ax.set_xlim(min_x,max_x)
-    ax5.set_xlim(0,0.3)
-    ax.set_ylim(0.4,1.02)
+    # ax.set_xscale('log')
+    #max_x=3
+    # ax.hlines([0.5],min_x,max_x,linestyles='dotted', linewidth = 2)
+    ax5.hlines([0.5],min_x,max_x,linestyles='dotted', linewidth = 2)
+    # ax.hlines([1.],min_x,max_x,linestyles='dotted', linewidth = 2)
+    ax5.hlines([1.],min_x,max_x,linestyles='dotted', linewidth = 2)
+
+    # ax.set_xlim(min_x,max_x)
+    ax5.set_xlim(0.15,0.20)
+    # ax6.set_xlim(0,0.3)
+    
+    # ax.set_ylim(0.4,1.02)
     ax5.set_ylim(0.4,1.02)
-    ax.set_xlabel('Free evolution time (ms)',fontsize = 20)
+    # ax6.set_ylim(0.4,1.02)
+    
+    # ax.set_xlabel('Free evolution time (ms)',fontsize = 20)
     ax5.set_xlabel('Tau (ms)',fontsize = 20)
-    ax.set_ylabel('Fidelity',fontsize = 20)
+    # ax6.set_xlabel('Tau .... (ms)',fontsize = 20)
+    
+    # ax.set_ylabel('Fidelity',fontsize = 20)
     ax5.set_ylabel('Fidelity',fontsize = 20)
-    ax.tick_params(axis='x', which='major', labelsize=20)
+    
+    # ax.tick_params(axis='x', which='major', labelsize=20)
     ax5.tick_params(axis='x', which='major', labelsize=20)
-    ax.tick_params(axis='y', which='major', labelsize=20)
+    
+    # ax.tick_params(axis='y', which='major', labelsize=20)
     ax5.tick_params(axis='y', which='major', labelsize=20)
+    
+
     # ax.set_xticks([0,1,2,3])
-    ax.set_yticks([0.5,0.75,1])
-    for axis in ['top','bottom','left','right']:
-        ax.spines[axis].set_linewidth(2)
+    # ax.set_yticks([0.5,0.75,1])
+
+    # for axis in ['top','bottom','left','right']:
+    #     ax.spines[axis].set_linewidth(2)
+    
     # plt.legend(loc = 'center left',fontsize = 16, bbox_to_anchor=(1, 0.5))
     # plt.legend(loc = 'center left',fontsize = 15,ncol=2,numpoints = 1,frameon = False,columnspacing=0.5,handletextpad=0.0)
-    plt.legend(loc = 'top right',fontsize = 30,ncol=2,numpoints = 1,frameon = False,columnspacing=0.5,handletextpad=0.0)
+    plt.legend(loc = 'top right',fontsize = 20,ncol=2,numpoints = 1,frameon = False,columnspacing=0.5,handletextpad=0.0)
     
     print 'folder ='
     print DBdir
-    plt.savefig(DBdir +'DD_vs_Tau_zoom.pdf', bbox_inches='tight')
+    # plt.savefig(DBdir +'DD_vs_tau_selected.pdf', bbox_inches='tight')
     # plt.show()
     logx = np.log10(Nlist)
     def fit_func(x, a, b):
@@ -421,12 +439,7 @@ def DD_scaling_elec(msmts,
     #         return (2./3.)*x + b
 
     for exp_nr, exponent in enumerate(exponents):
-        if exp_nr == 0:
-            fig3 = plt.figure(figsize=(4,6))
-            ax3 = fig3.add_subplot(111)
-
-            
-    
+                
         print Ts_Tot[exp_nr]
         # sdfklaj
         logy = np.log10(Ts_Tot[exp_nr])
@@ -449,11 +462,11 @@ def DD_scaling_elec(msmts,
 
         # print logx
         # print logy
-        print covs
-        print 
-        print params
+        # print covs
+        # print 
+        # print params
 
-        print covs[0][0]
+        # print covs[0][0]
         # print 10**(covs[0][1])
         # for a in range(len(Ts)):
         #     yerrp.append( abs(np.log(Ts[a]+Ts_err[a])-np.log(Ts[a])))

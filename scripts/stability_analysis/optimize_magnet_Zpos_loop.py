@@ -141,7 +141,10 @@ def fit_B_msmt_loop(older_than = None, newer_than = None, filename = 'magnet_Zpo
             temperature_list = temperature_list,
             magnet_position_list = magnet_position_list)
 
-def plot_meas_B_loop(filename = 'backlash_calib_data', optimization_target = 10, plot_out_of_range = True):
+
+
+
+def plot_meas_B_loop(filename = 'backlash_calib_data',filename2 = 'backlash_calib_data', optimization_target = 10, plot_out_of_range = True):
 
     d = np.load(filename+'.npz')
     f0m = d['f0m']; u_f0m = d['u_f0m']; #f0p = d['f0p'] ;u_f0p = d['u_f0p']
@@ -158,6 +161,13 @@ def plot_meas_B_loop(filename = 'backlash_calib_data', optimization_target = 10,
     # print 'magnet position is   ' +str(magnet_position_list)
 
     # f0m_c = f0m - (temperature_list-22.24)*.001133
+
+
+    d2 = np.load(filename2+'.npz')
+    f0p = d2['f0m']; u_f0m = d['u_f0m'];
+    dZFS= ((f0p+f0m)/2 - 2.877623)
+
+    print 'dZFS is' + str(1e6*dZFS)
 
 
     ### Deleting all the failed fits 
@@ -218,7 +228,22 @@ def plot_meas_B_loop(filename = 'backlash_calib_data', optimization_target = 10,
 
 
 
-    
+
+    # plot ZFS distribution
+
+    mean_dZFS         = np.mean(dZFS)   
+    stdev_dZFS        = np.std(dZFS)
+
+    plt.figure(2)
+    n, bins, patches = plt.hist((dZFS)*1e6,50,normed = 1)
+    bincenters = 0.5*(bins[1:]+bins[:-1])
+    # y = mlab.normpdf( bincenters, 1e6*(mean_fms0-1.746), 1e6*stdev_fms0)
+    # plt.plot(bincenters, y, 'r--', linewidth=1)
+    plt.xlabel('binned dZFS (kHz)')
+    plt.title('Mean '+str(round(mean_dZFS*1e6,6))+' KHz, stdev '+str(round(stdev_dZFS*1e6,2))+' kHz')
+    plt.savefig(folder+'/binned_dZFS.png',format='png')
+
+
 
    
 
@@ -226,7 +251,7 @@ def plot_meas_B_loop(filename = 'backlash_calib_data', optimization_target = 10,
 
     # plot magnetic field distribution 
 
-    plt.figure(2)
+    plt.figure(0)
     n, bins, patches = plt.hist((f0m_filtered-1.746)*1e6,50,normed = 1)
     bincenters = 0.5*(bins[1:]+bins[:-1])
     # y = mlab.normpdf( bincenters, 1e6*(mean_fms0-1.746), 1e6*stdev_fms0)
@@ -372,6 +397,9 @@ def plot_meas_B_loop(filename = 'backlash_calib_data', optimization_target = 10,
         # plt.show()
         
         plt.savefig(folder+'/binned_delta_time.png',format='png')
+
+
+
 
 
 

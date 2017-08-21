@@ -66,7 +66,7 @@ class MBIAnalysis(m2.M2Analysis):
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
             # if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
-            #    print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
+            #     print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
         else:
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro = self.ssro_results/float(self.reps)
@@ -152,7 +152,7 @@ class MBIAnalysis(m2.M2Analysis):
 
     def get_electron_ROC(self, ssro_calib_folder='',**kw):
         if ssro_calib_folder == '':
-            ssro_calib_folder = toolbox.latest_data('SSROCalibration')
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration', **kw)
 
         self.p0 = np.zeros(self.normalized_ssro.shape)
         self.u_p0 = np.zeros(self.normalized_ssro.shape)
@@ -189,7 +189,6 @@ class MBIAnalysis(m2.M2Analysis):
 
                 self.p0[:,i] = p0
                 self.u_p0[:,i] = u_p0
-
 
 
         self.result_corrected = True
@@ -310,6 +309,7 @@ class MBIAnalysis(m2.M2Analysis):
     def plot_results_vs_sweepparam(self, name='', save=True, **kw):
         mode = kw.get('mode', 'ssro_results')
         labels = kw.get('labels', None)
+        ylabel = kw.get('ylabel',None)
         ret = kw.get('ret', None)
         ylim = kw.get('ylim', (-0.05, 1.05))
         ax = kw.get('ax', None)
@@ -328,7 +328,7 @@ class MBIAnalysis(m2.M2Analysis):
             ax = self.default_ax(fig)
         else:
             ax.set_title(self.timestamp+'\n'+self.measurementstring)
-
+        print labels
         if labels == None:
             if mode != 'correlations':
                 labels = ['RO #%d' % i for i in range(self.readouts)]
@@ -346,10 +346,13 @@ class MBIAnalysis(m2.M2Analysis):
                         yerr=self.u_p0[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                     ax.axhspan(0,1,fill=False,ls='dotted')
 
-            if not self.result_corrected:
-                ax.set_ylabel('avg (uncorrected) outcome')
+            if ylabel == None:
+                if not self.result_corrected:
+                    ax.set_ylabel('avg (uncorrected) outcome')
+                else:
+                    ax.set_ylabel(r'$F(|0\rangle)$')
             else:
-                ax.set_ylabel(r'$F(|0\rangle)$')
+                ax.set_ylabel(ylabel)
 
         else:
             for i in range(len(self.correlation_names)):
@@ -362,10 +365,13 @@ class MBIAnalysis(m2.M2Analysis):
                         yerr=self.u_p_correlations[:,i], label=labels[i],markersize=markersize,capsize=capsize)
                     ax.axhspan(0,1,fill=False,ls='dotted')
 
-            if not self.result_correlation_corrected:
-                ax.set_ylabel('avg (uncorrected) outcome')
+            if ylabel == None:
+                if not self.result_correlation_corrected:
+                    ax.set_ylabel('avg (uncorrected) outcome')
+                else:
+                    ax.set_ylabel('Probability')
             else:
-                ax.set_ylabel('Probability')
+                ax.set_ylabel(ylabel)
 
 
         ax.set_xlabel(self.sweep_name)

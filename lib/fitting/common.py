@@ -59,6 +59,22 @@ def fit_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_decaying_cos_with_phase_errors(g_f, g_a, g_A, g_phi,g_t,phase_errors):
+    fitfunc_str = 'A *exp(-x/t) cos(2pi * (f*x + (phi + phi_err/360) ) + a'
+
+    f = fit.Parameter(g_f, 'f')
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    phi = fit.Parameter(g_phi, 'phi')
+    t   = fit.Parameter(g_t, 't')
+    # print 'guessed frequency is '+str(g_f)
+    p0 = [f, a, A,phi,t]
+
+    def fitfunc(x, phi_err=phase_errors):
+        return a() + A()*np.exp(-x/t()) * np.cos(2*np.pi*( f()*x + (phi()+phi_err)/360.))
+
+    return p0, fitfunc, fitfunc_str
+
 def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     fitfunc_str = 'A *exp(-(x/t)**2) cos(2pi * (f*x + phi/360) ) + a'
 
@@ -224,6 +240,34 @@ def fit_exp_decay_shifted_with_offset(g_a, g_A, g_tau, g_x0, *arg):
 
     def fitfunc(x):
         return a() + A() * np.exp(-(x-x0())/tau())
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_double_exp_decay_shifted_with_offset(g_a, g_A, g_tau,  g_x0,g_A2, g_tau2,*arg):
+    """
+    fitfunction for an exponential decay,
+        y(x) = A * exp(-(x-x0)/tau)+ A2 * exp(-(x-x0=)/tau2) + a
+
+    Initial guesses (in this order):
+        g_a : offset
+        g_A : initial Amplitude
+        g_tau : decay constant
+        g_A2 : initial Amplitude 2
+        g_tau2 : decay constant 2
+    """
+    fitfunc_str = 'A * exp(-x/tau)+ A2 * exp(-x/tau2) + a'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    tau = fit.Parameter(g_tau, 'tau')
+    A2 = fit.Parameter(g_A2, 'A2')
+    tau2 = fit.Parameter(g_tau2, 'tau2')
+    x0 = fit.Parameter(g_x0, 'x0')
+
+    p0 = [a, A, tau,x0, A2, tau2]
+
+    def fitfunc(x):
+        return a() + A() * np.exp(-(x-x0())/tau()) + A2() * np.exp(-(x-x0())/tau2())
 
     return p0, fitfunc, fitfunc_str
 
@@ -490,6 +534,23 @@ def fit_2lorentz(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_x02, g_gamma2):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_2lorentz_symmetric(g_a, g_A, g_x0, g_gamma, dx):
+    fitfunc_str = 'a + 2*A/np.pi*gamma/(4*(x-x01)**2+gamma**2) \
+            + 2*A/np.pi*gamma/(4*(x-x02)**2+gamma**2)'
+
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    gamma = fit.Parameter(g_gamma, 'gamma')
+    dx = fit.Parameter(dx, 'dx')
+
+    p0 = [a, A, x0, gamma, dx]
+
+    def fitfunc(x):
+        return a()+2*A()/np.pi*gamma()/(4*(x-x0()-(dx()/2))**2+gamma()**2)+\
+                2*A()/np.pi*gamma()/(4*(x-x0()+(dx()/2))**2+gamma()**2)
+
+    return p0, fitfunc, fitfunc_str
 
 def fit_3lorentz_symmetric(g_a1, g_A1, g_x01, g_gamma1, g_dx, g_A2):  # fit for 3 lorentzians for EOM drive, symmetric around middle peak
     fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01)**2+gamma1**2) \
@@ -627,6 +688,33 @@ def fit_2lorentz_splitting(g_a1, g_A1, g_x01, g_gamma1, g_A2, g_dx2, g_gamma2):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_esr(g_a,g_A1,g_A2,g_x0,g_dx,g_gamma,g_dxN):
+    fitfunc_str = 'a1 + 2*A1/np.pi*gamma1/(4*(x-x01-dx/2-dxN)**2+gamma**2) \
+            +2*A1/np.pi*gamma1/(4*(x-x01-dx/2)**2+gamma**2) \
+            2*A1/np.pi*gamma1/(4*(x-x01-dx/2+dxN)**2+gamma**2) \
+            2*A2/np.pi*gamma1/(4*(x-x01+dx/2-dxN)**2+gamma**2) \
+            2*A2/np.pi*gamma1/(4*(x-x01+dx/2)**2+gamma**2) \
+            2*A2/np.pi*gamma1/(4*(x-x01+dx/2+dxN)**2+gamma**2) '
+    a = fit.Parameter(g_a, 'a')
+    A1 = fit.Parameter(g_A1, 'A1')
+    A2 = fit.Parameter(g_A2, 'A2')
+    x0 = fit.Parameter(g_x0, 'x0')
+    dx = fit.Parameter(g_dx, 'dx')
+    gamma = fit.Parameter(g_gamma, 'gamma')
+    dxN = fit.Parameter(g_dxN, 'dxN') 
+
+    p0 = [a, A1, A2, x0, dx, gamma, dxN]
+    def fitfunc(x):
+        return a()+2*A1()/np.pi*gamma()/(4*(x-x0()-dx()/2-dxN())**2+gamma()**2)+\
+            2*A1()/np.pi*gamma()/(4*(x-x0()-dx()/2)**2+gamma()**2)+\
+            2*A1()/np.pi*gamma()/(4*(x-x0()-dx()/2+dxN())**2+gamma()**2)+\
+            2*A2()/np.pi*gamma()/(4*(x-x0()+dx()/2-dxN())**2+gamma()**2)+\
+            2*A2()/np.pi*gamma()/(4*(x-x0()+dx()/2)**2+gamma()**2)+\
+            2*A2()/np.pi*gamma()/(4*(x-x0()+dx()/2+dxN())**2+gamma()**2)
+
+    return p0, fitfunc, fitfunc_str
+
+
 
 def fit_line(g_a, g_b, *arg):
     """
@@ -669,6 +757,29 @@ def fit_inverse(g_a, g_b, *arg):
 
     def fitfunc(x):
         return a() + b()*1./x
+
+    return p0, fitfunc, fitfunc_str
+
+
+def fit_inverse_squared(g_a, g_b, *arg):
+    """
+    fitfunction for a line
+        y(x) = a + b/x**2
+
+    I.g.:
+        g_a : offset
+        g_b : quadratic slope
+    """
+
+    fitfunc_str = 'a + b/x^2'
+
+    a = fit.Parameter(g_a, 'a')
+    b = fit.Parameter(g_b, 'b')
+    #xsat = fit.Parameter(g_xsat, 'xsat')
+    p0 = [a, b]
+
+    def fitfunc(x):
+        return a() + b()*(1./x)**2
 
     return p0, fitfunc, fitfunc_str
 
@@ -885,4 +996,20 @@ def fit_clipping_radius(g_ROC,g_rclip,g_Transmission,g_Loss, *arg):
 
     def fitfunc(x):
         return 2*np.pi/(Transmission()+Loss())+np.exp(-2*rclip()**2/(wavelength**2/np.pi**2*wavelength*x/2*(ROC()-wavelength*x/2)))
+    return p0, fitfunc, fitfunc_str
+
+def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
+    fitfunc_str = 'g_A*(1-(1+a)*exp(-|x-x0|/tau1)+a*exp(-|x-x0|/tau2))'
+
+    x0 = fit.Parameter(g_x0,'x0')
+    A = fit.Parameter(g_A,'A')
+    a = fit.Parameter(g_a,'a')
+    tau1 = fit.Parameter(g_tau1,'tau1')
+    tau2 = fit.Parameter(g_tau2,'tau2')
+
+    p0 = [x0,A,a,tau1,tau2]
+
+    def fitfunc(x):
+        return A()*(1-(1+a())*np.exp(-np.abs(x-x0())/tau1())+a()*np.exp(-(np.abs(x-x0())/tau2())))
+
     return p0, fitfunc, fitfunc_str

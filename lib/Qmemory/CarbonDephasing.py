@@ -1652,20 +1652,20 @@ def ionization_paper_plot(timestamps=None, measurement_name = 'adwindata', ssro_
             exclude_first_n_points = 0., binwidth_ns = None,
             amplitude = 1, decay_constant_guess = 3000, decay_constant_two = 0.6, x_offs = 0,
             plot_results = True, do_T2correct=False, labels = [''], log_plot = True,
-            do_fit = True, do_print = False, fixed = [2], show_guess = True,
+            do_fit = True, do_print = False, fixed = [2], show_guess = True,save_fig = True,
             colors=['b']):
    
 
     fitted_tau, fitted_tau_err = [],[]
     CR_after_check = True
 
-    #p0, fitfunc, fitfunc_str = [], [], []
-    fig = plt.figure(figsize=figsize)
+
+    fig = plt.figure(figsize)
     ax = plt.subplot()
-    fig.text(0.04,0.92, '(a)', fontsize=fignumber_fontsize)
+    # fig.text(0.04,0.92, '(a)', fontsize=fignumber_fontsize)
     plt.xlabel('Repetitions', size=axeslabel_fontsize)
     plt.ylabel(r'$p_{NV^-}$', size=axeslabel_fontsize)
-    ax.set_yscale("log", nonposy='clip')
+    # ax.set_yscale("log", nonposy='clip')
 
     plt.tick_params(pad = 4, axis='both', which='major', labelsize=ticklabel_fontsize, width = tickwidth, length=majorticklength)
     plt.tick_params(pad = 4, axis='both', which='minor', labelsize=ticklabel_fontsize, width = tickwidth, length=minorticklength)
@@ -1687,7 +1687,7 @@ def ionization_paper_plot(timestamps=None, measurement_name = 'adwindata', ssro_
             
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
-        a.get_readout_results(name='adwindata', CR_after_check = False)
+        a.get_readout_results(name='adwindata', CR_after_check = CR_after_check)
         a.get_electron_ROC(ssro_calib_folder)
 
         x_list = a.sweep_pts.reshape(-1)[exclude_first_n_points[count]:]
@@ -1720,7 +1720,7 @@ def ionization_paper_plot(timestamps=None, measurement_name = 'adwindata', ssro_
         
         plt.legend(numpoints=1, fontsize=legend_fontsize, loc=3, frameon=False, labelspacing=0.3, borderpad=.5, handletextpad=0, borderaxespad=0)
 
-    if plot_results:
+    if save_fig:
         save_figure_to = 'D:\measuring\QMem_plots'
         #save_figure_to = 'K:\ns\qt\Diamond\Eigenpapers\15-WeaklyCoupledQuantumMemory\Figures'
         print 'saving to: ', save_figure_to
@@ -2149,3 +2149,76 @@ def coupling_vs_rep_update_data( c_idents=['1'], older_than=None, do_Z = False, 
         x,y,y_u,folder = coupling_vs_repetitions(c_idents,older_than = older_than,
             folder_name = 'Memory_NoOfRepetitions_', do_T2correct=do_T2correct)
         return x, y, y_u, folder
+
+
+
+def ionization_probabilities(timestamps=None, measurement_name = 'adwindata', ssro_calib_timestamp =None,
+            exclude_first_n_points = 0., binwidth_ns = None,
+            amplitude = 1, decay_constant_guess = 3000, decay_constant_two = 0.6, x_offs = 0,
+            plot_results = True, do_T2correct=False, labels = [''], log_plot = True,
+            do_fit = True, do_print = False, fixed = [2], show_guess = True,save_fig = True,
+            colors=['b'],**kw):
+   
+
+    fitted_tau, fitted_tau_err = [],[]
+    CR_after_check = kw.pop('CR_after_check',False)
+
+    fig = plt.figure()
+    ax = plt.subplot()
+    # fig.text(0.04,0.92, '(a)', fontsize=fignumber_fontsize)
+    plt.xlabel('Repetitions')
+    plt.ylabel(r'$p_{NV^-}$')
+    # ax.set_yscale("log", nonposy='clip')
+
+    # plt.tick_params(pad = 4, axis='both', which='major', labelsize=ticklabel_fontsize, width = tickwidth, length=majorticklength)
+    # plt.tick_params(pad = 4, axis='both', which='minor', labelsize=ticklabel_fontsize, width = tickwidth, length=minorticklength)
+    
+    plt.tight_layout()
+    
+    for count in np.arange(len(timestamps)):
+        x, y, y_u, fit_results = [], [], [], []
+
+        folder = toolbox.data_from_time(timestamps[count])
+
+        if ssro_calib_timestamp == None :
+            ssro_calib_folder = toolbox.latest_data('SSROCalibration', older_than=timestamps[count])
+        else:
+            ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp[count])
+            ssro_calib_folder = toolbox.data_from_time(ssro_calib_timestamp)
+        if VERBOSE:
+            print 'Using SSRO timestamp ', ssro_calib_folder
+            
+        a = mbi.MBIAnalysis(folder)
+        a.get_sweep_pts()
+        a.get_readout_results(name='adwindata', CR_after_check = CR_after_check)
+        a.get_electron_ROC(ssro_calib_folder)
+
+        x_list = a.sweep_pts.reshape(-1)[exclude_first_n_points[count]:]
+        x = np.append(x, x_list - x_list[0])  #shifts the graph such that it starts at t=0
+        y = np.append(y, a.p0.reshape(-1)[exclude_first_n_points[count]:])
+        y_u = np.append(y_u,a.u_p0.reshape(-1)[exclude_first_n_points[count]:])
+
+        if binwidth_ns != None:
+            binned_x, binned_y, binned_yu = bin_data(x, y, y_u, binwidth_ns[count])
+        else:
+            binned_x, binned_y, binned_yu = x, y, y_u
+        if VERBOSE:
+            print 'binned x and y: ', binned_x, binned_y
+
+        plt.ylim(0.1,1.0)
+        plt.xlim(0.,1.05*max(binned_x))
+
+        plt.errorbar(binned_x, binned_y, zorder = 500-count, yerr = binned_yu,  fmt = 'o', ls= '', color = colors[count], label = labels[count])
+
+        if do_fit:
+            p0, fitfunc, fitfunc_str = common.fit_exp_decay_with_offset(0.,1.,decay_constant_guess[count])
+            print  p0, fitfunc, fitfunc_str 
+            fit_result = fit.fit1d( binned_x, binned_y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True, fixed = fixed)
+        if plot_results and show_guess:
+            ax.plot(np.linspace(binned_x[0],binned_x[-1],201), fitfunc(np.linspace(binned_x[0],binned_x[-1],201)), ':', lw=2)
+
+        if do_fit:  ## plot data and fit
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001),color = colors[count],log=log_plot, 
+                ax=ax, plot_data=False, legend=False, add_txt=False)
+        
+        # plt.legend(numpoints=1, fontsize=legend_fontsize, loc=3, frameon=False, labelspacing=0.3, borderpad=.5, handletextpad=0, borderaxespad=0)

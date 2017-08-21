@@ -154,11 +154,9 @@ def gate_sweep_analysis(carbon, **kw):
 		search_string = 'Sweep_uncond_carbon_Gate__C'+str(carbon)+ '_positive_tau'
 		
 	entire_folder_list = toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1]
-	search_string += '0'
-	nr_of_parts = len(toolbox.latest_data(contains = search_string, older_than=older_than, newer_than=newer_than, return_all = True)[::-1])
+	nr_of_parts = len(toolbox.latest_data(contains = search_string + '0', older_than=older_than, newer_than=newer_than, return_all = True)[::-1])
 	nr_of_taus = len(entire_folder_list)/nr_of_parts
-	# print nr_of_parts
-	# print nr_of_taus
+
 	tau_nrs 	= kw.pop('tau_nrs', range(nr_of_taus))
 
 	for t in tau_nrs:			
@@ -169,7 +167,6 @@ def gate_sweep_analysis(carbon, **kw):
 
 		best_b = np.amax(b)
 		best_b_ind = np.argmax(b)
-
 
 		#### get the top 5 gates and return their configurations
 		idx = (-b).argsort()[:5]
@@ -253,10 +250,6 @@ def plot_gate_time(gates,gate_values,b,b_u):
 	for i in range(len(gate_values)):
 		gate_time = []
 		for g in gate_values[i]:
-			# print 'statements'
-			# print int(g[0])
-			# print float(g[1])
-			# print int(g[0])*float(g[1])
 			gate_time.append(int(g[0])*float(g[1]))
 		# print gate_time
 		plt.plot(gate_time, b[i], '.',label = 'gates' + str(i+1))
@@ -267,21 +260,5 @@ def plot_gate_time(gates,gate_values,b,b_u):
 # Support methods
 def column(matrix, i):
     return [row[i] for row in matrix]
-# # Should actually generalize this into all
-# def compare_msmts(carbons = [5,5],
-# 					newer_than = [None,None],
-# 					older_than = [None,None],
-# 					tau_nrs = [0,0]):
-	
-# 	plot_fidelity = kw.pop('plot_fidelity',False)
-# 	plot_gate_time = kw.pop('plot_gate_time',False)
-# 	plot_graph = kw.pop('plot_graph',False)
-
-# 	for i in len(carbons):
-# 		self.get_gate_fidelity(carbon = carbons[i], newer_than=newer_than[i], older_than= None, tau_nrs = [0],
-#                      plot_fidelity = plot_fidelity, plot_gate_time = plot_gate_time, plot_graph=plot_graph)
-
-
-
 
 
