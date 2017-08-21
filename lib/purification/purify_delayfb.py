@@ -174,7 +174,8 @@ def get_pos_neg_data(a, adwindata_str='', ro_array=['positive', 'negative'], **k
     if ssro_calib_folder is None:
         use_preceding_ssro_calib = kw.pop('use_preceding_ssro_calib', False)
         if use_preceding_ssro_calib:
-            ssro_calib_folder = toolbox.latest_data('SSROCalib', older_than=a.timestamp.replace('/', ''), **kw)
+            kw['older_than'] = a.timestamp.replace('/', '')
+            ssro_calib_folder = toolbox.latest_data('SSROCalib', **kw)
         else:
             ssro_calib_timestamp = kw.pop('ssro_calib_timestamp', None)
 
@@ -359,6 +360,85 @@ def average_repump_time_2carbon(contains='', do_fit=False, **kw):
 
     if kw.get('ret_data_fit'):
         return x, y, y_u, fit_result
+
+
+def average_repump_time(contains='', do_fit=False, **kw):
+    '''
+    gets data from a folder whose name contains the contains variable.
+    Does or does not fit the data with a gaussian function
+    '''
+
+    ### kw for fitting
+
+    fit_offset = kw.pop('fit_offset', 0)
+    fit_amplitude = kw.pop('fit_amplitude', 1)
+    fit_x0 = kw.pop('fit_x0', None)
+    fit_sigma = kw.pop('fit_sigma', 0.2)
+    fixed = kw.pop('fixed', [])
+    show_guess = kw.pop('show_guess', False)
+
+    ### folder choice
+    if contains == '':
+        contains = 'Sweep_Repump_time'
+    elif len(contains) == 2:
+        contains = 'Sweep_Repump_time' + contains
+    elif len(contains) == 1:
+        contains = 'Sweep_Repump_time_' + contains
+
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains, **kw)
+    a = mbi.MBIAnalysis(f)
+
+    if '_Z' in f:
+        x, y, y_u = get_pos_neg_data(a, adwindata_str='Z_', **kw)
+        ylabel = 'Z'
+    else:
+        x, y1, y1_u = get_pos_neg_data(a, adwindata_str='X_', **kw)
+        x2, y2, y2_u = get_pos_neg_data(a, adwindata_str='Y_', **kw)
+        y, y_u = quadratic_addition(y1, y2, y1_u, y2_u)
+        # y=y1
+        # y_u = y1_u
+        ylabel = 'Bloch vector length'
+
+    ### create a plot
+    xlabel = a.g.attrs['sweep_name']
+    x = a.g.attrs['sweep_pts']  # could potentially be commented out?
+    title = kw.pop("title", "avg repump time")
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title=title)
+
+    if fit_x0 is None:
+        max_idx = np.argmax(y)
+        fit_x0 = x[max_idx]
+
+    ## plot data
+    plot_data(x, y, y_u=y_u)
+
+    ### fitting if you feel like it
+    if do_fit:
+
+        p0, fitfunc, fitfunc_str = common.fit_gauss(fit_offset, fit_amplitude, fit_x0, fit_sigma)
+
+        if show_guess:
+            # print decay
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, fixed=fixed, ret=True)
+        plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+
+        try:
+            fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+        except:
+            pass
+
+    ## save and close plot. We are done.
+    save_and_close_plot(f)
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
+
+    if kw.get('ret', False):
+        return fit_result
 
 
 def number_of_repetitions(contains='', do_fit=False, **kw):
@@ -788,6 +868,7 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only', False)
     tomo_basis = kw.pop('tomo_basis', None)
+    T2star_correction = kw.pop('T2star_correction', False)
 
     ### folder choice
     if contains == '':
@@ -846,6 +927,81 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
         x = np.append(x, x_new)
         y = np.append(y, y_new)
         y_u = np.append(y_u, y_u_new)
+
+    if T2star_correction:
+        from measurement.scripts.lt4_scripts.setup import msmt_params
+        reload(msmt_params)
+        import scipy.stats
+        carbons = multi_as[0].g.attrs['carbons']
+
+        sample = msmt_params.cfg['samples']['current']
+        m_params = msmt_params.cfg['samples'][sample]
+        e_trans = m_params['electron_transition']
+
+        T2stars = []
+        for c in carbons:
+            T2star_0 = m_params['C%d_T2star_0' % c]
+            T2star_1 = m_params['C%d_T2star_1%s' % (c, e_trans)]
+
+            T2star_arr = np.array([T2star_0, T2star_1])
+
+            # take the sqrt of the harmonic mean of the squared T2stars
+            # I hope this is correct
+            T2star = np.sqrt(scipy.stats.hmean(T2star_arr ** 2))
+            print("avg. T2* for C%d: %.2f" % (c, T2star * 1e3))
+
+            T2stars += [T2star]
+
+        T2stars = np.array(T2stars)
+
+        if kw.pop("T2star_gate_duration", True):
+            print("Taking gate duration into account for T2* correction")
+            T2star_envelope = np.ones_like(y)
+
+            LDE_duration = kw.pop('LDE_element_length')
+            LDE_total_duration = x*LDE_duration
+
+            m_attrs = multi_as[0].g.attrs
+
+            sequence_type = m_attrs['sequence_type']
+            gates_per_carbon = {
+                'serial_swap':  3,  # 2 swap gates and 1 tomo gate
+                'MBE':          2,  # 1 MBE gate and 1 tomo gate
+            }
+
+            gates_duration = 0.0
+            for i_c, c in enumerate(carbons):
+                sequence_duration = LDE_total_duration + gates_duration
+                T2star_envelope *= np.exp(-(sequence_duration / T2stars[i_c]) ** 2)
+                gate_tau = m_attrs['C%d_Ren_tau%s' % (c, e_trans)][0]
+                gate_N = m_attrs['C%d_Ren_N%s' % (c, e_trans)][0]
+                gates_duration += gates_per_carbon[sequence_type] * 2.0 * gate_N * gate_tau
+
+        else:
+            combined_T2star = 1. / np.sqrt( np.sum(1./T2stars**2) )
+            print("combined T2* for carbons %s: %.2f" % (str(carbons), combined_T2star * 1e3))
+
+            def T2star_envelope(t, T2star):
+                return np.exp(-(t / T2star) ** 2)
+
+            LDE_duration = kw.pop('LDE_element_length')
+            sequence_duration = x*LDE_duration
+
+            T2star_envelope = np.exp(-(sequence_duration / T2star) ** 2)
+
+        # let's cut out data points with T2star correction of more than 5 times
+        valid_pts = T2star_envelope > 0.4
+
+        y = y / T2star_envelope
+        y_u = y_u / T2star_envelope
+
+        x = x[valid_pts]
+        y = y[valid_pts]
+        y_u = y_u[valid_pts]
+
+        print("valid pts: %d" % np.sum(valid_pts))
+
+
 
     ### create a plot
     xlabel = multi_as[0].g.attrs['sweep_name']
