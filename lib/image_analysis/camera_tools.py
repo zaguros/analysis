@@ -291,7 +291,7 @@ def stamp_out_marker_grid_onto_im(im,all_marker_pts,marker_size,show_images = Fa
 # Bit marker detection and readout # (a.k.a. where am i currently on the sample?)
 ####################################
 
-def find_bit_marker_in_image(filtered_img):
+def find_bit_marker_in_image(filtered_img,do_plot = False):
     """
     expects a edged version of the original image. then returns the coordinates of the bit marker in the image    
     edged versions of images can be obtained with e.g.
@@ -323,12 +323,19 @@ def find_bit_marker_in_image(filtered_img):
             cxs[ii] = int(M['m10']/M['m00'])
             cys[ii] = int(M['m01']/M['m00'])
             c_filt[ii] = True
-            epsilon = 0.1*cv2.arcLength(c,True)
+            epsilon = 0.01*cv2.arcLength(c,True)
             approx = cv2.approxPolyDP(c,epsilon,True)
+            x,y,w,h = cv2.boundingRect(c)
+            c_filt[ii] = c_filt[ii] and w>h*2 ## we only want elongated rectangles
+
             shape_matching[ii] = cv2.matchShapes(approx,ideal_bitmarker_identifier,1,0.0)
 
-    shape_fltr = np.logical_and(c_filt,areas>0)
+    shape_fltr = np.logical_and(np.logical_and(c_filt,areas>30),areas<100)
     # print shape_matching[shape_fltr]
+    best_shape_fit = np.amin(shape_matching[shape_fltr])
+    if best_shape_fit > 1.:
+        print 'could not find bit marker in image'
+        return False
     contour_index = np.argmin(shape_matching[shape_fltr])
     real_contour_index = np.where(np.cumsum(shape_fltr) == contour_index+1)[0]
 
@@ -336,7 +343,8 @@ def find_bit_marker_in_image(filtered_img):
 
     #### now want to find the position of the identifier in the image
     cv2.drawContours(edges, [bit_marker_identifier], -1, (110, 0, 0), 3)
-    show_image(edges,size = 7)
+    if do_plot:
+        show_image(edges,size = 7,no_col_bar = True)
 
     bit_y = np.amin(bit_marker_identifier.T[0]) + 10
     bit_x = np.amin(bit_marker_identifier.T[1]) + 2
@@ -416,7 +424,7 @@ def generate_bitm_array(bit_x,bit_y):
                             [1,1,1,1]],dtype=int)
 
 
-def generate_idealized_ebeam_pattern(small_marker_pitch=5,bit_x_max = 36,bit_y_max = 15,pitch_bitm = 60):
+def generate_marker_pattern(small_marker_pitch=5,bit_x_max = 36,bit_y_max = 15,pitch_bitm = 60):
     """
     generates the marker pattern from a few simple codewords
     Assumes an array resolution of 1 um.
@@ -482,16 +490,19 @@ def draw_spot_onto_pattern(pattern,brightness,bitm_x,bitm_y,rel_x,rel_y,bitm_pit
     """
     does this need a resolution? should be handled by a different function that forwards indices. We assume a micron
     """
+    
+    x,y = find_current_ebeam_coordinates(pattern,bitm_x,bitm_y,rel_x,rel_y,bitm_pitch = bitm_pitch,correct_lift_off_problems=correct_lift_off_problems)
+    pattern[y,x] = brightness
+    return pattern
+
+def find_current_ebeam_coordinates(pattern,bitm_x,bitm_y,rel_x,rel_y,bitm_pitch = 60,correct_lift_off_problems=True):
     rel_y = -rel_y
     y_dim,x_dim = np.shape(pattern)
-    
+
     if correct_lift_off_problems:
         bitm_x,bitm_y = correct_faulty_lift_off(bitm_x,bitm_y,bitm_pitch,x_dim,y_dim)
 
     y = int(y_dim-bitm_y*bitm_pitch + rel_y)
     x = int(bitm_x*bitm_pitch + rel_x)
-    pattern[y,x] = brightness
-
-    print pattern[y,x]
-    return pattern
-
+    
+    return x,y
