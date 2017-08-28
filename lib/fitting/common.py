@@ -761,6 +761,29 @@ def fit_inverse(g_a, g_b, *arg):
     return p0, fitfunc, fitfunc_str
 
 
+def fit_inverse_squared(g_a, g_b, *arg):
+    """
+    fitfunction for a line
+        y(x) = a + b/x**2
+
+    I.g.:
+        g_a : offset
+        g_b : quadratic slope
+    """
+
+    fitfunc_str = 'a + b/x^2'
+
+    a = fit.Parameter(g_a, 'a')
+    b = fit.Parameter(g_b, 'b')
+    #xsat = fit.Parameter(g_xsat, 'xsat')
+    p0 = [a, b]
+
+    def fitfunc(x):
+        return a() + b()*(1./x)**2
+
+    return p0, fitfunc, fitfunc_str
+
+
 def fit_general_exponential_dec_cos(g_a, g_A, g_x0, g_T, g_n,g_f,g_phi):
     # NOTE: Order of arguments has changed to remain consistent with fitting params order
     # NOTE: removed g_x0=0 as a default argument. This should be handed explicitly to the function to prevent confusion
