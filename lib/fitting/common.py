@@ -1013,3 +1013,4 @@ def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
         return A()*(1-(1+a())*np.exp(-np.abs(x-x0())/tau1())+a()*np.exp(-(np.abs(x-x0())/tau2())))
 
     return p0, fitfunc, fitfunc_str
+

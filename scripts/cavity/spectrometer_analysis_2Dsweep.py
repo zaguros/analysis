@@ -118,12 +118,16 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         """
         indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
         indices_hom = np.append(indices_fund[0]-1,-1)
-        dnu_trans_all = np.abs(np.diff(x0s)[indices_hom])
-        # print dnu_trans_all
-        dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all<hom_max)] #filter out too far away peaks
-        dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all>1.)] #filter out too near peaks
-        dnu_trans_avg = np.average(dnu_trans_all)
-        u_dnu_trans_avg = scipy.stats.sem(dnu_trans_all)
+        if len(indices_hom)>1:
+            dnu_trans_all = np.abs(np.diff(x0s)[indices_hom])
+            # print dnu_trans_all
+            dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all<hom_max)] #filter out too far away peaks
+            dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all>1.)] #filter out too near peaks
+            dnu_trans_avg = np.average(dnu_trans_all)
+            u_dnu_trans_avg = scipy.stats.sem(dnu_trans_all)
+        else:
+            dnu_trans_avg = 0
+            u_dnu_trans_avg =0
         # print dnu_trans_all
         return dnu_trans_avg,u_dnu_trans_avg
 
@@ -138,13 +142,17 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         report_fails = kw.pop('report_fails',False)
         success = np.zeros(len(x0s))
 
-        indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
-        x0s_fund = x0s[indices_fund]
-        x0s = np.append(x0s_fund,x0s[-1])
-        u_x0s_fund = u_x0s[indices_fund]
-        u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
-        success[indices_fund]=1
-        success[-1]=1
+        if len(success)>0:
+            indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
+            x0s_fund = x0s[indices_fund]
+            x0s = np.append(x0s_fund,x0s[-1])
+            u_x0s_fund = u_x0s[indices_fund]
+            u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
+            success[indices_fund]=1
+            success[-1]=1
+        else:
+            x0s= np.array([])
+            u_x0s=np.array([])
         if report_fails:
             print '%d higher order modes removed'%(len(success) - len(x0s))
         return x0s,u_x0s,success
