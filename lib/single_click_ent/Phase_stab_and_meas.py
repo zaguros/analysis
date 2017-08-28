@@ -11,19 +11,19 @@ from analysis.lib.tools import plot; reload(plot)
 import Analysis_params_SCE as analysis_params; reload(analysis_params)
 import scipy.fftpack
 
-def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
+def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
     # Import
     lt3_analysis = kw.pop('lt3_analysis', False)
 
     if not(lt3_analysis):
-        folder= tb.latest_data(contains)
+        measfile= tb.latest_data(contains)
     else:
         base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
-        lt4_folder = os.path.join(base_folder_lt4,contains)
+        folder = os.path.join(base_folder_lt4,contains)
         filename_str = kw.pop('filename_str', analysis_params.data_settings['filenames_for_expms'][contains])
-        a_list=tb.latest_data(contains = filename_str,folder =lt4_folder,**kw)
+        measfile=tb.latest_data(contains = filename_str,folder =folder,**kw)
 
-    a = ppq.purifyPQAnalysis(folder, hdf5_mode='r')
+    a = ppq.purifyPQAnalysis(measfile, hdf5_mode='r')
 
     # general params
     
@@ -44,18 +44,16 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
     g_0 = a.g.attrs['Phase_Msmt_g_0']
     visibility = a.g.attrs['Phase_Msmt_Vis']
 
-    pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
-    sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
-    pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
-    sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
-
-    pid_counts_1 = pid_counts_1[(start_rep_no - 1)*pid_cycles:]
-    pid_counts_2 = pid_counts_2[(start_rep_no - 1)*pid_cycles:]
-    sample_counts_1 = sample_counts_1[(start_rep_no - 1)*sample_cycles:]
-    sample_counts_2 = sample_counts_2[(start_rep_no - 1)*sample_cycles:]
-
+    
+   
     if mode == 'only_meas':
-        
+    
+        sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
+        sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
+        sample_counts_1 = sample_counts_1[(start_rep_no - 1)*sample_cycles:]
+        sample_counts_2 = sample_counts_2[(start_rep_no - 1)*sample_cycles:]
+
+    
         delay = delay_meas
         total_cycles = sample_cycles
 
@@ -67,6 +65,11 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
 
     elif mode == 'only_stab':
 
+        pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
+        pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
+        pid_counts_1 = pid_counts_1[(start_rep_no - 1)*pid_cycles:]
+        pid_counts_2 = pid_counts_2[(start_rep_no - 1)*pid_cycles:]
+
         delay = delay_stable
         total_cycles = pid_cycles
 
@@ -77,7 +80,15 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
 
 
     else:
-        
+        pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
+        pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
+        sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
+        sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
+        sample_counts_1 = sample_counts_1[(start_rep_no - 1)*sample_cycles:]
+        sample_counts_2 = sample_counts_2[(start_rep_no - 1)*sample_cycles:]
+        pid_counts_1 = pid_counts_1[(start_rep_no - 1)*pid_cycles:]
+        pid_counts_2 = pid_counts_2[(start_rep_no - 1)*pid_cycles:]
+
         v_1 = []
         v_2 = []
         t = []
@@ -112,44 +123,44 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
     fig = plt.figure(figsize=(17,6))
     ax = plt.subplot(211)
     plt.plot(t, v_1, 'b')
-    plt.title('Counts ZPL detector 1 {0}'.format(folder))
+    plt.title('Counts ZPL detector 1 {0}'.format(a.folder))
     ax.set_xlabel('elapsed time (ms)')
     ax.set_ylabel('counts')
     ax2 = plt.subplot(212)
     plt.plot(t, v_2, 'b')
-    plt.title('Counts ZPL detector 2 {0}'.format(folder))
+    plt.title('Counts ZPL detector 2 {0}'.format(a.folder))
     ax2.set_xlabel('elapsed time (ms)')
     ax2.set_ylabel('counts')
     plt.tight_layout()  
-    fig.savefig(os.path.join(folder, 'trace_counts.png'))
+    fig.savefig(os.path.join(a.folder, 'trace_counts.png'))
 
     if len(plot_zoomed):
         
         fig = plt.figure(figsize=(17,6))
         ax = plt.subplot(111)
         plt.plot(t[total_cycles*plot_zoomed[0]:total_cycles*plot_zoomed[1]], angle[total_cycles*plot_zoomed[0]:total_cycles*plot_zoomed[1]])
-        plt.title('Zoomed trace {0}'.format(folder))
+        plt.title('Zoomed trace {0}'.format(a.folder))
         ax.set_xlabel('elapsed time (milliseconds)')
         ax.set_ylabel('Phase')
         plt.tight_layout()
-        fig.savefig(os.path.join(folder, 'trace_zoomed.png'))
+        fig.savefig(os.path.join(a.folder, 'trace_zoomed.png'))
 
     # phase
     fig = plt.figure(figsize=(17,6))
     ax = plt.subplot(111)
     plt.plot(t, angle, 'r')
-    plt.title('Phase of ZPL photons {0}'.format(folder))
+    plt.title('Phase of ZPL photons {0}'.format(a.folder))
     plt.ylim([0,180])
     ax.set_xlabel('elapsed time (ms)')
     ax.set_ylabel('angle ($^o$)')
-    fig.savefig(os.path.join(folder, 'trace_angle.png'))
+    fig.savefig(os.path.join(a.folder, 'trace_angle.png'))
 
 
     # fft
 
     if mode == 'only_meas' or mode == 'only_stab':
 
-        yf = scipy.fftpack.fft(angle)
+        yf = np.abs(scipy.fftpack.fft(angle))
         xf = np.linspace(0, 1.0/(2*delay*1e-6), len(angle)/2)
 
         fig, ax = plt.subplots()
@@ -159,10 +170,10 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
         xlim = plt.xlim()
         if (xlim[1]>1000):
             plt.xlim(0,1000)
-        plt.title('FFT {0}'.format(folder))
+        plt.title('FFT {0}'.format(a.folder))
         ax.set_xlabel('frequency (Hz)')
         ax.set_ylabel('Amplitude (a.u.)')
-        fig.savefig(os.path.join(folder, 'fft.png'))
+        fig.savefig(os.path.join(a.folder, 'fft.png'))
 
     # histogram
     fig = plt.figure()
@@ -181,8 +192,11 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
                          ret=True,fixed=[])
     plot.plot_fit1d(fit_result, np.linspace(center[0],center[-1],201), ax=ax, 
                         plot_data=False,print_info = True)
-    fig.savefig(os.path.join(folder, 'histogram.png'))
-    print 'x0, sigma ', fit_result['params_dict']['x0'] , fit_result['params_dict']['sigma'] 
+
+    ax.set_xlabel('Phase')
+    fig.savefig(os.path.join(a.folder, 'histogram.png'))
+    if len(fit_result['params_dict']):
+        print 'x0, sigma ', fit_result['params_dict']['x0'] , fit_result['params_dict']['sigma'] 
 
     # standard dev
     fig = plt.figure()
@@ -195,7 +209,7 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1):
 
 
     plt.plot(binsize*t[0:(int(np.floor(total_cycles/binsize)))], var_array)
-    plt.title('Standard deviation of Phase {0}'.format(folder))
+    plt.title('Standard deviation of Phase {0}'.format(a.folder))
     ax.set_xlabel('time (ms)')
     ax.set_ylabel('std dev ($^o$)')
     # fig.savefig(os.path.join(folder, 'standard_dev.png'))

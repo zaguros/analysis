@@ -43,7 +43,8 @@ class CavitySims ():
         else:
             print 'Please give a valid parameter set!!! '
 
-
+        print 'Hello world!'
+        
         self.A_tot = np.sum(self.A)
         self.epsilon = self.A/self.A_tot #relative strength transitions
         self.gamma_relative = self.gamma_tot*self.epsilon
