@@ -59,7 +59,8 @@ CR_after_check = True ### discard events with ionization for data analysis? (thi
 
 def get_from_hdf5(folder,key_list):
     # gets a msmt_parameter from an hdf5 file
-    Datafile=h5py.File(folder+folder[26:] + '.hdf5','r') 
+    df = folder+'/'+os.path.split(folder)[1] + '.hdf5'
+    Datafile=h5py.File(df,'r')
 
     first_dict_layer = Datafile[Datafile.keys()[0]]
     return_list = []
@@ -69,7 +70,9 @@ def get_from_hdf5(folder,key_list):
     return return_list
 
 def get_tstamp_from_folder(folder):
-    return folder[18:18+15]
+    sp1 = os.path.split(folder)
+    sp2 = os.path.split(sp1[0])
+    return sp2[1][:8] + "/" + sp1[1][:6]
 
 def get_dephasing_data(folder_dict,ssro_calib_folder,**kw):
 
@@ -307,10 +310,11 @@ def create_plot(folder_name, folder_dict, carbon, fit_result):
 
     plt.xlabel(plot_Xlabel)
     plt.ylabel('Bloch vector length')
-    plt.title('Dephasing for C'+carbon+' '+ get_tstamp_from_folder(folder_dict['X'][0]))
+    tsfolder = folder_dict['XX'][0] if len(folder_dict['XX']) > 0 else folder_dict['X'][0]
+    plt.title('Dephasing for C'+carbon+' '+ get_tstamp_from_folder(tsfolder))
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., fontsize=legend_fontsize)
-    plt.savefig(os.path.join(folder_dict['X'][0],'CarbonDephasing.pdf'),format='pdf')
-    plt.savefig(os.path.join(folder_dict['X'][0],'CarbonDephasing.png'),format='png')
+    plt.savefig(os.path.join(tsfolder,'CarbonDephasing.pdf'),format='pdf')
+    plt.savefig(os.path.join(tsfolder,'CarbonDephasing.png'),format='png')
     plt.show()
     plt.close('all')
 
@@ -380,7 +384,7 @@ def Sweep_repetitions(older_than = None,
         fixed = [0,3]
 
     fit_result = fit.fit1d(folder_dict['sweep_pts'],folder_dict['res'],None,
-            p0 = p0, fitfunc = fitfunc, do_print = False, ret = True, fixed = fixed)
+            p0 = p0, fitfunc = fitfunc, do_print = True, ret = True, fixed = fixed)
 
     folder_dict, coupling, folder = extract_coupling_strength(folder_dict)
 
@@ -570,7 +574,8 @@ def coupling_vs_repetitions(c_identifiers,**kw):
     for carbon in c_identifiers:
         if len(carbon) > 1:
             for logicstate in ['X','mX']:
-                x_temp,y_temp,y_u_temp,folder,fit_result = Sweep_repetitions(carbon = carbon,logicstate = logicstate,return_fits=True,plot_result = False,**kw)
+                x_temp,y_temp,y_u_temp,folder,fit_result = Sweep_repetitions(carbon = carbon,logicstate = logicstate,
+                                                                             return_fits=True,plot_result = True,**kw)
                 if fit_result['params_dict']['A'] > threshold:
                     x.append(x_temp)
                     y.append(y_temp)
@@ -578,7 +583,8 @@ def coupling_vs_repetitions(c_identifiers,**kw):
                 else:
                     print 'Low initial amplitude ', folder, 'A0 is ', fit_result['params_dict']['A']
         else:
-            x_temp,y_temp,y_u_temp,folder,fit_result = Sweep_repetitions(carbon = carbon,return_fits=True,plot_result = False,**kw)
+            x_temp,y_temp,y_u_temp,folder,fit_result = Sweep_repetitions(carbon = carbon,return_fits=True,plot_result
+            = True,**kw)
             x.append(x_temp)
             y.append(y_temp)
             y_u.append(y_u_temp)
@@ -1842,12 +1848,12 @@ def coupling_vs_rep_paper_plot(c_idents = ['1'], do_Z=False, older_than_list= No
     save_figure_to = 'D:\measuring\QMem_plots'
     #save_figure_to = 'K:\ns\qt\Diamond\Eigenpapers\15-WeaklyCoupledQuantumMemory\Figures'
     print 'saving to: ', save_figure_to
-    if older_than_Z == None:
-        plt.savefig(os.path.join(save_figure_to, 'Fig4b.pdf'), format='pdf')
-        plt.savefig(os.path.join(save_figure_to, 'Fig4b.png'), format='png')
-    else:
-        plt.savefig(os.path.join(save_figure_to, 'Supp_Zdecay.pdf'), format='pdf')
-        plt.savefig(os.path.join(save_figure_to, 'Supp_Zdecay.png'), format='png')
+    # if older_than_Z == None:
+    #     plt.savefig(os.path.join(save_figure_to, 'Fig4b.pdf'), format='pdf')
+    #     plt.savefig(os.path.join(save_figure_to, 'Fig4b.png'), format='png')
+    # else:
+    #     plt.savefig(os.path.join(save_figure_to, 'Supp_Zdecay.pdf'), format='pdf')
+    #     plt.savefig(os.path.join(save_figure_to, 'Supp_Zdecay.png'), format='png')
     
     plt.show()
     plt.close('all')
