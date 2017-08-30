@@ -16,7 +16,7 @@ def lengthscan_analysis(folder,**kw):
 
 
     a = cga.cavity_analysis(folder)
-    x,y = a.get_lengthscan_data(**kw)
+    x,y = a.get_lengthscan_data()
 
     fig,ax = plt.subplots()
     ax.set_title(folder)

@@ -24,6 +24,8 @@ class spectrometer_analysis(object):
         self.ana_pars['min_gamma']=0.0
         self.ana_pars['max_gamma']=2.4
         self.ana_pars['g_gamma']=0.2
+        self.ana_pars['fit_peak_window'] = 6
+        
         self.ana_pars['keep_same_height']=True #keep peaks closer together than min_peak_dist, if the same height(!)
         self.ana_pars['max_height_diff'] = 0.28#0.2#120 #if keep_same_height, the max smaller the smaller one is allowed to be.
         self.ana_pars['rescale_to_avg']=True
@@ -164,9 +166,10 @@ class spectrometer_analysis(object):
         g_gamma = kw.pop('g_gamma',self.ana_pars['g_gamma'])
         max_gamma = kw.pop('max_gamma',self.ana_pars['max_gamma'])
         min_gamma = kw.pop('min_gamma',self.ana_pars['min_gamma'])
-        
+        fit_peak_window  = kw.pop('fit_peak_window', self.ana_pars['fit_peak_window']) # in multiples of gamma
+
         frequency_range = np.abs(self.frequencies[-1]-self.frequencies[0])
-        indices_around_peak = int((len(self.frequencies)/frequency_range)*g_gamma*6)
+        indices_around_peak = int((len(self.frequencies)/frequency_range)*g_gamma*fit_peak_window)
         success = np.zeros(len(indices))
         nr_fails = 0
 
