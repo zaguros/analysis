@@ -116,7 +116,7 @@ def load_data(N = [8], el_trans = 'min'):
 	return a, folder
 
 def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8], 
-	el_trans = 'min', HF_perp = None, HF_par = None,xlim=None,xticks=None):
+	el_trans = 'min', HF_perp = None, HF_par = None,xlim=None,xticks=None,**kw):
 
 	# allowed params:
 	# el_trans = ['min', 'plus']
@@ -163,7 +163,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 			ax.set_xlim(3.5,23.5)
 			xlim = [3.5,23.5]
 		else:
-			fig = data.default_fig(figsize=(5+(xlim[1]-xlim[0]),2))
+			fig = data.default_fig(figsize=(5+3*(xlim[1]-xlim[0]),2))
 			ax = data.default_ax(fig)
 			ax.set_xlim(xlim)
 
@@ -182,7 +182,7 @@ def fingerprint(a = None, folder = None, disp_sim_spin = True, N = [8],
 		#######################
 		if disp_sim_spin == True:
 			# print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
-			B_Field = 414.2 # in gauss
+			B_Field = kw.pop('B_field',414.2) # in gauss
 			# print B_Field
 			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
@@ -277,7 +277,7 @@ def fingerprint_v2(a = None, folder = None, disp_sim_spin = True, N = [8],
 		#######################
 		if disp_sim_spin == True:
 			# print 'Starting Simulation for N = ' + str(pulses) + ' on transition ' + str(el_trans) 
-			B_Field = 417.05
+			B_Field = kw.pop('B_field',414.2)
 			# print B_Field
 			tau_lst = np.linspace(xlim[0]*1e-6, xlim[1]*1e-6, 2000)
 			Mt16 = SC.dyn_dec_signal(HFs_par = HF_par, HFs_orth = HF_perp,
