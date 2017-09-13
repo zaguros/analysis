@@ -43,7 +43,8 @@ class CavitySims ():
         else:
             print 'Please give a valid parameter set!!! '
 
-
+        print 'Hello world!'
+        
         self.A_tot = np.sum(self.A)
         self.epsilon = self.A/self.A_tot #relative strength transitions
         self.gamma_relative = self.gamma_tot*self.epsilon
@@ -155,7 +156,7 @@ class CavitySims ():
         """
         wavelength = kw.pop('wavelength', self.wavelength_cav)
         #self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)
-        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)#/n_diamond
+        self.waist = ((wavelength/np.pi)**0.5)*(self.optical_length*(self.radius_curvature-self.optical_length))**(1/4.)/n_diamond
 
         return self.waist
 
@@ -164,9 +165,14 @@ class CavitySims ():
         calcuate 'optical' mode volume
         self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length
         """
-        #self.mode_volume = (np.pi*((0.5*self.waist)**2)*self.optical_length/n_diamond)#/(n_diamond**3)
+        self.mode_volume = (np.pi*((0.5*self.waist)**2)*(self.cavity_length+self.diamond_thickness))
 
-        self.mode_volume = (np.pi*((0.5*self.waist)**2)*2*self.optical_length)/(n_diamond**3)#(self.cavity_length+self.diamond_thickness*))#to really calculate the physical mode volume
+        #self.mode_volume = (np.pi*((0.5*self.waist)**2)*2*self.optical_length)/(n_diamond**3)#(self.cavity_length+self.diamond_thickness*))#to really calculate the physical mode volume
+        #using E_vac constant throughout the cavity and V = int_cav (n^2*E) / n_d^2 E_max, as in Janitz et al. and 'purcell_factor_and_refractive_index' by SvD in simulations/theory  
+        #self.mode_volume = np.pi*((0.5*self.waist)**2)*(n_diamond**2*self.diamond_thickness+self.cavity_length)/(n_diamond**2)#(self.cavity_length+self.diamond_thickness*))#to really calculate the physical mode volume
+        #self.mode_volume = np.pi*((0.5*self.waist)**2)*self.optical_length#(self.diamond_thickness+self.cavity_length)#(self.cavity_length+self.diamond_thickness*))#to really calculate the physical mode volume
+
+
         return self.mode_volume
 
 
@@ -383,21 +389,24 @@ class CavitySims ():
         """
         Function that calculates the branching ratio from the Purcell factor
         """
-        self.mod_branchingratio = (1.+self.Fp)*self.bare_gamma_ZPL/((1.+self.Fp)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+        #self.mod_branchingratio = (1.+self.Fp)*self.bare_gamma_ZPL/((1.+self.Fp)*self.bare_gamma_ZPL+self.bare_gamma_PSB) #into ZPL
+        self.mod_branchingratio = (self.Fp)*self.bare_gamma_ZPL/((1.+self.Fp)*self.bare_gamma_ZPL+self.bare_gamma_PSB) #into ZPL into cavity
         return self.mod_branchingratio
 
     def calc_branching_ratio_airmode(self,**kw):
         """
         Function that calculates the branching ratio from the Purcell factor
         """
-        self.mod_branchingratio_A = (1.+self.FpA)*self.bare_gamma_ZPL/((1.+self.FpA)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+        #self.mod_branchingratio_A = (1+self.FpA)*self.bare_gamma_ZPL/((1.+self.FpA)*self.bare_gamma_ZPL+self.bare_gamma_PSB) # into ZPL
+        self.mod_branchingratio_A = (self.FpA)*self.bare_gamma_ZPL/((1.+self.FpA)*self.bare_gamma_ZPL+self.bare_gamma_PSB) # into ZPL into cavity
         return self.mod_branchingratio_A
 
     def calc_branching_ratio_diamondmode(self,**kw):
         """
         Function that calculates the branching ratio from the Purcell factor
         """
-        self.mod_branchingratio_D = (1.+self.FpD)*self.bare_gamma_ZPL/((1.+self.FpD)*self.bare_gamma_ZPL+self.bare_gamma_PSB)
+        #self.mod_branchingratio_D = (1.+self.FpD)*self.bare_gamma_ZPL/((1.+self.FpD)*self.bare_gamma_ZPL+self.bare_gamma_PSB) # into ZPL
+        self.mod_branchingratio_D = (self.FpD)*self.bare_gamma_ZPL/((1.+self.FpD)*self.bare_gamma_ZPL+self.bare_gamma_PSB) # into ZPL into cavity
         return self.mod_branchingratio_D
 
     def calc_lifetime_standardcav(self,**kw):
@@ -476,8 +485,8 @@ class CavitySims ():
 
     def calculate_derived_params (self, verbose=False,**kw):
         self.calc_optical_length()    
-        if (self.optical_length>self.radius_curvature-2e-6):
-            print "WARNING: Cavity is unstable!", self.optical_length,'>',self.radius_curvature-2e-6 
+        # if (self.optical_length>self.radius_curvature-2e-6):
+            # print "WARNING: Cavity is unstable!", self.optical_length,'>',self.radius_curvature-2e-6 
 
         self.calc_FSR()
         self.calc_longitudinal_cav_modes(**kw)

@@ -946,7 +946,6 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
             T2star_arr = np.array([T2star_0, T2star_1])
 
             # take the sqrt of the harmonic mean of the squared T2stars
-            # I hope this is correct
             T2star = np.sqrt(scipy.stats.hmean(T2star_arr ** 2))
             print("avg. T2* for C%d: %.2f" % (c, T2star * 1e3))
 

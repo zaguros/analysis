@@ -33,10 +33,10 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
     offset, amplitude, decay_constant,exponent,frequency ,phase 
     '''
 
-    if timestamp != None:
-        folder = toolbox.data_from_time(timestamp)
-    elif carbon != None:
-        folder = toolbox.latest_data(contains='C'+str(carbon)+'_ms'+str(transition))
+    # if timestamp != None:
+    #     folder = toolbox.data_from_time(timestamp)
+    if carbon != None:
+        folder = toolbox.latest_data(older_than=timestamp,contains='C'+str(carbon)+'_ms'+str(transition))
     else:
         folder = toolbox.latest_data(title)
 
@@ -49,7 +49,7 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
         ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
         ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
         print ssro_calib_folder
-
+    print 'i found this folder',folder
 
     fit_results = []
     for k in range(0,len(measurement_name)):
@@ -70,9 +70,8 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
         if show_guess:
             ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+        fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
 
-        print 'fitfunction: '+fitfunc_str
 
         ## plot data and fit as function of total time
         if plot_fit == True:

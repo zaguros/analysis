@@ -153,16 +153,18 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 
 	# print 'XY = ' +str( (y[0]**2 + y[1]**2)**0.5)
 
-	if plot_fit ==True: 
+	if plot_fit ==True:
+		width = 0.5
 		fig,ax = plt.subplots() 
-		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k' )
+		rects = ax.bar(x,y,yerr=y_err,align ='center',ecolor = 'k',width=width )
+		
 		ax.set_xticks(x)
 		ax.set_xticklabels(x_labels.tolist()) ## if you want rotated labels: ,rotation=90
 		ax.set_ylim(-1.1,1.1)
-		print 'test'
 		print folder_a
 		ax.set_title(str(folder_a)+'/'+str(timestamps[0]))
 		ax.hlines([-1,0,1],x[0]-1,x[-1]+1,linestyles='dotted')
+		plt.ylabel('Contrast')
 
 			# print values on bar plot
 		def autolabel(rects):
@@ -170,12 +172,13 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		        height = rect.get_height()
 		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
 		            ha='center', va='bottom')
-		autolabel(rects)
+		# autolabel(rects)
+		fig.set_size_inches(6, 4)
 
 	if save and ax != None:
 		try:
 		    fig.savefig(
-		        os.path.join(folder_a,'tomo.png'))
+		        os.path.join(folder_a,'tomo.png'),dpi=1024)
 		except:
 		    print 'Figure has not been saved.'
 
