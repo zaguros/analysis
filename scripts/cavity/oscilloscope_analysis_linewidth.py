@@ -6,6 +6,7 @@ SvD  9-2016
 
 
 import numpy as np 
+import scipy
 import scipy.constants
 import scipy.interpolate
 from matplotlib import pyplot as plt
@@ -49,6 +50,8 @@ class oscilloscope_analysis():
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","Y"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
+        if nr_channels == 2:
+            data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","1","mod","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
         if nr_channels == 3:
             data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
         elif nr_channels == 4:
@@ -163,9 +166,8 @@ class oscilloscope_analysis():
         linewidth = gamma1*scaling #scale the linewidth to get linewidht in frequency
         u_linewidth = u_gamma1*scaling
         linewidth_string = 'gamma = '+str(round(linewidth,2))+'+-'+str(round(u_linewidth,3))+'GHz'
-        print linewidth_string
 
-        print gamma1
+        # print gamma1
 
         g_x01 = kw.pop('g_x01', 0)
         g_dx = EOM_freq
@@ -189,6 +191,7 @@ class oscilloscope_analysis():
         ax.set_ylabel("Transmitted signal (a.u.)", fontsize = 14)
 
         ax.set_xlim(self.x[0],self.x[-1])
+        ax.set_ylim(0,max(self.y)*1.1)
 
         #rescaling for x-axis in GHz
 
@@ -199,10 +202,10 @@ class oscilloscope_analysis():
 
         # ticks = (ax.get_xticks()-x01)*scaling
         # ticks = np.round(ticks,2)
-        xticks = np.linspace(-15,15,7)
+        xticks = np.linspace(self.x[0],self.x[-1],7)
         xticks = np.round(xticks,2)
 
-        yticks = np.linspace(0,0.12,5)
+        yticks = np.linspace(0,max(self.y)*1.1,5)
 
         ax.set_xticks(xticks)
         ax.set_yticks(yticks)
@@ -332,7 +335,8 @@ class oscilloscope_analysis():
 
 ############
 def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_odd_offset,g_gamma,
-                                g_dx,g_A,max_chisq,test=False,total_length=125000,data_col=3,max_plots=10,min_plots=0,return_data=False):
+                                g_dx,g_A,max_chisq,test=False,total_length=125000,data_col=3,max_plots=2,
+                                min_plots=0,return_data=False,nr_channels=2, max_u_lw = 0.1, min_A2=0.2):
     '''
     function that fits the resonances in an oscilloscope trace.
     for particularly noisy/'vibrating' data, it uses a first fit to put the resonance to the middle of the windows
@@ -341,8 +345,8 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
     '''
     oa_single = oscilloscope_analysis(indir=indir,filename=filename)
 
-    max_u_lw=0.1
-    min_A2=0.1
+    max_u_lw=max_u_lw
+    min_A2=min_A2
     lws = np.array([])#lws_old## 
     As = np.array([])#lws_old## 
     gammas = np.array([])#lws_old## 
@@ -379,8 +383,9 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
             x_max = -1
 
 
-        oa_single.get_data(use_timetrace=False,x_min = x_min, x_max=x_max,data_col=data_col)    
-        oa_single.plot_data()
+        oa_single.get_data(use_timetrace=False,x_min = x_min, x_max=x_max,data_col=data_col,nr_channels=nr_channels)    
+        if test:
+            oa_single.plot_data()
 
         lw,u_lw,A1,u_A1,gamma1,u_gamma1,chisq,x01,A2 = \
             oa_single.plot_and_fit_with_EOM(EOM_freq=EOM_freq,
@@ -409,14 +414,14 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
             x_max = x01+windowsize
         else:
             x_max = None
-        oa_single.get_data(use_timetrace=False,x_min = x_min, x_max=x_max,data_col=data_col)
+        oa_single.get_data(use_timetrace=False,x_min = x_min, x_max=x_max,data_col=data_col,nr_channels=nr_channels)
     #     oa_single.plot_data()    
         lw,u_lw,A1,u_A1,gamma1,u_gamma1,chisq,x02,A2 = \
             oa_single.plot_and_fit_with_EOM(EOM_freq=EOM_freq,
                g_gamma1=g_gamma, g_dx=g_dx,g_A2=g_A,g_A3=g_A,show_fit=True,print_fit=False,plot_name=str(int(round(x01,0))))
 
         u_lws = np.append(u_lws,u_lw)
-        lws = np.append(lws,lw)
+        lws = np.append(lws,abs(lw))
         As = np.append(As,A1)
         gammas = np.append(gammas,gamma1)
         chisqs = np.append(chisqs,chisq)
@@ -445,7 +450,7 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
             continue      
 
         print 20*'*'
-        print chisq,lw,'+-',u_lw,'gamma',gamma1
+        print 'chisq: ',chisq,' linewidth: ',lw,'+-',u_lw,' gamma: ',gamma1
         print 'fit good!!! '
         print 20*'*'
         success[i] = 1
@@ -463,10 +468,12 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
     good_fits['max_chisq']=max_chisq
     good_fits['max_u_lw']=max_u_lw
     good_fits['min_A2']=min_A2
+    good_fits['avg_lw']=np.average(good_lws)
+    good_fits['u_avg_lw']=scipy.stats.sem(good_lws)
 
     print '%d good fits out of %d tries'%(len(good_lws),nr_lws)
     print 'the good linewidth fits from %s :'%filename
-    print 'average lw = %.2f +- %.2f'%(np.average(good_lws),np.std(good_lws))
+    print 'average lw = %.2f +- %.2f'%(np.average(good_lws),scipy.stats.sem(good_lws))
     print 'lws = ',good_lws
     print 'u_lws = ',good_u_lws
     print 'chisq = ',good_chisqs

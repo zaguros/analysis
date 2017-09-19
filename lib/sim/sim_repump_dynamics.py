@@ -51,7 +51,7 @@ def simulate_repump(time_duration = 50,dt=0.1,repetitions = 6000):
 	plt.plot(t_array,populations)
 	plt.ylim([0,1])
 	plt.show()
-	       
+
 
 
 def simulate_double_pulsing(time_duration = 50,pulse_center = 5,dt = 0.1,FWHMs = np.array([0.5,1.6,2.3]),repetitions = 6000):
