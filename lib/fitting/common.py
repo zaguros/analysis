@@ -87,7 +87,26 @@ def fit_gaussian_decaying_cos(g_f, g_a, g_A, g_phi,g_t, *arg):
     p0 = [f, a, A,phi,t]
 
     def fitfunc(x):
-        return a() + A()*np.exp(-(x/t())**2) * np.cos(2*np.pi*( f()*x + phi()/360.))
+        retval = a() + A()*np.exp(-(x/t())**2) * np.cos(2*np.pi*( f()*x + phi()/360.))
+        return retval
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_gaussian_decaying_offset_cos(g_f, g_a, g_A, g_phi,g_t,g_B, *arg):
+    fitfunc_str = 'A *exp(-(x/t)**2) (1 + B*cos(2pi * (f*x + phi/360) ) ) + a'
+
+    f = fit.Parameter(g_f, 'f')
+    a = fit.Parameter(g_a, 'a')
+    A = fit.Parameter(g_A, 'A')
+    phi = fit.Parameter(g_phi, 'phi')
+    t   = fit.Parameter(g_t, 't')
+    B   = fit.Parameter(g_B, 'B')
+    print 'guessed frequency is '+str(g_f)
+    p0 = [f, a, A,phi,t, B]
+
+    def fitfunc(x):
+        retval = a() + A()*np.exp(-(x/t())**2) * (1 + B() * np.cos(2*np.pi*( f()*x + phi()/360.)))
+        return retval
 
     return p0, fitfunc, fitfunc_str
 
