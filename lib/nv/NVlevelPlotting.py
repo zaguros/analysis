@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import scipy
 
-sys.path.append(r'//Users/humphreys/Repositories/')
+#sys.path.append(r'//Users/humphreys/Repositories/')
 
 from analysis.lib.nv import nvlevels; reload(nvlevels)
 from matplotlib import pyplot as plt
@@ -113,7 +113,7 @@ def plot_transitions(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0.,0.],m0=Tru
             trans_keys.append('msp1')
             transition_results['msp1'] = np.empty([3,pts])
     else:
-        transition_results = np.empty([2*bool(m0)+3*bool(m1)+3*bool(p1),pts])   
+        transition_results = np.empty([2*bool(m0)+4*bool(m1)+4*bool(p1),pts])   
     
     for i in range(pts):
             slice_list = nvlevels.get_transitions_ExEy(ExZero+Strainarray[i]/2,EyZero-Strainarray[i]/2,B_field=B_field,return_dict = return_dict, show_FB_E_transitions=False,show_FB_A_transitions=False, show_E_prime_flip_transitions=False, show_ms0_transitions = m0, show_m1_transitions = m1, show_p1_transitions = p1)
@@ -129,12 +129,12 @@ def plot_transitions(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0.,0.],m0=Tru
         fig = plt.figure()
         ax = plt.subplot()
 
-    if type(result_list) == np.ndarray:
-        for res in result_list:
+    if type(transition_results) == np.ndarray:
+        for res in transition_results:
             plt.plot(Strainarray,res)
-    elif type(result_list) == dict:
-        for key in result_list:
-            for i,res in enumerate(result_list[key]):
+    elif type(transition_results) == dict:
+        for key in transition_results:
+            for i,res in enumerate(transition_results[key]):
                 if i == 0: 
                     baseline, = plt.plot(Strainarray,res,label = key, ls=plot_style[key])
                 else:
