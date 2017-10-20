@@ -73,6 +73,8 @@ class MBIAnalysis(m2.M2Analysis):
             self.u_normalized_ssro = \
                 (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
 
+
+
     def get_correlations(self, name=''):
         """
         computes the readout correlations between all readouts in a sequence.

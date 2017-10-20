@@ -15,7 +15,7 @@ import copy as cp
 
 reload(fit);reload(mbi);reload(common);reload(toolbox)
 
-CR_after_check = False # global variable that let's us post select whether or not the NV was ionized
+CR_after_check = True # global variable that let's us post select whether or not the NV was ionized
 
 
 
