@@ -32,6 +32,8 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
         
     fit_results = []
 
+    print measurement_name
+
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()

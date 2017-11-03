@@ -147,6 +147,21 @@ def quadratic_addition(X, Y, X_u, Y_u):
     return res, res_u
 
 
+def general_quadratic_addition(Xs, X_us):
+    res = np.zeros_like(Xs[0])
+    res_u = np.zeros_like(X_us[0])
+
+    for i in range(len(Xs)):
+        res += Xs[i]**2
+        res_u += (Xs[i] * X_us[i])**2
+
+    res = np.sqrt(res)
+    res_u = np.sqrt(res_u) / res
+
+    return res, res_u
+
+
+
 def get_pos_neg_data(a, adwindata_str='', ro_array=['positive', 'negative'], **kw):
     '''
     Input: a : a data object of the class MBIAnalysis
@@ -228,6 +243,89 @@ def average_repump_time(contains='', do_fit=False, **kw):
         x, y1, y1_u = get_pos_neg_data(a, adwindata_str='X_', **kw)
         x2, y2, y2_u = get_pos_neg_data(a, adwindata_str='Y_', **kw)
         y, y_u = quadratic_addition(y1, y2, y1_u, y2_u)
+        # y=y1
+        # y_u = y1_u
+        ylabel = 'Bloch vector length'
+
+    ### create a plot
+    xlabel = a.g.attrs['sweep_name']
+    x = a.g.attrs['sweep_pts']  # could potentially be commented out?
+    title = kw.pop("title", "avg repump time")
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title=title)
+
+    if fit_x0 is None:
+        max_idx = np.argmax(y)
+        fit_x0 = x[max_idx]
+
+    ## plot data
+    plot_data(x, y, y_u=y_u)
+
+    ### fitting if you feel like it
+    if do_fit:
+
+        p0, fitfunc, fitfunc_str = common.fit_gauss(fit_offset, fit_amplitude, fit_x0, fit_sigma)
+
+        if show_guess:
+            # print decay
+            ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
+
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, fixed=fixed, ret=True)
+        plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+
+        try:
+            fit_result['carbon_id'] = a.g.attrs['carbons'][0]
+        except:
+            pass
+
+    ## save and close plot. We are done.
+    save_and_close_plot(f, show=kw.get('show_plot', True))
+
+    if kw.get('ret_data_fit', None):
+        return x, y, y_u, fit_result
+
+    if kw.get('ret', None):
+        return fit_result
+
+
+def average_repump_time_2carbon(contains='', do_fit=False, **kw):
+    '''
+    gets data from a folder whose name contains the contains variable.
+    Does or does not fit the data with a gaussian function
+    '''
+
+    ### kw for fitting
+
+    fit_offset = kw.pop('fit_offset', 0)
+    fit_amplitude = kw.pop('fit_amplitude', 1)
+    fit_x0 = kw.pop('fit_x0', None)
+    fit_sigma = kw.pop('fit_sigma', 0.2)
+    fixed = kw.pop('fixed', [])
+    show_guess = kw.pop('show_guess', False)
+
+    ### folder choice
+    if contains == '':
+        contains = 'Sweep_Repump_time'
+    elif len(contains) == 2:
+        contains = 'Sweep_Repump_time' + contains
+    elif len(contains) == 1:
+        contains = 'Sweep_Repump_time_' + contains
+
+    # older_than = kw.get('older_than',None) automatically handled by kws
+    ### acquire data
+    f = toolbox.latest_data(contains, **kw)
+    a = mbi.MBIAnalysis(f)
+
+    if '_Z' in f:
+        x, y, y_u = get_pos_neg_data(a, adwindata_str='ZZ_', **kw)
+        ylabel = 'ZZ'
+    else:
+        x, y1, y1_u = get_pos_neg_data(a, adwindata_str='XX_', **kw)
+        x2, y2, y2_u = get_pos_neg_data(a, adwindata_str='YY_', **kw)
+        x3, y3, y3_u = get_pos_neg_data(a, adwindata_str='YX_', **kw)
+        x4, y4, y4_u = get_pos_neg_data(a, adwindata_str='XY_', **kw)
+        y, y_u = general_quadratic_addition([y1, y2, y3, y4], [y1_u, y2_u, y3_u, y4_u])
+        y = y / np.sqrt(2)
+        y_u = y_u / np.sqrt(2)
         # y=y1
         # y_u = y1_u
         ylabel = 'Bloch vector length'
@@ -361,6 +459,9 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only', False)
+    is_z = kw.pop('is_z',False)
+    do_plot = kw.pop('do_plot',True)
+    do_print = kw.pop('do_print',True)
 
     ### folder choice
     if contains == '':
@@ -375,7 +476,7 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     f = toolbox.latest_data(contains, **kw)
     a = mbi.MBIAnalysis(f)
 
-    if '_Z' in f and x_only == False:
+    if ('_Z' in f and x_only == False) or is_z:
         x, y, y_u = get_pos_neg_data(a, adwindata_str='Z_', **kw)
         ylabel = 'Z'
     else:
@@ -390,9 +491,9 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
             ylabel = 'Bloch vector length'
 
     ### create a plot
-    xlabel = a.g.attrs['sweep_name']
-    x = a.g.attrs['sweep_pts']  # could potentially be commented out?
-    if kw.get('do_plot',True):
+    if do_plot:
+        xlabel = a.g.attrs['sweep_name']
+        x = a.g.attrs['sweep_pts']  # could potentially be commented out?
         fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
 
         ## plot data
@@ -407,22 +508,23 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
             # print decay
             ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=False, fixed=fixed, ret=True)
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, fixed=fixed, ret=True)
 
         if isinstance(fit_result, int):
             print "Fit failed!"
         else:
-            if kw.get('do_plot',True):
+            if do_plot:
                 plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
 
     ## save and close plot. We are done.
-    if kw.get('do_plot',True):
+    if do_plot:
         save_and_close_plot(f)
 
     if kw.get('ret_data', False):
         return x, y, y_u
 
     if kw.get('ret', False):
+        fit_result['a'] = a
         return fit_result
 
     if kw.get('ret_data_fit', False):
@@ -909,38 +1011,33 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
 
     ### create a plot
     xlabel = multi_as[0].g.attrs['sweep_name']
-
-    if kw.get('do_plot',True):
-        fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
+    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
 
     if g_A is None:
         min_x_pos = np.argmin(x)
         g_A = y[min_x_pos]
         print("Starting amplitude: %.3f" % g_A)
     ## plot data
-    if kw.get('do_plot',True):
-        plot_data(x, y, y_u=y_u)
+    plot_data(x, y, y_u=y_u)
 
     ### fitting if you feel like it
     if do_fit:
 
         p0, fitfunc, fitfunc_str = common.fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi)
 
-        if show_guess and kw.get('do_plot',True):
+        if show_guess:
             # print decay
             ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=False, fixed=fixed, ret=True)
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, fixed=fixed, ret=True)
 
         if isinstance(fit_result, int):
             print "Fit failed!"
         else:
-            if kw.get('do_plot',True):
-                plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+            plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
 
     ## save and close plot. We are done.
-    if kw.get('do_plot',True):
-        save_and_close_plot(f)
+    save_and_close_plot(f)
 
     if kw.get('ret_data', False):
         return x, y, y_u
@@ -1083,12 +1180,6 @@ def calibrate_LDE_phase_stitched(contains='', do_fit=False, older_thans=None, mu
     fixed = kw.pop('fixed', [1])
     show_guess = kw.pop('show_guess', False)
 
-    if freq is None:
-        try:
-            freq = a.g.attrs['phase_detuning'] / 360.0
-        except:
-            freq = 1./12. # voll auf die zwoelf.
-
     ro_array = ['positive', 'negative']
 
     # older_than = kw.get('older_than',None) automatically handled by kws
@@ -1113,6 +1204,12 @@ def calibrate_LDE_phase_stitched(contains='', do_fit=False, older_thans=None, mu
     for f in multi_fs:
         a = mbi.MBIAnalysis(f)
         multi_as.append(a)
+
+    if freq is None:
+        try:
+            freq = (multi_as[0].g.attrs['phase_detuning'] + 1.0) / 360.0
+        except:
+            freq = 1./12. # voll auf die zwoelf.
 
     x = np.array([])
     y = np.array([])

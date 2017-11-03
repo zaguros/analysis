@@ -15,7 +15,7 @@ import copy as cp
 
 reload(fit);reload(mbi);reload(common);reload(toolbox)
 
-CR_after_check = False # global variable that let's us post select whether or not the NV was ionized
+CR_after_check = True # global variable that let's us post select whether or not the NV was ionized
 
 
 
@@ -250,8 +250,9 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only',False)
-    ret = kw.pop('ret',False)
-
+    is_z = kw.pop('is_z',False)
+    do_plot = kw.pop('do_plot',True)
+    do_print = kw.pop('do_print',True)
     ### folder choice
     if contains == '':
         contains = '_sweep_number_of_reps'
@@ -266,7 +267,7 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
     f = toolbox.latest_data(contains,**kw)
     a = mbi.MBIAnalysis(f)
     
-    if '_Z' in f:
+    if ('_Z' in f and x_only == False) or is_z:
         x,y,y_u = get_pos_neg_data(a,adwindata_str = 'Z_',**kw)
         ylabel = 'Z'
     else:
@@ -280,17 +281,16 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
             ylabel = 'Bloch vector length'
 
 
-    if ret:
-        a.p0 = y; a.u_p0 = y_u
-        return a
+
 
     ### create a plot
-    xlabel = a.g.attrs['sweep_name']
-    x = a.g.attrs['sweep_pts'] # could potentially be commented out?
-    fig,ax = create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'Number of repetitions')
+    if do_plot:
+        xlabel = a.g.attrs['sweep_name']
+        x = a.g.attrs['sweep_pts'] # could potentially be commented out?
+        fig,ax = create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'Number of repetitions')
 
-    ## plot data
-    plot_data(x,y,y_u=y_u)
+        ## plot data
+        plot_data(x,y,y_u=y_u)
 
     ### fitting if you feel like it
     if do_fit:
@@ -301,18 +301,33 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
             # print decay
             ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x,y,None,p0=p0,fitfunc=fitfunc,do_print=True,fixed=fixed,ret=True)
+        fit_result = fit.fit1d(x,y,None,p0=p0,fitfunc=fitfunc,do_print=do_print,fixed=fixed,ret=True)
 
         if isinstance(fit_result, int):
             print "Fit failed!"
         else: 
-            plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],100),ax=ax,plot_data=False)
+            if do_plot:
+                plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],100),ax=ax,plot_data=False)
 
 
     ## save and close plot. We are done.
-    save_and_close_plot(f)
+    if do_plot:
+        save_and_close_plot(f)
 
+    if kw.get('ret_data', False):
+        return x, y, y_u
 
+    if kw.get('ret', False):
+        fit_result['a'] = a
+        return fit_result
+
+    if kw.get('ret_obj', False):
+        a.p0 = y; a.u_p0 = y_u
+        return a
+
+    if kw.get('ret_data_fit', False):
+        return x, y, y_u, fit_result
+        
 def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
     '''
     gets data from a folder whose name contains the contains variable.
