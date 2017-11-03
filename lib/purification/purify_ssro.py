@@ -250,6 +250,7 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
     x_only = kw.pop('x_only',False)
+    ret = kw.pop('ret',False)
 
     ### folder choice
     if contains == '':
@@ -279,7 +280,9 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
             ylabel = 'Bloch vector length'
 
 
-
+    if ret:
+        a.p0 = y; a.u_p0 = y_u
+        return a
 
     ### create a plot
     xlabel = a.g.attrs['sweep_name']

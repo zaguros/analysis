@@ -392,10 +392,11 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     ### create a plot
     xlabel = a.g.attrs['sweep_name']
     x = a.g.attrs['sweep_pts']  # could potentially be commented out?
-    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
+    if kw.get('do_plot',True):
+        fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
 
-    ## plot data
-    plot_data(x, y, y_u=y_u)
+        ## plot data
+        plot_data(x, y, y_u=y_u)
 
     ### fitting if you feel like it
     if do_fit:
@@ -406,15 +407,17 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
             # print decay
             ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, fixed=fixed, ret=True)
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=False, fixed=fixed, ret=True)
 
         if isinstance(fit_result, int):
             print "Fit failed!"
         else:
-            plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+            if kw.get('do_plot',True):
+                plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
 
     ## save and close plot. We are done.
-    save_and_close_plot(f)
+    if kw.get('do_plot',True):
+        save_and_close_plot(f)
 
     if kw.get('ret_data', False):
         return x, y, y_u
@@ -906,33 +909,38 @@ def number_of_repetitions_stitched(contains='', do_fit=False, older_thans=None, 
 
     ### create a plot
     xlabel = multi_as[0].g.attrs['sweep_name']
-    fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
+
+    if kw.get('do_plot',True):
+        fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
 
     if g_A is None:
         min_x_pos = np.argmin(x)
         g_A = y[min_x_pos]
         print("Starting amplitude: %.3f" % g_A)
     ## plot data
-    plot_data(x, y, y_u=y_u)
+    if kw.get('do_plot',True):
+        plot_data(x, y, y_u=y_u)
 
     ### fitting if you feel like it
     if do_fit:
 
         p0, fitfunc, fitfunc_str = common.fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi)
 
-        if show_guess:
+        if show_guess and kw.get('do_plot',True):
             # print decay
             ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
 
-        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=True, fixed=fixed, ret=True)
+        fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=False, fixed=fixed, ret=True)
 
         if isinstance(fit_result, int):
             print "Fit failed!"
         else:
-            plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+            if kw.get('do_plot',True):
+                plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
 
     ## save and close plot. We are done.
-    save_and_close_plot(f)
+    if kw.get('do_plot',True):
+        save_and_close_plot(f)
 
     if kw.get('ret_data', False):
         return x, y, y_u
