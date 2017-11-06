@@ -6,7 +6,7 @@ All data are analyzed according to the MBI analysis class with varying input nam
 
 import numpy as np
 import os
-from analysis.lib.tools import toolbox, plot; 
+from analysis.lib.tools import toolbox, plot;
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
 # import matplotlib as mpl
@@ -232,84 +232,99 @@ def average_repump_time(contains = '',do_fit = False, **kw):
     save_and_close_plot(f)
 
 
-def number_of_repetitions(contains = '', do_fit = False, **kw):
+def number_of_repetitions(contains='', do_fit=False, **kw):
     '''
     gets data from a folder whose name contains the contains variable.
-    Does or does not fit the data with a gaussian function
+    Does or does not fit the data with a gen. exponential function
     '''
 
     ### kw for fitting
 
-    g_a = kw.pop('fit_a',0)
+    g_a = kw.pop('fit_a', 0)
     g_A = kw.pop('fit_A', 1)
     g_x0 = kw.pop('fit_x0', 0)
-    g_T = kw.pop('fit_T', 500)
+    g_T = kw.pop('fit_T', 200)
     g_n = kw.pop('fit_n', 1)
     g_f = kw.pop('fit_f', 0.0000)
     g_phi = kw.pop('fit_phi', 0)
     fixed = kw.pop('fixed', [])
     show_guess = kw.pop('show_guess', False)
-    x_only = kw.pop('x_only',False)
+    x_only = kw.pop('x_only', False)
     is_z = kw.pop('is_z',False)
     do_plot = kw.pop('do_plot',True)
     do_print = kw.pop('do_print',True)
+
     ### folder choice
     if contains == '':
         contains = '_sweep_number_of_reps'
     elif len(contains) == 2:
-        contains = '_sweep_number_of_reps'+contains
+        contains = '_sweep_number_of_reps' + contains
     elif len(contains) == 1:
-        contains = '_sweep_number_of_reps_'+contains
-
+        contains = '_sweep_number_of_reps_' + contains
 
     # older_than = kw.get('older_than',None) automatically handled by kws
     ### acquire data
-    f = toolbox.latest_data(contains,**kw)
-    a = mbi.MBIAnalysis(f)
+
+    fs = toolbox.latest_data(contains, **kw)
     
-    if ('_Z' in f and x_only == False) or is_z:
-        x,y,y_u = get_pos_neg_data(a,adwindata_str = 'Z_',**kw)
-        ylabel = 'Z'
-    else:
-        x,y1,y1_u  = get_pos_neg_data(a,adwindata_str = 'X_',**kw)
-        if x_only:
-            y = y1; y_u = y1_u;
-            ylabel = 'X'
+    ### need to clean up the kws for the second usage of the toolbox (befoire looking for the latest ssro)
+    kw.pop('return_all',False);kw.pop('older_than',False);kw.pop('newer_than',False)
+    ssro_calib_folder = toolbox.latest_data('SSROCalib',**kw)
+    kw.update({'ssro_calib_folder':ssro_calib_folder}) #### using this we only look for the ssro calib once in get_pos_neg_data.
+
+
+    a_list = []
+    res_list = []
+    ### multiple folders??
+    if type(fs) != list:
+        fs = [fs]
+    
+
+    for f in fs:    
+        a = mbi.MBIAnalysis(f)
+
+        if ('_Z' in f and x_only == False) or is_z:
+            x, y, y_u = get_pos_neg_data(a, adwindata_str='Z_', **kw)
+            ylabel = 'Z'
         else:
-            x2,y2,y2_u = get_pos_neg_data(a,adwindata_str = 'Y_',**kw)
-            y,y_u = quadratic_addition(y1,y2,y1_u,y2_u)
-            ylabel = 'Bloch vector length'
+            x, y1, y1_u = get_pos_neg_data(a, adwindata_str='X_', **kw)
+            if x_only:
+                y = y1;
+                y_u = y1_u;
+                ylabel = 'X'
+            else:
+                x2, y2, y2_u = get_pos_neg_data(a, adwindata_str='Y_', **kw)
+                y, y_u = quadratic_addition(y1, y2, y1_u, y2_u)
+                ylabel = 'Bloch vector length'
 
+        ### create a plot
+        if do_plot:
+            xlabel = a.g.attrs['sweep_name']
+            x = a.g.attrs['sweep_pts']  # could potentially be commented out?
+            fig, ax = create_plot(f, xlabel=xlabel, ylabel=ylabel, title='Number of repetitions')
 
+            ## plot data
+            plot_data(x, y, y_u=y_u)
 
+        ### fitting if you feel like it
+        if do_fit:
 
-    ### create a plot
-    if do_plot:
-        xlabel = a.g.attrs['sweep_name']
-        x = a.g.attrs['sweep_pts'] # could potentially be commented out?
-        fig,ax = create_plot(f,xlabel = xlabel,ylabel =ylabel,title = 'Number of repetitions')
+            p0, fitfunc, fitfunc_str = common.fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi)
 
-        ## plot data
-        plot_data(x,y,y_u=y_u)
+            if show_guess:
+                # print decay
+                ax.plot(np.linspace(x[0], x[-1], 201), fitfunc(np.linspace(x[0], x[-1], 201)), ':', lw=2)
 
-    ### fitting if you feel like it
-    if do_fit:
-
-        p0,fitfunc,fitfunc_str = common.fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi)
-
-        if show_guess:
-            # print decay
-            ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
-
-        fit_result = fit.fit1d(x,y,None,p0=p0,fitfunc=fitfunc,do_print=do_print,fixed=fixed,ret=True)
-
-        if isinstance(fit_result, int):
-            print "Fit failed!"
-        else: 
-            if do_plot:
-                plot.plot_fit1d(fit_result,np.linspace(x[0],x[-1],100),ax=ax,plot_data=False)
-
-
+            fit_result = fit.fit1d(x, y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, fixed=fixed, ret=True)
+            fit_result['a'] = a
+            fit_result['y_u'] = y_u
+            res_list.append(fit_result)
+            if isinstance(fit_result, int):
+                print "Fit failed!"
+            else:
+                if do_plot:
+                    plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
+        a_list.append(a)
     ## save and close plot. We are done.
     if do_plot:
         save_and_close_plot(f)
@@ -318,11 +333,11 @@ def number_of_repetitions(contains = '', do_fit = False, **kw):
         return x, y, y_u
 
     if kw.get('ret', False):
-        fit_result['a'] = a
-        return fit_result
+        return res_list
 
     if kw.get('ret_data_fit', False):
         return x, y, y_u, fit_result
+
         
 def el_to_c_swap(contains = '',input_el=['Z'], do_fit = False, **kw):
     '''

@@ -23,7 +23,6 @@ class SequenceAnalysis(m2.M2Analysis):
             #### the adwin did ssro, use this in order to gauge how many repetitions were done.
             self.reps = int(len(adwingrp['ssro_results'].value))
             self.ssro_results = adwingrp['ssro_results'].value
-            print type(self.ssro_results)
         else:
             self.reps = adwingrp['completed_reps'].value
             self.ssro_results = adwingrp['RO_data'].value
