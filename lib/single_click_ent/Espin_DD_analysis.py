@@ -27,13 +27,13 @@ def get_tstamps_dsets(contains,older_than = '',newer_than = '',n_datasets = 5,su
 
     i_dataset = 0
     f_list = []
-    while tb.latest_data(contains=contains,older_than = older_than,newer_than = newer_than,
+    while tb.latest_data(contains=contains,older_than = older_than,newer_than = newer_than, folder=  None,
                 raise_exc = False) != False and (i_dataset< n_datasets):
 
         subset_f_list = []
         for i_subset in np.array(range(subsets))+1:
             latest_tstamp, f_sub = tb.latest_data(contains=contains+str(i_subset),older_than = older_than,
-                                            newer_than = newer_than,
+                                            newer_than = newer_than, folder=   None,
                 raise_exc = False,return_timestamp = True)
 
             subset_f_list.append(f_sub)
@@ -43,7 +43,7 @@ def get_tstamps_dsets(contains,older_than = '',newer_than = '',n_datasets = 5,su
 
     return f_list
 
-def compile_xy_values_of_datasets(f_list,ssro_tstamp = None,**kw):
+def compile_xy_values_of_datasets(f_list,ssro_tstamp = '112128',**kw):
     """
     besides returning all msmt values this function also returns 
     one data object in case one wants to review msmt params.
@@ -53,7 +53,7 @@ def compile_xy_values_of_datasets(f_list,ssro_tstamp = None,**kw):
     if ssro_tstamp == None: 
         ssro_calib_folder = tb.latest_data('SSROCalib')
     else:
-        ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_tstamp)
+        ssro_dstmp, ssro_tstmp = tb.verify_timestamp(ssro_tstamp)
         ssro_calib_folder = tb.latest_data(ssro_tstmp)
 
     x = []
@@ -99,6 +99,8 @@ def analyse_dataset(contains,**kw):
     f_list = get_tstamps_dsets(contains,**kw)
     x_list,y_list,y_u_list = [],[],[]
 
+    print f_list
+
     for f_sub_list in f_list:
         x,y,y_u,a = compile_xy_values_of_datasets(f_sub_list,**kw)
 
@@ -117,11 +119,26 @@ def analyse_dataset(contains,**kw):
     ax.set_xlabel(a.sweep_name)
     ax.set_ylabel(r'$F(|0\rangle)$')
     ax.set_xlim([0,np.amax(best_x)*1.05])
+   
+
+    # To avoid dips in the analysis
+    for jj in range (1,2):
+        index_list=[]
+        for ii in range(1,len(best_x)-10):
+            #if y[ii+2] > 0.65:
+            for kk in range (ii+1, len(best_x)-1):
+                if y[kk] > 1.05*y[ii] :
+                    index_list.append(ii)
+        best_x=np.delete(best_x,[index_list])
+        best_y=np.delete(best_y,[index_list])
+        best_y_u =np.delete(best_y_u,[index_list])
+
+
     ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
 
     ########## time to fit the best results
-    p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 200.,2) ## one could start to make cool guesses based on the data but i refrain
-    fit_result = fit.fit1d(best_x,best_y,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,fixed = [0,1,2,4])
+    p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 100.,2) ## one could start to make cool guesses based on the data but i refrain
+    fit_result = fit.fit1d(best_x,best_y,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,fixed = [0,2])
 
     plot.plot_fit1d(fit_result,np.linspace(0,np.amax(best_x)*1.05,201),ax=ax,plot_data=False)
     plt.savefig(os.path.join(a.folder, 'analyzed_result.pdf'),

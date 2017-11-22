@@ -61,7 +61,7 @@ class MBIAnalysis(m2.M2Analysis):
                     results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
                     # print results[ii]
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
-
+            
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
@@ -72,6 +72,9 @@ class MBIAnalysis(m2.M2Analysis):
             self.normalized_ssro = self.ssro_results/float(self.reps)
             self.u_normalized_ssro = \
                 (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
+
+
+    
 
     def get_correlations(self, name=''):
         """

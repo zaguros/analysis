@@ -648,7 +648,7 @@ for ii, timestamp in enumerate(timestamp_list):
 
     
 ######################################### plotting data ################
-fig = plt.figure(2,figsize=(14,8))
+fig = plt.figure(2,figsize=(5,3))
 ax1 = fig.add_subplot(111)
 ax1.set_color_cycle(color_list)
 
@@ -677,7 +677,7 @@ for jj in range(0,len(x_list)):
     #########################################################
     T2= 20
 
-    ax1.errorbar(x.flatten(),y.flatten(),yerr=e[jj],fmt=fmt_label[jj],label=labels[jj],color=color_list[jj])
+    ax1.errorbar(x.flatten(),y.flatten(),yerr=e[jj],fmt=fmt_label[jj],label=labels[jj],color=color_list[jj],markersize=3)
 
     
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
@@ -688,7 +688,7 @@ for jj in range(0,len(x_list)):
     plot_fit= False
 
     if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(0,np.amax(x)+400.,1001), ax=ax1,add_txt = False, plot_data=False,color=color_list[jj])
+        plot.plot_fit1d(fit_result, np.linspace(0,np.amax(x)+400.,1001), ax=ax1,add_txt = False, plot_data=False,color=color_list[jj],lw=1)
 
     fit_results.append(fit_result)
     T_list.append(fit_result['params_dict']['T'])
@@ -698,34 +698,42 @@ e_avg=(e_avg**0.5)/6
   
 ##################################
 ax1.set_xlabel('Total free evolution time (ms)')
-ax1.set_ylabel('State Fidelity')
+ax1.set_ylabel('State fidelity')
 ax1.set_xscale('log')
 #ax1.set_xlim(0,80)
 #ax1.grid()
-ax1.legend(bbox_to_anchor=(1.25,0.5),loc='center right',ncol=1)
+ax1.legend(bbox_to_anchor=(1.25,0.5),loc='center right',numpoints=1,fontsize=8,frameon=False)
 
-plt.savefig(os.path.join(folder, 'selected_max_vs_tot_time_log.pdf'),
-format='pdf')
-plt.savefig(os.path.join(folder, 'selected_max_vs_tot_time_log.png'),
-format='png')
+folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures'
+plt.savefig(os.path.join(folder,'Process_fidelity_separate_inputs.pdf'),
+format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
+
+# folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures'
+# plt.savefig(os.path.join(folder,'Process_fidelity_detailed.pdf'),
+# format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
+
+# plt.savefig(os.path.join(folder, 'selected_max_vs_tot_time_log.pdf'),
+# format='pdf')
+# plt.savefig(os.path.join(folder, 'selected_max_vs_tot_time_log.png'),
+# format='png')
 
 # Plot the average
 
 
 
 
-fig = plt.figure(3,figsize=(14,9))
+fig = plt.figure(3,figsize=(4,2.5))
 ax2 = fig.add_subplot(111)
 ax2.set_color_cycle(color_list)
 for ii in range (0,len(x)):
-    ax2.errorbar(x[ii],y_avg[ii],yerr=e_avg[ii], fmt=fmt_label[ii],color=color_list[ii],label=labels_N[ii]) 
+    ax2.errorbar(x[ii],y_avg[ii],yerr=e_avg[ii], fmt=fmt_label[ii],color=color_list[ii],label=labels_N[ii],markersize=3) 
 
 
 ## fitting the average
 
 y=y_avg
 y = y.reshape(-1)[:]
-
+print (x)
 p0, fitfunc, fitfunc_str = common.fit_general_exponential(offset, amplitude, position, T2, power)
 
 fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=[0,2])
@@ -734,7 +742,7 @@ fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=Tru
 plot_fit= True
 
 if plot_fit == True:
-    plot.plot_fit1d(fit_result, np.linspace(0,np.amax(x)+400.,1001), ax=ax2,add_txt = False, plot_data=False,color=color_list[11])
+    plot.plot_fit1d(fit_result, np.linspace(0,np.amax(x)+400.,1001), ax=ax2,add_txt = False, plot_data=False,color='green',lw=1)
 
 fit_results.append(fit_result)
 T_list.append(fit_result['params_dict']['T'])
@@ -743,15 +751,29 @@ T_list.append(fit_result['params_dict']['T'])
 
 
 
-ax2.set_xlabel('Total free evolution time (ms)')
+
+ax2.set_xlabel('Total evolution time (ms)')
 ax2.set_ylabel('Average state fidelity')
 #ax1.set_xlabel('Tau (us)')
 
 ax2.set_xscale('log')
-plt.axhline(y=0.6667, xmin=0.001, xmax=1.e3, linewidth=0.5,color='b')
+plt.axhline(y=0.6667, xmin= 0.55, xmax=1.e3, linewidth=0.5,color='gray')
 #ax2.set_xlim(0.5e0,1.e5)
+ax2.set_ylim(0.45,1.08)
+
+# get handles
+#handles, labels = ax2.get_legend_handles_labels()
+# remove the errorbars
+#handles = [h[0] for h in handles]
+# use them in the legend
+#ax2.legend(handles, labels, loc='upper left',numpoints=1)
 #ax2.grid()
-ax2.legend(bbox_to_anchor=(1.25,0.5),loc='center right',ncol=1)
+#ax2.legend(bbox_to_anchor=(1.25,0.5),loc='center right',ncol=1,fontsize=9)
+ax2.legend(loc='bottom left',ncol=2,numpoints=1,fontsize=8,frameon=False)
+
+folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures'
+plt.savefig(os.path.join(folder,'Process_fidelity.pdf'),
+format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
 
 
 
