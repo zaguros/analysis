@@ -38,6 +38,9 @@ data_settings = {
 	'base_folder_lt3' : r'D:\measuring\data\Single_click_expm\LT3_data\EntOnDemand20170705',
 	'base_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data\EntOnDemand20170705',
 	
+	'save_folder_lt3' : r'D:\measuring\data\Single_click_expm\LT3_data\EntOnDemand20170705\ProcessedData',
+	'save_folder_lt4' : r'D:\measuring\data\Single_click_expm\LT4_data\EntOnDemand20170705\ProcessedData',
+	
 	'filenames_for_expms' : {'SweepPhase0p05' : r'EntangleXsweepY',
 							 'SweepPhase0p1' : r'EntangleXsweepY',
 							 'SweepTheta'	  : r'EntangleSweepEverything',
@@ -48,6 +51,14 @@ data_settings = {
 							 'EntOnDemand0p2_14k' : r'EntangleOnDemandInclCR',
 							 'EntOnDemand0p2_16p5k' : r'EntangleOnDemandInclCR',
 							 'EntOnDemand0p2_19k' : r'EntangleOnDemandInclCR',},
+
+	'ent_on_demand_runs' : ['EntOnDemand0p15_14k' ,
+							 'EntOnDemand0p15_18k' ,
+							 'EntOnDemand0p15_22k' ,
+							 'EntOnDemand0p2_11p5k' ,
+							 'EntOnDemand0p2_14k' ,
+							 'EntOnDemand0p2_16p5k' ,
+							 'EntOnDemand0p2_19k']
 
 
 }

@@ -13,7 +13,7 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
             offset=[0], amplitude = [0.5], center = [0], decay_constant = [200], exp_power = [0],
             frequency = [1], phase =[0],
             fixed = [], ylim = [-0.5, 1.05],ssro_tstamp ='',base_folder = None,
-            plot_fit = False, do_print = False, show_guess = True,correct_ionization = True):
+            plot_fit = False, do_print = False, show_guess = True,correct_ionization = True, save =False):
     ''' Function to fit mbi-type data with exponential and sinusoidal functions or combinations thereof.
     timestamp       : format yyyymmdd_hhmmss or hhmmss or None. None takes the last data.
     measurement_name: list of measurement names
@@ -32,12 +32,17 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
         
     fit_results = []
 
+    print measurement_name
+
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
         a.get_sweep_pts()
         a.get_readout_results(name=measurement_name[k],CR_after_check = correct_ionization)
         a.get_electron_ROC(ssro_folder)
         ax = a.plot_results_vs_sweepparam(ret='ax')
+
+        if save:
+            a.save('ssro_results')
 
         if ylim != None:
             ax.set_ylim(ylim[0],ylim[1])
@@ -54,14 +59,14 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
             if show_guess:
                 ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
             print 'starting fit.fit1d'
-            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
             fit_result['y_u'] = a.u_p0.reshape(-1)[:]
         elif len(frequency) == 2:
             p0, fitfunc, fitfunc_str = common.fit_gaussian_decaying_2cos(offset[0],amplitude[0],decay_constant[0],amplitude[0],
                 frequency[0],  phase[0], amplitude[1], frequency[1],  phase[1])
             if show_guess:
                 ax.plot(np.linspace(0,x[-1],201), fitfunc(np.linspace(0,x[-1],201)), ':', lw=2)
-            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=True, ret=True,fixed=fixed)
+            fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
             fit_result['y_u'] = a.u_p0.reshape(-1)[:]
             ### Also plot the individual curves
 

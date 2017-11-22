@@ -38,18 +38,20 @@ class MBIAnalysis(m2.M2Analysis):
         self.readouts = adwingrp.attrs['nr_of_ROsequences']
         discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
         self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
-
         if discards > 0:
             results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
         else:
             results = adwingrp['ssro_results'].value
 
         if CR_after_check:
-            CR_after = adwingrp['CR_after'].value
+            if discards > 0:
+                CR_after = adwingrp['CR_after'].value.reshape(-1)[:-discards]
+            else:
+                CR_after = adwingrp['CR_after'].value
             reps_list = np.ones(self.pts)*self.reps
-            num_of_reps = len(CR_after)
+            num_of_reps = len(CR_after-discards)
             CR_failed_count = 0
-
+            
             ### loop over the results of CR check after and eliminate those where ionization was apparent.
             ### there is probably a faster way to do this. np.search?
             for ii,CR in enumerate(CR_after):
@@ -61,12 +63,12 @@ class MBIAnalysis(m2.M2Analysis):
                     results[ii] = (results[ii]-1)*results[ii] ### set all events to 0 photons
                     # print results[ii]
             reps_list = reps_list.reshape(len(reps_list),1) ## cast into matrix
-            
+
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro =  np.multiply(self.ssro_results,1./reps_list)
             self.u_normalized_ssro = (np.multiply(self.normalized_ssro*(1.-self.normalized_ssro),1./reps_list))**0.5
             # if np.float64(100 * len(self.ssro_results) ) / num_of_reps !=100.:
-            #    print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
+            #     print 'Ionized in ', float(100 * CR_failed_count ) / float(num_of_reps),' per cent of all trials'
         else:
             self.ssro_results = results.reshape((-1,self.pts,self.readouts)).sum(axis=0)
             self.normalized_ssro = self.ssro_results/float(self.reps)
@@ -74,7 +76,6 @@ class MBIAnalysis(m2.M2Analysis):
                 (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
 
 
-    
 
     def get_correlations(self, name=''):
         """

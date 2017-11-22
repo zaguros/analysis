@@ -475,7 +475,7 @@ class SSROAnalysis(m2.M2Analysis):
 
 
 
-def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True):
+def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True,ret=False):
     if folder=='' and contains == '':
         folder=toolbox.latest_data('AdwinSSRO')
     elif contains != '':
@@ -494,12 +494,16 @@ def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True):
     #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity(plot,plot_photon_ms0)
+    
+    if ret:
+        return a
     a.finish()
 
-
-def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
+def ssrocalib_MWInit(folder='', contains = '',plot = True, plot_photon_ms0 = True,ret = False):
     if folder=='':
-        folder=toolbox.latest_data('_SSRO_calib_MWInit_')
+        if contains == '':
+            contains = '_SSRO_calib_MWInit_'
+        folder=toolbox.latest_data(contains)
     a = SSROAnalysis(folder)
 
     for n,ms in zip(['ms0','msp1','msm1'], [0,1,-1]):
@@ -513,7 +517,11 @@ def ssrocalib_MWInit(folder='', plot = True, plot_photon_ms0 = True):
     #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity_MWInit(plot,plot_photon_ms0)
-    a.finish()
+
+    if not ret:
+        a.finish()
+    if ret:
+        return a
     print 'Job\'s done!'
 
 

@@ -148,7 +148,7 @@ class TailAnalysis(PQSequenceAnalysis):
 
         is_ph = pq_tools.get_photons(self.pqf, pq_device = self.pq_device)[channel]
         sync_time_ns = self.pqf[self.pq_device + '/PQ_sync_time-1'].value * pq_binsize_ns
-        print len(is_ph), len(sync_time_ns)
+
 
         if str(self.f.keys()).count('sync_time') > 1 :
             for i in np.arange(str(self.f.keys()).count('sync_time')-1):
@@ -168,7 +168,6 @@ class TailAnalysis(PQSequenceAnalysis):
             print 'total_photons in window:', len(sync_time_ns[np.where(is_ph & st_fltr)]) 
         valid_tail_idxs = self.sweep_idxs[np.where(is_ph & st_fltr)]
 
-        print len(self.sweep_idxs)
 
         if verbose:
 
@@ -182,7 +181,7 @@ class TailAnalysis(PQSequenceAnalysis):
                                 float(len(np.where(valid_tail_idxs==sweep_idx)[0])) / (self.reps*self.syncs_per_sweep/self.sweep_length)
             self.tail_hist_h[sweep_idx], self.tail_hist_b = \
                                 np.histogram(sync_time_ns[np.where(is_ph & (self.sweep_idxs == sweep_idx))], bins=hist_bins)
-        print self.tail_cts_per_sweep_idx
+
 
     
     def plot_tail_cts_vs_sweep(self, name='', save=True, **kw):

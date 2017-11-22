@@ -23,18 +23,16 @@ def get_tstamps_dsets(contains,older_than = '',newer_than = '',n_datasets = 5,su
     Counting start from new and goes towards old.
     returns a list of folder_lists (divided into datasets and subsets)
     """
-
-
     i_dataset = 0
     f_list = []
     while tb.latest_data(contains=contains,older_than = older_than,newer_than = newer_than, folder=  None,
-                raise_exc = False) != False and (i_dataset< n_datasets):
+                raise_exc = False,**kw) != False and (i_dataset< n_datasets):
 
         subset_f_list = []
         for i_subset in np.array(range(subsets))+1:
             latest_tstamp, f_sub = tb.latest_data(contains=contains+str(i_subset),older_than = older_than,
                                             newer_than = newer_than, folder=   None,
-                raise_exc = False,return_timestamp = True)
+                raise_exc = False,return_timestamp = True,**kw)
 
             subset_f_list.append(f_sub)
         older_than = latest_tstamp
@@ -95,7 +93,9 @@ def sort_for_best_signal(x_list,y_list,y_u_list,**kw):
 
 
 def analyse_dataset(contains,**kw):
-
+    """
+    see the notebook purification/LT3/Espin_DD_w_switch.ipynb for example uses.
+    """
     f_list = get_tstamps_dsets(contains,**kw)
     x_list,y_list,y_u_list = [],[],[]
 
@@ -107,7 +107,7 @@ def analyse_dataset(contains,**kw):
         x_list.append(x); y_list.append(y); y_u_list.append(y_u)
 
 
-    if kw.pop('plot_raw',True):
+    if kw.pop('plot_raw',True) and kw.get('do_plot',True):
         ax = a.default_ax(figsize = (7,4))
 
         for x,y, y_u in zip(x_list,y_list,y_u_list):
@@ -136,17 +136,29 @@ def analyse_dataset(contains,**kw):
 
     ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
 
+
     ########## time to fit the best results
     p0, fitfunc, fitfunc_str = common.fit_general_exponential(0.5,0.5, 0., 100.,2) ## one could start to make cool guesses based on the data but i refrain
     fit_result = fit.fit1d(best_x,best_y,None,p0=p0,fitfunc=fitfunc,do_print=True,ret=True,fixed = [0,2])
+    fit_result['all_x'] = x_list; fit_result['all_y'] = y_list;fit_result['all_y_u'] = y_u_list
+    if kw.pop('do_plot',True):
 
-    plot.plot_fit1d(fit_result,np.linspace(0,np.amax(best_x)*1.05,201),ax=ax,plot_data=False)
-    plt.savefig(os.path.join(a.folder, 'analyzed_result.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(a.folder, 'analyzed_result.png'),
-    format='png')
+        ax.set_xlabel(a.sweep_name)
+        ax.set_ylabel(r'$F(|0\rangle)$')
+        ax.set_xlim([0,np.amax(best_x)*1.05])
+        ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
 
-    print 'plots are saved in'
-    print a.folder
+        plot.plot_fit1d(fit_result,np.linspace(0,np.amax(best_x)*1.05,201),ax=ax,plot_data=False)
+        plt.savefig(os.path.join(a.folder, 'analyzed_result.pdf'),
+        format='pdf')
+        plt.savefig(os.path.join(a.folder, 'analyzed_result.png'),
+        format='png')
+        plt.show()
+        print 'plots are saved in'
+        print a.folder
 
-    plt.show()
+    if kw.pop('return_fit',False):
+        fit_result['y_u'] = best_y_u
+        return fit_result
+
+

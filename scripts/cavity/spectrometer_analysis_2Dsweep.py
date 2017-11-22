@@ -118,13 +118,17 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         """
         indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
         indices_hom = np.append(indices_fund[0]-1,-1)
-        dnu_trans_all = np.abs(np.diff(x0s)[indices_hom])
-        print dnu_trans_all
-        dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all<hom_max)] #filter out too far away peaks
-        dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all>1.)] #filter out too near peaks
-        dnu_trans_avg = np.average(dnu_trans_all)
-        u_dnu_trans_avg = scipy.stats.sem(dnu_trans_all)
-        print dnu_trans_all
+        if len(indices_hom)>1:
+            dnu_trans_all = np.abs(np.diff(x0s)[indices_hom])
+            # print dnu_trans_all
+            dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all<hom_max)] #filter out too far away peaks
+            dnu_trans_all = dnu_trans_all[np.where(dnu_trans_all>1.)] #filter out too near peaks
+            dnu_trans_avg = np.average(dnu_trans_all)
+            u_dnu_trans_avg = scipy.stats.sem(dnu_trans_all)
+        else:
+            dnu_trans_avg = 0
+            u_dnu_trans_avg =0
+        # print dnu_trans_all
         return dnu_trans_avg,u_dnu_trans_avg
 
 
@@ -138,13 +142,17 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         report_fails = kw.pop('report_fails',False)
         success = np.zeros(len(x0s))
 
-        indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
-        x0s_fund = x0s[indices_fund]
-        x0s = np.append(x0s_fund,x0s[-1])
-        u_x0s_fund = u_x0s[indices_fund]
-        u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
-        success[indices_fund]=1
-        success[-1]=1
+        if len(success)>0:
+            indices_fund = np.where(np.abs(np.diff(x0s))>hom_max)
+            x0s_fund = x0s[indices_fund]
+            x0s = np.append(x0s_fund,x0s[-1])
+            u_x0s_fund = u_x0s[indices_fund]
+            u_x0s =  np.append(u_x0s_fund,u_x0s[-1])
+            success[indices_fund]=1
+            success[-1]=1
+        else:
+            x0s= np.array([])
+            u_x0s=np.array([])
         if report_fails:
             print '%d higher order modes removed'%(len(success) - len(x0s))
         return x0s,u_x0s,success
@@ -174,13 +182,11 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             u_x0s = np.zeros(len(peak_frequencies))
             success = np.ones(len(peak_frequencies))
         peak_intensity_x0s = peak_intensity[np.where(success >0)]
-
         dnu_trans, u_dnu_trans = self.calc_dnu_trans(x0s,u_x0s,hom_max=hom_max)
 
         if remove_hom:
             x0s,u_x0s,hom_success = self.remove_higher_order_modes(x0s,u_x0s,hom_max=hom_max,**kw)
             peak_intensity_x0s = peak_intensity_x0s[np.where(hom_success >0)]
-
 
         # print self.folder
         # print len(peak_intensity),len(peak_intensity_x0s)
@@ -189,7 +195,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             ax.plot(self.frequencies,intensity)
             # ax.plot(peak_wavelengths,peak_intensity,'o', mfc=None, mec='r', mew=2, ms=8)
             ax.plot(x0s,peak_intensity_x0s,'+', mfc=None, mec='r', mew=2, ms=8)
-            #ax.set_title(self.plot_name)
+            ax.set_title(self.folder)
             ax.set_xlabel('Frequency (THz)')
             ax.set_ylabel('Transmitted signal (a.u.)')
             if save_fig:
@@ -219,6 +225,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             # if i>0:
             #     break
             x0s,u_x0s,dnu_trans,u_dnu_trans = self.peaks_from_1D_data(intensity,**kw)
+
             x = np.append(x,x0s)
             u_x = np.append(u_x,u_x0s)
             dnus_trans[i]= dnu_trans
@@ -517,16 +524,19 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         plt.close()
 
 
-    def plot_data(self, ret_ax=False,ax=None,**kw):
+    def plot_data(self, ret_ax=False,ax=None,scale='linear',**kw):
         title = kw.pop('title','/2D_plot')
         cmap = kw.pop('cmap','YlGnBu')
         vmax = kw.pop('vmax',self.ana_pars['vmax'])
         vmin = kw.pop('vmin',self.ana_pars['vmin'])
         aspect = kw.pop('aspect','auto')
-        save_fig = kw.pop('save_fig',False)
+        save_fig = kw.pop('save_fig',True)
         plot_x = kw.pop('plot_x','V')
         if ax==None:
-            fig,ax = plt.subplots(figsize=(8,6))
+            if scale == 'linear':
+                fig,ax = plt.subplots(figsize=(8,6))
+            else:
+                fig,ax = plt.subplots(figsize=(8,12))
 
         if plot_x =='V':
             ax.set_xlim([self.Vs[0]-self.V_extent_correction,self.Vs[-1]+self.V_extent_correction])
@@ -548,7 +558,12 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         frqs_xl = np.append(self.frequencies+self.frq_extent_correction,self.frequencies[-1]-self.frq_extent_correction)
         x,y = np.meshgrid(xs_xl,frqs_xl) 
 
-        im = ax.pcolormesh(x,y,self.intensities,vmax =vmax, vmin=vmin,cmap = cmap)
+        if scale == 'linear': # Wouter 1 8 2017, added log scale option
+            im = ax.pcolormesh(x,y,self.intensities,vmax =vmax, vmin=vmin,cmap = cmap) 
+        elif scale == 'log':
+            im = ax.pcolormesh(x,y,10.0*np.log10(self.intensities))  
+        else: 
+            print 'ERROR: scale argument should be linear or log'
         ax = self.set_axes_basics(ax,plot_x=plot_x)
         #ax.set_title(self.plot_name+title)
         plt.colorbar(im)
@@ -567,6 +582,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
         plt.show()
         plt.close()
+
 
 
     def plot_peaks(self,ret_ax=False,**kw):
@@ -703,17 +719,17 @@ class spectrometer_2D_analysis(spectrometer_analysis):
 
     def get_slope(self,  diamond_thickness=4.e-6,air_length = 5.e-6, nr_points=61, N=39):
 
-         modes= self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
-         modeN=modes[N]
+        modes= self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
+        modeN=modes[N]
 
-         y_diff = np.diff(modeN)
-         index, frequency = self.find_nearest(modeN, c/self.laser_wavelength*1e-12)
-         slope_value=1./2*(y_diff[index]+y_diff[index+1])
+        y_diff = np.diff(modeN)
+        index, frequency = self.find_nearest(modeN, c/self.ana_pars['laser_wavelength']*1e-12)
+        slope_value=1./2*(y_diff[index]+y_diff[index+1])
 
-         final_slope = slope_value/(self.V_range/nr_points)
+        final_slope = slope_value/(self.V_range/nr_points)
 
 
-         return final_slope
+        return final_slope
 
 
     def plot_peaks_and_modes(self, ax=None,ret_ax=False, **kw):
@@ -836,7 +852,9 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         self.laser_frq = (c/self.ana_pars['laser_wavelength']*1.e-12)
         near_idx,near_freq = self.find_nearest(self.diamond_mode_freqs,self.laser_frq)
 
-        #print near_freq,near_idx
+        # print near_freq,near_idx
+        # print self.laser_frq
+        # print self.diamond_mode_freqs
 
         if near_freq>self.laser_frq:
             low_freq = self.diamond_mode_freqs[near_idx-1]
@@ -862,23 +880,25 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         return frq_nearest
 
     def get_V_intersects(self,frq=470,dfrq=10,**kw):
-        min_V_int_distance = abs(self.ana_pars['V_max'] -self.ana_pars['V_min'])/(self.ana_pars['nr_files']-1)
+        min_V_int_distance = abs(self.ana_pars['V_max'] -self.ana_pars['V_min'])/(self.ana_pars['nr_files']-2.)
         idxs_near_frq = np.where( np.abs(self.peak_frq - frq) < dfrq)[0]
         Vs_near_frq = self.peak_V[idxs_near_frq]
-        print Vs_near_frq
-        print np.diff(Vs_near_frq)
+        # print Vs_near_frq
+        # print np.diff(Vs_near_frq)
+        # print min_V_int_distance
 
         #remove others if there were multiple in the vicinity. 
         #could improve by checking which one is nearer
         del_is = np.array([])
-        for i in np.where(abs(np.diff(Vs_near_frq))<min_V_int_distance)[0]: 
+        for i in np.where(abs(np.diff(Vs_near_frq))<=min_V_int_distance)[0]: 
+
             del_is = np.append(del_is,i)
         idxs_near_frq = np.delete(idxs_near_frq,del_is)
+        print 'deleting ', len(del_is), 'intersects'
 
         self.Vs_at_frq=np.array([])
         dV = self.V_range/float(len(self.Vs)-1)
 
-        print 'deleting ', len(del_is), 'intersects'
         
         for i in idxs_near_frq:
             frq_nearest = self.peak_frq[i]
@@ -888,13 +908,13 @@ class spectrometer_2D_analysis(spectrometer_analysis):
                 frq_first = frq_nearest
                 V_last = V_nearest+dV
                 # print V_last
-                if V_last>10.:
+                if V_last>self.ana_pars['V_max']:
                     continue 
                 frq_last = self.find_nearest_peak_frq_at_V(frq,V_last)
             elif frq_nearest < frq:
                 V_first = V_nearest-dV
                 # print V_first
-                if V_first<0.:
+                if V_first<self.ana_pars['V_min']:
                     continue
                 frq_first = self.find_nearest_peak_frq_at_V(frq,V_first)
                 V_last = V_nearest
@@ -911,11 +931,13 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         
         Vs = self.get_V_intersects(frq = frq,dfrq=dfrq,**kw)
         self.plot_V_intersects(frq = frq,**kw)
-
+        print 'Vs',Vs
         dpeaks = np.diff(Vs)
+        print 'dpeaks,',dpeaks
+
         centrepeaks = (Vs[:-1]+dpeaks/2.)-self.ana_pars['V_min']
-        local_conversionfactors = (c/(frq*1.e12))/2/dpeaks*1.e9 # in nm/V
-            
+        local_conversionfactors = (c/(frq*1.e12))/2./dpeaks*1.e9 # in nm/V
+        
         return centrepeaks,local_conversionfactors
 
     def get_conversion_factors(self,**kw):
@@ -945,33 +967,42 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             #dpeaks_2nd = np.diff(Vs_2nd)
             #centrepeaks_2nd = Vs_2nd[:-1]+dpeaks_2nd/2
             #local_conversionfactors_2nd = (c/(self.ana_pars['2nd_frq_for_conversion_factor']*1.e12))/2/dpeaks_2nd*1.e9 # in nm/V
-            
-
-        g_a0= 240
-        g_a1 = 24
-        g_a2 = -2
-        fixed=[]
-
-        p0, fitfunc, fitfunc_str = common.fit_poly(g_a0,g_a1,g_a2)#,0.1,1)
-        fit_result = fit.fit1d(centrepeaks,local_conversionfactors, None, p0=p0, 
-            fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed,show_guess=True)
-
-
+        
         fig,ax= plt.subplots()
         ax.plot(centrepeaks,local_conversionfactors,'o')
         ax.set_xlabel('V - V_min (V)')
         ax.set_ylabel('local conversion factor (dL/dV) (nm/V)')
-        plot.plot_fit1d(fit_result, np.linspace(0,self.ana_pars['V_max']-self.ana_pars['V_min'],101),ax=ax)
-        print os.path.join(self.folder,'conversion_factor.png' )
+
+        # Suggestion Wouter: why not use polyfit which does not require guess (or use it as guess)
+        # The line below gives erros when centrepeaks contains two identical numbers.
+        a2,a1,a0=np.polyfit(centrepeaks,local_conversionfactors,2)
+        x = np.linspace(0,self.ana_pars['V_max']-self.ana_pars['V_min'],51)
+        plt.plot(x, np.poly1d([a2,a1,a0])(x))
+
+        ###Fitting using SciPy
+        # g_a0= 200
+        # g_a1 = 100
+        # g_a2 = 0#-2
+        # fixed=[]
+        # p0, fitfunc, fitfunc_str = common.fit_poly(g_a0,g_a1,g_a2)#,0.1,1)
+        # fit_result = fit.fit1d(centrepeaks,local_conversionfactors, None, p0=p0, 
+        #     fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed,show_guess=True)  
+
+        # plot.plot_fit1d(fit_result, np.linspace(0,self.ana_pars['V_max']-self.ana_pars['V_min'],101),ax=ax)
+
+        # a0 = fit_result['params_dict']['a0']
+        # a1 = fit_result['params_dict']['a1']
+        # a2 = fit_result['params_dict']['a2']
+
         plt.savefig(os.path.join(self.folder,'conversion_factor.png' ))
 
         if plot_fit:
             plt.show(fig)
         plt.close(fig)
 
-        self.ana_pars['conversion_factor'] = fit_result['params_dict']['a0']*1.e-9
-        self.ana_pars['quadratic_conversion_factor'] = fit_result['params_dict']['a1']*1.e-9/2.
-        self.ana_pars['cubic_conversion_factor'] = fit_result['params_dict']['a2']*1.e-9/3.
+        self.ana_pars['conversion_factor'] = a0*1.e-9
+        self.ana_pars['quadratic_conversion_factor'] = a1*1.e-9/2.
+        self.ana_pars['cubic_conversion_factor'] = a2*1.e-9/3.
 
         self.Vs_to_dLs_conversion()
 
@@ -991,7 +1022,12 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         return dL
 
     def pure_diamond_modes(self, diamond_thickness=4.e-6):
-        max_nr_modes = 50
+        if self.ana_pars['laser_wavelength'] != None:
+            cav_wl = self.ana_pars['laser_wavelength']
+        else:
+            cav_wl = 637e-9
+        max_nr_modes = diamond_thickness*n_diamond*2/(cav_wl)+10
+
         Ns = np.arange(max_nr_modes)
 
         nu_diamond = ((Ns-1/2.) * c / (2 * n_diamond *diamond_thickness))/1.e12
