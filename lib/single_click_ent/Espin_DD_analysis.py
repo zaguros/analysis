@@ -121,17 +121,17 @@ def analyse_dataset(contains,**kw):
     ax.set_xlim([0,np.amax(best_x)*1.05])
    
 
-    # To avoid dips in the analysis
-    for jj in range (1,2):
-        index_list=[]
-        for ii in range(1,len(best_x)-10):
-            #if y[ii+2] > 0.65:
-            for kk in range (ii+1, len(best_x)-1):
-                if y[kk] > 1.05*y[ii] :
-                    index_list.append(ii)
-        best_x=np.delete(best_x,[index_list])
-        best_y=np.delete(best_y,[index_list])
-        best_y_u =np.delete(best_y_u,[index_list])
+    # # To avoid dips in the analysis
+    # for jj in range (1,2):
+    #     index_list=[]
+    #     for ii in range(1,len(best_x)-10):
+    #         #if y[ii+2] > 0.65:
+    #         for kk in range (ii+1, len(best_x)-1):
+    #             if y[kk] > 1.05*y[ii] :
+    #                 index_list.append(ii)
+    #     best_x=np.delete(best_x,[index_list])
+    #     best_y=np.delete(best_y,[index_list])
+    #     best_y_u =np.delete(best_y_u,[index_list])
 
 
     ax.errorbar(best_x,best_y,best_y_u,zorder = 5, fmt = 'bo')
