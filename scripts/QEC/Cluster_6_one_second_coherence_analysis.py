@@ -5,6 +5,7 @@ from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
 from analysis.lib.m2.ssro import mbi
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 reload(common)
 reload(fit) 
 reload(toolbox)
@@ -17,7 +18,7 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
         x_ticks=np.arange(0,100,5), y_ticks=np.arange(0.2,0.8,0.1),color='b',
         c=1,t=1,frequency = [1,1], offset =0.5, amplitude =[ 0.5,0.5],  phase =[0,0], 
         fixed = [], 
-        plot_fit = False, do_print = False, show_guess = True,xlim=None):
+        plot_fit = False, do_print = False, show_guess = True, xlim1=None, xlim2=None):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -131,12 +132,27 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
         
-    fig = plt.figure(1,figsize=(4,1.5))
-    ax2 = fig.add_subplot(111)
-    ax2.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,lw=1,markersize=3)
-    ax2.set_xlabel('Free evolution time (ms)')
-    ax2.set_ylabel('State Fidelity')
+    # fig = plt.figure(1,figsize=(10,2))
+    # ax2 = fig.add_subplot(111)
 
+
+    # ax2.set_xlabel('Free evolution time (ms)')
+    # ax2.set_ylabel('State Fidelity')
+
+    #f = plt.figure(1,figsize=(60,2))
+    #f,(ax1,ax2,ax3,ax4) = plt.subplots(1,4,sharey=True, facecolor='w',figsize=(10,3.5))
+
+    fig = plt.figure(figsize=(9, 3.3)) 
+    gs = gridspec.GridSpec(1, 4, width_ratios=[3, 3,2,1]) 
+    ax1 = plt.subplot(gs[0])
+    ax2 = plt.subplot(gs[1])
+    ax3 = plt.subplot(gs[2])
+    ax4 = plt.subplot(gs[3])
+
+    ax1.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,lw=1,markersize=3)
+    ax2.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,lw=1,markersize=3)
+    ax3.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,lw=1,markersize=3)
+    ax4.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,lw=1,markersize=3)
 
 
 
@@ -150,11 +166,19 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
         p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset,amplitude[0], 0,t,
             exponent,frequency[0] ,phase[0] )
     if show_guess:
-        ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
+        ax1.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(x[0],x[-1],201)), ':', lw=2)
 
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
     if plot_fit == True:
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],8001), ax=ax1, color=color,
+                plot_data=False,print_info = False,lw=1.5)
+
         plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],8001), ax=ax2, color=color,
+                plot_data=False,print_info = False,lw=1.5)
+
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],8001), ax=ax3, color=color,
+                plot_data=False,print_info = False,lw=1.5)
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],8001), ax=ax4, color=color,
                 plot_data=False,print_info = False,lw=1.5)
 
 
@@ -163,16 +187,78 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
 
 
     ## plot data and fit as function of total time
-    plt.xticks(x_ticks)
+    #plt.xticks(x_ticks)
     # plt.yticks(np.arange(min(y),(max(y)),0.1))
-    plt.yticks(y_ticks)
-    ax2.set_xlim(0,xlim)
+    #plt.yticks(y_ticks)
+    ax1.set_xlim(0,31)
+    ax2.set_xlim(xlim1,xlim2)
+    ax3.set_xlim(609,631)
+    ax4.set_xlim(910,920)
+
     #ax2.set_ylim(0,1)
 
     #ax2.set_xlabel('Free evolution time (ms)')
     #ax2.set_ylabel('State Fidelity')
-    
-    folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures\Fig 3'
+    d = .045 # how big to make the diagonal lines in axes coordinates
+    # arguments to pass plot, just so we don't keep repeating them
+    ax1.spines['right'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    ax3.spines['left'].set_visible(False)
+    ax3.spines['right'].set_visible(False)
+    ax1.yaxis.tick_left()
+    ax1.tick_params(labelright='off')
+    ax2.tick_params(labelleft='off')
+    ax2.tick_params(labelright='off')
+    ax3.tick_params(labelleft='off')
+    ax3.tick_params(labelright='off')
+    ax4.tick_params(labelleft='off')
+    ax4.tick_params(labelright='off')
+    #ax4.tick_params(labelbottom='off')
+    #ax1.tick_params(labelbottom='off')
+    #ax2.tick_params(labelbottom='off')
+    #ax3.tick_params(labelbottom='off')
+
+    ax4.spines['left'].set_visible(False)
+    plt.sca(ax1)
+    plt.xticks([10,20,30])
+    plt.yticks([0.4,0.5,0.6,0.7])
+    plt.sca(ax2)
+    plt.xticks([200,210,220,230])
+    plt.yticks([])
+    plt.sca(ax3)
+    plt.xticks([610,620,630])
+    plt.yticks([])
+    plt.sca(ax4)
+    plt.xticks([910,920])
+    plt.yticks([])
+
+
+    #plt.step(ax1,ax2,xticks=[10,20,30],yticks=[0.4,0.5,0.6,0.7])
+    #ax4.yaxis.tick_right()
+    #ax4.xaxis.tick_bottom()
+
+    # kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+    # ax1.plot((1-d,1+d), (-d,+d), **kwargs)
+    # ax1.plot((1-d,1+d),(1-d,1+d), **kwargs)
+
+    # kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+    # ax2.plot((-d,+d), (1-d,1+d), **kwargs)
+    # ax2.plot((-d,+d), (-d,+d), **kwargs)
+    # ax2.plot((1-d,1+d), (-d,+d), **kwargs)
+    # ax2.plot((1-d,1+d),(1-d,1+d), **kwargs)
+
+    # kwargs = dict(transform=ax3.transAxes, color='k', clip_on=False)
+    # ax3.plot((-d,+d), (1-d,1+d), **kwargs)
+    # ax3.plot((-d,+d), (-d,+d), **kwargs)
+    # ax3.plot((1-d,1+d), (-d,+d), **kwargs)
+    # ax3.plot((1-d,1+d),(1-d,1+d), **kwargs)
+
+    # kwargs.update(transform=ax4.transAxes)  # switch to the bottom axes
+    # ax4.plot((-d,+d), (1-d,1+d), **kwargs)
+    # ax4.plot((-d,+d), (-d,+d), **kwargs)
+        
+    folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures'
     plt.savefig(os.path.join(folder, title + '.pdf'),
     format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
 
