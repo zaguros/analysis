@@ -1018,7 +1018,7 @@ def fit_clipping_radius(g_ROC,g_rclip,g_Transmission,g_Loss, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
-    fitfunc_str = 'g_A*(1-(1+a)*exp(-|x-x0|/tau1)+a*exp(-|x-x0|/tau2))'
+    fitfunc_str = 'scale()*(1-(2*np.pi*Rabifreq()/2) * (1 - np.cos(2*np.pi*Rabifreq()*x)))'
 
     x0 = fit.Parameter(g_x0,'x0')
     A = fit.Parameter(g_A,'A')
@@ -1033,3 +1033,34 @@ def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_Rabi(g_f, g_A, *arg):
+    fitfunc_str = 'A * cos(2pi * (f*x + phi/360) ) + a'
+
+    Rabifreq = fit.Parameter(g_f, 'f')
+    scale = fit.Parameter(g_A, 'A')
+
+    p0 = [Rabifreq, scale] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+
+    def fitfunc(x):
+        return 1 - 0.5*(1 - scale()*np.cos(2*np.pi*Rabifreq()*x))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_NMR_spectrum(g_f, g_A, g_x0, pulse_t, *arg):
+    fitfunc_str = '((Rabifreq)**2/2*sqrt(Rabifreq**2+x**2)) * (1-scale*cos(sqrt((2*pi*Rabifreq)**2 + (2*pi*x)**2)*pulse_t'
+
+    Rabifreq = fit.Parameter(g_f, 'f')
+    scale = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    pulse_t = pulse_t
+
+    p0 = [Rabifreq, scale, x0] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+
+    def fitfunc(x):
+        prefactor = ((Rabifreq()**2)/(2*np.sqrt((Rabifreq()**2)+((x-x0())**2))))
+        cosine = (1-scale()*np.cos(np.sqrt(((2*np.pi*Rabifreq())**2)+(2*np.pi*(x-x0()))**2)*pulse_t))
+        return prefactor*cosine
+
+    return p0, fitfunc, fitfunc_str

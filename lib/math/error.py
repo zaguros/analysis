@@ -67,8 +67,7 @@ class Formula:
             return self.value(), self.uncertainty()
         
         valfunc = lambdify(symbol, self.value(), 'numpy')
-        print 'uncertianties', uncertainties
-        if uncertainties == None:        
+        if uncertainties.all() == None:        
             uncertaintyfunc = lambdify(symbol, self.uncertainty(), 'numpy')
             return valfunc(values), uncertaintyfunc(values)
         else:
