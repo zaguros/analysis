@@ -24,7 +24,9 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
             return_results = True,
             close_plot = False,
             color='b',
-            title = 'Carbon'):
+            title = 'Carbon',
+            x_ticks=np.arange(0,100,5),
+            y_ticks=np.arange(0.2,0.8,0.1)):
     ''' 
     Function to analyze simple decoupling measurements. Loads the results and fits them to a simple exponential.
     Inputs:
@@ -63,11 +65,22 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
         y = a.p0.reshape(-1)[:]
         e= a.u_p0
         
-        fig = plt.figure(1,figsize=(8,6))
+        # fig = plt.figure(1,figsize=(4,1.5))
+        fig = plt.figure(1,figsize=(8,3))
+
         ax2 = fig.add_subplot(111)
-        ax2.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color)
+        ax2.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,markersize=4,lw=1)
         ax2.set_xlabel('Free evolution time (ms)')
         ax2.set_ylabel('State Fidelity')
+
+        print min(y)
+        print max(y)
+        #plt.xticks(x_ticks)
+        # plt.yticks(np.arange(min(y),(max(y)),0.1))
+        #plt.yticks(y_ticks)
+
+        #ax2.set_ylim(min(y)-0.03,max(y)+0.07)
+        
         p0, fitfunc, fitfunc_str = common.fit_general_exponential_dec_cos(offset, amplitude, 
                 x0, decay_constant,exponent,frequency ,phase )
 
@@ -81,24 +94,28 @@ def Carbon_Ramsey(timestamp=None, carbon=None, transition=None, measurement_name
 
         ## plot data and fit as function of total time
         if plot_fit == True:
-            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax2, add_txt = False, color=color, plot_data=False)
+            plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],1001), ax=ax2, add_txt = False, color=color, plot_data=False,lw=1.5)
+
+        
 
         fit_results.append(fit_result)
         if title == None:
             title = 'analyzed_result'
         
-
+        folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures\Fig 3'
         plt.savefig(os.path.join(folder, title + '.pdf'),
-        format='pdf')
-        plt.savefig(os.path.join(folder, title + '.png'),
-        format='png')
+        format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
+
         if close_plot == True:
             plt.close()
+
+    #     plt.savefig('C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures\Fig 1\T1_sum_log.pdf',
+    # format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
 
         # for item in fit_result['params_dict']:
         #     print item
         # return fit_result
-        print folder
+        #print folder
 
         if return_freq == True:
             f0 = fit_result['params_dict']['f']
