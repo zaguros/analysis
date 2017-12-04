@@ -24,7 +24,7 @@ def analysis_gateset(contains = '',timestamp=None,ssro_folder = None,
         else:
             ssro_folder = toolbox.data_from_time(ssro_tstamp)
     
-    a = mbi.MBIAnalysis(folder)
+    a = mbi.MBIAnalysis(folder,CR_after_check = False)
 
     measurement_name = a.g.attrs['all_run_names']   
 
