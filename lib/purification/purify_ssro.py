@@ -111,7 +111,7 @@ def plot_data(x,y,**kw):
     y_u = kw.pop('y_u',None)
     if y_u != None:
         plt.errorbar(x,y,y_u,fmt = 'o',label = label,**kw)
-    else: plt.plot(x,y)
+    else: plt.plot(x,y,**kw)
 
 
 def quadratic_addition(X,Y,X_u,Y_u):
@@ -165,6 +165,45 @@ def get_pos_neg_data(a,adwindata_str = '',ro_array = ['positive','negative'],**k
             res_u = [np.sqrt(y0**2+y_u[ii]**2)/2 for ii,y0 in enumerate(res_u)]
 
     return np.array(x_labels),np.array(res),np.array(res_u)
+
+def plot_pos_neg_XY_data(contains = '',do_fit = False, **kw):
+    """
+    Can handle multiple files with the same 'contains' in the name.
+    Range is then handled via newer_than and older_than in tb.latest_data()
+    """
+
+    fs = toolbox.latest_data(contains, **kw)
+
+    ### need to clean up the kws for the second usage of the toolbox (befoire looking for the latest ssro)
+    kw.pop('return_all',False);kw.pop('older_than',False);kw.pop('newer_than',False)
+    ssro_calib_folder = toolbox.latest_data('SSROCalib',**kw)
+    kw.update({'ssro_calib_folder':ssro_calib_folder}) #### using this we only look for the ssro calib once in get_pos_neg_data. saves a lot of time
+
+    
+
+    for ii,f in enumerate(fs):    
+        a = mbi.MBIAnalysis(f)
+        print f
+        if not ii:
+            fig, ax = create_plot(f, **kw)
+            f0 = f
+        x, y1, y1_u = get_pos_neg_data(a, adwindata_str='X_', **kw)
+        x2, y2, y2_u = get_pos_neg_data(a, adwindata_str='Y_', **kw)
+        y, y_u = quadratic_addition(y1, y2, y1_u, y2_u)
+        ylabel = 'Bloch vector length'
+
+        ### create a plot
+
+        xlabel = a.g.attrs['sweep_name']
+        x = a.g.attrs['sweep_pts']  # could potentially be commented out?
+        
+
+        ## plot data
+        plot_data(x, y, y_u=y_u,color='b')
+
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    save_and_close_plot(f0)
 
 def average_repump_time(contains = '',do_fit = False, **kw):
     '''
