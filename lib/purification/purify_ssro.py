@@ -257,8 +257,8 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     ### folder choice
     if contains == '':
         contains = '_sweep_number_of_reps'
-    elif len(contains) == 2:
-        contains = '_sweep_number_of_reps' + contains
+    # elif len(contains) == 2:
+    #     contains = '_sweep_number_of_reps' + contains
     elif len(contains) == 1:
         contains = '_sweep_number_of_reps_' + contains
 
@@ -281,6 +281,7 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     
 
     for f in fs:    
+        print f
         a = mbi.MBIAnalysis(f)
 
         if ('_Z' in f and x_only == False) or is_z:
@@ -308,7 +309,7 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
 
         ### fitting if you feel like it
         if do_fit:
-
+            g_A = kw.pop('fit_A', np.amax(y))
             p0, fitfunc, fitfunc_str = common.fit_exp_cos(g_a, g_A, g_x0, g_T, g_n, g_f, g_phi)
 
             if show_guess:
@@ -326,8 +327,8 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
                     plot.plot_fit1d(fit_result, np.linspace(x[0], x[-1], 100), ax=ax, plot_data=False)
         a_list.append(a)
     ## save and close plot. We are done.
-    if do_plot:
-        save_and_close_plot(f)
+        if do_plot:
+            save_and_close_plot(f)
 
     if kw.get('ret_data', False):
         return x, y, y_u
