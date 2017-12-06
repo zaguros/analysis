@@ -22,30 +22,17 @@ temperature_list = []
 absolute_time_list = []
 
 
-new_tsmp = '20170209_214100' ## newer than
-old_tsmp = '20170210_043000' ## older than
+new_tsmp = '20170216_160000' ## newer than
+old_tsmp = '20170216_232000' ## older than
 
-new_tsmp = '20170620_181500' ## newer than
-old_tsmp = '20170620_185900' ## older than
+new_tsmp = '20140404_152200' ## newer than  Hans N=16
+old_tsmp = '20140404_161400' ## older than
 
-new_tsmp = '20170620_191500' ## newer than
-old_tsmp = '20170620_205500' ## older than
+new_tsmp = '20140404_163520' ## newer than  Hans N=32
+old_tsmp = '20140404_163600' ## older than
 
-new_tsmp = '20170621_051100' ## newer than
-old_tsmp = '20170621_183600' ## older than
-
-new_tsmp = '20170308_005600' ## newer than
-old_tsmp = '20170308_011000' ## older than
-
-new_tsmp = '20171031_184000' ## newer than
-old_tsmp = '20171031_184300' ## older than
-
-new_tsmp = '20171114_184900' ## newer than
-old_tsmp = '20171114_190700' ## older than
-
-
-
-search_string = 'DecouplingSequence_111_1'
+search_string = 'N32'
+#search_string = 'DecouplingSequence_111_1'
 while toolbox.latest_data(contains=search_string,
                                         return_timestamp =True,
                                         older_than=old_tsmp,
@@ -70,7 +57,7 @@ print 'time stamp is    ' +str(timestamp)
 offset      = 0.5
 amplitude   = 0.45
 position    = 0
-T2          = 100
+T2          = 5000
 power       = 1.5
 
 ## other settings ##
@@ -127,18 +114,33 @@ a.sweep_pts = cum_sweep_pts #/(2*4.371)
 a.p0    = cum_p0
 a.u_p0  = cum_u_p0
 
-#print cum_u_p0
+print cum_u_p0
 #a.tau_list = cum_tau_list
 
 # a.p0 = np.array(cum_p0[0],cum_p0[5],cum_p0[11],cum_p0[17],cum_p0[23],cum_p0[29])
 # a.sweep_pts = np.array(cum_sweep_pts[0],cum_sweep_pts[5],cum_sweep_pts[11],cum_sweep_pts[17],cum_sweep_pts[23],cum_sweep_pts[29])
 
-ax = a.plot_results_vs_sweepparam(ret='ax',fmt='-o',figsize=(20,8))
+#ax = a.plot_results_vs_sweepparam(ret='ax',fmt='-o',figsize=(20,8))
 
 x = a.sweep_pts.reshape(-1)[:]
 y = a.p0.reshape(-1)[:]
 
+index_list=[]
+# To avoid dips in the analysis
+for jj in range (1,2):
+    index_list=[]
+    for ii in range(1,len(x)-40):
+        #if y[ii+2] > 0.65:
+        for kk in range (ii+1, len(x)-1):
+            if y[kk] > 1.03*y[ii] :
+                index_list.append(ii)
+    x=np.delete(x,[index_list])
+    y=np.delete(y,[index_list])
 
+fig = plt.figure(2,figsize=(10,5))
+ax = fig.add_subplot(111)
+
+ax.plot(x,y,'o')
 
 #x=np.delete(x,[28,29,30,31,32,33,34,50,51,52,53,54])
 #y=np.delete(y,[28,29,30,31,32,33,34,50,51,52,53,54])
@@ -163,7 +165,7 @@ fit_results.append(fit_result)
 #ax.set_xlim(6.0,7.0)
 # ax.set_ylim(0.2,1.03)
 #ax.set_xscale('log')
-# ax.set_xlabel('N')
+ax.set_xlabel('Total evolution time (ms)')
 #plt.axvline(x=52*2.3147, ymin=0, ymax=1, linewidth=0.5)
 #ticks= range(40,80,2)
 #ticks=np.linspace(2.6,4.6,10)
