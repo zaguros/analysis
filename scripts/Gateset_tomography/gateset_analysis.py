@@ -2,7 +2,8 @@ import numpy as np
 import os
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
-import pygsti
+import pygsti;reload(pygsti)
+print 'everything reloaded'
 import pickle
 reload(mbi)
 
@@ -48,7 +49,10 @@ def analysis_gateset(contains = '',timestamp=None,ssro_folder = None,
             repetitions.append(a.reps)
 
     neg_no_correction = np.array(repetitions)-np.array(ssro_results_no_correction)
-    neg_w_correction  = np.array(repetitions)-np.array(ssro_results_w_correction)
+    neg_w_correction  = (1-np.array(ssro_results_w_correction))*np.array(repetitions)
+    ssro_results_w_correction *=np.array(repetitions)
+    neg_w_correction = neg_w_correction.astype(int)
+    ssro_results_w_correction = ssro_results_w_correction.astype(int)
 
     insert_counts_into_dataset(str(folder)+"/MyDataTemplate.txt", str(folder)+"/Dataset_no_RO_correction.txt", ssro_results_no_correction, neg_no_correction)
     insert_counts_into_dataset(str(folder)+"/MyDataTemplate.txt", str(folder)+"/Dataset_w_RO_correction.txt", ssro_results_w_correction, neg_w_correction)
