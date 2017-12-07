@@ -179,11 +179,11 @@ def plot_pos_neg_XY_data(contains = '',do_fit = False, **kw):
     ssro_calib_folder = toolbox.latest_data('SSROCalib',**kw)
     kw.update({'ssro_calib_folder':ssro_calib_folder}) #### using this we only look for the ssro calib once in get_pos_neg_data. saves a lot of time
 
-    
+    list_of_data = []
 
     for ii,f in enumerate(fs):    
         a = mbi.MBIAnalysis(f)
-        print f
+        # print f
         if not ii:
             fig, ax = create_plot(f, **kw)
             f0 = f
@@ -197,13 +197,15 @@ def plot_pos_neg_XY_data(contains = '',do_fit = False, **kw):
         xlabel = a.g.attrs['sweep_name']
         x = a.g.attrs['sweep_pts']  # could potentially be commented out?
         
-
+        a.x = x; a.y = y; a.y_u = y_u
+        list_of_data.append(a)
         ## plot data
         plot_data(x, y, y_u=y_u,color='b')
 
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     save_and_close_plot(f0)
+    return list_of_data
 
 def average_repump_time(contains = '',do_fit = False, **kw):
     '''
@@ -324,9 +326,9 @@ def number_of_repetitions(contains='', do_fit=False, **kw):
     
 
     for f in fs:    
-        print f
+        # print f
         a = mbi.MBIAnalysis(f)
-        print f
+        # print f
         if ('_Z' in f and x_only == False) or is_z:
             x, y, y_u = get_pos_neg_data(a, adwindata_str='Z_', **kw)
             ylabel = 'Z'
