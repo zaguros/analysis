@@ -22,7 +22,7 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
         folder = toolbox.data_from_time(timestamp,folder = base_folder)
     else:
         folder = toolbox.latest_data(contains,folder = base_folder)
-    print folder
+    print 'Current working folder:',folder
     if ssro_folder == None:
         if ssro_tstamp == '':
             ssro_folder = ssro_tstamp
@@ -31,6 +31,8 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
             ssro_folder = toolbox.data_from_time(ssro_tstamp)
         
     fit_results = []
+
+    print 'Measurement type:',measurement_name
 
     for k in range(0,len(measurement_name)):
         a = mbi.MBIAnalysis(folder)
@@ -50,13 +52,11 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
 
         ### fit depending on the number of the frequencies
         if len(frequency) == 1:
-            print exp_power[0]
             p0, fitfunc, fitfunc_str = common.fit_exp_cos(offset[0],
                     amplitude[0], center[0], decay_constant[0], exp_power[0],
                     frequency[0], phase[0])
             if show_guess:
                 ax.plot(np.linspace(x[0],x[-1],201), fitfunc(np.linspace(0,x[-1],201)), lw=2)
-            print 'starting fit.fit1d'
             fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
             fit_result['y_u'] = a.u_p0.reshape(-1)[:]
         elif len(frequency) == 2:
@@ -75,16 +75,15 @@ def exp_sin(contains = '',timestamp=None, measurement_name = ['adwindata'],ssro_
 
         ## plot fit
         if plot_fit == True:
-
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],201), ax=ax, plot_data=False)
+        if len(frequency) > 0:
+            fit_results.append(fit_result)
 
-        fit_results.append(fit_result)
-        print folder
         plt.savefig(os.path.join(folder, 'analyzed_result.pdf'),
         format='pdf')
         plt.savefig(os.path.join(folder, 'analyzed_result.png'),
         format='png')
-
+        print 'Fit Params: ',fit_results[0]['params']
         plt.show()
     return fit_results
 

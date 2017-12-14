@@ -38,18 +38,20 @@ class MBIAnalysis(m2.M2Analysis):
         self.readouts = adwingrp.attrs['nr_of_ROsequences']
         discards = len(adwingrp['ssro_results'].value) % (self.pts*self.readouts)
         self.reps = int(len(adwingrp['ssro_results'].value) / (self.pts*self.readouts))
-
         if discards > 0:
             results = adwingrp['ssro_results'].value.reshape(-1)[:-discards]
         else:
             results = adwingrp['ssro_results'].value
 
         if CR_after_check:
-            CR_after = adwingrp['CR_after'].value
+            if discards > 0:
+                CR_after = adwingrp['CR_after'].value.reshape(-1)[:-discards]
+            else:
+                CR_after = adwingrp['CR_after'].value
             reps_list = np.ones(self.pts)*self.reps
-            num_of_reps = len(CR_after)
+            num_of_reps = len(CR_after-discards)
             CR_failed_count = 0
-
+            
             ### loop over the results of CR check after and eliminate those where ionization was apparent.
             ### there is probably a faster way to do this. np.search?
             for ii,CR in enumerate(CR_after):
@@ -72,6 +74,8 @@ class MBIAnalysis(m2.M2Analysis):
             self.normalized_ssro = self.ssro_results/float(self.reps)
             self.u_normalized_ssro = \
                 (self.normalized_ssro*(1.-self.normalized_ssro)/self.reps)**0.5
+
+
 
     def get_correlations(self, name=''):
         """
@@ -328,7 +332,7 @@ class MBIAnalysis(m2.M2Analysis):
             ax = self.default_ax(fig)
         else:
             ax.set_title(self.timestamp+'\n'+self.measurementstring)
-        print labels
+    
         if labels == None:
             if mode != 'correlations':
                 labels = ['RO #%d' % i for i in range(self.readouts)]
