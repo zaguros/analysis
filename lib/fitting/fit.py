@@ -96,7 +96,8 @@ def fit1d(x, y, fitmethod, *arg, **kw):
     
     # do the fit and process
     p1, cov, info, mesg, success = optimize.leastsq(f, p, full_output=True, maxfev=len(x)*100)
-    if not success or cov == None: # FIXME: find a better solution!!!
+
+    if not success or (cov == None if (not isinstance(cov,(list, tuple, np.ndarray))) else False): # FIXME: find a better solution!!!
         success = False
         if VERBOSE:
             print 'ERROR: Fit did not converge !'
