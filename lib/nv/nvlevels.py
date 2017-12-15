@@ -341,7 +341,6 @@ def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=Tru
         show_p1_transitions = True
 
     E_GS=np.sort(get_GS(**kw)[0])
-
     # print E_GS[0],E_GS[1],E_GS[2]#,E_GS[2]-E_GS[1]
     # print kw.get('B_field',0.)
     E_ES=np.sort(get_ES(**kw)[0])

@@ -9,6 +9,8 @@ output
 .ipynb
 .DS_Store
 .ipynb_checkpoints
+*.npy
+*.npz
 
 notebooks/QEC/NV gen.ipynb
 
