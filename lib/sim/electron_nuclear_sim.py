@@ -531,7 +531,7 @@ def sweep_MW_amp(NV_system,N = 11, amp_range =  np.arange(0.1,2,0.05), tau = 7.5
 	print 'Min sig. ', results[ind], ' at ', amp_range[ind]
 
 
-def MonteCarlo_MWFid(NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 0.995,sigma=0.01):
+def MonteCarlo_MWFid(NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 1.0,sigma=0.01):
 	'''Simulate doing microwave pulses with a certain standard deviation on the pulse amplitude from trial to trial '''
 	
 	rands = np.random.normal(loc = mean,scale=sigma, size=N_rand)
@@ -543,7 +543,7 @@ def MonteCarlo_MWFid(NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 0.995,si
 	
 		infids[i] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,NV_system.nuclear_gate(N ,tau,scheme = 'simple')))
 
-	print "Infidelity is %f \pm %f" % (np.mean(infids), np.std(infids))
+	print "Infidelity is %f \pm %f" % (np.mean(infids), np.std(infids)/np.sqrt(N_rand))
 
 	return infids
 

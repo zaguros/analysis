@@ -5,8 +5,16 @@ from libc.stdlib cimport rand, RAND_MAX
 
 @cython.boundscheck(False)
 
-def monteCarlo(int init_state,np.ndarray[double, ndim=2,negative_indices=False,mode='c'] rateMat,double time_duration,double dt,int repetitions):
+def monteCarlo(np.ndarray[int, ndim=1,negative_indices=False,mode='c'] init_state,np.ndarray[double, ndim=2,negative_indices=False,mode='c'] rateMat,double time_duration,double dt,int repetitions):
     
+    cdef int init_state_per_rep
+    if np.size(init_state) == 1:
+        init_state_per_rep = 0
+    elif np.size(init_state) == repetitions:
+        init_state_per_rep = 1
+    else:
+        print "Incorrect init_state size!"
+
     cdef int num_states = np.shape(rateMat)[0]
     cdef int total_points = np.ceil(time_duration/np.float(dt) + 1).astype(int)
     cdef int current_state
@@ -31,11 +39,16 @@ def monteCarlo(int init_state,np.ndarray[double, ndim=2,negative_indices=False,m
         print 'dt should be no bigger than ', 0.8/np.max(probs)
 
     for jj in range(repetitions):
-        current_state = init_state
-        prob = probs[init_state]
+        if init_state_per_rep == 1:
+            current_state = init_state[jj]
+        else:
+            current_state = init_state[0]
+
+        prob = probs[current_state]
         for x in range(num_states): # Stupid way to slice a matrix.
-            cumBranching[x] = branchingMat[init_state,x]
-        
+            cumBranching[x] = branchingMat[current_state,x]
+
+                
         for ii in range(total_points):
             
             if prob == -1.0: # Pretty boring if never going to decay from this state
@@ -58,7 +71,7 @@ def monteCarlo(int init_state,np.ndarray[double, ndim=2,negative_indices=False,m
             for ind in range(num_states):
                 pops_expanded[jj,ii,ind] = pops[jj,ii]==ind
 
-    return t_array,pops_expanded
+    return t_array,pops_expanded,pops
 
 def monteCarlo_old(int init_state,np.ndarray[double, ndim=2,negative_indices=False,mode='c'] rateMat,double time_duration,double dt,int repetitions):
     
