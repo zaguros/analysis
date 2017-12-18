@@ -4,6 +4,4 @@ aI1
 aI2
 aI4
 aI8
-aI16
-aI32
 a.
