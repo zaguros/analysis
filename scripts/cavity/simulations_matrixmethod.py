@@ -127,7 +127,7 @@ class Cavity():
         else:
             if n1 == n_air and n2 == n_diamond:
                 # print 'air-diamond interface'
-                sigma=0.4e-9
+                sigma=1.0e-9
                 # print sigma
             if abs(n1) == n_diamond and abs(n2) == self.n_1:
                 # print 'diamond-mirror interface'
@@ -312,7 +312,7 @@ class Cavity():
         
         if plot_r:
             fig,ax = plt.subplots()
-            ax.plot(lambda_is*1.e6,r_is)
+            ax.plot(lambda_is*1.e9,r_is)
             plt.show()
             plt.close()
         
@@ -336,7 +336,7 @@ class Cavity():
         if plot_r:
             print 'air gap',self.t_a*1.e6, ' um; r = ', self.r
             fig,ax = plt.subplots()
-            ax.plot(scipy.constants.c/lambda_is*1.e-12,r_iis)
+            ax.plot(lambda_is*1.e9,r_iis)
             ax.set_xlabel('frequency (THz)')
             plt.show()
             plt.close()
@@ -477,6 +477,7 @@ class Cavity():
         arg_zs_in_cavity = np.where((self.ns_vs_z<n_0+0.001)&(self.ns_vs_z>n_0-0.001))
         zs_in_cavity = self.zs[arg_zs_in_cavity]
         arg_shallow_zs_in_cavity = arg_zs_in_cavity[0][-int(self.lambda_i/2/n_0/dz):]
+
         z0_i = arg_shallow_zs_in_cavity[0] + np.argmax(self.Etot_vs_z[arg_shallow_zs_in_cavity])
         z0 = self.zs[z0_i]
         E_z0 = self.Etot_vs_z[z0_i]
@@ -650,7 +651,25 @@ def calculate_Fp_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,finesses=np.linspace
     ax2.spines['right'].set_color('orange')
     ax2.spines['left'].set_color('magenta')
     ax2.set_ylabel('% into ZPL')
-    ax2.set_xlim((min(dnus*1.e-9),6))
+    ax2.set_xlim((min(dnus*1.e-9),10))
+
+    plt.show()
+
+
+    fig,ax = plt.subplots()
+    ax.plot(dnus*1.e-9,taus,'magenta',label='Fp')
+    ax.set_ylabel('tau (ns)',fontsize=14)
+    ax.set_xlabel('linewidth (GHz)')
+    ax.yaxis.label.set_color('magenta')
+    ax.tick_params(axis='y', colors='magenta')
+    ax2 = ax.twinx()
+    ax2.plot(dnus*1.e-9,intoZPLs,'orange',label='%% into ZPL')
+    ax2.yaxis.label.set_color('orange')
+    ax2.tick_params(axis='y', colors='orange')
+    ax2.spines['right'].set_color('orange')
+    ax2.spines['left'].set_color('magenta')
+    ax2.set_ylabel('% into ZPL')
+    ax2.set_xlim((min(dnus*1.e-9),10))
 
     plt.show()
     return dnus,Fps,intoZPLs
@@ -685,9 +704,8 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
 
     """
     s = Cavity(t_d, t_a_g, R,dnu=dnu,lambda_i=lambda_ZPL)
-    s.find_res_condition(plot_r=False)
+    s.find_res_condition(plot_r=True)
     t_a0 = s.t_a
-
 
     s.calculate_w0()
     s.analyse_cavity(plot_Evac=False)    
@@ -703,10 +721,9 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
     Purcells=np.zeros(len(dLs))
 
     for i,dL in enumerate(dLs):
-        cav_lengths = np.linspace(s.optical_length-4*dL,s.optical_length+4*dL,nr_pts)
-        
-        si = Cavity(t_d, t_a0+dL, R,dnu=dnu)
+        # cav_lengths = np.linspace(s.optical_length-4*dL,s.optical_length+4*dL,nr_pts)
 
+        si = Cavity(t_d, t_a0+dL, R,dnu=dnu)#, res_wl_search_range=0.1e-10)
         si.find_res_wavelength(plot_r=False)
         lambda_ress[i] = si.lambda_i
 
@@ -717,12 +734,13 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
             si.analyse_cavity()
             Purcells[i] = si.calculate_Purcell()
             intoZPLonR = si.calculate_into_ZPL()
-
         into_ZPL = intoZPLonR  *spectral_overlap(lambda_ZPL,si.lambda_i,si.dnu)
         into_ZPLs[i] = into_ZPL
+        # print i, 'out of', len(dLs)
 
     avg_p_ZPL = sim_vib.avg_p_ZPL_to_zero(into_ZPLs,p_cav_length)
 
+    # print lambda_ress
     if show_plots:
         fig,ax = plt.subplots()
         ax.plot(dLs, p_cav_length/np.sum(p_cav_length))
@@ -754,21 +772,42 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
 
     return into_ZPLs,Purcells,lambda_ress,avg_p_ZPL
 
-def calc_avg_ZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dLs=np.linspace(0.05,1.,20)*1.e-9,dnu=3.5e9,lambda_ZPL=637.e-9,dLmax=4.e-9,nr_pts=3):
+def calc_avg_ZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dLs=np.linspace(0.05,1.,20)*1.e-9,dnu=3.5e9,lambda_ZPL=637.e-9,dLmax=1.e-9,nr_pts=31):
     """
     calculate average emission into ZPL into cavity vs FWHM of vibrations
     """
     avg_ZPLs = np.zeros(len(vib_dLs))
     for i,vib_dL in enumerate(vib_dLs):
         print i, 'out of ', len(vib_dLs), 'done'
-        print vib_dL
+        # print vib_dL
         a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True)
-        print avg_ZPL
+        # print avg_ZPL
         avg_ZPLs[i]=avg_ZPL
 
     fig,ax = plt.subplots()
     ax.plot(vib_dLs,avg_ZPLs)
     ax.set_xlabel('FWHM vibrations (nm)')
+    ax.set_ylabel('avg emission into ZPL')
+    plt.show()
+    plt.close()
+
+    return avg_ZPLs
+
+def calc_avg_ZPL_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,dnus=np.linspace(1,10,10)*1.e9,vib_dL=0.4,lambda_ZPL=637.e-9,dLmax=1.e-9,nr_pts=51):
+    """
+    calculate average emission into ZPL into cavity vs FWHM of vibrations
+    """
+    avg_ZPLs = np.zeros(len(dnus))
+    for i,dnu in enumerate(dnus):
+        print i, 'out of ', len(dnus), 'done'
+        # print vib_dL
+        a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True)
+        # print avg_ZPL
+        avg_ZPLs[i]=avg_ZPL
+
+    fig,ax = plt.subplots()
+    ax.plot(dnus*1.e-9,avg_ZPLs)
+    ax.set_xlabel('cavity linewidth (GHz)')
     ax.set_ylabel('avg emission into ZPL')
     plt.show()
     plt.close()
