@@ -25,8 +25,6 @@ def Generate_NV(Carb_Conc=0.011,N_NV=1,N=25,do_sphere = True):
     a = np.array([0,0,0])
     b =a0/4*np.array([1,1,1])
     b = Rx.dot(Rz).dot(b)
-
-    print b
     # Basisvectors of Bravais lattice
     i =a0/2*np.array([0,1,1])
     i = Rx.dot(Rz).dot(i)
@@ -40,7 +38,7 @@ def Generate_NV(Carb_Conc=0.011,N_NV=1,N=25,do_sphere = True):
     NVPos = round(N/2) *i +round(N/2)*j+round(N/2)*k
 
     prefactor = mu0*gam_el*gam_n/(4*pi)*hbar**2 /hbar/(2*pi) #Last /hbar/2pi is to convert from Joule to Hz
-    prefactor_cc = mu0*(gam_n**2)/(4*pi)*hbar**2 /hbar/(2*pi)
+
     #Initialise
     L_size = 2*(N)**3-2 # minus 2 for N and V positions
     Ap = np.zeros(L_size) #parallel
@@ -99,15 +97,10 @@ def Generate_NV(Carb_Conc=0.011,N_NV=1,N=25,do_sphere = True):
         z_NV = [ z[u] for u in Sel]
         
         # NV_list.append(A_NV[0]) #index 0 is to get rid of outher brackets in A_NV0
-
-
-    print Ap[4]
-    print Ao[4]
-
-    print 'dd_zz interaction is   '  +str(prefactor_cc*2/(2*0.43*a0)**3) +  '  Hz'
-    print 'Ap first c in the cluster  '  +str(prefactor*2/(1.e-9)**3) +  '  Hz'
-    print 'Ap second c in the cluster  '  +str(prefactor*2/(1.e-9+0.43*a0)**3) +  '  Hz'
     return Ap_NV[0], Ao_NV[0] , r_NV[0], x_NV[0], y_NV[0], z_NV[0]
+
+
+
 
 
 

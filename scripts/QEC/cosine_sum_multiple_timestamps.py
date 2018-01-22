@@ -13,6 +13,8 @@ reload(mbi)
 
 
 def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'],ssro_calib_folder=None, ssro_calib_timestamp =None,
+        new_tsmp = '20170612_230600',old_tsmp = '20170614_071700',two_cos=True,title='Cluster',
+        x_ticks=np.arange(0,100,5), y_ticks=np.arange(0.2,0.8,0.1),color='b',
         c=1,t=1,frequency = [1,1], offset =0.5, amplitude =[ 0.5,0.5],  phase =[0,0], 
         fixed = [], 
         plot_fit = False, do_print = False, show_guess = True,xlim=None):
@@ -30,7 +32,7 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
     plot_fit    = True
     show_guess  = False
     exponent=2
-    two_cos=False
+    #two_cos=True
     fit_results = []
 
     cum_pts = 0
@@ -41,20 +43,29 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
     cum_u_p0            = np.empty(0)
     cum_tau_list            = np.empty(0)
 
-    new_tsmp = '20170611_165140' ## newer than
-    old_tsmp = '20170611_235700' ## older than
+    # new_tsmp = '20170611_165140' ## newer than
+    # old_tsmp = '20170611_235700' ## older than
 
     # new_tsmp = '20170612_005040' ## newer than
     # old_tsmp = '20170612_015800' ## older than
 
-    new_tsmp = '20170612_230600' ## newer than
-    old_tsmp = '20170614_071700' ## older than
+    # new_tsmp = '20170612_230600' ## newer than
+    # old_tsmp = '20170614_071700' ## older than
 
     # new_tsmp = '20170616_190600' ## newer than
     # old_tsmp = '20170617_053700' ## older than
 
     # new_tsmp = '20170621_183900' ## newer than
     # old_tsmp = '20170621_185800' ## older than
+
+    # new_tsmp = '20170719_161700' ## newer than
+    # old_tsmp = '20170719_165500' ## older than
+
+    # new_tsmp = '20170720_171400' ## newer than
+    # old_tsmp = '20170720_181700' ## older than
+
+    # new_tsmp = '20170720_182900' ## newer than
+    # old_tsmp = '20170720_195700' ## older than
 
     search_string = 'Carbon'
     while toolbox.latest_data(contains=search_string,
@@ -79,7 +90,7 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
             ssro_calib_folder = toolbox.latest_data('SSRO')
         else:
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
-            ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_Hans_sil1'
+            ssro_calib_folder = toolbox.datadir + '/'+ssro_dstmp+'/'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'
     print ssro_calib_folder
     
  
@@ -120,13 +131,13 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
     x = a.sweep_pts.reshape(-1)[:]
     y = a.p0.reshape(-1)[:]
         
-    fig = plt.figure(1,figsize=(8,6))
+    fig = plt.figure(1,figsize=(4,1.5))
     ax2 = fig.add_subplot(111)
-    ax2.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color='b',lw=2)
+    ax2.errorbar(x.flatten(),y.flatten(),yerr=e,fmt='o',label='',color=color,lw=1,markersize=3)
     ax2.set_xlabel('Free evolution time (ms)')
     ax2.set_ylabel('State Fidelity')
 
- 
+
 
 
     fit_result = [None]
@@ -143,8 +154,8 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
 
     fit_result = fit.fit1d(x,y, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True,fixed=fixed)
     if plot_fit == True:
-        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],8001), ax=ax2, color='g',
-                plot_data=False,print_info = False)
+        plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],8001), ax=ax2, color=color,
+                plot_data=False,print_info = False,lw=1.5)
 
 
 
@@ -152,16 +163,17 @@ def CosineSum_MBI_data(folder=None,timestamp=[], measurement_name = ['adwindata'
 
 
     ## plot data and fit as function of total time
-    ax2.set_xlim(0,40)
-    ax2.set_ylim(0.38,0.74)
+    plt.xticks(x_ticks)
+    # plt.yticks(np.arange(min(y),(max(y)),0.1))
+    plt.yticks(y_ticks)
+    ax2.set_xlim(0,xlim)
+    #ax2.set_ylim(0,1)
 
     #ax2.set_xlabel('Free evolution time (ms)')
     #ax2.set_ylabel('State Fidelity')
     
-    plt.savefig(os.path.join(folder, 'CosineSumFit.pdf'),
-    format='pdf')
-    plt.savefig(os.path.join(folder, 'CosineSumFit.png'),
-    format='png')
-    return fitfunc,ax2,a,fit_result
+    folder='C:\Users\TUD277931\Dropbox\TaminiauLab\Projects\Coherence in multi-qubit systems\Paper\Figures\Fig 3'
+    plt.savefig(os.path.join(folder, title + '.pdf'),
+    format='pdf',bbox_inches='tight',pad_inches=0.2,transparent=True)
 
     # return fit_result

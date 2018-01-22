@@ -494,10 +494,10 @@ def ssrocalib(contains = '',folder='', plot = True, plot_photon_ms0 = True,ret=F
     #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity(plot,plot_photon_ms0)
-    a.finish()
+    
     if ret:
         return a
-
+    a.finish()
 
 def ssrocalib_MWInit(folder='', contains = '',plot = True, plot_photon_ms0 = True,ret = False):
     if folder=='':
@@ -517,7 +517,9 @@ def ssrocalib_MWInit(folder='', contains = '',plot = True, plot_photon_ms0 = Tru
     #f = self.analysis_h5data()
     plt.close('all')
     a.mean_fidelity_MWInit(plot,plot_photon_ms0)
-    a.finish()
+
+    if not ret:
+        a.finish()
     if ret:
         return a
     print 'Job\'s done!'

@@ -160,7 +160,7 @@ class laserscan_analysis(cga.cavity_analysis):
             if ax==None:
                 fig,ax = plt.subplots(figsize=(10,4))
             plot.plot_fit1d(fit_result, np.linspace(x[0],x[-1],len(x)*10),
-                ax=ax,label=label,show_guess=False, plot_data=False,print_info=False)
+                ax=ax,label=label,show_guess=False, plot_data=True,print_info=False)
             ax.set_title('FWHM = %.1f +- %.1f GHz %s'%(FWHM,u_FWHM,plot_title))
             if save_plot:
                 fig = ax.get_figure()

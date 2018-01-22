@@ -16,7 +16,7 @@ reload(plot)
 timestamp =None#'20160112_165427' #' #'114103_PulsarD' #YYYYmmddHHMMSS
 
 guess_offset = 1
-guess_x0 = 4.035#1.7 #central frequency
+# guess_x0 = 4.035#1.7 #central frequency
 #guess_splitB = 30.
 guess_splitN = 0.002191
 guess_splitC = 0.8e-3 
@@ -34,6 +34,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
     a.get_electron_ROC(ssro_calib_folder=ssro_calib_folder)
 
     x = a.sweep_pts # convert to MHz
+    guess_x0 = x[int(len(x)/2.)]
     y = a.p0.reshape(-1)[:]
     a.plot_result_vs_sweepparam(ret=None, name='ssro', ax=ax)
 
@@ -44,7 +45,7 @@ def analyze_dark_esr(folder, ax=None, **kw):
             guess_amplitude, guess_width, guess_ctr,
              (2, guess_splitC),
             # (2, guess_splitB),
-            # (3, guess_splitN),
+            (3, guess_splitN),
             do_print=True, ret=True, fixed=[]) # fixed N splitting.
     
     plot.plot_fit1d(fit_result, np.linspace(min(x), max(x), 1000), ax=ax, plot_data=False, **kw)
