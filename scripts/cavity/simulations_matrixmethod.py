@@ -657,7 +657,8 @@ def dielmirror_reflectivity(n_1,n_2,M,lambda_design=637.e-9,na=n_air,nb=n_air,la
     # initiliaze the recursion using the right-most interface (E'-_Mp1 = 0)
     Gamma_Mp1 = np.ones(len(lambdas))*rho_Mp1
 
-    Gamma = Gamma_Mp1
+    Gamma = Gamma_Mp1  
+
     for n in np.arange(M):
         Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, L_1,rho_odd)
         Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_2, L_2,rho_even)
@@ -667,11 +668,57 @@ def dielmirror_reflectivity(n_1,n_2,M,lambda_design=637.e-9,na=n_air,nb=n_air,la
     Refl = np.conjugate(Gamma)*Gamma
     return Gamma,Refl
 
+
+def dielmirror_narrowsb_reflectivity(n_1,n_2,M,lambda_design=637.e-9,na=n_air,nb=n_air,lambdas = np.array([637.e-9])):
+    """
+    calculates dielectric mirror reflectivity optimised for wavelength 'lambda', using recursive application of reflection coefficient.
+    Inputs: 
+    n_1         refractive index start & end layer
+    n_2         refractive index alternating layer
+    M           number of alternating layers - total # layers is 2M+1+4 
+    lambda_design   wavelength for which mirror is designed (layers are lambda/4/n thick)
+    na          refractive index outside layer (default: n_air)    
+    nb          refractive index outside layer (default: n_air)
+    lambdas     array of wavelenths at which to evaluate the reflectivity
+    """
+
+    rho_Mp1 = (n_1 - nb)/(n_1+nb)
+    rho_1 = (na - n_1) /(na+n_1)
+    rho_odd = (n_2 - n_1)/(n_2+n_1)
+    rho_even = (n_1 - n_2)/(n_2+n_1)
+
+    L_1 = lambda_design / (4*n_1)
+    L_2 = lambda_design / (4*n_2)
+
+    ks_1 = 2*math.pi*n_1/lambdas
+    ks_2 = 2*math.pi*n_2/lambdas
+
+    # initiliaze the recursion using the right-most interface (E'-_Mp1 = 0)
+    Gamma_Mp1 = np.ones(len(lambdas))*rho_Mp1
+
+    Gamma = Gamma_Mp1  
+
+    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 1.27335*L_1,rho_odd)
+    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 2.94525*L_2,rho_even)
+    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 0.94808*L_1,rho_odd)
+    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 2.99742*L_1,rho_even)
+
+
+    for n in np.arange(M):
+        Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, L_1,rho_odd)
+        Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_2, 3*L_2,rho_even)
+
+    # and the final layer, back to material na
+    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1,L_1, rho_1)
+    Refl = np.conjugate(Gamma)*Gamma
+    return Gamma,Refl
+
+
 def calculate_transfer_matrices_mirrors(wavelength, lambda_design=637e-9,n_air=n_air,n_H=2.15,n_L=1.46,na=n_air,nb=n_air,number_of_layers=10):
     k_H = 2.*math.pi*n_H/wavelength
     k_L = 2.*math.pi*n_L/wavelength
     t_H = lambda_design/(4*n_H)
-    t_L = lambda_design/(4*n_L)
+    t_L = 3*lambda_design/(4*n_L)
     v_H =np.exp(1j*k_H*t_H)
 
 
