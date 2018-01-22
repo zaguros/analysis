@@ -172,8 +172,8 @@ def BarPlotTomoContrast(timestamps = [None,None], tag = '', measurement_name = [
 		        height = rect.get_height()
 		        plt.text(rect.get_x()+rect.get_width()/2., 1.02*height, str(round(y[ii],2)) +'('+ str(int(round(y_err[ii]*100))) +')',
 		            ha='center', va='bottom')
-		# autolabel(rects)
-		fig.set_size_inches(6, 4)
+		autolabel(rects)
+		# fig.set_size_inches(6, 4)
 
 	if save and ax != None:
 		try:

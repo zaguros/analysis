@@ -1017,8 +1017,39 @@ def fit_clipping_radius(g_ROC,g_rclip,g_Transmission,g_Loss, *arg):
         return 2*np.pi/(Transmission()+Loss())+np.exp(-2*rclip()**2/(wavelength**2/np.pi**2*wavelength*x/2*(ROC()-wavelength*x/2)))
     return p0, fitfunc, fitfunc_str
 
+def fit_clipping_losses_hybrid(g_d, g_ROC,g_Dia,g_L_init, *arg):
+    """
+    fitting the clipping loss as a function of length. 
+    use the analytic solution for the beam diameter on the mirror (see mathematica notebook gaussian_beams_in_hybrid_cavity)
+    """
+    fitfunc_str = '2pi/(Lclip+Linit); Lclip = e^(-2(D/2)^2/wm^2; wm^2 = lambda/(nd*pi) * nd*(x + d/nd^2) *sqrt(ROC/(x+d/nd^2) -1 ) '
+
+    wavelength = 637e-9
+    nd = 2.41
+
+    d = fit.Parameter(g_d,'d')
+    ROC = fit.Parameter(g_ROC, 'ROC')
+    Dia = fit.Parameter(g_Dia, 'Dia')
+    L_init = fit.Parameter(g_L_init, 'L_init')
+
+    p0 = [d,ROC,Dia,L_init]
+
+    def fitfunc(x):
+        z0a = ( x + d()/nd**2 ) * np.sqrt( ( ROC()/(x + (d()/nd**2) ) ) -1 )  
+        delta_za = d()*(nd**2-1)/nd**2
+        w0asquared = wavelength/(np.pi) * z0a
+        wmsquared = w0asquared* (1 + ( (x + d() - delta_za ) / z0a )**2  )
+        #wavelength/(nd*np.pi) * ( x + d()/nd**2 )) * np.sqrt( ROC()/(x + d()/nd**2 ) -1 )  
+        Lclip = np.exp(-2*((Dia()/2)**2/wmsquared)) 
+        return 2*np.pi/(Lclip+L_init())
+        # return 2*np.pi/(np.exp(-2*(Dia()/2)**2/(wavelength/(nd*np.pi) * (nd*( x + d()/nd**2 )) * np.sqrt( ROC()/(x + d()/nd**2 ) -1 )  ))+L_init())
+
+    return p0, fitfunc, fitfunc_str
+
+
+
 def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
-    fitfunc_str = 'g_A*(1-(1+a)*exp(-|x-x0|/tau1)+a*exp(-|x-x0|/tau2))'
+    fitfunc_str = 'scale()*(1-(2*np.pi*Rabifreq()/2) * (1 - np.cos(2*np.pi*Rabifreq()*x)))'
 
     x0 = fit.Parameter(g_x0,'x0')
     A = fit.Parameter(g_A,'A')
@@ -1033,3 +1064,34 @@ def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
 
     return p0, fitfunc, fitfunc_str
 
+def fit_Rabi(g_f, g_A, *arg):
+    fitfunc_str = 'A * cos(2pi * (f*x + phi/360) ) + a'
+
+    Rabifreq = fit.Parameter(g_f, 'f')
+    scale = fit.Parameter(g_A, 'A')
+
+    p0 = [Rabifreq, scale] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+
+    def fitfunc(x):
+        return 1 - 0.5*(1 - scale()*np.cos(2*np.pi*Rabifreq()*x))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_NMR_spectrum(g_f, g_A, g_x0, pulse_t, *arg):
+    fitfunc_str = '((Rabifreq)**2/2*sqrt(Rabifreq**2+x**2)) * (1-scale*cos(sqrt((2*pi*Rabifreq)**2 + (2*pi*x)**2)*pulse_t'
+
+    Rabifreq = fit.Parameter(g_f, 'f')
+    scale = fit.Parameter(g_A, 'A')
+    x0 = fit.Parameter(g_x0, 'x0')
+    pulse_t = pulse_t
+
+    p0 = [Rabifreq, scale, x0] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+
+    def fitfunc(x):
+        prefactor = ((Rabifreq()**2)/(2*np.sqrt((Rabifreq()**2)+((x-x0())**2))))
+        cosine = (1-scale()*np.cos(np.sqrt(((2*np.pi*Rabifreq())**2)+(2*np.pi*(x-x0()))**2)*pulse_t))
+        return prefactor*cosine
+
+    return p0, fitfunc, fitfunc_str

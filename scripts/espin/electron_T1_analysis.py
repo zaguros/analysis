@@ -106,12 +106,32 @@ def get_T1_data(folder):
     a.get_sweep_pts()
     a.get_readout_results('ssro')
     a.get_electron_ROC()
+    #a.get_cr_results('ssro')
+    #a.plot_cr_vs_sweep()
     x = a.sweep_pts
     y = a.p0
+    #y=a.normalized_ssro
+    #print y
     y_err = a.u_p0
+    #y_err=a.u_normalized_ssro
     #ax = a.plot_result_vs_sweepparam(ret='ax')
     return x,y,y_err
 
+def get_T1_data_uncorrected(folder):
+    a = sequence.SequenceAnalysis(folder)
+    a.get_sweep_pts()
+    a.get_readout_results('ssro')
+    #a.get_electron_ROC()
+    #a.get_cr_results('ssro')
+    #a.plot_cr_vs_sweep()
+    x = a.sweep_pts
+    #y = a.p0
+    y=a.normalized_ssro
+    print y
+    #y_err = a.u_p0
+    y_err=a.u_normalized_ssro
+    #ax = a.plot_result_vs_sweepparam(ret='ax')
+    return x,y,y_err
 
 
 
@@ -130,7 +150,7 @@ def electron_T1_mul(older_than='20161110_180000',newer_than='20161110_141200',mo
     y_var_tot=[]
 
     for i in range(len(Folder_list)):
-        print Folder_list[len(Folder_list)-i-1]
+        #print Folder_list[len(Folder_list)-i-1]
         Folder = Folder_list[len(Folder_list)-i-1]
         x,y,y_var = get_T1_data(Folder)
         #print y
@@ -169,9 +189,9 @@ def electron_T1_mul(older_than='20161110_180000',newer_than='20161110_141200',mo
     #ax_tot=np.array(ax_tot)
 
 
-    print x_tot
-    print y_tot
-    print y_var_tot
+    #print x_tot
+    #print y_tot
+    #print y_var_tot
 
     p0, fitfunc, fitfunc_str = common.fit_exp_decay_with_offset(offset, Amplitude, T1)
     # fit_result = fit.fit1d(x_tot,y_tot, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True)
@@ -233,7 +253,7 @@ def electron_T1_mul_1(older_than='20161111_091500',newer_than='20161110_224400',
     y_var_tot=np.zeros(3)
 
     for i in range(len(Folder_list)):
-        print Folder_list[len(Folder_list)-i-1]
+        #print Folder_list[len(Folder_list)-i-1]
         Folder = Folder_list[len(Folder_list)-i-1]
         x,y,y_var = get_T1_data(Folder)
         y_tot+=y
@@ -290,9 +310,9 @@ def electron_T1_mul_2(older_than='20161111_091500',newer_than='20161110_224400',
         x,y,y_var = get_T1_data(Folder)
         y_tot+=y
         y_var_tot+=y_var**(2.0)
-        print x
-        print y
-        print y_var
+        #print x
+        #print y
+        #print y_var
         
 
     print 'len(Folder_list) is' + str(len(Folder_list))
@@ -300,9 +320,9 @@ def electron_T1_mul_2(older_than='20161111_091500',newer_than='20161110_224400',
     y_tot=y_tot/len(Folder_list)
     y_var_tot=y_var_tot**(1/2.0)/len(Folder_list)
 
-    print 'x_tot is  ' +str(x_tot)
-    print 'y_tot is  ' +str(y_tot)
-    print 'error_tot is  ' +str(y_var_tot)
+    #print 'x_tot is  ' +str(x_tot)
+    #print 'y_tot is  ' +str(y_tot)
+    #print 'error_tot is  ' +str(y_var_tot)
 
 
 
@@ -327,7 +347,7 @@ def electron_T1_mul_2(older_than='20161111_091500',newer_than='20161110_224400',
 
 
     return x_tot[1],y_tot[1],y_var_tot[1]
-
+    #return x_tot,y_tot,y_var_tot
 
 
 def electron_T1_mul_3(older_than='20161111_091500',newer_than='20161110_224400', Amplitude=1, offset=1, T1=1e9, do_print = False,contains='T1'):
@@ -343,9 +363,9 @@ def electron_T1_mul_3(older_than='20161111_091500',newer_than='20161110_224400',
         x,y,y_var = get_T1_data(Folder)
         y_tot+=y
         y_var_tot+=y_var**(2.0)
-        print x
-        print y
-        print y_var
+        #print x
+        #print y
+        #print y_var
         
 
     print 'len(Folder_list) is' + str(len(Folder_list))
@@ -353,9 +373,38 @@ def electron_T1_mul_3(older_than='20161111_091500',newer_than='20161110_224400',
     y_tot=y_tot/len(Folder_list)
     y_var_tot=y_var_tot**(1/2.0)/len(Folder_list)
 
-    print 'x_tot is  ' +str(x_tot)
-    print 'y_tot is  ' +str(y_tot)
-    print 'error_tot is  ' +str(y_var_tot)
+    #print 'x_tot is  ' +str(x_tot)
+    #print 'y_tot is  ' +str(y_tot)
+    #print 'error_tot is  ' +str(y_var_tot)
+
+    return x_tot[2],y_tot[2],y_var_tot[2]
+    
+def electron_T1_mul_3_uncorrected(older_than='20161111_091500',newer_than='20161110_224400', Amplitude=1, offset=1, T1=1e9, do_print = False,contains='T1'):
+
+    Folder_list = toolbox.latest_data(contains=contains,older_than=older_than,newer_than=newer_than,return_all=True)
+    x_tot=np.zeros(3)
+    y_tot=np.zeros(3)
+    y_var_tot=np.zeros(3)
+
+    for i in range(len(Folder_list)):
+        print Folder_list[len(Folder_list)-i-1]
+        Folder = Folder_list[len(Folder_list)-i-1]
+        x,y,y_var = get_T1_data_uncorrected(Folder)
+        y_tot+=y
+        y_var_tot+=y_var**(2.0)
+        #print x
+        #print y
+        #print y_var
+        
+
+    print 'len(Folder_list) is' + str(len(Folder_list))
+    x_tot=x
+    y_tot=y_tot/len(Folder_list)
+    y_var_tot=y_var_tot**(1/2.0)/len(Folder_list)
+
+    #print 'x_tot is  ' +str(x_tot)
+    #print 'y_tot is  ' +str(y_tot)
+    #print 'error_tot is  ' +str(y_var_tot)
 
 
 
@@ -380,7 +429,7 @@ def electron_T1_mul_3(older_than='20161111_091500',newer_than='20161110_224400',
     # plt.savefig(os.path.join(folder, 'analyzed_result.png'),
     # format='png')
 
-
+    #return x_tot,y_tot,y_var_tot
     return x_tot[2],y_tot[2],y_var_tot[2]
 
 
@@ -401,7 +450,7 @@ def electron_T1_ms_1(older_than='20161117_160000',newer_than='20161117_131000',m
     y_var_tot=[]
 
     for i in range(len(Folder_list)):
-        print Folder_list[len(Folder_list)-i-1]
+        #print Folder_list[len(Folder_list)-i-1]
         Folder = Folder_list[len(Folder_list)-i-1]
         x,y,y_var = get_T1_data(Folder)
         #print y
@@ -457,9 +506,9 @@ def electron_T1_ms_1(older_than='20161117_160000',newer_than='20161117_131000',m
     #ax_tot=np.array(ax_tot)
 
 
-    print x_tot
-    print y_tot
-    print y_var_tot
+    #print x_tot
+    #print y_tot
+    #print y_var_tot
 
     p0, fitfunc, fitfunc_str = common.fit_exp_decay_with_offset(offset, Amplitude, T1)
     # fit_result = fit.fit1d(x_tot,y_tot, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True)
@@ -578,9 +627,9 @@ def electron_T1_msp1(older_than='20161121_190000',newer_than='20161121_171000',m
     #ax_tot=np.array(ax_tot)
 
 
-    print x_tot
-    print y_tot
-    print y_var_tot
+    # print x_tot
+    # print y_tot
+    # print y_var_tot
 
     p0, fitfunc, fitfunc_str = common.fit_exp_decay_with_offset(offset, Amplitude, T1)
     # fit_result = fit.fit1d(x_tot,y_tot, None, p0=p0, fitfunc=fitfunc, do_print=do_print, ret=True)
@@ -640,9 +689,9 @@ def plot_summation(Amplitude=1, offset=0.333, T1=1000, do_print = True):
     x_tot2,y_tot2,y_var_tot2= electron_T1_ms_1()
     x_tot3,y_tot3,y_var_tot3= electron_T1_msp1()
 
-    print len(x_tot1)
-    print len(x_tot2)
-    print len(x_tot3)
+    # print len(x_tot1)
+    # print len(x_tot2)
+    # print len(x_tot3)
 
     x_tot= (x_tot1+x_tot2+x_tot3)/3.0
     y_tot= (y_tot1+y_tot2+y_tot3)/3.0
@@ -679,7 +728,7 @@ def plot_summation(Amplitude=1, offset=0.333, T1=1000, do_print = True):
 
     # print 'data saved in  ' + str(Folder)
 
-
+    return x_tot1,y_tot1,y_var_tot1
 
 
 
@@ -706,9 +755,9 @@ def electron_T1_mul_5min(older_than='20161111_091500',newer_than='20161110_22440
         x,y,y_var = get_T1_data(Folder)
         y_tot+=y
         y_var_tot+=y_var**(2.0)
-        print x
-        print y
-        print y_var
+        # print x
+        # print y
+        # print y_var
         
 
     print 'len(Folder_list) is' + str(len(Folder_list))
