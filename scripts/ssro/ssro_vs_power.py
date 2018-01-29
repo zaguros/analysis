@@ -12,7 +12,7 @@ from analysis.lib.m2.ssro import ssro
 
 
 folder = None
-timestamp =  None
+timestamp =  '20160620164533'
 
 if folder == None:
     if timestamp != None:
@@ -25,7 +25,7 @@ a = ssro.SSROAnalysis(folder)
 pwrs = []
 taus = []
 u_taus = []
-
+print folder
 for g in a.g.items():    
     gn = g[0]
     if 'instrument_settings' in gn:
@@ -49,6 +49,7 @@ for g in a.g.items():
     res = fit.fit1d(t,c, common.fit_exp_decay_with_offset, 0, c[0], 10, 
             ret=True, do_print=True, fixed=[])
     if res != False:
+        print 'aaa'
         plot.plot_fit1d(res, t, ax=ax, plot_data=False)
         pwrs.append(pwr)
         taus.append(res['params_dict']['tau'])
@@ -60,6 +61,7 @@ for g in a.g.items():
     ax.set_ylabel('cts (Hz)')
     ax.set_title(a.default_plot_title + ', ' + gn)
     fig.savefig(os.path.join(folder, 'readout_relaxation_P=%dnW' % pwr))
+    plt.show()
 
 plt.close('all')
 a.finish()
