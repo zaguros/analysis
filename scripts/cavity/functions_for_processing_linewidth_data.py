@@ -76,6 +76,7 @@ def get_avg_values_from_json(V,Lnr,day_dir,tag=''):
     #string_name = '%sL%d_V%sp%s'%(tag,Lnr,V_str[0],V_str[2:])
 #     print string_name
     datapath = os.path.join(day_dir,string_name)
+    print datapath
     analysis=0
     
 #     print datapath

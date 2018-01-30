@@ -50,12 +50,14 @@ class oscilloscope_analysis():
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","Y"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
 
         # data = pd.read_csv(os.path.join(indir,filename+'.csv'), skiprows=16, names = ["X","None","Y"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
+        if nr_channels == 1:
+            data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["mod","1"],usecols=[0,1]) #creating a dataframe in pandas and importing the data
         if nr_channels == 2:
             data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","1","mod","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
         if nr_channels == 3:
             data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3"],usecols=[0,1,2,3]) #creating a dataframe in pandas and importing the data
         elif nr_channels == 4:
-            data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","mod","2","3","4"],usecols=[0,1,2,3,4]) #creating a dataframe in pandas and importing the data
+            data = pd.read_csv(os.path.join(self.indir,self.filename+'.csv'), skiprows=16, names = ["None","1","mod"],usecols=[0,1,2]) #creating a dataframe in pandas and importing the data
         #print data
 
         #Could be used for x/y ticks and labels
@@ -479,7 +481,7 @@ def fit_all_resonances_in_sweep(indir,filename,EOM_freq,nr_lws,x0,windowsize,x_o
     print 'chisq = ',good_chisqs
     print 'x0s = ',good_x01s
 
-    funcs.save_to_json_file(indir,filename+'_analysis_2',good_fits)
+    funcs.save_to_json_file(indir,filename+'_analysis',good_fits)
 
     if return_data:
         return oa_single.x,oa_single.y,oa_single.fit_result
