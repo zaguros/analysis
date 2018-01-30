@@ -900,7 +900,7 @@ def fit_dephasing_constant_offset(g_a,g_coup,g_offs):
 def fit_repumping(g_a, g_A, g_tau, g_tau2, g_offs_x, *arg):
     """
     fitfunction for an exponential decay,
-        y(x) = A * exp(-x/tau)+ A2 * exp(-x/tau2) + a
+        y(x) = A * exp(-x/tau)+ (1-A)* exp(-x/tau2) + a
 
     Initial guesses (in this order):
         g_a : offset
@@ -909,7 +909,7 @@ def fit_repumping(g_a, g_A, g_tau, g_tau2, g_offs_x, *arg):
         g_tau2 : decay constant 2
         g_offs_x : x offset
     """
-    fitfunc_str = 'A * exp(-(x-offs_x)/tau)+ A2 * exp(-(x-offs_x)/tau2) + a'
+    fitfunc_str = 'A * exp(-(x-offs_x)/tau)+ (1-A)* exp(-(x-offs_x)/tau2) + a'
 
     a = fit.Parameter(g_a, 'a')
     A = fit.Parameter(g_A, 'A')
