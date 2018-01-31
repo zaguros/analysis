@@ -9,6 +9,7 @@ import scipy.constants
 import scipy.linalg
 import math 
 import os
+import time
 
 from analysis.lib.tools import toolbox as tb
 from matplotlib import pyplot as plt
@@ -16,7 +17,8 @@ import analysis.scripts.cavity.simulations_gaussian_beams as sim_gb; reload(sim_
 import analysis.scripts.cavity.simulations_vibrations as sim_vib; reload(sim_vib)
 import analysis.lib.cavity.simulations_cavity as sim_cav; reload(sim_cav)
 
-
+from analysis.lib.tools import plot
+from analysis.lib.fitting import fit, common
 
 data_dir = 'K://ns/qt/Diamond/Projects/Cavities/simulations/transfer_matrix_model/'
 if os.path.isdir(data_dir):   
@@ -260,7 +262,7 @@ class Cavity():
 
         return r
 
-    def find_linewidth(self,nr_pts=10001,sweep_range =7e9,plot=False):
+    def find_linewidth(self,nr_pts=21,sweep_range =4e9,plot_data=False):
         """
         find the linewidth by sweeping around lambda_i
         """
@@ -274,20 +276,35 @@ class Cavity():
             r = self.cavity_reflectivity()
             r_iis[i]=np.abs(r)**2
         
-        self.lambda_i=lambda_was
-        self.r = r_iis[np.argmin(r_iis)] #should be the same as initially.
-        
-        halfmax = ((1-self.r)/2+self.r)
-        self.linewidth = abs(2*(freq_is[np.argmin(abs(r_iis - halfmax))]))
 
-        if plot:
-            fig,ax = plt.subplots()
-            ax.set_xlabel('frequency THz')
-            ax.set_ylabel('reflectivity')
-            ax.plot(freq_is*1.e-12,r_iis)
-            ax.plot([self.freq_i*1.e-12-self.linewidth*1.e-12/2,self.freq_i*1.e-12+self.linewidth*1.e-12/2],[halfmax,halfmax],'c',linewidth=4)
-            plt.show()
-            plt.close()
+        self.lambda_i=lambda_was
+        self.r=r_iis[np.argmin(r_iis)] #should be the same as initially, though seems not to be
+        halfmax = ((1-self.r)/2+self.r)
+        g_offset=1
+        g_x0 = self.freq_i
+        g_gamma = abs(2*(freq_is[np.argmin(abs(r_iis - halfmax))]))
+        g_A = -g_gamma
+
+        fixed=[0]
+        p0, fitfunc, fitfunc_str = common.fit_lorentz(g_offset, g_A, g_x0, g_gamma)
+        fit_result = fit.fit1d((self.freq_i+freq_is),r_iis, None, p0=p0, 
+            fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+        try:
+            self.linewidth=fit_result['params_dict']['gamma']
+            if plot_data:
+                plot.plot_fit1d(fit_result,fit_xvals = self.freq_i+freq_is)
+        except:
+            'failed to fit linewidth. setting to guess'
+            self.linewidth=g_gamma
+
+        # if plot_data:
+        #     fig,ax = plt.subplots()
+        #     ax.set_xlabel('frequency THz')
+        #     ax.set_ylabel('reflectivity')
+        #     ax.plot((self.freq_i+freq_is)*1.e-12,r_iis,'o')
+        #     ax.plot([self.freq_i*1.e-12-self.linewidth*1.e-12/2.,self.freq_i*1.e-12+self.linewidth*1.e-12/2.],[halfmax,halfmax],'c',linewidth=4)
+        #     plt.show()
+        #     plt.close()
 
         return self.linewidth
 
@@ -312,11 +329,11 @@ class Cavity():
         
         if plot_r:
             fig,ax = plt.subplots()
-            ax.plot(lambda_is*1.e9,r_is)
+            ax.plot(lambda_is*1.e9,r_is, 'o')
             plt.show()
             plt.close()
         
-        lambda_is = np.linspace(lambda_ii-self.res_wl_search_range/100.,lambda_ii+self.res_wl_search_range/100.,3*nr_pts)
+        lambda_is = np.linspace(lambda_ii-self.res_wl_search_range/50.,lambda_ii+self.res_wl_search_range/50.,nr_pts/4)
         r_iis = np.zeros(len(lambda_is))
         for i,lambda_iii in enumerate(lambda_is):
             self.lambda_i = lambda_iii
@@ -336,7 +353,7 @@ class Cavity():
         if plot_r:
             print 'air gap',self.t_a*1.e6, ' um; r = ', self.r
             fig,ax = plt.subplots()
-            ax.plot(lambda_is*1.e9,r_iis)
+            ax.plot(lambda_is*1.e9,r_iis,'o')
             ax.set_xlabel('frequency (THz)')
             plt.show()
             plt.close()
@@ -348,6 +365,7 @@ class Cavity():
         """
         find the resonance condition by varying t_a around t_a_g
         uses two consecutive optimisation steps
+        could replace the second search for a lorentzian fit.
         """
         
         t_as = np.linspace(self.t_a_g-(self.res_search_range),self.t_a_g+self.res_search_range,nr_pts)
@@ -367,7 +385,7 @@ class Cavity():
             plt.show()
             plt.close()
         
-        t_as = np.linspace(t_ai-self.res_search_range/100.,t_ai+self.res_search_range/100.,2*nr_pts)
+        t_as = np.linspace(t_ai-self.res_search_range/100.,t_ai+self.res_search_range/100.,1.5*nr_pts)
         r_iis = np.zeros(len(t_as))
         for i,t_aii in enumerate(t_as):
             self.t_a = t_aii
@@ -548,16 +566,14 @@ class Cavity():
         return self.tau
 
     def analyse_cavity(self,nr_points=30001,plot_Evac=False,save_plot=True):
-
         self.ts_in_cavity()
         self.electric_field_distribution(nr_points=nr_points)
+
         self.calculate_E_max_at_NV()
         self.calculate_energy_dist_length()
-
         self.calculate_mode_volume()#t_a+t_d*2.4)
         self.calculate_max_Evac()
         self.find_linewidth()
-
         self.Etot_vs_z = self.Etot_vs_z*self.Evac_max/self.E_z0
 
         self.Etot_diamond = self.calculate_energy_in_m(n_diamond)
@@ -565,6 +581,7 @@ class Cavity():
 
         if self.calculate_dnu:
             self.dnu = self.linewidth
+
         self.calculate_Purcell()
         self.calculate_into_ZPL()
 
@@ -594,6 +611,7 @@ class Cavity():
                 plt.savefig(data_folder+'/'+title_string+'.png')
             plt.show()
             plt.close()
+
 
         return self.zs,self.ns_vs_z,self.Etot_vs_z,self.Evac_max,self.z0,self.dz0,self.Etot_diamond,self.Etot_air
 
@@ -704,27 +722,27 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
 
     """
     s = Cavity(t_d, t_a_g, R,dnu=dnu,lambda_i=lambda_ZPL)
-    s.find_res_condition(plot_r=True)
+    s.find_res_condition(plot_r=False)
     t_a0 = s.t_a
-
     s.calculate_w0()
-    s.analyse_cavity(plot_Evac=False)    
+    s.analyse_cavity(plot_Evac=False,nr_points=50001)    
     if fast_approx:
         s.calculate_Purcell()
         intoZPL0 = s.calculate_into_ZPL()
-
     dLs = np.linspace(-dLmax,dLmax,nr_pts)
     p_cav_length = sim_vib.gaussian(t_a0+dLs,t_a0,vib_dL)
-
     into_ZPLs = np.zeros(len(dLs))
     lambda_ress = np.zeros(len(dLs))
     Purcells=np.zeros(len(dLs))
 
+
+
+    t0 = time.time()
+
     for i,dL in enumerate(dLs):
         # cav_lengths = np.linspace(s.optical_length-4*dL,s.optical_length+4*dL,nr_pts)
-
-        si = Cavity(t_d, t_a0+dL, R,dnu=dnu)#, res_wl_search_range=0.1e-10)
-        si.find_res_wavelength(plot_r=False)
+        si = Cavity(t_d, t_a0+dL, R,dnu=dnu, res_wl_search_range=0.6e-10)
+        si.find_res_wavelength(plot_r=False,nr_pts=101)
         lambda_ress[i] = si.lambda_i
 
         if fast_approx:
@@ -736,6 +754,12 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
             intoZPLonR = si.calculate_into_ZPL()
         into_ZPL = intoZPLonR  *spectral_overlap(lambda_ZPL,si.lambda_i,si.dnu)
         into_ZPLs[i] = into_ZPL
+
+        t1 = time.time()-t0
+        # print 'dL %.2f at'%dL, t1
+        # print '%d out of %d done'%(i+1, len(dLs))
+        # print 'expected time remaining: %d seconds'%(t1/(i+1)*len(dLs)-t1)
+
         # print i, 'out of', len(dLs)
 
     avg_p_ZPL = sim_vib.avg_p_ZPL_to_zero(into_ZPLs,p_cav_length)
@@ -798,11 +822,16 @@ def calc_avg_ZPL_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,dnus=np.linspace(1,1
     calculate average emission into ZPL into cavity vs FWHM of vibrations
     """
     avg_ZPLs = np.zeros(len(dnus))
+    t0 = time.time()
     for i,dnu in enumerate(dnus):
-        print i, 'out of ', len(dnus), 'done'
         # print vib_dL
         a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True)
         # print avg_ZPL
+        t1 = time.time()-t0
+        # print 'at', t1
+        print '%d out of %d done'%(i+1, len(dnus))
+        print 'expected time remaining: %d seconds'%(t1/(i+1)*len(dnus)-t1)
+
         avg_ZPLs[i]=avg_ZPL
 
     fig,ax = plt.subplots()
