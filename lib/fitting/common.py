@@ -1046,8 +1046,6 @@ def fit_clipping_losses_hybrid(g_d, g_ROC,g_Dia,g_L_init, *arg):
 
     return p0, fitfunc, fitfunc_str
 
-
-
 def fit_3level_autocorrelation(g_x0,g_A,g_a, g_tau1, g_tau2):
     fitfunc_str = 'scale()*(1-(2*np.pi*Rabifreq()/2) * (1 - np.cos(2*np.pi*Rabifreq()*x)))'
 
@@ -1078,20 +1076,53 @@ def fit_Rabi(g_f, g_A, *arg):
 
     return p0, fitfunc, fitfunc_str
 
-def fit_NMR_spectrum(g_f, g_A, g_x0, pulse_t, *arg):
+def fit_NMR_spectrum(g_f, g_A, g_x0,g_t,g_o, *arg):
     fitfunc_str = '((Rabifreq)**2/2*sqrt(Rabifreq**2+x**2)) * (1-scale*cos(sqrt((2*pi*Rabifreq)**2 + (2*pi*x)**2)*pulse_t'
 
-    Rabifreq = fit.Parameter(g_f, 'f')
-    scale = fit.Parameter(g_A, 'A')
-    x0 = fit.Parameter(g_x0, 'x0')
-    pulse_t = pulse_t
+    Rabifreq = fit.Parameter(g_f, 'Rabi frequency')
+    scale = fit.Parameter(g_A, 'Scale factor')
+    x0 = fit.Parameter(g_x0, 'Centre frequency')
+    pulse_t = fit.Parameter(g_t,'pulse_t')
+    offset = fit.Parameter(g_o, 'offset')
 
-    p0 = [Rabifreq, scale, x0] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+    p0 = [Rabifreq, scale, x0, pulse_t,offset] #Note: If you do not want to use a fit argument set fixed when using in fit1d
 
 
     def fitfunc(x):
-        prefactor = ((Rabifreq()**2)/(2*np.sqrt((Rabifreq()**2)+((x-x0())**2))))
-        cosine = (1-scale()*np.cos(np.sqrt(((2*np.pi*Rabifreq())**2)+(2*np.pi*(x-x0()))**2)*pulse_t))
-        return prefactor*cosine
+
+        return offset() + 1 - (0.5 - 0.5*scale() + scale()*Rabifreq()**2/(2*(Rabifreq()**2 + (x-x0())**2))*(1-np.cos(np.sqrt((2*np.pi*Rabifreq())**2 + (2*np.pi*x-2*np.pi*x0())**2)*pulse_t())))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_inverse_NMR_spectrum(g_f, g_A, g_x0,g_t,g_o, *arg):
+    fitfunc_str = '((Rabifreq)**2/2*sqrt(Rabifreq**2+x**2)) * (1-scale*cos(sqrt((2*pi*Rabifreq)**2 + (2*pi*x)**2)*pulse_t'
+
+    Rabifreq = fit.Parameter(g_f, 'Rabi frequency')
+    scale = fit.Parameter(g_A, 'Scale factor')
+    x0 = fit.Parameter(g_x0, 'Centre frequency')
+    pulse_t = fit.Parameter(g_t,'pulse_t')
+    offset = fit.Parameter(g_o, 'offset')
+
+    p0 = [Rabifreq, scale, x0, pulse_t, offset] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+
+    def fitfunc(x):
+
+        return offset() + (0.5 - 0.5*scale() + scale()*Rabifreq()**2/(2*(Rabifreq()**2 + (x-x0())**2))*(1-np.cos(np.sqrt((2*np.pi*Rabifreq())**2 + (2*np.pi*x-2*np.pi*x0())**2)*pulse_t())))
+
+    return p0, fitfunc, fitfunc_str
+
+def fit_phase_sweep(g_phi0, g_A, *arg):
+    fitfunc_str = '1- (0.5 - 0.5*scale + scale*cos(phi0 - x)**2)'
+
+    phi0 = fit.Parameter(g_phi0, 'Phase offset')
+    scale = fit.Parameter(g_A, 'Scale factor')
+
+    p0 = [phi0, scale] #Note: If you do not want to use a fit argument set fixed when using in fit1d
+
+
+    def fitfunc(x):
+
+        return 1 - (0.5 - 0.5*scale() + scale()*np.cos(phi0() - x*(np.pi)/360)**2)
 
     return p0, fitfunc, fitfunc_str

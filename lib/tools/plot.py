@@ -9,7 +9,7 @@ from analysis.lib.fitting import fit
 
 
 # TODO implement formatting options
-def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,add_txt = True, **kw):
+def plot_fit1d(res, fit_xvals=np.array([None]),fit_num_points=100,ax=None, ret=None, lw = 2,add_txt = True, **kw):
     '''
     function to plot a fitresult as returned by analysis.lib.fitting.fit.fit1d().
     '''
