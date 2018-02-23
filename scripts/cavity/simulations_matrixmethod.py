@@ -10,6 +10,9 @@ import scipy.linalg
 import math 
 import os
 import time
+import json
+import h5py
+
 
 from analysis.lib.tools import toolbox as tb
 from matplotlib import pyplot as plt
@@ -32,6 +35,18 @@ else:
     print 'data_dir:  '+data_dir+ ' does not exist! Saving disabled.'
 
 
+
+
+def default(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    raise TypeError('Not serializable')
+    
+def save_to_json_file(folder,filename,analysis_dict):
+    f = open(os.path.join(folder,filename+'.json'), 'w')
+    json.dump(analysis_dict,f,default=default)
+    f.close()
+
 n_air = 1.0
 n_diamond = 2.41
 n_Al2O3 = 1.77
@@ -44,22 +59,22 @@ class Cavity():
         self.t_a_g = t_a_g
         self.R = R
         self.lambda_cav = kw.pop('lambda_cav', 637.e-9)
-        self.n_1 = kw.pop('n_1', 2.15) #(Ta2O5)
-        self.n_2 = kw.pop('n_2', 1.46) #SiO2
+        self.n_1 = kw.pop('n_1', 2.1349) #(Ta2O5)
+        self.n_2 = kw.pop('n_2', 1.476) #SiO2
         self.M = kw.pop('M', 10) #number of mirror layers
         self.cav_type = kw.pop('cav_type','hybrid') #cavity type. can be hybrid or air
         self.lambda_i = kw.pop('lambda_i', 637.e-9)
         self.res_search_range = kw.pop('res_search_range',100e-9)
         self.res_wl_search_range = kw.pop('res_wl_search_range', 0.5e-9)
-        self.dnu = kw.pop('dnu',0.e9)
-        self.calculate_dnu =kw.pop('calculate_dnu',True)
+        self.dnu = kw.pop('dnu',3.e9)
+        self.calculate_dnu =kw.pop('calculate_dnu',False)
         self.beta0 = kw.pop('beta0',0.03) #free space branching ratio into ZPL
         self.tau0 = kw.pop('tau0',12) #excited state lifetime in ns
         self.AR_coating = kw.pop('AR_coating',False)
         self.AR_type = kw.pop('AR_type','ideal')
         self.bond_gap = kw.pop('bond_gap', False)
         self.t_bondgap = kw.pop('t_bondgap',0.e-6)
-        self.N_n2 = kw.pop('N_n2',3) #number of lambda/4 thicknesses of n2 (3 for narrow stopband, 1 for broad stopband)
+        self.N_n2 = kw.pop('N_n2',1) #number of lambda/4 thicknesses of n2 (3 for narrow stopband, 1 for broad stopband)
         self.realistic_mirrors = kw.pop('realistic_mirrors',False)
         self.include_losses = kw.pop('include_losses',False)
         # print 'cavity with design wavelength: ',self.lambda_cav*1.e9,' nm'
@@ -161,72 +176,59 @@ class Cavity():
         return out  
 
     def ns_in_cavity(self):
+        if self.realistic_mirrors:
+            ns_mirror1 = np.append(np.array((self.n_1,self.n_2)*self.M_1),np.array((self.n_1)))
+            ns_mirror2 = np.append(np.array((self.n_1,self.n_2)*self.M_2),np.array((self.n_1)))   
+        else:
+            ns_mirror = np.append(np.array((self.n_1,self.n_2)*self.M),np.array((self.n_1)))
+            ns_mirror1=ns_mirror
+            ns_mirror2=ns_mirror
+
         if self.cav_type == 'hybrid':
             if self.AR_coating:
-                ns_mirror = np.append(np.array((self.n_1,self.n_2)*self.M),np.array((self.n_1)))
                 ns_cav = np.array((n_diamond, self.n_AR, n_air))
-                self.ns = np.concatenate((ns_mirror,ns_cav,ns_mirror))   
             elif self.bond_gap:
-                ns_mirror = np.append(np.array((self.n_1,self.n_2)*self.M),np.array((self.n_1)))
                 ns_cav = np.array((n_air, n_diamond, n_air))
-                self.ns = np.concatenate((ns_mirror,ns_cav,ns_mirror))    
-            elif self.realistic_mirrors:
-                ns_mirror1 = np.append(np.array((self.n_1,self.n_2)*self.M_1),np.array((self.n_1)))
-                ns_mirror2 = np.append(np.array((self.n_1,self.n_2)*self.M_2),np.array((self.n_1)))
-                ns_cav = np.array((n_diamond, n_air))
-                self.ns = np.concatenate((ns_mirror2,ns_cav,ns_mirror1))    
             else:
-                ns_mirror = np.append(np.array((self.n_1,self.n_2)*self.M),np.array((self.n_1)))
                 ns_cav = np.array((n_diamond, n_air))
-                self.ns = np.concatenate((ns_mirror,ns_cav,ns_mirror))                
+
         elif self.cav_type == 'air':
-            ns_mirror = np.append(np.array((self.n_1,self.n_2)*self.M),np.array((self.n_1)))
             ns_cav = np.array([n_air])
-            self.ns = np.concatenate((ns_mirror,ns_cav,ns_mirror)) 
-        elif self.cav_type == 'test1':
-            ts_substrate = np.array([n_diamond])
-            ns_mirror1 = np.append(np.array((self.n_1,self.n_2)*self.M1),np.array((self.n_1)))
-            ns_mirror2 = np.append(np.array((self.n_1,self.n_2)*self.M2),np.array((self.n_1)))
-            ns_cav = np.array([n_air])
-            self.ns = np.concatenate((ts_substrate,ns_mirror1,ns_cav,ns_mirror2))  
         else:
             'specify valid cavity type (hyrbid or air)!'
             return
+
+        self.ns = np.concatenate((ns_mirror2,ns_cav,ns_mirror1))  
+
         return self.ns
 
     def ts_in_cavity(self):
+        if self.realistic_mirrors:
+            ts_mirror_1 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2_1*self.lambda_cav/(4*self.n_2))*self.M_1),np.array(self.lambda_cav/(4*self.n_1)))
+            ts_mirror_2 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2_2*self.lambda_cav/(4*self.n_2))*self.M_2),np.array(self.lambda_cav/(4*self.n_1)))
+        else:
+            ts_mirror = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M),np.array(self.lambda_cav/(4*self.n_1)))
+            ts_mirror_1=ts_mirror
+            ts_mirror_2=ts_mirror
+
         if self.cav_type == 'hybrid':
             if self.AR_coating:
-                ts_mirror = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M),np.array(self.lambda_cav/(4*self.n_1)))
                 ts_cav = np.array((self.t_d,self.lambda_cav/(4*self.n_AR),self.t_a))
-                self.ts = np.concatenate((ts_mirror,ts_cav,ts_mirror))
             elif self.bond_gap:
-                ts_mirror = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M),np.array(self.lambda_cav/(4*self.n_1)))
                 ts_cav = np.array((self.t_bondgap,self.t_d,self.t_a))
-                self.ts = np.concatenate((ts_mirror,ts_cav,ts_mirror))
-            elif self.realistic_mirrors:
-                ts_mirror_1 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2_1*self.lambda_cav/(4*self.n_2))*self.M_1),np.array(self.lambda_cav/(4*self.n_1)))
-                ts_mirror_2 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2_2*self.lambda_cav/(4*self.n_2))*self.M_2),np.array(self.lambda_cav/(4*self.n_1)))
-                ts_cav = np.array((self.t_d,self.t_a))
-                self.ts = np.concatenate((ts_mirror_2,ts_cav,ts_mirror_1))
             else:
-                ts_mirror = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M),np.array(self.lambda_cav/(4*self.n_1)))
                 ts_cav = np.array((self.t_d,self.t_a))
-                self.ts = np.concatenate((ts_mirror,ts_cav,ts_mirror))
-        elif self.cav_type == 'air':
-            ts_mirror = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M),np.array(self.lambda_cav/(4*self.n_1)))
-            ts_cav = np.array([self.t_a])
-            self.ts = np.concatenate((ts_mirror,ts_cav,ts_mirror))
-        elif self.cav_type == 'test1':
-            ts_substrate = np.array([self.t_s])
-            ts_mirror1 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M1),np.array(self.lambda_cav/(4*self.n_1)))
-            ts_mirror2 = np.append(np.array((self.lambda_cav/(4*self.n_1),self.N_n2*self.lambda_cav/(4*self.n_2))*self.M2),np.array(self.lambda_cav/(4*self.n_1)))
-            ts_cav = np.array([self.t_a])
-            self.ts = np.concatenate((ts_substrate,ts_mirror1,ts_cav,ts_mirror2))        
 
+        elif self.cav_type == 'air':
+            ts_cav = np.array([self.t_a])
         else:
             'specify valid cavity type (hyrbid or air)!'
             return
+
+        self.ts = np.concatenate((ts_mirror_2,ts_cav,ts_mirror_1))
+        self.tmirror1 = sum(ts_mirror_1)
+        self.tmirror2 = sum(ts_mirror_2)
+
         return self.ts
 
 
@@ -278,7 +280,7 @@ class Cavity():
         
 
         self.lambda_i=lambda_was
-        self.r=r_iis[np.argmin(r_iis)] #should be the same as initially, though seems not to be
+        self.r=r_iis[np.argmin(r_iis)] #should be the same as initially, though seems not (always) to be
         halfmax = ((1-self.r)/2+self.r)
         g_offset=1
         g_x0 = self.freq_i
@@ -367,7 +369,6 @@ class Cavity():
         uses two consecutive optimisation steps
         could replace the second search for a lorentzian fit.
         """
-        
         t_as = np.linspace(self.t_a_g-(self.res_search_range),self.t_a_g+self.res_search_range,nr_pts)
         r_is = np.zeros(len(t_as))
         for i,t_ai in enumerate(t_as):
@@ -381,7 +382,7 @@ class Cavity():
         
         if plot_r:
             fig,ax = plt.subplots()
-            ax.plot(t_as*1.e6,r_is)
+            ax.plot(t_as*1.e6,r_is,'o')
             plt.show()
             plt.close()
         
@@ -398,7 +399,7 @@ class Cavity():
         if plot_r:
             print 'air gap',self.t_a*1.e6, ' um; r = ', self.r
             fig,ax = plt.subplots()
-            ax.plot(t_as*1.e6,r_iis)
+            ax.plot(t_as*1.e6,r_iis,'o')
             plt.show()
             plt.close()
         
@@ -418,8 +419,8 @@ class Cavity():
         """
         #print 'looking up w0 from : La,d,R = ', self.t_a,self.t_d,self.R
         self.w0 = sim_gb.get_w0_from_table(La=self.t_a,d=self.t_d,R=self.R)
-        #self.w0 =  1.04e-6#*math.from my calculations of beam waist in cavity Riedel
-        #self.w0 = 0.704e-6*2#from FWHM quted in Riedels paper
+        # self.w0 =  1.04e-6#*math.from my calculations of beam waist in cavity Riedel -> corresponds with both predictions from mathematica, and outcomes!! 
+        # self.w0 =0.83e-6#0.705e-6# from 'FWHM beam waist' quoted in Riedels paper
         # self.w0 = 1.61e-6#from calculations for d=12, L = 4, R=39
         return self.w0
 
@@ -508,39 +509,157 @@ class Cavity():
         """
         dz = np.abs(self.zs[0]-self.zs[1])
         self.effective_length = np.real(np.sum((self.ns_vs_z**2)*(self.Etot_vs_z**2))*dz/((self.n_z0**2)*(self.E_z0**2)))
+        return self.effective_length
 
+    def calculate_energy_dist_length_for_args(self,args):
+        """
+        calculate energy distribution length int((n(z)^2)*(E(z))^2 dz)/(n(z0))^2*E(z0)^2
+        """
+        ns_vs_z_in_m = self.ns_vs_z[args]
+        Etot_vs_z_in_m = self.Etot_vs_z[args]
+        # print ns_vs_z_in_m
+        dz = np.abs(self.zs[0]-self.zs[1])
+        effective_length_in_m = np.real(np.sum((ns_vs_z_in_m**2)*(Etot_vs_z_in_m**2))*dz/((self.n_z0**2)*(self.Evac_max**2)))
+        return effective_length_in_m
+
+    def calculate_energy_dist_length_in_m(self,n_m):
+        """
+        calculate the electric field energy (J/m^2) in cavity material with refractive index n_m
+        """
+        arg_zs_in_m = np.where((self.ns_vs_z<n_m+0.01)&(self.ns_vs_z>n_m-0.01))
+        effective_length_in_m = self.calculate_energy_dist_length_for_args(arg_zs_in_m)
+        return effective_length_in_m #in J/m^2 
 
     def calculate_mode_volume(self):
-        self.mode_volume = math.pi*self.w0**2/2.*self.effective_length #note that since we are using the effective length, we here have to use pi*wo^2/2
+        self.mode_volume = math.pi*self.w0**2/2.*self.effective_length #note that since we are using the effective length, we here have to use pi*wo^2/2. this is int(|E(x,y,z0)|^2dxdy) = int(e^(-2r^2/w0^2)rdr = pi*w0^2/2)
         #print 'mode vol',self.mode_volume
+        return self.mode_volume
         
     def calculate_max_Evac(self):
         """
         Uses the mode volume to determine the maximum vacuum electric field (hbar omega/(2epsilon*V)) (epsilon = n^2*epsilon_0)
         """
-        self.Evac_max = np.sqrt(sc.constants.hbar*2*math.pi*(sc.constants.c/self.lambda_i)/(2*sc.constants.epsilon_0*self.n_z0**2*self.mode_volume))
+        self.Evac_max =np.sqrt(sc.constants.hbar*2*math.pi*(sc.constants.c/self.lambda_i)/(2*sc.constants.epsilon_0*self.n_z0**2*self.mode_volume))
+
+    def calculate_energy_in_cavity(self):
+        dz = np.abs(self.zs[0]-self.zs[1])
+        Etot_L = 1./2*sc.constants.epsilon_0*np.sum((self.ns_vs_z**2)*(self.Etot_vs_z**2))*dz 
+        Etot_V = Etot_L*math.pi*self.w0**2/2
+        return Etot_L,Etot_V
+
+    def calculate_energy_in_args(self,args):
+        ns_vs_z_in_m = self.ns_vs_z[args]
+        # arg=args[0]
+        # print arg
+        # print args
+        # if len(arg)>1:
+        #     plt.figure()
+        #     plt.plot(self.zs,self.ns_vs_z)
+
+        #     plt.plot(self.zs, np.concatenate((np.zeros(arg[0]),np.ones(len(arg)),np.zeros(len(self.ns_vs_z)-arg[-1]-1))))
+        #     plt.show()
+        #     plt.close()
+
+        Etot_vs_z_in_m = self.Etot_vs_z[args]
+        dz = np.abs(self.zs[0]-self.zs[1])
+        # print ns_vs_z_in_m
+        # print 'length', ns_vs_z_in_m[1] ,np.sum(np.ones(len(ns_vs_z_in_m)))*dz *1.e6
+
+        Etot = 1./2*sc.constants.epsilon_0*np.sum((ns_vs_z_in_m**2)*(Etot_vs_z_in_m**2))*dz 
+        return Etot #in J/m^2 
 
     def calculate_energy_in_m(self,n_m):
         """
         calculate the electric field energy (J/m^2) in cavity material with refractive index n_m
         """
         arg_zs_in_m = np.where((self.ns_vs_z<n_m+0.01)&(self.ns_vs_z>n_m-0.01))
-        ns_vs_z_in_m = self.ns_vs_z[arg_zs_in_m]
-        Etot_vs_z_in_m = self.Etot_vs_z[arg_zs_in_m]
-        dz = np.abs(self.zs[0]-self.zs[1])
-        Etot = 1./2*sc.constants.epsilon_0*np.sum((ns_vs_z_in_m**2)*(Etot_vs_z_in_m**2))*dz 
+        # ns_vs_z_in_m = self.ns_vs_z[arg_zs_in_m]
+        # Etot_vs_z_in_m = self.Etot_vs_z[arg_zs_in_m]
+        # dz = np.abs(self.zs[0]-self.zs[1])
+        # Etot = 1./2*sc.constants.epsilon_0*np.sum((ns_vs_z_in_m**2)*(Etot_vs_z_in_m**2))*dz 
+        Etot = self.calculate_energy_in_args(arg_zs_in_m)
         return Etot #in J/m^2 
+
+    def calculate_pen_depth(self):
+        # Eair = self.Etot_air
+        # Ediamond = self.Etot_diamond
+        # Etot = self.Etot
+        # if self.AR_coating:
+        #     EAR = self.calculate_energy_in_m(n_m=self.n_AR)F
+        #     Emirrors = Etot - Ediamond - Eair - EAR
+        # else:
+        #     Emirrors = Etot - Ediamond - Eair 
+
+
+        argsmirror1 = np.where(abs(self.zs < self.tmirror1))
+        Emirror1 = self.calculate_energy_in_args(argsmirror1)
+        argsmirror2 = np.where(abs(self.zs>(self.zs[-1]-self.tmirror2)))
+        Emirror2 = self.calculate_energy_in_args(argsmirror2)
+
+        Emax_air = self.calculate_E_max_in_n(n_0=1)[1]
+        # t_pen_mirror = Emirror/(Eair+Ediamond)*(self.t_a+n_diamond*self.t_d)
+        if self.cav_type == 'hybrid':
+            Emax_diamond = self.calculate_E_max_in_n(n_0=n_diamond)[1]
+
+            # self.t_pen_mirror1 = Emirror1/(Ediamond)*(n_diamond*self.t_d)
+            # self.t_pen_mirror2 = Emirror2/(Ediamond)*(n_diamond*self.t_d)
+            #     # print '1',self.t_pen_mirror1*1.e6
+
+            #compare both to the max field in diamond such that get close to effective energy distribution length
+            self.t_pen_mirror1 = Emirror1/(1/4.*scipy.constants.epsilon_0*n_diamond*Emax_diamond**2)
+            self.t_pen_mirror2 = Emirror2/(1/4.*scipy.constants.epsilon_0*n_diamond*Emax_diamond**2)
+
+            # print '2',self.t_pen_mirror1*1.e6
+            # if self.AR_coating:
+            #     # self.t_pen_mirror1 = Emirror1/(Eair+EAR+Ediamond)*(self.t_a+n_diamond*self.t_d+self.lambda_cav/4)
+            #     # self.t_pen_mirror2 = Emirror2/(Eair+EAR+Ediamond)*(self.t_a+n_diamond*self.t_d+self.lambda_cav/4)
+
+            # else:
+            #     self.t_pen_mirror1 = Emirror1/(Eair+Ediamond)*(self.t_a+n_diamond*self.t_d)
+            #     self.t_pen_mirror2 = Emirror2/(Eair+Ediamond)*(self.t_a+n_diamond*self.t_d)    
+
+        elif self.cav_type == 'air':
+            self.t_pen_mirror1 =  Emirror1/(1/4.*scipy.constants.epsilon_0*Emax_air**2)
+            self.t_pen_mirror2 = Emirror2/(1/4.*scipy.constants.epsilon_0*Emax_air**2)
+        else: 
+            print 'specify valid cavity type!'
+
+        # print Emirror1, Emirror2
+        # print 'Eair', Eair/self.t_a, 'Ediamond', Ediamond/(n_diamond*self.t_d) ,
+        # if self.AR_coating:
+        #     print 'EAR', EAR/(self.n_AR*self.lambda_cav/(4*self.n_AR)) 
+        # print 'Eair/diamond', Eair/self.t_a/(Ediamond/(n_diamond*self.t_d))
+        # print Eair/Etot,Ediamond/Etot,Emirrors/Etot
+
+        # print n_diamond*self.t_d/(self.t_a+n_diamond*self.t_d),self.t_a/(self.t_a+n_diamond*self.t_d)
+        # print 't_pen_mirror',t_pen_mirror
+        # print 't_pen_mirror1',t_pen_mirror1
+        # print 't_pen_mirror2',t_pen_mirror2
+        return self.t_pen_mirror1,self.t_pen_mirror2
 
     def calculate_dnu_from_LM1_LM2(self,LM1=100e-6,LM2=2200e-6):
         """
         calculate the linewidth based on losses at the mirrors only (no diamond losses), using the unequal distribution of E-field in the cavity
         """
-        # print 'LM1 = ',LM1 #'convex mirror'
-        # print 'LM2 = ', LM2 #plane mirror losses
-        Emax_air = self.calculate_E_max_in_n(n_0=1)[1]
-        Emax_diamond = self.calculate_E_max_in_n(n_0=n_diamond)[1]
-        dnu = sc.constants.c/(4*math.pi)*(Emax_diamond*LM2 + Emax_air*LM1)/(Emax_diamond*n_diamond*self.t_d + Emax_air*self.t_a)
+        self.calculate_pen_depth()
+        if self.cav_type == 'hybrid':
+            Emax_air = self.calculate_E_max_in_n(n_0=1)[1]
+            Emax_diamond = self.calculate_E_max_in_n(n_0=n_diamond)[1]
+            f = Emax_air**2/(n_diamond*Emax_diamond**2) #ratio of time-averaged poynting vectors!
+            dnu = sc.constants.c/(4*math.pi)*(LM1*f+LM2)/(2*n_diamond*self.effective_length)
+        else:
+            dnu = sc.constants.c/(4*math.pi)*(LM1+LM2)/(2*self.effective_length)
+            # if self.AR_coating:
+            #     dnus =  sc.constants.c/(4*math.pi)*(LM2 + LM1)/(self.effective_length)
+            #     dnu = sc.constants.c/(4*math.pi)*(LM2 + LM1)/(n_diamond*self.t_d + self.t_a+self.t_pen_mirror1+self.t_pen_mirror2+self.lambda_cav/4)
+            # else:
 
+                
+            #     dside = n_diamond*self.t_d+self.t_pen_mirror2 #~optical cycles on the diamond side
+            #     aside = self.t_a + self.t_pen_mirror1 #~optical cycles on the air side
+            #     print 'use length',(f/(1-f)*aside+dside)
+            #     dnu = sc.constants.c/(4*math.pi)*(LM1*f+LM2)/(f/(1-f)*aside+dside)
+                
         return dnu
 
     def calculate_Purcell(self):
@@ -565,7 +684,7 @@ class Cavity():
         self.tau = 1./(self.Fp*self.beta0+1)*self.tau0
         return self.tau
 
-    def analyse_cavity(self,nr_points=30001,plot_Evac=False,save_plot=True):
+    def analyse_cavity(self,nr_points=50001,plot_Evac=False,save_plot=True):
         self.ts_in_cavity()
         self.electric_field_distribution(nr_points=nr_points)
 
@@ -573,13 +692,15 @@ class Cavity():
         self.calculate_energy_dist_length()
         self.calculate_mode_volume()#t_a+t_d*2.4)
         self.calculate_max_Evac()
-        self.find_linewidth()
         self.Etot_vs_z = self.Etot_vs_z*self.Evac_max/self.E_z0
 
+
+        self.Etot,self.Etot_3d = self.calculate_energy_in_cavity()
         self.Etot_diamond = self.calculate_energy_in_m(n_diamond)
         self.Etot_air = self.calculate_energy_in_m(n_air)
 
         if self.calculate_dnu:
+            self.find_linewidth()
             self.dnu = self.linewidth
 
         self.calculate_Purcell()
@@ -600,7 +721,7 @@ class Cavity():
             ax.set_title(title_string)
             # ax.set_ylim((1.,2.6))
             ax2=ax.twinx()
-            # ax2.set_xlim(7.0,7.2)#((1.8,2.3))
+            # ax2.set_xlim(4,6)#((1.8,2.3))
             # ax2.set_ylim((0,1))
             ax2.plot(self.zs*1.e6,self.Etot_vs_z/1000.,'g')
             ax2.plot([self.z0*1.e6],[self.Evac_max/1000.],'ok',label='dz = %.1f nm, Emax = %.1f kV/m'%(self.dz0*1.e9,self.Evac_max/1000))
@@ -614,6 +735,7 @@ class Cavity():
 
 
         return self.zs,self.ns_vs_z,self.Etot_vs_z,self.Evac_max,self.z0,self.dz0,self.Etot_diamond,self.Etot_air
+
 
 
 def calculate_Fp_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,finesses=np.linspace(100,20000,199)):
@@ -710,61 +832,305 @@ def calculate_Fp_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,finesses=np.linspace
 #     print lambda_cavs
 #     spectral_overlap = 1./(1.+4*(Qs**2)*((lambda_ZPL/lambda_cavs)-1.)**2)
 
+
 def spectral_overlap(lambda_ZPL,lambda_cav,dnu):
     Q = sc.constants.c/lambda_cav/dnu#nu/dnu
     spectral_overlap = 1./(1.+4*(Q**2)*((lambda_ZPL/lambda_cav)-1.)**2)
     return spectral_overlap
 
-def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=3.5e9,lambda_ZPL=637.e-9,dLmax=1.e-9,nr_pts=51,show_plots=False,fast_approx=False): #dL in nm
+def calculate_avgintoZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,Rs=[18.e-6],vib_dLs=[0.4e-9], dLmax=1.0e-9, Ltots = [1000e-6],LM1s = [242e-6],lambda_ZPL=637.e-9,
+        nr_pts = 51, show_plots=False, plot_r=False,AR_coating=False,realistic_mirrors=False, method='numeric',save_data=False,tag=''):
+    """
+    calculate the average emission into the ZPL, and outcoupling throught the top mirror, under the influence of vibrations and varying division of losses over the mirrors.
+    For the numeric case, always assume that the purcell factor on-resonance does not change for the small fluctuations in air gap due oto vibrations. 
+    This is a valid approximation, as can be verified using the function 'calculate_Fp_w_vibrations'.
+    """
+
+    s = Cavity(t_d, t_a_g, Rs[0],lambda_i=lambda_ZPL,realistic_mirrors=realistic_mirrors,AR_coating=AR_coating,calculate_dnu=True)
+    s.find_res_condition(plot_r=plot_r)
+    t_a0 = s.t_a
+    s.calculate_w0()
+    s.analyse_cavity(plot_Evac=False,nr_points=20001)    
+    linewidth_for_seach_range = s.linewidth #we use this value ONLY to determine the res_wl_search_range of the cavity objects below. It is NOT the linewidth of our cavity, that is specified by the different losses.
+    res_wl_search_range = 10*linewidth_for_seach_range*scipy.constants.c/((scipy.constants.c/lambda_ZPL)**2)#transform change in frequency to change in wavelength. multiply by 20 to do wide range search initially.
+    dLmax = max(2*res_wl_search_range,1.8*max(vib_dLs))
+
+    #In the high-finesse limit, the resonance condition does not end up at 637nm. The cavity object below is used to calculate the resonant wavelength.
+    sr = Cavity(t_d, t_a0, Rs[0],res_wl_search_range=res_wl_search_range,AR_coating=AR_coating,realistic_mirrors=realistic_mirrors)
+    sr.find_res_wavelength(plot_r=False,nr_pts=101)
+    lambda_ref = sr.lambda_i #use this for simple_analytics and numeric methods as reference lambda in the spectral overlap.
+
+    dLs = np.linspace(-dLmax,dLmax,nr_pts)
+
+    lambda_ress = np.zeros(len(dLs))
+
+    if method == 'simple_analytic': #use dnu=dL/L*nu
+        dnus = -dLs*(scipy.constants.c/lambda_ZPL)/(2*n_diamond*s.effective_length)
+        lambda_ress = scipy.constants.c/((scipy.constants.c/lambda_ZPL)+dnus)
+
+    elif method == 'analytic':
+        Nmin =int(2*(t_a0+t_d*n_diamond)*450e12/scipy.constants.c)
+        N= np.arange(Nmin,Nmin+10)
+        r_diamond=(1-n_diamond)/(n_diamond+1)
+
+        nu0_analytics = scipy.constants.c/(2*math.pi*(t_a0+n_diamond*t_d))*(math.pi*(N) - (-1)**(N)*np.arcsin( -r_diamond*np.sin((N)*math.pi*(t_a0 - n_diamond*t_d)/(t_a0 +n_diamond*t_d) )  )  )
+        nu0_res = nu0_analytics[np.argmin(abs(nu0_analytics-scipy.constants.c/lambda_ZPL))]
+        N0 = N[np.argmin(abs(nu0_analytics-scipy.constants.c/lambda_ZPL))]
+        lambda_ref=scipy.constants.c/nu0_res
+
+        t_as = t_a0+dLs
+        nu_analytics = scipy.constants.c/(2*math.pi*(t_as+n_diamond*t_d))*(math.pi*(N0) - (-1)**(N0)*np.arcsin( -r_diamond*np.sin((N0)*math.pi*(t_as - n_diamond*t_d)/(t_as +n_diamond*t_d) )  )  )
+        lambda_ress = scipy.constants.c/nu_analytics
+
+    elif method == 'numeric':
+
+        for i,dL in enumerate(dLs):
+            si = Cavity(t_d, t_a0+dL, Rs[0],res_wl_search_range=res_wl_search_range,AR_coating=AR_coating,realistic_mirrors=realistic_mirrors)
+            si.find_res_wavelength(plot_r=False,nr_pts=101)
+            lambda_ress[i] = si.lambda_i
+        
+
+    else:
+        'WARNING: define a valid method!'
+   
+    t0 = time.time()
+
+
+    #Incorporating the option to sweep: Ltots, LM1s, and vib_dLs
+    dnu_from_losses = np.zeros((len(Ltots),len(LM1s)))
+    intoZPL0s = np.zeros((len(Rs),len(Ltots),len(LM1s)))
+    intoZPLs = np.zeros((len(Rs),len(Ltots),len(LM1s),len(dLs)))
+    avg_p_ZPLs = np.zeros((len(Rs),len(Ltots),len(LM1s),len(vib_dLs) ))
+    out_through_M2s = np.zeros((len(Rs),len(Ltots),len(LM1s),len(vib_dLs) ))
+    w0s = np.zeros(len(Rs))
+    mode_volumes=np.zeros(len(Rs))
+
+    for i, R in enumerate(Rs):
+        s.R = R
+        s.calculate_w0()
+        s.calculate_mode_volume()
+        w0s[i] = s.w0
+        mode_volumes[i]=s.mode_volume
+        for j, Ltot in enumerate(Ltots):
+            for k,LM1 in enumerate(LM1s):
+                dnu_from_losses[j,k] = s.calculate_dnu_from_LM1_LM2(LM1 = LM1,LM2 = Ltot-LM1)#make sure that max(LM1s),min(Ltots)
+                s.dnu = dnu_from_losses[j,k] #need this to get the right into ZPL calculation
+                s.calculate_Purcell()
+                intoZPL0s[i,j,k] = s.calculate_into_ZPL()
+                intoZPLs[i,j,k,:] = intoZPL0s[i,j,k] * spectral_overlap(lambda_ref,lambda_ress,dnu_from_losses[j,k] )
+                for l,vib_dL in enumerate(vib_dLs):    #here we are really taking the size of the vibrations into account
+                    p_cav_length = sim_vib.gaussian(dLs,0,vib_dL)
+                    avg_p_ZPLs[i,j,k,l] = sim_vib.avg_p_ZPL_to_zero(intoZPLs[i,j,k,:],p_cav_length)
+                    # out_through_M2s[i,j,k,l] = avg_p_ZPLs[i,j,k,l]*(Ltot-LM1)/Ltot
+
+            # if j%40==0:
+            #     t1 = time.time()-t0
+            #     print 'Ltot %.0f at'%(Ltot*1.e6), t1
+            #     print '%d out of %d done'%(j+1, len(Ltots))
+            #     print 'expected time remaining: %d seconds'%(t1/(j+1)*len(Ltots)-t1)
+
+
+    LM1smesh , Ltotsmesh = np.meshgrid(LM1s,Ltots)
+    dimarray=np.array([1,len(Ltots),len(LM1s),1])
+    frac_out_through_M2s = ((Ltotsmesh-LM1smesh)/(Ltotsmesh)).reshape(dimarray)
+    out_through_M2s = avg_p_ZPLs*frac_out_through_M2s #use broadcasting
+
+    if len(Ltots)>1:       
+        i_max_out_through_M2s = np.argmax(out_through_M2s,axis=1)
+        max_out_through_M2s = np.amax(out_through_M2s,axis=1)
+        Ltot_max_out_through_M2s = Ltots[i_max_out_through_M2s]
+    else:
+        i_max_out_through_M2s =0
+        max_out_through_M2s =0
+        Ltot_max_out_through_M2s=0
+
+    if show_plots:
+        fig,ax = plt.subplots()
+        ax.plot(dLs, p_cav_length/np.sum(p_cav_length),'o')
+        ax.set_xlabel('dL w.r.t. resonance (nm)')
+        ax.set_ylabel('probability distribution')
+        ax2=ax.twinx()
+        ax2.plot(dLs*1.e9,into_ZPLs,'o')
+        ax2.set_ylabel('into ZPL')
+        plt.show()
+        plt.close()
+
+        fig,ax = plt.subplots()
+        ax.plot(dLs*1.e9,lambda_ress*1.e9,'o')
+        ax.set_xlabel('dL w.r.t. resonance (nm)')
+        ax.set_ylabel('resonant wavelength')
+        plt.show()
+        plt.close()
+
+
+    if save_data:
+        filename = '%s_avgZPLvsvibs_method_%s_R_%.1f_td_%.2f_ta0_%.2f_%s.hdf5'%(tb.get_timestamp_from_now()[8:14],method,R*1.e6,t_d*1.e6,t_a0*1.e6,tag)
+
+        if not os.path.exists(os.path.join(data_folder, filename)):
+            print 'creating analysis file'
+            mode = 'w'    
+
+        f = h5py.File(os.path.join(data_folder, filename), 'w')
+        g = f.require_group('results')
+
+        f['/results/avg_ZPLs'] = avg_p_ZPLs
+        # f['/results/out_through_M2s'] = out_through_M2s #do not save, can reprocudec easily
+        f['/results/dnu']=dnu_from_losses
+        f['/results/lambda_ress'] = lambda_ress
+        f['/results/intoZPLs'] = intoZPLs
+        f['/results/intoZPL0s'] = intoZPL0s
+        f['/results/w0s'] = w0s
+        f['/results/mode_volumes'] = mode_volumes
+
+        data_dict = {}
+        data_dict['vibs_dL']=vib_dLs
+        # data_dict['max_out_through_M2s']=max_out_through_M2s #ot saving, since too large, and can be easily reconstructed! 
+        # data_dict['Ltot_max_out_through_M2s']=Ltot_max_out_through_M2s #ot saving, since too large, and can be easily reconstructed!
+        data_dict['Rs']=Rs
+        data_dict['t_d']=t_d
+        data_dict['t_a_g']=t_a_g
+        data_dict['t_a']=t_a0
+        data_dict['method']=method
+        data_dict['Ltots'] = Ltots
+        data_dict['LM1s'] = LM1s
+        data_dict['dLmax'] = dLmax
+        data_dict['nr_pts'] = nr_pts
+        data_dict['lambda_ref'] = lambda_ref
+        data_dict['res_wl_search_range'] = res_wl_search_range
+
+        data_dict['realistic_mirrors'] = realistic_mirrors
+        data_dict['AR_coating'] = AR_coating
+
+
+        for k in data_dict:
+            g.attrs[k] = data_dict[k]
+                
+        f.close()
+
+    return intoZPLs,lambda_ress,avg_p_ZPLs,max_out_through_M2s,Ltot_max_out_through_M2s
+
+
+def calculate_avg_into_ZPL_vs_tds(t_ds=np.linspace(1.e-6,15.e-6,15), t_a_gs = np.ones(15)*1.2e-6,R=18.e-6,vib_dL=0.4e-9, dLmax=1.0e-9,LM1=146e-6,Ltot=1000e-6,lambda_ZPL=637.e-9,
+            nr_pts=51, AR_coating = False, realistic_mirrors =False, method = 'numeric',save_data=False,tag=''):
+    
+    t0 = time.time()
+    
+    lambda_ress = np.zeros((len(t_ds),nr_pts))
+    avg_p_ZPLs = np.zeros(len(t_ds))
+
+    for i,t_d in enumerate(t_ds):
+        t_a_g = t_a_gs[i]
+        a,lambda_ress[i,:],avg_p_ZPLs[i],b,c = calculate_avgintoZPL_vs_vibrations(t_d=t_d,t_a_g=t_a_g,Rs=[R],vib_dLs=[vib_dL], dLmax=dLmax, Ltots = [Ltot],LM1s = [LM1],lambda_ZPL=lambda_ZPL,
+            nr_pts = nr_pts, show_plots=False, plot_r=False,AR_coating=AR_coating,realistic_mirrors=realistic_mirrors, method=method,save_data=False,tag=tag)
+
+        t1 = time.time()-t0
+        if i%10==0:
+            print '%d out of %d done'%(i+1, len(t_ds))
+            print 'expected time remaining: %d seconds'%(t1/(i+1)*len(t_ds)-t1)
+
+    if save_data:
+        filename = '%s_avgZPLvstds_method_%s_R_%.1f_vibdL_%.2f_tag_%.2f_AR_%s_RealM_%s_%s.hdf5'%(tb.get_timestamp_from_now()[8:14],method,R*1.e6,vib_dL*1.e6,t_a_g*1.e6,str(AR_coating),str(realistic_mirrors),tag)
+
+        if not os.path.exists(os.path.join(data_folder, filename)):
+            print 'creating analysis file'
+            mode = 'w'    
+
+        f = h5py.File(os.path.join(data_folder, filename), 'w')
+        g = f.require_group('results')
+
+        f['/results/avg_ZPLs'] = avg_p_ZPLs
+        f['/results/lambda_ress'] = lambda_ress
+
+        data_dict = {}
+        data_dict['vibs_dL']=vib_dL
+        data_dict['Rs']=R
+        data_dict['t_ds']=t_ds
+        data_dict['t_a_gs']=t_a_gs
+        data_dict['method']=method
+        data_dict['Ltots'] = Ltot
+        data_dict['LM1s'] = LM1
+        data_dict['dLmax'] = dLmax
+        data_dict['nr_pts'] = nr_pts
+        data_dict['tag']=tag
+
+        data_dict['realistic_mirrors'] = realistic_mirrors
+        data_dict['AR_coating'] = AR_coating
+
+        for k in data_dict:
+            g.attrs[k] = data_dict[k]
+                
+        f.close()
+
+    fig,ax = plt.subplots()
+    ax.plot(t_ds*1.e6,avg_p_ZPLs)
+    ax.set_xlabel('diamond thickness (um)')
+    ax.set_ylabel('avg emission into ZPL')
+    plt.show()
+    plt.close()
+
+    return avg_p_ZPLs
+
+def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,losses=1000e-6,dnu=3.5e9,
+            lambda_ZPL=637.e-9,dLmax=1.e-9,nr_pts=51,show_plots=False,
+            fast_approx=False,AR_coating=False,plot_r=False,LM1=242e-6): #dL in nm
     """
     Calculates the average emission into the ZPL, when taking vibrations into account.
     Assumes a gaussian distribution of cavity length with FWHM of vib_dL as a result of vibrations
-
+    When using fast_approx this function does the same as calculate_avgintoZPL_w_vibrations with method=numeric.
     """
-    s = Cavity(t_d, t_a_g, R,dnu=dnu,lambda_i=lambda_ZPL)
-    s.find_res_condition(plot_r=False)
+    s = Cavity(t_d, t_a_g, R,dnu=dnu,lambda_i=lambda_ZPL,realistic_mirrors=True,AR_coating=AR_coating, res_search_range=0.01e-6)
+    s.find_res_condition(plot_r=plot_r,nr_pts=2001)
     t_a0 = s.t_a
     s.calculate_w0()
-    s.analyse_cavity(plot_Evac=False,nr_points=50001)    
-    if fast_approx:
-        s.calculate_Purcell()
-        intoZPL0 = s.calculate_into_ZPL()
+    s.analyse_cavity(plot_Evac=False,nr_points=20001)   
+    dnu_from_losses = s.calculate_dnu_from_LM1_LM2(LM1 = LM1,LM2 = losses-LM1)#calculate the linewidth based on the losses!
+    s.dnu = dnu_from_losses #need this to get the right into ZPL calculation
+    s.calculate_Purcell()
+    intoZPL0 = s.calculate_into_ZPL()
+
+    #In the high-finesse limit, the resonance condition does not end up at 637nm. The cavity object below is used to calculate the resonant wavelength.
+    sr = Cavity(t_d, t_a0, R,dnu=dnu, res_wl_search_range=1e-10,AR_coating=AR_coating,realistic_mirrors=True)
+    sr.find_res_wavelength(plot_r=False,nr_pts=101)
+
     dLs = np.linspace(-dLmax,dLmax,nr_pts)
     p_cav_length = sim_vib.gaussian(t_a0+dLs,t_a0,vib_dL)
+
     into_ZPLs = np.zeros(len(dLs))
     lambda_ress = np.zeros(len(dLs))
     Purcells=np.zeros(len(dLs))
-
-
+    dnus_si=np.zeros(len(dLs))
 
     t0 = time.time()
 
     for i,dL in enumerate(dLs):
-        # cav_lengths = np.linspace(s.optical_length-4*dL,s.optical_length+4*dL,nr_pts)
-        si = Cavity(t_d, t_a0+dL, R,dnu=dnu, res_wl_search_range=0.6e-10)
+        si = Cavity(t_d, t_a0+dL, R,dnu=dnu, res_wl_search_range=1e-10,AR_coating=AR_coating,realistic_mirrors=True)
         si.find_res_wavelength(plot_r=False,nr_pts=101)
+
         lambda_ress[i] = si.lambda_i
 
-        if fast_approx:
-            intoZPLonR = intoZPL0
-        else:
+        if not fast_approx: #in the fast approximation, do not re-calculate the emission intoZPL on resonance; rather assume the change is negligable for each.
             si.calculate_w0()
-            si.analyse_cavity()
+            si.analyse_cavity(plot_Evac=False)
+            dnu_from_losses_si = si.calculate_dnu_from_LM1_LM2(LM1 = LM1,LM2 = losses-LM1)#(LM1 = losses/2,LM2 = losses/2)#fix base losses for now!!242e-6
+            si.dnu = dnu_from_losses_si
+            dnus_si[i]=dnu_from_losses_si
             Purcells[i] = si.calculate_Purcell()
             intoZPLonR = si.calculate_into_ZPL()
-        into_ZPL = intoZPLonR  *spectral_overlap(lambda_ZPL,si.lambda_i,si.dnu)
-        into_ZPLs[i] = into_ZPL
+            into_ZPL = intoZPLonR  *spectral_overlap(sr.lambda_i,si.lambda_i,dnu_from_losses_si)
+            into_ZPLs[i] = into_ZPL
 
         t1 = time.time()-t0
-        # print 'dL %.2f at'%dL, t1
-        # print '%d out of %d done'%(i+1, len(dLs))
-        # print 'expected time remaining: %d seconds'%(t1/(i+1)*len(dLs)-t1)
+        if i%50==0:
+            print 'dL %.2f nm at'%(dL*1.e9), t1
+            print '%d out of %d done'%(i+1, len(dLs))
+            print 'expected time remaining: %d seconds'%(t1/(i+1)*len(dLs)-t1)
 
-        # print i, 'out of', len(dLs)
+    if fast_approx:
+        dnus_si = np.ones(len(into_ZPLs))*dnu_from_losses
+        into_ZPLs = intoZPL0  *spectral_overlap(sr.lambda_i,lambda_ress,dnu_from_losses)
 
     avg_p_ZPL = sim_vib.avg_p_ZPL_to_zero(into_ZPLs,p_cav_length)
 
-    # print lambda_ress
     if show_plots:
         fig,ax = plt.subplots()
         ax.plot(dLs, p_cav_length/np.sum(p_cav_length))
@@ -787,61 +1153,176 @@ def calculate_Fp_w_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dL=0.4e-9,dnu=
         plt.show()
         plt.close()
 
-        fig,ax = plt.subplots()
-        ax.plot(dLs*1.e9,Purcells)
-        ax.set_xlabel('dL w.r.t. resonance (nm)')
-        ax.set_ylabel('Purcell factor')
-        plt.show()
-        plt.close()
 
-    return into_ZPLs,Purcells,lambda_ress,avg_p_ZPL
+    return into_ZPLs,Purcells,lambda_ress,avg_p_ZPL,dnus_si
 
-def calc_avg_ZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dLs=np.linspace(0.05,1.,20)*1.e-9,dnu=3.5e9,lambda_ZPL=637.e-9,dLmax=1.e-9,nr_pts=31):
-    """
-    calculate average emission into ZPL into cavity vs FWHM of vibrations
-    """
-    avg_ZPLs = np.zeros(len(vib_dLs))
-    for i,vib_dL in enumerate(vib_dLs):
-        print i, 'out of ', len(vib_dLs), 'done'
-        # print vib_dL
-        a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True)
-        # print avg_ZPL
-        avg_ZPLs[i]=avg_ZPL
+# def calc_avg_ZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,vib_dLs=np.linspace(0.05,1.,20)*1.e-9,dnu=3.5e9,
+#         lambda_ZPL=637.e-9,dLmax=None,nr_pts=31,save_data=False,analytic_version=False,AR_coating=False):
+#     """
+#     calculate average emission into ZPL into cavity vs FWHM of vibrations
+#     """
+#     if dLmax==None:
+#         dLmaxs = vib_dLs*1.8
+#     else:
+#         dLmaxs = [dLmax]*len(vib_dLs)
 
-    fig,ax = plt.subplots()
-    ax.plot(vib_dLs,avg_ZPLs)
-    ax.set_xlabel('FWHM vibrations (nm)')
-    ax.set_ylabel('avg emission into ZPL')
-    plt.show()
-    plt.close()
+#     avg_ZPLs = np.zeros(len(vib_dLs))
+#     t0 = time.time()
 
-    return avg_ZPLs
+#     for i,vib_dL in enumerate(vib_dLs):
+#         dLmax = dLmaxs[i]
+#         # print vib_dL
+#         if analytic_version:
+#             a,b,avg_ZPL = calculate_Fp_w_fullyanalytic_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,
+#                 lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,show_plots=False,AR_coating=AR_coating)
+#         else:
+#             a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,
+#                 lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=False,show_plots=True,AR_coating=AR_coating)
+#         # print avg_ZPL
+#         avg_ZPLs[i]=avg_ZPL
+#         t1 = time.time()-t0
+#         print '%d out of %d done'%(i+1, len(vib_dLs))
+#         print 'expected time remaining: %d seconds'%(t1/(i+1)*len(vib_dLs)-t1)
 
-def calc_avg_ZPL_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,dnus=np.linspace(1,10,10)*1.e9,vib_dL=0.4,lambda_ZPL=637.e-9,dLmax=1.e-9,nr_pts=51):
-    """
-    calculate average emission into ZPL into cavity vs FWHM of vibrations
-    """
-    avg_ZPLs = np.zeros(len(dnus))
-    t0 = time.time()
-    for i,dnu in enumerate(dnus):
-        # print vib_dL
-        a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True)
-        # print avg_ZPL
-        t1 = time.time()-t0
-        # print 'at', t1
-        print '%d out of %d done'%(i+1, len(dnus))
-        print 'expected time remaining: %d seconds'%(t1/(i+1)*len(dnus)-t1)
 
-        avg_ZPLs[i]=avg_ZPL
+#     if save_data:
+#         filename = '%s_avgZPLvsvibs_R_%.1f_td_%.2f_tag_%.2f_dnu_%.2f'%(tb.get_timestamp_from_now()[8:14],R*1.e6,t_d*1.e6,t_a_g*1.e6,dnu*1.e-9)
+#         data_dict = {}
+#         data_dict['vibs_dL']=vib_dLs
+#         data_dict['avg_ZPLs']=avg_ZPLs
+#         data_dict['R']=R
+#         data_dict['t_d']=t_d
+#         data_dict['t_a_g']=t_a_g
+#         data_dict['dnu']=dnu
+#         data_dict['dLmax'] = dLmax
+#         data_dict['nr_pts'] = nr_pts
+#         save_to_json_file(data_folder,filename,data_dict)
 
-    fig,ax = plt.subplots()
-    ax.plot(dnus*1.e-9,avg_ZPLs)
-    ax.set_xlabel('cavity linewidth (GHz)')
-    ax.set_ylabel('avg emission into ZPL')
-    plt.show()
-    plt.close()
 
-    return avg_ZPLs
+#     fig,ax = plt.subplots()
+#     ax.plot(vib_dLs,avg_ZPLs)
+#     ax.set_xlabel('FWHM vibrations (nm)')
+#     ax.set_ylabel('avg emission into ZPL')
+#     plt.show()
+#     plt.close()
+
+#     return avg_ZPLs
+
+# def calc_avg_ZPL_vs_finesse(t_d=4.e-6,t_a_g=1.2e-6,R=18.e-6,dnus=np.linspace(1,10,10)*1.e9,vib_dL=0.4,lambda_ZPL=637.e-9,
+#         dLmax=1.e-9,nr_pts=51,save_data=False,AR_coating=False):
+#     """
+#     calculate average emission into ZPL into cavity vs losses
+#     """
+#     avg_ZPLs = np.zeros(len(dnus))
+#     t0 = time.time()
+#     for i,dnu in enumerate(dnus):
+#         # print vib_dL
+#         if analytic_version:
+#             a,b,avg_ZPL = calculate_Fp_w_fullyanalytic_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,
+#                     lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True,AR_coating=AR_coating)
+#         else:
+#             a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,
+#                     lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,fast_approx=True,AR_coating=AR_coating)
+#         # print avg_ZPL
+#         t1 = time.time()-t0
+#         # print 'at', t1
+#         print '%d out of %d done'%(i+1, len(dnus))
+#         print 'expected time remaining: %d seconds'%(t1/(i+1)*len(dnus)-t1)
+
+#         avg_ZPLs[i]=avg_ZPL
+
+#     if save_data:
+#         filename = '%s_avgZPLvsF_R_%.1f_td_%.2f_tag_%.2f_vibZPL_%.2f'%(tb.get_timestamp_from_now()[8:14],R*1.e6,t_d*1.e6,t_a_g*1.e6,vib_dL*1.e9)
+#         data_dict = {}
+#         data_dict['vib_dL']=vib_dL
+#         data_dict['avg_ZPLs']=avg_ZPLs
+#         data_dict['R']=R
+#         data_dict['t_d']=t_d
+#         data_dict['t_a_g']=t_a_g
+#         data_dict['dnus']=dnus
+#         data_dict['dLmax'] = dLmax
+#         data_dict['nr_pts'] = nr_pts
+#         save_to_json_file(data_folder,filename,data_dict)
+
+#     fig,ax = plt.subplots()
+#     ax.plot(dnus*1.e-9,avg_ZPLs)
+#     ax.set_xlabel('cavity linewidth (GHz)')
+#     ax.set_ylabel('avg emission into ZPL')
+#     plt.show()
+#     plt.close()
+
+
+
+#     return avg_ZPLs
+
+
+
+# def calc_avg_ZPL_vs_t_d_s(t_d_s=np.linspace(1.e-6,15.e-6,15),t_a_g=1.2e-6,R=18.e-6,vib_dL=0.3e-9,losses=1000e-6,
+#         lambda_ZPL=637.e-9,dLmax=0.54e-9,nr_pts=31,save_data=False,mode='',analytic_version=False,AR_coating=False):
+#     """
+#     calculate average emission into ZPL into cavity vs thickness of diamond
+#     """
+#     avg_ZPLs = np.zeros(len(t_d_s))
+#     t0 = time.time()
+
+#     for i,t_d in enumerate(t_d_s):
+#         if i==0: 
+#             plot_r=True
+#         else:
+#             plot_r=False
+#         if AR_coating:
+#             dnu = (scipy.constants.c/(2*(t_d*n_diamond+t_a_g+lambda_ZPL/4)))/(2*math.pi/losses)#finesse to dnu calculation
+#         else:
+#             dnu = (scipy.constants.c/(2*(t_d*n_diamond+t_a_g)))/(2*math.pi/losses)#finesse to dnu calculation
+
+#         if dnu<1:
+#             nr_points=601
+#         elif dnu<2:
+#             nr_points=401
+#         elif dnu<4:
+#             nr_points=201
+#         else:
+#             nr_points=nr_pts
+#         if analytic_version:
+#             a,b,avg_ZPL = calculate_Fp_w_fullyanalytic_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,losses=losses,
+#                 lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_pts,show_plots=False,AR_coating=AR_coating)
+#         else:
+#             a,b,c,avg_ZPL = calculate_Fp_w_vibrations(t_d=t_d,t_a_g=t_a_g,R=R,vib_dL=vib_dL,dnu=dnu,losses=losses,
+#                 lambda_ZPL=lambda_ZPL,dLmax=dLmax,nr_pts=nr_points,fast_approx=True,show_plots=False,AR_coating=AR_coating,plot_r=plot_r)
+#         # print avg_ZPL
+#         avg_ZPLs[i]=avg_ZPL
+#         t1 = time.time()-t0
+#         if not analytic_version:
+#             print '%d out of %d done'%(i+1, len(t_d_s))
+#             print 'expected time remaining: %d seconds'%(t1/(i+1)*len(t_d_s)-t1)
+
+
+#     if save_data:
+#         filename = '%s_avgZPLvstds_R_%.1f_tag_%.2f_vibdL_%.2f,loss_%.2f_%s'%(tb.get_timestamp_from_now()[8:14],R*1.e6,t_a_g*1.e6,vib_dL*1.e9,losses*1.e6,mode)
+#         data_dict = {}
+#         data_dict['vib_dL']=vib_dL
+#         data_dict['avg_ZPLs']=avg_ZPLs
+#         data_dict['R']=R
+#         data_dict['t_d_s']=t_d_s
+#         data_dict['t_a_g']=t_a_g
+#         data_dict['dnu']=dnu
+#         data_dict['dLmax'] = dLmax
+#         data_dict['nr_pts'] = nr_pts
+#         data_dict['mode'] = mode
+#         data_dict['losses'] = losses
+#         save_to_json_file(data_folder,filename,data_dict)
+
+
+#     fig,ax = plt.subplots()
+#     ax.plot(t_d_s*1.e6,avg_ZPLs)
+#     ax.set_xlabel('diamond thickness (um)')
+#     ax.set_ylabel('avg emission into ZPL')
+#     plt.show()
+#     plt.close()
+
+#     return avg_ZPLs
+
+
 
 if __name__ == '__main__':
     R=18.e-6
@@ -931,16 +1412,9 @@ def dielmirror_narrowsb_reflectivity(n_1,n_2,M,lambda_design=637.e-9,na=n_air,nb
     Gamma = Gamma_Mp1  
 
     Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 1.27335*L_1,rho_odd)
-<<<<<<< HEAD
-    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 2.94525*L_2,rho_even)
-    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 0.94808*L_1,rho_odd)
-    Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 2.99742*L_1,rho_even)
-
-=======
     Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_2, 2.94525*L_2,rho_even)
     Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, 0.94808*L_1,rho_odd)
     Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_2, 2.99742*L_2,rho_even)
->>>>>>> cec6bd265b20670c6243dd1107ed7396fc81c267
 
     for n in np.arange(M):
         Gamma = dielmirror_recursive_refl_coeff(Gamma, ks_1, L_1,rho_odd)
@@ -952,10 +1426,7 @@ def dielmirror_narrowsb_reflectivity(n_1,n_2,M,lambda_design=637.e-9,na=n_air,nb
     return Gamma,Refl
 
 
-<<<<<<< HEAD
-=======
 
->>>>>>> cec6bd265b20670c6243dd1107ed7396fc81c267
 def calculate_transfer_matrices_mirrors(wavelength, lambda_design=637e-9,n_air=n_air,n_H=2.15,n_L=1.46,na=n_air,nb=n_air,number_of_layers=10):
     k_H = 2.*math.pi*n_H/wavelength
     k_L = 2.*math.pi*n_L/wavelength
