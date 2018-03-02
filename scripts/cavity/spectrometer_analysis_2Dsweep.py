@@ -312,6 +312,10 @@ class spectrometer_2D_analysis(spectrometer_analysis):
                     modes = self.diamond_air_modes(air_length = air_length,diamond_thickness=diamond_thickness,
                         nr_points=self.ana_pars['nr_files']) 
                         #important to take same nr_points for the modes as filenumbers
+                elif mode_type == 'diamond_air_modes_AR':
+                    modes = self.diamond_air_modes_AR(air_length = air_length,diamond_thickness=diamond_thickness,
+                        nr_points=self.ana_pars['nr_files']) 
+                        #important to take same nr_points for the modes as filenumbers
                 elif mode_type == 'air_modes':
                     modes = self.pure_air_modes(cavity_length=cavity_length,
                         nr_points=self.ana_pars['nr_files'])
@@ -529,6 +533,7 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         cmap = kw.pop('cmap','YlGnBu')
         vmax = kw.pop('vmax',self.ana_pars['vmax'])
         vmin = kw.pop('vmin',self.ana_pars['vmin'])
+        air_length=kw.pop('air_length',self.ana_pars['air_length'])
         aspect = kw.pop('aspect','auto')
         save_fig = kw.pop('save_fig',True)
         plot_x = kw.pop('plot_x','V')
@@ -545,10 +550,10 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             xs_xl = np.linspace(self.Vs[0]-self.V_extent_correction,self.Vs[-1]+self.V_extent_correction,len(self.filenumbers)+1)
 
         elif plot_x == 'L':
-            ax.set_xlim((self.ana_pars['air_length']+self.dLs[0]-(self.dLs[1]-self.dLs[0])/2.)*1.e6,(self.ana_pars['air_length']+self.dLs[-1]+(self.dLs[-1]-self.dLs[-2])/2.)*1.e6)
-            extent = [(self.ana_pars['air_length']+self.dLs-(self.dLs[1]-self.dLs[0])/2.)*1e6,(self.ana_pars['air_length']+self.dLs+(self.dLs[-1]-self.dLs[-2])/2.)*1.e6,\
+            ax.set_xlim((air_length+self.dLs[0]-(self.dLs[1]-self.dLs[0])/2.)*1.e6,(air_length+self.dLs[-1]+(self.dLs[-1]-self.dLs[-2])/2.)*1.e6)
+            extent = [(air_length+self.dLs-(self.dLs[1]-self.dLs[0])/2.)*1e6,(air_length+self.dLs+(self.dLs[-1]-self.dLs[-2])/2.)*1.e6,\
                 self.frequencies[-1]-self.frq_extent_correction,self.frequencies[0]+self.frq_extent_correction]        
-            xs_xl = (self.ana_pars['air_length']+self.dLs)*1.e6
+            xs_xl = (air_length+self.dLs)*1.e6
         ax.set_ylim([self.frequencies[-1]-self.frq_extent_correction,self.frequencies[0]+self.frq_extent_correction])
 
         #add an extra point to the Vs array, to make the pcolor plot work
@@ -564,10 +569,10 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             im = ax.pcolormesh(x,y,10.0*np.log10(self.intensities))  
         else: 
             print 'ERROR: scale argument should be linear or log'
-        ax = self.set_axes_basics(ax,plot_x=plot_x)
+        ax = self.set_axes_basics(ax,plot_x=plot_x, air_length=air_length)
         #ax.set_title(self.plot_name+title)
-        plt.colorbar(im)
-
+        cb = plt.colorbar(im)
+        cb.set_label('spectrometer counts')
 
         if save_fig:
             try: 
@@ -688,7 +693,9 @@ class spectrometer_2D_analysis(spectrometer_analysis):
             modes,ax = self.plot_air_modes(air_length=air_length,nr_points = self.ana_pars['nr_files'],ax=ax,return_modes=True,x=x,**kw)
         elif mode_type == 'diamond_modes':
             modes,ax = self.plot_diamond_modes(diamond_thickness=diamond_thickness,ax=ax,return_modes=True,x=x,**kw)
-                        
+        elif mode_type == 'diamond_air_modes_AR':
+            modex,ax = self.plot_diamond_air_modes_AR(air_length = air_length,diamond_thickness =diamond_thickness,
+                ax=ax,nr_points=self.ana_pars['nr_files'], return_modes=True,x=x,**kw)
 
         #ms_error, u_ms_error = self.calculate_overlap_quality(self.peak_frq,self.peak_V,modes,**kw)
         #print 15*'*'
@@ -891,7 +898,6 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         #could improve by checking which one is nearer
         del_is = np.array([])
         for i in np.where(abs(np.diff(Vs_near_frq))<=min_V_int_distance)[0]: 
-
             del_is = np.append(del_is,i)
         idxs_near_frq = np.delete(idxs_near_frq,del_is)
         print 'deleting ', len(del_is), 'intersects'
@@ -908,13 +914,13 @@ class spectrometer_2D_analysis(spectrometer_analysis):
                 frq_first = frq_nearest
                 V_last = V_nearest+dV
                 # print V_last
-                if V_last>self.ana_pars['V_max']:
+                if V_last>max(self.ana_pars['V_max'],self.ana_pars['V_min']):
                     continue 
                 frq_last = self.find_nearest_peak_frq_at_V(frq,V_last)
             elif frq_nearest < frq:
                 V_first = V_nearest-dV
                 # print V_first
-                if V_first<self.ana_pars['V_min']:
+                if V_first<min(self.ana_pars['V_max'],self.ana_pars['V_min']):
                     continue
                 frq_first = self.find_nearest_peak_frq_at_V(frq,V_first)
                 V_last = V_nearest
@@ -1121,6 +1127,45 @@ class spectrometer_2D_analysis(spectrometer_analysis):
         if ax == None:
             fig,ax = plt.subplots()
         nu_diamond_air = self.diamond_air_modes(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
+
+        print nu_diamond_air
+
+        for N,nu in enumerate(nu_diamond_air):
+            if N==0:
+                ax.plot(x,nu,'m',lw=2,label='diamond-air modes')
+            ax.plot(x,nu, 'm',lw=2)
+            if (nu[0]<ax.get_ylim()[-1]) and (nu[0]>ax.get_ylim()[0]) and show_Ns:
+                ax.text(ax.get_xlim()[0],nu[0], 'N={}'.format(N))
+
+        if return_modes:
+            return nu_diamond_air,ax
+        return ax
+
+    def diamond_air_modes_AR(self, air_length = 1.e-6, diamond_thickness = 4.e-6, nr_points=31):
+        cavity_length= air_length+diamond_thickness
+
+        lengths = cavity_length + self.dLs 
+
+        max_nr_modes = 850
+        mode_nrs = np.arange(max_nr_modes)
+
+        Ls,Ns = np.meshgrid(lengths,mode_nrs)
+        Ltot =  Ls+(n_diamond-1)*diamond_thickness
+        Lred = Ls-(n_diamond+1)*diamond_thickness
+
+        nu_diamond_air_AR = c / (2*math.pi*(Ltot)) * \
+            (math.pi*(Ns+1/2) - (-1)**Ns * np.arcsin( (1.77**2-n_diamond)/(n_diamond+1.77**2) * \
+            np.cos( ((Ns+1/2)*math.pi*Lred/Ltot)))) 
+
+        return nu_diamond_air_AR/1.e12
+
+    def plot_diamond_air_modes_AR(self, air_length=1.e-6,diamond_thickness=4.e-6,ax = None,nr_points=31, return_modes=False,**kw):
+        x = kw.pop('x',self.Vs)
+        show_Ns = kw.pop('show_Ns',True)
+
+        if ax == None:
+            fig,ax = plt.subplots()
+        nu_diamond_air = self.diamond_air_modes_AR(air_length=air_length,diamond_thickness=diamond_thickness,nr_points=nr_points)
 
         print nu_diamond_air
 
