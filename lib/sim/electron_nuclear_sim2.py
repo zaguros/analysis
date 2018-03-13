@@ -9,12 +9,16 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import warnings
 
+import copy
+
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
 
 #######################
 ### Basic functions ###
 #######################
+
+'''To do make all this a class!'''
 
 def pauli():
 	'''Define pauli spin matrices'''
@@ -75,7 +79,7 @@ def basic_spin_states():
 	return ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy
 
 def basic_spin_states_S1():
-
+	# Version for SU(1)
 	rhom = qutip.qeye(3)/3
 	ket0 = qutip.basis(3,1)
 	bra0 = qutip.basis(3,1).dag()
@@ -89,7 +93,7 @@ def basic_spin_states_S1():
 
 	return ket0, bra0, ket1, bra1, ketm1, bram1, rho0, rho1, rhom1, rhom
 
-### create a set of usefull simple states and gates
+### create a set of usefull simple states and gates (should live in a class)
 Id, sx, sy, sz = pauli()                                # Electron spin operators
 Id_S1, sx_S1, sy_S1, sz_S1 = pauli_S1()					# Spin 1
 X,Y,Z,mX,mY,mZ,x,y,z,mx,my,mz = basic_spin_rotations()  # Basic gates
@@ -136,8 +140,6 @@ class NV_system(object):
 
 	def __init__(self,**kw):
 
-		self.decouple_scheme = kw.pop('decouple_scheme','XY4')
-
 		self.B_field = kw.pop('B_field',414.1871869) 
 		self.gamma_c = 1.0705e3 #g-factor for C13 in Hz/G
 
@@ -147,9 +149,8 @@ class NV_system(object):
 		self.inc_nitrogen = kw.pop('inc_nitrogen',False)
 
 		self.add_carbons(**kw)
-		self.define_useful_states()
-		self.define_e_operators()
-		self.define_gates()
+		self.recalculate()
+	
 
 	def add_carbons(self, **kw):
 
@@ -214,9 +215,14 @@ class NV_system(object):
 		''' Helper function to embed e operator combined with an operator on carbons '''
 		return qutip.tensor([e_operator] + [Id] * self.num_carbons + [N_operator])
 
+	def recalculate(self):
+		self.recalc_Hamiltonian = True
+		self.define_useful_states()
+		self.define_e_operators()	
+
 	def define_useful_states(self):
 		''' standard init state for system '''
-		self.initial_state = qutip.tensor([rho0] + [rhom] * self.num_carbons + [rhom_S1] * self.inc_nitrogen)
+		self.NV0_carbons_mixed = qutip.tensor([rho0] + [rhom] * self.num_carbons + [rhom_S1] * self.inc_nitrogen)
 	
 	def define_e_operators(self):
 		''' Define commonly used electronic operations '''
@@ -229,59 +235,6 @@ class NV_system(object):
 		self._mxe = self.e_op(mx)
 		self._mye = self.e_op(my)
 		self._Ide = self.e_op(Id)
-
-	
-	def define_gates(self):
-		''' This is written this way so that can be easily overwritten for more complex behaviour (say using Hamiltonians instead of unitaries)'''
-		self.Xe = lambda : self._Xe
-		self.Ye = lambda : self._Ye
-		self.mXe = lambda : self._mXe
-		self.mYe = lambda : self._mYe
-		self.xe = lambda : self._xe
-		self.ye = lambda : self._ye
-		self.mxe = lambda : self._mxe
-		self.mye = lambda : self._mye
-		self.re = lambda theta, phi : self.e_op(spin_theta_rotation(theta, phi))
-
-		self.proj0 = lambda : self.e_op(rho0)
-		self.proj1 = lambda : self.e_op(rho1)
-
-
-	def compile(self,seq,reps = 1):
-		''' Again, written this way for flexibility '''
-		gate = self._Ide
-
-		for elem in seq:
-			gate = elem*gate
-
-		gate = gate**reps
-
-		return gate
-
-	def evolve(self,system,operator, norm = False):
-		sysout = operator * system * operator.dag()
-
-		return sysout.unit() if norm else sysout 
-
-	def measure_e(self,sys_state,e_state = 0):
-		if e_state == 0:
-			e_state = self.proj0()
-		elif e_state == 1:
-			e_state = self.proj1()
-
-		return np.real((e_state*sys_state).tr())
-
-	def measure_c(self,sys_state,c_num=1,c_state = 0):
-		''' Not directly accessible, but sometimes useful'''
-		if c_state == 0:
-			c_state = rho0
-		elif c_state == 1:
-			c_state = rh1
-
-		proj = self.c_op(c_state,c_num)
-
-		return np.real((proj*sys_state).tr())
-
 
 	def NV_carbon_system_Hamiltonian(self):
 		''' Function to calculate the NV C13 system Hamiltonian '''
@@ -307,44 +260,190 @@ class NV_system(object):
 
 		return (-1j*self.NV_carbon_system_Hamiltonian()*tau).expm()
 
+class basic_gate_sequence(object):
+
+	def __init__(self,NV_system,**kw):
+		self.NVsys = NV_system
+		self.Ide = lambda : self.NVsys._Ide
+		self.seq_operation = self.Ide() # Start with an identity operation
+		self._define_gates()
+
+	def _reset_sequence(self):
+		self.seq_operation = self.Ide()
+
+	def add_gate_to_seq(self,gate,reps=1,before=False):
+		
+		if isinstance(gate,basic_gate_sequence): # Combining sequences
+			gate = copy.deepcopy(gate.seq_operation)
+
+		if before:
+			self.seq_operation = self.seq_operation * (gate**reps)
+		else:
+			self.seq_operation = (gate**reps) * self.seq_operation
+
+		return self
+
+	def gate_function_maker_helper(self,unitary):
+		return lambda before=False : self.add_gate_to_seq(unitary)
+
+	def _define_gates(self):
+		''' This is written this way so that could be overwritten for more complex behaviour (say using Hamiltonians instead of unitaries)'''
+		self.Xe = self.gate_function_maker_helper(self.NVsys._Xe)
+		self.Ye = self.gate_function_maker_helper(self.NVsys._Ye)
+		self.mXe = self.gate_function_maker_helper(self.NVsys._mXe)
+		self.mYe = self.gate_function_maker_helper(self.NVsys._mYe)
+		self.xe = self.gate_function_maker_helper(self.NVsys._xe)
+		self.ye = self.gate_function_maker_helper(self.NVsys._ye)
+		self.mxe = self.gate_function_maker_helper(self.NVsys._mxe)
+		self.mye = self.gate_function_maker_helper(self.NVsys._mye)
+		
+		self.proj0 = self.gate_function_maker_helper(self.NVsys.e_op(rho0))
+		self.proj1 = self.gate_function_maker_helper(self.NVsys.e_op(rho1))
+
+		self.re = lambda theta, phi, before=False: self.add_gate_to_seq(self.NVsys.e_op(spin_theta_rotation(theta, phi)))
+
+	def apply_sequence(self,state,reps=1,norm = False):
+		operator = self.seq_operation**reps
+		sysout = operator * state * operator.dag()
+
+		return sysout.unit() if norm else sysout 
+
+	def copy_seq(self):
+		copied_seq = basic_gate_sequence(self.NVsys)
+		copied_seq.seq_operation = self.seq_operation
+		return copied_seq
+
+
+# def combine_gate_sequences(seq_list,reps = None):
+# 	'''Helper function to combine gate sequences'''
+
+# 	if len(seq_list) < 2:
+# 		print "Not enough sequences passed!"
+# 		return False
+
+# 	if reps is None:
+# 		reps = np.zeros(len(seq_list),1)
+
+# 	seq = seq_list[0]**reps[0]
+# 	for se,rep in zip(seq_list[1:],reps[1:]):
+# 		seq.add_gate_to_seq(se,reps=rep)
+
+# 	return seq
+
+class NV_gate_sequence(basic_gate_sequence):
+# Add in more sophisticated gates (i.e. nuclear spin gates)
+
+	def __init__(self,NV_system,**kw):
+		basic_gate_sequence.__init__(self,NV_system,**kw)
+		self.decouple_scheme = kw.pop('decouple_scheme','XY4')
+
+	def copy_seq(self):
+		copied_seq = NV_gate_sequence(self.NVsys)
+		copied_seq.seq_operation = self.seq_operation
+		return copied_seq
 
 	def nuclear_gate(self,N,tau,**kw):
+
 		'''Evolution during a decouple unit'''
-		
-		evNV_C_tau = self.NV_carbon_ev(self.nuclear_gate_tau(tau, double_sided = True))
-		evNV_C_tau_single = self.NV_carbon_ev(self.nuclear_gate_tau(tau))
-		evNV_C_2tau = self.NV_carbon_ev(self.nuclear_gate_tau(2*tau, double_sided = True))
+
+		evNV_C_tau = self.NVsys.NV_carbon_ev(self.nuclear_gate_tau(tau, double_sided = True))
+		evNV_C_tau_single = self.NVsys.NV_carbon_ev(self.nuclear_gate_tau(tau))
+		evNV_C_2tau = self.NVsys.NV_carbon_ev(self.nuclear_gate_tau(2*tau, double_sided = True))
 
 		scheme = kw.pop('scheme',self.decouple_scheme)
+
+		seq = basic_gate_sequence(self.NVsys)
 
 		if scheme == 'XY4':
 			if N%4 != 0:
 				raise Exception('Incompatible number of pulses!')
-			gate = self.compile([evNV_C_tau,self.Xe(),evNV_C_tau_single,
-								self.compile([evNV_C_tau_single,self.Ye(),evNV_C_2tau,self.Xe(),evNV_C_tau_single],reps = (N/2-1)),
-								evNV_C_tau_single,self.Ye(),evNV_C_tau])
+		
+			seq.add_gate_to_seq(evNV_C_tau)
+			seq.Xe()
+			seq.add_gate_to_seq(evNV_C_tau_single)
+
+			seq_repeat = basic_gate_sequence(self.NVsys)
+			seq_repeat.add_gate_to_seq(evNV_C_tau_single)
+			seq_repeat.Ye()
+			seq_repeat.add_gate_to_seq(evNV_C_2tau)
+			seq_repeat.Xe()
+			seq_repeat.add_gate_to_seq(evNV_C_tau_single)
+			seq.add_gate_to_seq(seq_repeat,reps=(N/2-1))
+
+			seq.add_gate_to_seq(evNV_C_tau_single)
+			seq.Ye()
+			seq.add_gate_to_seq(evNV_C_tau)
 
 		elif scheme == 'XY8':
 			if N%8 != 0:
 				raise Exception('Incompatible number of pulses!')
-			gate = self.compile([evNV_C_tau,self.Xe(),evNV_C_2tau,self.Ye(),evNV_C_2tau,self.Xe(),evNV_C_2tau,self.Ye(),evNV_C_tau_single,
-								self.compile([self.compile([evNV_C_tau_single,self.Ye(),evNV_C_2tau,self.Xe(),evNV_C_tau_single],reps=2),
-								 			  self.compile([evNV_C_tau_single,self.Xe(),evNV_C_2tau,self.Ye(),evNV_C_tau_single],reps=2)],reps = (N/8-1)),
-								evNV_C_tau_single,self.Ye(),evNV_C_2tau,self.Xe(),evNV_C_2tau,self.Ye(),evNV_C_2tau,self.Xe(),evNV_C_tau])
+
+			seq.add_gate_to_seq(evNV_C_tau)
+			seq.Xe()
+			seq.add_gate_to_seq(evNV_C_2tau)
+			seq.Ye()
+			seq.add_gate_to_seq(evNV_C_2tau)
+			seq.Xe()
+			seq.add_gate_to_seq(evNV_C_2tau)
+			seq.Ye()
+			seq.add_gate_to_seq(evNV_C_tau_single)
+
+			seq_repeat = basic_gate_sequence(self.NVsys)
+			seq_repeata = basic_gate_sequence(self.NVsys)
+			seq_repeata.add_gate_to_seq(evNV_C_tau_single)
+			seq_repeata.Ye()
+			seq_repeata.add_gate_to_seq(evNV_C_2tau)
+			seq_repeata.Xe()
+			seq_repeata.add_gate_to_seq(evNV_C_tau_single)
+
+			seq_repeatb = basic_gate_sequence(self.NVsys)
+			seq_repeatb.add_gate_to_seq(evNV_C_tau_single)
+			seq_repeatb.Xe()
+			seq_repeatb.add_gate_to_seq(evNV_C_2tau)
+			seq_repeatb.Ye()
+			seq_repeatb.add_gate_to_seq(evNV_C_tau_single)
+
+			seq_repeat.add_gate_to_seq(seq_repeata,reps=2).add_gate_to_seq(seq_repeatb,reps=2)
+			seq.add_gate_to_seq(seq_repeat,reps = (N/8-1))
+
+			seq.add_gate_to_seq(evNV_C_tau)
+			seq.Ye()
+			seq.add_gate_to_seq(evNV_C_2tau)
+			seq.Xe()
+			seq.add_gate_to_seq(evNV_C_2tau)
+			seq.Ye()
+			seq.add_gate_to_seq(evNV_C_2tau)
+			seq.Xe()
+			seq.add_gate_to_seq(evNV_C_tau_single)
 
 		elif scheme == 'simple': # CHECK THIS
 			if N<2:
-				raise Exception('N must be greater than 2!')
-			gate = self.compile([evNV_C_tau,self.Xe(),evNV_C_tau_single,self.compile([evNV_C_tau_single,self.Xe(),evNV_C_tau_single],reps = N-2),evNV_C_tau_single,self.Xe(),evNV_C_tau])
+				seq.add_gate_to_seq(evNV_C_tau)
+				seq.Xe()
+				seq.add_gate_to_seq(evNV_C_tau)
+			else:
+				seq.add_gate_to_seq(evNV_C_tau)
+				seq.Xe()
+				seq.add_gate_to_seq(evNV_C_tau_single)
+
+				seq_repeat = basic_gate_sequence(self.NVsys)
+				seq_repeat.add_gate_to_seq(evNV_C_tau_single)
+				seq_repeat.Xe()
+				seq_repeat.add_gate_to_seq(evNV_C_tau_single)
+				seq.add_gate_to_seq(seq_repeat,reps=(N-2))
+
+				seq.add_gate_to_seq(evNV_C_tau_single)
+				seq.Xe()
+				seq.add_gate_to_seq(evNV_C_tau)
+
 		else:
 			raise Exception('Unknown scheme!')
 
-		return gate
-	
+		self.add_gate_to_seq(seq,**kw)
 
 	def nuclear_gate_tau(self,tau,double_sided = False):
 		'''Helper function to get tau for gate seq'''
-		tau_correction_factor = self.tau_correction_factor if hasattr(self,'tau_correction_factor') else 0
+		tau_correction_factor = self.NVsys.tau_correction_factor if hasattr(self.NVsys,'tau_correction_factor') else 0
 
 		scale_fact = 0.5 if not(double_sided) else 1.0
 
@@ -352,20 +451,76 @@ class NV_system(object):
 			raise Exception('mw_duration too long!')
 		return (tau - scale_fact*tau_correction_factor)
 
-	
-	def nuclear_phase_gate(self,carbon_nr, phase, state = 'sup'):
+		
+	def wait_gate(self,tau,**kw):
+		''' Do nothing! '''
+		self.add_gate_to_seq(self.NVsys.NV_carbon_ev(tau),**kw)
+
+	def nuclear_phase_gate(self,carbon_nr, phase, state = 'sup',**kw):
+
 		''' For small waits (no decoupling) '''
 		if state == 'sup':
-			precession_freq = self.c_prec_freqs[carbon_nr-1,2]
+			precession_freq = self.NVsys.c_prec_freqs[carbon_nr-1,2]
 		elif state == 0:
-			precession_freq = self.c_prec_freqs[carbon_nr-1,0]
+			precession_freq = self.NVsys.c_prec_freqs[carbon_nr-1,0]
 		elif state == 1:
-			precession_freq = self.c_prec_freqs[carbon_nr-1,1]
+			precession_freq = self.NVsys.c_prec_freqs[carbon_nr-1,1]
 		# NEED TO CHECK HOW PHASE IS DEFINED IN OUR EXPM
 		phase = (np.pi*float(-1*phase)/180)%(2*np.pi)
 		dec_time = phase/precession_freq
-		return self.compile([self.NV_carbon_ev(dec_time)])
+		
+		self.wait_gate(dec_time,**kw)
 
+	def mbi_sequence(self,N,tau):
+
+		self.ye()
+		self.nuclear_gate(N ,tau)
+		self.mxe()
+
+
+
+class NV_experiment(object):
+
+	def __init__(self,NV_system,**kw):
+		self.NVsys = NV_system
+		self.initial_state = self.NVsys.NV0_carbons_mixed
+		self.reset_output_state()
+
+	def reset_init_state(self, state = None):
+		if state is None:
+			self.initial_state = self.NVsys.NV0_carbons_mixed
+		else:
+			self.initial_state = copy.deepcopy(state)
+		self.reset_output_state()
+
+	def reset_output_state(self):
+		self.output_state = copy.deepcopy(self.initial_state)
+
+	def gate_sequence(self): # Convenience function to quickly get a new gate sequence
+		return NV_gate_sequence(self.NVsys)
+
+	def apply_gates(self,gate_sequence,**kw):
+		self.output_state = gate_sequence.apply_sequence(self.output_state, **kw)
+		return self
+
+	def measure_e(self,e_state = 0):
+		if e_state == 0:
+			e_state = self.NVsys.e_op(rho0)
+		elif e_state == 1:
+			e_state = self.NVsys.e_op(rho1)
+
+		return np.real((e_state*self.output_state).tr())
+
+	def measure_c(self,c_num=1,c_state = 0):
+		''' Not directly accessible, but sometimes useful'''
+		if c_state == 0:
+			c_state = rho0
+		elif c_state == 1:
+			c_state = rh1
+
+		proj = self.NVsys.c_op(c_state,c_num)
+
+		return np.real((proj*self.output_state).tr())
 
 def gaussian_envelope(t,duration):
 	T_herm = 0.1667*duration
@@ -385,7 +540,6 @@ class noisy_NV_system(NV_system):
 		NV_system.__init__(self,**kw)
 		self.define_useful_states()
 		self.define_e_operators()
-		self.define_gates()
 
 	def set_noisy_params(self,**kw):
 
@@ -399,7 +553,6 @@ class noisy_NV_system(NV_system):
 			self.tau_correction_factor = self.mw_duration
 		
 		self.define_e_operators()
-		self.define_gates()
 
 	def finite_microwave_pulse(self,duration,theta,phi,steps=20):
 
@@ -457,38 +610,49 @@ def C13_fingerprint(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7), ca
 			carbon_params = NV_system.carbon_params
 			c_prec_freqs = NV_system.c_prec_freqs
 			
+			nv_expm = NV_experiment(NV_system)
+			
+
 			for j, carbon_param in enumerate(carbon_params):
 
 				NV_system.carbon_params = [carbon_param]
 				NV_system.num_carbons = 1
 				NV_system.c_prec_freqs = [c_prec_freqs[j]]
-				NV_system.recalc_Hamiltonian = True
-				NV_system.define_useful_states()
-				NV_system.define_e_operators()
-				NV_system.define_gates()
-				
+				NV_system.recalculate()
+				nv_expm.reset_init_state()
+
 
 				for i,tau in enumerate(tau_range):
+					gate_seq = nv_expm.gate_sequence()
+					# gate_seq._reset_sequence()
+					gate_seq.xe(), gate_seq.nuclear_gate(N ,tau), gate_seq.mxe()
+					nv_expm.apply_gates(gate_seq)
 
-					gate_seq = NV_system.compile([NV_system.xe(),NV_system.nuclear_gate(N ,tau),NV_system.mxe()]) 
-					exp0[i,j] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,gate_seq))
+					exp0[i,j] = nv_expm.measure_e()
+
+					nv_expm.reset_output_state()
 
 			NV_system.carbon_params = carbon_params
 			NV_system.num_carbons = len(carbon_params)
 			NV_system.c_prec_freqs = c_prec_freqs
-			NV_system.recalc_Hamiltonian = True
-			NV_system.define_useful_states()
-			NV_system.define_e_operators()
-			NV_system.define_gates()
+			NV_system.recalculate()
 
 		else:
 
 			exp0 = np.zeros((np.shape(tau_range)[0]))
+			nv_expm = NV_experiment(NV_system)
+
 			for i,tau in enumerate(tau_range):
 
-				gate_seq = NV_system.compile([NV_system.xe(),NV_system.nuclear_gate(N ,tau),NV_system.mxe()]) 
-				exp0[i] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,gate_seq))
-			
+				gate_seq = nv_expm.gate_sequence()
+				gate_seq.xe()
+				gate_seq.nuclear_gate(N ,tau)
+				gate_seq.mxe()
+
+				nv_expm.apply_gates(gate_seq)
+				exp0[i] = nv_expm.measure_e()
+				
+				nv_expm.reset_output_state()
 	else:
 		exp0 = 0.5*(1+dyn_dec_signal(NV_system.carbon_params, tau_range, N,sign = NV_system.sign)).T
 
@@ -504,18 +668,20 @@ def C13_fingerprint(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7), ca
 	
 				
 
-def sweep_MW_amp(NV_system,N = 11, amp_range =  np.arange(0.1,2,0.05), tau = 7.5e-6,**kw):
-	NV_system.decouple_scheme = 'simple'
+def sweep_MW_amp(noisy_NV_system,N = 11, amp_range =  np.arange(0.1,2,0.05), tau = 7.5e-6,**kw):
+
+	nv_expm = NV_experiment(noisy_NV_system)
 
 	results = np.zeros(np.shape(amp_range))
 	
 	for i,amp in enumerate(amp_range):
-		NV_system.set_noisy_params(amp_val = amp)
 
-		pulse_seq = NV_system.compile([NV_system.nuclear_gate(N ,tau, scheme = 'simple')])
-		init_state = NV_system.initial_state
-
-		results[i] = NV_system.measure_e(NV_system.evolve(init_state,pulse_seq))
+		noisy_NV_system.set_noisy_params(amp_val = amp)
+		gate_seq = nv_expm.gate_sequence()
+		gate_seq.nuclear_gate(N ,tau, scheme = 'simple')
+		nv_expm.apply_gates(gate_seq)
+		results[i] = nv_expm.measure_e()
+		nv_expm.reset_output_state()
 
 
 	plt.figure()
@@ -525,36 +691,79 @@ def sweep_MW_amp(NV_system,N = 11, amp_range =  np.arange(0.1,2,0.05), tau = 7.5
 	plt.show()
 	plt.close()
 
-	NV_system.set_noisy_params(amp_val = 1)
+	noisy_NV_system.set_noisy_params(amp_val = 1)
 
 	ind = np.argmin(results)
 	print 'Min sig. ', results[ind], ' at ', amp_range[ind]
 
 
-def MonteCarlo_MWFid(NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 1.0,sigma=0.01):
+def MonteCarlo_MWFid(noisy_NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 1.0,sigma=0.01):
 	'''Simulate doing microwave pulses with a certain standard deviation on the pulse amplitude from trial to trial '''
 	
+	nv_expm = NV_experiment(noisy_NV_system)
+
 	rands = np.random.normal(loc = mean,scale=sigma, size=N_rand)
 	infids = np.zeros(N_rand)
 
 	for i, rand_amp in enumerate(rands):
 
-		NV_system.set_noisy_params(amp_val = rand_amp)
-	
-		infids[i] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,NV_system.nuclear_gate(N ,tau,scheme = 'simple')))
+		noisy_NV_system.set_noisy_params(amp_val = rand_amp)
+		
+		gate_seq = nv_expm.gate_sequence()
+		gate_seq.nuclear_gate(N ,tau, scheme = 'simple')
+		nv_expm.apply_gates(gate_seq)
+		infids[i] = nv_expm.measure_e()
+		nv_expm.reset_output_state()
 
 	print "Infidelity is %f \pm %f" % (np.mean(infids), np.std(infids)/np.sqrt(N_rand))
 
 	return infids
 
 
+def dynamical_decouple(NV_system,N_range = range(8,1000,32), tau = None,**kw):
+
+	if tau is None:
+		tau = 1/(NV_system.B_field * NV_system.gamma_c)
+
+		print tau
+	scheme = kw.pop("scheme", "simple")
+
+	nv_expm = NV_experiment(NV_system)
+
+	results = np.zeros(np.shape(N_range))
+	
+	for i,N in enumerate(N_range):
+
+		gate_seq = nv_expm.gate_sequence()
+		gate_seq.nuclear_gate(N ,tau, scheme = scheme)
+		nv_expm.apply_gates(gate_seq,norm=True)
+		results[i] = nv_expm.measure_e()
+		nv_expm.reset_output_state()
+
+
+	plt.figure()
+	plt.plot(N_range,results)
+	plt.title('Signal'); plt.xlabel('N')
+	plt.ylim(bottom = 0,top=1.1)
+	plt.show()
+	plt.close()
+
+
 def e_ramsey(NV_system,delay_range =  np.arange(100e-9,5e-6,50e-9),meas_basis = 'X'):
 	''' Prepare e in X (or attempt to) and measure in X or Y '''
 	results = np.zeros(np.shape(delay_range))
-	
+	nv_expm = NV_experiment(NV_system)
+
 	for i,tau in enumerate(delay_range):
-		ramsey_seq = NV_system.compile([NV_system.xe(),NV_system.NV_carbon_ev(NV_system.nuclear_gate_tau(tau,double_sided =True)),NV_system.mxe()])
-		results[i] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,ramsey_seq))
+
+		ramsey_seq = nv_expm.gate_sequence()
+		ramsey_seq.xe()
+		ramsey_seq.wait_gate(tau)
+		ramsey_seq.mxe()
+
+		nv_expm.apply_gates(ramsey_seq)
+		results[i] = nv_expm.measure_e()
+		nv_expm.reset_output_state()
 	
 	plt.figure()
 	plt.plot(delay_range*1e6,results)
@@ -566,11 +775,21 @@ def e_ramsey(NV_system,delay_range =  np.arange(100e-9,5e-6,50e-9),meas_basis = 
 def hahn_echo(NV_system,delay_range =  np.arange(100e-9,10e-6,100e-9),meas_basis = 'X'):
 	''' Prepare e in X (or attempt to) and measure in X or Y '''
 	results = np.zeros(np.shape(delay_range))
-	
+	nv_expm = NV_experiment(NV_system)
+
 	for i,tau in enumerate(delay_range):
-		ramsey_seq = NV_system.compile([NV_system.xe(),NV_system.NV_carbon_ev(NV_system.nuclear_gate_tau(tau,double_sided =True)),NV_system.Ye(),NV_system.NV_carbon_ev(NV_system.nuclear_gate_tau(tau,double_sided =True)),NV_system.mxe()])
-		results[i] = NV_system.measure_e(NV_system.evolve(NV_system.initial_state,ramsey_seq))
-	
+
+		ramsey_seq = nv_expm.gate_sequence()
+		ramsey_seq.xe()
+		ramsey_seq.wait_gate(tau)
+		ramsey_seq.Ye()
+		ramsey_seq.wait_gate(tau)
+		ramsey_seq.mxe()
+
+		nv_expm.apply_gates(ramsey_seq)
+		results[i] = nv_expm.measure_e()
+		nv_expm.reset_output_state()
+
 	plt.figure()
 	plt.plot(delay_range*1e6,results)
 	plt.title('Signal'); plt.xlabel('Tau')
@@ -587,19 +806,40 @@ def prepare_X_and_measure_XY(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,
 	X = np.zeros(np.shape(tau_range))
 	Y = np.zeros(np.shape(tau_range))
 	
+	nv_expm = NV_experiment(NV_system)
+
 	c_num = kw.pop('c_num',1)
 
 	for i,tau in enumerate(tau_range):
-		mbi_seq = NV_system.compile([NV_system.ye(),NV_system.nuclear_gate(N ,tau),NV_system.mxe()])
-		init_state = NV_system.evolve(NV_system.initial_state,NV_system.compile([mbi_seq,NV_system.proj0()]), norm = True)
+
+		
+		mbi_seq = nv_expm.gate_sequence()
+		mbi_seq.mbi_sequence(N,tau)
+
+		init_seq = mbi_seq.copy_seq()
+		init_seq.proj0()
+
+		mbi_seq_plus_90 = mbi_seq.copy_seq()
+		mbi_seq_plus_90.nuclear_phase_gate(1,90,state=0,before=True)
+
+		nv_expm.apply_gates(init_seq, norm = True)
+		nv_expm.reset_init_state(state = nv_expm.output_state)
 		
 		if meas == 'eXY':
-			X[i] = NV_system.measure_e(NV_system.evolve(init_state,mbi_seq))
-			Y[i] = NV_system.measure_e(NV_system.evolve(init_state,NV_system.compile([NV_system.nuclear_phase_gate(1,90,state=0),mbi_seq])))
+			nv_expm.apply_gates(mbi_seq)
+			X[i] = nv_expm.measure_e()
+			nv_expm.reset_output_state()
+
+			nv_expm.apply_gates(mbi_seq_plus_90)
+			Y[i] = nv_expm.measure_e()
+			nv_expm.reset_output_state()
+
 		elif meas == 'nXY': 
 			
-			X[i] = NV_system.measure_c(init_state,c_state = rhox,c_num=c_num)
-			Y[i] = NV_system.measure_c(init_state,c_state = rhoy,c_num=c_num)
+			X[i] = nv_expm.measure_c(c_state = rhox,c_num=c_num)
+			Y[i] = nv_expm.measure_c(c_state = rhoy,c_num=c_num)
+			
+		nv_expm.reset_init_state()
 
 	Fid = (np.sqrt((X-0.5)**2 + (Y-0.5)**2)+0.5)
 
@@ -624,18 +864,41 @@ def MonteCarlo_MWAmp_CGate_fid(NV_system,N = 32, tau = 6.582e-6,N_rand = 100,mea
 	rands = np.random.normal(loc = mean,scale=sigma, size=N_rand)
 	infids = np.zeros(N_rand)
 
+	nv_expm = NV_experiment(NV_system)
+
 	for i, rand_amp in enumerate(rands):
 
 		NV_system.set_noisy_params(amp_val = rand_amp)
 
-		mbi_seq = NV_system.compile([NV_system.ye(),NV_system.nuclear_gate(N ,tau),NV_system.mxe(),NV_system.proj0()])
-		init_state = NV_system.evolve(NV_system.initial_state,mbi_seq, norm = True)
+		
+		mbi_seq = nv_expm.gate_sequence()
+		mbi_seq.mbi_sequence(N,tau)
+
+		init_seq = mbi_seq.copy_seq()
+		init_seq.proj0()
+
+		mbi_seq_plus_90 = mbi_seq.copy_seq()
+		mbi_seq_plus_90.nuclear_phase_gate(1,90,state=0,before=True)
+
+		nv_expm.apply_gates(init_seq, norm = True)
+		nv_expm.reset_init_state(state = nv_expm.output_state)
+		
 		if meas == 'eXY':
-			X = NV_system.measure_e(NV_system.evolve(init_state,mbi_seq))
-			Y = NV_system.measure_e(NV_system.evolve(init_state,NV_system.compile([NV_system.nuclear_phase_gate(1,90,state=0),mbi_seq])))
+			nv_expm.apply_gates(mbi_seq)
+			X = nv_expm.measure_e()
+			nv_expm.reset_output_state()
+
+			nv_expm.apply_gates(mbi_seq_plus_90)
+			Y = nv_expm.measure_e()
+			nv_expm.reset_output_state()
+
 		elif meas == 'nXY': 
-			X = NV_system.measure_c(init_state,c_state = rhox)
-			Y = NV_system.measure_c(init_state,c_state = rhoy)
+			
+			X = nv_expm.measure_c(c_state = rhox,c_num=c_num)
+			Y = nv_expm.measure_c(c_state = rhoy,c_num=c_num)
+			
+		nv_expm.reset_init_state()
+
 
 		infids[i] = (np.sqrt((X-0.5)**2 + (Y-0.5)**2)+0.5)
 
@@ -643,23 +906,6 @@ def MonteCarlo_MWAmp_CGate_fid(NV_system,N = 32, tau = 6.582e-6,N_rand = 100,mea
 
 	return infids
 			
-	
-def prepare_X_measure_theta(NV_system,N = 32, tau = 6.582e-6,thetas = np.arange(0,360,4)):
-
-	meas = np.zeros(np.shape(thetas))
-	
-	mbi_seq = NV_system.compile([NV_system.ye(),NV_system.nuclear_gate(N ,tau),NV_system.mxe(),NV_system.proj0()])
-	init_state = NV_system.evolve(NV_system.initial_state,mbi_seq, norm = True)
-		
-	for i,theta in enumerate(thetas):
-		meas[i] = NV_system.measure_e(NV_system.evolve(init_state,NV_system.compile([NV_system.nuclear_phase_gate(1,theta,state=0),mbi_seq])))
-	
-	plt.figure()
-	plt.plot(thetas,meas)
-	plt.title('Signal'); plt.xlabel('Theta')
-	plt.ylim([0,1.1])
-	plt.show()
-	plt.close()
 
 
 

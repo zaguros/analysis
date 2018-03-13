@@ -193,7 +193,7 @@ class repumpingMonteCarlo():
             Ppop[(ind_drive+1):] = (2-E2decay) * Ppop[ind_drive] + self.S_branching[0]*Spop[ind_drive]*(1-S_decay_no_drive)
 
        
-        plot_log_or_lin(t,np.transpose([Spop,Mpop,Ppop]),log_plot)
+        plot_log_or_lin(t,np.transpose([Spop,Mpop,Ppop]),log_plot,linestyle='--',color="black")
 
 def fit_bi_exp(g_A1, g_A2, g_t1, g_t2,*arg):
     fitfunc_str = 'A1 *exp(-x/t1) + A2 *exp(-x/t2)'
@@ -210,11 +210,11 @@ def fit_bi_exp(g_A1, g_A2, g_t1, g_t2,*arg):
 
     return p0, fitfunc, fitfunc_str
 
-def plot_log_or_lin(x,y,log_plot):
+def plot_log_or_lin(x,y,log_plot,**kw):
     if log_plot:
-        plt.semilogy(x,y)
+        plt.semilogy(x,y,**kw)
     else:
-        plt.plot(x,y)
+        plt.plot(x,y,**kw)
 
 def normalized(a, axis=-1):
     a = np.array(a)
