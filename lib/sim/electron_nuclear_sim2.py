@@ -163,6 +163,8 @@ class NV_system(object):
 		self.add_carbons(**kw)
 		self.recalculate()
 	
+	def set_mw_detuning(self,detuning):
+		self.mw_detuning = detuning
 
 	def add_carbons(self, **kw):
 
@@ -587,19 +589,18 @@ class noisy_NV_system(NV_system):
 	def __init__(self,**kw):
 
 		self.mean_amp = kw.pop('mean_amp',1.0)
-		self.sigma_amp = kw.pop('sigma_amp',0.0)
 		self.mw_duration = kw.pop('mw_duration',10.0e-9)
 		self.tau_correction_factor = self.mw_duration
 		self.pulse_shape = kw.pop('pulse_shape','square')
 
-		self.mw_ops = ['Xe','Ye','mXe','mYe','xe','ye','mxe','mye'] # list of possible ops
+		self.mw_ops = ['Xe','Ye','mXe','mYe','xe','ye','mxe','mye'] # list of defined rotation ops for cache purposes 
+
 
 		NV_system.__init__(self,**kw)
 		self.recalculate()
 		self.reset_caches()
 
 	def set_mw_duration(self,**kw):
-
 		mw_duration = kw.pop('mw_duration',None)
 		if mw_duration != None:
 			self.mw_duration = mw_duration
@@ -612,8 +613,19 @@ class noisy_NV_system(NV_system):
 		self.mean_amp = amp
 		self.reset_caches()
 
+	def set_mw_detuning(self,detuning):
+		self.mw_detuning = detuning
+		self.reset_caches()
+
+	def recalculate(self):
+		self.recalc_Hamiltonian = True
+		self.define_useful_states()
+		self._define_e_operators()	
+		self.reset_caches()	
+
 	def amp_val(self):
-		return self.mean_amp#np.random.normal(loc = self.mean_amp,scale=self.sigma_amp)[0]
+		# Could do more complicated things if you want!
+		return self.mean_amp
 
 	def finite_microwave_pulse(self,duration,theta,phi,steps=20):
 
@@ -650,7 +662,10 @@ class noisy_NV_system(NV_system):
 		raw_gate_op = eval('self._' + op_string)
 
 		# Add in the amplitude value
-		gate_op = qutip.Qobj(fractional_matrix_power(raw_gate_op.full(), self.amp_val()),dims=raw_gate_op.dims)
+		if self.amp_val != 1.0:
+			gate_op = qutip.Qobj(fractional_matrix_power(raw_gate_op.full(), self.amp_val()),dims=raw_gate_op.dims)
+		else:
+			gate_op = raw_gate_op
 		gate_op.tidyup()
 
 		# Add to cache
@@ -679,7 +694,7 @@ class noisy_NV_system(NV_system):
 		self.Ide = lambda : self._Ide 
 		self.proj0 = lambda : self._proj0
 		self.proj1 = lambda : self._proj1
-		self.re = lambda theta,phi : self.e_op(spin_theta_rotation(theta, phi)) ** self.amp_val()
+		self.re = lambda theta,phi : self.finite_microwave_pulse(self.mw_duration,theta,phi*self.amp_val()) # Not cached! 
 
 			
 
@@ -898,7 +913,7 @@ def dark_esr(noisy_NV_system,freq_range =  np.arange(-5e6,5e6,1e5)):
 
 	for i,freq in enumerate(freq_range):
 
-		noisy_NV_system.mw_detuning = freq
+		noisy_NV_system.set_mw_detuning(freq)
 		noisy_NV_system.recalculate()
 
 		desr_seq = nv_expm.gate_sequence()
@@ -972,17 +987,17 @@ def prepare_X_and_measure_XY(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,
 	print 'Max fid. ', Fid[ind], ' at ', tau_range[ind]*1e6
 
 
-def MonteCarlo_MWAmp_CGate_fid(NV_system,N = 32, tau = 6.582e-6,N_rand = 100,mean = 0.995,sigma=0.01,meas = 'eXY'):
+def MonteCarlo_MWAmp_CGate_fid(noisy_NV_system,N = 32, tau = 6.582e-6,N_rand = 100,mean = 0.995,sigma=0.01,meas = 'eXY'):
 	'''Simulate doing a carbon gate with finite microwave durations and a certain standard deviation on the pulse amplitude from trial to trial '''
 
 	rands = np.random.normal(loc = mean,scale=sigma, size=N_rand)
 	infids = np.zeros(N_rand)
 
-	nv_expm = NV_experiment(NV_system)
+	nv_expm = NV_experiment(noisy_NV_system)
 
 	for i, rand_amp in enumerate(rands):
 
-		noisy_NV_system.mean_amp = rand_amp
+		noisy_NV_system.set_mw_amp(rand_amp)
 
 		
 		mbi_seq = nv_expm.gate_sequence()
