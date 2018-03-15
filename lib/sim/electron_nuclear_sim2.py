@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 ''' A module to calculate the 13C nuclear and electron spin dynamics
 under dynamical decoupling gates. By PH (inspiration from TH previous version) '''
 
@@ -13,6 +15,8 @@ import copy
 
 import hyperfine_params as hf_params; reload(hf_params)
 hf = hf_params.hyperfine_params
+
+from scipy.linalg import fractional_matrix_power
 
 #######################
 ### Basic functions ###
@@ -34,7 +38,9 @@ def pauli_S1():
 	sx = qutip.jmat(1,'x')
 	sy = qutip.jmat(1,'y')
 	sz = qutip.jmat(1,'z')
-	return identity, sx, sy, sz
+
+	szPseudo1_2 = qutip.Qobj(-1.0*sz_S1[1:,1:])
+	return identity, sx, sy, sz, szPseudo1_2
 
 def basic_spin_rotations():
 	''' define some simple spin rotations'''
@@ -95,7 +101,7 @@ def basic_spin_states_S1():
 
 ### create a set of usefull simple states and gates (should live in a class)
 Id, sx, sy, sz = pauli()                                # Electron spin operators
-Id_S1, sx_S1, sy_S1, sz_S1 = pauli_S1()					# Spin 1
+Id_S1, sx_S1, sy_S1, sz_S1, szPseudo1_2 = pauli_S1()					# Spin 1
 X,Y,Z,mX,mY,mZ,x,y,z,mx,my,mz = basic_spin_rotations()  # Basic gates
 ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy = basic_spin_states() # Basic states
 
@@ -142,6 +148,12 @@ class NV_system(object):
 
 		self.B_field = kw.pop('B_field',414.1871869) 
 		self.gamma_c = 1.0705e3 #g-factor for C13 in Hz/G
+
+		self.gamma_n = 0.31e3 # Nitrogen hamiltonian
+		self.P_n = 5.04e6 # Nitrogen hamiltonian
+		self.A_n = 2.19e6
+
+		self.mw_detuning = kw.pop('mw_detuning',0.0) 
 
 		self.espin_trans = kw.pop('espin_trans','+1')  # Changes sign of A_par and A_perp
 		self.sign = -1 if self.espin_trans == '-1' else 1
@@ -207,6 +219,10 @@ class NV_system(object):
 		''' Helper function to embed c operator with identities on other carbons '''
 		return qutip.tensor([Id] * c_num + [operator] + [Id] * (self.num_carbons - c_num) + [Id_S1] * self.inc_nitrogen)
 
+	def N_op(self,N_operator):
+		''' Helper function to embed N operator with identities on other carbons '''
+		return qutip.tensor([Id] * (self.num_carbons + 1) + [N_operator])
+
 	def e_C_op(self,e_operator,c_operator,c_num):
 		''' Helper function to embed e operator combined with an operator on carbons '''
 		return qutip.tensor([e_operator] + [Id] * (c_num-1) + [c_operator] + [Id] * (self.num_carbons - c_num) + [Id_S1] * self.inc_nitrogen)
@@ -218,13 +234,13 @@ class NV_system(object):
 	def recalculate(self):
 		self.recalc_Hamiltonian = True
 		self.define_useful_states()
-		self.define_e_operators()	
+		self._define_e_operators()	
 
 	def define_useful_states(self):
 		''' standard init state for system '''
 		self.NV0_carbons_mixed = qutip.tensor([rho0] + [rhom] * self.num_carbons + [rhom_S1] * self.inc_nitrogen)
-	
-	def define_e_operators(self):
+
+	def _define_e_operators(self):
 		''' Define commonly used electronic operations '''
 		self._Xe = self.e_op(X)
 		self._Ye = self.e_op(Y)
@@ -235,6 +251,23 @@ class NV_system(object):
 		self._mxe = self.e_op(mx)
 		self._mye = self.e_op(my)
 		self._Ide = self.e_op(Id)
+		self._proj0 = self.e_op(rho0)
+		self._proj1 = self.e_op(rho1)
+
+		''' Trivial here but useful later '''
+		self.Xe = lambda : self._Xe
+		self.Ye = lambda : self._Ye
+		self.mXe = lambda : self._mXe
+		self.mYe = lambda : self._mYe
+		self.xe = lambda : self._xe
+		self.ye = lambda : self._ye
+		self.mxe = lambda : self._mxe
+		self.mye = lambda : self._mye
+		self.Ide = lambda : self._Ide
+		self.proj0 = lambda : self._proj0
+		self.proj1 = lambda : self._proj1
+		self.re = lambda theta,phi : self.e_op(spin_theta_rotation(theta, phi))
+
 
 	def NV_carbon_system_Hamiltonian(self):
 		''' Function to calculate the NV C13 system Hamiltonian '''
@@ -246,10 +279,16 @@ class NV_system(object):
 							 + self.e_C_op(rho1,((carbon_param[0]+ self.sign*carbon_param[1])*sz + self.sign * carbon_param[2] * sx),i+1) \
 					   for i,carbon_param in enumerate(self.carbon_params)]).tidyup()
 			else:
-				self.Hsys = self._Ide
+				self.Hsys = 0
 
 			if self.inc_nitrogen:
-				self.Hsys += self.e_N_op(2*np.pi*2.19e6*sz,sz_S1)
+				
+				self.Hsys += self.e_N_op(2*np.pi*self.A_n*self.sign*szPseudo1_2,sz_S1) + self.N_op(-2 * np.pi * (self.P_n*(sz_S1**2 -  1/3.0) + self.gamma_n*self.B_field*sz_S1))
+
+			self.Hsys += self.e_op(2*np.pi*self.mw_detuning*self.sign*szPseudo1_2) # Note that funniness because NV is actually an S1 system..
+			
+			self.Hsys.tidyup()
+
 			self.recalc_Hamiltonian = False
 
 		return self.Hsys
@@ -272,7 +311,7 @@ class basic_gate_sequence(object):
 		self.seq_operation = self.Ide()
 
 	def add_gate_to_seq(self,gate,reps=1,before=False):
-		
+
 		if isinstance(gate,basic_gate_sequence): # Combining sequences
 			gate = copy.deepcopy(gate.seq_operation)
 
@@ -288,19 +327,18 @@ class basic_gate_sequence(object):
 
 	def _define_gates(self):
 		''' This is written this way so that could be overwritten for more complex behaviour (say using Hamiltonians instead of unitaries)'''
-		self.Xe = self.gate_function_maker_helper(self.NVsys._Xe)
-		self.Ye = self.gate_function_maker_helper(self.NVsys._Ye)
-		self.mXe = self.gate_function_maker_helper(self.NVsys._mXe)
-		self.mYe = self.gate_function_maker_helper(self.NVsys._mYe)
-		self.xe = self.gate_function_maker_helper(self.NVsys._xe)
-		self.ye = self.gate_function_maker_helper(self.NVsys._ye)
-		self.mxe = self.gate_function_maker_helper(self.NVsys._mxe)
-		self.mye = self.gate_function_maker_helper(self.NVsys._mye)
-		
-		self.proj0 = self.gate_function_maker_helper(self.NVsys.e_op(rho0))
-		self.proj1 = self.gate_function_maker_helper(self.NVsys.e_op(rho1))
+		self.Xe = self.gate_function_maker_helper(self.NVsys.Xe())
+		self.Ye = self.gate_function_maker_helper(self.NVsys.Ye())
+		self.mXe = self.gate_function_maker_helper(self.NVsys.mXe())
+		self.mYe = self.gate_function_maker_helper(self.NVsys.mYe())
+		self.xe = self.gate_function_maker_helper(self.NVsys.xe())
+		self.ye = self.gate_function_maker_helper(self.NVsys.ye())
+		self.mxe = self.gate_function_maker_helper(self.NVsys.mxe())
+		self.mye = self.gate_function_maker_helper(self.NVsys.mye())
+		self.proj0 = self.gate_function_maker_helper(self.NVsys.proj0())
+		self.proj1 = self.gate_function_maker_helper(self.NVsys.proj0())
 
-		self.re = lambda theta, phi, before=False: self.add_gate_to_seq(self.NVsys.e_op(spin_theta_rotation(theta, phi)))
+		self.re = lambda theta, phi, before=False: self.add_gate_to_seq(self.NVsys.re(theta, phi)) # This should be made less awkward
 
 	def apply_sequence(self,state,reps=1,norm = False):
 		operator = self.seq_operation**reps
@@ -345,6 +383,8 @@ class NV_gate_sequence(basic_gate_sequence):
 	def nuclear_gate(self,N,tau,**kw):
 
 		'''Evolution during a decouple unit'''
+		if N == 0:
+			return
 
 		evNV_C_tau = self.NVsys.NV_carbon_ev(self.nuclear_gate_tau(tau, double_sided = True))
 		evNV_C_tau_single = self.NVsys.NV_carbon_ev(self.nuclear_gate_tau(tau))
@@ -375,6 +415,7 @@ class NV_gate_sequence(basic_gate_sequence):
 			seq.add_gate_to_seq(evNV_C_tau)
 
 		elif scheme == 'XY8':
+
 			if N%8 != 0:
 				raise Exception('Incompatible number of pulses!')
 
@@ -522,6 +563,19 @@ class NV_experiment(object):
 
 		return np.real((proj*self.output_state).tr())
 
+	def measure_N(self,N_state = 0):
+		''' Not directly accessible, but sometimes useful'''
+		if N_state == 0:
+			N_state = rho0_S1
+		elif N_state == 1:
+			N_state = rho1_S1
+		elif N_state == -1:
+			N_state = rhom1_S1
+
+		proj = self.NVsys.N_op(N_state)
+
+		return np.real((proj*self.output_state).tr())
+
 def gaussian_envelope(t,duration):
 	T_herm = 0.1667*duration
 
@@ -532,20 +586,19 @@ class noisy_NV_system(NV_system):
 
 	def __init__(self,**kw):
 
-		self.amp_val = kw.pop('amp_val',1.0)
+		self.mean_amp = kw.pop('mean_amp',1.0)
+		self.sigma_amp = kw.pop('sigma_amp',0.0)
 		self.mw_duration = kw.pop('mw_duration',10.0e-9)
 		self.tau_correction_factor = self.mw_duration
 		self.pulse_shape = kw.pop('pulse_shape','square')
 
+		self.mw_ops = ['Xe','Ye','mXe','mYe','xe','ye','mxe','mye'] # list of possible ops
+
 		NV_system.__init__(self,**kw)
-		self.define_useful_states()
-		self.define_e_operators()
+		self.recalculate()
+		self.reset_caches()
 
-	def set_noisy_params(self,**kw):
-
-		amp_val = kw.pop('amp_val',None)
-		if amp_val != None:
-			self.amp_val = amp_val
+	def set_mw_duration(self,**kw):
 
 		mw_duration = kw.pop('mw_duration',None)
 		if mw_duration != None:
@@ -553,6 +606,14 @@ class noisy_NV_system(NV_system):
 			self.tau_correction_factor = self.mw_duration
 		
 		self.define_e_operators()
+		self.reset_caches()
+
+	def set_mw_amp(self,amp):
+		self.mean_amp = amp
+		self.reset_caches()
+
+	def amp_val(self):
+		return self.mean_amp#np.random.normal(loc = self.mean_amp,scale=self.sigma_amp)[0]
 
 	def finite_microwave_pulse(self,duration,theta,phi,steps=20):
 
@@ -571,24 +632,55 @@ class noisy_NV_system(NV_system):
 			dt = duration/steps
 			t = np.arange(0+dt/2,duration,dt)
 			normfactor = steps/np.sum(gaussian_envelope(t,duration))
-			Hint = normfactor/duration*phi*self.e_op((np.cos(theta)*sx + np.sin(theta)*sy))
+			Hint = (normfactor/duration)*phi*self.e_op((np.cos(theta)*sx + np.sin(theta)*sy))
 			
 			Utots = [(-1j*(Hsys+gaussian_envelope(ts,duration)*Hint)*dt).expm() for ts in t]
 			return qutip.gate_sequence_product(Utots)
 
+	def reset_caches(self):
+		for op_string in self.mw_ops:
+			setattr(self, op_string + '_cache_recalc', True)
 
-	def define_e_operators(self):
+	def calc_unitary_trans(self,op_string):
+		#Here is some code cleverness to only recalculate the matrices if the mw_amp changes
+		if hasattr(self,op_string + '_cache'):
+			if not(eval('self.' + op_string + '_cache_recalc')):
+				return eval('self.' + op_string + '_cache')
+	
+		raw_gate_op = eval('self._' + op_string)
+
+		# Add in the amplitude value
+		gate_op = qutip.Qobj(fractional_matrix_power(raw_gate_op.full(), self.amp_val()),dims=raw_gate_op.dims)
+		gate_op.tidyup()
+
+		# Add to cache
+		setattr(self, op_string + '_cache', gate_op)
+		setattr(self, op_string + '_cache_recalc', False)
+
+		return gate_op
+
+	def _define_e_operators(self):
 		''' Override commonly used electronic gates '''
 		self._Ide = self.e_op(Id)
-		self._Xe = self.finite_microwave_pulse(self.mw_duration,0.0,np.pi * self.amp_val)
-		self._Ye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,np.pi * self.amp_val)
-		self._mXe = self.finite_microwave_pulse(self.mw_duration,0.0,-np.pi * self.amp_val)
-		self._mYe = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,-np.pi * self.amp_val)
-		self._xe = self.finite_microwave_pulse(self.mw_duration,0.0,0.5*np.pi * self.amp_val)
-		self._ye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,0.5*np.pi * self.amp_val)
-		self._mxe = self.finite_microwave_pulse(self.mw_duration,0.0,-0.5*np.pi * self.amp_val)
-		self._mye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,-0.5*np.pi * self.amp_val)
-		self.re = lambda theta, phi : self.finite_microwave_pulse(self.mw_duration,theta,phi * self.amp_val)
+		self._proj0 = self.e_op(rho0)
+		self._proj1 = self.e_op(rho1)
+
+		self._Xe = self.finite_microwave_pulse(self.mw_duration,0.0,np.pi)
+		self._Ye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,np.pi)
+		self._mXe = self.finite_microwave_pulse(self.mw_duration,0.0,-np.pi)
+		self._mYe = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,-np.pi)
+		self._xe = self.finite_microwave_pulse(self.mw_duration,0.0,0.5*np.pi)
+		self._ye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,0.5*np.pi)
+		self._mxe = self.finite_microwave_pulse(self.mw_duration,0.0,-0.5*np.pi)
+		self._mye = self.finite_microwave_pulse(self.mw_duration,0.5*np.pi,-0.5*np.pi)
+
+		for op_string in self.mw_ops:
+			setattr(self,op_string, lambda op_string = op_string: self.calc_unitary_trans(op_string))  # Force eval of op_string at defn time
+		self.Ide = lambda : self._Ide 
+		self.proj0 = lambda : self._proj0
+		self.proj1 = lambda : self._proj1
+		self.re = lambda theta,phi : self.e_op(spin_theta_rotation(theta, phi)) ** self.amp_val()
+
 			
 
 #########################################
@@ -676,7 +768,7 @@ def sweep_MW_amp(noisy_NV_system,N = 11, amp_range =  np.arange(0.1,2,0.05), tau
 	
 	for i,amp in enumerate(amp_range):
 
-		noisy_NV_system.set_noisy_params(amp_val = amp)
+		noisy_NV_system.set_mw_amp(amp)
 		gate_seq = nv_expm.gate_sequence()
 		gate_seq.nuclear_gate(N ,tau, scheme = 'simple')
 		nv_expm.apply_gates(gate_seq)
@@ -691,7 +783,7 @@ def sweep_MW_amp(noisy_NV_system,N = 11, amp_range =  np.arange(0.1,2,0.05), tau
 	plt.show()
 	plt.close()
 
-	noisy_NV_system.set_noisy_params(amp_val = 1)
+	noisy_NV_system.set_mw_amp(1)
 
 	ind = np.argmin(results)
 	print 'Min sig. ', results[ind], ' at ', amp_range[ind]
@@ -707,7 +799,7 @@ def MonteCarlo_MWFid(noisy_NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 1.
 
 	for i, rand_amp in enumerate(rands):
 
-		noisy_NV_system.set_noisy_params(amp_val = rand_amp)
+		noisy_NV_system.set_mw_amp(rand_amp)
 		
 		gate_seq = nv_expm.gate_sequence()
 		gate_seq.nuclear_gate(N ,tau, scheme = 'simple')
@@ -720,15 +812,15 @@ def MonteCarlo_MWFid(noisy_NV_system,N = 11, tau = 7.5e-6,N_rand = 100,mean = 1.
 	return infids
 
 
-def dynamical_decouple(NV_system,N_range = range(8,1000,32), tau = None,**kw):
+def dynamical_decouple(NV_system,N_range = range(1000,3000,32), tau = None,**kw):
 
 	if tau is None:
 		tau = 1/(NV_system.B_field * NV_system.gamma_c)
 
-		print tau
-	scheme = kw.pop("scheme", "simple")
+	scheme = kw.pop("scheme", "XY8") # Note that simple means that can constructively get oscillations from Nitrogen coupling during finite pulse duration..
 
 	nv_expm = NV_experiment(NV_system)
+	nv_expm.reset_init_state(state = qutip.tensor([rho0] + [rhom] * NV_system.num_carbons + [rho1_S1] * NV_system.inc_nitrogen))
 
 	results = np.zeros(np.shape(N_range))
 	
@@ -737,7 +829,7 @@ def dynamical_decouple(NV_system,N_range = range(8,1000,32), tau = None,**kw):
 		gate_seq = nv_expm.gate_sequence()
 		gate_seq.nuclear_gate(N ,tau, scheme = scheme)
 		nv_expm.apply_gates(gate_seq,norm=True)
-		results[i] = nv_expm.measure_e()
+		results[i] = nv_expm.measure_e(0)
 		nv_expm.reset_output_state()
 
 
@@ -799,6 +891,28 @@ def hahn_echo(NV_system,delay_range =  np.arange(100e-9,10e-6,100e-9),meas_basis
 	ind = np.argmin(results)
 	print 'Min sig. ', results[ind], ' at ', delay_range[ind]*1e6
 
+def dark_esr(noisy_NV_system,freq_range =  np.arange(-5e6,5e6,1e5)):
+	
+	results = np.zeros(np.shape(freq_range))
+	nv_expm = NV_experiment(noisy_NV_system)
+
+	for i,freq in enumerate(freq_range):
+
+		noisy_NV_system.mw_detuning = freq
+		noisy_NV_system.recalculate()
+
+		desr_seq = nv_expm.gate_sequence()
+		desr_seq.re(0,1.0)
+
+		nv_expm.apply_gates(desr_seq)
+		results[i] = nv_expm.measure_e()
+		nv_expm.reset_output_state()
+	
+	plt.figure()
+	plt.plot(freq_range*1e-6,results)
+	plt.title('Signal'); plt.xlabel('Freq')
+	plt.show()
+	plt.close()
 
 
 def prepare_X_and_measure_XY(NV_system,N = 32, tau_range =  np.arange(1e-6,7e-6,1e-7),meas = 'eXY',**kw):
@@ -868,7 +982,7 @@ def MonteCarlo_MWAmp_CGate_fid(NV_system,N = 32, tau = 6.582e-6,N_rand = 100,mea
 
 	for i, rand_amp in enumerate(rands):
 
-		NV_system.set_noisy_params(amp_val = rand_amp)
+		noisy_NV_system.mean_amp = rand_amp
 
 		
 		mbi_seq = nv_expm.gate_sequence()
