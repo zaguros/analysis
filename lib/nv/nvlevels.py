@@ -297,7 +297,7 @@ def get_optical_transition_strengths(show_ms0_transitions=True,show_m1_transitio
     v_ES = v_ES[:,order]
     E_ES = E_ES[order]
 
-    E_GS = np.sort(get_GS_SpinComp(**kw)[0])
+    E_GS = get_GS_SpinComp(**kw)[0]
 
     transitions = {}
 
@@ -317,7 +317,7 @@ def get_optical_transition_strengths(show_ms0_transitions=True,show_m1_transitio
         transitions['msm1']['freq'] = np.empty([6])
         for ii,v in enumerate(np.transpose(v_ES)):
             v = np.transpose(v)
-            transitions['msm1']['strength'][ii] =  np.power(np.abs(v[0]),2)**2 + np.power(np.abs(v[4]),2)
+            transitions['msm1']['strength'][ii] =  np.power(np.abs(v[0]),2) + np.power(np.abs(v[4]),2)
             transitions['msm1']['freq'][ii]  = E_ES[ii] - E_GS[1]
 
     if show_p1_transitions:  
@@ -340,7 +340,7 @@ def get_optical_transitions(show_A_transitions = False, show_ms0_transitions=Tru
         show_m1_transitions = True
         show_p1_transitions = True
 
-    E_GS=np.sort(get_GS(**kw)[0])
+    E_GS=get_GS(**kw)[0]
     # print E_GS[0],E_GS[1],E_GS[2]#,E_GS[2]-E_GS[1]
     # print kw.get('B_field',0.)
     E_ES=np.sort(get_ES(**kw)[0])
