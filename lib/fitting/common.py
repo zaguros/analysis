@@ -401,7 +401,7 @@ def fit_AOM_powerdependence(g_a, g_xc, g_k, *arg):
     return p0, fitfunc, fitfunc_str
 
 def fit_AOM_powerdependence_diode(g_a,g_c, *arg):
-    fitfunc_str = 'a * x'
+    fitfunc_str = 'a * x + c'
 
     a = fit.Parameter(g_a, 'a')
     c = fit.Parameter(g_c, 'k')

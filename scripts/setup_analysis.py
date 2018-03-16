@@ -13,7 +13,7 @@ if os.name == 'nt':
     sys.path.append("d:/measuring")
     sys.path.append("c:/measuring")
     sys.path.append("h:/My Documents/measuring")#only for local SvD
-    sys.paht.append("/Users/maartendegen/Documents/measuring")
+    sys.path.append("/Users/maartendegen/Documents/measuring")
 else:
     sys.path.append(measuring_root)
 
