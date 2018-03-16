@@ -9,7 +9,7 @@ from analysis.lib.fitting import fit
 
 
 # TODO implement formatting options
-def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,add_txt = True, **kw):
+def plot_fit1d(res, fit_xvals=np.array([None]),fit_num_points=100,ax=None, ret=None, lw = 2,add_txt = True, **kw):
     '''
     function to plot a fitresult as returned by analysis.lib.fitting.fit.fit1d().
     '''
@@ -38,7 +38,7 @@ def plot_fit1d(res, fit_xvals=None,fit_num_points=100,ax=None, ret=None, lw = 2,
             ax.errorbar(res['x'],res['y'],fmt='o',yerr=res['yerr'])
         else:
             ax.plot(res['x'], res['y'], data_linestyle, color = data_color, lw= data_lw)
-    if fit_xvals == None:
+    if fit_xvals.any() == None:
         fit_xvals=np.linspace(res['x'][0],res['x'][-1],fit_num_points)
     ax.plot(fit_xvals, res['fitfunc'](fit_xvals, **fitfunc_params), linestyle,color = color, lw=lw, label=label )
     

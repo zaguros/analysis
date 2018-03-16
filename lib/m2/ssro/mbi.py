@@ -332,7 +332,7 @@ class MBIAnalysis(m2.M2Analysis):
             ax = self.default_ax(fig)
         else:
             ax.set_title(self.timestamp+'\n'+self.measurementstring)
-        print labels
+    
         if labels == None:
             if mode != 'correlations':
                 labels = ['RO #%d' % i for i in range(self.readouts)]
