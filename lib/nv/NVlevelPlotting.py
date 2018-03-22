@@ -2,12 +2,12 @@ import sys
 import numpy as np
 import scipy
 
-sys.path.append(r'//Users/humphreys/Repositories/')
+#sys.path.append(r'//Users/humphreys/Repositories/')
 
 from analysis.lib.nv import nvlevels; reload(nvlevels)
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.colors import ListedColormap, BoundaryNorm, LogNorm
 
 
 def plot_ES_energies(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0.,0.], ax=None):
@@ -35,6 +35,29 @@ def plot_ES_energies(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0.,0.], ax=No
     plt.show()
     plt.close("all")
    
+
+def plot_ES_energies_B(B_start,B_end,pts,E_field=[0.,0.,0.], ax=None):
+
+    result_list = np.zeros([6,pts])
+    Barray = np.linspace(B_start,B_end,pts)
+    for i in range(pts):
+        result_list[:,i] = (nvlevels.get_ES_SpinComp(E_field=E_field,B_field=[0,0,Barray[i]]))[0]
+
+    if ax == None:
+        fig = plt.figure()
+        ax = plt.subplot()
+
+    legend_list = ["E-'","E+'",'Ey','Ex','A1','A2']
+    for res,legend in zip(result_list,legend_list):
+        plt.plot(Barray,res,label = legend)
+
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.ylabel('Frequency (GHz)')
+    plt.xlabel('B field (Gauss)')
+    plt.title('Excited state energies')
+    plt.show()
+    plt.close("all")
+
 def plot_GS_energies(B_start,B_end,pts,E_field=[0.,0.,0.], ax=None):
 
     result_list = np.zeros([3,pts])
@@ -53,7 +76,6 @@ def plot_GS_energies(B_start,B_end,pts,E_field=[0.,0.,0.], ax=None):
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.ylabel('Frequency (GHz)')
     plt.xlabel('B field (Gauss)')
-    plt.ylim([-0.2,plt.ylim()[1]])
     plt.title('Ground state energies')
     plt.show()
     plt.close("all")
@@ -113,7 +135,7 @@ def plot_transitions(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0.,0.],m0=Tru
             trans_keys.append('msp1')
             transition_results['msp1'] = np.empty([3,pts])
     else:
-        transition_results = np.empty([2*bool(m0)+3*bool(m1)+3*bool(p1),pts])   
+        transition_results = np.empty([2*bool(m0)+4*bool(m1)+4*bool(p1),pts])   
     
     for i in range(pts):
             slice_list = nvlevels.get_transitions_ExEy(ExZero+Strainarray[i]/2,EyZero-Strainarray[i]/2,B_field=B_field,return_dict = return_dict, show_FB_E_transitions=False,show_FB_A_transitions=False, show_E_prime_flip_transitions=False, show_ms0_transitions = m0, show_m1_transitions = m1, show_p1_transitions = p1)
@@ -129,12 +151,12 @@ def plot_transitions(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0.,0.],m0=Tru
         fig = plt.figure()
         ax = plt.subplot()
 
-    if type(result_list) == np.ndarray:
-        for res in result_list:
+    if type(transition_results) == np.ndarray:
+        for res in transition_results:
             plt.plot(Strainarray,res)
-    elif type(result_list) == dict:
-        for key in result_list:
-            for i,res in enumerate(result_list[key]):
+    elif type(transition_results) == dict:
+        for key in transition_results:
+            for i,res in enumerate(transition_results[key]):
                 if i == 0: 
                     baseline, = plt.plot(Strainarray,res,label = key, ls=plot_style[key])
                 else:
@@ -203,5 +225,67 @@ def plot_transitions_w_strengths(Ex,Ey,Strain_start,Strain_end,pts,B_field=[0.,0
 
     ax.autoscale_view(True,True,True)
     
+    plt.show()
+    plt.close("all")
+
+
+   
+def plot_transitions_w_strengths_B(B_start,B_end,pts,E_field=[0.,0.,0.],m0=True,m1=True,p1=True,ax=None,log_scale =False, ylim= False):
+    
+    Barray = np.linspace(B_start,B_end,pts)
+
+    trans_keys = []
+    if m0:
+        trans_keys.append('ms0')
+    if m1:
+        trans_keys.append('msm1')
+    if p1:
+        trans_keys.append('msp1')
+        
+    transitions = {}
+    for key in trans_keys:
+        transitions[key] = {}
+        transitions[key]['strength'] = np.empty([6,pts])
+        transitions[key]['freq'] = np.empty([6,pts])
+        
+    for ii in range(pts):
+        slice_list = nvlevels.get_optical_transition_strengths(E_field=E_field,B_field=[0.0,0.0,Barray[ii]],
+                    show_ms0_transitions=m0,show_m1_transitions=m1,show_p1_transitions=p1)
+        
+        for key in trans_keys:
+            transitions[key]['strength'][:,ii] = slice_list[key]['strength']
+            transitions[key]['freq'][:,ii] = slice_list[key]['freq']
+            
+    color_map_key = {'msp1' : 'Blues', 'msm1': 'Greens', 'ms0' : 'Reds'}
+
+    if ax == None:
+        fig = plt.figure(figsize = (10,6))
+
+        ax = plt.subplot()
+
+    for key in transitions:
+        
+        for ii in range(np.shape(transitions[key]['freq'])[0]):
+
+            points = np.array([Barray, transitions[key]['freq'][ii,:]]).T.reshape(-1, 1, 2)
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+            if not log_scale:
+                lc = LineCollection(segments, cmap=plt.get_cmap(color_map_key[key]),norm=plt.Normalize(vmin=0,vmax=1))
+                lc.set_array(transitions[key]['strength'][ii,:])
+            else:
+                lc = LineCollection(segments, cmap=plt.get_cmap(color_map_key[key]),norm=plt.Normalize(vmin=-3,vmax=0))
+                transitions[key]['strength'][ii,(transitions[key]['strength'][ii,:] == 0)] = 1e-5
+                lc.set_array(np.log10(transitions[key]['strength'][ii,:]))
+            lc.set_linewidth(1)
+            ax.add_collection(lc)
+
+    plt.colorbar(lc)
+    plt.ylabel('Frequency (GHz)')
+    plt.xlabel('B field (Gauss)')
+
+    ax.autoscale_view(True,True,True)
+
+    if isinstance(ylim,list):
+        plt.ylim(ylim)
     plt.show()
     plt.close("all")

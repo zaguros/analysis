@@ -13,6 +13,7 @@ if os.name == 'nt':
     sys.path.append("d:/measuring")
     sys.path.append("c:/measuring")
     sys.path.append("h:/My Documents/measuring")#only for local SvD
+    sys.path.append("/Users/maartendegen/Documents/measuring")
 else:
     sys.path.append(measuring_root)
 
@@ -20,7 +21,6 @@ import numpy as np
 import h5py
 
 from matplotlib import pyplot as plt
-
 from analysis.lib.tools import toolbox as tb
 from analysis.lib.m2 import m2
 from analysis.lib.m2.ssro import ssro, mbi, sequence, pqsequence
