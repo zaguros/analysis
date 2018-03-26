@@ -20,8 +20,8 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
     else:
         base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
         folder = os.path.join(base_folder_lt4,contains)
-        filename_str = kw.pop('filename_str', analysis_params.data_settings['filenames_for_expms'][contains])
-        measfile=tb.latest_data(contains = filename_str,folder =folder,**kw)
+        filename_str = kw.pop('filename_str','XsweepY')
+        measfile=tb.latest_data(contains = filename_str,folder =folder,return_all=False)
 
     a = ppq.purifyPQAnalysis(measfile, hdf5_mode='r')
 
@@ -33,7 +33,6 @@ def analyze_phase(contains, mode, plot_zoomed = [], start_rep_no = 1,**kw):
     pid_cycles = a.g.attrs['pid_points_to_store']
     if a.g.attrs['do_post_ent_phase_msmt'] and mode == 'do_only_meas':
         sample_cycles = 1
-        print 'ey'
         max_repetitions = a.g['adwindata']['completed_reps'].value
     else:
         sample_cycles = a.g.attrs['sample_points']
