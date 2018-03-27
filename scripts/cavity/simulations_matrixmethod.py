@@ -48,7 +48,7 @@ def save_to_json_file(folder,filename,analysis_dict):
     f.close()
 
 n_air = 1.0
-n_diamond = 2.41
+n_diamond = 2.41#
 n_Al2O3 = 1.77
 
 
@@ -77,6 +77,7 @@ class Cavity():
         self.N_n2 = kw.pop('N_n2',1) #number of lambda/4 thicknesses of n2 (3 for narrow stopband, 1 for broad stopband)
         self.realistic_mirrors = kw.pop('realistic_mirrors',False)
         self.include_losses = kw.pop('include_losses',False)
+        self.sigma_DA = kw.pop('sigma_DA', 0.4e-9)
         # print 'cavity with design wavelength: ',self.lambda_cav*1.e9,' nm'
 
         if self.dnu != 0.e9 and self.calculate_dnu:
@@ -105,7 +106,7 @@ class Cavity():
             self.M_1 = kw.pop('M_1',10)
 
         if self.include_losses:
-            print 'including losses'
+            # print 'including losses'
             self.n_1_i = kw.pop('n_1_i',0.001)
             self.n_2_i = kw.pop('n_2_i',0.001)
             # self.n_1 = self.n_1 + 1j*self.n_1_i
@@ -121,6 +122,8 @@ class Cavity():
             else:
                 self.n_AR = 1.
                 'Specify valid AR_type (ideal or Al2O3)'
+        else:
+            self.n_AR=1.
 
         if self.bond_gap:
             if self.AR_coating:
@@ -130,7 +133,7 @@ class Cavity():
 
         self.ns_in_cavity()
 
-    def boundary_matrix(self,n1,n2,sigma=0):
+    def boundary_matrix(self,n1,n2):
         rho12 = (n1-n2)/(n1+n2)
         rho21 = (n2-n1)/(n1+n2)
         tau12 = 2*n1/(n1+n2)
@@ -144,24 +147,40 @@ class Cavity():
         else:
             if n1 == n_air and n2 == n_diamond:
                 # print 'air-diamond interface'
-                sigma=1.0e-9
+                sigma=self.sigma_DA
                 # print sigma
-            if abs(n1) == n_diamond and abs(n2) == self.n_1:
+            elif n1 == n_diamond and n2 == n_air: #in case reversed cavity
+                # print 'air-diamond interface'
+                sigma=self.sigma_DA
+                # print sigma
+            elif abs(n1) == n_diamond and abs(n2) == self.n_1:
                 # print 'diamond-mirror interface'
-                sigma=0.4e-9
+                sigma=0.0e-9
                 # print sigma
-            if abs(n1) == self.n_1 and abs(n2) == n_air:
+            elif abs(n1) == self.n_1 and abs(n2) == n_air:
                 # print 'air-mirror interface'
-                sigma=0.2e-9
+                sigma=0.0e-9
                 # print sigma
+            elif n1==self.n_AR and n2==n_diamond:
+                sigma=self.sigma_DA
+            elif n1==n_air and n2==self.n_AR:
+                sigma=self.sigma_DA
             else:
-                sigma=sigma
-            rho12 = rho12*np.exp(-2.*(2*math.pi*sigma*n1/self.lambda_i)**2)
-            rho21 = rho21*np.exp(-2.*(2*math.pi*sigma*n2/self.lambda_i)**2)
-            tau12 = tau12*np.exp(-1./2*(2*math.pi*sigma*(n2-n1)/self.lambda_i)**2)
-            tau21 = tau21*np.exp(-1./2*(2*math.pi*sigma*(n1-n2)/self.lambda_i)**2)
-            # print rho,tau
+                # rho=rho12
+                # tau=tau12
+                # matrix = (1./tau)*np.array(((1,rho),(rho,1)))
+                sigma=0.0e-9
+            rho12 = rho12*np.exp(-2.*(2.*math.pi*sigma*n1/self.lambda_i)**2)
+            rho21 = rho21*np.exp(-2.*(2.*math.pi*sigma*n2/self.lambda_i)**2)
+            tau12 = tau12*np.exp(-1./2*(2.*math.pi*sigma*(n2-n1)/self.lambda_i)**2)
+            tau21 = tau21*np.exp(-1./2*(2.*math.pi*sigma*(n1-n2)/self.lambda_i)**2)
+
             matrix = (1./tau12)*np.array(((1,-rho21),(rho12, (tau12*tau21)-(rho12*rho21) )) )
+            # if n1 == n_air and n2 == n_diamond:
+
+                # print sigma
+                # print 'losses matrix',matrix
+                # print 'losses matrux',(1./(2*n1/(n1+n2)))*np.array(((1,((n1-n2)/(n1+n2))),((n1-n2)/(n1+n2),1)))
             # print matrix
 
         return matrix
@@ -285,7 +304,7 @@ class Cavity():
         g_offset=1
         g_x0 = self.freq_i
         g_gamma = abs(2*(freq_is[np.argmin(abs(r_iis - halfmax))]))
-        g_A = -g_gamma
+        g_A = -g_gamma/2*math.pi
 
         fixed=[0]
         p0, fitfunc, fitfunc_str = common.fit_lorentz(g_offset, g_A, g_x0, g_gamma)
@@ -386,7 +405,7 @@ class Cavity():
             plt.show()
             plt.close()
         
-        t_as = np.linspace(t_ai-self.res_search_range/100.,t_ai+self.res_search_range/100.,1.5*nr_pts)
+        t_as = np.linspace(t_ai-self.res_search_range/400.,t_ai+self.res_search_range/400.,0.2*nr_pts)
         r_iis = np.zeros(len(t_as))
         for i,t_aii in enumerate(t_as):
             self.t_a = t_aii
@@ -394,15 +413,42 @@ class Cavity():
             r = self.cavity_reflectivity()
             r_iis[i]=np.abs(r)**2
 
-        self.t_a = t_as[np.argmin(r_iis)]
-        self.r = r_iis[np.argmin(r_iis)]
-        if plot_r:
+        # self.lambda_i=lambda_was
+        # print self.r
+        halfmax = ((1-r_iis[np.argmin(r_iis)])/2+r_iis[np.argmin(r_iis)])
+        g_offset=1
+        g_x0 = t_ai*1.e6
+        g_gamma = abs(2*(t_as[np.argmin(abs(r_iis - halfmax))]-t_as[np.argmin(r_iis)]))*1.e6
+        g_A = -g_gamma/2*math.pi
+
+        fixed=[0]
+        p0, fitfunc, fitfunc_str = common.fit_lorentz(g_offset, g_A, g_x0, g_gamma)
+        fit_result = fit.fit1d(t_as*1.e6,r_iis, None, p0=p0, 
+            fitfunc=fitfunc, do_print=False, ret=True,fixed=fixed)
+        fail=False
+        try:
+            gamma=fit_result['params_dict']['gamma']
+            A=fit_result['params_dict']['A']
+            x0=fit_result['params_dict']['x0']*1.e-6
+
+            if (A*gamma)>0:
+                fail = True
+            self.r=1+(2*A/(math.pi*gamma))
+            self.t_a = x0
+
+            if plot_r:
+                print 'air gap',self.t_a*1.e6, ' um; r = ', self.r
+                print 'g',gamma*1.e6,'A',A*1.e6,'r',1+(2*A/(math.pi*gamma))
+                plot.plot_fit1d(fit_result,fit_xvals = np.linspace(min(t_as*1.e6),max(t_as*1.e6),10*len(t_as)))
+        except:
+            fail = True
+        if fail:
+            print 'failed to fit resonance. setting reflection, t_a to lowest point'
+            self.r=r_iis[np.argmin(r_iis)] 
+            self.t_a = t_as[np.argmin(r_iis)]
             print 'air gap',self.t_a*1.e6, ' um; r = ', self.r
-            fig,ax = plt.subplots()
-            ax.plot(t_as*1.e6,r_iis,'o')
-            plt.show()
-            plt.close()
-        
+
+       
         self.optical_length = self.t_a + self.t_d*n_diamond
         return self.t_a,self.r,r_iis#,t_ai,r_i,r_is#,
 
@@ -637,29 +683,67 @@ class Cavity():
         # print 't_pen_mirror2',t_pen_mirror2
         return self.t_pen_mirror1,self.t_pen_mirror2
 
-    def calculate_dnu_from_LM1_LM2(self,LM1=100e-6,LM2=2200e-6):
+    def scattering_term(self,sigma_DA,n_1,n_2):
+        rho12 = (n_1-n_2)/(n_1+n_2)
+
+        S_AD1 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_1-n_2)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*n_1/self.lambda_i)**2
+
+        # S_AD1 = (1-rho12**2)*((2*math.pi*sigma_DA*(n_1-n_2)/self.lambda_i)**2-(2*math.pi*sigma_DA*(n_1-n_2)/self.lambda_i)**4/2.)+rho12**2*((math.pi*4.*sigma_DA*n_1/self.lambda_i)**2-(math.pi*4.*sigma_DA*n_1/self.lambda_i)**4/2.)        
+        return S_AD1
+
+
+    def calculate_dnu_from_LM1_LM2(self,LM1=100e-6,LM2=2200e-6,**kw):
         """
         calculate the linewidth based on losses at the mirrors only (no diamond losses), using the unequal distribution of E-field in the cavity
         """
-        self.calculate_pen_depth()
+        sigma_DA = kw.pop('sigma_DA',0.0e-9)#could consider using s.sigma_DA as standard
         if self.cav_type == 'hybrid':
             Emax_air = self.calculate_E_max_in_n(n_0=1)[1]
             Emax_diamond = self.calculate_E_max_in_n(n_0=n_diamond)[1]
             f = Emax_air**2/(n_diamond*Emax_diamond**2) #ratio of time-averaged poynting vectors!
-            dnu = sc.constants.c/(4*math.pi)*(LM1*f+LM2)/(2*n_diamond*self.effective_length)
-        else:
-            dnu = sc.constants.c/(4*math.pi)*(LM1+LM2)/(2*self.effective_length)
-            # if self.AR_coating:
-            #     dnus =  sc.constants.c/(4*math.pi)*(LM2 + LM1)/(self.effective_length)
-            #     dnu = sc.constants.c/(4*math.pi)*(LM2 + LM1)/(n_diamond*self.t_d + self.t_a+self.t_pen_mirror1+self.t_pen_mirror2+self.lambda_cav/4)
-            # else:
 
-                
-            #     dside = n_diamond*self.t_d+self.t_pen_mirror2 #~optical cycles on the diamond side
-            #     aside = self.t_a + self.t_pen_mirror1 #~optical cycles on the air side
-            #     print 'use length',(f/(1-f)*aside+dside)
-            #     dnu = sc.constants.c/(4*math.pi)*(LM1*f+LM2)/(f/(1-f)*aside+dside)
-                
+            # f_AD = (np.sin(2*math.pi*(n_diamond*self.t_d)/(self.lambda_i)))**2/2.
+            f_AD =(np.sin(2*math.pi*(n_diamond*self.t_d)/(self.lambda_i)))**2
+           
+            if self.AR_coating:
+                f_ARD = f_AD
+                f_AAR= (np.sin(2*math.pi*(n_diamond*self.t_d)/(self.lambda_i)+math.pi/2.))**2
+                # print 'f_ard,f_aar',f_ARD,f_AAR
+                S_ARD = self.scattering_term(sigma_DA,n_diamond,self.n_AR)
+                S_AAR = self.scattering_term(sigma_DA,self.n_AR,n_air)
+                print 'S_ARD',S_ARD,'S_AAR',S_AAR
+                # S_ARD = (math.pi*4.*sigma_DA*(n_diamond/self.n_AR)/self.lambda_i)**2# + (math.pi*4.*sigma_DA*(self.n_AR)/self.lambda_i)**2
+                # S_AAR = (math.pi*4.*sigma_DA*(self.n_AR)/self.lambda_i)**2 #+(math.pi*4.*sigma_DA*(n_air)/self.lambda_i)**2
+                # print 'S_ard,S_aar',S_ARD*1.e6,S_AAR*1.e6
+                S = 2*S_ARD*f_ARD+2*S_AAR*f_AAR
+                # print S*1.e6
+
+                # print 's',S*1.e6
+            else:
+                # S_AD1 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2
+                # S_AD2 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*1/self.lambda_i)**2
+                S_AD1 = self.scattering_term(sigma_DA,n_diamond,n_air)
+                # S_AD2 = self.scattering_term(sigma_DA,n_air,n_diamond)
+                # print S_AD1*1.e6
+                # print S_AD2*1.e6
+                # print f
+                # S_AD1 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2
+                # S_AD2 = (tau21**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*1/self.lambda_i)**2
+                S = f_AD*(S_AD1*2)#+f*S_AD2)#+S_AD2)
+                # S_AD = (math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2.#+(math.pi*4.*sigma_DA/self.lambda_i)**2
+
+
+                # print 'incl air',S_AD*1.e6
+                # S_AD = (math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2#+(math.pi*4.*sigma_DA/self.lambda_i)**2
+                # print S_AD*1.e6
+
+                # S = S_AD*f_AD
+
+            dnu = sc.constants.c/(4.*math.pi)*(LM1*f+LM2+S)/(2.*n_diamond*self.effective_length)
+
+        else:
+            dnu = sc.constants.c/(4.*math.pi)*(LM1+LM2)/(2.*self.effective_length)
+
         return dnu
 
     def calculate_Purcell(self):
@@ -669,8 +753,8 @@ class Cavity():
         self.Fp = 3*scipy.constants.c*self.lambda_i**2/(4*math.pi**2*self.n_z0**3*self.dnu)/self.mode_volume
         return self.Fp
 
-    def calculate_into_ZPL(self):
-        self.intoZPL = self.beta0*(self.Fp+1)/(self.beta0*(self.Fp)+1) #into ZPL AND into cavity (into ZPL alone: beta*(F+1)/(beta*F+1))
+    def calculate_into_ZPL(self,**kw):
+        self.intoZPL = self.beta0*(self.Fp)/(self.beta0*(self.Fp)+1) #into ZPL AND into cavity (into ZPL alone: beta*(F+1)/(beta*F+1))
         return self.intoZPL
 
     def calculate_lifetime(self):
@@ -721,7 +805,7 @@ class Cavity():
             ax.set_title(title_string)
             # ax.set_ylim((1.,2.6))
             ax2=ax.twinx()
-            # ax2.set_xlim(4,6)#((1.8,2.3))
+            # ax2.set_xlim(22.5,23.5)#(1.8,2.8)#(4,6)#()
             # ax2.set_ylim((0,1))
             ax2.plot(self.zs*1.e6,self.Etot_vs_z/1000.,'g')
             ax2.plot([self.z0*1.e6],[self.Evac_max/1000.],'ok',label='dz = %.1f nm, Emax = %.1f kV/m'%(self.dz0*1.e9,self.Evac_max/1000))
@@ -838,8 +922,10 @@ def spectral_overlap(lambda_ZPL,lambda_cav,dnu):
     spectral_overlap = 1./(1.+4*(Q**2)*((lambda_ZPL/lambda_cav)-1.)**2)
     return spectral_overlap
 
-def calculate_avgintoZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,Rs=[18.e-6],vib_dLs=[0.4e-9], dLmax=1.0e-9, Ltots = [1000e-6],LM1s = [242e-6],lambda_ZPL=637.e-9,
-        nr_pts = 51, show_plots=False, plot_r=False,AR_coating=False,realistic_mirrors=False, method='numeric',save_data=False,tag=''):
+def calculate_avgintoZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,Rs=[18.e-6],vib_dLs=[0.4e-9], dLmax=1.0e-9, 
+        Ltots = [1000e-6],LM1s = [242e-6],sigma_DA=0.25e-9,lambda_ZPL=637.e-9,
+        nr_pts = 51, show_plots=False, plot_r=False,AR_coating=False,
+        realistic_mirrors=False, method='numeric',save_data=False,tag=''):
     """
     calculate the average emission into the ZPL, and outcoupling throught the top mirror, under the influence of vibrations and varying division of losses over the mirrors.
     For the numeric case, always assume that the purcell factor on-resonance does not change for the small fluctuations in air gap due oto vibrations. 
@@ -913,11 +999,13 @@ def calculate_avgintoZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,Rs=[18.e-6],vib_dL
         mode_volumes[i]=s.mode_volume
         for j, Ltot in enumerate(Ltots):
             for k,LM1 in enumerate(LM1s):
-                dnu_from_losses[j,k] = s.calculate_dnu_from_LM1_LM2(LM1 = LM1,LM2 = Ltot-LM1)#make sure that max(LM1s),min(Ltots)
+                dnu_from_losses[j,k] = s.calculate_dnu_from_LM1_LM2(LM1 = LM1,LM2 = Ltot-LM1,sigma_DA=sigma_DA)#make sure that max(LM1s),min(Ltots)
                 s.dnu = dnu_from_losses[j,k] #need this to get the right into ZPL calculation
                 s.calculate_Purcell()
-                intoZPL0s[i,j,k] = s.calculate_into_ZPL()
-                intoZPLs[i,j,k,:] = intoZPL0s[i,j,k] * spectral_overlap(lambda_ref,lambda_ress,dnu_from_losses[j,k] )
+                intoZPL0s[i,j,k]=s.calculate_into_ZPL()
+                Fps = s.calculate_Purcell()* spectral_overlap(lambda_ref,lambda_ress,dnu_from_losses[j,k] )
+                intoZPLs[i,j,k,:] = s.beta0*(Fps)/(s.beta0*(Fps)+1) 
+                # intoZPLs[i,j,k,:] = intoZPL0s[i,j,k] * spectral_overlap(lambda_ref,lambda_ress,dnu_from_losses[j,k] )
                 for l,vib_dL in enumerate(vib_dLs):    #here we are really taking the size of the vibrations into account
                     p_cav_length = sim_vib.gaussian(dLs,0,vib_dL)
                     avg_p_ZPLs[i,j,k,l] = sim_vib.avg_p_ZPL_to_zero(intoZPLs[i,j,k,:],p_cav_length)
@@ -987,6 +1075,7 @@ def calculate_avgintoZPL_vs_vibrations(t_d=4.e-6,t_a_g=1.2e-6,Rs=[18.e-6],vib_dL
         # data_dict['max_out_through_M2s']=max_out_through_M2s #ot saving, since too large, and can be easily reconstructed! 
         # data_dict['Ltot_max_out_through_M2s']=Ltot_max_out_through_M2s #ot saving, since too large, and can be easily reconstructed!
         data_dict['Rs']=Rs
+        data_dict['sigma_DA']=sigma_DA
         data_dict['t_d']=t_d
         data_dict['t_a_g']=t_a_g
         data_dict['t_a']=t_a0
@@ -1483,6 +1572,72 @@ def mirror_reflectivity_from_matrix(lambdas,number_of_layers=10):
     return R,r_coeff
 
 
+##############ray transfer matrices 
 
 
+def raytransfer_propagation_matrix(d):
+    return np.array(((1,d),(0,1)))
 
+def raytransfer_interface_matrix(n1,n2):
+    return np.array(((1,0),(0,(n1/n2))))
+
+def raytransfer_interface(xt,n1,n2):
+    xt_0_f = xt[0]
+    xt_1_f = np.arcsin(n1/n2*np.sin(xt[1]))
+    return np.array((xt_0_f,xt_1_f))
+
+
+def raytransfer(x_i,theta_i,M=10,n_1=2.1,n_2=1.4):
+    lambda_design= 637e-9
+    L_1 = lambda_design / (4*n_1)
+    L_2 = lambda_design / (4*n_2)
+    L_substrate = 1.e-6
+
+    n_SiO2 = 1.4
+    n_AR = np.sqrt(n_air*n_SiO2)
+    L_AR = lambda_design / (4*n_AR)
+    zs = np.zeros(2*(M-1)+7)
+    all_xts = np.zeros((2*(M-1)+7,2))
+    
+    xt_i = np.array((x_i,theta_i))
+    all_xts[0,:]=xt_i
+    zs[0] = 0
+    xt_1 = raytransfer_interface(xt_i,n_diamond,n_1)
+    # xt_1 = np.dot(raytransfer_interface_matrix(n_diamond,n_1),xt_i)
+    all_xts[1,:]=xt_1
+    zs[1] = 0
+    xt = np.dot(raytransfer_propagation_matrix(L_1),xt_1)
+
+
+    for i in np.arange(M):
+        # xt = np.dot(raytransfer_interface_matrix(n_1,n_2),xt)
+        xt = raytransfer_interface(xt,n_1,n_2)
+        all_xts[2*i+2,:] = xt
+        zs[2*i+2] = zs[2*i+1]+L_1
+
+        xt = np.dot(raytransfer_propagation_matrix(L_2),xt)
+        # xt = np.dot(raytransfer_interface_matrix(n_2,n_1),xt)
+        xt = raytransfer_interface(xt,n_2,n_1)
+        all_xts[2*i+3,:] = xt
+        zs[2*i+3] = zs[2*i+2]+L_2
+
+        xt = np.dot(raytransfer_propagation_matrix(L_1),xt)
+
+    # xt = np.dot(raytransfer_interface_matrix(n_1,n_SiO2),xt)
+    xt = raytransfer_interface(xt,n_1,n_SiO2)
+    all_xts[2*(M-1)+4,:] = xt
+    zs[2*(M-1)+4] = zs[2*(M-1)+3]+L_1
+    xt = np.dot(raytransfer_propagation_matrix(L_substrate),xt)
+    # xt = np.dot(raytransfer_interface_matrix(n_SiO2,n_AR),xt)
+    xt = raytransfer_interface(xt,n_SiO2,n_AR)
+    all_xts[2*(M-1)+5,:] = xt
+    zs[2*(M-1)+5] = zs[2*(M-1)+4]+L_substrate
+
+    xt = np.dot(raytransfer_propagation_matrix(L_AR),xt)
+    # xt = np.dot(raytransfer_interface_matrix(n_AR,n_air),xt)
+    xt = raytransfer_interface(xt,n_AR,n_air)
+    all_xts[(2*(M-1)+6),:] = xt
+    zs[2*(M-1)+6] = zs[2*(M-1)+5]+L_AR
+
+    xt_f = xt
+    return xt_f,all_xts,zs
