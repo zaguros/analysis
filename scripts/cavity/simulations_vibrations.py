@@ -20,7 +20,7 @@ dnu_vibr_slow_scans = 13.3e9 #gaussian fit in Hz
 
 def gaussian(x, mu, FWHM):
     sig = FWHM/(2.*np.sqrt(2*np.log(2)))
-    return 1./(math.sqrt(2*sig*math.pi))*np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+    return 1./(math.sqrt(2*np.power(sig,2.)*math.pi))*np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
 def avg_p_ZPL_to_zero(ZPL_to_zero,p_cav_length):
     return np.sum(ZPL_to_zero*p_cav_length)/np.sum(p_cav_length)

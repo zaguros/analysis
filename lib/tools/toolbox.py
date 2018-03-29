@@ -103,7 +103,6 @@ def latest_data(contains='', older_than=None, newer_than=None,return_timestamp =
         search_dir = datadir
     else:
         search_dir = folder
-        print search_dir
 
     if folder_is_daydir == False:
         dir_entries = os.listdir(search_dir)

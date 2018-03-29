@@ -63,4 +63,5 @@ def get_w0_from_table(La=4.e-6,d=4.e-6,R=37.e-6):
     w0s = data[1:,1:] 
     La_idx = (np.abs(Las-La*1.e6)).argmin()
     d_idx = (np.abs(ds-d*1.e6)).argmin()
+    # print max(ds),max(Las)
     return w0s[La_idx,d_idx]*1.e-6
