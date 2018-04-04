@@ -97,7 +97,7 @@ def basic_spin_states():
 	return ket0, bra0, ket1, bra1, rho0, rho1, rhom, ketx,brax,ketmx,bramx,rhox,rhomx,kety,bray,ketmy,bramy,rhoy,rhomy
 
 def basic_spin_states_S1():
- 	'''Return some basic spin states for S=1'''
+	'''Return some basic spin states for S=1'''
 	rhom = qutip.qeye(3)/3
 	ket0 = qutip.basis(3,1)
 	bra0 = qutip.basis(3,1).dag()
