@@ -19,8 +19,8 @@ import warnings
 import collections
 import copy
 
-#import hyperfine_params as hf_params; reload(hf_params)
-#hf = hf_params.hyperfine_params
+import hyperfine_params as hf_params; reload(hf_params)
+hf = hf_params.hyperfine_params
 
 from scipy.linalg import fractional_matrix_power
 
@@ -531,11 +531,11 @@ class basic_gate_sequence(object):
 	def _reset_sequence(self):
 		self.sequence = collections.deque()
 
-	def add_gate_helper(self,gate_func,name=None,**kw):
+	def add_gate_helper(self,gate_func,name = None, **kw):
 		before = kw.pop('before', False)
-		reps = kw.pop('reps',1)
-		g =  gate(gate_func,name,**kw)
-		self.add_gate_to_seq(g,before=before,reps=reps)
+		reps = kw.pop('reps', 1)
+		g =  gate(gate_func,name, **kw)
+		self.add_gate_to_seq(g, before = before, reps = reps)
 
 		return self
 
