@@ -941,7 +941,90 @@ def bulk_analyze_entanglement_on_demand():
     for expm in analysis_params.data_settings['ent_on_demand_runs']:
         analyze_entanglement_on_demand(expm,use_file_library=True,save_corrs=True)
 
-  
+def return_phase_stab(contains, start_rep_no=3,mode='only_meas',**kw):
+    base_folder_lt4 = analysis_params.data_settings['base_folder_lt4']
+    folder = os.path.join(base_folder_lt4,contains)
+    filename_str = kw.pop('filename_str','XsweepY')
+    measfiles=tb.latest_data(contains = filename_str,folder =folder,return_all=True)
+
+    x0s = []
+    sigmas = []
+    for measfile in measfiles:
+        a = ppq.purifyPQAnalysis(measfile, hdf5_mode='r')
+
+        # general params
+        delay_stable = np.float(a.g.attrs['count_int_time_stab'])
+        delay_meas = np.float(a.g.attrs['count_int_time_meas'])
+    
+
+        if mode == 'only_meas':
+        
+            sample_counts_1 = a.g['adwindata']['sampling_counts_1'].value
+            sample_counts_2 = a.g['adwindata']['sampling_counts_2'].value
+            sample_counts_1 = sample_counts_1[start_rep_no:]
+            sample_counts_2 = sample_counts_2[start_rep_no:]
+
+        
+            delay = delay_meas
+          
+            v_1 = sample_counts_1
+            v_2 = sample_counts_2
+            t = np.arange(0, (len(v_1)*delay/1000), (float(delay)/1000))
+
+
+
+        elif mode == 'only_stab':
+
+            pid_counts_1 = a.g['adwindata']['pid_counts_1'].value
+            pid_counts_2 = a.g['adwindata']['pid_counts_2'].value
+            pid_counts_1 = pid_counts_1[start_rep_no:]
+            pid_counts_2 = pid_counts_2[start_rep_no:]
+
+            delay = delay_stable
+          
+            v_1 = pid_counts_1
+            v_2 = pid_counts_2
+            t = np.arange(0, (len(v_1)*delay/1000), (float(delay)/1000))
+            
+        g_0 = a.g.attrs['Phase_Msmt_g_0']
+        visibility = a.g.attrs['Phase_Msmt_Vis']
+       
+        cosvals = [2*(float(n0)/(float(n0)+float(n1)*g_0)-0.5)*visibility for n0,n1 in zip(v_1,v_2)]
+        cosvals = [cosval if np.abs(cosval) < 1 else (1.0 * np.sign(cosval)) for cosval in cosvals]
+        angle = 180*np.arccos(cosvals)/np.pi
+
+        hist, bins = np.histogram(angle,bins= 100,normed = True)
+        width = np.diff(bins)
+        center = (bins[:-1] + bins[1:]) / 2
+        
+
+        g_a = 0.0
+        g_x0 = 90
+        g_sigma = 45
+        g_A = 1/(np.sqrt(2 * np.pi) * g_sigma)
+
+        p0, fitfunc,fitfunc_str = common.fit_gauss(g_a, g_A, g_x0, g_sigma)
+        fit_result = fit.fit1d(center,hist, None, p0=p0, fitfunc=fitfunc,
+                             ret=True,fixed=[])
+
+        x0s.append(fit_result['params_dict']['x0'])
+        sigmas.append(fit_result['params_dict']['sigma'])
+    return x0s, sigmas
+
+def bulk_analyze_phase_stability(mode='only_meas'):
+    x0s = []
+    sigmas = []
+    for expm in analysis_params.data_settings['ent_on_demand_runs']:
+        x0, sigma = return_phase_stab(expm,mode=mode)
+        x0s.extend(np.array(x0))
+        sigmas.extend(np.abs(sigma))
+
+    print np.round(x0s,1)
+    print np.round(sigmas,1)
+    print np.mean(np.abs(sigma))
+    print np.std(np.abs(sigma))
+    print np.std(np.abs(sigma))/len(sigma)
+        
 def analyze_eod_sweep_dd_reps(contains = 'EntangleOnDemandInclCR',**kw):
     save_sweep_param_corrs = kw.pop('save_sweep_param_corrs',False)
     sca = run_analysis(contains,do_ROC = True,ret_sca=True,**kw)
