@@ -14,6 +14,8 @@ if os.name == 'nt':
     sys.path.append("c:/measuring")
     sys.path.append("h:/My Documents/measuring")#only for local SvD
     sys.path.append("/Users/maartendegen/Documents/measuring")
+elif os.name == 'posix':
+	sys.path.append("/Users/jrandall/Documents/GitHub")
 else:
     sys.path.append(measuring_root)
 
