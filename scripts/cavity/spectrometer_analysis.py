@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 from analysis.scripts.cavity import peakdetect; reload(peakdetect)
 from analysis.lib.tools import plot
 from analysis.lib.fitting import fit, common
-c=2.997e8#speed of light
+import scipy.constants
+c=scipy.constants.c #speed of light
 
 class spectrometer_analysis(object):
     def __init__(self,folder):

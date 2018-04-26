@@ -700,7 +700,7 @@ class Cavity():
         if self.cav_type == 'hybrid':
             Emax_air = self.calculate_E_max_in_n(n_0=1)[1]
             Emax_diamond = self.calculate_E_max_in_n(n_0=n_diamond)[1]
-            f = Emax_air**2/(n_diamond*Emax_diamond**2) #ratio of time-averaged poynting vectors!
+            f = Emax_air**2/(n_diamond*Emax_diamond**2) #ratio of intensities (~time-averaged poynting vectorsif this were a propagating wave)!
 
             # f_AD = (np.sin(2*math.pi*(n_diamond*self.t_d)/(self.lambda_i)))**2/2.
             f_AD =(np.sin(2*math.pi*(n_diamond*self.t_d)/(self.lambda_i)))**2
@@ -708,36 +708,14 @@ class Cavity():
             if self.AR_coating:
                 f_ARD = f_AD
                 f_AAR= (np.sin(2*math.pi*(n_diamond*self.t_d)/(self.lambda_i)+math.pi/2.))**2
-                # print 'f_ard,f_aar',f_ARD,f_AAR
                 S_ARD = self.scattering_term(sigma_DA,n_diamond,self.n_AR)
                 S_AAR = self.scattering_term(sigma_DA,self.n_AR,n_air)
-                print 'S_ARD',S_ARD,'S_AAR',S_AAR
-                # S_ARD = (math.pi*4.*sigma_DA*(n_diamond/self.n_AR)/self.lambda_i)**2# + (math.pi*4.*sigma_DA*(self.n_AR)/self.lambda_i)**2
-                # S_AAR = (math.pi*4.*sigma_DA*(self.n_AR)/self.lambda_i)**2 #+(math.pi*4.*sigma_DA*(n_air)/self.lambda_i)**2
-                # print 'S_ard,S_aar',S_ARD*1.e6,S_AAR*1.e6
                 S = 2*S_ARD*f_ARD+2*S_AAR*f_AAR
-                # print S*1.e6
 
-                # print 's',S*1.e6
             else:
-                # S_AD1 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2
-                # S_AD2 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*1/self.lambda_i)**2
                 S_AD1 = self.scattering_term(sigma_DA,n_diamond,n_air)
-                # S_AD2 = self.scattering_term(sigma_DA,n_air,n_diamond)
-                # print S_AD1*1.e6
-                # print S_AD2*1.e6
-                # print f
-                # S_AD1 = (1-rho12**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2
-                # S_AD2 = (tau21**2)*(2*math.pi*sigma_DA*(n_diamond-1)/self.lambda_i)**2+rho12**2*(math.pi*4.*sigma_DA*1/self.lambda_i)**2
                 S = f_AD*(S_AD1*2)#+f*S_AD2)#+S_AD2)
-                # S_AD = (math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2.#+(math.pi*4.*sigma_DA/self.lambda_i)**2
 
-
-                # print 'incl air',S_AD*1.e6
-                # S_AD = (math.pi*4.*sigma_DA*n_diamond/self.lambda_i)**2#+(math.pi*4.*sigma_DA/self.lambda_i)**2
-                # print S_AD*1.e6
-
-                # S = S_AD*f_AD
 
             dnu = sc.constants.c/(4.*math.pi)*(LM1*f+LM2+S)/(2.*n_diamond*self.effective_length)
 
