@@ -135,7 +135,6 @@ def gate_sweep_analysis(carbon, **kw):
 	"""
 	gets data, plots it and prints the gate parameters for maximum bloch vector length.
 	"""
-
 	older_than = kw.pop('older_than',None)
 	newer_than = kw.pop('newer_than',None)
 	ssro_tstamp = kw.pop('ssro_tstamp',None)
@@ -158,7 +157,6 @@ def gate_sweep_analysis(carbon, **kw):
 	nr_of_taus = len(entire_folder_list)/nr_of_parts
 
 	tau_nrs 	= kw.pop('tau_nrs', range(nr_of_taus))
-
 	for t in tau_nrs:			
 		gates,x,y,x_u,y_u,folder_pos, gate_values = get_raw_data_all_parts(carbon,older_than = older_than,
 			newer_than = newer_than, ssro_tstamp = ssro_tstamp, uncond_data = uncond_data, tau_nr = t, **kw)

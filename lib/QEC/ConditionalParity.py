@@ -1,5 +1,5 @@
 from analysis.lib.m2 import m2
-from analysis.lib.m2.ssro import ssro
+from analysis.lib.m2.ssro import ssro; reload(ssro)
 from analysis.lib.tools import toolbox
 from analysis.lib.m2.ssro import mbi
 from analysis.lib.math import error
@@ -469,7 +469,8 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
         '''
         Performs Readout Correction, needs to be updated to correct for post selected results and apply error-bars correctly.
         '''
-        
+        e_transition = self.adgrp.attrs['electron_transition']#if MWInit_SSRO was performed, the data for e_transition will be used
+
         if post_select_QEC == True and self.post_select == True:
             if ssro_calib_folder == '':
                 ssro_calib_folder = toolbox.latest_data('SSRO')
@@ -490,7 +491,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             for i in range(len(self.normalized_ssro_00[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
                     ssro.get_SSRO_calibration(ssro_calib_folder,
-                            ro_durations[i])
+                            ro_durations[i],e_transition)
                 p0_00, u_p0_00 = roc.num_eval(self.normalized_ssro_00[:,i],
                         self.u_normalized_ssro_00[:,i])
                 p0_01, u_p0_01 = roc.num_eval(self.normalized_ssro_01[:,i],
@@ -557,7 +558,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             for i in range(len(self.normalized_ssro_0000[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
                     ssro.get_SSRO_calibration(ssro_calib_folder,
-                            ro_durations[i])
+                            ro_durations[i],e_transition)
                 p0_0000, u_p0_0000 = roc.num_eval(self.normalized_ssro_0000[:,i],
                         self.u_normalized_ssro_0000[:,i])
                 p0_0100, u_p0_0100 = roc.num_eval(self.normalized_ssro_0100[:,i],
@@ -658,7 +659,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             for i in range(len(self.normalized_ssro_000[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
                     ssro.get_SSRO_calibration(ssro_calib_folder,
-                            ro_durations[i])
+                            ro_durations[i],e_transition)
                 p0_000, u_p0_000 = roc.num_eval(self.normalized_ssro_000[:,i],
                         self.u_normalized_ssro_000[:,i])
                 p0_001, u_p0_001 = roc.num_eval(self.normalized_ssro_001[:,i],
@@ -710,7 +711,7 @@ class ConditionalParityAnalysis(mbi.MBIAnalysis):
             for i in range(len(self.normalized_ssro_0[0])):
                 roc.F0, roc.u_F0, roc.F1, roc.u_F1 = \
                     ssro.get_SSRO_calibration(ssro_calib_folder,
-                            ro_durations[i])
+                            ro_durations[i],e_transition)
                 p0_0, u_p0_0 = roc.num_eval(self.normalized_ssro_0[:,i],
                         self.u_normalized_ssro_0[:,i])
                 p0_1, u_p0_1 = roc.num_eval(self.normalized_ssro_1[:,i],

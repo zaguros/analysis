@@ -21,12 +21,17 @@ from matplotlib import pyplot as plt
 script_name = 'GHZ_analysis.py'
 
 
+
+
+
+
 def get_data(folder,folder_timestamp,RO_correct=True,ssro_calib_timestamp=None,tomo_bases='XXX',get_title=False, return_orientations=False, **kw):
     evaluate_both = kw.pop('evaluate_both',False)
 
     a = CP.ConditionalParityAnalysis(folder)
     #a.get_sweep_pts()
     a.get_readout_results(name='adwindata', post_select_GHZ = True)
+
     if a.orientations[3] == 'negative':
         multiply_by = -1
     else:
@@ -167,7 +172,7 @@ def get_debug_data(folder,folder_timestamp,RO_correct=True,ssro_calib_timestamp=
             ssro_dstmp, ssro_tstmp = toolbox.verify_timestamp(ssro_calib_timestamp)
             ssro_calib_folder = toolbox.datadir + '\\'+ssro_dstmp+'\\'+ssro_tstmp+'_AdwinSSRO_SSROCalibration_111_1_sil18'#GHZ_'+tomo_bases
 
-        print ssro_calib_folder
+        # print ssro_calib_folder
         a.get_electron_ROC(ssro_calib_folder = ssro_calib_folder)
 
         #take the [0,0] part of the arrays right now; no sweep_pts
@@ -189,7 +194,9 @@ def get_debug_data(folder,folder_timestamp,RO_correct=True,ssro_calib_timestamp=
 def do_plot(folder,timestamp,name,p,y,y_err,x_labels,x, savc=True, return_ax=False, show_plot=True,
             tomo_bases='XXX',title='',width=None,ylabel='',print_avg=False,add_title=True,hbar=False):
     plt.close('all')
-
+    # print 'p',p
+    # print 'y',y
+    # print 'y_err',y_err
     if hbar:
         if width==None:
             fig,ax = plt.subplots() 
@@ -202,7 +209,7 @@ def do_plot(folder,timestamp,name,p,y,y_err,x_labels,x, savc=True, return_ax=Fal
         ax.set_yticklabels(x_labels)
         ax.set_xlim(-1.1,1.1)
         if add_title:
-            ax.set_title(str(folder)+'/'+str(timestamp))
+            ax.set_title(str(folder)+'/'+str(timestamp)+'_'+name)
         else:
             ax.set_title('')
         # ax.grid()
@@ -254,7 +261,8 @@ def do_plot(folder,timestamp,name,p,y,y_err,x_labels,x, savc=True, return_ax=Fal
             ax.set_ylabel(ylabel)
 
         avg_fid = np.mean(y,axis=0)
-        u_avg_fid = np.divide(np.sqrt(np.sum((y_err**2),axis=0)),len(y_err))
+        print avg_fid
+        u_avg_fid = np.divide(np.sqrt(np.sum((np.array(y_err)**2),axis=0)),len(y_err))
 
         #avg_fid = sum(y)/len(y)
         #u_avg_fid = sum(y_err)/len(y_err)/sqrt(len(y_err))
@@ -386,20 +394,20 @@ def plot_sweep_orientations_GHZ_data(plot=True, save = True, plot_single=True, t
     if return_data == True:
         return(folder,oldest_timestamp,p_avg,y_avg,y_err_avg,title)
 
-def plot_singlerun_GHZ_data(timestamp=None, plot=True, save = True):
+def plot_singlerun_GHZ_data(timestamp=None, plot=True, save = True,contains=None):
     if timestamp == None:
-        timestamp, folder   = toolbox.latest_data(folder_name,return_timestamp =True)
+        timestamp, folder   = toolbox.latest_data(return_timestamp =True,contains=contains)
     else: 
         folder = toolbox.data_from_time(timestamp) 
 
-    p,y,y_err = get_data(folder,timestamp,RO_correct=True)
+    p,y,y_err,title = get_data(folder,timestamp,RO_correct=True)
 
     x_labels = ('1,1,1', '1,1,-1' , '1,-1,1', '1,-1,-1','-1,1,1', '-1,1,-1' , '-1,-1,1', '-1,-1,-1')
     x = range(len(y)) 
 
     do_plot(folder,timestamp,'GHZ_results',p,y,y_err,x_labels,x)
 
-def plot_debug_GHZ_data(plot=True, save = True,tomo_bases="ZZI",plot_single=True,extra_tag='',return_data=False):
+def plot_debug_GHZ_data(show_plot=True, save = True,tomo_bases="ZZI",plot_single=True,extra_tag='',return_data=False,older_than=None):
     p = np.zeros([4,2])
     y = np.zeros([4,2])
     y_err = np.zeros([4,2])
@@ -408,8 +416,8 @@ def plot_debug_GHZ_data(plot=True, save = True,tomo_bases="ZZI",plot_single=True
     data_labels = ['pp','pn','np','nn']
 
     for k,label in enumerate(data_labels):
-        timestamp,folder = toolbox.latest_data(contains=extra_tag+'tomo'+tomo_bases+'_'+label,return_timestamp=True)
-        print folder
+        timestamp,folder = toolbox.latest_data(contains=extra_tag+'tomo_'+tomo_bases+'_'+label,return_timestamp=True,older_than=older_than)
+        # print folder
         p[k],y[k],y_err[k] = get_debug_data(folder,timestamp,RO_correct=True,tomo_bases=tomo_bases)
         if plot_single:
             do_plot(folder,timestamp,'GHZ_debug_results',p[k],y[k],y_err[k],x_labels,range(len(y[k])),show_plot=False,tomo_bases=tomo_bases)
@@ -425,8 +433,8 @@ def plot_debug_GHZ_data(plot=True, save = True,tomo_bases="ZZI",plot_single=True
     y_err_avg = np.divide(np.sqrt(np.sum((y_err**2),axis=0)),len(data_labels))
 
     x = range(len(y_avg)) 
-
-    do_plot(folder,timestamp,'GHZ_debug_results_all_orientations',p_avg,y_avg,y_err_avg,x_labels,x,tomo_bases=tomo_bases)
+    if show_plot:
+        do_plot(folder,timestamp,'GHZ_debug_results_all_orientations',p_avg,y_avg,y_err_avg,x_labels,x,tomo_bases=tomo_bases)
 
     if return_data == True:
         return(folder,oldest_timestamp,p_avg,y_avg,y_err_avg,title)
@@ -652,6 +660,50 @@ def plot_permuted_carbons(carbons= ["1","2","5"], plot=True,plot_single=True,pos
     do_plot(folder,timestamp,'permutations',p_avg,y_avg,y_err_avg,basis_labels,x,show_plot=plot,width=len(basis_labels)*0.8,ylabel='exp. value',add_title=False,hbar=True)
 
 
+def plot_Cvalue():
+    tomo_lists=[['X','X','X'],['Y','Y','X'], ['Y','X','Y'],['X','Y','Y'],['X','X','X']]
+    A_lists = [['X','Y','Y'],['Y','I','I'],['Y','I','I'],['X','I','I'],['X','I','I']]
+    B_lists = [['Y','X','Y'],['I','Y','I'],['I','X','I'],['I','Y','I'],['I','X','I']]
+    C_lists = [['Y','Y','X'],['I','I','X'],['I','I','Y'],['I','I','Y'],['I','I','X']]    
+
+
+
+    containses = ["XYY_YXY_YYX_tomo_XXX","XII_IYI_IIY_tomo_XYY","YII_IXI_IIY_tomo_YXY","YII_IYI_IIX_tomo_YYX","XII_IXI_IIX_tomo_XXX"] 
+    x_labels = ('1,1,1', '1,1,-1' , '1,-1,1', '1,-1,-1','-1,1,1', '-1,1,-1' , '-1,-1,1', '-1,-1,-1')
+    x_avg_labels=[]
+
+    p = np.zeros([8,len(containses)])
+    y = np.zeros([8,len(containses)])  
+    y_avg = np.zeros([len(containses)])  
+    y_err = np.zeros([8,len(containses)])  
+
+    for i,contains in enumerate(containses):
+        timestamp, folder   = toolbox.latest_data(return_timestamp =True,contains=contains)
+        tomo_name = ''.join([b for b in tomo_lists[i]])
+        A_name = ''.join([b for b in A_lists[i]])
+        B_name = ''.join([b for b in B_lists[i]])
+        C_name = ''.join([b for b in C_lists[i]])
+        folder,timestamp,p[:,i],y[:,i],y_err[:,i],title=plot_sweep_orientations_GHZ_data(plot=True,tomo_bases=contains,return_data=True,get_title=True)
+
+        # p[:,i],y[:,i],y_err[:,i],title = get_data(folder,timestamp,RO_correct=True)
+        y_avg[i]=np.mean((y[:,i].transpose()*np.array([1,-1,-1,1,-1,1,1,-1])).transpose(),axis=0)
+        x_avg_labels.append('<%s %s\n  %s %s>'%(A_name,B_name,C_name,tomo_name))
+        do_plot(folder,timestamp,'GHZ_results',p[:,i],y[:,i],y_err[:,i],x_labels,range(len(x_labels)),title='avg = %.2f'%(y_avg[i]),add_title=True)
+
+    p_avg = np.sum(p,axis=0)
+    #y_avg = np.sum(y*p,axis=0)
+    #y_err_avg = np.sum(y_err*p,axis=0)
+
+    # y_avg = np.mean(y,axis=0)
+    y_err_avg = np.divide(np.sqrt(np.sum((y_err**2),axis=0)),len(containses))    
+
+    expectation=str(round(-y_avg[0]+y_avg[1]+y_avg[2]+y_avg[3]+y_avg[4],2))
+    expectation_err=str(int(round((y_err_avg[0]+y_err_avg[1]+y_err_avg[2]+y_err_avg[3]+y_err_avg[4])/5*100,0)))
+    # NQI_result='<x1 y2 y2 xyy> + <y1 x2 y3 yxy> + <y1 y2 x3 yyx> + \n<x1 x2 x3 xxx> - <xyy yxy yyx xxx> = '+expectation+'('+expectation_err+')'
+    NQI_result='C = '+expectation+'('+expectation_err+')'
+
+    do_plot(folder,timestamp,'nonzero_tomo',p_avg,y_avg,y_err_avg,x_avg_labels,range(len(containses)),show_plot=True,width=len(containses)*1.3,ylabel='exp. value',title=NQI_result,
+            print_avg=False,add_title=False)
 
 def plot_contextuality(bases= ["XYY_YXY_YYX_XXX","XII_IYI_IIY_XYY","YII_IXI_IIY_YXY","YII_IYI_IIX_YYX","XII_IXI_IIX_XXX"], plot=True,plot_single=True,postselect=True,**kw):
     
@@ -750,7 +802,7 @@ def plot_debug_tomo(mmts= ['IIX_IIX_IIX','IIX_IIX_XXX'], tomo = 'ZZI', init='noi
 
 
 
-def plot_debug_2mmt_tomo(bases= ['X','Y'], extra_tag='',plot=True):
+def plot_debug_2mmt_tomo(bases= ['X','Y'], extra_tag='',show_plot=True):
     
     p = np.zeros([2,len(bases)])
     y = np.zeros([2,len(bases)])
@@ -758,8 +810,12 @@ def plot_debug_2mmt_tomo(bases= ['X','Y'], extra_tag='',plot=True):
     tag_labels=bases
 
     for k,basis in enumerate(bases):
-        folder,timestamp,p[:,k],y[:,k],y_err[:,k],title=plot_debug_GHZ_data(plot=False,tomo_bases=basis,extra_tag=extra_tag+'_',return_data=True)
+        folder,timestamp,p[:,k],y[:,k],y_err[:,k],title=plot_debug_GHZ_data(show_plot=False,tomo_bases=basis,extra_tag=extra_tag+'_',return_data=True)
     
+
+    y_abs_avg = np.mean(abs(y),axis=0)
+
+    y_combine_avg=np.mean((y.transpose()*np.array([1,-1])).transpose(),axis=0)
     p_avg = np.sum(p,axis=0)
     y_avg = np.mean(y,axis=0)
     y_err_avg = np.divide(np.sqrt(np.sum((y_err**2),axis=0)),len(tag_labels))    
@@ -767,5 +823,9 @@ def plot_debug_2mmt_tomo(bases= ['X','Y'], extra_tag='',plot=True):
     # y_err_avg = np.sum(y_err*p,axis=0)
     x = range(len(tag_labels)) 
 
-    do_plot(folder,timestamp,'2mmts_tomo_',p_avg,y_avg,y_err_avg,tag_labels,x,show_plot=plot,width=len(tag_labels)*1.5,tomo_bases='ev')
 
+    do_plot(folder,timestamp,'2mmts_tomo_p1_',p[0],y[0],y_err[0],tag_labels,x,show_plot=show_plot,width=len(tag_labels)*1.5,tomo_bases='ev')
+    do_plot(folder,timestamp,'2mmts_tomo_m1_',p[1],y[1],y_err[1],tag_labels,x,show_plot=show_plot,width=len(tag_labels)*1.5,tomo_bases='ev')
+
+    do_plot(folder,timestamp,'2mmts_tomo_',p_avg,y_avg,y_err_avg,tag_labels,x,show_plot=show_plot,width=len(tag_labels)*1.5,tomo_bases='ev')
+    do_plot(folder,timestamp,'2mmts_tomo_',p_avg,y_combine_avg,y_err_avg,tag_labels,x,show_plot=show_plot,width=len(tag_labels)*1.5,tomo_bases='ev')

@@ -35,18 +35,55 @@ def get_SSRO_MWInit_calibration(folder, readout_time,el_state):
     return f0, u_f0, f1, u_f1
 
 
-def get_SSRO_calibration(folder, readout_time):
+# def get_SSRO_calibration(folder, readout_time):########Removed,  since doesnt work forSSRO_MWinit_calibration
+#     if 'analysis.hdf5' in str(folder):
+#         fp = folder
+#     else:
+#         fp = os.path.join(folder, 'analysis.hdf5')
+#     f = h5py.File(fp, 'r')
+
+#     times = f['fidelity/time'].value
+#     fids0 = f['fidelity/ms0'].value
+#     fids1 = f['fidelity/ms%s1'%str(el_state)].value
+
+#     tidx = np.argmin(abs(times-readout_time))
+#     f0 = fids0[tidx,1]
+#     u_f0 = fids0[tidx,2]
+#     f1 = fids1[tidx,1]
+#     u_f1 = fids1[tidx,2]
+
+#     return f0, u_f0, f1, u_f1
+
+def get_SSRO_calibration(folder, readout_time=None, e_transition = None):
+    """
+    returns calibrated fidelities and uncertainties for ms = 0 and the dark state.
+    Works with both MInit and without MW+_intit
+    """
+
     if 'analysis.hdf5' in str(folder):
         fp = folder
     else:
         fp = os.path.join(folder, 'analysis.hdf5')
     f = h5py.File(fp, 'r')
 
-    times = f['fidelity/time'].value
-    fids0 = f['fidelity/ms0'].value
-    fids1 = f['fidelity/ms1'].value
+    g=f[ 'fidelity']
 
-    tidx = np.argmin(abs(times-readout_time))
+    times = g['ms0'].value[:,0]
+    fids0 = g['ms0'].value
+
+    if 'MWInit' in fp:
+        if (e_transition==None):
+            e_transition='m1'
+            print 'WARNING: e_transition not specified in ssro.get_ssro_calibration(). calibration for ms=-1 transition used!'
+        fids1 = g['ms%s'%(e_transition[-2:])].value
+    else:     
+        fids1 = g['ms1'].value
+
+    if readout_time==None:
+        tidx=len(times)-1
+    else:
+        tidx = np.argmin(abs(times-readout_time))
+
     f0 = fids0[tidx,1]
     u_f0 = fids0[tidx,2]
     f1 = fids1[tidx,1]
